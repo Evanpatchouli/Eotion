@@ -52,13 +52,25 @@ Add Tiptap 3 + ProseMirror to `apps/web` and verify:
 
 Avoid one giant Page document containing every block.
 
-## P5 - Collaboration
+## P5 - Agent integration (MCP)
+
+Build this after P4 provides authentication, workspace/page domain APIs, and typed contracts.
+
+- Add an MCP adapter to `apps/api` as part of the NestJS/Fastify modular monolith; route tools through the same application services and authorization checks as other clients.
+- Start with bounded, workspace-scoped tools for listing/searching and reading pages; add explicit page/block create and update operations with audit and retry behavior defined.
+- Enforce user and workspace permissions on every call, validate inputs, bound result sizes, and apply API rate limits. Do not expose direct database access or unrestricted destructive/bulk operations.
+- Validate setup and end-to-end behavior with Codex and another compatible MCP client.
+- Document the supported tools, authentication setup, and operational limits.
+
+See [Agent Integration Baseline](architecture/agent-integration.md) for the scope and security boundaries.
+
+## P6 - Collaboration
 
 - Add Yjs only after the single-user local-first path is stable.
 - Decide collaboration server persistence/compaction strategy.
 - Add Redis only when presence/fan-out/horizontal scale needs it.
 
-## P6 - Asynchronous infrastructure
+## P7 - Asynchronous infrastructure
 
 Introduce Kafka only when concrete consumers exist, for example:
 

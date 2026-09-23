@@ -53,9 +53,12 @@ NestJS + Fastify
   files
   sync
   search
+  mcp (planned agent-facing adapter)
        |
      MongoDB -------- Aliyun OSS
 ```
+
+The MCP adapter will be another interface to the same application capabilities, not a separate service or a path around API authorization. See [Agent Integration Baseline](agent-integration.md) for its planned scope and security boundaries.
 
 Redis is a later cache/presence/rate-limit/distributed-state dependency. Kafka is a later event backbone for asynchronous workloads such as indexing, audit, notifications and analytics.
 
@@ -93,3 +96,7 @@ Vue 3
 ```
 
 Desktop and mobile share document schema/editor core, while interaction affordances may differ (hover handle vs long-press/touch toolbar).
+
+## 7. Agent integration (planned)
+
+Eotion will provide an MCP service for compatible Agents. It belongs in the API modular monolith and will call the same authenticated application services as other API clients. Initial capabilities will focus on discovering, searching, reading, and explicitly creating or updating workspace content. See [Agent Integration Baseline](agent-integration.md).

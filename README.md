@@ -8,6 +8,7 @@ Eotion is a **web-first Notion-inspired workspace**. This repository is intentio
 - Desktop: Electron + electron-vite, renderer reuses `apps/web`
 - Mobile: Vue Lynx + Lynx `<webview>`; target platforms are HarmonyOS, Android and iOS
 - API: NestJS + Fastify
+- Agent integration: MCP service planned as an API adapter after authentication and core workspace/page APIs are in place
 - Server database: MongoDB
 - Future infrastructure: Redis + Kafka
 - Object storage: Aliyun OSS
@@ -89,13 +90,15 @@ packages/
   contracts/  shared API/event contracts
   sdk/        minimal typed API client foundation
 docs/
-  architecture.md
+  architecture/
+    architecture.md
+    agent-integration.md
   roadmap.md
 ```
 
 ## What is intentionally NOT implemented yet
 
-This is a run-first scaffold, not the Notion clone itself. Tiptap/ProseMirror, Yjs, MongoDB schemas, auth, SQLite, IndexedDB, OSS upload, Redis and Kafka are left for staged implementation after all platform shells are proven.
+This is a run-first scaffold, not the Notion clone itself. Tiptap/ProseMirror, Yjs, MongoDB schemas, auth, the MCP service, SQLite, IndexedDB, OSS upload, Redis and Kafka are left for staged implementation after all platform shells are proven. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
 
 The first high-risk PoC after bootstrapping is:
 
