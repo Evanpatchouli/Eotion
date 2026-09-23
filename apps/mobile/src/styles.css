@@ -1,0 +1,14 @@
+* {
+  box-sizing: border-box;
+}
+
+.mobile-shell {
+  width: 100%;
+  height: 100vh;
+  background-color: #ffffff;
+}
+
+.eotion-webview {
+  width: 100%;
+  height: 100%;
+}

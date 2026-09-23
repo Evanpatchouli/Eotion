@@ -1,0 +1,21 @@
+{
+  "name": "@eotion/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "postinstall": "node node_modules/electron/install.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "electron": "^44.4.3",
+    "electron-vite": "^5.0.0",
+    "typescript": "~6.0.3"
+  }
+}

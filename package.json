@@ -1,0 +1,23 @@
+{
+  "name": "eotion",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Eotion - a Notion-inspired web-first knowledge workspace",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=22.12 <27",
+    "pnpm": ">=10 <11"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @eotion/web dev",
+    "dev:desktop": "pnpm --filter @eotion/desktop dev",
+    "dev:mobile": "pnpm --filter @eotion/mobile dev",
+    "dev:api": "pnpm --filter @eotion/api dev",
+    "build:web": "pnpm --filter @eotion/web build",
+    "build:desktop": "pnpm --filter @eotion/desktop build",
+    "build:mobile": "pnpm --filter @eotion/mobile build",
+    "build:api": "pnpm --filter @eotion/api build",
+    "build": "pnpm build:web && pnpm build:desktop && pnpm build:mobile && pnpm build:api",
+    "typecheck": "pnpm --filter @eotion/web typecheck && pnpm --filter @eotion/desktop typecheck && pnpm --filter @eotion/api typecheck"
+  }
+}

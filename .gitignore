@@ -1,0 +1,22 @@
+node_modules/
+.pnpm-store/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+
+# builds
+dist/
+out/
+build/
+coverage/
+.lynx/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
