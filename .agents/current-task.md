@@ -9,8 +9,8 @@
 | ID | 目标与输入/输出 | 验收条件 | 验证方式 | 预计修改范围 | 难度 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
 | T1 | 基于现有 Web 开发路由和 runtime context，输出独立编辑器页与 Tiptap Extension/Command 骨架 | 开发路由可输入、可切换 Text/Heading/Bullet；生产不注册；同一 Web renderer 可供三端加载 | Web typecheck/build、浏览器冒烟 | `apps/web` 依赖、路由、编辑器组件与页面 | S2 | done |
-| T2 | 基于 T1 编辑器，输出 Slash 菜单、IME/selection 观察仪表和交互 | `/` 菜单支持键盘上下/Enter/Esc；composition 中不误触发；选区和事件可观察，真实中文 IME 有人工步骤 | 相关逻辑测试或浏览器交互、人工 IME checklist | 编辑器 Extension、Slash UI、PoC 页面 | S2 | in_progress |
-| T3 | 基于同一 schema，输出确定性约 5000 区块 fixture 与轻量耗时观测 | 加载成功，记录就绪与普通输入耗时，能重复检查光标/选区及卡顿 | fixture 测试、浏览器性能运行 | fixture、PoC 页面、验证文档 | S2 | pending |
+| T2 | 基于 T1 编辑器，输出 Slash 菜单、IME/selection 观察仪表和交互 | `/` 菜单支持键盘上下/Enter/Esc；composition 中不误触发；选区和事件可观察，真实中文 IME 有人工步骤 | 相关逻辑测试或浏览器交互、人工 IME checklist | 编辑器 Extension、Slash UI、PoC 页面 | S2 | done |
+| T3 | 基于同一 schema，输出确定性约 5000 区块 fixture 与轻量耗时观测 | 加载成功，记录就绪与普通输入耗时，能重复检查光标/选区及卡顿 | fixture 测试、浏览器性能运行 | fixture、PoC 页面、验证文档 | S2 | in_progress |
 | T4 | 基于现有 input/layout/runtime 模式，输出触摸工具栏、长按观察和三端验证说明 | 触摸可操作、原生长按选择未被拦截；Web/Electron 实测，HarmonyOS 无设备则明确人工待验 | 浏览器移动视口、Electron smoke、设备 checklist | 编辑器触摸交互、PoC 页面、`docs/p2-editor-demo.md` | S2 | pending |
 
 ## Constraints
@@ -25,7 +25,8 @@
 - 现有 `WorkspaceView.vue` 是 `contenteditable` 占位区；P1 路由在 `import.meta.env.DEV` 下注册。
 - 官方 Tiptap Vue 3 指南建议 `@tiptap/vue-3`、`@tiptap/pm`、`@tiptap/starter-kit`，Slash 可用 `@tiptap/suggestion`。
 - T1 Web typecheck/build 通过；开发路由浏览器输入及 Heading 命令已运行验证。
+- T2 Web typecheck/build 通过；浏览器确认 `/` 菜单、方向键、Enter、Escape 与选区读数。真实中文 IME 尚未人工运行。
 
 ## Next action
 
-执行 T2；之后按独立工作单元验证与提交。
+执行 T3，记录真实 5000 区块加载和编辑结果。
