@@ -69,13 +69,19 @@ GET http://localhost:3000/api/health
 
 ### Mobile shell
 
+For phone testing, the mobile build detects the development machine's LAN IPv4 address and uses port `5173` by default. To override the URL, set `EOTION_WEB_URL` in `apps/mobile/.env` (see `apps/mobile/.env.example`). Start the Web dev server in one terminal; it already listens on `0.0.0.0:5173`:
+
+```bash
+pnpm dev:web
+```
+
+Then start the Lynx dev server in a second terminal and scan/open its QR code with Lynx Explorer:
+
 ```bash
 pnpm dev:mobile
 ```
 
-Scan/open the generated Lynx bundle with Lynx Explorer. The starter uses Vue Lynx and a `<webview>` that points at the Eotion Web dev server.
-
-**Important:** on a real phone, `127.0.0.1:5173` points to the phone itself. Change `apps/mobile/src/config.ts` to your development machine's LAN URL, for example `http://192.168.1.10:5173`, and run the Web dev server with network access if needed.
+Keep both servers running while testing. Restart `pnpm dev:mobile` after changing `apps/mobile/.env` so the new URL is compiled into the bundle.
 
 ## Repository map
 

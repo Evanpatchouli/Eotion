@@ -33,7 +33,7 @@ pnpm 仍会报告 peer 警告（electron-vite 5 与 Vite 8、Vue Lynx CSS/templa
 
 1. 安装 DevEco Studio 和 HarmonyOS SDK，并启动 HarmonyOS 模拟器或连接设备。
 2. 按 [Lynx Explorer 快速开始](https://lynxjs.org/guide/start/quick-start.html) 安装 Harmony 模拟器 HAP；官方文档说明预构建 HAP 面向模拟器，真机需要从源码构建 Explorer。通过 `hdc install lynx_explorer-default-unsigned.hap` 安装。
-3. 在 Eotion 仓库运行 `pnpm dev:mobile`，在 Explorer 中扫描二维码；模拟器也可粘贴终端输出的 bundle URL。
-4. 将 `apps/mobile/src/config.ts` 的 `EOTION_WEB_URL` 改为开发机可从设备访问的局域网地址（不能使用设备自身的 `127.0.0.1`），并运行 `pnpm dev:web`。
+3. 先在一个终端运行 `pnpm dev:web`，再在另一个终端运行 `pnpm dev:mobile`；在 Explorer 中扫描二维码，模拟器也可粘贴终端输出的 bundle URL。
+4. `apps/mobile` 默认检测开发机局域网 IPv4 地址并访问 `5173` 端口；也可在 `apps/mobile/.env` 中设置 `EOTION_WEB_URL` 覆盖。修改 `.env` 后需要重启移动端 bundle 服务。
 
 完整 HarmonyOS 宿主集成需按 [Lynx Existing App 集成指南](https://lynxjs.org/guide/start/integrate-with-existing-apps.html) 在 ArkTS/HAP 工程中加入 Lynx 运行时并加载 bundle；该宿主工程不属于当前 v0.1 scaffold。

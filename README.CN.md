@@ -69,13 +69,21 @@ GET http://localhost:3000/api/health
 
 ### 移动端外壳
 
+移动端构建默认检测开发机器的局域网 IPv4 地址，并使用 `5173` 端口。需要覆盖地址时，在 `apps/mobile/.env` 中设置 `EOTION_WEB_URL`（见 `apps/mobile/.env.example`）。Web 开发服务器已监听 `0.0.0.0:5173`。
+
+先在一个终端运行 Web 开发服务器：
+
+```bash
+pnpm dev:web
+```
+
+再在另一个终端运行 Lynx 开发服务器，并使用 Lynx Explorer 扫描/打开生成的 bundle：
+
 ```bash
 pnpm dev:mobile
 ```
 
-使用 Lynx Explorer 扫描/打开生成的 Lynx bundle。使用 Vue Lynx 和一个指向 Eotion Web 开发服务器的 `<webview>`。
-
-**重要：** 在真实手机上，`127.0.0.1:5173` 指向手机本身。将 `apps/mobile/src/config.ts` 改为你开发机器的局域网 URL，例如 `http://192.168.1.10:5173`，并在需要时以网络访问方式运行 Web 开发服务器。
+修改 `apps/mobile/.env` 后需重启 `pnpm dev:mobile`，新地址才会编译进 bundle。
 
 ## 仓库结构
 
