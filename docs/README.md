@@ -14,6 +14,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `knowledge/` | 长期稳定、未来会重复使用的工程经验 |
 | `exec-plans/` | 复杂、跨会话执行计划 |
 | `p1-mobile-demo.md` | P1 移动 WebView PoC 的验证入口与判读方式 |
+| `p2-editor-demo.md` | P2 Tiptap 编辑器 PoC 的验证入口、三端步骤与当前结果 |
 
 ## 使用原则
 

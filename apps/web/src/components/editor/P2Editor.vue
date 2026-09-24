@@ -1,17 +1,55 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { exitSuggestion } from '@tiptap/suggestion'
 
 import { createSlashCommand } from '../../editor/slashCommand'
 
+defineProps<{ touchToolbar: boolean }>()
+
 const composing = ref(false)
 const compositionEvents = ref<string[]>([])
 const compositionTransactions = ref(0)
 const selection = ref({ from: 0, to: 0, empty: true })
 const lastInputLatencyMs = ref<number | null>(null)
+const longPressObservation = ref('尚无')
+const keyboardInset = ref(0)
 let pendingInputStart: number | null = null
+let touchStartedAt: number | null = null
+
+function updateKeyboardInset() {
+  const viewport = window.visualViewport
+  keyboardInset.value = viewport
+    ? Math.max(0, Math.round(window.innerHeight - viewport.offsetTop - viewport.height))
+    : 0
+}
+
+onMounted(() => {
+  updateKeyboardInset()
+  window.visualViewport?.addEventListener('resize', updateKeyboardInset)
+  window.visualViewport?.addEventListener('scroll', updateKeyboardInset)
+})
+
+onBeforeUnmount(() => {
+  window.visualViewport?.removeEventListener('resize', updateKeyboardInset)
+  window.visualViewport?.removeEventListener('scroll', updateKeyboardInset)
+})
+
+function onPointerDown(event: PointerEvent) {
+  if (event.pointerType === 'touch') touchStartedAt = performance.now()
+}
+
+function onPointerFinish(event: PointerEvent) {
+  if (event.pointerType !== 'touch' || touchStartedAt === null) return
+  const duration = Math.round(performance.now() - touchStartedAt)
+  if (duration >= 500) longPressObservation.value = `触摸持续 ${duration} ms；请检查原生选择手柄与菜单`
+  touchStartedAt = null
+}
+
+function onContextMenu() {
+  longPressObservation.value = '收到原生 contextmenu；未阻止默认行为'
+}
 
 function onBeforeInput(event: Event) {
   const input = event as InputEvent
@@ -111,6 +149,10 @@ defineExpose({ editor, lastInputLatencyMs })
       @compositionupdate="onCompositionUpdate"
       @compositionend="onCompositionEnd"
       @beforeinput="onBeforeInput"
+      @pointerdown="onPointerDown"
+      @pointerup="onPointerFinish"
+      @pointercancel="onPointerFinish"
+      @contextmenu="onContextMenu"
     />
     <div class="p2-editor-observation" aria-label="输入与选择观测">
       <span>composition: {{ composing ? '进行中' : '未进行' }}</span>
@@ -118,6 +160,21 @@ defineExpose({ editor, lastInputLatencyMs })
       <span>composition 中 transaction: {{ compositionTransactions }}</span>
       <span>事件: {{ compositionEvents.length ? compositionEvents.join(' → ') : '尚无' }}</span>
       <span>最近单字符输入至下一帧: {{ lastInputLatencyMs === null ? '尚无' : `${lastInputLatencyMs} ms` }}</span>
+      <span>长按观察: {{ longPressObservation }}</span>
+      <span>可视视口底部遮挡: {{ keyboardInset }} px</span>
+    </div>
+    <div
+      v-if="touchToolbar"
+      class="p2-touch-toolbar"
+      role="toolbar"
+      aria-label="触摸编辑工具栏"
+      :style="{ bottom: `${keyboardInset}px` }"
+    >
+      <button type="button" :disabled="!editor" @click="editor?.chain().focus().toggleBold().run()">粗体</button>
+      <button type="button" :disabled="!editor" @click="editor?.chain().focus().toggleItalic().run()">斜体</button>
+      <button type="button" :disabled="!editor" @click="editor?.chain().focus().setParagraph().run()">文本</button>
+      <button type="button" :disabled="!editor" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">标题</button>
+      <button type="button" :disabled="!editor" @click="editor?.chain().focus().toggleBulletList().run()">列表</button>
     </div>
   </section>
 </template>
@@ -134,6 +191,9 @@ defineExpose({ editor, lastInputLatencyMs })
 .p2-editor-content :deep(.tiptap ul) { padding-left: 1.5em; }
 .p2-editor-content :deep(.tiptap h2) { line-height: 1.3; }
 .p2-editor-observation { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px; border-top: 1px solid #e5e5e1; color: #62655f; font-size: 12px; overflow-wrap: anywhere; }
+.p2-touch-toolbar { position: fixed; z-index: 15; right: 0; left: 0; display: flex; gap: 6px; overflow-x: auto; padding: 9px max(12px, env(safe-area-inset-right)) calc(9px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); border-top: 1px solid #d9ded6; background: #fff; box-shadow: 0 -5px 20px #0001; }
+.p2-touch-toolbar button { flex: 1 0 auto; min-width: 54px; min-height: 42px; padding: 7px 10px; border: 1px solid #dce2d7; border-radius: 7px; background: #f7f9f5; }
+.p2-touch-toolbar button:disabled { opacity: .5; }
 </style>
 
 <style>

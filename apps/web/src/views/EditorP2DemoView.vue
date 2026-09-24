@@ -61,13 +61,14 @@ async function loadLargeDocument() {
           <span>至下一次绘制机会：{{ measurement.readyMs }} ms</span>
         </div>
       </section>
-      <P2Editor ref="editorView" />
+      <P2Editor ref="editorView" :touch-toolbar="layoutMode === 'mobile' || inputMode !== 'mouse'" />
       <section class="p2-demo-checks" aria-label="编辑器人工验证步骤">
         <h2>输入与选择验证</h2>
         <ol>
           <li>在空段落输入 <code>/</code>，用 ↑/↓ 选择 Text、Heading、Bullet List，按 Enter 执行；再次输入并按 Esc 验证关闭。</li>
           <li>用真实中文输入法输入词组，观察 compositionstart/update/end、过程中的 transaction 数和光标位置；组合输入期间 Slash 菜单不应出现。</li>
           <li>拖选文字、移动光标，核对上方 selection 的 from/to/empty；输入后使用 Ctrl/Cmd+Z、Ctrl/Cmd+Shift+Z 检查撤销与重做。</li>
+          <li>在触摸设备上长按并拖动原生选择手柄，观察长按记录；用底部工具栏切换格式。弹出虚拟键盘后确认光标、工具栏及编辑区域仍可见。</li>
         </ol>
       </section>
     </div>
@@ -76,7 +77,7 @@ async function loadLargeDocument() {
 
 <style scoped>
 .p2-demo { min-height: 100dvh; overflow: auto; background: #fafaf8; }
-.p2-demo-inner { width: min(860px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 90px; }
+.p2-demo-inner { width: min(860px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 130px; }
 .p2-demo-back { color: #4469a6; font-size: 14px; text-decoration: none; }
 .p2-demo header { margin: 30px 0 18px; }
 .p2-demo-kicker { color: #767873; font-size: 12px; letter-spacing: .08em; }

@@ -86,6 +86,8 @@ Keep both servers running while testing. Restart `pnpm dev:mobile` after changin
 
 For the Mobile P1 capability demo, use the development-only sidebar item or open `http://localhost:5173/#/__dev/mobile-p1`. See [`docs/p1-mobile-demo.md`](docs/p1-mobile-demo.md).
 
+For the Tiptap P2 editor PoC, use the development-only sidebar item or open `http://localhost:5173/#/__dev/editor-p2`. See [`docs/p2-editor-demo.md`](docs/p2-editor-demo.md) for the 5,000-block fixture and platform verification steps.
+
 ## Repository map
 
 ```text
@@ -107,7 +109,7 @@ docs/
 
 ## What is intentionally NOT implemented yet
 
-This is a run-first scaffold, not the Notion clone itself. Tiptap 3 editor integration (with ProseMirror used through `@tiptap/pm` only when Tiptap's abstraction is insufficient), Yjs, MongoDB schemas, auth, the MCP service, SQLite, IndexedDB, OSS upload, Redis and Kafka are left for staged implementation after all platform shells are proven. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
+This is a run-first scaffold, not the Notion clone itself. A development-only Tiptap 3 editor PoC now exists; product editor integration, Yjs, MongoDB schemas, auth, the MCP service, SQLite, IndexedDB, OSS upload, Redis and Kafka remain for later stages. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
 
 The first high-risk PoC after bootstrapping is:
 
