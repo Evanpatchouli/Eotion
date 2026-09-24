@@ -1,8 +1,8 @@
-# Eotion Architecture Baseline
+# Eotion 架构基线
 
-## 1. Client principle: Web First
+## 1. 客户端原则：Web 优先
 
-`apps/web` is the product. It owns the routing, editor UI, workspace UI, state and responsive interaction model.
+`apps/web` 就是产品。它负责路由、编辑器 UI、工作区 UI、状态以及响应式交互模型。
 
 ```text
                        apps/web
@@ -17,31 +17,31 @@
                                 Harmony/iOS/Android
 ```
 
-The Web UI has three layout modes but one codebase:
+Web UI 有三种布局模式，但只有一套代码库：
 
-- Desktop: multi-pane, mouse/keyboard, hover/context-menu/shortcuts.
-- Tablet: collapsible/overlay side panels, touch/hybrid input.
-- Mobile: single-column, drawer/bottom-sheet oriented touch interaction.
+- 桌面端：多窗格、鼠标/键盘、悬停/上下文菜单/快捷键。
+- 平板端：可折叠/浮层侧边面板、触摸/混合输入。
+- 移动端：单列、以抽屉/底部面板为导向的触摸交互。
 
-Runtime, layout and input mode are distinct concepts. A narrow Electron window is not automatically a mobile runtime.
+运行时、布局和输入模式是不同的概念。一个狭窄的 Electron 窗口并不会自动成为移动端运行时。
 
-## 2. Desktop
+## 2. 桌面端
 
-`apps/desktop` contains only Electron main/preload concerns. electron-vite points its renderer root directly at `apps/web`.
+`apps/desktop` 只包含 Electron 主进程/预加载相关关注点。electron-vite 将其渲染器根目录直接指向 `apps/web`。
 
-Platform APIs must later be exposed through narrow preload bridges. Do not enable Node.js integration in the renderer.
+平台 API 之后必须通过狭窄的预加载桥接暴露。不要在渲染器中启用 Node.js 集成。
 
-## 3. Mobile
+## 3. 移动端
 
-`apps/mobile` uses Vue Lynx as an application shell. v0.1 loads Eotion Web in Lynx's built-in `<webview>`.
+`apps/mobile` 使用 Vue Lynx 作为应用外壳。v0.1 在 Lynx 内置的 `<webview>` 中加载 Eotion Web。
 
-Later native-only capabilities belong behind typed bridges: notifications, deep links, files, share sheets, local database and app lifecycle.
+之后的原生专属能力应置于类型化桥接之后：通知、深度链接、文件、分享面板、本地数据库和应用生命周期。
 
-Do not port the whole UI to Lynx by default. Native Lynx screens should be introduced only for a measured reason.
+默认情况下，不要将整个 UI 移植到 Lynx。只有在有可衡量理由时，才应引入原生 Lynx 屏幕。
 
-## 4. Server
+## 4. 服务器
 
-Start with a modular monolith:
+从模块化单体开始：
 
 ```text
 NestJS + Fastify
@@ -58,15 +58,15 @@ NestJS + Fastify
      MongoDB -------- Aliyun OSS
 ```
 
-The MCP adapter will be another interface to the same application capabilities, not a separate service or a path around API authorization. See [Agent Integration Baseline](agent-integration.md) for its planned scope and security boundaries.
+MCP 适配器将是同一应用能力的另一个接口，而不是一个独立服务，也不是绕过 API 授权的路径。其规划范围和安全边界见 [Agent 集成基线](agent-integration.md)。
 
-Redis is a later cache/presence/rate-limit/distributed-state dependency. Kafka is a later event backbone for asynchronous workloads such as indexing, audit, notifications and analytics.
+Redis 是之后的缓存/在线状态/速率限制/分布式状态依赖。Kafka 是之后的事件骨干，用于索引、审计、通知和分析等异步工作负载。
 
-## 5. Persistence and sync direction
+## 5. 持久化与同步方向
 
-Do not mirror MongoDB collections directly into SQLite tables as a database replication scheme.
+不要将 MongoDB 集合直接镜像到 SQLite 表中作为数据库复制方案。
 
-The long-term model should sync domain operations / document changes:
+长期模型应同步领域操作/文档变更：
 
 ```text
 Client edit
@@ -77,16 +77,16 @@ Client edit
    -> MongoDB / collaboration persistence
 ```
 
-Potential local stores:
+可能的本地存储：
 
-- Web: IndexedDB
-- Electron: SQLite behind Electron main/worker + typed preload IPC
-- Android/iOS: SQLite adapter through native bridge
-- HarmonyOS: SQLite/relationalStore adapter through ArkTS/native bridge
+- Web：IndexedDB
+- Electron：SQLite，位于 Electron 主进程/worker 之后 + 类型化预加载 IPC
+- Android/iOS：通过原生桥接的 SQLite 适配器
+- HarmonyOS：通过 ArkTS/原生桥接的 SQLite/relationalStore 适配器
 
-## 6. Editor direction
+## 6. 编辑器方向
 
-The editor should remain Web technology across all targets:
+编辑器应在所有目标平台上保持 Web 技术：
 
 ```text
 Vue 3
@@ -95,8 +95,8 @@ Vue 3
   -> later Yjs
 ```
 
-Desktop and mobile share document schema/editor core, while interaction affordances may differ (hover handle vs long-press/touch toolbar).
+桌面端和移动端共享文档 schema/编辑器核心，但交互方式可能不同（悬停手柄 vs 长按/触摸工具栏）。
 
-## 7. Agent integration (planned)
+## 7. Agent 集成（规划中）
 
-Eotion will provide an MCP service for compatible Agents. It belongs in the API modular monolith and will call the same authenticated application services as other API clients. Initial capabilities will focus on discovering, searching, reading, and explicitly creating or updating workspace content. See [Agent Integration Baseline](agent-integration.md).
+Eotion 将为兼容的 Agent 提供 MCP 服务。它属于 API 模块化单体，并将调用与其他 API 客户端相同的已认证应用服务。初始能力将聚焦于发现、搜索、读取，以及显式创建或更新工作区内容。见 [Agent 集成基线](agent-integration.md)。

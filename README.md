@@ -1,4 +1,4 @@
-# Eotion Starter
+# Eotion
 
 Eotion is a **web-first Notion-inspired workspace**. This repository is intentionally a thin v0.1 foundation: one Vue 3 product UI, reused by Electron on desktop and embedded by a Vue Lynx mobile shell, with a NestJS/Fastify backend.
 

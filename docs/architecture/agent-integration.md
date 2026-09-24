@@ -1,38 +1,38 @@
-# Agent Integration Baseline
+# Agent 集成基线
 
-## Goal
+## 目标
 
-Make Eotion usable by compatible Agents through the Model Context Protocol (MCP), starting with Codex while keeping the interface portable across MCP clients. MCP is planned; the current API scaffold does not yet implement authentication, workspace/page operations, or an MCP server.
+通过模型上下文协议（MCP）让兼容的 Agent 能够使用 Eotion，首先从 Codex 开始，同时保持接口在各类 MCP 客户端之间的可移植性。MCP 尚在规划中；当前 API 脚手架尚未实现认证、工作区/页面操作或 MCP 服务器。
 
-## Placement
+## 放置位置
 
-- Implement MCP as an adapter in `apps/api`, within the NestJS/Fastify modular monolith.
-- Reuse the same application services, domain rules, contracts, authentication, and authorization as the regular API. MCP calls must not access MongoDB or Aliyun OSS directly.
-- Keep MCP transport and schema details at the API boundary. Do not add Agent-provider-specific behavior to `packages/domain` or make the Web UI responsible for MCP access.
-- Choose the transport and credential flow during implementation based on supported MCP clients and the API authentication design. Keep the initial deployment in the API process; do not add a separate microservice without a demonstrated scaling or isolation need.
+- 在 `apps/api` 中，以 NestJS/Fastify 模块化单体内的适配器形式实现 MCP。
+- 复用与常规 API 相同的应用服务、领域规则、契约、认证和授权。MCP 调用不得直接访问 MongoDB 或阿里云 OSS。
+- 将 MCP 传输和 schema 细节保留在 API 边界。不要向 `packages/domain` 添加 Agent 提供商特定的行为，也不要让 Web UI 负责 MCP 访问。
+- 在实现过程中，根据支持的 MCP 客户端和 API 认证设计来选择传输方式和凭证流程。初始部署保持在 API 进程内；在没有明确的扩展或隔离需求之前，不要添加独立的微服务。
 
-## Initial capability scope
+## 初始能力范围
 
-Start with small, composable tools that let an Agent:
+从一些小而可组合的工具开始，让 Agent 能够：
 
-- discover available workspaces within the signed-in user's access;
-- list and search pages with pagination and bounded result sizes;
-- read a page and its blocks;
-- create or update a page or block through explicit, typed operations.
+- 发现已登录用户访问权限内可用的工作区；
+- 以分页和有限结果大小列出和搜索页面；
+- 读取页面及其区块；
+- 通过显式、类型化的操作创建或更新页面或区块。
 
-Tool schemas should be narrow and descriptions should explain the effect of each operation. Return structured results with stable resource IDs and actionable errors. Do not expose arbitrary database queries, unbounded exports, permission changes, or destructive/bulk operations in the initial tool set. Add MCP resources or prompt templates later only when a concrete workflow needs them.
+工具 schema 应当保持狭窄，描述应当解释每个操作的效果。返回带有稳定资源 ID 和可操作错误的结构化结果。初始工具集中不要暴露任意数据库查询、无界导出、权限更改或破坏性/批量操作。只有在具体工作流需要时，再添加 MCP 资源或提示模板。
 
-## Security and reliability
+## 安全与可靠性
 
-- Derive identity from the authenticated MCP connection. Check workspace membership and resource-level permissions for every operation; never treat the MCP connection itself as blanket access.
-- Apply the same validation, audit trail, and rate limits as equivalent API actions. Keep credentials out of tool results and Agent-visible workspace content.
-- Treat page content and other workspace data as untrusted input. Content must not grant the Agent additional permissions or override the tool's declared scope.
-- Bound page sizes, search results, and response payloads. Define retry/idempotency behavior for writes so a retried call does not silently duplicate content.
-- Keep deletes and other difficult-to-reverse actions out of the initial tool set until their authorization, confirmation, and audit behavior is explicit.
+- 从已认证的 MCP 连接中推导身份。对每个操作检查工作区成员资格和资源级权限；绝不要将 MCP 连接本身视为一揽子访问权限。
+- 应用与等效 API 操作相同的验证、审计追踪和速率限制。将凭证排除在工具结果和 Agent 可见的工作区内容之外。
+- 将页面内容和其他工作区数据视为不可信输入。内容不得授予 Agent 额外权限，也不得覆盖工具声明的范围。
+- 限制页面大小、搜索结果和响应负载。为写入定义重试/幂等行为，以便重试调用不会静默地重复内容。
+- 在授权、确认和审计行为明确之前，将删除和其他难以逆转的操作排除在初始工具集之外。
 
-## Delivery checks
+## 交付检查
 
-- Confirm read operations only return data visible to the authenticated user, including across workspace boundaries.
-- Confirm write operations enforce the same permissions as the API and produce an auditable, unambiguous result.
-- Exercise pagination, malformed inputs, oversized results, rate limits, connection expiry, and retried writes.
-- Complete an end-to-end setup and workflow in Codex, then check interoperability with another compatible MCP client.
+- 确认读操作仅返回已认证用户可见的数据，包括跨工作区边界的情况。
+- 确认写操作强制执行与 API 相同的权限，并产生可审计、明确无歧义的结果。
+- 演练分页、格式错误的输入、超大结果、速率限制、连接过期和重试写入。
+- 在 Codex 中完成端到端设置和工作流，然后检查与另一个兼容 MCP 客户端的互操作性。
