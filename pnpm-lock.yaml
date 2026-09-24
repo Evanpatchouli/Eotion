@@ -71,6 +71,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@eotion/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       vue:
         specifier: ^3.5.43
         version: 3.5.43(typescript@6.0.3)
@@ -102,6 +105,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@eotion/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@eotion/domain':
         specifier: workspace:*
         version: link:../../packages/domain

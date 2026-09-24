@@ -10,6 +10,7 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@eotion/contracts": "workspace:*",
     "@eotion/domain": "workspace:*",
     "pinia": "^4.0.3",
     "vue": "^3.5.43",

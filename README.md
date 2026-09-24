@@ -83,6 +83,8 @@ pnpm dev:mobile
 
 Keep both servers running while testing. Restart `pnpm dev:mobile` after changing `apps/mobile/.env` so the new URL is compiled into the bundle.
 
+For the Mobile P1 capability demo, see [`docs/p1-mobile-demo.md`](docs/p1-mobile-demo.md). Its development-only route is `http://localhost:5173/#/__dev/mobile-p1`.
+
 ## Repository map
 
 ```text

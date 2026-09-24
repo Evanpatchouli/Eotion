@@ -14,6 +14,8 @@
 
 ## P1 - 移动端 WebView 概念验证
 
+验证入口与操作说明见 [移动端 P1 演示页](p1-mobile-demo.md)。
+
 先在 HarmonyOS 6 上验证，然后是 Android 和 iOS：
 
 - 在 Lynx `<webview>` 中加载 Eotion Web；

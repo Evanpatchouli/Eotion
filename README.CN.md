@@ -85,6 +85,8 @@ pnpm dev:mobile
 
 修改 `apps/mobile/.env` 后需重启 `pnpm dev:mobile`，新地址才会编译进 bundle。
 
+移动端 P1 能力演示见 [`docs/p1-mobile-demo.md`](docs/p1-mobile-demo.md)，开发环境路由为 `http://localhost:5173/#/__dev/mobile-p1`。
+
 ## 仓库结构
 
 ```text
