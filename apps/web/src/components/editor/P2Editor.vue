@@ -10,6 +10,15 @@ const composing = ref(false)
 const compositionEvents = ref<string[]>([])
 const compositionTransactions = ref(0)
 const selection = ref({ from: 0, to: 0, empty: true })
+const lastInputLatencyMs = ref<number | null>(null)
+let pendingInputStart: number | null = null
+
+function onBeforeInput(event: Event) {
+  const input = event as InputEvent
+  if (!composing.value && !input.isComposing && input.inputType === 'insertText' && input.data?.length === 1) {
+    pendingInputStart = performance.now()
+  }
+}
 
 function recordComposition(event: CompositionEvent) {
   compositionEvents.value = [
@@ -58,12 +67,19 @@ const editor = useEditor({
   },
   onCreate: updateSelection,
   onSelectionUpdate: updateSelection,
-  onTransaction: () => {
+  onTransaction: ({ transaction }) => {
     if (composing.value) compositionTransactions.value += 1
+    if (transaction.docChanged && pendingInputStart !== null) {
+      const start = pendingInputStart
+      pendingInputStart = null
+      requestAnimationFrame(() => {
+        lastInputLatencyMs.value = Math.round((performance.now() - start) * 10) / 10
+      })
+    }
   },
 })
 
-defineExpose({ editor })
+defineExpose({ editor, lastInputLatencyMs })
 </script>
 
 <template>
@@ -94,12 +110,14 @@ defineExpose({ editor })
       @compositionstart="onCompositionStart"
       @compositionupdate="onCompositionUpdate"
       @compositionend="onCompositionEnd"
+      @beforeinput="onBeforeInput"
     />
     <div class="p2-editor-observation" aria-label="输入与选择观测">
       <span>composition: {{ composing ? '进行中' : '未进行' }}</span>
       <span>selection: {{ selection.from }}–{{ selection.to }} ({{ selection.empty ? '光标' : '选区' }})</span>
       <span>composition 中 transaction: {{ compositionTransactions }}</span>
       <span>事件: {{ compositionEvents.length ? compositionEvents.join(' → ') : '尚无' }}</span>
+      <span>最近单字符输入至下一帧: {{ lastInputLatencyMs === null ? '尚无' : `${lastInputLatencyMs} ms` }}</span>
     </div>
   </section>
 </template>

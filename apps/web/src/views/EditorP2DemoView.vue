@@ -1,10 +1,34 @@
 <script setup lang="ts">
+import { nextTick, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import P2Editor from '../components/editor/P2Editor.vue'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
+import { loadP2Fixture, type P2LoadMeasurement } from '../editor/p2Benchmark'
 
 const { runtime, layoutMode, inputMode, width } = useRuntimeContext()
+const editorView = ref<InstanceType<typeof P2Editor> | null>(null)
+const loading = ref(false)
+const loadError = ref('')
+const measurement = ref<P2LoadMeasurement | null>(null)
+
+async function loadLargeDocument() {
+  const editor = editorView.value?.editor
+  if (!editor || loading.value) return
+
+  loading.value = true
+  loadError.value = ''
+  measurement.value = null
+  await nextTick()
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+  try {
+    measurement.value = await loadP2Fixture(editor)
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : String(error)
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <template>
@@ -22,7 +46,22 @@ const { runtime, layoutMode, inputMode, width } = useRuntimeContext()
         <span>input: {{ inputMode }}</span>
         <span>width: {{ width }}px</span>
       </div>
-      <P2Editor />
+      <section class="p2-demo-benchmark" aria-label="5000 区块验证">
+        <div>
+          <strong>5,000 区块合成文档</strong>
+          <p>同一编辑器加载确定性的段落、标题、列表及格式化文字。加载后点击内容输入普通字符，并观察下方耗时和选区。</p>
+        </div>
+        <button type="button" :disabled="loading" @click="loadLargeDocument">{{ loading ? '加载中…' : '加载 5,000 区块' }}</button>
+        <p v-if="loadError" role="alert">加载失败：{{ loadError }}</p>
+        <div v-if="measurement" class="p2-demo-metrics" aria-label="加载指标">
+          <span>可编辑文本块：{{ measurement.stats.textBlocks }}</span>
+          <span>实际渲染：{{ measurement.renderedTextBlocks }}</span>
+          <span>生成：{{ measurement.generationMs }} ms</span>
+          <span>setContent：{{ measurement.setContentMs }} ms</span>
+          <span>至下一次绘制机会：{{ measurement.readyMs }} ms</span>
+        </div>
+      </section>
+      <P2Editor ref="editorView" />
       <section class="p2-demo-checks" aria-label="编辑器人工验证步骤">
         <h2>输入与选择验证</h2>
         <ol>
@@ -45,6 +84,13 @@ const { runtime, layoutMode, inputMode, width } = useRuntimeContext()
 .p2-demo header p { margin: 0; color: #686b66; line-height: 1.6; }
 .p2-demo-context { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .p2-demo-context span { padding: 5px 8px; border: 1px solid #e4e4df; border-radius: 5px; background: #fff; color: #62655f; font-size: 12px; }
+.p2-demo-benchmark { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-bottom: 16px; padding: 14px; border: 1px solid #e4e4df; border-radius: 9px; background: #fff; }
+.p2-demo-benchmark > div:first-child { flex: 1 1 300px; }
+.p2-demo-benchmark strong { font-size: 14px; }
+.p2-demo-benchmark p { margin: 4px 0 0; color: #666b63; font-size: 12px; line-height: 1.5; }
+.p2-demo-benchmark button { min-height: 36px; padding: 6px 12px; border: 1px solid #ced6ca; border-radius: 6px; background: #f1f6ed; cursor: pointer; }
+.p2-demo-benchmark button:disabled { cursor: default; opacity: .6; }
+.p2-demo-metrics { display: flex; flex: 1 1 100%; flex-wrap: wrap; gap: 6px 14px; color: #434a41; font-size: 12px; }
 .p2-demo-checks { margin-top: 24px; color: #555a53; line-height: 1.7; }
 .p2-demo-checks h2 { margin: 0 0 8px; color: #252a24; font-size: 17px; }
 .p2-demo-checks ol { margin: 0; padding-left: 22px; }
