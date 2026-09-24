@@ -4,15 +4,15 @@
 
 ## 在浏览器与手机中打开
 
-1. 运行 `pnpm dev:web`。浏览器打开 `http://localhost:5173/#/__dev/mobile-p1`，可先检查页面和 Web API 按钮。
-2. 要在手机中直接打开演示页，在 `apps/mobile/.env` 中设置完整 URL，例如：
+1. 运行 `pnpm dev:web` 和 `pnpm dev:mobile`，在 Lynx Explorer 扫码。WebView 默认进入工作区；打开侧边栏，点仅开发模式可见的“移动端 P1 演示”。之后可用页面顶部的“返回工作区”链接返回，无需切换 `.env`。
+2. 浏览器也可直接打开 `http://localhost:5173/#/__dev/mobile-p1` 检查页面和 Web API 按钮。
+3. 如需扫码后直接进入演示页，可选地在 `apps/mobile/.env` 中设置完整 URL，例如：
 
    ```dotenv
    EOTION_WEB_URL="http://192.168.1.10:5173/#/__dev/mobile-p1"
    ```
 
-   换成开发机实际局域网 IP。URL 中有 `#`，因此 `.env` 的值需要加引号。
-3. 运行 `pnpm dev:mobile`，在 Lynx Explorer 扫码。更改 `.env` 后重启移动端开发服务。
+   换成开发机实际局域网 IP。URL 中有 `#`，因此 `.env` 的值需要加引号。更改 `.env` 后重启移动端开发服务。若想恢复扫码后进入工作区，移除该覆盖值或将其改为 Web 根地址即可。
 
 ## 操作与判读
 

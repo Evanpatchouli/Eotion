@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 import { useRuntimeContext } from '../composables/useRuntimeContext'
 import { useWorkspaceStore } from '../stores/workspace'
@@ -7,6 +8,7 @@ import { useWorkspaceStore } from '../stores/workspace'
 const workspace = useWorkspaceStore()
 const { layoutMode, inputMode, runtime, width } = useRuntimeContext()
 const mobileNavOpen = ref(false)
+const showMobileP1Demo = import.meta.env.DEV
 
 const activePage = computed(
   () => workspace.pages.find((page) => page.id === workspace.activePageId) ?? workspace.pages[0],
@@ -50,6 +52,15 @@ function choosePage(id: string) {
           <span>{{ page.icon }}</span>
           <span>{{ page.title }}</span>
         </button>
+        <RouterLink
+          v-if="showMobileP1Demo"
+          class="page-item page-item--dev"
+          to="/__dev/mobile-p1"
+          @click="mobileNavOpen = false"
+        >
+          <span>◇</span>
+          <span>移动端 P1 演示</span>
+        </RouterLink>
       </nav>
 
       <div class="sidebar-footer">Web-first · TypeScript</div>
