@@ -88,6 +88,7 @@
 - Electron 特有 API 必须通过 preload / typed bridge 暴露，不允许 Web UI 随处判断 `window.electron`。
 - Lynx 侧优先保持轻量，只承担 App Shell、WebView、生命周期、原生桥接和必须的本地能力。
 - 编辑器、页面树、数据库视图等核心产品能力优先在 Web 层实现并三端复用。
+- 编辑器统一使用 Tiptap 3；ProseMirror 仅作为其底层引擎，在 Tiptap 抽象不足时通过 `@tiptap/pm/*` 按需使用。不要把 ProseMirror 作为第二套编辑器框架，也不要无明确理由直接添加 `prosemirror-*` 依赖。
 
 ## 8. 服务端约束
 

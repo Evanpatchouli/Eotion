@@ -28,11 +28,13 @@
 
 ## P2 - 编辑器概念验证
 
-向 `apps/web` 添加 Tiptap 3 + ProseMirror，并验证：
+向 `apps/web` 添加 Tiptap 3 编辑器。ProseMirror 不作为第二套编辑器单独接入；仅在 Tiptap 抽象不足时通过 `@tiptap/pm` 使用底层能力，并验证：
 
 - 中文输入法组合输入；
 - 选区/光标；
 - 斜杠命令；
+- Tiptap Extension/Command 作为默认扩展入口，必要的区块选择、Selection/Transaction、Decoration 等能力才下沉到 `@tiptap/pm`；
+- 不额外直接引入 `prosemirror-*` 依赖，除非出现 `@tiptap/pm` 无法满足且已验证的具体需求；
 - 5,000 个区块的合成文档；
 - 触摸工具栏和长按行为；
 - Web、Electron、HarmonyOS WebView 的一致性。

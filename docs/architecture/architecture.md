@@ -86,14 +86,21 @@ Client edit
 
 ## 6. 编辑器方向
 
-编辑器应在所有目标平台上保持 Web 技术：
+编辑器应在所有目标平台上保持 Web 技术。Eotion 的编辑器框架只有 **Tiptap 3**；ProseMirror 是 Tiptap 的底层编辑引擎，不作为第二套编辑器并行接入。
 
 ```text
 Vue 3
-  -> Tiptap 3
-  -> ProseMirror
-  -> later Yjs
+  -> Tiptap 3 (primary editor framework / extension surface)
+       -> ProseMirror (underlying engine, via @tiptap/pm when needed)
+       -> later Yjs
 ```
+
+实现原则：
+
+- 默认优先使用 Tiptap 的 Extension、Command、Node、Mark 等上层 API 实现编辑器能力。
+- 只有当 Tiptap 抽象不足以实现区块选择、复杂 Selection/Transaction、Decoration、NodeView、剪贴板、拖拽等底层行为时，才下沉到 ProseMirror API。
+- 需要 ProseMirror 能力时，优先从 `@tiptap/pm/*` 导入，保持与 Tiptap 使用的 ProseMirror 版本一致。
+- 不单独维护一套 `prosemirror-*` 直接依赖，也不要形成“半套 Tiptap + 半套原生 ProseMirror”的并行架构；只有存在明确、经过验证的技术理由时才例外。
 
 桌面端和移动端共享文档 schema/编辑器核心，但交互方式可能不同（悬停手柄 vs 长按/触摸工具栏）。
 

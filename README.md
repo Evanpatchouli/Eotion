@@ -5,6 +5,7 @@ Eotion is a **web-first Notion-inspired workspace**. This repository is intentio
 ## Technology baseline
 
 - Web: Vue 3 + Vite + Vue Router + Pinia
+- Editor: Tiptap 3 is the single editor framework. ProseMirror is its underlying engine and is accessed only when lower-level behavior is needed, preferably through `@tiptap/pm`.
 - Desktop: Electron + electron-vite, renderer reuses `apps/web`
 - Mobile: Vue Lynx + Lynx `<webview>`; target platforms are HarmonyOS, Android and iOS
 - API: NestJS + Fastify
@@ -106,7 +107,7 @@ docs/
 
 ## What is intentionally NOT implemented yet
 
-This is a run-first scaffold, not the Notion clone itself. Tiptap/ProseMirror, Yjs, MongoDB schemas, auth, the MCP service, SQLite, IndexedDB, OSS upload, Redis and Kafka are left for staged implementation after all platform shells are proven. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
+This is a run-first scaffold, not the Notion clone itself. Tiptap 3 editor integration (with ProseMirror used through `@tiptap/pm` only when Tiptap's abstraction is insufficient), Yjs, MongoDB schemas, auth, the MCP service, SQLite, IndexedDB, OSS upload, Redis and Kafka are left for staged implementation after all platform shells are proven. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
 
 The first high-risk PoC after bootstrapping is:
 
