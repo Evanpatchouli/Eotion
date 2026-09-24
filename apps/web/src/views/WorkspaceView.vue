@@ -8,7 +8,7 @@ import { useWorkspaceStore } from '../stores/workspace'
 const workspace = useWorkspaceStore()
 const { layoutMode, inputMode, runtime, width } = useRuntimeContext()
 const mobileNavOpen = ref(false)
-const showMobileP1Demo = import.meta.env.DEV
+const showDevDemos = import.meta.env.DEV
 
 const activePage = computed(
   () => workspace.pages.find((page) => page.id === workspace.activePageId) ?? workspace.pages[0],
@@ -53,13 +53,22 @@ function choosePage(id: string) {
           <span>{{ page.title }}</span>
         </button>
         <RouterLink
-          v-if="showMobileP1Demo"
+          v-if="showDevDemos"
           class="page-item page-item--dev"
           to="/__dev/mobile-p1"
           @click="mobileNavOpen = false"
         >
           <span>◇</span>
           <span>移动端 P1 演示</span>
+        </RouterLink>
+        <RouterLink
+          v-if="showDevDemos"
+          class="page-item page-item--dev"
+          to="/__dev/editor-p2"
+          @click="mobileNavOpen = false"
+        >
+          <span>✎</span>
+          <span>编辑器 P2 演示</span>
         </RouterLink>
       </nav>
 

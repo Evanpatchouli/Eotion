@@ -12,6 +12,10 @@
   "dependencies": {
     "@eotion/contracts": "workspace:*",
     "@eotion/domain": "workspace:*",
+    "@tiptap/core": "^3.31.3",
+    "@tiptap/pm": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
+    "@tiptap/vue-3": "^3.31.3",
     "pinia": "^4.0.3",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1"
