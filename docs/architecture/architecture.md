@@ -77,12 +77,12 @@ Client edit
    -> MongoDB / collaboration persistence
 ```
 
-可能的本地存储：
+P3 已实现的本地存储基础详见 [P3 本地优先基础](../p3-local-first.md)。当前各端状态：
 
-- Web：IndexedDB
-- Electron：SQLite，位于 Electron 主进程/worker 之后 + 类型化预加载 IPC
-- Android/iOS：通过原生桥接的 SQLite 适配器
-- HarmonyOS：通过 ArkTS/原生桥接的 SQLite/relationalStore 适配器
+- Web：IndexedDB，已实现。
+- Electron：SQLite，位于 Electron 主进程之后，通过类型化预加载 IPC 访问，已实现。
+- Android/iOS：平台原生持久化尚未实现。
+- HarmonyOS：typed WebView bridge 已定义，原生存储宿主模块尚未实现，manual verification required。
 
 ## 6. 编辑器方向
 
