@@ -40,4 +40,20 @@ pnpm --filter @eotion/mobile build
 
 Playwright 测试真实 Chrome 中的 IndexedDB CRUD、重开持久化、oplog 顺序、失败事务、offline/reconnect/retry、重复并发 reconnect、跨实例状态更新与 UTF-8 BINARY 排序；并启动真实 Electron 窗口，经 typed IPC 写入 SQLite，检查 reload 和应用重启后的内容及 pending 队列。开发页可手工操作写入、读取、删除、reload、离线/重连与 adapter 标识。
 
-HarmonyOS 待人工验证：Native Module 注册与持久化实现、WebView request/response 实际送达、应用进程重启后的 Page/Block/oplog 恢复、断线和重复重连。当前不声明这些项目通过。
+### Safe Area 真机验证
+
+- **iPhone XS Max / iOS WebView：✅ 通过**
+  - 系统状态栏与 Eotion 顶栏不重叠。
+  - safe area 正常消费。
+- **Huawei nova 14 / HarmonyOS Browser：✅ Web 布局通过**
+  - 系统栏和浏览器 UI 正常划分 viewport。
+  - `safe inset = 0` 为正常结果。
+  - Eotion 内容无系统区域侵入。
+- **Huawei nova 14 / Android Lynx Explorer via 卓易通：⚠️ 不作为原生 HarmonyOS Safe Area 验收环境**
+  - Explorer 以 fullscreen / immersive 方式运行。
+  - WebView 延伸至物理屏顶部。
+  - `safe-area-inset-top = 0`。
+  - 系统状态栏下拉后覆盖 WebView。
+  - 该现象归于当前宿主未暴露/消费系统 inset，不据此判定 Eotion Web Safe Area 或原生 HarmonyOS 适配失败。
+
+HarmonyOS 原生宿主仍待人工验证：Native Module 注册与持久化实现、WebView request/response 实际送达、应用进程重启后的 Page/Block/oplog 恢复、断线和重复重连，以及原生 Lynx/HarmonyOS 宿主下的 Safe Area / 系统栏行为。当前不声明这些项目通过。
