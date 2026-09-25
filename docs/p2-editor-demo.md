@@ -8,13 +8,16 @@
 | --- | --- |
 | Tiptap 3 Extension / Command | 段落、二级标题、项目列表和 Slash 菜单使用 Tiptap Command；Slash 匹配使用 Tiptap Suggestion utility。Web 与 Electron 已运行验证。 |
 | `@tiptap/pm` | 按官方 Vue 3 安装组合引入，目前没有直接调用；没有直接添加 `prosemirror-*` 依赖。当前 PoC 尚未出现必须下沉到 Selection、Transaction 或 Decoration API 的需求。 |
-| 中文 IME | 页面记录 `compositionstart/update/end`、组合期 transaction 数及 selection。**真实中文输入法人工验证待完成**，自动文本输入不算通过。 |
-| Selection / Cursor | Web 浏览器中移动光标、拖选文字和 5000 区块末尾选区已验证；设备侧仍需人工确认。 |
-| Slash Command | Web 中 `/` 菜单、方向键、Enter、Escape 已验证；真实 IME 与 Slash 的交互仍需人工确认。 |
-| 触摸工具栏 / 长按 | 移动布局的底部工具栏在浏览器视口已显示，选区加粗命令已验证。长按及原生选择手柄需要触摸设备人工验证；页面只观察 pointer/contextmenu，不阻止默认行为。 |
+| 中文 IME | 页面记录 `compositionstart/update/end`、组合期 transaction 数及 selection；Huawei Nova 14 与 iPhone XS Max 的真实输入法清单由用户人工确认通过。 |
+| Selection / Cursor | Web 浏览器中移动光标、拖选文字和 5000 区块末尾选区已验证；两台真机的光标、选区与选择手柄由用户人工确认通过。 |
+| Slash Command | Web 中 `/` 菜单、方向键、Enter、Escape 已验证；两台真机的 Slash 与 IME 交互由用户人工确认通过。 |
+| 触摸工具栏 / 长按 | 移动布局的底部工具栏在浏览器视口已显示，选区加粗命令已验证；两台真机的触摸工具栏与长按由用户人工确认通过。页面只观察 pointer/contextmenu，不阻止默认行为。 |
 | Web | 开发路由、编辑、命令、5000 区块加载与输入已实测。 |
 | Electron | 开发态 Electron 窗口实际报告 `runtime: electron`；输入、标题命令和 5000 区块加载已实测。 |
-| HarmonyOS WebView | **manual verification required**；当前环境没有连接 Huawei 设备，不能标记通过。 |
+| HarmonyOS WebView | 用户在 Huawei Nova 14（HarmonyOS 6）人工测试，确认 P2 清单全部通过；未记录精确耗时。 |
+| iOS WebView | 用户在 iPhone XS Max 人工测试，确认 P2 清单全部通过；iOS 版本和精确耗时未记录。 |
+
+真机结论来自用户在设备上的人工测试，不是当前开发机自动运行结果。两端均确认中文输入、Slash、光标/选区、长按与触摸工具栏、虚拟键盘布局和 5000 区块可用；5000 区块的设备端耗时没有记录，因此只能判定功能与可用性，不能量化移动端性能。
 
 ## 自动验证与 Web 操作
 
@@ -37,17 +40,17 @@ pnpm dev:web
 
 `pnpm --filter @eotion/desktop typecheck` 当前因 `electron.vite.config.ts` 在 CommonJS 模式导入 ESM 包报 TS1479；该配置未被 P2 修改，桌面 build 成功。此项需另行修复，不能视为 typecheck 通过。
 
-## HarmonyOS WebView 人工验证
+## 移动 WebView 人工验证与复测
 
-1. 在开发机运行 `pnpm dev:web` 和 `pnpm dev:mobile`。按 [P1 WebView 步骤](p1-mobile-demo.md)在 Huawei HarmonyOS 6 设备的 Lynx Explorer 扫码。可从侧栏进入 P2；若直达，在 `apps/mobile/.env` 设置带引号的 `EOTION_WEB_URL="http://<开发机局域网 IP>:5173/#/__dev/editor-p2"`，重启移动 dev server。
+1. 在开发机运行 `pnpm dev:web` 和 `pnpm dev:mobile`。按 [P1 WebView 步骤](p1-mobile-demo.md)在 Huawei HarmonyOS 或 iOS 设备的 Lynx Explorer 扫码。可从侧栏进入 P2；若直达，在 `apps/mobile/.env` 设置带引号的 `EOTION_WEB_URL="http://<开发机局域网 IP>:5173/#/__dev/editor-p2"`，重启移动 dev server。
 2. 确认页面和编辑区加载，记下 runtime/layout/input/width；若 runtime 显示 `web`，记录实际 UA 和 Lynx 环境，不把标签误判为编辑器已在普通浏览器运行。当前 Shell 没有显式注入 `EotionMobile` UA 标记。
-3. 使用华为中文输入法输入词组、删除、换行并撤销/重做。通过条件：组合事件完整，文字无重复/丢失，候选选择时光标不乱跳，Slash 菜单不在组合过程中误触发。
+3. 使用设备上的中文输入法输入词组、删除、换行并撤销/重做。通过条件：组合事件完整，文字无重复/丢失，候选选择时光标不乱跳，Slash 菜单不在组合过程中误触发。
 4. 用手指移动光标、长按文字并拖动系统选择手柄。通过条件：选区与仪表读数一致，原生选择/复制菜单仍可用；底部触摸工具栏可执行粗体、斜体、文本、标题、列表，不意外丢失选择。
 5. 打开虚拟键盘后在文档首尾编辑、旋转屏幕、切换后台再返回。通过条件：编辑区/光标没有被键盘长期遮挡，工具栏位于可视区域，现有内容和 focus 不意外丢失。页面的“可视视口底部遮挡”数值仅辅助判读。
-6. 加载 5000 区块，记录页面的耗时；在文档末尾输入普通字符并拖选。通过条件：5000 块加载且仍可输入、移动光标和选择，没有严重卡顿或崩溃。记录机型、系统、WebView/Lynx 版本及异常现象。
+6. 加载 5000 区块，记录页面的耗时；在文档末尾输入普通字符并拖选。通过条件：5000 块加载且仍可输入、移动光标和选择，没有严重卡顿或崩溃。复测时记录机型、系统、WebView/Lynx 版本及异常现象。本次两台设备的精确耗时未记录。
 
 ## 已知限制
 
-- HarmonyOS 真机 IME、长按、软键盘布局和 5000 区块性能仍待人工验收；浏览器模拟移动宽度不能替代触摸设备。
+- 两台真机的 P2 功能清单已由用户人工确认通过；精确加载与输入耗时、iOS 版本及 WebView/Lynx 版本未记录，浏览器模拟移动宽度不能替代这些设备结果。
 - `runtime` 的 mobile-webview 标签依赖 UA 包含 `EotionMobile`，当前 Lynx 壳未显式设置该值，需在真机核对。
 - PoC 没有持久化、协作、完整 Notion 命令系统或虚拟化；重载页面会恢复初始内容。

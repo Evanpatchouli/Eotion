@@ -18,18 +18,19 @@
 - `apps/web` 是唯一编辑器 UI；不复制到 Electron/Lynx。
 - 优先 Tiptap 公开 Extension/Command/Suggestion；仅有明确不足才使用 `@tiptap/pm/*`，不直接安装 `prosemirror-*`。
 - 每个可工作的逻辑单元分别提交；不做 P3 持久化、P4 服务端、P6 协作。
-- HarmonyOS 设备结果必须来自真实设备；当前无设备时标记 `manual verification required`。
+- HarmonyOS 与 iOS 设备结果来自用户人工测试；缺失的性能数字不作推测。
 
 ## Evidence / blockers
 
 - 现有 `WorkspaceView.vue` 是 `contenteditable` 占位区；P1 路由在 `import.meta.env.DEV` 下注册。
 - 官方 Tiptap Vue 3 指南建议 `@tiptap/vue-3`、`@tiptap/pm`、`@tiptap/starter-kit`，Slash 可用 `@tiptap/suggestion`。
 - T1 Web typecheck/build 通过；开发路由浏览器输入及 Heading 命令已运行验证。
-- T2 Web typecheck/build 通过；浏览器确认 `/` 菜单、方向键、Enter、Escape 与选区读数。真实中文 IME 尚未人工运行。
+- T2 Web typecheck/build 通过；浏览器确认 `/` 菜单、方向键、Enter、Escape 与选区读数。两台真机的真实中文 IME 由用户人工确认通过。
 - T3 fixture 结构断言为 5000 个可编辑文本块；Web 浏览器两次加载均实际渲染 5000 块。首次生成 1ms、setContent 47ms、至下一绘制机会 134ms；重复加载为 1/12/24ms。末尾字符输入至下一帧 15ms，选区正确。
 - T4 移动布局工具栏显示并执行加粗；Electron 实际窗口报告 `runtime: electron`，输入/标题命令和 5000 块加载成功；Mobile bundle build 通过。独立 reviewer 未发现可证实的 blocker。
-- HarmonyOS 设备未连接，真实中文 IME、长按手柄、虚拟键盘与 WebView 性能为 `manual verification required`。Desktop typecheck 对未改动的 `electron.vite.config.ts` 报 TS1479；desktop build 通过。
+- 用户在 Huawei Nova 14（HarmonyOS 6）和 iPhone XS Max 人工确认中文 IME、Slash、光标/选区、长按与工具栏、虚拟键盘、5000 区块清单均通过。设备端精确耗时与 iOS 版本未记录。
+- Desktop typecheck 对未改动的 `electron.vite.config.ts` 报 TS1479；desktop build 通过。
 
 ## Next action
 
-在 Huawei HarmonyOS 6 设备上按 `docs/p2-editor-demo.md` 完成人工验证并记录机型、系统和结果；另行处理 Desktop typecheck 的现存 TS1479。
+P2 验证记录已完成。Desktop typecheck 的现存 TS1479 属于单独修复事项；不进入 P3。
