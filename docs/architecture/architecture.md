@@ -19,6 +19,8 @@
 
 Web UI 有三种布局模式，但只有一套代码库：
 
+Web 的 viewport 使用 `viewport-fit=cover`。`App.vue` 的 `.app-viewport` 铺满动态视口，背景延伸到屏幕边缘（开发页按路由匹配背景），并通过全局 `--safe-top/right/bottom/left` 消费 CSS `env(safe-area-inset-*)`，使所有路由的交互内容处于安全区域。工作区内部只滚动文档区；移动抽屉按安全区定位，固定编辑器工具栏自行在内边距中消费相关 inset，不叠加页面级安全区。Lynx Shell 当前让 WebView 填满自身视口，不传原生 inset；HarmonyOS 的 `env()` 和 Shell 系统栏关系仍需真机验证。
+
 - 桌面端：多窗格、鼠标/键盘、悬停/上下文菜单/快捷键。
 - 平板端：可折叠/浮层侧边面板、触摸/混合输入。
 - 移动端：单列、以抽屉/底部面板为导向的触摸交互。

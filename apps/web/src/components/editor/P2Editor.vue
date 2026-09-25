@@ -191,7 +191,7 @@ defineExpose({ editor, lastInputLatencyMs })
 .p2-editor-content :deep(.tiptap ul) { padding-left: 1.5em; }
 .p2-editor-content :deep(.tiptap h2) { line-height: 1.3; }
 .p2-editor-observation { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px; border-top: 1px solid #e5e5e1; color: #62655f; font-size: 12px; overflow-wrap: anywhere; }
-.p2-touch-toolbar { position: fixed; z-index: 15; right: 0; left: 0; display: flex; gap: 6px; overflow-x: auto; padding: 9px max(12px, env(safe-area-inset-right)) calc(9px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); border-top: 1px solid #d9ded6; background: #fff; box-shadow: 0 -5px 20px #0001; }
+.p2-touch-toolbar { position: fixed; z-index: 15; right: 0; left: 0; display: flex; gap: 6px; overflow-x: auto; padding: 9px max(12px, var(--safe-right)) calc(9px + var(--safe-bottom)) max(12px, var(--safe-left)); border-top: 1px solid #d9ded6; background: #fff; box-shadow: 0 -5px 20px #0001; }
 .p2-touch-toolbar button { flex: 1 0 auto; min-width: 54px; min-height: 42px; padding: 7px 10px; border: 1px solid #dce2d7; border-radius: 7px; background: #f7f9f5; }
 .p2-touch-toolbar button:disabled { opacity: .5; }
 </style>

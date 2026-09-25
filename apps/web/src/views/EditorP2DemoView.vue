@@ -76,7 +76,7 @@ async function loadLargeDocument() {
 </template>
 
 <style scoped>
-.p2-demo { min-height: 100dvh; overflow: auto; background: #fafaf8; }
+.p2-demo { min-height: 100%; background: #fafaf8; }
 .p2-demo-inner { width: min(860px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 130px; }
 .p2-demo-back { color: #4469a6; font-size: 14px; text-decoration: none; }
 .p2-demo header { margin: 30px 0 18px; }

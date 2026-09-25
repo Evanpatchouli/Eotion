@@ -28,3 +28,9 @@ Ping 使用网页的 `window.postMessage` 发出请求；Lynx `<webview>` 监听
 若手机上 Ping 超时，可查看 Lynx DevTool 日志：没有 `P1 ping received` 说明网页消息没有到达 Lynx；收到 Ping 但出现 `P1 pong delivery failed` 说明回调网页失败。
 
 剪贴板、文件、分享按钮直接验证 WebView 中的 Web API，页面会显示调用结果。当前仓库没有自有的 HarmonyOS、Android 或 iOS 原生宿主模块，因此这些按钮的成功不代表原生桥接已完成；后续接入宿主模块时可沿用此路由做对照验证。
+
+## Safe Area / 全屏调试
+
+页首显示 runtime、`window.innerWidth/innerHeight`、`visualViewport.width/height`，以及 Web 应用外壳实际消费的 top/right/bottom/left safe inset（像素）。旋转设备、展开/收起浏览器工具栏、弹出键盘后对照数值与可点击内容的位置。背景可以铺到屏幕边缘，标题、按钮、侧栏及底部编辑器工具栏应避开系统危险区。
+
+在 iPhone Safari/WebView 和 HarmonyOS 6 Lynx WebView 上，分别检查竖屏状态栏、底部手势区及横屏两侧；还应检查输入法和浏览器工具栏变化时没有双滚动条。若内容侵入系统栏且四边 inset 都是 0，先核查宿主是否让 WebView 覆盖系统区域、是否向页面暴露 `env(safe-area-inset-*)`。当前没有真机自动化证据，HarmonyOS 的 `env()` 行为为 **manual verification required**；取得实际测量结果后再决定是否需要 typed native bridge。

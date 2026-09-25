@@ -3,6 +3,8 @@ import { MOBILE_P1_CHANNEL, type MobileP1Ping, type MobileP1Pong } from '@eotion
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { useRuntimeContext } from '../composables/useRuntimeContext'
+
 type LogLevel = 'info' | 'success' | 'error'
 type LogEntry = { id: number; time: string; level: LogLevel; text: string }
 type BridgeWindow = Window & { __eotionMobileP1Receive?: (message: unknown) => void }
@@ -19,6 +21,24 @@ const shareStatus = ref('尚未测试')
 const sharePending = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const secureContext = window.isSecureContext
+const { runtime } = useRuntimeContext()
+const viewportInfo = ref({ width: 0, height: 0, visualWidth: 0, visualHeight: 0, top: 0, right: 0, bottom: 0, left: 0 })
+
+function updateViewportInfo() {
+  const shell = document.querySelector<HTMLElement>('.app-viewport')
+  const style = shell && getComputedStyle(shell)
+  const visual = window.visualViewport
+  viewportInfo.value = {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    visualWidth: Math.round(visual?.width ?? window.innerWidth),
+    visualHeight: Math.round(visual?.height ?? window.innerHeight),
+    top: parseFloat(style?.paddingTop ?? '0'),
+    right: parseFloat(style?.paddingRight ?? '0'),
+    bottom: parseFloat(style?.paddingBottom ?? '0'),
+    left: parseFloat(style?.paddingLeft ?? '0'),
+  }
+}
 
 let nextLogId = 0
 let nextRequestId = 0
@@ -208,12 +228,19 @@ async function shareText() {
 }
 
 onMounted(() => {
+  updateViewportInfo()
+  window.addEventListener('resize', updateViewportInfo)
+  window.visualViewport?.addEventListener('resize', updateViewportInfo)
+  window.visualViewport?.addEventListener('scroll', updateViewportInfo)
   const bridgeWindow = window as BridgeWindow
   bridgeWindow.__eotionMobileP1Receive = receiveFromLynx
   addLog('info', '演示页已就绪。手机端可开始 Ping/Pong 测试。')
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateViewportInfo)
+  window.visualViewport?.removeEventListener('resize', updateViewportInfo)
+  window.visualViewport?.removeEventListener('scroll', updateViewportInfo)
   const bridgeWindow = window as BridgeWindow
   if (bridgeWindow.__eotionMobileP1Receive === receiveFromLynx) {
     delete bridgeWindow.__eotionMobileP1Receive
@@ -232,6 +259,12 @@ onBeforeUnmount(() => {
       <div class="lab-meta">
         <span>路由：/__dev/mobile-p1</span>
         <span>{{ secureContext ? '安全上下文' : '局域网 HTTP · 部分 Web API 可能受限' }}</span>
+      </div>
+      <div class="lab-viewport" aria-label="Safe Area 调试信息">
+        <span>runtime: {{ runtime }}</span>
+        <span>viewport: {{ viewportInfo.width }} × {{ viewportInfo.height }}</span>
+        <span>visualViewport: {{ viewportInfo.visualWidth }} × {{ viewportInfo.visualHeight }}</span>
+        <span>safe T/R/B/L: {{ viewportInfo.top }} / {{ viewportInfo.right }} / {{ viewportInfo.bottom }} / {{ viewportInfo.left }} px</span>
       </div>
     </header>
 
@@ -288,7 +321,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.p1-lab { min-height: 100dvh; background: #f7f7f4; color: #242522; }
+.p1-lab { min-height: 100%; background: #f7f7f4; color: #242522; }
 .lab-header { position: relative; padding: 48px max(24px, calc((100vw - 900px) / 2)) 42px; border-bottom: 1px solid #dfdfd8; background: #e9eddf; }
 .lab-eyebrow { color: #4f6855; font-size: 11px; font-weight: 700; letter-spacing: .16em; }
 .back-link { position: absolute; top: 42px; right: max(24px, calc((100vw - 900px) / 2)); color: #36523e; font-size: 13px; text-decoration: none; }
@@ -296,6 +329,7 @@ onBeforeUnmount(() => {
 h1 { margin: 26px 0 12px; font-size: clamp(34px, 5vw, 52px); line-height: 1.08; letter-spacing: -.05em; }
 .lab-header p { max-width: 600px; margin: 0; color: #576052; font-size: 15px; line-height: 1.6; }
 .lab-meta { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-top: 28px; color: #647060; font-size: 12px; }
+.lab-viewport { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; color: #475a48; font: 12px/1.5 ui-monospace, monospace; }
 .lab-content { width: min(900px, calc(100% - 48px)); margin: 0 auto; padding: 8px 0 80px; }
 .lab-section { padding: 32px 0; border-bottom: 1px solid #ddded8; }
 .section-heading { display: flex; align-items: start; gap: 18px; margin-bottom: 24px; }
