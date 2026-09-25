@@ -9,7 +9,12 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "postinstall": "node node_modules/electron/install.js",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test src/main/*.test.cjs"
+  },
+  "dependencies": {
+    "@eotion/domain": "workspace:*",
+    "@eotion/storage": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
