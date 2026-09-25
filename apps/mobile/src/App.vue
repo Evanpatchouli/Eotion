@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { MOBILE_P1_CHANNEL, type MobileP1Ping, type MobileP1Pong } from '@eotion/contracts'
+import {
+  isMobileStorageRequest,
+  MOBILE_P1_CHANNEL,
+  type MobileP1Ping,
+  type MobileP1Pong,
+  type MobileStorageUnavailableResponse,
+} from '@eotion/contracts'
 
 import { EOTION_WEB_URL } from './config.js'
 
@@ -13,6 +19,33 @@ function onWebMessage(event: WebviewMessageEvent) {
   try {
     message = JSON.parse(raw)
   } catch {
+    return
+  }
+
+  if (isMobileStorageRequest(message)) {
+    const response: MobileStorageUnavailableResponse = {
+      channel: message.channel,
+      kind: 'response',
+      id: message.id,
+      method: message.method,
+      ok: false,
+      error: {
+        code: 'unavailable',
+        message: 'Mobile local storage is unavailable: this Lynx shell has no registered native storage module.',
+      },
+    }
+
+    lynx.createSelectorQuery()
+      .select('#eotion-webview')
+      .invoke({
+        method: 'eval',
+        params: {
+          func: `window.__eotionMobileStorageReceive?.(${JSON.stringify(response)})`,
+        },
+        success: () => console.info('[mobile] storage unavailable response sent', response.id),
+        fail: (error: unknown) => console.warn('[mobile] storage response delivery failed', error),
+      })
+      .exec()
     return
   }
 
