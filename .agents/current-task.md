@@ -1,25 +1,25 @@
-# Current Task — P3 本地优先基础
+# Current Task — P3 本地优先架构收尾
 
 ## Goal
 
-共享 LocalStore，Web IndexedDB、Electron SQLite/typed IPC、Mobile typed bridge；内容和 oplog 原子提交，重启与重连可恢复。
+解除 contracts 对 storage 的反向依赖；准确限定 reconnect 的并发与至少一次投递语义，不进入 P4。
 
 ## Work units
 
-| ID | 验收边界 | 实际路由 | 状态 |
+| ID | 模式与验收边界 | 路由 | 状态 |
 | --- | --- | --- | --- |
-| W1 | 共享 contract、顺序重连状态机及测试 | S2 worker | done，0ea1be9 |
-| W2 | Web IndexedDB、单一 factory、开发演示页和真实浏览器测试 | S2 主 Agent | 实现并验证，待提交 |
-| W3 | Electron main SQLite、typed preload IPC、真实窗口测试 | S2 worker | done，2e55316；端到端由主 Agent 验证 |
-| W4 | Mobile typed bridge 与 HarmonyOS 可行性 | S1 fast_worker | done，ab72578；真机待人工验证 |
+| W1 | investigate：依赖引用、三端 runtime、oplog 与现有验证证据 | S0 scout + 主 Agent | 完成 |
+| W2 | decide：storage bridge 归属、reconnect 范围与投递语义 | S2 主 Agent | 完成：协议归 storage；at-least-once，不新增跨实例锁 |
+| W3 | execute：移动 bridge 协议、更新直接消费者与依赖 | S1 fast_worker | 完成 |
+| W4 | execute：reconnect 测试、注释与受影响文档 | S1 主 Agent | 完成 |
+| W5 | verify/review：定向测试、三端构建、依赖检查、最终 diff | S0 scout + Review reviewer + 主 Agent | 完成；review 无 blocker |
 
 ## Constraints
 
-不进入 P4/P5/P6、远程同步、Redis/Kafka。应用业务只依赖共享契约。每个独立逻辑单元提交；最终主 Agent 复核与验证。
+只收紧 P3；保持 LocalStore、强类型 RPC、runtime validator 和 durable oplog。无跨实例互斥承诺，不实现 P4 server sync 或幂等表。每个独立逻辑变更提交。
 
 ## Evidence
 
-- Shared storage 3/3 tests + typecheck passed.
-- Web Playwright Chrome IndexedDB CRUD/persistence/ordering/transaction/reconnect passed.
-- Electron SQLite 2/2 tests + typecheck/build passed；Playwright Electron renderer 经 typed IPC 的 reload 和 app restart passed.
-- Mobile build passed；HarmonyOS 原生存储仍 manual verification required。
+- `contracts` 与 `storage` typecheck、storage 5 tests、Web build、Mobile build 均通过。
+- Web storage Playwright 3 tests 覆盖 IndexedDB durable oplog 与 Electron renderer/SQLite；Electron SQLite 2 tests、build 通过。
+- Package 依赖图中 `contracts` 无 storage 引用；最终独立 review 无 blocker。

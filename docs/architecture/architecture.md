@@ -79,10 +79,13 @@ Client edit
 
 P3 已实现的本地存储基础详见 [P3 本地优先基础](../p3-local-first.md)。当前各端状态：
 
+- `LocalStore` 与 Mobile storage bridge 协议同属 `@eotion/storage`；通用 API/P1 协议留在 `@eotion/contracts`，后者不依赖本地存储。
 - Web：IndexedDB，已实现。
 - Electron：SQLite，位于 Electron 主进程之后，通过类型化预加载 IPC 访问，已实现。
 - Android/iOS：平台原生持久化尚未实现。
 - HarmonyOS：typed WebView bridge 已定义，原生存储宿主模块尚未实现，manual verification required。
+
+P3 reconnect 依赖持久 oplog，以稳定 operation id 至少一次投递；同一 JS realm 中同一 store 对象的并发调用会合并，但跨实例和跨 renderer 不互斥。P4 的 sync transport/server 必须按 operation id 幂等。
 
 ## 6. 编辑器方向
 

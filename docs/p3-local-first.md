@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | Web | IndexedDB `pages`、`blocks`、`operations`、`meta`；Page 和 Block 是本地领域记录 | 已实现并在 Chrome 真实运行 |
 | Electron | main process `node:sqlite`，userData 下 `eotion-local.sqlite`；preload 仅暴露固定 `LocalStore` 方法，IPC 拒绝非主 frame | 已实现并在 Electron 窗口真实运行；`contextIsolation: true`、`nodeIntegration: false`、`sandbox: true` |
-| Mobile WebView | `packages/contracts` 定义相关联 request/response；Web 侧 `MobileBridgeLocalStore` 发送消息；Lynx 壳当前明确返回 `unavailable` | typed bridge 边界已实现；原生持久化尚不可用，**manual verification required** |
+| Mobile WebView | `packages/storage` 定义基于 `LocalStore` 的强类型 request/response 和运行时请求校验；Web 侧 `MobileBridgeLocalStore` 发送消息；Lynx 壳当前明确返回 `unavailable` | typed bridge 边界已实现；原生持久化尚不可用，**manual verification required** |
 
 当前仓库没有 HarmonyOS 原生宿主工程、已注册的 storage Native Module 或平台数据库适配器。Lynx 官方文档支持 [HarmonyOS Native Module](https://lynxjs.org/next/guide/use-native-modules.html?platform=harmony) 路径，但注册、WebView 消息转发和进程重启后的持久化必须在真实宿主上实现并验证。当前 Mobile bridge 不把 IndexedDB 冒充平台存储。
 
@@ -20,11 +20,14 @@
 
 每条成功的本地内容 mutation 同事务写入一条 `pending` operation。operation 包含稳定的 `id`、持久 `clientId`、单调 `sequence`、`kind`、`target`、`payload`、`createdAt` 和 `status`。IndexedDB 以同一 readwrite transaction 提交内容、元数据与 oplog；SQLite 使用单一 `BEGIN IMMEDIATE`/`COMMIT`。失败的内容写入回滚，不能留下序号跳跃或孤立 oplog。应用重启后，`pending` 和 `failed` operation 仍按 sequence 可查询。
 
-`reconnectPending` 只读取现有队列，按 sequence 发送；成功标记 `synced`，第一条发送失败标记 `failed` 并停止后续发送。重复 reconnect 不创建新 operation；同一 `LocalStore` 实例的并发 reconnect 共用同一次执行。P3 使用 fake transport 验证这些语义，不连接服务器。未来 transport 必须按 operation id 幂等：如果发送成功但本地状态更新前崩溃，重启后会重试同一 operation。这是本地优先传输边界的明确要求。
+`reconnectPending` 只读取现有队列，按 sequence 发送；成功标记 `synced`，第一条发送失败标记 `failed` 并停止后续发送。重试不创建新 operation，沿用持久记录的 operation id。同一 JS realm 中同一 `LocalStore` 对象的并发调用共用一次执行；不同 store 对象即使指向同一数据库，也可能同时发送同一 operation。不同浏览器 tab、Electron renderer 或重载后的 JS realm 也不共享 `WeakMap`。Mobile 当前无原生存储，尚不能验证宿主侧的跨实例协调。
+
+P3 的语义是 **durable local oplog + at-least-once delivery + stable operation id**，不承诺客户端 exactly-once 或跨实例全局互斥。发送已被远端接收、但本地 `synced` 状态尚未提交时，后续 reconnect 会用同一 id 重试。P4 sync transport 和 server 必须按 operation id 幂等处理重复投递；这是未来服务端契约的必要条件。P3 只用 fake transport 验证本地语义，不连接服务器。
 
 ## 验证
 
 ```bash
+pnpm --filter @eotion/contracts typecheck
 pnpm --filter @eotion/storage test
 pnpm --filter @eotion/storage typecheck
 pnpm --filter @eotion/desktop test

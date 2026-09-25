@@ -131,12 +131,17 @@ export interface ReconnectResult {
   failed: number
 }
 
+// Coalesces calls only for the same object in this JS realm; it is not a
+// cross-instance, cross-tab, or cross-renderer lock.
 const inFlight = new WeakMap<LocalStore, Promise<ReconnectResult>>()
 
 /**
  * Retries the persisted queue in order, without generating a new operation.
  * Stops at the first failure so later operations cannot overtake it. Concurrent
- * reconnects for the same store share one attempt.
+ * reconnects for the same store object in this JS realm share one attempt.
+ * Delivery is at least once: if send succeeds but the local status update
+ * fails, the persisted operation is sent again with the same id. The future
+ * transport/server must deduplicate by operation id.
  */
 export function reconnectPending(store: LocalStore, transport: OperationTransport): Promise<ReconnectResult> {
   const active = inFlight.get(store)

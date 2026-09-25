@@ -23,7 +23,7 @@
 | Contracts | `packages/contracts/src/` | architecture / specs | DTO、contract、protocol、shared type |
 | Domain | `packages/domain/src/` | architecture / specs | domain model、workspace、page、block |
 | SDK | `packages/sdk/src/` | architecture / specs | typed client、API |
-| Local storage (P3) | `packages/storage/src/`、`apps/web/src/storage/`、`apps/desktop/src/main/sqlite-store.ts` | `p3-local-first.md` | LocalStore、IndexedDB、SQLite、oplog、reconnect |
+| Local storage (P3) | `packages/storage/src/`（含 Mobile storage bridge 协议）、`apps/web/src/storage/`、`apps/desktop/src/main/sqlite-store.ts` | `p3-local-first.md` | LocalStore、IndexedDB、SQLite、Mobile bridge、oplog、reconnect |
 | Roadmap / Phase | `docs/roadmap.md` | 本页 | P0…P7、exit criteria、scope |
 
 随着稳定模块增加再维护索引。只记录入口和关键词，不复制源码实现。

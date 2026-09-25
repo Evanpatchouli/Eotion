@@ -63,6 +63,8 @@ test('failure remains retryable and blocks later operations until the next recon
   offline = false
   assert.deepEqual(await reconnectPending(store, transport), { synced: 2, failed: 0 })
   assert.deepEqual(sent, ['op-1', 'op-1', 'op-2'])
+  assert.deepEqual(queue.map(({ id }) => id), ['op-1', 'op-2'])
+  assert.equal(queue.length, 2)
 })
 
 test('concurrent reconnects for one store share a single send attempt', async () => {
@@ -83,4 +85,54 @@ test('concurrent reconnects for one store share a single send attempt', async ()
   release()
   assert.deepEqual(await first, { synced: 1, failed: 0 })
   assert.equal(sends, 1)
+})
+
+test('separate store instances do not share the in-flight attempt', async () => {
+  const { store, queue } = queueStore([operation(1)])
+  const other = { ...store } as LocalStore
+  const sent: string[] = []
+  let bothSending!: () => void
+  const started = new Promise<void>((resolve) => { bothSending = resolve })
+  let release!: () => void
+  const gate = new Promise<void>((resolve) => { release = resolve })
+  const transport = {
+    async send(item: StorageOperation) {
+      sent.push(item.id)
+      if (sent.length === 2) bothSending()
+      await gate
+    },
+  }
+
+  const first = reconnectPending(store, transport)
+  const second = reconnectPending(other, transport)
+  assert.notStrictEqual(second, first)
+  await started
+  assert.deepEqual(sent, ['op-1', 'op-1'])
+  release()
+  assert.deepEqual(await Promise.all([first, second]), [
+    { synced: 1, failed: 0 },
+    { synced: 1, failed: 0 },
+  ])
+  assert.equal(queue.length, 1)
+})
+
+test('retry after a delivered send and failed local acknowledgement keeps the operation id', async () => {
+  const { store, queue } = queueStore([operation(1)])
+  const markSynced = store.markOperationSynced.bind(store)
+  let failAcknowledgement = true
+  store.markOperationSynced = async (id) => {
+    if (failAcknowledgement) {
+      failAcknowledgement = false
+      throw new Error('local acknowledgement failed')
+    }
+    await markSynced(id)
+  }
+  const sent: string[] = []
+  const transport = { async send(item: StorageOperation) { sent.push(item.id) } }
+
+  await assert.rejects(reconnectPending(store, transport), /local acknowledgement failed/)
+  assert.deepEqual(queue.map(({ id, status }) => ({ id, status })), [{ id: 'op-1', status: 'pending' }])
+  assert.deepEqual(await reconnectPending(store, transport), { synced: 1, failed: 0 })
+  assert.deepEqual(sent, ['op-1', 'op-1'])
+  assert.equal(queue.length, 1)
 })
