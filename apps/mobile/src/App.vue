@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import {
-  isMobileStorageRequest,
   MOBILE_P1_CHANNEL,
   type MobileP1Ping,
   type MobileP1Pong,
-  type MobileStorageUnavailableResponse,
 } from '@eotion/contracts'
+import {
+  isMobileStorageRequest,
+  type MobileStorageUnavailableResponse,
+} from '@eotion/storage'
 
 import { EOTION_WEB_URL } from './config.js'
 

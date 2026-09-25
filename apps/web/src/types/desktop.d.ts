@@ -1,7 +1,7 @@
 export {}
 
 import type { LocalStore } from '@eotion/storage'
-import type { MobileStorageResponse } from '@eotion/contracts'
+import type { MobileStorageResponse } from '@eotion/storage'
 
 declare global {
   interface Window {

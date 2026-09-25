@@ -3,7 +3,7 @@ import {
   MOBILE_STORAGE_CHANNEL,
   type MobileStorageRequest,
   type MobileStorageResponse,
-} from '@eotion/contracts'
+} from '@eotion/storage'
 import type { LocalStore, StorageOperation } from '@eotion/storage'
 
 type Pending = { resolve(value: unknown): void; reject(reason: Error): void; timer: number }

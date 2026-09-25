@@ -81,6 +81,9 @@ importers:
       '@eotion/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@eotion/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       vue:
         specifier: ^3.5.43
         version: 3.5.43(typescript@6.0.3)
@@ -166,10 +169,10 @@ importers:
         version: 3.3.11(typescript@6.0.3)
 
   packages/contracts:
-    dependencies:
-      '@eotion/storage':
-        specifier: workspace:*
-        version: link:../storage
+    devDependencies:
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/domain: {}
 
