@@ -6,6 +6,7 @@ const devRoutes: RouteRecordRaw[] = import.meta.env.DEV
   ? [
       { path: '/__dev/mobile-p1', name: 'mobile-p1', component: () => import('./views/MobileP1DemoView.vue') },
       { path: '/__dev/editor-p2', name: 'editor-p2', component: () => import('./views/EditorP2DemoView.vue') },
+      { path: '/__dev/storage-p3', name: 'storage-p3', component: () => import('./views/StorageP3DemoView.vue') },
     ]
   : []
 

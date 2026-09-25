@@ -9,6 +9,16 @@ import {
 
 import { EOTION_WEB_URL } from './config.js'
 
+function mobileWebUrl(url: string): string {
+  const hashIndex = url.indexOf('#')
+  const base = hashIndex < 0 ? url : url.slice(0, hashIndex)
+  const hash = hashIndex < 0 ? '' : url.slice(hashIndex)
+  const separator = base.includes('?') ? '&' : '?'
+  return `${base}${separator}eotionRuntime=mobile-webview${hash}`
+}
+
+const webviewUrl = mobileWebUrl(EOTION_WEB_URL)
+
 type WebviewMessageEvent = { detail?: { msg?: unknown }; msg?: unknown }
 
 function onWebMessage(event: WebviewMessageEvent) {
@@ -87,7 +97,7 @@ function onWebMessage(event: WebviewMessageEvent) {
     <webview
       id="eotion-webview"
       class="eotion-webview"
-      :src="EOTION_WEB_URL"
+      :src="webviewUrl"
       :enable-debug="true"
       @message="onWebMessage"
     />

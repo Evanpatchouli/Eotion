@@ -28,7 +28,7 @@ export function useRuntimeContext() {
 
   const runtime = computed<Runtime>(() => {
     if (window.eotionDesktop) return 'electron'
-    if (window.navigator.userAgent.includes('EotionMobile')) return 'mobile-webview'
+    if (new URLSearchParams(window.location.search).get('eotionRuntime') === 'mobile-webview') return 'mobile-webview'
     return 'web'
   })
 

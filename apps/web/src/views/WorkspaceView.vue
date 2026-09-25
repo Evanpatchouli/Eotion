@@ -70,6 +70,15 @@ function choosePage(id: string) {
           <span>✎</span>
           <span>编辑器 P2 演示</span>
         </RouterLink>
+        <RouterLink
+          v-if="showDevDemos"
+          class="page-item page-item--dev"
+          to="/__dev/storage-p3"
+          @click="mobileNavOpen = false"
+        >
+          <span>▣</span>
+          <span>本地存储 P3 演示</span>
+        </RouterLink>
       </nav>
 
       <div class="sidebar-footer">Web-first · TypeScript</div>

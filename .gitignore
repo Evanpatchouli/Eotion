@@ -12,6 +12,7 @@ dist/
 out/
 build/
 coverage/
+test-results/
 .lynx/
 *.tsbuildinfo
 
