@@ -28,6 +28,9 @@ P3 的语义是 **durable local oplog + at-least-once delivery + stable operatio
 
 ## 验证
 
+真机人工验收进度见 [P3 真机测试清单](verification/device/p3-local-first.md)。
+
+
 ```bash
 pnpm --filter @eotion/contracts typecheck
 pnpm --filter @eotion/storage test
