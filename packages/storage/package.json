@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@eotion/domain": "workspace:*"
+    "@eotion/domain": "workspace:*",
+    "nanoid": "^5.1.16"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",

@@ -1,6 +1,7 @@
 import type { BlockRecord, PageSummary } from '@eotion/domain'
 import {
   MOBILE_STORAGE_CHANNEL,
+  createLocalId,
   type MobileStorageRequest,
   type MobileStorageResponse,
 } from '@eotion/storage'
@@ -25,7 +26,7 @@ export class MobileBridgeLocalStore implements LocalStore {
   }
 
   private call<K extends keyof LocalStore>(method: K, ...args: Parameters<LocalStore[K]>): Promise<Awaited<ReturnType<LocalStore[K]>>> {
-    const id = crypto.randomUUID()
+    const id = createLocalId()
     const message = { channel: MOBILE_STORAGE_CHANNEL, kind: 'request', id, method, args } as MobileStorageRequest
     return new Promise((resolve, reject) => {
       const timer = window.setTimeout(() => {

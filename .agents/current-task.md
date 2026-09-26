@@ -1,27 +1,22 @@
-# Current Task — Mobile Safe Area / viewport 基础
+# Current Task — P3 真机 ID 生成兼容性
 
 ## Goal
 
-统一 Web 三端布局对四边安全区与动态视口的消费，不修改业务 UI，不进入新 Roadmap Phase。
+修复缺少 `crypto.randomUUID` 的 WebView 中 P3 本地存储及 Mobile bridge ID 生成，保持 operation retry 的持久 ID。
 
 ## Work units
 
 | ID | 模式与验收边界 | 状态 |
 | --- | --- | --- |
-| W1 | investigate：Web viewport、布局、fixed UI；Lynx WebView 尺寸及桥接证据 | 完成 |
-| W2 | decide：外壳消费四边 inset，工作区内部使用剩余高度；固定 UI 单独定位 | 完成 |
-| W3 | execute：Web 基础样式、现有 fixed UI、开发调试信息和文档 | 完成 |
-| W4 | verify/review：Web/Mobile 构建、相关 Playwright 测试、diff 复核 | 完成；review 缺口已修复 |
+| W1 | investigate：检索全仓 randomUUID 用法、现有 ID 与 retry 语义 | 完成 |
+| W2 | decide：storage 包导出统一 nanoid helper；现有 demo 固定 ID 继续服务更新/重开验证 | 完成 |
+| W3 | execute：Web、Desktop、Mobile bridge 调用 helper；补缺失 randomUUID 的 Page/Block 测试 | 完成 |
+| W4 | verify/review：Web/Mobile typecheck、build、storage tests、diff 复核 | 完成；独立 review 无 blocker |
 
 ## Constraints
 
-不写死机型尺寸，不复制业务 UI，不提前建立 HarmonyOS Native Module。iOS WebView 与 HarmonyOS Browser 已完成真机布局验证；Android Lynx Explorer via 卓易通不作为原生 HarmonyOS Safe Area 验收环境，原生 HarmonyOS Lynx 宿主仍为 manual verification required。
+不使用 Math.random fallback；operation retry 沿用持久记录的 ID；不改 Page/Block upsert 契约或无关功能。
 
 ## Evidence
 
-Web typecheck/build、Mobile build 通过；Safe Area 与 storage/desktop Playwright 共 5 个用例通过。独立 review 发现的开发页安全区背景白边已修复。
-
-真机 Safe Area：
-- iPhone XS Max / iOS WebView：✅ 通过；系统状态栏与 Eotion 顶栏不重叠，safe area 正常消费。
-- Huawei nova 14 / HarmonyOS Browser：✅ Web 布局通过；系统栏和浏览器 UI 正常划分 viewport，safe inset = 0 为正常结果，内容无系统区域侵入。
-- Huawei nova 14 / Android Lynx Explorer via 卓易通：⚠️ 不作为原生 HarmonyOS Safe Area 验收环境；Explorer fullscreen/immersive，WebView 延伸到物理屏顶部且 `safe-area-inset-top = 0`，系统状态栏下拉后覆盖 WebView，归于当前宿主未暴露/消费系统 inset。
+Storage、Web、Desktop typecheck；Mobile `tsc -b`；Web、Mobile、Desktop build；Storage 单元测试 5/5、Web storage Playwright 4/4（含 Electron）、Desktop 单元测试 2/2 通过。缺失 `crypto.randomUUID` 的浏览器回归用例覆盖 Page/Block 创建、重开持久化及 operation ID 重试稳定性。全仓源码无 `randomUUID()` 调用，独立 review 无 blocker。

@@ -1,9 +1,8 @@
-import { randomUUID } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { BlockRecord, PageSummary } from '@eotion/domain'
-import type { LocalStore, StorageOperation } from '@eotion/storage'
+import { createLocalId, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 type OperationKind = StorageOperation['kind']
 
@@ -47,7 +46,7 @@ export class SqliteLocalStore implements LocalStore {
     if (existing) {
       this.clientId = existing.value
     } else {
-      const id = randomUUID()
+      const id = createLocalId()
       this.database.prepare("INSERT INTO metadata (key, value) VALUES ('client_id', ?)").run(id)
       this.clientId = id
     }
@@ -81,7 +80,7 @@ export class SqliteLocalStore implements LocalStore {
       INSERT INTO operations (id, client_id, sequence, kind, target_type, target_id, payload, created_at, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     `).run(
-      randomUUID(),
+      createLocalId(),
       this.clientId,
       sequence,
       kind,

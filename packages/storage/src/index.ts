@@ -1,5 +1,7 @@
 import type { BlockRecord, PageSummary } from '@eotion/domain'
 
+export { createLocalId } from './id.ts'
+
 export type OperationStatus = 'pending' | 'synced' | 'failed'
 export type OperationKind = 'page.upsert' | 'page.delete' | 'block.upsert' | 'block.delete'
 

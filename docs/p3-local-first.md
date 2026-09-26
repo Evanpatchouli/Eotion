@@ -20,6 +20,8 @@
 
 每条成功的本地内容 mutation 同事务写入一条 `pending` operation。operation 包含稳定的 `id`、持久 `clientId`、单调 `sequence`、`kind`、`target`、`payload`、`createdAt` 和 `status`。IndexedDB 以同一 readwrite transaction 提交内容、元数据与 oplog；SQLite 使用单一 `BEGIN IMMEDIATE`/`COMMIT`。失败的内容写入回滚，不能留下序号跳跃或孤立 oplog。应用重启后，`pending` 和 `failed` operation 仍按 sequence 可查询。
 
+本地新 ID 统一通过 `@eotion/storage` 的 `createLocalId()` 生成（基于 nanoid）；Page / Block 的 ID 由调用方在创建时赋予，更新时沿用原 ID。adapter 只在首次建立 client identity 和写入新 operation 时生成 ID；重试读取已有 operation，不生成新 ID。Mobile bridge 请求也使用该 helper。
+
 `reconnectPending` 只读取现有队列，按 sequence 发送；成功标记 `synced`，第一条发送失败标记 `failed` 并停止后续发送。重试不创建新 operation，沿用持久记录的 operation id。同一 JS realm 中同一 `LocalStore` 对象的并发调用共用一次执行；不同 store 对象即使指向同一数据库，也可能同时发送同一 operation。不同浏览器 tab、Electron renderer 或重载后的 JS realm 也不共享 `WeakMap`。Mobile 当前无原生存储，尚不能验证宿主侧的跨实例协调。
 
 P3 的语义是 **durable local oplog + at-least-once delivery + stable operation id**，不承诺客户端 exactly-once 或跨实例全局互斥。发送已被远端接收、但本地 `synced` 状态尚未提交时，后续 reconnect 会用同一 id 重试。P4 sync transport 和 server 必须按 operation id 幂等处理重复投递；这是未来服务端契约的必要条件。P3 只用 fake transport 验证本地语义，不连接服务器。

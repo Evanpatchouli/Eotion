@@ -1,5 +1,5 @@
 import type { BlockRecord, PageSummary } from '@eotion/domain'
-import type { LocalStore, StorageOperation } from '@eotion/storage'
+import { createLocalId, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 const DB_VERSION = 1
 const encoder = new TextEncoder()
@@ -62,7 +62,7 @@ export class IndexedDbLocalStore implements LocalStore {
     const done = completed(tx)
     const meta = tx.objectStore('meta')
     if (!await request<string | undefined>(meta.get('clientId'))) {
-      meta.put(crypto.randomUUID(), 'clientId')
+      meta.put(createLocalId(), 'clientId')
       meta.put(0, 'sequence')
     }
     await done
@@ -118,7 +118,7 @@ export class IndexedDbLocalStore implements LocalStore {
       const sequence = (await request<number>(meta.get('sequence'))) + 1
       await change(tx)
       const operation: StorageOperation = {
-        id: crypto.randomUUID(), clientId, sequence, kind, target, payload,
+        id: createLocalId(), clientId, sequence, kind, target, payload,
         createdAt: new Date().toISOString(), status: 'pending',
       }
       tx.objectStore('operations').put(operation)

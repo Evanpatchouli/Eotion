@@ -17,8 +17,8 @@ test('IndexedDB content and operation log survive reopen, reject partial writes,
 
   const result = await page.evaluate(async (storageUrl) => {
     const { IndexedDbLocalStore } = await import('/src/storage/indexedDbStore.ts')
-    const { reconnectPending } = await import(/* @vite-ignore */ storageUrl)
-    const dbName = `p3-test-${crypto.randomUUID()}`
+    const { createLocalId, reconnectPending } = await import(/* @vite-ignore */ storageUrl)
+    const dbName = `p3-test-${createLocalId()}`
     let store = await IndexedDbLocalStore.open(dbName)
     const page = { id: 'p', title: 'First', updatedAt: new Date().toISOString() }
     const block = { id: 'b', pageId: 'p', type: 'paragraph' as const, orderKey: 'a', props: { text: 'hello' }, createdAt: page.updatedAt, updatedAt: page.updatedAt }
@@ -76,8 +76,61 @@ test('IndexedDB content and operation log survive reopen, reject partial writes,
   expect(errors).toEqual([])
 })
 
+test('Page and Block creation works when crypto.randomUUID is unavailable', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true })
+  })
+  await page.goto('/')
+
+  const result = await page.evaluate(async (storageUrl) => {
+    const { createLocalId, reconnectPending } = await import(/* @vite-ignore */ storageUrl)
+    const { IndexedDbLocalStore } = await import('/src/storage/indexedDbStore.ts')
+    const dbName = `p3-no-random-uuid-${createLocalId()}`
+    let store = await IndexedDbLocalStore.open(dbName)
+    const now = new Date().toISOString()
+    const pageRecord = { id: createLocalId(), title: 'Offline page', updatedAt: now }
+    const block = {
+      id: createLocalId(), pageId: pageRecord.id, type: 'paragraph' as const,
+      orderKey: 'a', props: { text: 'Offline block' }, createdAt: now, updatedAt: now,
+    }
+    await store.upsertPage(pageRecord)
+    await store.upsertBlock(block)
+    const before = await store.getPendingOperations()
+    store.close()
+
+    store = await IndexedDbLocalStore.open(dbName)
+    const savedPage = await store.getPage(pageRecord.id)
+    const savedBlock = await store.getBlock(block.id)
+    await reconnectPending(store, { async send() { throw new Error('offline') } })
+    const afterFailure = await store.getPendingOperations()
+    const sent: string[] = []
+    await reconnectPending(store, { async send(operation) { sent.push(operation.id) } })
+    store.close()
+
+    return {
+      randomUUID: typeof crypto.randomUUID,
+      pageId: savedPage?.id,
+      blockId: savedBlock?.id,
+      expectedPageId: pageRecord.id,
+      expectedBlockId: block.id,
+      ids: before.map((operation) => operation.id),
+      failedIds: afterFailure.map((operation) => operation.id),
+      sent,
+      clientIds: before.map((operation) => operation.clientId),
+    }
+  }, storageModuleUrl)
+
+  expect(result.randomUUID).toBe('undefined')
+  expect(result.pageId).toBe(result.expectedPageId)
+  expect(result.blockId).toBe(result.expectedBlockId)
+  expect(new Set([result.pageId, result.blockId, ...result.ids, ...result.clientIds]).size).toBe(5)
+  expect(result.failedIds).toEqual(result.ids)
+  expect(result.sent).toEqual(result.ids)
+})
+
 test('mobile WebView marker selects the typed bridge instead of IndexedDB', async ({ page }) => {
   await page.addInitScript(() => {
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true })
     window.addEventListener('message', (event) => {
       if (typeof event.data !== 'string') return
       const request = JSON.parse(event.data)
