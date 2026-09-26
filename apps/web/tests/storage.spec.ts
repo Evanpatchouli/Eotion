@@ -224,14 +224,18 @@ test('mobile bridge diagnostics track responses, concurrency, timeouts, and fall
 
   const mismatch = await page.evaluate(async () => {
     const w = window as typeof window & { __bridgeStore: { listPages(): Promise<unknown>; getDiagnostics(): any }; __bridgeRequests: Array<{ channel: string; id: string }> }
-    const pending = w.__bridgeStore.listPages()
+    const pending = w.__bridgeStore.listPages().then(() => 'resolved', (error: Error) => error.message)
     const request = w.__bridgeRequests.at(-1)!
-    window.__eotionMobileStorageReceive?.({ channel: request.channel, kind: 'response', id: request.id, method: 'getPage', ok: true, result: [] })
-    await pending
-    return w.__bridgeStore.getDiagnostics()
+    const response = { channel: request.channel, kind: 'response', id: request.id, method: 'getPage', ok: true, result: [] } as const
+    window.__eotionMobileStorageReceive?.(response)
+    const outcome = await pending
+    window.__eotionMobileStorageReceive?.(response)
+    return { outcome, diagnostics: w.__bridgeStore.getDiagnostics() }
   })
-  expect(mismatch).toMatchObject({ requestsSent: 5, responsesReceived: 7, pending: 0, methodMismatches: 1 })
-  expect(mismatch.recentEvents[0].status).toContain('method-mismatch')
+  expect(mismatch.outcome).toContain('protocol error')
+  expect(mismatch.outcome).toContain('getPage does not match request method listPages')
+  expect(mismatch.diagnostics).toMatchObject({ requestsSent: 5, responsesReceived: 8, pending: 0, methodMismatches: 1, duplicateResponses: 2, timeouts: 0 })
+  expect(mismatch.diagnostics.recentEvents[0].status).toContain('method-mismatch')
 
   await page.evaluate(() => {
     const w = window as typeof window & { __bridgeStore: { getPage(id: string): Promise<unknown> }; __bridgeRequests: Array<{ id: string }> }
@@ -244,7 +248,7 @@ test('mobile bridge diagnostics track responses, concurrency, timeouts, and fall
     return { error: await (window as any).__timeoutPromise as string, diagnostics: w.__bridgeStore.getDiagnostics() }
   })
   expect(timedOut.error).toContain('timed out')
-  expect(timedOut.diagnostics).toMatchObject({ requestsSent: 6, responsesReceived: 7, pending: 0, timeouts: 1, unknownResponses: 1, duplicateResponses: 1, methodMismatches: 1 })
+  expect(timedOut.diagnostics).toMatchObject({ requestsSent: 6, responsesReceived: 8, pending: 0, timeouts: 1, unknownResponses: 1, duplicateResponses: 2, methodMismatches: 1 })
   expect(timedOut.diagnostics.recentEvents[0].status).toBe('timeout')
 
   const cleared = await page.evaluate(() => {
@@ -253,4 +257,34 @@ test('mobile bridge diagnostics track responses, concurrency, timeouts, and fall
     return store.getDiagnostics()
   })
   expect(cleared).toMatchObject({ requestsSent: 0, responsesReceived: 0, pending: 0, timeouts: 0, unknownResponses: 0, duplicateResponses: 0, methodMismatches: 0, recentEvents: [] })
+
+  const oldResponseAfterClear = await page.evaluate(() => {
+    const w = window as typeof window & { __bridgeStore: { getDiagnostics(): any }; __bridgeRequests: Array<{ channel: string; id: string; method: string }> }
+    const request = w.__bridgeRequests[0]
+    window.__eotionMobileStorageReceive?.({ channel: request.channel, kind: 'response', id: request.id, method: request.method, ok: true, result: undefined })
+    return w.__bridgeStore.getDiagnostics()
+  })
+  expect(oldResponseAfterClear).toMatchObject({ responsesReceived: 1, unknownResponses: 1, duplicateResponses: 0 })
+
+  const boundedHistory = await page.evaluate(async () => {
+    const w = window as typeof window & { __bridgeStore: { listPages(): Promise<unknown>; clearDiagnostics(): void; getDiagnostics(): any }; __bridgeRequests: Array<{ channel: string; id: string; method: string }> }
+    const store = w.__bridgeStore
+    store.clearDiagnostics()
+    const completed: typeof w.__bridgeRequests = []
+    for (let index = 0; index < 257; index += 1) {
+      const pending = store.listPages()
+      const request = w.__bridgeRequests.at(-1)!
+      completed.push(request)
+      window.__eotionMobileStorageReceive?.({ channel: request.channel, kind: 'response', id: request.id, method: request.method, ok: true, result: [] })
+      await pending
+    }
+    const oldest = completed[0]
+    window.__eotionMobileStorageReceive?.({ channel: oldest.channel, kind: 'response', id: oldest.id, method: oldest.method, ok: true, result: [] })
+    const afterOldest = store.getDiagnostics()
+    const newest = completed.at(-1)!
+    window.__eotionMobileStorageReceive?.({ channel: newest.channel, kind: 'response', id: newest.id, method: newest.method, ok: true, result: [] })
+    return { afterOldest, final: store.getDiagnostics() }
+  })
+  expect(boundedHistory.afterOldest).toMatchObject({ requestsSent: 257, responsesReceived: 258, pending: 0, unknownResponses: 1, duplicateResponses: 0 })
+  expect(boundedHistory.final).toMatchObject({ requestsSent: 257, responsesReceived: 259, pending: 0, unknownResponses: 1, duplicateResponses: 1 })
 })

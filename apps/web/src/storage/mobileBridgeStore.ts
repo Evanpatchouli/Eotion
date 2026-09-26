@@ -8,6 +8,7 @@ import {
 import type { LocalStore, StorageOperation } from '@eotion/storage'
 
 type Pending = { resolve(value: unknown): void; reject(reason: Error): void; timer: number; method: keyof LocalStore; sentAt: number; sequence: number }
+const COMPLETED_ID_LIMIT = 256
 
 export type MobileBridgeDiagnostics = {
   requestsSent: number
@@ -50,6 +51,7 @@ export class MobileBridgeLocalStore implements LocalStore {
 
   clearDiagnostics(): void {
     if (!import.meta.env.DEV || this.pending.size > 0) return
+    this.completedIds.clear()
     this.diagnostics = emptyDiagnostics()
     this.publishDiagnostics()
   }
@@ -64,6 +66,14 @@ export class MobileBridgeLocalStore implements LocalStore {
   private recordEvent(event: MobileBridgeDiagnostics['recentEvents'][number]): void {
     this.diagnostics.recentEvents.unshift(event)
     this.diagnostics.recentEvents.length = Math.min(this.diagnostics.recentEvents.length, 20)
+  }
+
+  private recordCompletedId(id: string): void {
+    this.completedIds.add(id)
+    if (this.completedIds.size > COMPLETED_ID_LIMIT) {
+      const oldest = this.completedIds.values().next().value
+      if (oldest !== undefined) this.completedIds.delete(oldest)
+    }
   }
 
   constructor() {
@@ -90,12 +100,16 @@ export class MobileBridgeLocalStore implements LocalStore {
       window.clearTimeout(request.timer)
       this.pending.delete(response.id)
       if (import.meta.env.DEV) {
-        this.completedIds.add(response.id)
+        this.recordCompletedId(response.id)
         this.recordEvent({ sequence: request.sequence, id: response.id, method: request.method,
           status: response.method === request.method ? (response.ok ? 'ok' : response.error.code)
             : `method-mismatch (${response.ok ? 'ok' : response.error.code}; response method: ${response.method})`,
           latencyMs: Date.now() - request.sentAt })
         this.publishDiagnostics()
+      }
+      if (response.method !== request.method) {
+        request.reject(new Error(`Mobile storage bridge protocol error: response method ${response.method} does not match request method ${request.method}`))
+        return
       }
       if (response.ok) request.resolve(response.result)
       else request.reject(new Error(`${response.error.code}: ${response.error.message}`))
