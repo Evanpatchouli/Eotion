@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="p1-lab">
+  <div class="p1-lab">
     <header class="lab-header">
       <div class="lab-eyebrow">EOTION / MOBILE P1</div>
       <RouterLink class="back-link" to="/">返回工作区 ↗</RouterLink>
@@ -317,14 +317,14 @@ onBeforeUnmount(() => {
         </ol>
       </section>
     </div>
-  </main>
+  </div>
 </template>
 
 <style scoped>
 .p1-lab { min-height: 100%; background: #f7f7f4; color: #242522; }
-.lab-header { position: relative; padding: 48px max(24px, calc((100vw - 900px) / 2)) 42px; border-bottom: 1px solid #dfdfd8; background: #e9eddf; }
+.lab-header { position: relative; padding: 48px max(24px, calc((100% - 900px) / 2)) 42px; border-bottom: 1px solid #dfdfd8; background: #e9eddf; }
 .lab-eyebrow { color: #4f6855; font-size: 11px; font-weight: 700; letter-spacing: .16em; }
-.back-link { position: absolute; top: 42px; right: max(24px, calc((100vw - 900px) / 2)); color: #36523e; font-size: 13px; text-decoration: none; }
+.back-link { position: absolute; top: 42px; right: max(24px, calc((100% - 900px) / 2)); color: #36523e; font-size: 13px; text-decoration: none; }
 .back-link:hover { text-decoration: underline; }
 h1 { margin: 26px 0 12px; font-size: clamp(34px, 5vw, 52px); line-height: 1.08; letter-spacing: -.05em; }
 .lab-header p { max-width: 600px; margin: 0; color: #576052; font-size: 15px; line-height: 1.6; }

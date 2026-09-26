@@ -32,7 +32,7 @@ async function loadLargeDocument() {
 </script>
 
 <template>
-  <main class="p2-demo" :data-layout="layoutMode" :data-input="inputMode" :data-runtime="runtime">
+  <div class="p2-demo" :data-layout="layoutMode" :data-input="inputMode" :data-runtime="runtime">
     <div class="p2-demo-inner">
       <RouterLink class="p2-demo-back" to="/">← 返回工作区</RouterLink>
       <header>
@@ -72,7 +72,7 @@ async function loadLargeDocument() {
         </ol>
       </section>
     </div>
-  </main>
+  </div>
 </template>
 
 <style scoped>

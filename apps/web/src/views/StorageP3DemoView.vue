@@ -109,7 +109,7 @@ onUnmounted(() => unsubscribeDiagnostics?.())
 </script>
 
 <template>
-  <main class="p3-demo">
+  <div class="p3-demo">
     <RouterLink to="/">← 返回工作区</RouterLink>
     <h1>P3 本地优先存储</h1>
     <p>Adapter: <strong>{{ adapter }}</strong> · Offline: <strong>{{ offline }}</strong></p>
@@ -152,7 +152,7 @@ onUnmounted(() => unsubscribeDiagnostics?.())
     <section><h2>Blocks by page</h2><pre>{{ JSON.stringify(blocks, null, 2) }}</pre></section>
     <section><h2>Pending / failed operations ({{ pending.length }})</h2><pre>{{ JSON.stringify(pending, null, 2) }}</pre></section>
     <section><h2>Fake transport sent IDs ({{ sent.length }})</h2><pre>{{ sent.join('\n') }}</pre></section>
-  </main>
+  </div>
 </template>
 
 <style scoped>
