@@ -1,12 +1,13 @@
-type ZoomEnvironment = Pick<ImportMetaEnv, 'VITE_DISABLE_DOUBLE_TAP_ZOOM' | 'VITE_DISABLE_PINCH_ZOOM'>
+type ZoomEnvironment = Pick<ImportMetaEnv, 'VITE_ALLOW_PAGE_ZOOM'>
 
 const originalViewportContent = new WeakMap<HTMLMetaElement, string>()
 
 /** Applies Web-only touch preferences before the app mounts. */
 export function applyWebRuntimePreferences(env: ZoomEnvironment = import.meta.env): void {
+  const allowPageZoom = env.VITE_ALLOW_PAGE_ZOOM !== 'false'
   document.documentElement.classList.toggle(
-    'eotion-disable-double-tap-zoom',
-    env.VITE_DISABLE_DOUBLE_TAP_ZOOM === 'true',
+    'eotion-page-zoom-disabled',
+    !allowPageZoom,
   )
 
   const viewport = document.querySelector<HTMLMetaElement>('meta[name="viewport"]')
@@ -17,7 +18,5 @@ export function applyWebRuntimePreferences(env: ZoomEnvironment = import.meta.en
     original = viewport.content
     originalViewportContent.set(viewport, original)
   }
-  viewport.content = env.VITE_DISABLE_PINCH_ZOOM === 'true'
-    ? `${original}, maximum-scale=1.0, user-scalable=no`
-    : original
+  viewport.content = allowPageZoom ? original : `${original}, maximum-scale=1.0, user-scalable=no`
 }

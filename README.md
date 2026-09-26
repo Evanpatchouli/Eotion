@@ -43,14 +43,13 @@ pnpm dev:web
 
 Open `http://localhost:5173`.
 
-Optional Web zoom preferences are listed in `apps/web/.env.example`:
+The Web page zoom preference is listed in `apps/web/.env.example`:
 
 ```env
-VITE_DISABLE_DOUBLE_TAP_ZOOM=false
-VITE_DISABLE_PINCH_ZOOM=false
+VITE_ALLOW_PAGE_ZOOM=true
 ```
 
-Set `VITE_DISABLE_DOUBLE_TAP_ZOOM=true` to prevent rapid taps from triggering double-tap zoom while keeping normal taps, scrolling, and pinch zoom. Set `VITE_DISABLE_PINCH_ZOOM=true` to request that the viewport disable whole-page pinch zoom. The switches are independent and default to `false`; restart the Web dev server after changing them. Disabling pinch zoom reduces page zoom accessibility, so leave it `false` unless a device test requires otherwise. Some browsers or WebViews may override viewport zoom limits for accessibility; verify the result on the target device.
+Page zoom is allowed by default, including when the variable is unset. Set `VITE_ALLOW_PAGE_ZOOM=false` to prevent page-level double-tap and pinch zoom while retaining normal taps, long presses, and single-finger scrolling. This applies `touch-action: pan-x pan-y` to the Web app's scroll container and adds viewport limits. Restart the Web dev server after changing the variable. Disabling page zoom reduces accessibility; some browsers or WebViews may override viewport limits, so verify the result on the target device.
 
 ### Electron desktop
 

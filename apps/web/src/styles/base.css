@@ -14,7 +14,6 @@
 
 * { box-sizing: border-box; }
 html, body, #app { width: 100%; min-width: 0; height: 100%; margin: 0; }
-html.eotion-disable-double-tap-zoom { touch-action: manipulation; }
 button, input, textarea { font: inherit; }
 button { color: inherit; }
 
@@ -27,6 +26,7 @@ button { color: inherit; }
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   background: #fff;
 }
+html.eotion-page-zoom-disabled .app-viewport { touch-action: pan-x pan-y; }
 .app-viewport[data-route="mobile-p1"] { background: #f7f7f4; }
 .app-viewport[data-route="mobile-p1"]::before {
   position: absolute; top: 0; right: 0; left: 0; height: var(--safe-top);

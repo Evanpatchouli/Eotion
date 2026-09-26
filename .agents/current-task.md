@@ -1,22 +1,22 @@
-# Current Task — Web zoom preferences
+# Current Task — Unified Web page zoom preference
 
 ## Goal
 
-为 Web bootstrap 增加独立的 double-tap / pinch zoom 环境开关；默认 false，保持当前 viewport 和 Safe Area。仅 Web 层变更。
+将两个 Web 缩放环境开关收敛为 `VITE_ALLOW_PAGE_ZOOM`；默认允许缩放，值为 `false` 时在实际滚动容器上禁止页面缩放并保留点击、长按和滚动语义。
 
 ## Work units
 
-| ID | 模式 | 验收 | 状态 |
+| ID | 模式 | 边界与验收 | 状态 |
 | --- | --- | --- | --- |
-| W1 | investigate | 已确认入口为 `apps/web/src/main.ts`，全局样式在 `base.css`，viewport 在 `index.html`，已有 `safe-area.spec.ts`。 | 完成 |
-| W2 | decide | bootstrap 读取两个 Vite env；double-tap 用 root class + `touch-action: manipulation`；pinch 修改现有 viewport 并保持初始化幂等。 | 完成 |
-| W3 | execute | 最小代码、`.env.example`、README 说明及四种组合的 Playwright 覆盖。 | 完成 |
-| W4 | verify/review | Web typecheck/build、Mobile build、storage 与 Safe Area Playwright、diff/编码复核后单独提交。 | 验证与复核完成，待提交 |
+| W1 | investigate | 已确认旧开关只在 Web bootstrap、CSS、env 示例/类型、README、zoom Playwright 中使用。 | 完成 |
+| W2 | decide | 精确比较字符串 `false`；root class 标识状态，`.app-viewport` 使用 `pan-x pan-y`；原 viewport 缓存支持 false→true→false。 | 完成 |
+| W3 | execute | 删除旧配置引用，更新实现、文档与测试。 | 完成 |
+| W4 | verify/review | Web typecheck/build、Mobile build、storage、zoom、Safe Area 测试及 diff/编码复核后提交。 | 完成；独立复核无 blocker |
 
 ## Constraints
 
-不改 Lynx Shell、bridge、LocalStore、RPC、oplog/reconnect、真机测试状态；保留已有无关工作区改动。
+不改 Mobile bridge、P3 diagnostics、LocalStore、RPC、oplog/reconnect、真机 #5～#10 状态及无关文件。
 
 ## Evidence
 
-Web typecheck/build、Mobile build、Web storage Playwright 5/5、zoom preferences + Safe Area Playwright 8/8 通过。实际双开关 true 的 Web 服务在手机尺寸 Chrome 中确认单一 viewport meta、CSS class / touch-action、菜单点击与无页面错误；复用两项均为 true 的开发服务再次运行 zoom Playwright 6/6 通过。目标设备的手势效果仍需真机验证。
+Storage typecheck/单测 5/5、Web typecheck/build、Mobile build、Web storage Playwright 5/5、zoom + Safe Area Playwright 7/7 通过。`VITE_ALLOW_PAGE_ZOOM=false` 的真实 Web dev server + 手机尺寸 Chrome 检查 class、滚动容器 touch-action、单一 viewport、安全区参数、普通菜单点击与无页面错误。双击和双指手势需真机验证。
