@@ -1,22 +1,22 @@
-# Current Task — P3 真机 ID 生成兼容性
+# Current Task — P3 Mobile Bridge Diagnostics
 
 ## Goal
 
-修复缺少 `crypto.randomUUID` 的 WebView 中 P3 本地存储及 Mobile bridge ID 生成，保持 operation retry 的持久 ID。
+在 native storage 仍返回 unavailable 时，让开发调试页能按真实 bridge 请求生命周期验证真机 #5–#10；不改生产存储语义。
 
 ## Work units
 
-| ID | 模式与验收边界 | 状态 |
-| --- | --- | --- |
-| W1 | investigate：检索全仓 randomUUID 用法、现有 ID 与 retry 语义 | 完成 |
-| W2 | decide：storage 包导出统一 nanoid helper；现有 demo 固定 ID 继续服务更新/重开验证 | 完成 |
-| W3 | execute：Web、Desktop、Mobile bridge 调用 helper；补缺失 randomUUID 的 Page/Block 测试 | 完成 |
-| W4 | verify/review：Web/Mobile typecheck、build、storage tests、diff 复核 | 完成；独立 review 无 blocker |
+| ID | 模式 | 边界与验收 | 状态 |
+| --- | --- | --- | --- |
+| W1 | investigate | 确认 `MobileBridgeLocalStore` 是请求收发集中点；业务存储结果不能证明 bridge 生命周期。 | 完成 |
+| W2 | decide | Web Mobile adapter 内提供仅开发环境记录的 snapshot/observer；按 ID 和方法识别响应；timeout、unknown、duplicate 单独计数。 | 完成 |
+| W3 | execute | Adapter 记录、P3 页面展示与清空、自动化测试、真机清单与 P3 文档。 | 完成 |
+| W4 | verify/review | storage/web/mobile 相关验证、Playwright、diff 与独立复核。 | 完成；独立复核发现的方法串包问题已修复，复核无 blocker |
 
 ## Constraints
 
-不使用 Math.random fallback；operation retry 沿用持久记录的 ID；不改 Page/Block upsert 契约或无关功能。
+未修改 RPC contract、LocalStore、operation retry、native storage 或生产调试路由；保留真机清单原有用户排版改动，#5–#10 仍未通过。
 
 ## Evidence
 
-Storage、Web、Desktop typecheck；Mobile `tsc -b`；Web、Mobile、Desktop build；Storage 单元测试 5/5、Web storage Playwright 4/4（含 Electron）、Desktop 单元测试 2/2 通过。缺失 `crypto.randomUUID` 的浏览器回归用例覆盖 Page/Block 创建、重开持久化及 operation ID 重试稳定性。全仓源码无 `randomUUID()` 调用，独立 review 无 blocker。
+Storage typecheck 和 5/5 单元测试、Web typecheck/build、Mobile build、Web storage Playwright 5/5（含 IndexedDB、Electron SQLite、Mobile bridge）通过。Playwright 覆盖 unavailable、并发逆序响应、unknown 不影响 pending、duplicate 不重复 resolve、错方法响应、timeout、缺少 crypto.randomUUID 和调试页计数/清空。

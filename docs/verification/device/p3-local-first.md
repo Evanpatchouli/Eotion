@@ -28,12 +28,14 @@ Safe Area 的已验证结论记录在 [P3 本地优先基础](../../p3-local-fir
 | 2 | ✅ | WebView → Lynx 消息发送 | 在 P3 页面触发 storage 操作 | Lynx Shell 实际收到并处理 storage request；否则不会返回 native storage 状态。 |
 | 3 | ✅ | Lynx → WebView 响应 | 触发 storage 操作 | Web 收到 Shell response，并在页面展示返回结果，不是 timeout。 |
 | 4 | ✅ | 当前 unavailable 行为 | 尝试创建 / 更新页面 | 明确返回 `unavailable: Mobile local storage is unavailable: this Lynx shell has no registered native storage module.`；无 IndexedDB fallback、白屏或卡死。 |
-| 5 | ⬜ | 连续请求稳定性 | 连续触发读取 / 写入 10 次左右 | 每个 request 都有对应 response；无永久 pending、串包、重复回调或崩溃。 |
-| 6 | ⬜ | WebView reload | 刷新 / 重载 WebView 后再次操作 | runtime 与 bridge 能重新初始化，仍可正常收到 response。 |
-| 7 | ⬜ | App 前后台恢复 | 切到后台 10–20 秒，再返回并操作 | bridge 继续可用，无需重启 App，无重复 listener。 |
-| 8 | ⬜ | App 完全重启 | 杀掉 App 进程后重新打开 P3 页面 | runtime 判断与 bridge 能重新初始化并继续工作。 |
-| 9 | ⬜ | 页面 / WebView 重建 | 触发页面重建、方向切换或宿主重新创建 WebView 后操作 | bridge 不失效；一次 request 只产生一次对应 response。 |
-| 10 | ⬜ | 异常响应体验 | 在没有 native storage 的当前状态下重复操作 | 明确展示 unavailable；App / WebView 不崩溃、不白屏、不卡死。 |
+| 5 | ⬜ | 连续请求稳定性 | 等待初次读取结束，清空 diagnostics，连续触发读取 / 写入约 10 次 | `Requests sent` 等于 `Responses received`；`Pending`、`Timeouts`、`Unknown responses`、`Duplicate responses`、`Method mismatches` 均为 0；最近记录逐项显示对应方法与 `unavailable`。 |
+| 6 | ⬜ | WebView reload | 刷新 / 重载 WebView 后再次操作 | diagnostics 重新计数；新请求仍有对应 response，`Pending`、`Timeouts`、`Unknown responses`、`Duplicate responses` 均为 0。 |
+| 7 | ⬜ | App 前后台恢复 | 切到后台 10–20 秒，再返回并操作 | 返回后清空 diagnostics 并触发新请求；计数匹配，异常计数为 0，无重复 listener。 |
+| 8 | ⬜ | App 完全重启 | 杀掉 App 进程后重新打开 P3 页面 | runtime 判断与 bridge 重新初始化；新请求计数匹配且异常计数为 0。 |
+| 9 | ⬜ | 页面 / WebView 重建 | 触发页面重建、方向切换或宿主重新创建 WebView 后操作 | 重建后新请求计数匹配，`Pending` 与异常计数为 0；一次 request 只产生一次对应 response。 |
+| 10 | ⬜ | 异常响应体验 | 在没有 native storage 的当前状态下重复操作 | 最近记录展示 `unavailable`，`Responses received` 持续增长，`Timeouts` 为 0；App / WebView 不崩溃、不白屏、不卡死。 |
+
+`Bridge diagnostics` 只在开发版 Mobile typed bridge 页面显示，数据仅保存在当前 WebView 内存中。`Responses received` 包括正常匹配、unknown 和 duplicate 响应；相同 ID 但方法不符会另外计入 `Method mismatches` 并标注在最近记录中。验证 #5 时还需确认这三项均为 0。清空按钮仅在 `Pending = 0` 时可用。重新加载或重建 WebView 后计数重新开始，不用于验证 Page / Block / oplog 持久化。#5–#10 仍待真机按上述步骤重测。
 
 ## B. 原生存储实现后执行：CRUD、持久化与 oplog
 

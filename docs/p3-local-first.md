@@ -43,7 +43,7 @@ pnpm --filter @eotion/web build
 pnpm --filter @eotion/mobile build
 ```
 
-Playwright 测试真实 Chrome 中的 IndexedDB CRUD、重开持久化、oplog 顺序、失败事务、offline/reconnect/retry、重复并发 reconnect、跨实例状态更新与 UTF-8 BINARY 排序；并启动真实 Electron 窗口，经 typed IPC 写入 SQLite，检查 reload 和应用重启后的内容及 pending 队列。开发页可手工操作写入、读取、删除、reload、离线/重连与 adapter 标识。
+Playwright 测试真实 Chrome 中的 IndexedDB CRUD、重开持久化、oplog 顺序、失败事务、offline/reconnect/retry、重复并发 reconnect、跨实例状态更新与 UTF-8 BINARY 排序；并启动真实 Electron 窗口，经 typed IPC 写入 SQLite，检查 reload 和应用重启后的内容及 pending 队列。开发页可手工操作写入、读取、删除、reload、离线/重连与 adapter 标识。Mobile typed bridge 时，开发页还从 `MobileBridgeLocalStore` 的内存 diagnostics 显示请求、响应、pending、timeout、unknown/duplicate response、方法不匹配计数及最近请求；`unavailable` 计作已收到响应。该能力不属于 `LocalStore` 或 RPC contract，生产构建不展示调试页。真机 #5–#10 的当前状态仍以清单为准。
 
 ### Safe Area 真机验证
 

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { BlockRecord, PageSummary } from '@eotion/domain'
 import { reconnectPending, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 import { createLocalStore } from '../storage/createLocalStore'
+import { MobileBridgeLocalStore, type MobileBridgeDiagnostics } from '../storage/mobileBridgeStore'
 
 const pageId = 'p3-demo-page'
 const blockId = 'p3-demo-block'
@@ -18,6 +19,13 @@ const blocks = ref<BlockRecord[]>([])
 const pending = ref<StorageOperation[]>([])
 const sent = ref<string[]>([])
 const message = ref('')
+const bridgeDiagnostics = ref<MobileBridgeDiagnostics>()
+let bridgeStore: MobileBridgeLocalStore | undefined
+let unsubscribeDiagnostics: (() => void) | undefined
+
+function clearBridgeDiagnostics() {
+  bridgeStore?.clearDiagnostics()
+}
 
 async function refresh() {
   if (!store.value) return
@@ -48,6 +56,12 @@ function saveBlock() {
   }))
 }
 
+function readAgain() {
+  void refresh().catch((error: unknown) => {
+    message.value = error instanceof Error ? error.message : String(error)
+  })
+}
+
 function reconnect() {
   void run(async (local) => {
     const transport = {
@@ -73,6 +87,12 @@ onMounted(async () => {
     const selected = await createLocalStore()
     adapter.value = selected.adapter
     store.value = selected.store
+    if (selected.store instanceof MobileBridgeLocalStore) {
+      bridgeStore = selected.store
+      unsubscribeDiagnostics = bridgeStore.subscribeDiagnostics((snapshot) => {
+        bridgeDiagnostics.value = snapshot
+      })
+    }
   } catch (error) {
     adapter.value = 'unavailable'
     message.value = error instanceof Error ? error.message : String(error)
@@ -84,6 +104,8 @@ onMounted(async () => {
     message.value = error instanceof Error ? error.message : String(error)
   }
 })
+
+onUnmounted(() => unsubscribeDiagnostics?.())
 </script>
 
 <template>
@@ -101,10 +123,31 @@ onMounted(async () => {
       <button @click="run((local) => local.deleteBlock(blockId))">删除区块</button>
       <label><input v-model="offline" type="checkbox" /> Offline</label>
       <button @click="reconnect">Reconnect（并发两次）</button>
-      <button @click="refresh">重新读取</button>
+      <button @click="readAgain">重新读取</button>
       <button @click="reloadPage">Reload</button>
     </div>
     <p role="status">{{ message }}</p>
+    <section v-if="bridgeDiagnostics" aria-label="Bridge diagnostics">
+      <h2>Bridge diagnostics</h2>
+      <button :disabled="bridgeDiagnostics.pending > 0" @click="clearBridgeDiagnostics">清空 diagnostics</button>
+      <dl class="bridge-counts">
+        <dt>Requests sent</dt><dd>{{ bridgeDiagnostics.requestsSent }}</dd>
+        <dt>Responses received</dt><dd>{{ bridgeDiagnostics.responsesReceived }}</dd>
+        <dt>Pending</dt><dd>{{ bridgeDiagnostics.pending }}</dd>
+        <dt>Timeouts</dt><dd>{{ bridgeDiagnostics.timeouts }}</dd>
+        <dt>Unknown responses</dt><dd>{{ bridgeDiagnostics.unknownResponses }}</dd>
+        <dt>Duplicate responses</dt><dd>{{ bridgeDiagnostics.duplicateResponses }}</dd>
+        <dt>Method mismatches</dt><dd>{{ bridgeDiagnostics.methodMismatches }}</dd>
+      </dl>
+      <p>Last request: <span v-if="bridgeDiagnostics.lastRequest">id={{ bridgeDiagnostics.lastRequest.id }} · method={{ bridgeDiagnostics.lastRequest.method }} · sentAt={{ new Date(bridgeDiagnostics.lastRequest.sentAt).toLocaleString() }}</span><span v-else>—</span></p>
+      <p>Last response: <span v-if="bridgeDiagnostics.lastResponse">id={{ bridgeDiagnostics.lastResponse.id }} · method={{ bridgeDiagnostics.lastResponse.method }} · status={{ bridgeDiagnostics.lastResponse.status }} · latencyMs={{ bridgeDiagnostics.lastResponse.latencyMs ?? '—' }}</span><span v-else>—</span></p>
+      <h3>Recent requests</h3>
+      <ol class="bridge-events">
+        <li v-for="event in bridgeDiagnostics.recentEvents" :key="`${event.sequence}-${event.id}`">
+          #{{ event.sequence }} {{ event.method }} → {{ event.status }} {{ event.latencyMs === undefined ? '' : `${event.latencyMs} ms` }} <small>{{ event.id }}</small>
+        </li>
+      </ol>
+    </section>
     <section><h2>Pages</h2><pre>{{ JSON.stringify(pages, null, 2) }}</pre></section>
     <section><h2>Blocks by page</h2><pre>{{ JSON.stringify(blocks, null, 2) }}</pre></section>
     <section><h2>Pending / failed operations ({{ pending.length }})</h2><pre>{{ JSON.stringify(pending, null, 2) }}</pre></section>
@@ -118,4 +161,8 @@ onMounted(async () => {
 .p3-controls label { display: flex; align-items: center; gap: 8px; }
 button, input { padding: 8px; font: inherit; }
 pre { max-height: 240px; overflow: auto; padding: 12px; background: #f5f5f5; }
+.bridge-counts { display: grid; grid-template-columns: max-content auto; gap: 4px 16px; }
+.bridge-counts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.bridge-events { padding-left: 24px; }
+.bridge-events li { overflow-wrap: anywhere; }
 </style>
