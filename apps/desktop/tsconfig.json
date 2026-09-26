@@ -3,6 +3,7 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
     "types": ["node", "electron"],
     "lib": ["ES2022"],
     "noEmit": true

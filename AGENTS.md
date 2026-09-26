@@ -33,7 +33,7 @@
 - Web 应用负责 Desktop / Tablet / Mobile 三种布局与交互模式；不要拆成三套前端项目。
 - 服务端从 NestJS + Fastify 的**模块化单体**开始，不在没有明确需求前引入微服务。
 - MongoDB 是服务端主数据库；Aliyun OSS 保存二进制资源，MongoDB 保存元数据。
-- Web 本地持久化后续使用 IndexedDB；Desktop / Mobile 使用 SQLite 或平台本地存储适配器。
+- Web 与 Mobile WebView 共用 IndexedDB 本地存储适配器；Electron 通过主进程使用 SQLite。
 - Redis、Kafka 属于后续扩展能力，不是 v0.1 硬依赖。
 - 编辑器统一使用 Tiptap 3；ProseMirror 只作为其底层引擎，在 Tiptap 抽象不足时通过 `@tiptap/pm/*` 按需使用。
 - 不把 ProseMirror 作为第二套编辑器框架，也不要无明确、已验证理由直接添加 `prosemirror-*` 依赖。

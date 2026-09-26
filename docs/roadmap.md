@@ -42,9 +42,9 @@
 ## P3 - 本地优先基础
 
 - 在 `packages/` 中定义存储接口。
-- Web IndexedDB 适配器。
+- Web IndexedDB 适配器；Mobile WebView 与 Web 共用同一个 adapter，并进行目标真机持久性验收。
 - Electron SQLite 适配器，通过主进程/worker + 预加载 IPC。
-- 在 HarmonyOS 上验证移动端存储桥接。
+- Mobile WebView 保持稳定 origin/storage partition；`mobile-webview` runtime/UI marker 不选择存储 adapter。origin 从远程切到 bundled/local 时重新评估数据迁移。
 - 操作日志和重连语义。
 
 ## P4 - 服务器领域

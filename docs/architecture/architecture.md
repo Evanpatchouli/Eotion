@@ -81,11 +81,11 @@ Client edit
 
 P3 已实现的本地存储基础详见 [P3 本地优先基础](../p3-local-first.md)。当前各端状态：
 
-- `LocalStore` 与 Mobile storage bridge 协议同属 `@eotion/storage`；通用 API/P1 协议留在 `@eotion/contracts`，后者不依赖本地存储。
-- Web：IndexedDB，已实现。
+- `LocalStore` 属于 `@eotion/storage`；历史 Mobile storage bridge PoC 协议也曾在该包中定义。通用 API/P1 协议留在 `@eotion/contracts`，后者不依赖本地存储。
+- Web 与 Mobile WebView：共用 `apps/web` 的同一个 IndexedDB adapter，已实现；`eotionRuntime=mobile-webview` 仅用于 runtime/UI 识别，不影响 storage adapter 选择。Mobile WebView 的真机持久性待验证。
 - Electron：SQLite，位于 Electron 主进程之后，通过类型化预加载 IPC 访问，已实现。
-- Android/iOS：平台原生持久化尚未实现。
-- HarmonyOS：typed WebView bridge 已定义，原生存储宿主模块尚未实现，manual verification required。
+
+Mobile WebView 的 IndexedDB 持久性依赖稳定的 origin 和 storage partition；query/hash 不应造成分区变化，reload、升级和应用重启不能主动清除站点数据。远程 origin 改为 bundled/local origin，或 origin / storage partition 变化时，需重新评估迁移并重新验证。
 
 P3 reconnect 依赖持久 oplog，以稳定 operation id 至少一次投递；同一 JS realm 中同一 store 对象的并发调用会合并，但跨实例和跨 renderer 不互斥。P4 的 sync transport/server 必须按 operation id 幂等。
 

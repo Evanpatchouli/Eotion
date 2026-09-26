@@ -13,7 +13,7 @@ Eotion is a **web-first Notion-inspired workspace**. This repository is intentio
 - Server database: MongoDB
 - Future infrastructure: Redis + Kafka
 - Object storage: Aliyun OSS
-- Local data: IndexedDB on Web; SQLite/native adapters on desktop/mobile later
+- Local data: shared IndexedDB adapter for Web and Mobile WebView; SQLite through Electron main process
 - Workspace: pnpm monorepo
 - Language: TypeScript
 
@@ -117,7 +117,7 @@ docs/
 
 ## What is intentionally NOT implemented yet
 
-This is a run-first scaffold, not the Notion clone itself. A development-only Tiptap 3 editor PoC now exists; product editor integration, Yjs, MongoDB schemas, auth, the MCP service, SQLite, IndexedDB, OSS upload, Redis and Kafka remain for later stages. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
+This is a run-first scaffold, not the Notion clone itself. A development-only Tiptap 3 editor PoC now exists; product editor integration, Yjs, MongoDB schemas, auth, the MCP service, OSS upload, Redis and Kafka remain for later stages. P3 local storage currently uses IndexedDB for Web and Mobile WebView, and SQLite through Electron's main process; Mobile WebView device persistence remains to be verified. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
 
 The first high-risk PoC after bootstrapping is:
 
