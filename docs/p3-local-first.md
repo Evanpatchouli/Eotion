@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | Web | IndexedDB `pages`、`blocks`、`operations`、`meta`；Page 和 Block 是本地领域记录 | 已实现并在 Chrome 真实运行 |
 | Electron | main process `node:sqlite`，userData 下 `eotion-local.sqlite`；preload 仅暴露固定 `LocalStore` 方法，IPC 拒绝非主 frame | 已实现并在 Electron 窗口真实运行；`contextIsolation: true`、`nodeIntegration: false`、`sandbox: true` |
-| Mobile WebView | 与普通 Web 共用 IndexedDB adapter；`eotionRuntime=mobile-webview` 只标记运行时/UI，不影响存储选择 | adapter 已实现；指定真机上的 IndexedDB 持久性 **manual verification required** |
+| Mobile WebView | 与普通 Web 共用 IndexedDB adapter；`eotionRuntime=mobile-webview` 只标记运行时/UI，不影响存储选择 | 已实现；2026-09-27 在 Huawei nova 14 / Android Lynx Explorer via 卓易通完成 15/15 项真机验收 |
 
 IndexedDB 依赖 WebView 使用稳定的 origin 和 storage partition。query/hash 变化不应形成新的存储分区；reload、应用升级及应用/宿主重启不得主动清除站点数据。若部署从远程 Web origin 改为 bundled/local origin，或 origin / storage partition 发生变化，必须重新评估数据迁移和持久性，不可假设原数据自动可见。
 
@@ -47,7 +47,7 @@ pnpm --filter @eotion/web build
 pnpm --filter @eotion/mobile build
 ```
 
-Playwright 测试真实 Chrome 中的 IndexedDB CRUD、重开持久化、oplog 顺序、失败事务、offline/reconnect/retry、重复并发 reconnect、跨实例状态更新与 UTF-8 BINARY 排序；并启动真实 Electron 窗口，经 typed IPC 写入 SQLite，检查 reload 和应用重启后的内容及 pending 队列。开发页可手工操作写入、读取、删除、reload、离线/重连与 adapter 标识。Mobile WebView 真机上的 origin/storage partition 稳定性、reload/重启持久性和当前 P3 项目尚待按清单验证。历史 typed bridge PoC 的 diagnostics 仅记录 bridge 请求响应，不属于 `LocalStore` 或 RPC contract，也不是当前 P3 IndexedDB 验收依据；生产构建不展示调试页。
+Playwright 测试真实 Chrome 中的 IndexedDB CRUD、重开持久化、oplog 顺序、失败事务、offline/reconnect/retry、重复并发 reconnect、跨实例状态更新与 UTF-8 BINARY 排序；并启动真实 Electron 窗口，经 typed IPC 写入 SQLite，检查 reload 和应用重启后的内容及 pending 队列。开发页可手工操作写入、读取、删除、reload、离线/重连与 adapter 标识。2026-09-27，Mobile WebView 的 P3 IndexedDB 真机清单已在 Huawei nova 14 / Android Lynx Explorer via 卓易通完成 15/15 项并全部通过，包括 origin/storage partition 稳定性、reload/进程重启持久性、oplog/reconnect 等项目；该结果只覆盖该宿主/设备，不自动代表原生 iOS 或原生 HarmonyOS Lynx 宿主。历史 typed bridge PoC 的 diagnostics 仅记录 bridge 请求响应，不属于 `LocalStore` 或 RPC contract，也不是当前 P3 IndexedDB 验收依据；生产构建不展示调试页。
 
 ### Safe Area 真机验证
 
@@ -65,4 +65,4 @@ Playwright 测试真实 Chrome 中的 IndexedDB CRUD、重开持久化、oplog �
   - 系统状态栏下拉后覆盖 WebView。
   - 该现象归于当前宿主未暴露/消费系统 inset，不据此判定 Eotion Web Safe Area 或原生 HarmonyOS 适配失败。
 
-Safe Area / 系统栏行为仍需在目标原生 Lynx/HarmonyOS 宿主人工验证。当前不声明 P3 IndexedDB 真机验收或这些 Safe Area 项目通过。
+Safe Area / 系统栏行为仍需在目标原生 Lynx/HarmonyOS 宿主人工验证。P3 IndexedDB 真机验收已在 Huawei nova 14 / Android Lynx Explorer via 卓易通完成 15/15 并通过；该结果与 Safe Area / 系统栏验收相互独立。
