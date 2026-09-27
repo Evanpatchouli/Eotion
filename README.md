@@ -12,7 +12,7 @@ Eotion is a **web-first Notion-inspired workspace**. This repository is intentio
 - Agent integration: MCP service planned as an API adapter after authentication and core workspace/page APIs are in place
 - Server database: MongoDB
 - Future infrastructure: Redis + Kafka
-- Object storage: Aliyun OSS
+- Object storage: independent `ali-oss-server` service, consumed server-side through its SDK and backed by Aliyun OSS
 - Local data: shared IndexedDB adapter for Web and Mobile WebView; SQLite through Electron main process
 - Workspace: pnpm monorepo
 - Language: TypeScript
@@ -117,7 +117,7 @@ docs/
 
 ## What is intentionally NOT implemented yet
 
-This is a run-first scaffold, not the Notion clone itself. A development-only Tiptap 3 editor PoC now exists; product editor integration, Yjs, MongoDB schemas, auth, the MCP service, OSS upload, Redis and Kafka remain for later stages. P3 local storage currently uses IndexedDB for Web and Mobile WebView, and SQLite through Electron's main process; Mobile WebView device persistence remains to be verified. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
+This is a run-first scaffold, not the Notion clone itself. A development-only Tiptap 3 editor PoC now exists; product editor integration, Yjs, MongoDB schemas, auth, the MCP service, Eotion's server-side integration with `ali-oss-server`, Redis and Kafka remain for later stages. Eotion will not reimplement OSS signing or object-storage infrastructure: `apps/api` will use the `ali-oss-server` SDK with an Eotion-specific service URL, `clientId`, and `clientSecret`. P3 local storage uses IndexedDB for Web and Mobile WebView, and SQLite through Electron's main process; the current Mobile WebView P3 device checklist has passed 15/15 on the recorded Lynx Explorer test environment. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
 
 The first high-risk PoC after bootstrapping is:
 

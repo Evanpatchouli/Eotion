@@ -12,7 +12,7 @@ Eotion 是一个 **Web 优先、受 Notion 启发的​​工作区**。本仓�
 - Agent 集成：MCP 服务计划在认证和核心工作区/页面 API 就位后作为 API 适配器实现
 - 服务器数据库：MongoDB
 - 未来基础设施：Redis + Kafka
-- 对象存储：阿里云 OSS
+- 对象存储：独立 `ali-oss-server` 服务；Eotion 服务端通过其 SDK 调用，底层使用阿里云 OSS
 - 本地数据：Web 与 Mobile WebView 共用 IndexedDB adapter；Electron 通过主进程使用 SQLite
 - 工作区：pnpm monorepo
 - 语言：TypeScript
@@ -109,7 +109,7 @@ docs/
 
 ## 有意尚未实现的内容
 
-这是一个运行优先的脚手架，而不是 Notion 克隆本身。Tiptap 3 编辑器集成（ProseMirror 仅在 Tiptap 抽象不足时通过 `@tiptap/pm` 按需使用）、Yjs、MongoDB schema、认证、MCP 服务、OSS 上传、Redis 和 Kafka 都留待后续分阶段实现。P3 本地存储已实现：Web 与 Mobile WebView 共用 IndexedDB adapter，Electron 通过主进程使用 SQLite；Mobile WebView 真机持久性仍待验证。MCP 服务将通过 API 暴露权限范围受限的工作区能力；目前尚未实现。
+这是一个运行优先的脚手架，而不是 Notion 克隆本身。Tiptap 3 编辑器集成（ProseMirror 仅在 Tiptap 抽象不足时通过 `@tiptap/pm` 按需使用）、Yjs、MongoDB schema、认证、MCP 服务、Eotion 服务端接入 `ali-oss-server`、Redis 和 Kafka 都留待后续分阶段实现。Eotion 不重复实现 OSS 签名或对象存储基础设施；`apps/api` 将通过 `ali-oss-server` 提供的 SDK，使用 Eotion 专属的服务地址、`clientId` 和 `clientSecret` 连接本地或已部署的 `ali-oss-server`。P3 本地存储已实现：Web 与 Mobile WebView 共用 IndexedDB adapter，Electron 通过主进程使用 SQLite；当前记录的 Lynx Explorer 真机环境已完成 P3 15/15 验收。MCP 服务将通过 API 暴露权限范围受限的工作区能力；目前尚未实现。
 
 引导之后第一个高风险概念验证是：
 

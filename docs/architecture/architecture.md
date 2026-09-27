@@ -57,10 +57,20 @@ NestJS + Fastify
   search
   mcp (planned agent-facing adapter)
        |
-     MongoDB -------- Aliyun OSS
+     MongoDB
+       |
+  files module
+       |
+  ali-oss-server SDK
+       |
+  ali-oss-server
+       |
+   Aliyun OSS
 ```
 
 MCP 适配器将是同一应用能力的另一个接口，而不是一个独立服务，也不是绕过 API 授权的路径。其规划范围和安全边界见 [Agent 集成基线](agent-integration.md)。
+
+文件对象本身不由 Eotion 直接对接 Aliyun OSS。Eotion 的 `files` 模块负责文件元数据和业务权限，`apps/api` 通过 `ali-oss-server` 提供的 SDK 调用独立的 `ali-oss-server` 服务。开发环境连接本机运行的服务，部署环境连接已部署实例；两者都使用 Eotion 专属的 `clientId` / `clientSecret`。该凭据只保存在服务端，不暴露给 Web、Mobile WebView 或 Electron renderer。OSS 鉴权、上传、删除和对象路径隔离等基础能力由 `ali-oss-server` 负责，Eotion 不重复实现。
 
 Redis 是之后的缓存/在线状态/速率限制/分布式状态依赖。Kafka 是之后的事件骨干，用于索引、审计、通知和分析等异步工作负载。
 
@@ -82,7 +92,7 @@ Client edit
 P3 已实现的本地存储基础详见 [P3 本地优先基础](../p3-local-first.md)。当前各端状态：
 
 - `LocalStore` 属于 `@eotion/storage`；历史 Mobile storage bridge PoC 协议也曾在该包中定义。通用 API/P1 协议留在 `@eotion/contracts`，后者不依赖本地存储。
-- Web 与 Mobile WebView：共用 `apps/web` 的同一个 IndexedDB adapter，已实现；`eotionRuntime=mobile-webview` 仅用于 runtime/UI 识别，不影响 storage adapter 选择。Mobile WebView 的真机持久性待验证。
+- Web 与 Mobile WebView：共用 `apps/web` 的同一个 IndexedDB adapter，已实现；`eotionRuntime=mobile-webview` 仅用于 runtime/UI 识别，不影响 storage adapter 选择。2026-09-27 已在 Huawei nova 14 / Android Lynx Explorer via 卓易通完成 P3 IndexedDB 真机验收 15/15。
 - Electron：SQLite，位于 Electron 主进程之后，通过类型化预加载 IPC 访问，已实现。
 
 Mobile WebView 的 IndexedDB 持久性依赖稳定的 origin 和 storage partition；query/hash 不应造成分区变化，reload、升级和应用重启不能主动清除站点数据。远程 origin 改为 bundled/local origin，或 origin / storage partition 变化时，需重新评估迁移并重新验证。

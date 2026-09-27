@@ -51,8 +51,10 @@
 
 - 用于工作区/页面/区块/文件元数据的 MongoDB schema。
 - 认证/会话。
-- 类型化契约和 SDK。
-- 使用签名凭证/URL 的阿里云 OSS 直传。
+- 类型化契约和 Eotion SDK。
+- 文件元数据由 Eotion 管理；对象存储复用独立部署的 `ali-oss-server`，不在 Eotion 内重复实现 OSS 签名、上传或对象管理基础设施。
+- `apps/api` 通过 `ali-oss-server` 提供的 SDK 连接该服务；开发环境连接本机运行的 `ali-oss-server`，部署环境连接已部署服务。
+- 为 Eotion 配置专属的 `clientId` / `clientSecret` 和服务地址；密钥只存在于 Eotion 服务端配置中，不下发给 Web、Mobile WebView 或 Electron renderer。
 
 避免使用一个包含所有区块的巨型 Page 文档。
 
