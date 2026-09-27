@@ -26,6 +26,8 @@ export interface StorageOperation {
  * and next sequence survive store reopening. Reads return snapshots, not live data.
  */
 export interface LocalStore {
+  /** Resets all local P3 content, operations, and client metadata without emitting an operation. */
+  clearAllData(): Promise<void>
   getPage(id: string): Promise<PageSummary | undefined>
   listPages(): Promise<PageSummary[]>
   upsertPage(page: PageSummary): Promise<void>

@@ -169,3 +169,44 @@ test('mobile WebView runtime uses the shared IndexedDB store without storage bri
   await expect(page.getByRole('heading', { name: 'Pages' }).locator('..')).toContainText('p3-demo-page')
   await expect(page.getByRole('heading', { name: 'Blocks by page' }).locator('..')).toContainText('p3-demo-block')
 })
+
+test('P3 clear data removes persisted content and oplog and restarts sequencing', async ({ page }) => {
+  await page.goto('/#/__dev/storage-p3')
+  await page.getByRole('button', { name: '创建 / 更新页面' }).click()
+  await page.getByRole('button', { name: '创建 / 更新区块' }).click()
+  await expect(page.getByRole('heading', { name: 'Pending / failed operations (2)' })).toBeVisible()
+
+  await page.getByRole('button', { name: '清除数据' }).click()
+  await expect(page.getByRole('status')).toHaveText('数据已清除')
+  await expect(page.getByRole('heading', { name: 'Pages' }).locator('..')).not.toContainText('p3-demo-page')
+  await expect(page.getByRole('heading', { name: 'Blocks by page' }).locator('..')).not.toContainText('p3-demo-block')
+  await expect(page.getByRole('heading', { name: 'Pending / failed operations (0)' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Pending / failed operations (0)' })).toBeVisible()
+  await page.getByRole('button', { name: '创建 / 更新页面' }).click()
+  await expect(page.getByRole('heading', { name: 'Pending / failed operations (1)' }).locator('..')).toContainText('"sequence": 1')
+})
+
+test('P3 clear waits for an in-flight reconnect', async ({ page }) => {
+  await page.goto('/#/__dev/storage-p3')
+  await page.getByRole('button', { name: '创建 / 更新页面' }).click()
+  await page.getByRole('checkbox', { name: 'Offline' }).uncheck()
+  await page.evaluate(async () => {
+    const { IndexedDbLocalStore } = await import('/src/storage/indexedDbStore.ts')
+    const original = IndexedDbLocalStore.prototype.markOperationSynced
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => { release = resolve })
+    ;(window as typeof window & { releaseP3Reconnect?: () => void }).releaseP3Reconnect = release
+    IndexedDbLocalStore.prototype.markOperationSynced = async function (id) {
+      await gate
+      return original.call(this, id)
+    }
+  })
+  await page.getByRole('button', { name: 'Reconnect（并发两次）' }).click()
+  await expect(page.getByRole('button', { name: '清除数据' })).toBeDisabled()
+  await page.evaluate(() => (window as typeof window & { releaseP3Reconnect: () => void }).releaseP3Reconnect())
+  await expect(page.getByRole('button', { name: '清除数据' })).toBeEnabled()
+  await page.getByRole('button', { name: '清除数据' }).click()
+  await expect(page.getByRole('status')).toHaveText('数据已清除')
+  await expect(page.getByRole('heading', { name: 'Fake transport sent IDs (0)' })).toBeVisible()
+})

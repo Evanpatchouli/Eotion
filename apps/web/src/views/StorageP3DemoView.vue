@@ -19,6 +19,7 @@ const blocks = ref<BlockRecord[]>([])
 const pending = ref<StorageOperation[]>([])
 const sent = ref<string[]>([])
 const message = ref('')
+const busy = ref(false)
 const { runtime } = useRuntimeContext()
 const runtimeLabel = { web: 'Web', electron: 'Electron', 'mobile-webview': 'Mobile WebView' }
 
@@ -30,13 +31,16 @@ async function refresh() {
 }
 
 async function run(action: (local: LocalStore) => Promise<void | string>) {
-  if (!store.value) return
+  if (!store.value || busy.value) return
+  busy.value = true
   try {
     const detail = await action(store.value)
     await refresh()
     message.value = detail ?? '完成'
   } catch (error) {
     message.value = error instanceof Error ? error.message : String(error)
+  } finally {
+    busy.value = false
   }
 }
 
@@ -77,6 +81,14 @@ function reloadPage() {
   window.location.reload()
 }
 
+function clearData() {
+  void run(async (local) => {
+    await local.clearAllData()
+    sent.value = []
+    return '数据已清除'
+  })
+}
+
 onMounted(async () => {
   try {
     const selected = await createLocalStore()
@@ -102,7 +114,7 @@ onMounted(async () => {
     <h1>P3 本地优先存储</h1>
     <p>Runtime: <strong>{{ runtimeLabel[runtime] }}</strong> · Adapter: <strong>{{ adapter }}</strong> · Offline: <strong>{{ offline }}</strong></p>
     <p>创建页面及区块后刷新页面，检查内容和 pending operations 是否仍在。断线时 reconnect 会失败；恢复后重复点击只应发送剩余操作。</p>
-    <div class="p3-controls">
+    <fieldset class="p3-controls" :disabled="busy || !store">
       <label>页面标题 <input v-model="title" /></label>
       <button @click="savePage">创建 / 更新页面</button>
       <button @click="run((local) => local.deletePage(pageId))">删除页面及区块</button>
@@ -113,7 +125,8 @@ onMounted(async () => {
       <button @click="reconnect">Reconnect（并发两次）</button>
       <button @click="readAgain">重新读取</button>
       <button @click="reloadPage">Reload</button>
-    </div>
+      <button @click="clearData">清除数据</button>
+    </fieldset>
     <p role="status">{{ message }}</p>
     <section><h2>Pages</h2><pre>{{ JSON.stringify(pages, null, 2) }}</pre></section>
     <section><h2>Blocks by page</h2><pre>{{ JSON.stringify(blocks, null, 2) }}</pre></section>
@@ -124,7 +137,7 @@ onMounted(async () => {
 
 <style scoped>
 .p3-demo { max-width: 960px; margin: 0 auto; padding: 32px; font: 15px/1.5 system-ui, sans-serif; }
-.p3-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 24px 0; }
+.p3-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 24px 0; padding: 0; border: 0; }
 .p3-controls label { display: flex; align-items: center; gap: 8px; }
 button, input { padding: 8px; font: inherit; }
 pre { max-height: 240px; overflow: auto; padding: 12px; background: #f5f5f5; }

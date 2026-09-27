@@ -15,6 +15,7 @@ function registerStorageBridge(store: SqliteLocalStore): void {
   }
 
   handle('getPage', (id: string) => store.getPage(id))
+  handle('clearAllData', () => store.clearAllData())
   handle('listPages', () => store.listPages())
   handle('upsertPage', (page: Parameters<SqliteLocalStore['upsertPage']>[0]) => store.upsertPage(page))
   handle('deletePage', (id: string) => store.deletePage(id))

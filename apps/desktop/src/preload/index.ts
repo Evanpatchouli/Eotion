@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { LocalStore } from '@eotion/storage'
 
 const storage: LocalStore = {
+  clearAllData: () => ipcRenderer.invoke('eotion:storage:clearAllData'),
   getPage: (id) => ipcRenderer.invoke('eotion:storage:getPage', id),
   listPages: () => ipcRenderer.invoke('eotion:storage:listPages'),
   upsertPage: (page) => ipcRenderer.invoke('eotion:storage:upsertPage', page),

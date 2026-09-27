@@ -57,6 +57,19 @@ export class IndexedDbLocalStore implements LocalStore {
     this.db.close()
   }
 
+  async clearAllData(): Promise<void> {
+    const tx = this.db.transaction(['pages', 'blocks', 'operations', 'meta'], 'readwrite')
+    const done = completed(tx)
+    tx.objectStore('pages').clear()
+    tx.objectStore('blocks').clear()
+    tx.objectStore('operations').clear()
+    const meta = tx.objectStore('meta')
+    meta.clear()
+    meta.put(createLocalId(), 'clientId')
+    meta.put(0, 'sequence')
+    await done
+  }
+
   private async ensureIdentity(): Promise<void> {
     const tx = this.db.transaction('meta', 'readwrite')
     const done = completed(tx)

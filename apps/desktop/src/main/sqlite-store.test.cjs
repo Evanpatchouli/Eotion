@@ -66,3 +66,23 @@ test('failed content write rolls back its operation and sequence', async () => {
     store.close()
   }
 })
+
+test('clearAllData resets SQLite content, operations, and identity', async () => {
+  const store = new SqliteLocalStore(':memory:')
+  try {
+    const page = { id: 'p', title: 'Demo', updatedAt: '2026-01-01T00:00:00.000Z' }
+    await store.upsertPage(page)
+    await store.upsertBlock({ id: 'b', pageId: 'p', type: 'paragraph', orderKey: 'a', props: {}, createdAt: page.updatedAt, updatedAt: page.updatedAt })
+    const previousClientId = (await store.getPendingOperations())[0].clientId
+    await store.clearAllData()
+    assert.deepEqual(await store.listPages(), [])
+    assert.deepEqual(await store.listBlocksByPage('p'), [])
+    assert.deepEqual(await store.getPendingOperations(), [])
+    await store.upsertPage(page)
+    const [operation] = await store.getPendingOperations()
+    assert.equal(operation.sequence, 1)
+    assert.notEqual(operation.clientId, previousClientId)
+  } finally {
+    store.close()
+  }
+})

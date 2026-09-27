@@ -9,7 +9,7 @@ type OperationKind = StorageOperation['kind']
 /** SQLite lives only in Electron's main process. Each content change and its op are one transaction. */
 export class SqliteLocalStore implements LocalStore {
   private readonly database: DatabaseSync
-  private readonly clientId: string
+  private clientId: string
 
   constructor(path: string) {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true })
@@ -54,6 +54,15 @@ export class SqliteLocalStore implements LocalStore {
 
   close(): void {
     this.database.close()
+  }
+
+  async clearAllData(): Promise<void> {
+    const clientId = createLocalId()
+    this.transaction(() => {
+      this.database.exec('DELETE FROM blocks; DELETE FROM pages; DELETE FROM operations; DELETE FROM metadata;')
+      this.database.prepare("INSERT INTO metadata (key, value) VALUES ('client_id', ?)").run(clientId)
+    })
+    this.clientId = clientId
   }
 
   private transaction(action: () => void): void {

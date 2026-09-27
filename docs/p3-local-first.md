@@ -6,6 +6,8 @@
 
 业务层只依赖 `LocalStore`；`apps/web/src/storage/createLocalStore.ts` 是唯一平台选择点。普通 Web 和 Mobile WebView 共用同一个 IndexedDB adapter；Electron renderer 通过 typed preload IPC 调用 main process 内的 SQLite。Lynx 壳在 WebView URL 的 hash 前写入 `eotionRuntime=mobile-webview`，该标记只用于 runtime/UI 识别，不选择或改变存储 adapter。P3 开发验证页位于 `/#/__dev/storage-p3`，生产构建不注册路由。
 
+开发验证页的“清除数据”会重置当前 P3 LocalStore 的页面、区块、全部 oplog 及 client metadata，并清空本页 fake transport 发送记录；重置本身不生成 operation。此操作清除当前存储适配器中的全部 P3 数据，不影响其他站点数据。
+
 ## Adapter 边界与状态
 
 | 运行时 | 当前实现 | 状态 |

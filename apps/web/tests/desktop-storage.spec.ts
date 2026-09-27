@@ -30,6 +30,13 @@ test('Electron renderer uses SQLite through typed preload and survives reload', 
     await expect(reopened.getByText('Electron SQLite')).toBeVisible()
     await expect(reopened.getByRole('heading', { name: 'Pages' }).locator('..')).toContainText('p3-demo-page')
     await expect(reopened.getByRole('heading', { name: 'Pending / failed operations (2)' })).toBeVisible()
+    await reopened.getByRole('button', { name: '清除数据' }).click()
+    await expect(reopened.getByRole('status')).toHaveText('数据已清除')
+    await expect(reopened.getByRole('heading', { name: 'Pending / failed operations (0)' })).toBeVisible()
+    await reopened.reload()
+    await expect(reopened.getByRole('heading', { name: 'Pages' }).locator('..')).not.toContainText('p3-demo-page')
+    await expect(reopened.getByRole('heading', { name: 'Blocks by page' }).locator('..')).not.toContainText('p3-demo-block')
+    await expect(reopened.getByRole('heading', { name: 'Pending / failed operations (0)' })).toBeVisible()
   } finally {
     await app.close()
     rmSync(profile, { recursive: true, force: true })
