@@ -22,6 +22,7 @@ const message = ref('')
 const busy = ref(false)
 const { runtime } = useRuntimeContext()
 const runtimeLabel = { web: 'Web', electron: 'Electron', 'mobile-webview': 'Mobile WebView' }
+const currentUrl = new URL(window.location.href)
 
 async function refresh() {
   if (!store.value) return
@@ -81,6 +82,12 @@ function reloadPage() {
   window.location.reload()
 }
 
+function reloadWithChangedQuery() {
+  const url = new URL(window.location.href)
+  url.searchParams.set('p3QueryTest', Date.now().toString())
+  window.location.href = url.toString()
+}
+
 function clearData() {
   void run(async (local) => {
     await local.clearAllData()
@@ -113,6 +120,7 @@ onMounted(async () => {
     <RouterLink to="/">← 返回工作区</RouterLink>
     <h1>P3 本地优先存储</h1>
     <p>Runtime: <strong>{{ runtimeLabel[runtime] }}</strong> · Adapter: <strong>{{ adapter }}</strong> · Offline: <strong>{{ offline }}</strong></p>
+    <p class="p3-url-info">Origin: {{ currentUrl.origin }}<br />Query: {{ currentUrl.search }}<br />Hash: {{ currentUrl.hash }}</p>
     <p>创建页面及区块后刷新页面，检查内容和 pending operations 是否仍在。断线时 reconnect 会失败；恢复后重复点击只应发送剩余操作。</p>
     <fieldset class="p3-controls" :disabled="busy || !store">
       <label>页面标题 <input v-model="title" /></label>
@@ -125,6 +133,7 @@ onMounted(async () => {
       <button @click="reconnect">Reconnect（并发两次）</button>
       <button @click="readAgain">重新读取</button>
       <button @click="reloadPage">Reload</button>
+      <button @click="reloadWithChangedQuery">修改 Query 并 Reload</button>
       <button @click="clearData">清除数据</button>
     </fieldset>
     <p role="status">{{ message }}</p>
@@ -139,6 +148,7 @@ onMounted(async () => {
 .p3-demo { max-width: 960px; margin: 0 auto; padding: 32px; font: 15px/1.5 system-ui, sans-serif; }
 .p3-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 24px 0; padding: 0; border: 0; }
 .p3-controls label { display: flex; align-items: center; gap: 8px; }
+.p3-url-info { overflow-wrap: anywhere; }
 button, input { padding: 8px; font: inherit; }
 pre { max-height: 240px; overflow: auto; padding: 12px; background: #f5f5f5; }
 </style>

@@ -1,22 +1,21 @@
-# Current Task — P3 Mobile WebView IndexedDB
+# Current Task — P3 query reload helper
 
 ## Goal
 
-将 Mobile WebView 的 P3 LocalStore 直接接入 Web 共用的 IndexedDB adapter，移除失效的 storage 专用 Lynx bridge，并保留通用 ping/pong bridge。更新 P3 文档、真机清单与自动化覆盖，验证后提交并同步 master。
+在 P3 开发页验证 Lynx Explorer / Mobile WebView 中相同 origin 下修改 query 并真正 reload 后 IndexedDB 数据仍可读，不改变存储架构。
 
 ## Work units
 
 | ID | 模式 | 边界与验收 | 状态 |
 | --- | --- | --- | --- |
-| W1 | investigate/decide | 核对远程 master、storage 引用和 P3 现状，确定删除边界。 | 完成：master 与 origin/master 一致；旧 storage bridge 引用已定位。 |
-| W2 | execute | 平台选择、Mobile Shell、共享协议、P3 Demo 和测试调整。 | 完成 |
-| W3 | execute | 同步 P3 架构文档和真机清单，保留历史桥验证记录。 | 完成 |
-| W4 | verify/review | 相关测试/构建、diff/编码、独立复核、提交及推送。 | 验证与独立复核完成；无 blocker，真机项目待测 |
+| W1 | investigate/decide | 核对最新 master、P3 页面、router、LocalStore 与现有测试；决定 clientId/sequence 范围。 | 完成：LocalStore 无只读 metadata API，本轮不扩展契约。 |
+| W2 | execute | 增加按钮、URL 信息、#14 真机步骤与 Playwright 覆盖。 | 完成 |
+| W3 | verify/review | 执行 Web typecheck/build/storage 与布局相关测试，独立复核 diff。 | 完成；无 blocker。 |
 
 ## Constraints
 
-不触碰 `.codex`；保留 `eotionRuntime=mobile-webview`、P1 通用 WebView ↔ Lynx bridge、Safe Area、Workspace Layout、page zoom 与 Electron SQLite。P3 不实现移动原生存储或同步服务。真机 IndexedDB 生命周期验收须如实标记待测。
+保留已有真机清单排版改动；不改变 LocalStore、IndexedDB schema、Mobile WebView adapter、Electron SQLite 或其他阶段行为。
 
 ## Verification
 
-`@eotion/storage` test 5/5、typecheck；`@eotion/web` typecheck/build、storage Playwright 4/4；`@eotion/mobile` build；`@eotion/desktop` typecheck/test 2/2；Workspace Layout、Safe Area、zoom/route Playwright 10/10。目标真机 IndexedDB 持久性 15 项仍待验证。
+`@eotion/web` typecheck/build 通过，storage Playwright 7/7，Workspace Layout / Safe Area / zoom / route Playwright 10/10；`git diff --check` 与 UTF-8 无 BOM 检查通过。目标真机 #14 待执行。

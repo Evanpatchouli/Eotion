@@ -170,6 +170,52 @@ test('mobile WebView runtime uses the shared IndexedDB store without storage bri
   await expect(page.getByRole('heading', { name: 'Blocks by page' }).locator('..')).toContainText('p3-demo-block')
 })
 
+test('P3 query helper reloads with the same origin, query context, hash route, and IndexedDB data', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/?eotionRuntime=mobile-webview&existing=kept#/__dev/storage-p3')
+  await expect(page.getByText('IndexedDB')).toBeVisible()
+  await page.getByRole('button', { name: '创建 / 更新页面' }).click()
+  await page.getByRole('button', { name: '创建 / 更新区块' }).click()
+  await expect(page.getByRole('heading', { name: 'Pending / failed operations (2)' })).toBeVisible()
+
+  const before = new URL(page.url())
+  await Promise.all([
+    page.waitForEvent('load'),
+    page.getByRole('button', { name: '修改 Query 并 Reload' }).click(),
+  ])
+  const after = new URL(page.url())
+  expect(after.origin).toBe(before.origin)
+  expect(after.pathname).toBe(before.pathname)
+  expect(after.hash).toBe(before.hash)
+  expect(after.searchParams.get('eotionRuntime')).toBe('mobile-webview')
+  expect(after.searchParams.get('existing')).toBe('kept')
+  expect(after.searchParams.get('p3QueryTest')).toMatch(/^\d+$/)
+  await expect(page.locator('.p3-url-info')).toContainText(`Origin: ${before.origin}`)
+  await expect(page.locator('.p3-url-info')).toContainText(`Query: ${after.search}`)
+  await expect(page.locator('.p3-url-info')).toContainText(`Hash: ${before.hash}`)
+  await expect(page.getByText('Mobile WebView')).toBeVisible()
+  await expect(page.getByText('IndexedDB')).toBeVisible()
+  await page.getByRole('button', { name: '重新读取' }).click()
+  await expect(page.getByRole('heading', { name: 'Pages' }).locator('..')).toContainText('p3-demo-page')
+  await expect(page.getByRole('heading', { name: 'Blocks by page' }).locator('..')).toContainText('p3-demo-block')
+  await expect(page.getByRole('heading', { name: 'Pending / failed operations (2)' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+
+  await Promise.all([
+    page.waitForEvent('load'),
+    page.getByRole('button', { name: '修改 Query 并 Reload' }).click(),
+  ])
+  const updated = new URL(page.url())
+  expect(updated.origin).toBe(before.origin)
+  expect(updated.pathname).toBe(before.pathname)
+  expect(updated.hash).toBe(before.hash)
+  expect(updated.searchParams.get('eotionRuntime')).toBe('mobile-webview')
+  expect(updated.searchParams.get('existing')).toBe('kept')
+  expect(updated.searchParams.getAll('p3QueryTest')).toHaveLength(1)
+  expect(updated.searchParams.get('p3QueryTest')).not.toBe(after.searchParams.get('p3QueryTest'))
+  await expect(page.getByRole('heading', { name: 'Pending / failed operations (2)' })).toBeVisible()
+})
+
 test('P3 clear data removes persisted content and oplog and restarts sequencing', async ({ page }) => {
   await page.goto('/#/__dev/storage-p3')
   await page.getByRole('button', { name: '创建 / 更新页面' }).click()
@@ -190,14 +236,17 @@ test('P3 clear data removes persisted content and oplog and restarts sequencing'
 test('P3 clear waits for an in-flight reconnect', async ({ page }) => {
   await page.goto('/#/__dev/storage-p3')
   await page.getByRole('button', { name: '创建 / 更新页面' }).click()
+  await expect(page.getByRole('heading', { name: 'Pending / failed operations (1)' })).toBeVisible()
   await page.getByRole('checkbox', { name: 'Offline' }).uncheck()
   await page.evaluate(async () => {
-    const { IndexedDbLocalStore } = await import('/src/storage/indexedDbStore.ts')
-    const original = IndexedDbLocalStore.prototype.markOperationSynced
+    const { createLocalStore } = await import('/src/storage/createLocalStore.ts')
+    const { store } = await createLocalStore()
+    const prototype = Object.getPrototypeOf(store)
+    const original = prototype.markOperationSynced
     let release!: () => void
     const gate = new Promise<void>((resolve) => { release = resolve })
     ;(window as typeof window & { releaseP3Reconnect?: () => void }).releaseP3Reconnect = release
-    IndexedDbLocalStore.prototype.markOperationSynced = async function (id) {
+    prototype.markOperationSynced = async function (id: string) {
       await gate
       return original.call(this, id)
     }
