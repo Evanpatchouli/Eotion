@@ -51,6 +51,8 @@
 
 目标：补齐正式产品所需的服务端基础，使 P5 可以直接围绕真实业务页面开发，而不是继续停留在 PoC / Demo。
 
+进度：P4.1 服务端领域与 MongoDB 基础见 [P4.1 Server Domain](p4-server-domain.md)；以下其余能力及 P4 退出条件仍待完成。
+
 - 用于工作区/页面/区块/文件元数据的 MongoDB schema。
 - 认证/会话与工作区级权限基础。
 - 类型化契约和 Eotion SDK。

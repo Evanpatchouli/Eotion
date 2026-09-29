@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config'
 import { MongooseModule } from '@nestjs/mongoose'
 
 import { HealthModule } from './modules/health/health.module'
+import { ServerDomainModule } from './modules/server-domain/server-domain.module'
 
 const mongoUri = process.env.MONGODB_URI?.trim()
 const mongoImports = mongoUri
@@ -19,6 +20,7 @@ const mongoImports = mongoUri
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ...mongoImports,
+    ...(mongoUri ? [ServerDomainModule] : []),
     HealthModule,
   ],
 })

@@ -10,6 +10,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@eotion/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@nestjs/common':
         specifier: ^12.0.4
         version: 12.1.0(reflect-metadata@0.2.2)(rxjs@7.8.2)

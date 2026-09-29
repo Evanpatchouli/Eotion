@@ -16,6 +16,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `p1-mobile-demo.md` | P1 移动 WebView PoC 的验证入口与判读方式 |
 | `p2-editor-demo.md` | P2 Tiptap 编辑器 PoC 的验证入口、三端步骤与当前结果 |
 | `p3-local-first.md` | P3 本地存储契约、adapter、oplog 与恢复语义的验证入口 |
+| `p4-server-domain.md` | P4.1 服务端领域、Mongo 集合与 P3/文件服务边界 |
 
 ## 使用原则
 

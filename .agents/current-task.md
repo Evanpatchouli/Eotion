@@ -1,21 +1,18 @@
-# Current Task — P3 query reload helper
+# Current Task — P4.1 Server Domain / MongoDB Foundation
 
 ## Goal
 
-在 P3 开发页验证 Lynx Explorer / Mobile WebView 中相同 origin 下修改 query 并真正 reload 后 IndexedDB 数据仍可读，不改变存储架构。
+仅建立 Workspace、Page、Block、FileMetadata 的服务端领域与 MongoDB 持久化基础；保留 P3 LocalStore 和无 Mongo 时 `/api/health` 可启动。
 
 ## Work units
 
-| ID | 模式 | 边界与验收 | 状态 |
+| ID | 模式 / 评级 | 边界与验收 | 状态 |
 | --- | --- | --- | --- |
-| W1 | investigate/decide | 核对最新 master、P3 页面、router、LocalStore 与现有测试；决定 clientId/sequence 范围。 | 完成：LocalStore 无只读 metadata API，本轮不扩展契约。 |
-| W2 | execute | 增加按钮、URL 信息、#14 真机步骤与 Playwright 覆盖。 | 完成 |
-| W3 | verify/review | 执行 Web typecheck/build/storage 与布局相关测试，独立复核 diff。 | 完成；无 blocker。 |
+| W1 | investigate / S0 | 核对 `origin/master`、P3 契约、API 接线与 Mongo 测试环境，形成证据。 | 完成：本地与远端一致，本机 Mongo 可连接。 |
+| W2 | decide / S2 | 决定实体字段、workspace 隔离、索引、repository 与 Mongo enabled/disabled 边界。 | 完成：独立集合、Block 持久化 workspaceId、按范围查询、可选模块接线。 |
+| W3 | execute / S1 | 按决定实现 schema、repository、薄 service、模块接线、测试及文档。 | 完成 |
+| W4 | verify/review / S0 + Review | 执行 P4.1 测试、指定 typecheck/build、独立 review、检查 diff。 | 完成：指定验证及真实 Mongo 集成测试通过；review blocker 已修复并复核。 |
 
 ## Constraints
 
-保留已有真机清单排版改动；不改变 LocalStore、IndexedDB schema、Mobile WebView adapter、Electron SQLite 或其他阶段行为。
-
-## Verification
-
-`@eotion/web` typecheck/build 通过，storage Playwright 7/7，Workspace Layout / Safe Area / zoom / route Playwright 10/10；`git diff --check` 与 UTF-8 无 BOM 检查通过。目标真机 #14 待执行。
+不实现 Auth、HTTP CRUD、真实 sync、OSS 调用、UI 或 P5；稳定 string domain ID；Page/Block 分 collection；不破坏 P3 LocalStore。
