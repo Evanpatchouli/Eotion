@@ -7,6 +7,18 @@
 本机或 `P4_TEST_MONGODB_URI` 指定的 MongoDB 必须可连接。测试使用随机数据库，结束时删除该数据库。
 P4.4 sync 集成测试还要求 Mongo 支持多文档事务；将 `P4_TEST_MONGODB_URI` 指向 replica set（单节点也可），例如 `mongodb://127.0.0.1:27018/?replicaSet=eotionP44`。本机默认 standalone 27017 仅适用于旧领域/HTTP 测试。
 
+### 测试文件必须先注入 env
+
+`apps/api` 下凡是会直接或间接读取 `process.env` 的测试文件，**第一行（第一条 import）必须先执行**：
+
+```ts
+import 'dotenv/config'
+```
+
+尤其是使用 `P4_TEST_MONGODB_URI`、`MONGODB_URI`、`ALI_OSS_*` 等环境变量的 integration test。不要依赖 `AppModule` 中的 `import 'dotenv/config'` 间接加载环境变量，因为测试 helper（例如 `testMongoUri()`）可能在动态导入 `AppModule` 之前就读取 `process.env`，导致错误地使用 fallback 配置。
+
+新增或修改 API 测试时，应保证 env 注入发生在任何环境变量读取、helper 调用和动态模块导入之前；这是测试文件的固定约定。
+
 ```bash
 pnpm --filter @eotion/api test:domain
 pnpm --filter @eotion/sdk test
