@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
+import { Readable } from 'node:stream'
 import { test } from 'node:test'
 import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
@@ -18,6 +19,7 @@ import { WorkspaceEntity } from './schemas/workspace.schema'
 import { AuthService } from './services/auth.service'
 import { BlockService } from './services/block.service'
 import { FileMetadataService } from './services/file-metadata.service'
+import { FILE_OBJECT_STORAGE, type FileObjectStorage } from './services/file-object-storage'
 import { PageService } from './services/page.service'
 import { SessionService } from './services/session.service'
 import { WorkspaceService } from './services/workspace.service'
@@ -41,6 +43,8 @@ test('server domain persists scoped records and creates the declared Mongo index
   const pages = app.get(PageService)
   const blocks = app.get(BlockService)
   const files = app.get(FileMetadataService)
+  const storage = app.get<FileObjectStorage>(FILE_OBJECT_STORAGE)
+  storage.assertConfigured = () => {}
   const auth = app.get(AuthService)
   const sessions = app.get(SessionService)
 
@@ -270,38 +274,38 @@ test('server domain persists scoped records and creates the declared Mongo index
   assert.equal(await connection.db!.collection('blocks').countDocuments(), 4)
   assert.ok(await connection.db!.listCollections({ name: 'pages' }).hasNext())
 
-  const fileInput = {
-    id: 'file-a',
-    workspaceId: workspaceA.id,
-    name: 'before.txt',
-    mimeType: 'text/plain',
-    size: 4,
-    objectKey: 'objects/file-a',
+  const originalClientId = process.env.ALI_OSS_CLIENT_ID
+  process.env.ALI_OSS_CLIENT_ID = 'domain-test'
+  t.after(() => { if (originalClientId === undefined) delete process.env.ALI_OSS_CLIENT_ID; else process.env.ALI_OSS_CLIENT_ID = originalClientId })
+  storage.upload = async ({ objectKey, stream }) => {
+    for await (const _chunk of stream) { /* consume the upload stream */ }
+    return { objectKey: `domain-test/${objectKey}`, url: 'https://example.test/file' }
   }
-  await assert.rejects(files.create(userA.id, workspaceA.id, { ...fileInput, workspaceId: workspaceB.id }), /File workspaceId does not match the target workspace/)
+  storage.delete = async () => {}
+  const fileInput = { id: 'file-a', name: 'before.txt', stream: Readable.from(['test']) }
   await assert.rejects(
-    files.create(userA.id, 'missing-workspace', { ...fileInput, workspaceId: 'missing-workspace' }),
+    files.create(userA.id, 'missing-workspace', fileInput),
     /Workspace not found/,
   )
   const file = await files.create(userA.id, workspaceA.id, fileInput)
   assert.equal(file.ownerId, userA.id)
-  assert.equal((await files.find(userA.id, workspaceA.id, file.id))?.objectKey, 'objects/file-a')
+  assert.match((await files.find(userA.id, workspaceA.id, file.id))?.objectKey ?? '', /^domain-test\/eotion\/workspaces\//)
   await assert.rejects(
-    files.update(userA.id, workspaceA.id, file.id, { $set: { workspaceId: workspaceB.id } } as Parameters<typeof files.update>[3]),
+    files.update(userA.id, workspaceA.id, file.id, { $set: { workspaceId: workspaceB.id } } as unknown as Parameters<typeof files.update>[3]),
     /Unsupported update field/,
   )
   assert.equal((await files.find(userA.id, workspaceA.id, file.id))?.workspaceId, workspaceA.id)
   assert.equal(await files.find(userB.id, workspaceB.id, file.id), null)
   await assert.rejects(files.find(userB.id, workspaceA.id, file.id), /Workspace not found/)
   await assert.rejects(files.create(userB.id, workspaceA.id, {
-    id: 'unauthorized-file', workspaceId: workspaceA.id, name: 'x', mimeType: 'text/plain', size: 1, objectKey: 'x',
+    id: 'unauthorized-file', name: 'x', stream: Readable.from(['x']),
   }), /Workspace not found/)
   await assert.rejects(files.update(userB.id, workspaceA.id, file.id, { name: 'stolen' }), /Workspace not found/)
   await assert.rejects(files.delete(userB.id, workspaceA.id, file.id), /Workspace not found/)
   assert.equal(await files.update(userB.id, workspaceB.id, file.id, { name: 'wrong-scope.txt' }), null)
-  const updated = await files.update(userA.id, workspaceA.id, file.id, { name: 'after.txt', size: 5 })
+  const updated = await files.update(userA.id, workspaceA.id, file.id, { name: 'after.txt' })
   assert.equal(updated?.name, 'after.txt')
-  assert.equal(updated?.size, 5)
+  assert.equal(updated?.size, 4)
   assert.equal(await files.delete(userB.id, workspaceB.id, file.id), false)
   assert.equal(await files.delete(userA.id, workspaceA.id, file.id), true)
   assert.equal(await files.find(userA.id, workspaceA.id, file.id), null)

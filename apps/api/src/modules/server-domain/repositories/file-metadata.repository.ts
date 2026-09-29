@@ -7,7 +7,7 @@ import { assertUpdateFields } from './assert-update-fields'
 import { FileMetadataDocument, FileMetadataEntity } from '../schemas/file-metadata.schema'
 
 type FileMetadataCreate = Omit<FileMetadata, 'createdAt' | 'updatedAt'>
-export type FileMetadataPatch = Partial<Pick<FileMetadata, 'name' | 'mimeType' | 'size' | 'objectKey' | 'url'>>
+export type FileMetadataPatch = Pick<FileMetadata, 'name'>
 
 @Injectable()
 export class FileMetadataRepository {
@@ -27,13 +27,13 @@ export class FileMetadataRepository {
   }
 
   async updateInWorkspace(workspaceId: string, id: string, patch: FileMetadataPatch): Promise<FileMetadata | null> {
-    assertUpdateFields(patch, ['name', 'mimeType', 'size', 'objectKey', 'url'])
+    assertUpdateFields(patch, ['name'])
     const doc = await this.model.findOneAndUpdate({ workspaceId, id }, patch, { returnDocument: 'after', runValidators: true }).exec()
     return doc ? this.toRecord(doc) : null
   }
 
-  async deleteInWorkspace(workspaceId: string, id: string): Promise<boolean> {
-    const result = await this.model.deleteOne({ workspaceId, id }).exec()
+  async deleteInWorkspace(workspaceId: string, id: string, objectKey: string): Promise<boolean> {
+    const result = await this.model.deleteOne({ workspaceId, id, objectKey }).exec()
     return result.deletedCount === 1
   }
 

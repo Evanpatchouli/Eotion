@@ -16,6 +16,7 @@ import { UserEntity, UserSchema } from './schemas/user.schema'
 import { OperationReceiptEntity, OperationReceiptSchema } from './schemas/operation-receipt.schema'
 import { BlockService } from './services/block.service'
 import { FileMetadataService } from './services/file-metadata.service'
+import { AliOssObjectStorage, FILE_OBJECT_STORAGE } from './services/file-object-storage'
 import { PageService } from './services/page.service'
 import { WorkspaceService } from './services/workspace.service'
 import { AuthService } from './services/auth.service'
@@ -46,6 +47,8 @@ import { SyncService } from './services/sync.service'
     PageService,
     BlockService,
     FileMetadataService,
+    AliOssObjectStorage,
+    { provide: FILE_OBJECT_STORAGE, useExisting: AliOssObjectStorage },
     AuthService,
     SessionService,
     WorkspacePermissionService,

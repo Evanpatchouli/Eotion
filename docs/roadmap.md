@@ -51,7 +51,7 @@
 
 目标：补齐正式产品所需的服务端基础，使 P5 可以直接围绕真实业务页面开发，而不是继续停留在 PoC / Demo。
 
-进度：P4.1 服务端领域与 MongoDB 基础见 [P4.1 Server Domain](p4-server-domain.md)；P4.2 User、认证、Session 和 owner-only 工作区权限基础见 [P4.2 Auth / Session](p4-auth-session.md)；P4.3 类型化 HTTP API 与 SDK 见 [P4.3 Typed HTTP API](p4-http-api.md)；P4.4 真实 sync transport 与 operation ID 幂等见 [P4.4 Sync](p4-sync.md)。对象存储文件链路及 P4 全部退出条件仍待完成。
+进度：P4.1 服务端领域与 MongoDB 基础见 [P4.1 Server Domain](p4-server-domain.md)；P4.2 User、认证、Session 和 owner-only 工作区权限基础见 [P4.2 Auth / Session](p4-auth-session.md)；P4.3 类型化 HTTP API 与 SDK 见 [P4.3 Typed HTTP API](p4-http-api.md)；P4.4 真实 sync transport 与 operation ID 幂等见 [P4.4 Sync](p4-sync.md)；P4.5 File metadata、workspace HTTP 与 ali-oss-server 对象生命周期见 [P4.5 File Storage](p4-file-storage.md)。P4 的已列退出条件由这些交付覆盖；P5 正式附件 UI 仍属于 P5。
 
 - 用于工作区/页面/区块/文件元数据的 MongoDB schema。
 - 认证/会话与工作区级权限基础。

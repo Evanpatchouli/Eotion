@@ -5,6 +5,8 @@ import type {
   BlockCreateRequest,
   BlockResponse,
   BlockUpdateRequest,
+  FileResponse,
+  FileUpdateRequest,
   HealthResponse,
   LoginRequest,
   LoginResponse,
@@ -64,6 +66,13 @@ export class EotionApiClient {
     get: (workspaceId: string, pageId: string, blockId: string, signal?: AbortSignal) => Promise<BlockResponse>
     update: (workspaceId: string, pageId: string, blockId: string, input: BlockUpdateRequest, signal?: AbortSignal) => Promise<BlockResponse>
   }
+  readonly files: {
+    upload: (workspaceId: string, fileId: string, file: File, signal?: AbortSignal) => Promise<FileResponse>
+    list: (workspaceId: string, signal?: AbortSignal) => Promise<FileResponse[]>
+    get: (workspaceId: string, fileId: string, signal?: AbortSignal) => Promise<FileResponse>
+    update: (workspaceId: string, fileId: string, input: FileUpdateRequest, signal?: AbortSignal) => Promise<FileResponse>
+    delete: (workspaceId: string, fileId: string, signal?: AbortSignal) => Promise<void>
+  }
   readonly sync: {
     send: (operation: SyncOperation, signal?: AbortSignal) => Promise<void>
   }
@@ -97,6 +106,22 @@ export class EotionApiClient {
       get: (workspaceId, pageId, blockId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks/${segment(blockId)}`, { method: 'GET', signal }),
       update: (workspaceId, pageId, blockId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks/${segment(blockId)}`, { method: 'PATCH', body: input, signal }),
     }
+    this.files = {
+      upload: (workspaceId, fileId, file, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/files`, {
+        method: 'POST',
+        rawBody: file,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'X-Eotion-File-Id': segment(fileId),
+          'X-Eotion-File-Name': segment(file.name),
+        },
+        signal,
+      }),
+      list: (workspaceId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/files`, { method: 'GET', signal }),
+      get: (workspaceId, fileId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/files/${segment(fileId)}`, { method: 'GET', signal }),
+      update: (workspaceId, fileId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/files/${segment(fileId)}`, { method: 'PATCH', body: input, signal }),
+      delete: (workspaceId, fileId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/files/${segment(fileId)}`, { method: 'DELETE', signal }),
+    }
     this.sync = {
       send: async (operation, signal) => {
         await this.request('/api/sync/operations', { method: 'POST', body: operation, signal })
@@ -109,17 +134,23 @@ export class EotionApiClient {
   }
 
   private async request<T>(path: string, options: {
-    method: 'GET' | 'POST' | 'PATCH'
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE'
     body?: unknown
+    rawBody?: BodyInit
+    headers?: Record<string, string>
     signal?: AbortSignal
   }): Promise<T> {
     const hasBody = options.body !== undefined
+    const headers = {
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+      ...options.headers,
+    }
     const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
       method: options.method,
       credentials: 'include',
       signal: options.signal,
-      headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
-      body: hasBody ? JSON.stringify(options.body) : undefined,
+      headers: Object.keys(headers).length > 0 ? headers : undefined,
+      body: options.rawBody ?? (hasBody ? JSON.stringify(options.body) : undefined),
     })
 
     if (!response.ok) {

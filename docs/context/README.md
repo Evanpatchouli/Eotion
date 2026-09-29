@@ -19,7 +19,7 @@
 | Editor（P2 起） | `apps/web/src/` | `roadmap.md`、architecture §6 | Tiptap、@tiptap/pm、selection、transaction、IME、slash command |
 | Desktop Shell | `apps/desktop/src/` | architecture §2 | Electron、preload、renderer、IPC |
 | Mobile Shell | `apps/mobile/src/` | `p1-mobile-demo.md`、architecture §3 | Lynx、webview、HarmonyOS、bridge、lifecycle |
-| API | `apps/api/src/` | architecture §4、`p4-server-domain.md`、`p4-auth-session.md`、`p4-http-api.md`、`p4-sync.md`、`architecture/agent-integration.md` | NestJS、Fastify、health、Mongo、User、Auth、Session、WorkspacePermission、HTTP、repository、sync receipt、MCP |
+| API | `apps/api/src/` | architecture §4、`p4-server-domain.md`、`p4-auth-session.md`、`p4-http-api.md`、`p4-sync.md`、`p4-file-storage.md`、`architecture/agent-integration.md` | NestJS、Fastify、health、Mongo、User、Auth、Session、WorkspacePermission、HTTP、repository、sync receipt、FileObjectStorage、MCP |
 | Contracts | `packages/contracts/src/` | `p4-http-api.md`、`p4-sync.md` | DTO、runtime schema、contract、protocol、sync operation |
 | Domain | `packages/domain/src/` | `p4-server-domain.md`、architecture / specs | domain model、workspace、page、block、file metadata |
 | SDK | `packages/sdk/src/` | `p4-http-api.md`、`p4-sync.md` | typed client、Cookie credentials、API error、OperationTransport |

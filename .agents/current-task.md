@@ -1,25 +1,23 @@
-# Current Task — P4.4 Real Sync Transport + Operation ID Idempotency
-
-Base: `73bf014ada70f9678d29eba8ba9b5b9e09bc3c20` (`origin/master`, 2026-09-29).
+# Current Task — P4.5 File Domain + ali-oss-server SDK
 
 ## Goal
 
-将 P3 durable oplog 经 authenticated HTTP 和 SDK 送入 P4 application services；Mongo 以稳定 operation ID 幂等应用。只覆盖 page/block upsert/delete，不引入冲突合并。
+完成 workspace-scoped File HTTP API、Mongo metadata、仅服务端使用的 ali-oss-server SDK 对象生命周期，以及浏览器兼容的 Eotion SDK。不要进入 P4.6/P5。
 
 ## Work units
 
-| ID | 模式 / 评级 | 边界与验收 | 状态 |
+| ID | 模式 / 评级 | 验收 | 状态 |
 | --- | --- | --- | --- |
-| W1 | investigate / S0 | 核对 P3 storage 缺口、P4 service/HTTP/test 与 Mongo 事务条件。 | 完成 |
-| W2 | decide / S2 | 定义 canonical sync operation、旧本地数据处理、事务 receipt/fingerprint 和 delete 语义。 | 完成 |
-| W3 | execute / S1 | contracts 与 P3 adapter/存储输入调整；迁移和原测试更新。 | 完成 |
-| W4 | execute / S1 | server sync service/receipt、delete service、authenticated HTTP。 | 完成 |
-| W5 | execute / S1 | SDK OperationTransport、Mongo+HTTP E2E 与轻量文档。 | 完成 |
-| W6 | verify/review | 相关验证、独立 review、修复 blocker、按逻辑单元提交推送。 | 验证与独立 review 完成；已按逻辑单元提交，待推送 |
+| W1 | investigate / S0 | 核对现有领域/HTTP/SDK 与 ali-oss-server SDK 真实接口和 URL 语义。 | 完成 |
+| W2 | decide / S2 | 确定上传流、objectKey、metadata ownership、OSS/Mongo 补偿及删除重试边界。 | 完成 |
+| W3 | execute / S1 | 实现服务端 adapter、File service、workspace HTTP routes 与 metadata 收紧。 | 完成 |
+| W4 | execute / S1 | 实现 contracts 与浏览器 SDK File API。 | 完成 |
+| W5 | execute / S1 | fake HTTP server 经真实 SDK 的集成/失败语义测试与文档。 | 完成 |
+| W6 | verify/review | 回归与构建、独立 review、修复、提交并推送。 | 完成 |
 
-## Constraints
+## Invariants
 
-- Network contract 位于 `@eotion/contracts`；每条 operation 显式 workspaceId，upsert 完整且稳定。
-- Cookie Session 和 owner-only permission 由现有边界执行；同 ID 同内容成功，同 ID 异内容拒绝。
-- receipt 与业务写入原子提交；客户端未 mark synced 时沿用原 ID 重试。
-- 客户端时间只作 mutation 事实，不作冲突版本或 Mongo 持久化时间。
+- `@ali-oss-server/sdk` 仅在 `apps/api` 使用；客户端不接收密钥或 token。
+- 每次上传独立 objectKey；Mongo 创建失败先回读确认结果，安全时只清理本次 SDK 返回的 key。
+- OSS delete 成功前不删 metadata；重试必须处理对象已不存在。
+- 客户端仅能修改 `name`；服务端控制归属、文件属性、objectKey、URL。

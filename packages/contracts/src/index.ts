@@ -147,6 +147,19 @@ export const BlockUpdateRequestSchema = z.object({
 })
 export type BlockUpdateRequest = z.infer<typeof BlockUpdateRequestSchema>
 
+export const FileUpdateRequestSchema = z.object({
+  name: nameSchema,
+}).strict().refine((value) => Object.keys(value).length > 0, {
+  message: 'At least one field must be provided',
+})
+export type FileUpdateRequest = z.infer<typeof FileUpdateRequestSchema>
+
+export const FileUploadMetadataSchema = z.object({
+  id: idSchema,
+  name: nameSchema,
+}).strict()
+export type FileUploadMetadata = z.infer<typeof FileUploadMetadataSchema>
+
 const userRecordSchema = z.object({
   id: idSchema,
   email: emailSchema,
@@ -181,15 +194,29 @@ const serverBlockRecordSchema = z.object({
   createdAt: dateSchema,
   updatedAt: dateSchema,
 }).strict()
+const fileRecordSchema = z.object({
+  id: idSchema,
+  workspaceId: idSchema,
+  ownerId: idSchema,
+  name: nameSchema,
+  mimeType: z.string().trim().min(1).max(256),
+  size: z.number().int().nonnegative(),
+  objectKey: z.string().trim().min(1),
+  url: z.string().optional(),
+  createdAt: dateSchema,
+  updatedAt: dateSchema,
+}).strict()
 
 export const UserRecordSchema = userRecordSchema
 export const WorkspaceRecordSchema = workspaceRecordSchema
 export const PageRecordSchema = pageRecordSchema
 export const ServerBlockRecordSchema = serverBlockRecordSchema
+export const FileRecordSchema = fileRecordSchema
 export type AuthUserDto = z.infer<typeof UserRecordSchema>
 export type WorkspaceResponse = z.infer<typeof WorkspaceRecordSchema>
 export type PageResponse = z.infer<typeof PageRecordSchema>
 export type BlockResponse = z.infer<typeof ServerBlockRecordSchema>
+export type FileResponse = z.infer<typeof FileRecordSchema>
 export const LoginResponseSchema = z.object({
   user: UserRecordSchema,
   expiresAt: dateSchema,
