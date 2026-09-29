@@ -31,13 +31,13 @@ Web 的 viewport 使用 `viewport-fit=cover`。`App.vue` 的 `.app-viewport` 铺
 
 ## 2. 桌面端
 
-`apps/desktop` 只包含 Electron 主进程/预加载相关关注点。electron-vite 将其渲染器根目录直接指向 `apps/web`。
+`apps/desktop` 只包含 Electron 主进程/预加载相关关注点。electron-vite 将其渲染器根目录直接指向 `apps/web`。窗口图标复用 `apps/desktop/resources/icon.png`；当前尚未引入安装包打包器，因此 Windows `.ico` / macOS `.icns` 等发行包图标留到正式 packaging 阶段配置。
 
 平台 API 之后必须通过狭窄的预加载桥接暴露。不要在渲染器中启用 Node.js 集成。
 
 ## 3. 移动端
 
-`apps/mobile` 使用 Vue Lynx 作为应用外壳。v0.1 在 Lynx 内置的 `<webview>` 中加载 Eotion Web。
+`apps/mobile` 使用 Vue Lynx 作为应用外壳。v0.1 在 Lynx 内置的 `<webview>` 中加载 Eotion Web。品牌源图同步保存在 `apps/mobile/resources/icon.png`，供后续独立 Android / iOS / HarmonyOS Shell packaging 生成 launcher icon；当前 Lynx Explorer 预览的启动图标由宿主应用控制，无法由 Eotion bundle 覆盖。
 
 之后的原生专属能力应置于类型化桥接之后：通知、深度链接、文件、分享面板、本地数据库和应用生命周期。
 

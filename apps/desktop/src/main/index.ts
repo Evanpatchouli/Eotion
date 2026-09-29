@@ -29,6 +29,7 @@ function registerStorageBridge(store: SqliteLocalStore): void {
 }
 
 function createWindow() {
+  const appIconPath = join(__dirname, '../../resources/icon.png')
   const window = new BrowserWindow({
     width: 1380,
     height: 900,
@@ -36,6 +37,7 @@ function createWindow() {
     minHeight: 620,
     show: false,
     backgroundColor: '#ffffff',
+    icon: appIconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

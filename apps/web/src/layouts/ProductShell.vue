@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
+import eotionIconUrl from '../assets/eotion-icon.png'
 import WorkspaceCreateForm from '../components/product/WorkspaceCreateForm.vue'
 import WorkspaceRenameForm from '../components/product/WorkspaceRenameForm.vue'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
@@ -126,7 +127,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   <div class="workspace-shell product-shell" :data-layout="layoutMode" :data-input="inputMode" :data-runtime="runtime">
     <aside class="sidebar product-sidebar" :class="{ 'sidebar--open': mobileNavOpen }" :aria-hidden="sidebarHidden" :inert="sidebarHidden" aria-label="工作区导航">
       <div class="brand-row">
-        <div class="brand-mark" aria-hidden="true">E</div>
+        <img :src="eotionIconUrl" class="brand-mark brand-mark--image" alt="" aria-hidden="true" />
         <strong>Eotion</strong>
         <button class="icon-button sidebar-close" type="button" aria-label="关闭导航菜单" @click="closeMobileNav">×</button>
       </div>

@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import eotionIconUrl from '../assets/eotion-icon.png'
 import { useAuthStore } from '../stores/auth'
 import '../styles/product.css'
 
@@ -33,7 +34,7 @@ async function retrySession() {
 <template>
   <main class="product-login-page">
     <section class="product-login-card" aria-labelledby="login-title">
-      <div class="product-login-brand"><span class="brand-mark" aria-hidden="true">E</span><span>Eotion</span></div>
+      <div class="product-login-brand"><img :src="eotionIconUrl" class="brand-mark brand-mark--image" alt="" aria-hidden="true" /><span>Eotion</span></div>
       <h1 id="login-title">登录 Eotion</h1>
       <p class="product-login-copy">登录后继续整理你的工作区。</p>
       <div v-if="auth.restoreError" class="product-restore-error">

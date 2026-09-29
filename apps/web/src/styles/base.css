@@ -58,6 +58,7 @@ html.eotion-page-zoom-disabled .app-viewport { touch-action: pan-x pan-y; }
   display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid #dddcd8;
   border-radius: 7px; background: white; font-weight: 800;
 }
+.brand-mark--image { display: block; border: 0; background: transparent; object-fit: cover; }
 
 .icon-button {
   display: inline-grid; width: 32px; height: 32px; padding: 0; place-items: center;
