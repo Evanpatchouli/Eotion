@@ -81,7 +81,7 @@ export class EotionApiClient {
 
   constructor(options: EotionApiClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '')
-    this.fetchImpl = options.fetch ?? fetch
+    this.fetchImpl = options.fetch ?? globalThis.fetch.bind(globalThis)
     this.auth = {
       register: (input, signal) => this.request('/api/auth/register', { method: 'POST', body: input, signal }),
       login: (input, signal) => this.request('/api/auth/login', { method: 'POST', body: input, signal }),

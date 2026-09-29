@@ -19,13 +19,15 @@
 
 Web UI 有三种布局模式，但只有一套代码库：
 
-Web 的 viewport 使用 `viewport-fit=cover`。`App.vue` 的 `.app-viewport` 铺满动态视口，背景延伸到屏幕边缘（开发页按路由匹配背景），并通过全局 `--safe-top/right/bottom/left` 消费 CSS `env(safe-area-inset-*)`，使所有路由的交互内容处于安全区域。`WorkspaceLayout` 是首页和 P1/P2/P3 开发路由共用的父路由壳，持有侧栏、顶栏和 `.document-wrap`；各 View 只渲染自己的内容，长页面由 `.document-wrap` 滚动。移动抽屉按安全区定位，固定编辑器工具栏自行在内边距中消费相关 inset，不叠加页面级安全区。Lynx Shell 当前让 WebView 填满自身视口，不传原生 inset；HarmonyOS 的 `env()` 和 Shell 系统栏关系仍需真机验证。
+Web 的 viewport 使用 `viewport-fit=cover`。`App.vue` 的 `.app-viewport` 铺满动态视口，背景延伸到屏幕边缘（开发页按路由匹配背景），并通过全局 `--safe-top/right/bottom/left` 消费 CSS `env(safe-area-inset-*)`，使所有路由的交互内容处于安全区域。`WorkspaceLayout` 是 `/__dev/workspace` 示例首页和 P1/P2/P3 开发路由共用的父路由壳，持有侧栏、顶栏和 `.document-wrap`；各 View 只渲染自己的内容，长页面由 `.document-wrap` 滚动。移动抽屉按安全区定位，固定编辑器工具栏自行在内边距中消费相关 inset，不叠加页面级安全区。Lynx Shell 当前让 WebView 填满自身视口，不传原生 inset；HarmonyOS 的 `env()` 和 Shell 系统栏关系仍需真机验证。
 
 - 桌面端：多窗格、鼠标/键盘、悬停/上下文菜单/快捷键。
 - 平板端：可折叠/浮层侧边面板、触摸/混合输入。
 - 移动端：单列、以抽屉/底部面板为导向的触摸交互。
 
 运行时、布局和输入模式是不同的概念。一个狭窄的 Electron 窗口并不会自动成为移动端运行时。
+
+正式产品入口为 `/#/login` 和 `/#/app/:workspaceId`；`ProductShell` 沿用同一响应式布局基础承载真实 Workspace 流程，开发示例入口与产品导航分离。Pinia 分开管理 Auth 和工作区列表/请求状态，当前工作区由正式路由派生。产品只通过 `@eotion/sdk` 调用已有 Cookie Session 与 Workspace API，见 [P5.1 产品骨架](../p5-product-shell.md)。
 
 ## 2. 桌面端
 

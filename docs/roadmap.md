@@ -72,9 +72,16 @@ P4 退出条件：
 - 文件元数据链路可用，Eotion API 能通过 `ali-oss-server` SDK 完成所需对象存储操作。
 - 相关 contract、SDK、integration test 和最小端到端验证完成。
 
-P4 后半段在 contracts、认证和核心领域 API 稳定后，可以提前并行开发 P5 的部分 UI；不要求等待 P4 所有收尾工作结束才开始产品页面。
-
 ## P5 - 产品 MVP（正式功能开发）
+
+P4 ✅ Final Acceptance PASS。P5 按以下独立阶段验收：
+
+- P5.1 Product Shell + Auth / Workspace：✅ 已完成，见 [产品入口与运行说明](p5-product-shell.md)。
+- P5.2 Page Tree：待开始。
+- P5.3 Real Page Editor：待开始。
+- P5.4 Real Sync：待开始。
+- P5.5 Attachments：待开始。
+- P5 Final Acceptance：待开始。
 
 从本阶段开始，以真实用户流程和正式产品路由为主，不再以 `/__dev/*` PoC 页面作为主要开发载体。P1/P2/P3 开发页可以继续保留作为回归和诊断入口。
 

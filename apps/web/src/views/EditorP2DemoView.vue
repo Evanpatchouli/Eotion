@@ -34,7 +34,7 @@ async function loadLargeDocument() {
 <template>
   <div class="p2-demo" :data-layout="layoutMode" :data-input="inputMode" :data-runtime="runtime">
     <div class="p2-demo-inner">
-      <RouterLink class="p2-demo-back" to="/">← 返回工作区</RouterLink>
+      <RouterLink class="p2-demo-back" to="/__dev/workspace">← 返回工作区</RouterLink>
       <header>
         <span class="p2-demo-kicker">开发验证 · P2</span>
         <h1>Tiptap 3 编辑器概念验证</h1>

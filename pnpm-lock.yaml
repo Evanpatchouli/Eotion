@@ -130,6 +130,9 @@ importers:
       '@eotion/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@eotion/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@eotion/storage':
         specifier: workspace:*
         version: link:../../packages/storage

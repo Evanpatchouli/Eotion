@@ -9,7 +9,7 @@ for (const [name, allowPageZoom] of [
 ] as const) {
   test(`Web zoom preferences: ${name}`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/')
+    await page.goto('/#/__dev/workspace')
 
     const result = await page.evaluate(async (allowPageZoom) => {
       const { applyWebRuntimePreferences } = await import('/src/webRuntimePreferences.ts')
@@ -47,7 +47,7 @@ for (const [name, allowPageZoom] of [
 }
 
 test('page zoom preference restores and reapplies after false → true → false', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/#/__dev/workspace')
   const states = await page.evaluate(async () => {
     const { applyWebRuntimePreferences } = await import('/src/webRuntimePreferences.ts')
     const read = () => ({
@@ -72,7 +72,7 @@ test('page zoom preference restores and reapplies after false → true → false
 
 test('zoom preferences preserve the mobile Safe Area layout', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto('/#/__dev/workspace')
   await page.evaluate(async () => {
     const { applyWebRuntimePreferences } = await import('/src/webRuntimePreferences.ts')
     applyWebRuntimePreferences({ VITE_ALLOW_PAGE_ZOOM: 'false' })

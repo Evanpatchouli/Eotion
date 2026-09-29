@@ -119,7 +119,7 @@ onMounted(async () => {
 
 <template>
   <div class="p3-demo">
-    <RouterLink to="/">← 返回工作区</RouterLink>
+    <RouterLink to="/__dev/workspace">← 返回工作区</RouterLink>
     <h1>P3 本地优先存储</h1>
     <p>Runtime: <strong>{{ runtimeLabel[runtime] }}</strong> · Adapter: <strong>{{ adapter }}</strong> · Offline: <strong>{{ offline }}</strong></p>
     <p class="p3-url-info">Origin: {{ currentUrl.origin }}<br />Query: {{ currentUrl.search }}<br />Hash: {{ currentUrl.hash }}</p>

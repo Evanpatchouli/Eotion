@@ -7,4 +7,5 @@ import { applyWebRuntimePreferences } from './webRuntimePreferences'
 import './styles/base.css'
 
 applyWebRuntimePreferences()
-createApp(App).use(createPinia()).use(router).mount('#app')
+const pinia = createPinia()
+createApp(App).use(pinia).use(router).mount('#app')

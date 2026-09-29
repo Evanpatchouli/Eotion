@@ -15,7 +15,7 @@
 
 | 领域 / 模块 | 代码入口 | 关键文档 | 常用检索线索 |
 | --- | --- | --- | --- |
-| Web 主 UI | `apps/web/src/` | `architecture/architecture.md` | Vue、router、WorkspaceView、runtime、layout、input |
+| Web 主 UI | `apps/web/src/` | `architecture/architecture.md`、`p5-product-shell.md` | Vue、router、ProductShell、auth、productWorkspaces、WorkspaceView、runtime、layout、input |
 | Editor（P2 起） | `apps/web/src/` | `roadmap.md`、architecture §6 | Tiptap、@tiptap/pm、selection、transaction、IME、slash command |
 | Desktop Shell | `apps/desktop/src/` | architecture §2 | Electron、preload、renderer、IPC |
 | Mobile Shell | `apps/mobile/src/` | `p1-mobile-demo.md`、architecture §3 | Lynx、webview、HarmonyOS、bridge、lifecycle |

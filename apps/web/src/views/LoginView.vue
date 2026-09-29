@@ -1,0 +1,59 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+import { useAuthStore } from '../stores/auth'
+import '../styles/product.css'
+
+const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
+const email = ref('')
+const password = ref('')
+const canSubmit = computed(() => email.value.trim().length > 0 && password.value.length > 0 && !auth.loginPending)
+
+function internalAppRedirect(): string {
+  const value = route.query.redirect
+  if (typeof value !== 'string' || !(value === '/app' || value.startsWith('/app/'))) return '/app'
+  return value
+}
+
+async function submit() {
+  if (!canSubmit.value) return
+  const loggedIn = await auth.login(email.value.trim(), password.value)
+  if (loggedIn) await router.replace(internalAppRedirect())
+}
+
+async function retrySession() {
+  await auth.retryRestore()
+  if (auth.user) await router.replace(internalAppRedirect())
+}
+</script>
+
+<template>
+  <main class="product-login-page">
+    <section class="product-login-card" aria-labelledby="login-title">
+      <div class="product-login-brand"><span class="brand-mark" aria-hidden="true">E</span><span>Eotion</span></div>
+      <h1 id="login-title">登录 Eotion</h1>
+      <p class="product-login-copy">登录后继续整理你的工作区。</p>
+      <div v-if="auth.restoreError" class="product-restore-error">
+        <p class="product-message product-message--error" role="alert">{{ auth.restoreError }}</p>
+        <button class="product-text-button" type="button" @click="retrySession">重试</button>
+      </div>
+      <form class="product-form" @submit.prevent="submit">
+        <label class="product-field">
+          <span>邮箱</span>
+          <input v-model="email" aria-label="邮箱" type="email" autocomplete="username" inputmode="email" required />
+        </label>
+        <label class="product-field">
+          <span>密码</span>
+          <input v-model="password" aria-label="密码" type="password" autocomplete="current-password" required />
+        </label>
+        <p v-if="auth.error" class="product-message product-message--error" role="alert">{{ auth.error }}</p>
+        <button class="product-button product-button--primary product-login-submit" type="submit" :disabled="!canSubmit">
+          {{ auth.loginPending ? '正在登录…' : '登录' }}
+        </button>
+      </form>
+    </section>
+  </main>
+</template>

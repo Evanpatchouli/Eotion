@@ -81,7 +81,7 @@ test('Page and Block creation works when crypto.randomUUID is unavailable', asyn
   await page.addInitScript(() => {
     Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true })
   })
-  await page.goto('/')
+  await page.goto('/#/__dev/workspace')
 
   const result = await page.evaluate(async (storageUrl) => {
     const { createLocalId, reconnectPending } = await import(/* @vite-ignore */ storageUrl)

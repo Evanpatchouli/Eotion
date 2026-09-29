@@ -41,7 +41,7 @@ See [`docs/bootstrap-result.md`](docs/bootstrap-result.md) for the verified comm
 pnpm dev:web
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:5173/#/app`. The product entry provides email/password login, session restore, and workspace creation, switching, and renaming. Start the API with MongoDB configured; see [P5.1 setup and product routes](docs/p5-product-shell.md). The original sample workspace is available in development at `/#/__dev/workspace`.
 
 The Web page zoom preference is listed in `apps/web/.env.example`:
 
@@ -117,7 +117,7 @@ docs/
 
 ## What is intentionally NOT implemented yet
 
-This is a run-first scaffold, not the Notion clone itself. A development-only Tiptap 3 editor PoC now exists; product editor integration, Yjs, MongoDB schemas, auth, the MCP service, Eotion's server-side integration with `ali-oss-server`, Redis and Kafka remain for later stages. Eotion will not reimplement OSS signing or object-storage infrastructure: `apps/api` will use the `ali-oss-server` SDK with an Eotion-specific service URL, `clientId`, and `clientSecret`. P3 local storage uses IndexedDB for Web and Mobile WebView, and SQLite through Electron's main process; the current Mobile WebView P3 device checklist has passed 15/15 on the recorded Lynx Explorer test environment. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
+P4 server domains, Cookie Session auth, typed APIs, sync transport and server-side `ali-oss-server` integration are complete. P5.1 adds the product shell and Auth / Workspace flow. Page Tree, product editor integration, product sync and attachment UI remain for P5.2–P5.5; Yjs, MCP, Redis and Kafka belong to later stages. Eotion will not reimplement OSS signing or object-storage infrastructure: `apps/api` will use the `ali-oss-server` SDK with an Eotion-specific service URL, `clientId`, and `clientSecret`. P3 local storage uses IndexedDB for Web and Mobile WebView, and SQLite through Electron's main process; the current Mobile WebView P3 device checklist has passed 15/15 on the recorded Lynx Explorer test environment. The MCP service will expose permission-scoped workspace capabilities through the API; it is not implemented yet.
 
 The first high-risk PoC after bootstrapping is:
 

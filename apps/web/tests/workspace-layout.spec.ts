@@ -7,7 +7,7 @@ const demoRoutes = [
 ] as const
 
 test('home and all dev routes render inside the shared workspace layout', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/#/__dev/workspace')
   await expect(page.locator('.workspace-shell .sidebar')).toBeVisible()
   await expect(page.locator('.workspace-shell .main-pane .topbar')).toBeVisible()
   await expect(page.locator('.document-wrap .document h1')).toHaveText('欢迎使用 Eotion')
@@ -28,7 +28,7 @@ test('home and all dev routes render inside the shared workspace layout', async 
 
 test('mobile drawer closes after navigation and dev routes switch within the layout', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto('/#/__dev/workspace')
 
   await page.locator('.mobile-menu').click()
   await expect(page.locator('.sidebar')).toHaveClass(/sidebar--open/)
@@ -45,7 +45,7 @@ test('mobile drawer closes after navigation and dev routes switch within the lay
 
   await page.locator('.mobile-menu').click()
   await page.getByRole('button', { name: 'Roadmap' }).click()
-  await expect(page).toHaveURL(/#\/$/)
+  await expect(page).toHaveURL(/#\/__dev\/workspace$/)
   await expect(page.locator('.sidebar')).not.toHaveClass(/sidebar--open/)
   await expect(page.locator('.document h1')).toHaveText('Roadmap')
 })

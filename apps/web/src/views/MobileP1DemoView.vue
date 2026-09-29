@@ -253,7 +253,7 @@ onBeforeUnmount(() => {
   <div class="p1-lab">
     <header class="lab-header">
       <div class="lab-eyebrow">EOTION / MOBILE P1</div>
-      <RouterLink class="back-link" to="/">返回工作区 ↗</RouterLink>
+      <RouterLink class="back-link" to="/__dev/workspace">返回工作区 ↗</RouterLink>
       <h1>移动端能力实验页</h1>
       <p>在手机的 Lynx WebView 中逐项操作，并记录每项的真实结果。</p>
       <div class="lab-meta">

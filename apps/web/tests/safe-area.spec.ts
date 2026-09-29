@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('desktop keeps the workspace flush with a zero-inset viewport', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('/')
+  await page.goto('/#/__dev/workspace')
 
   const shell = await page.locator('.app-viewport').boundingBox()
   const workspace = await page.locator('.workspace-shell').boundingBox()
@@ -15,7 +15,7 @@ test('desktop keeps the workspace flush with a zero-inset viewport', async ({ pa
 
 test('mobile shell, drawer, and editor controls respect all four insets', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/')
+  await page.goto('/#/__dev/workspace')
   await page.addStyleTag({ content: ':root { --safe-top: 47px; --safe-right: 12px; --safe-bottom: 34px; --safe-left: 12px; }' })
 
   const app = await page.locator('.app-viewport').boundingBox()
