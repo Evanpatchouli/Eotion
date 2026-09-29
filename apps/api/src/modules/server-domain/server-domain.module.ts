@@ -13,6 +13,7 @@ import { PageEntity, PageSchema } from './schemas/page.schema'
 import { WorkspaceEntity, WorkspaceSchema } from './schemas/workspace.schema'
 import { SessionEntity, SessionSchema } from './schemas/session.schema'
 import { UserEntity, UserSchema } from './schemas/user.schema'
+import { OperationReceiptEntity, OperationReceiptSchema } from './schemas/operation-receipt.schema'
 import { BlockService } from './services/block.service'
 import { FileMetadataService } from './services/file-metadata.service'
 import { PageService } from './services/page.service'
@@ -20,6 +21,7 @@ import { WorkspaceService } from './services/workspace.service'
 import { AuthService } from './services/auth.service'
 import { SessionService } from './services/session.service'
 import { WorkspacePermissionService } from './services/workspace-permission.service'
+import { SyncService } from './services/sync.service'
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { WorkspacePermissionService } from './services/workspace-permission.serv
       { name: FileMetadataEntity.name, schema: FileMetadataSchema },
       { name: UserEntity.name, schema: UserSchema },
       { name: SessionEntity.name, schema: SessionSchema },
+      { name: OperationReceiptEntity.name, schema: OperationReceiptSchema },
     ]),
   ],
   providers: [
@@ -46,7 +49,8 @@ import { WorkspacePermissionService } from './services/workspace-permission.serv
     AuthService,
     SessionService,
     WorkspacePermissionService,
+    SyncService,
   ],
-  exports: [WorkspaceService, PageService, BlockService, FileMetadataService, AuthService, SessionService, WorkspacePermissionService],
+  exports: [WorkspaceService, PageService, BlockService, FileMetadataService, AuthService, SessionService, WorkspacePermissionService, SyncService],
 })
 export class ServerDomainModule {}

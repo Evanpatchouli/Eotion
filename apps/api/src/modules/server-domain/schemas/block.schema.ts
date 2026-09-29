@@ -25,6 +25,9 @@ export class BlockEntity {
   @Prop({ type: Object, required: true, default: {} })
   props!: Record<string, unknown>
 
+  @Prop({ type: Number, default: 0 })
+  structureFence!: number
+
   createdAt!: Date
   updatedAt!: Date
 }

@@ -21,6 +21,9 @@ export class PageEntity {
   @Prop({ type: String, required: true })
   orderKey!: string
 
+  @Prop({ type: Number, default: 0 })
+  structureFence!: number
+
   createdAt!: Date
   updatedAt!: Date
 }

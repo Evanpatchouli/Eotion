@@ -6,11 +6,12 @@ import { PageController } from './page.controller'
 import { SameOriginGuard } from './same-origin.guard'
 import { SessionAuthGuard } from './auth.transport'
 import { WorkspaceController } from './workspace.controller'
+import { SyncController } from './sync.controller'
 import { ServerDomainModule } from '../server-domain/server-domain.module'
 
 @Module({
   imports: [ServerDomainModule],
-  controllers: [AuthController, WorkspaceController, PageController, BlockController],
+  controllers: [AuthController, WorkspaceController, PageController, BlockController, SyncController],
   providers: [SessionAuthGuard, { provide: APP_GUARD, useClass: SameOriginGuard }],
 })
 export class HttpApiModule {}
