@@ -82,6 +82,53 @@ export type PageUpdateRequest = z.infer<typeof PageUpdateRequestSchema>
 export const BlockTypeSchema = z.enum(BLOCK_TYPES)
 export type BlockType = z.infer<typeof BlockTypeSchema>
 
+const syncOperationBase = {
+  id: idSchema,
+  clientId: idSchema,
+  sequence: z.number().int().positive(),
+  workspaceId: idSchema,
+  createdAt: dateSchema,
+}
+
+const syncOperationSchema = z.discriminatedUnion('kind', [
+  z.object({
+    ...syncOperationBase,
+    kind: z.literal('page.upsert'),
+    payload: z.object({
+      id: idSchema,
+      parentPageId: idSchema.nullable(),
+      title: nameSchema,
+      icon: z.string().trim().min(1).max(256).nullable(),
+      orderKey: idSchema,
+    }).strict(),
+  }).strict(),
+  z.object({
+    ...syncOperationBase,
+    kind: z.literal('page.delete'),
+    payload: z.object({ id: idSchema }).strict(),
+  }).strict(),
+  z.object({
+    ...syncOperationBase,
+    kind: z.literal('block.upsert'),
+    payload: z.object({
+      id: idSchema,
+      pageId: idSchema,
+      parentBlockId: idSchema.nullable(),
+      type: BlockTypeSchema,
+      orderKey: idSchema,
+      props: propsSchema,
+    }).strict(),
+  }).strict(),
+  z.object({
+    ...syncOperationBase,
+    kind: z.literal('block.delete'),
+    payload: z.object({ id: idSchema }).strict(),
+  }).strict(),
+])
+
+export const SyncOperationSchema = syncOperationSchema
+export type SyncOperation = z.infer<typeof SyncOperationSchema>
+
 export const BlockCreateRequestSchema = z.object({
   id: idSchema,
   parentBlockId: idSchema.nullable(),

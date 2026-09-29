@@ -2,6 +2,7 @@ const assert = require('node:assert/strict')
 const { mkdtempSync, rmSync } = require('node:fs')
 const { tmpdir } = require('node:os')
 const { join } = require('node:path')
+const { DatabaseSync } = require('node:sqlite')
 const test = require('node:test')
 const ts = require('typescript')
 
@@ -15,9 +16,9 @@ const { SqliteLocalStore } = require('./sqlite-store.ts')
 test('SQLite persists content and ordered operations across reopening', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'eotion-sqlite-'))
   const path = join(directory, 'local.sqlite')
-  const page = { id: 'page-1', title: 'First', updatedAt: '2026-01-01T00:00:00.000Z' }
+  const page = { id: 'page-1', workspaceId: 'workspace-1', parentPageId: null, orderKey: 'a', title: 'First', updatedAt: '2026-01-01T00:00:00.000Z' }
   const block = {
-    id: 'block-1', pageId: page.id, type: 'paragraph', orderKey: 'a',
+    id: 'block-1', workspaceId: page.workspaceId, pageId: page.id, parentBlockId: null, type: 'paragraph', orderKey: 'a',
     props: { text: 'offline' }, createdAt: page.updatedAt, updatedAt: page.updatedAt,
   }
 
@@ -29,7 +30,9 @@ test('SQLite persists content and ordered operations across reopening', async ()
     assert.deepEqual(before.map((op) => op.sequence), [1, 2])
     assert.deepEqual(before.map((op) => op.kind), ['page.upsert', 'block.upsert'])
     assert.equal(before[0]?.clientId, before[1]?.clientId)
-    assert.deepEqual(before[1]?.payload, block)
+    assert.deepEqual(before[1]?.payload, {
+      id: block.id, pageId: block.pageId, parentBlockId: null, type: block.type, orderKey: block.orderKey, props: block.props,
+    })
     store.close()
 
     store = new SqliteLocalStore(path)
@@ -39,13 +42,13 @@ test('SQLite persists content and ordered operations across reopening', async ()
     await store.markOperationFailed(before[0].id)
     await store.markOperationSynced(before[1].id)
     assert.deepEqual((await store.getPendingOperations()).map((op) => op.id), [before[0].id])
-    await store.deletePage(page.id)
+    await store.deletePage(page.workspaceId, page.id)
     assert.equal(await store.getPage(page.id), undefined)
     assert.equal(await store.getBlock(block.id), undefined)
     const pending = await store.getPendingOperations()
     assert.deepEqual(pending.map((op) => op.sequence), [1, 3])
     assert.equal(pending[1]?.clientId, before[0]?.clientId)
-    assert.deepEqual(pending[1]?.target, { type: 'page', id: page.id })
+    assert.deepEqual(pending[1]?.payload, { id: page.id })
     store.close()
   } finally {
     rmSync(directory, { recursive: true, force: true })
@@ -60,7 +63,7 @@ test('failed content write rolls back its operation and sequence', async () => {
       createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
     }))
     assert.deepEqual(await store.getPendingOperations(), [])
-    await store.upsertPage({ id: 'real', title: 'Saved', updatedAt: '2026-01-01T00:00:00.000Z' })
+    await store.upsertPage({ id: 'real', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Saved', updatedAt: '2026-01-01T00:00:00.000Z' })
     assert.deepEqual((await store.getPendingOperations()).map((op) => op.sequence), [1])
   } finally {
     store.close()
@@ -70,9 +73,9 @@ test('failed content write rolls back its operation and sequence', async () => {
 test('clearAllData resets SQLite content, operations, and identity', async () => {
   const store = new SqliteLocalStore(':memory:')
   try {
-    const page = { id: 'p', title: 'Demo', updatedAt: '2026-01-01T00:00:00.000Z' }
+    const page = { id: 'p', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Demo', updatedAt: '2026-01-01T00:00:00.000Z' }
     await store.upsertPage(page)
-    await store.upsertBlock({ id: 'b', pageId: 'p', type: 'paragraph', orderKey: 'a', props: {}, createdAt: page.updatedAt, updatedAt: page.updatedAt })
+    await store.upsertBlock({ id: 'b', workspaceId: 'ws', pageId: 'p', parentBlockId: null, type: 'paragraph', orderKey: 'a', props: {}, createdAt: page.updatedAt, updatedAt: page.updatedAt })
     const previousClientId = (await store.getPendingOperations())[0].clientId
     await store.clearAllData()
     assert.deepEqual(await store.listPages(), [])
@@ -84,5 +87,36 @@ test('clearAllData resets SQLite content, operations, and identity', async () =>
     assert.notEqual(operation.clientId, previousClientId)
   } finally {
     store.close()
+  }
+})
+
+test('SQLite upgrades the old operation table without inventing missing sync fields', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'eotion-sqlite-legacy-'))
+  const path = join(directory, 'local.sqlite')
+  try {
+    const legacy = new DatabaseSync(path)
+    legacy.exec(`CREATE TABLE operations (
+      id TEXT PRIMARY KEY, client_id TEXT NOT NULL, sequence INTEGER NOT NULL UNIQUE,
+      kind TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT NOT NULL,
+      payload TEXT, created_at TEXT NOT NULL, status TEXT NOT NULL
+    )`)
+    legacy.prepare(`INSERT INTO operations
+      (id, client_id, sequence, kind, target_type, target_id, payload, created_at, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run('legacy-op', 'legacy-client', 1, 'page.upsert', 'page', 'legacy-page',
+        JSON.stringify({ id: 'legacy-page', title: 'Old page', updatedAt: '2026-01-01T00:00:00.000Z' }),
+        '2026-01-01T00:00:00.000Z', 'pending')
+    legacy.close()
+
+    const store = new SqliteLocalStore(path)
+    const [operation] = await store.getPendingOperations()
+    assert.equal(operation.id, 'legacy-op')
+    assert.equal(operation.clientId, 'legacy-client')
+    assert.equal(operation.sequence, 1)
+    assert.equal(operation.workspaceId, undefined)
+    assert.equal(operation.payload.title, 'Old page')
+    store.close()
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
   }
 })

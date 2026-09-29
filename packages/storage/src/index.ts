@@ -1,19 +1,23 @@
 import type { BlockRecord, PageSummary } from '@eotion/domain'
+import type { SyncOperation } from '@eotion/contracts'
 
 export { createLocalId } from './id.ts'
 
 export type OperationStatus = 'pending' | 'synced' | 'failed'
-export type OperationKind = 'page.upsert' | 'page.delete' | 'block.upsert' | 'block.delete'
+export type OperationKind = SyncOperation['kind']
+
+export interface LocalPageRecord extends PageSummary {
+  workspaceId: string
+  parentPageId: string | null
+  orderKey: string
+}
+
+export interface LocalBlockRecord extends BlockRecord {
+  workspaceId: string
+}
 
 /** A durable record of one local content mutation. Sequence is monotonic per clientId. */
-export interface StorageOperation {
-  id: string
-  clientId: string
-  sequence: number
-  kind: OperationKind
-  target: { type: 'page' | 'block'; id: string }
-  payload: PageSummary | BlockRecord | null
-  createdAt: string
+export type StorageOperation = SyncOperation & {
   status: OperationStatus
 }
 
@@ -28,16 +32,16 @@ export interface StorageOperation {
 export interface LocalStore {
   /** Resets all local P3 content, operations, and client metadata without emitting an operation. */
   clearAllData(): Promise<void>
-  getPage(id: string): Promise<PageSummary | undefined>
-  listPages(): Promise<PageSummary[]>
-  upsertPage(page: PageSummary): Promise<void>
+  getPage(id: string): Promise<LocalPageRecord | undefined>
+  listPages(): Promise<LocalPageRecord[]>
+  upsertPage(page: LocalPageRecord): Promise<void>
   /** Deletes the page and its blocks atomically, represented by one page.delete operation. */
-  deletePage(id: string): Promise<void>
+  deletePage(workspaceId: string, id: string): Promise<void>
 
-  getBlock(id: string): Promise<BlockRecord | undefined>
-  listBlocksByPage(pageId: string): Promise<BlockRecord[]>
-  upsertBlock(block: BlockRecord): Promise<void>
-  deleteBlock(id: string): Promise<void>
+  getBlock(id: string): Promise<LocalBlockRecord | undefined>
+  listBlocksByPage(pageId: string): Promise<LocalBlockRecord[]>
+  upsertBlock(block: LocalBlockRecord): Promise<void>
+  deleteBlock(workspaceId: string, id: string): Promise<void>
 
   /** Returns pending and failed operations in increasing sequence order. */
   getPendingOperations(): Promise<StorageOperation[]>
@@ -45,7 +49,7 @@ export interface LocalStore {
   markOperationFailed(id: string): Promise<void>
 }
 
-/** P3's transport boundary. A future server sync layer can implement this later. */
+/** Sends one canonical operation; adapters retain the stable id for retries. */
 export interface OperationTransport {
   send(operation: StorageOperation): Promise<void>
 }

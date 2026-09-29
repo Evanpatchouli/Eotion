@@ -1,10 +1,10 @@
 import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { BlockRecord, PageSummary } from '@eotion/domain'
-import { createLocalId, type LocalStore, type StorageOperation } from '@eotion/storage'
+import type { SyncOperation } from '@eotion/contracts'
+import { createLocalId, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
-type OperationKind = StorageOperation['kind']
+type OperationKind = SyncOperation['kind']
 
 /** SQLite lives only in Electron's main process. Each content change and its op are one transaction. */
 export class SqliteLocalStore implements LocalStore {
@@ -31,6 +31,7 @@ export class SqliteLocalStore implements LocalStore {
         id TEXT PRIMARY KEY,
         client_id TEXT NOT NULL,
         sequence INTEGER NOT NULL UNIQUE,
+        workspace_id TEXT,
         kind TEXT NOT NULL,
         target_type TEXT NOT NULL,
         target_id TEXT NOT NULL,
@@ -40,6 +41,10 @@ export class SqliteLocalStore implements LocalStore {
       );
       CREATE INDEX IF NOT EXISTS operations_by_status_sequence ON operations(status, sequence);
     `)
+    const operationColumns = this.database.prepare('PRAGMA table_info(operations)').all() as Array<{ name: string }>
+    if (!operationColumns.some(({ name }) => name === 'workspace_id')) {
+      this.database.exec('ALTER TABLE operations ADD COLUMN workspace_id TEXT')
+    }
     const existing = this.database.prepare("SELECT value FROM metadata WHERE key = 'client_id'").get() as
       | { value: string }
       | undefined
@@ -76,7 +81,7 @@ export class SqliteLocalStore implements LocalStore {
     }
   }
 
-  private appendOperation(kind: OperationKind, id: string, payload: PageSummary | BlockRecord | null): void {
+  private appendOperation(operation: Omit<SyncOperation, 'id' | 'clientId' | 'sequence' | 'createdAt'>): void {
     const next = this.database.prepare("SELECT value FROM metadata WHERE key = 'next_sequence'").get() as
       | { value: string }
       | undefined
@@ -85,98 +90,146 @@ export class SqliteLocalStore implements LocalStore {
       INSERT INTO metadata (key, value) VALUES ('next_sequence', ?)
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
     `).run(String(sequence + 1))
-    this.database.prepare(`
-      INSERT INTO operations (id, client_id, sequence, kind, target_type, target_id, payload, created_at, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-    `).run(
-      createLocalId(),
-      this.clientId,
+    const targetId = operation.payload.id
+    const fullOperation = {
+      ...operation,
+      id: createLocalId(),
+      clientId: this.clientId,
       sequence,
-      kind,
-      kind.startsWith('page.') ? 'page' : 'block',
-      id,
-      payload === null ? null : JSON.stringify(payload),
-      new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    } as SyncOperation
+    this.database.prepare(`
+      INSERT INTO operations (id, client_id, sequence, workspace_id, kind, target_type, target_id, payload, created_at, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    `).run(
+      fullOperation.id, fullOperation.clientId, fullOperation.sequence, fullOperation.workspaceId,
+      fullOperation.kind, fullOperation.kind.startsWith('page.') ? 'page' : 'block', targetId,
+      JSON.stringify(fullOperation.payload), fullOperation.createdAt,
     )
   }
 
-  async getPage(id: string): Promise<PageSummary | undefined> {
+  async getPage(id: string): Promise<LocalPageRecord | undefined> {
     const row = this.database.prepare('SELECT document FROM pages WHERE id = ?').get(id) as
       | { document: string }
       | undefined
-    return row ? JSON.parse(row.document) as PageSummary : undefined
+    return row ? JSON.parse(row.document) as LocalPageRecord : undefined
   }
 
-  async listPages(): Promise<PageSummary[]> {
+  async listPages(): Promise<LocalPageRecord[]> {
     const rows = this.database.prepare('SELECT document FROM pages ORDER BY id').all() as { document: string }[]
-    return rows.map((row) => JSON.parse(row.document) as PageSummary)
+    return rows.map((row) => JSON.parse(row.document) as LocalPageRecord)
   }
 
-  async upsertPage(page: PageSummary): Promise<void> {
+  async upsertPage(page: LocalPageRecord): Promise<void> {
     this.transaction(() => {
+      const existingRow = this.database.prepare('SELECT document FROM pages WHERE id = ?').get(page.id) as { document: string } | undefined
+      const existing = existingRow ? JSON.parse(existingRow.document) as LocalPageRecord : undefined
+      if (existing && (existing.workspaceId !== page.workspaceId || existing.parentPageId !== page.parentPageId)) {
+        throw new Error(`Page ${page.id} workspace and parent are immutable`)
+      }
+      if (page.parentPageId) {
+        const parent = this.database.prepare('SELECT document FROM pages WHERE id = ?').get(page.parentPageId) as { document: string } | undefined
+        const parentPage = parent ? JSON.parse(parent.document) as LocalPageRecord : undefined
+        if (!parentPage || parentPage.workspaceId !== page.workspaceId) throw new Error(`Parent page ${page.parentPageId} is unavailable in this workspace`)
+      }
       this.database.prepare('INSERT INTO pages (id, document) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET document = excluded.document')
         .run(page.id, JSON.stringify(page))
-      this.appendOperation('page.upsert', page.id, page)
+      const { id, workspaceId, parentPageId, title, icon, orderKey } = page
+      this.appendOperation({ kind: 'page.upsert', workspaceId, payload: { id, parentPageId, title, icon: icon ?? null, orderKey } })
     })
   }
 
-  async deletePage(id: string): Promise<void> {
+  async deletePage(workspaceId: string, id: string): Promise<void> {
     this.transaction(() => {
+      const row = this.database.prepare('SELECT document FROM pages WHERE id = ?').get(id) as { document: string } | undefined
+      const page = row ? JSON.parse(row.document) as LocalPageRecord : undefined
+      if (page && page.workspaceId !== workspaceId) throw new Error(`Page ${id} belongs to a different workspace`)
+      const pages = this.database.prepare('SELECT document FROM pages').all() as { document: string }[]
+      if (pages.some(({ document }) => {
+        const candidate = JSON.parse(document) as LocalPageRecord
+        return candidate.workspaceId === workspaceId && candidate.parentPageId === id
+      })) throw new Error(`Page ${id} has child pages`)
       this.database.prepare('DELETE FROM pages WHERE id = ?').run(id)
-      this.appendOperation('page.delete', id, null)
+      this.appendOperation({ kind: 'page.delete', workspaceId, payload: { id } })
     })
   }
 
-  async getBlock(id: string): Promise<BlockRecord | undefined> {
+  async getBlock(id: string): Promise<LocalBlockRecord | undefined> {
     const row = this.database.prepare('SELECT document FROM blocks WHERE id = ?').get(id) as
       | { document: string }
       | undefined
-    return row ? JSON.parse(row.document) as BlockRecord : undefined
+    return row ? JSON.parse(row.document) as LocalBlockRecord : undefined
   }
 
-  async listBlocksByPage(pageId: string): Promise<BlockRecord[]> {
+  async listBlocksByPage(pageId: string): Promise<LocalBlockRecord[]> {
     const rows = this.database.prepare('SELECT document FROM blocks WHERE page_id = ? ORDER BY order_key, id')
       .all(pageId) as { document: string }[]
-    return rows.map((row) => JSON.parse(row.document) as BlockRecord)
+    return rows.map((row) => JSON.parse(row.document) as LocalBlockRecord)
   }
 
-  async upsertBlock(block: BlockRecord): Promise<void> {
+  async upsertBlock(block: LocalBlockRecord): Promise<void> {
     this.transaction(() => {
+      const pageRow = this.database.prepare('SELECT document FROM pages WHERE id = ?').get(block.pageId) as { document: string } | undefined
+      const page = pageRow ? JSON.parse(pageRow.document) as LocalPageRecord : undefined
+      if (!page) throw new Error(`Page ${block.pageId} does not exist`)
+      if (page.workspaceId !== block.workspaceId) throw new Error(`Page ${block.pageId} belongs to a different workspace`)
+      const existingRow = this.database.prepare('SELECT document FROM blocks WHERE id = ?').get(block.id) as { document: string } | undefined
+      const existing = existingRow ? JSON.parse(existingRow.document) as LocalBlockRecord : undefined
+      if (existing && (existing.workspaceId !== block.workspaceId || existing.pageId !== block.pageId || (existing.parentBlockId ?? null) !== (block.parentBlockId ?? null))) {
+        throw new Error(`Block ${block.id} workspace, page, and parent are immutable`)
+      }
+      if (block.parentBlockId) {
+        const parentRow = this.database.prepare('SELECT document FROM blocks WHERE id = ?').get(block.parentBlockId) as { document: string } | undefined
+        const parent = parentRow ? JSON.parse(parentRow.document) as LocalBlockRecord : undefined
+        if (!parent || parent.pageId !== block.pageId || parent.workspaceId !== block.workspaceId) throw new Error(`Parent block ${block.parentBlockId} is unavailable in this workspace page`)
+      }
       this.database.prepare(`
         INSERT INTO blocks (id, page_id, order_key, document) VALUES (?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           page_id = excluded.page_id, order_key = excluded.order_key, document = excluded.document
       `).run(block.id, block.pageId, block.orderKey, JSON.stringify(block))
-      this.appendOperation('block.upsert', block.id, block)
+      const { id, workspaceId, pageId, parentBlockId, type, orderKey, props } = block
+      this.appendOperation({ kind: 'block.upsert', workspaceId, payload: { id, pageId, parentBlockId: parentBlockId ?? null, type, orderKey, props } })
     })
   }
 
-  async deleteBlock(id: string): Promise<void> {
+  async deleteBlock(workspaceId: string, id: string): Promise<void> {
     this.transaction(() => {
+      const row = this.database.prepare('SELECT document FROM blocks WHERE id = ?').get(id) as { document: string } | undefined
+      const block = row ? JSON.parse(row.document) as LocalBlockRecord : undefined
+      if (block && block.workspaceId !== workspaceId) throw new Error(`Block ${id} belongs to a different workspace`)
+      if (block) {
+        const siblings = this.database.prepare('SELECT document FROM blocks WHERE page_id = ?').all(block.pageId) as { document: string }[]
+        if (siblings.some(({ document }) => {
+          const candidate = JSON.parse(document) as LocalBlockRecord
+          return candidate.workspaceId === workspaceId && candidate.parentBlockId === id
+        })) throw new Error(`Block ${id} has child blocks`)
+      }
       this.database.prepare('DELETE FROM blocks WHERE id = ?').run(id)
-      this.appendOperation('block.delete', id, null)
+      this.appendOperation({ kind: 'block.delete', workspaceId, payload: { id } })
     })
   }
 
   async getPendingOperations(): Promise<StorageOperation[]> {
     const rows = this.database.prepare(`
-      SELECT id, client_id, sequence, kind, target_type, target_id, payload, created_at, status
+      SELECT id, client_id, sequence, workspace_id, kind, target_type, target_id, payload, created_at, status
       FROM operations WHERE status IN ('pending', 'failed') ORDER BY sequence
     `).all() as Array<{
-      id: string; client_id: string; sequence: number; kind: OperationKind
+      id: string; client_id: string; sequence: number; workspace_id: string | null; kind: OperationKind
       target_type: 'page' | 'block'; target_id: string; payload: string | null
       created_at: string; status: StorageOperation['status']
     }>
-    return rows.map((row) => ({
-      id: row.id,
-      clientId: row.client_id,
-      sequence: row.sequence,
-      kind: row.kind,
-      target: { type: row.target_type, id: row.target_id },
-      payload: row.payload === null ? null : JSON.parse(row.payload) as PageSummary | BlockRecord,
-      createdAt: row.created_at,
-      status: row.status,
-    }))
+    return rows.map((row) => (row.workspace_id === null
+      ? {
+          id: row.id, clientId: row.client_id, sequence: row.sequence, kind: row.kind,
+          target: { type: row.target_type, id: row.target_id },
+          payload: row.payload === null ? null : JSON.parse(row.payload),
+          createdAt: row.created_at, status: row.status,
+        }
+      : {
+          id: row.id, clientId: row.client_id, sequence: row.sequence, workspaceId: row.workspace_id,
+          kind: row.kind, payload: JSON.parse(row.payload!), createdAt: row.created_at, status: row.status,
+        }) as unknown as StorageOperation)
   }
 
   async markOperationSynced(id: string): Promise<void> {

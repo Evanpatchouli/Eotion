@@ -59,6 +59,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@eotion/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@eotion/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -202,6 +205,9 @@ importers:
 
   packages/storage:
     dependencies:
+      '@eotion/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@eotion/domain':
         specifier: workspace:*
         version: link:../domain

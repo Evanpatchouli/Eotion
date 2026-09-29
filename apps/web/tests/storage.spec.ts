@@ -21,8 +21,8 @@ test('IndexedDB content and operation log survive reopen, reject partial writes,
     const { createLocalId, reconnectPending } = await import(/* @vite-ignore */ storageUrl)
     const dbName = `p3-test-${createLocalId()}`
     let store = await IndexedDbLocalStore.open(dbName)
-    const page = { id: 'p', title: 'First', updatedAt: new Date().toISOString() }
-    const block = { id: 'b', pageId: 'p', type: 'paragraph' as const, orderKey: 'a', props: { text: 'hello' }, createdAt: page.updatedAt, updatedAt: page.updatedAt }
+    const page = { id: 'p', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'First', updatedAt: new Date().toISOString() }
+    const block = { id: 'b', workspaceId: 'ws', pageId: 'p', parentBlockId: null, type: 'paragraph' as const, orderKey: 'a', props: { text: 'hello' }, createdAt: page.updatedAt, updatedAt: page.updatedAt }
     await store.upsertPage(page)
     await store.upsertBlock(block)
     await store.upsertPage({ ...page, title: 'Updated' })
@@ -39,8 +39,8 @@ test('IndexedDB content and operation log survive reopen, reject partial writes,
     const [first, second] = await Promise.all([reconnectPending(store, onlineTransport), reconnectPending(store, onlineTransport)])
     const repeat = await reconnectPending(store, onlineTransport)
     const remaining = await store.getPendingOperations()
-    await store.deleteBlock('b')
-    await store.deletePage('p')
+    await store.deleteBlock('ws', 'b')
+    await store.deletePage('ws', 'p')
     const deleted = await store.getPage('p') === undefined && (await store.listBlocksByPage('p')).length === 0
     const deleteOps = await store.getPendingOperations()
     const other = await IndexedDbLocalStore.open(dbName)
@@ -89,9 +89,9 @@ test('Page and Block creation works when crypto.randomUUID is unavailable', asyn
     const dbName = `p3-no-random-uuid-${createLocalId()}`
     let store = await IndexedDbLocalStore.open(dbName)
     const now = new Date().toISOString()
-    const pageRecord = { id: createLocalId(), title: 'Offline page', updatedAt: now }
+    const pageRecord = { id: createLocalId(), workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Offline page', updatedAt: now }
     const block = {
-      id: createLocalId(), pageId: pageRecord.id, type: 'paragraph' as const,
+      id: createLocalId(), workspaceId: 'ws', pageId: pageRecord.id, parentBlockId: null, type: 'paragraph' as const,
       orderKey: 'a', props: { text: 'Offline block' }, createdAt: now, updatedAt: now,
     }
     await store.upsertPage(pageRecord)

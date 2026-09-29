@@ -7,9 +7,9 @@ function operation(sequence: number): StorageOperation {
     id: `op-${sequence}`,
     clientId: 'device-1',
     sequence,
+    workspaceId: 'workspace-1',
     kind: 'page.delete',
-    target: { type: 'page', id: `page-${sequence}` },
-    payload: null,
+    payload: { id: `page-${sequence}` },
     createdAt: '2026-01-01T00:00:00.000Z',
     status: 'pending',
   }

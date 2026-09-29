@@ -1,5 +1,5 @@
-import type { BlockRecord, PageSummary } from '@eotion/domain'
-import { createLocalId, type LocalStore, type StorageOperation } from '@eotion/storage'
+import type { SyncOperation } from '@eotion/contracts'
+import { createLocalId, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 const DB_VERSION = 1
 const encoder = new TextEncoder()
@@ -97,30 +97,30 @@ export class IndexedDbLocalStore implements LocalStore {
     return values
   }
 
-  getPage(id: string): Promise<PageSummary | undefined> {
+  getPage(id: string): Promise<LocalPageRecord | undefined> {
     return this.read('pages', id)
   }
 
-  listPages(): Promise<PageSummary[]> {
+  listPages(): Promise<LocalPageRecord[]> {
     return this.all('pages')
   }
 
-  getBlock(id: string): Promise<BlockRecord | undefined> {
+  getBlock(id: string): Promise<LocalBlockRecord | undefined> {
     return this.read('blocks', id)
   }
 
-  async listBlocksByPage(pageId: string): Promise<BlockRecord[]> {
+  async listBlocksByPage(pageId: string): Promise<LocalBlockRecord[]> {
     const tx = this.db.transaction('blocks', 'readonly')
     const done = completed(tx)
-    const blocks = await request<BlockRecord[]>(tx.objectStore('blocks').index('pageId').getAll(pageId))
+    const blocks = await request<LocalBlockRecord[]>(tx.objectStore('blocks').index('pageId').getAll(pageId))
     await done
     return blocks.sort((a, b) => sqliteBinaryCompare(a.orderKey, b.orderKey) || sqliteBinaryCompare(a.id, b.id))
   }
 
   private async mutate(
-    kind: StorageOperation['kind'],
-    target: StorageOperation['target'],
-    payload: StorageOperation['payload'],
+    workspaceId: string,
+    kind: SyncOperation['kind'],
+    payload: SyncOperation['payload'],
     change: (tx: IDBTransaction) => Promise<void> | void,
   ): Promise<void> {
     const tx = this.db.transaction(['pages', 'blocks', 'operations', 'meta'], 'readwrite')
@@ -130,10 +130,10 @@ export class IndexedDbLocalStore implements LocalStore {
       const clientId = await request<string>(meta.get('clientId'))
       const sequence = (await request<number>(meta.get('sequence'))) + 1
       await change(tx)
-      const operation: StorageOperation = {
-        id: createLocalId(), clientId, sequence, kind, target, payload,
+      const operation = {
+        id: createLocalId(), clientId, sequence, workspaceId, kind, payload,
         createdAt: new Date().toISOString(), status: 'pending',
-      }
+      } as StorageOperation
       tx.objectStore('operations').put(operation)
       meta.put(sequence, 'sequence')
       await done
@@ -144,39 +144,84 @@ export class IndexedDbLocalStore implements LocalStore {
     }
   }
 
-  upsertPage(page: PageSummary): Promise<void> {
-    return this.mutate('page.upsert', { type: 'page', id: page.id }, page, (tx) => {
-      tx.objectStore('pages').put(page)
+  upsertPage(page: LocalPageRecord): Promise<void> {
+    const { id, parentPageId, title, icon, orderKey } = page
+    return this.mutate(page.workspaceId, 'page.upsert', {
+      id, parentPageId, title, icon: icon ?? null, orderKey,
+    }, async (tx) => {
+      const pages = tx.objectStore('pages')
+      const existing = await request<LocalPageRecord | undefined>(pages.get(id))
+      if (existing && (existing.workspaceId !== page.workspaceId || existing.parentPageId !== parentPageId)) {
+        throw new Error(`Page ${id} workspace and parent are immutable`)
+      }
+      if (parentPageId) {
+        const parent = await request<LocalPageRecord | undefined>(pages.get(parentPageId))
+        if (!parent || parent.workspaceId !== page.workspaceId) throw new Error(`Parent page ${parentPageId} is unavailable in this workspace`)
+      }
+      pages.put(page)
     })
   }
 
-  deletePage(id: string): Promise<void> {
-    return this.mutate('page.delete', { type: 'page', id }, null, async (tx) => {
+  deletePage(workspaceId: string, id: string): Promise<void> {
+    return this.mutate(workspaceId, 'page.delete', { id }, async (tx) => {
+      const pages = tx.objectStore('pages')
+      const page = await request<LocalPageRecord | undefined>(pages.get(id))
+      if (page && page.workspaceId !== workspaceId) throw new Error(`Page ${id} belongs to a different workspace`)
+      const allPages = await request<LocalPageRecord[]>(pages.getAll())
+      if (allPages.some((candidate) => candidate.workspaceId === workspaceId && candidate.parentPageId === id)) {
+        throw new Error(`Page ${id} has child pages`)
+      }
       tx.objectStore('pages').delete(id)
       const blocks = tx.objectStore('blocks')
-      const ids = await request<IDBValidKey[]>(blocks.index('pageId').getAllKeys(id))
-      ids.forEach((blockId) => blocks.delete(blockId))
+      const pageBlocks = await request<LocalBlockRecord[]>(blocks.index('pageId').getAll(id))
+      if (pageBlocks.some((block) => block.workspaceId !== workspaceId)) throw new Error(`Page ${id} contains blocks from a different workspace`)
+      pageBlocks.forEach((block) => blocks.delete(block.id))
     })
   }
 
-  upsertBlock(block: BlockRecord): Promise<void> {
-    return this.mutate('block.upsert', { type: 'block', id: block.id }, block, async (tx) => {
-      if (!await request<PageSummary | undefined>(tx.objectStore('pages').get(block.pageId))) {
+  upsertBlock(block: LocalBlockRecord): Promise<void> {
+    const { id, pageId, parentBlockId, type, orderKey, props } = block
+    return this.mutate(block.workspaceId, 'block.upsert', {
+      id, pageId, parentBlockId: parentBlockId ?? null, type, orderKey, props,
+    }, async (tx) => {
+      const page = await request<LocalPageRecord | undefined>(tx.objectStore('pages').get(pageId))
+      if (!page) {
         throw new Error(`Page ${block.pageId} does not exist`)
       }
-      tx.objectStore('blocks').put(block)
+      if (page.workspaceId !== block.workspaceId) throw new Error(`Page ${pageId} belongs to a different workspace`)
+      const blocks = tx.objectStore('blocks')
+      const existing = await request<LocalBlockRecord | undefined>(blocks.get(id))
+      if (existing && (existing.workspaceId !== block.workspaceId || existing.pageId !== pageId || (existing.parentBlockId ?? null) !== (parentBlockId ?? null))) {
+        throw new Error(`Block ${id} workspace, page, and parent are immutable`)
+      }
+      if (parentBlockId) {
+        const parent = await request<LocalBlockRecord | undefined>(blocks.get(parentBlockId))
+        if (!parent || parent.pageId !== pageId || parent.workspaceId !== block.workspaceId) throw new Error(`Parent block ${parentBlockId} is unavailable in this workspace page`)
+      }
+      blocks.put(block)
     })
   }
 
-  deleteBlock(id: string): Promise<void> {
-    return this.mutate('block.delete', { type: 'block', id }, null, (tx) => {
+  deleteBlock(workspaceId: string, id: string): Promise<void> {
+    return this.mutate(workspaceId, 'block.delete', { id }, async (tx) => {
+      const blocks = tx.objectStore('blocks')
+      const block = await request<LocalBlockRecord | undefined>(blocks.get(id))
+      if (block && block.workspaceId !== workspaceId) throw new Error(`Block ${id} belongs to a different workspace`)
+      if (block) {
+        const siblings = await request<LocalBlockRecord[]>(blocks.index('pageId').getAll(block.pageId))
+        if (siblings.some((candidate) => candidate.workspaceId === workspaceId && candidate.parentBlockId === id)) {
+          throw new Error(`Block ${id} has child blocks`)
+        }
+      }
       tx.objectStore('blocks').delete(id)
     })
   }
 
   async getPendingOperations(): Promise<StorageOperation[]> {
     const operations = await this.all<StorageOperation>('operations')
-    return operations.filter((op) => op.status !== 'synced').sort((a, b) => a.sequence - b.sequence)
+    // Older P3 records intentionally remain readable; the strict network schema
+    // rejects them because workspace/snapshot fields cannot be inferred safely.
+    return operations.filter((op) => op.status !== 'synced').sort((a, b) => a.sequence - b.sequence) as StorageOperation[]
   }
 
   private async setStatus(id: string, status: StorageOperation['status']): Promise<void> {

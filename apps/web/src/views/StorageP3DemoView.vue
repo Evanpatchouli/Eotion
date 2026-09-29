@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import type { BlockRecord, PageSummary } from '@eotion/domain'
-import { reconnectPending, type LocalStore, type StorageOperation } from '@eotion/storage'
+import { reconnectPending, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 import { createLocalStore } from '../storage/createLocalStore'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
 
 const pageId = 'p3-demo-page'
 const blockId = 'p3-demo-block'
+const workspaceId = 'p3-demo-workspace'
 const store = ref<LocalStore>()
 const adapter = ref('loading')
 const title = ref('P3 local page')
 const blockText = ref('Durable block')
 const offline = ref(true)
-const pages = ref<PageSummary[]>([])
-const blocks = ref<BlockRecord[]>([])
+const pages = ref<LocalPageRecord[]>([])
+const blocks = ref<LocalBlockRecord[]>([])
 const pending = ref<StorageOperation[]>([])
 const sent = ref<string[]>([])
 const message = ref('')
@@ -46,12 +46,14 @@ async function run(action: (local: LocalStore) => Promise<void | string>) {
 }
 
 function savePage() {
-  void run((local) => local.upsertPage({ id: pageId, title: title.value, updatedAt: new Date().toISOString() }))
+  void run((local) => local.upsertPage({
+    id: pageId, workspaceId, parentPageId: null, orderKey: 'a', title: title.value, updatedAt: new Date().toISOString(),
+  }))
 }
 
 function saveBlock() {
   void run((local) => local.upsertBlock({
-    id: blockId, pageId, type: 'paragraph', orderKey: 'a', props: { text: blockText.value },
+    id: blockId, workspaceId, pageId, parentBlockId: null, type: 'paragraph', orderKey: 'a', props: { text: blockText.value },
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   }))
 }
@@ -125,10 +127,10 @@ onMounted(async () => {
     <fieldset class="p3-controls" :disabled="busy || !store">
       <label>页面标题 <input v-model="title" /></label>
       <button @click="savePage">创建 / 更新页面</button>
-      <button @click="run((local) => local.deletePage(pageId))">删除页面及区块</button>
+      <button @click="run((local) => local.deletePage(workspaceId, pageId))">删除页面及区块</button>
       <label>区块文本 <input v-model="blockText" /></label>
       <button @click="saveBlock">创建 / 更新区块</button>
-      <button @click="run((local) => local.deleteBlock(blockId))">删除区块</button>
+      <button @click="run((local) => local.deleteBlock(workspaceId, blockId))">删除区块</button>
       <label><input v-model="offline" type="checkbox" /> Offline</label>
       <button @click="reconnect">Reconnect（并发两次）</button>
       <button @click="readAgain">重新读取</button>

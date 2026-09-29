@@ -13,6 +13,7 @@
     "test": "node --test src/main/*.test.cjs"
   },
   "dependencies": {
+    "@eotion/contracts": "workspace:*",
     "@eotion/domain": "workspace:*",
     "@eotion/storage": "workspace:*"
   },
