@@ -100,7 +100,7 @@ export const useProductPagesStore = defineStore('product-pages', () => {
   }
 
   async function create(workspaceId: string, parentPageId: string | null): Promise<PageResponse | null> {
-    if (workspaceId !== forWorkspaceId.value || createPending.value) return null
+    if (workspaceId !== forWorkspaceId.value || !loaded.value || loading.value || error.value || createPending.value) return null
     createPending.value = true
     createError.value = ''
     const requestEpoch = epoch

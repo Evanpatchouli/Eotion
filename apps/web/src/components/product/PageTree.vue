@@ -21,6 +21,7 @@ const confirmDeleteFor = ref<string | null>(null)
 const workspaceId = computed(() => typeof route.params.workspaceId === 'string' ? route.params.workspaceId : '')
 const currentPageId = computed(() => typeof route.params.pageId === 'string' ? route.params.pageId : '')
 const rows = computed(() => flattenPageTree(buildPageTree(pages.items), expanded.value))
+const canCreate = computed(() => !!workspaceId.value && pages.forWorkspaceId === workspaceId.value && pages.loaded && !pages.loading && !pages.error && !pages.createPending)
 
 function closePanels() {
   menuFor.value = null
@@ -82,6 +83,7 @@ async function openPage(pageId: string) {
 }
 
 async function createRoot() {
+  if (!canCreate.value) return
   const created = await pages.create(workspaceId.value, null)
   if (created) await openPage(created.id)
 }
@@ -130,7 +132,7 @@ watch(workspaceId, () => { closePanels(); expanded.value = new Set() })
   <div class="product-sidebar-section product-pages-section">
     <div class="product-pages-heading">
       <span class="product-section-label">页面</span>
-      <button class="product-add-page" type="button" aria-label="新建根页面" :disabled="!workspaceId || pages.createPending" @click="createRoot">＋</button>
+      <button class="product-add-page" type="button" aria-label="新建根页面" :disabled="!canCreate" @click="createRoot">＋</button>
     </div>
 
     <p v-if="pages.createError" class="product-message product-message--error" role="alert">{{ pages.createError }}</p>

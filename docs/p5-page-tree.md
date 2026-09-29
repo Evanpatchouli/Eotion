@@ -22,7 +22,8 @@ P5.2 用真实页面树替换 P5.1 侧栏中的 Pages 占位提示，接通“�
 
 - 侧栏“页面区域 +”创建根页面，页面菜单的“新建子页面”创建子页面。
 - 标题默认 `无标题`；`id` 由客户端用既有 `createLocalId()` 生成，服务端不重新分配。
-- `orderKey` 由 `nextOrderKey(siblings)` 生成：取同级最大数值 `orderKey` 加一，再零填充到 16 位，使字典序与数值序一致。不引入 fractional indexing 依赖。
+- `orderKey` 由 `nextOrderKey(siblings)` 生成：同级 key 全为规范的 16 位十进制时取最大值加一并零填充；存在旧格式 key 时，按页面树的字符串排序取最大 key，并从它派生更大的 key，保证追加顺序且不重写旧数据。不引入 fractional indexing 依赖。
+- 只有当前工作区的页面列表成功加载后才能创建页面；加载中或加载失败时禁用创建，成功加载的空列表仍可创建第一个页面。
 - 成功后新页面立即出现在树上并自动打开。
 
 ### 重命名
@@ -42,6 +43,10 @@ P5.2 用真实页面树替换 P5.1 侧栏中的 Pages 占位提示，接通“�
 - `DELETE /api/workspaces/:workspaceId/pages/:pageId` 只删除叶子页面：先删该页区块再删页面，返回 `{ deleted: true }`。
 - 有子页面时返回 400 `Delete child pages first`；不级联删除，也不把子页面提升到父级。删除前需要在页面菜单里二次确认。
 - 删除当前打开的页面后，路由回到其父页面；没有父页面时回到 Workspace Home。刷新同样不会停在已删除页面。
+
+## 事务环境
+
+在支持事务的 MongoDB Replica Set 环境中，Page move / delete 使用事务与 `structureFence` 保障并发结构完整性。Standalone MongoDB 可用于部分普通 CRUD，但不具备这项事务保障，不能作为完整的生产或 Sync 数据一致性环境。
 
 ## 状态与组件
 

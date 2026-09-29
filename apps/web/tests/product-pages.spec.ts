@@ -26,6 +26,7 @@ type MockOptions = {
 
 type PageControls = {
   pageListFailures: number
+  pageListDelayMs: number
   createFailures: number
   createDelayMs: number
   renameFailures: number
@@ -41,6 +42,7 @@ async function installApi(page: Page, options: MockOptions = {}) {
   const pages = [...(options.pages ?? [])]
   const controls: PageControls = {
     pageListFailures: 0,
+    pageListDelayMs: 0,
     createFailures: 0,
     createDelayMs: 0,
     renameFailures: 0,
@@ -74,6 +76,7 @@ async function installApi(page: Page, options: MockOptions = {}) {
     if (listMatch) {
       const workspaceId = decodeURIComponent(listMatch[1]!)
       if (method === 'GET') {
+        await wait(controls.pageListDelayMs)
         if (controls.pageListFailures > 0) {
           controls.pageListFailures -= 1
           return json(route, 503, fail(503, 'Page list failed'))
@@ -184,6 +187,7 @@ test('shows an empty page tree, then creates a root page and opens it', async ({
   await page.goto('/#/app')
   await expect(page).toHaveURL(/#\/app\/ws-a$/)
   await expect(page.getByText('还没有页面')).toBeVisible()
+  await expect(page.getByRole('button', { name: '新建根页面' })).toBeEnabled()
 
   await page.getByRole('button', { name: '新建根页面' }).click()
   await expect(page).toHaveURL(/#\/app\/ws-a\/page\/[^/]+$/)
@@ -192,6 +196,51 @@ test('shows an empty page tree, then creates a root page and opens it', async ({
   expect(api.pages).toHaveLength(1)
   expect(api.pages[0]).toMatchObject({ workspaceId: 'ws-a', parentPageId: null, title: '无标题', orderKey: key(1) })
   expect(api.requests.find((request) => request.path === '/api/workspaces/ws-a/pages' && request.method === 'POST')?.body).toMatchObject({ parentPageId: null, title: '无标题' })
+})
+
+for (const { name, orderKeys, expectedKey } of [
+  { name: 'canonical', orderKeys: [key(1), key(2)], expectedKey: key(3) },
+  { name: 'legacy letters', orderKeys: ['a', 'b'], expectedKey: 'b0' },
+  { name: 'unpadded numbers', orderKeys: ['1', '2', '10'], expectedKey: '20' },
+]) {
+  test(`appends a root page after ${name} order keys`, async ({ page }) => {
+    const api = await installApi(page, {
+      workspaces: [workspace('ws-a', 'Ava space')],
+      pages: orderKeys.map((orderKey, index) => pageRecord(`page-${index}`, 'ws-a', `Existing ${index}`, null, orderKey)),
+    })
+    await page.goto('/#/app/ws-a')
+    await expect(page.getByRole('button', { name: '新建根页面' })).toBeEnabled()
+    await page.getByRole('button', { name: '新建根页面' }).click()
+    await expect(page.locator('.product-page-link .product-page-title').last()).toHaveText('无标题')
+    expect(api.pages.at(-1)?.orderKey).toBe(expectedKey)
+  })
+}
+
+test('keeps appending after legacy keys across consecutive creates', async ({ page }) => {
+  const api = await installApi(page, {
+    workspaces: [workspace('ws-a', 'Ava space')],
+    pages: [pageRecord('page-a', 'ws-a', 'Alpha', null, 'a'), pageRecord('page-b', 'ws-a', 'Bravo', null, 'b')],
+  })
+  await page.goto('/#/app/ws-a')
+  const add = page.getByRole('button', { name: '新建根页面' })
+  await expect(add).toBeEnabled()
+  await add.click()
+  await expect(add).toBeEnabled()
+  await add.click()
+  await expect(page.locator('.product-page-link .product-page-title')).toHaveText(['Alpha', 'Bravo', '无标题', '无标题'])
+  expect(api.pages.slice(-2).map((record) => record.orderKey)).toEqual(['b0', 'b00'])
+})
+
+test('disables root creation until the page list has loaded successfully', async ({ page }) => {
+  const api = await installApi(page, { workspaces: [workspace('ws-a', 'Ava space')] })
+  api.controls.pageListDelayMs = 500
+  await page.goto('/#/app/ws-a')
+  const add = page.getByRole('button', { name: '新建根页面' })
+  await expect(page.getByText('正在加载页面…')).toBeVisible()
+  await expect(add).toBeDisabled()
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await expect(add).toBeEnabled()
+  expect(api.requests.filter((request) => request.method === 'POST' && request.path === '/api/workspaces/ws-a/pages')).toHaveLength(0)
 })
 
 test('creates a child page under a page and keeps the hierarchy and sibling order', async ({ page }) => {
@@ -417,9 +466,11 @@ test('reports page tree load failures and retries', async ({ page }) => {
   api.controls.pageListFailures = 1
   await page.goto('/#/app/ws-a')
   await expect(page.locator('.product-pages-section').getByRole('alert')).toBeVisible()
+  await expect(page.getByRole('button', { name: '新建根页面' })).toBeDisabled()
   await page.locator('.product-pages-section').getByRole('button', { name: '重试' }).click()
   await expect(page.locator('.product-pages-section').getByRole('alert')).toHaveCount(0)
   await expect(page.getByText('还没有页面')).toBeVisible()
+  await expect(page.getByRole('button', { name: '新建根页面' })).toBeEnabled()
 
   // The page route reports the same failure instead of showing a blank document.
   api.controls.pageListFailures = 1

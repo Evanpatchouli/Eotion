@@ -14,6 +14,7 @@ export interface PageTreeRow {
 
 /** Fixed-width zero padding keeps lexicographic order identical to numeric order. */
 const ORDER_KEY_WIDTH = 16
+const CANONICAL_ORDER_KEY = /^\d{16}$/
 
 function comparePages(a: PageResponse, b: PageResponse): number {
   if (a.orderKey !== b.orderKey) return a.orderKey < b.orderKey ? -1 : 1
@@ -68,12 +69,19 @@ export function flattenPageTree(nodes: PageTreeNode[], expanded: ReadonlySet<str
 
 /** Appends after the current last sibling. Siblings are ordered by orderKey, then id. */
 export function nextOrderKey(siblings: PageResponse[]): string {
-  let highest = 0
-  for (const sibling of siblings) {
-    const value = Number(sibling.orderKey)
-    if (Number.isSafeInteger(value) && value >= 0 && value > highest) highest = value
+  if (siblings.every((sibling) => CANONICAL_ORDER_KEY.test(sibling.orderKey))) {
+    const highest = siblings.reduce((max, sibling) => {
+      const value = BigInt(sibling.orderKey)
+      return value > max ? value : max
+    }, 0n)
+    const next = String(highest + 1n)
+    if (next.length <= ORDER_KEY_WIDTH) return next.padStart(ORDER_KEY_WIDTH, '0')
   }
-  return String(highest + 1).padStart(ORDER_KEY_WIDTH, '0')
+
+  // The tree compares keys as strings. Extending the largest key also handles
+  // legacy keys and the fixed-width range limit without rewriting old pages.
+  const highest = siblings.reduce((max, sibling) => sibling.orderKey > max ? sibling.orderKey : max, '')
+  return `${highest}0`
 }
 
 /** Collects the page itself plus every page below it. */
