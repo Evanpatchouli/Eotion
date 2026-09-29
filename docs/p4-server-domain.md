@@ -9,7 +9,7 @@
 | `workspaces` | `WorkspaceRecord` | `id`、名称、`ownerId` 和时间；`ownerId` 暂为稳定字符串引用，用户/会话模型留待 P4.2。 |
 | `pages` | `PageRecord` | 以 `workspaceId` 隔离，`parentPageId` 和 `orderKey` 支持页面树。 |
 | `blocks` | `BlockRecord` 加服务端 `workspaceId` | 以 `pageId` 引用 Page，独立存储，不把 Block 数组嵌入 Page。 |
-| `filemetadatas` | `FileMetadata` | 只保存名称、类型、大小、对象键等元数据，不存文件内容。 |
+| `files` | `FileMetadata` | 只保存名称、类型、大小、对象键等元数据，不存文件内容。 |
 
 `Page.id` 与 `Block.id` 接受 P3 客户端生成的 ID，服务端不重新分配。所有对外资源 ID 均是稳定字符串；Mongo `_id` 仅为内部字段。每个集合的 `id` 有唯一索引。
 
@@ -34,3 +34,15 @@ Repository 提供显式的工作区范围查询，例如按 `workspaceId + id` �
 P3 的 `PageSummary`、`BlockRecord` 和 `LocalStore` 契约保留；完整的 `PageRecord` 与 `FileMetadata` 是新增服务端领域类型。P3 oplog 的至少一次投递和稳定 operation ID 不在 P4.1 接入，幂等服务端处理留待 P4.4。
 
 Eotion 只管理文件元数据。后续文件操作由 `apps/api` 使用 `ali-oss-server` SDK，通过独立服务访问 Aliyun OSS。`ALI_OSS_CLIENT_SECRET` 仅放服务端配置。`bucket` 和 `clientId` 属于服务配置，不重复存进每条元数据；临时签名 URL 不应持久化。
+
+## 后续 Sync 的时间与版本边界
+
+- **Client mutation time**：客户端离线操作发生的时间，属于本地操作事实；设备时钟可能不一致。
+- **Mongo server persistence time**：Mongo `createdAt` / `updatedAt` 记录服务端文档写入时间，不代表客户端实际编辑时间。
+- **Future sync/conflict version**：用于同步顺序、冲突判定的版本或修订标识尚未设计，留待真实 Sync 阶段确定。
+
+不能直接把客户端 `updatedAt` 当作服务端冲突判定依据；本阶段不实现 version/revision 或冲突算法。
+
+## Application error 边界
+
+当前 service 使用 Nest 的 `BadRequestException` / `NotFoundException`。后续 HTTP、Sync、MCP 共用 application service 时，若确有跨 transport 稳定错误码的需求，再引入统一错误模型；本阶段不定义 `DomainError` 或 `ErrorCode`。

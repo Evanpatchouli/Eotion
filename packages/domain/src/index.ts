@@ -7,16 +7,9 @@ export interface PageSummary {
   updatedAt: string
 }
 
-export type BlockType =
-  | 'paragraph'
-  | 'heading'
-  | 'bulleted-list'
-  | 'numbered-list'
-  | 'todo'
-  | 'quote'
-  | 'code'
-  | 'image'
-  | 'divider'
+import type { BLOCK_TYPES } from './block-types.js'
+
+export type BlockType = (typeof BLOCK_TYPES)[number]
 
 export interface BlockRecord {
   id: Id

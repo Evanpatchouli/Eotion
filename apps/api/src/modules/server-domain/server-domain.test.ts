@@ -5,6 +5,7 @@ import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { getConnectionToken, getModelToken, MongooseModule } from '@nestjs/mongoose'
 import { FastifyAdapter } from '@nestjs/platform-fastify'
+import { BLOCK_TYPES } from '@eotion/domain/block-types'
 import type { Connection, Model } from 'mongoose'
 
 import { ServerDomainModule } from './server-domain.module'
@@ -50,6 +51,9 @@ test('server domain persists scoped records and creates the declared Mongo index
   const blockModel = app.get<Model<unknown>>(getModelToken(BlockEntity.name))
   const fileModel = app.get<Model<unknown>>(getModelToken(FileMetadataEntity.name))
   await Promise.all([workspaceModel.init(), pageModel.init(), blockModel.init(), fileModel.init()])
+  assert.deepEqual((blockModel.schema.path('type') as unknown as { enumValues: string[] }).enumValues, [...BLOCK_TYPES])
+  assert.equal(fileModel.collection.name, 'files')
+  assert.equal(await connection.db!.listCollections({ name: 'filemetadatas' }).hasNext(), false)
 
   const workspaceA = await workspaces.create({ id: 'workspace-a', name: 'A', ownerId: 'owner-a' })
   const workspaceB = await workspaces.create({ id: 'workspace-b', name: 'B', ownerId: 'owner-b' })

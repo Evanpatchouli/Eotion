@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
 
-@Schema({ collection: 'filemetadatas', timestamps: true, versionKey: false })
+@Schema({ collection: 'files', timestamps: true, versionKey: false })
 export class FileMetadataEntity {
   @Prop({ type: String, required: true, unique: true })
   id!: string

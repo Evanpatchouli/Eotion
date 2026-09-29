@@ -1,10 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
+import { BLOCK_TYPES } from '@eotion/domain/block-types'
 import { HydratedDocument } from 'mongoose'
-
-const blockTypes = [
-  'paragraph', 'heading', 'bulleted-list', 'numbered-list', 'todo',
-  'quote', 'code', 'image', 'divider',
-] as const
 
 @Schema({ collection: 'blocks', timestamps: true, versionKey: false })
 export class BlockEntity {
@@ -20,7 +16,7 @@ export class BlockEntity {
   @Prop({ type: String, default: null })
   parentBlockId?: string | null
 
-  @Prop({ type: String, required: true, enum: blockTypes })
+  @Prop({ type: String, required: true, enum: BLOCK_TYPES })
   type!: string
 
   @Prop({ type: String, required: true })
