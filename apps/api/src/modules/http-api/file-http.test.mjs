@@ -1,8 +1,10 @@
 import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { once } from 'node:events'
+import { createRequire } from 'node:module'
 import { Readable } from 'node:stream'
 import { test } from 'node:test'
 import { NestFactory } from '@nestjs/core'
@@ -25,15 +27,25 @@ function fakeOss() {
   const objects = new Map()
   const uploaded = []
   const deleted = []
+  const abortedUploads = []
   let failUpload = false
   let failDelete = false
   let returnSignedUrl = false
   let tokenDelayMs = 0
+  let onUploadChunk
+  let uploadResponseBarrier
   const tokenClients = new Map()
   const server = createServer(async (request, response) => {
     const chunks = []
+    const isUpload = request.url === '/api/oss/upload-stream' && request.method === 'POST'
+    request.on('aborted', () => {
+      if (isUpload) abortedUploads.push(Buffer.concat(chunks).length)
+    })
     try {
-      for await (const chunk of request) chunks.push(chunk)
+      for await (const chunk of request) {
+        chunks.push(chunk)
+        if (isUpload) onUploadChunk?.()
+      }
     } catch {
       response.destroy()
       return
@@ -62,7 +74,10 @@ function fakeOss() {
       const objectKey = requestedKey.startsWith(`${authenticatedClientId}/`)
         ? requestedKey : `${authenticatedClientId}/${requestedKey}`
       objects.set(objectKey, bytes)
-      uploaded.push({ objectKey, bytes, mimeType: request.headers['content-type'], fileName: request.headers['x-file-name'] })
+      const unicodeName = request.headers['x-file-name-utf8']
+      const fileName = unicodeName === undefined ? request.headers['x-file-name'] : decodeURIComponent(unicodeName.slice("UTF-8''".length))
+      uploaded.push({ objectKey, bytes, mimeType: request.headers['content-type'], fileName, unicodeName })
+      if (uploadResponseBarrier) await uploadResponseBarrier()
       const url = returnSignedUrl
         ? `https://objects.example.test/${objectKey}?Expires=123&Signature=temporary`
         : `https://objects.example.test/${objectKey}`
@@ -78,11 +93,13 @@ function fakeOss() {
     return send(404, { message: 'unknown fake OSS route' })
   })
   return {
-    server, objects, uploaded, deleted,
+    server, objects, uploaded, deleted, abortedUploads,
     set failUpload(value) { failUpload = value },
     set failDelete(value) { failDelete = value },
     set returnSignedUrl(value) { returnSignedUrl = value },
     set tokenDelayMs(value) { tokenDelayMs = value },
+    set onUploadChunk(value) { onUploadChunk = value },
+    set uploadResponseBarrier(value) { uploadResponseBarrier = value },
   }
 }
 
@@ -127,6 +144,8 @@ function file(name = 'résumé #1.txt', text = 'file bytes') {
 }
 
 test('File HTTP lifecycle uses the real ali-oss-server SDK and preserves OSS/Mongo failure semantics', async (t) => {
+  assert.equal(typeof createRequire(import.meta.url)('@ali-oss-server/sdk').AliOssServerSdk, 'function')
+  assert.ok(!readFileSync(new URL('../server-domain/services/file-object-storage.ts', import.meta.url), 'utf8').includes('new Function('))
   const environment = Object.fromEntries(['MONGODB_URI', 'NODE_ENV', 'WEB_ORIGIN', 'ALI_OSS_SERVER_URL', 'ALI_OSS_CLIENT_ID', 'ALI_OSS_CLIENT_SECRET', 'ALI_OSS_MAX_UPLOAD_BYTES'].map((key) => [key, process.env[key]]))
   const oss = fakeOss()
   await new Promise((resolve) => oss.server.listen(0, '127.0.0.1', resolve))
@@ -206,7 +225,7 @@ test('File HTTP lifecycle uses the real ali-oss-server SDK and preserves OSS/Mon
       assert.match(created.objectKey, /workspaces\/.*\/files\//)
       assert.deepEqual(oss.objects.get(created.objectKey), Buffer.from('file bytes'))
       assert.equal(oss.uploaded.at(-1).mimeType, 'application/octet-stream')
-      assert.equal(oss.uploaded.at(-1).fileName, undefined)
+      assert.equal(oss.uploaded.at(-1).fileName, 'résumé #1.txt')
       assertSafe(created)
       assert.deepEqual(await client.files.list(workspaceId), [created])
       assert.deepEqual(await client.files.get(workspaceId, id), created)
@@ -241,9 +260,139 @@ test('File HTTP lifecycle uses the real ali-oss-server SDK and preserves OSS/Mon
       assert.equal(created.mimeType, 'application/octet-stream')
       assert.equal(created.size, Buffer.byteLength(bytes))
       assert.deepEqual(oss.objects.get(created.objectKey), Buffer.from(bytes))
+      assert.equal(oss.uploaded.at(-1).fileName, name)
+      assert.ok(oss.uploaded.at(-1).unicodeName?.startsWith("UTF-8''"))
       assert.equal((await files.findOne({ id })).name, name)
       assert.deepEqual(await client.files.get(workspaceId, id), created)
       assertSafe(created)
+    })
+
+    await t.test('ASCII and emoji names reach ali-oss-server unchanged', async () => {
+      for (const name of ['plain #1.txt', 'emoji 🌐.txt']) {
+        const id = `file-${randomUUID()}`
+        await client.files.upload(workspaceId, id, file(name, 'name check'))
+        assert.equal(oss.uploaded.at(-1).fileName, name)
+        assert.equal(oss.uploaded.at(-1).unicodeName === undefined, name === 'plain #1.txt')
+      }
+    })
+
+    await t.test('client abort stops upstream stream and API handles the next upload', async () => {
+      const id = `file-${randomUUID()}`
+      const route = `${baseUrl}/api/workspaces/${workspaceId}/files`
+      const controller = new AbortController()
+      let releaseBody
+      let sawUpstreamChunk
+      const bodyRelease = new Promise((resolve) => { releaseBody = resolve })
+      const upstreamChunk = new Promise((resolve) => { sawUpstreamChunk = resolve })
+      const abortedBefore = oss.abortedUploads.length
+      const uploadedBefore = oss.uploaded.length
+      oss.onUploadChunk = sawUpstreamChunk
+      const pending = fetch(route, {
+        method: 'POST',
+        headers: {
+          cookie: owner.cookie,
+          'content-type': 'application/octet-stream',
+          'x-eotion-file-id': encodeURIComponent(id),
+          'x-eotion-file-name': encodeURIComponent('cancel.txt'),
+        },
+        body: Readable.from((async function* () {
+          yield Buffer.alloc(64 * 1024, 1)
+          await bodyRelease
+          yield Buffer.alloc(1024 * 1024, 2)
+        })()),
+        duplex: 'half',
+        signal: controller.signal,
+      })
+      try {
+        await Promise.race([upstreamChunk, new Promise((_, reject) => setTimeout(() => reject(new Error('upstream did not receive first chunk')), 5000))])
+        controller.abort()
+        releaseBody()
+        await assert.rejects(pending, (error) => error.name === 'AbortError')
+        await Promise.race([
+          (async () => { while (oss.abortedUploads.length === abortedBefore) await new Promise((resolve) => setTimeout(resolve, 20)) })(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('upstream upload was not aborted')), 5000)),
+        ])
+        assert.equal(oss.uploaded.length, uploadedBefore)
+        assert.ok(oss.abortedUploads.at(-1) < 1024 * 1024)
+        assert.equal(await files.countDocuments({ id }), 0)
+        assert.equal((await jsonRequest(baseUrl, '/api/health', 'GET')).status, 200)
+        const next = await client.files.upload(workspaceId, `file-${randomUUID()}`, file('after-abort.txt'))
+        assert.equal(oss.objects.has(next.objectKey), true)
+      } finally {
+        controller.abort()
+        releaseBody()
+        oss.onUploadChunk = undefined
+        await pending.catch(() => {})
+      }
+    })
+
+    await t.test('abort with uncertain upstream result retains object for safe reconciliation', async () => {
+      const id = `file-${randomUUID()}`
+      const controller = new AbortController()
+      let releaseResponse
+      let upstreamStored
+      const responseRelease = new Promise((resolve) => { releaseResponse = resolve })
+      const stored = new Promise((resolve) => { upstreamStored = resolve })
+      oss.uploadResponseBarrier = () => { upstreamStored(); return responseRelease }
+      const pending = client.files.upload(workspaceId, id, file('uncertain.txt'), controller.signal)
+      try {
+        await Promise.race([stored, new Promise((_, reject) => setTimeout(() => reject(new Error('upstream did not store object')), 5000))])
+        const key = oss.uploaded.at(-1).objectKey
+        const deletionsBefore = oss.deleted.length
+        controller.abort()
+        await assert.rejects(pending)
+        releaseResponse()
+        assert.equal(await files.countDocuments({ id }), 0)
+        assert.equal(oss.objects.has(key), true)
+        assert.equal(oss.deleted.length, deletionsBefore)
+      } finally {
+        controller.abort()
+        releaseResponse()
+        oss.uploadResponseBarrier = undefined
+        await pending.catch(() => {})
+      }
+    })
+
+    await t.test('disconnect during session lookup never starts an upstream upload', async () => {
+      const { SessionService } = await import('../../../dist/modules/server-domain/services/session.service.js')
+      const sessions = app.get(SessionService)
+      const originalResolve = sessions.resolve.bind(sessions)
+      let releaseLookup
+      let lookupStarted
+      const lookupRelease = new Promise((resolve) => { releaseLookup = resolve })
+      const started = new Promise((resolve) => { lookupStarted = resolve })
+      sessions.resolve = async (...args) => {
+        lookupStarted()
+        await lookupRelease
+        return originalResolve(...args)
+      }
+      const controller = new AbortController()
+      const uploadsBefore = oss.uploaded.length
+      const pending = fetch(`${baseUrl}/api/workspaces/${workspaceId}/files`, {
+        method: 'POST',
+        headers: {
+          cookie: owner.cookie,
+          'content-type': 'application/octet-stream',
+          'x-eotion-file-id': encodeURIComponent(`file-${randomUUID()}`),
+          'x-eotion-file-name': encodeURIComponent('early-abort.txt'),
+        },
+        body: Buffer.from('complete request body'),
+        signal: controller.signal,
+      })
+      try {
+        await Promise.race([started, new Promise((_, reject) => setTimeout(() => reject(new Error('session lookup did not start')), 5000))])
+        controller.abort()
+        await assert.rejects(pending, (error) => error.name === 'AbortError')
+        releaseLookup()
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        assert.equal(oss.uploaded.length, uploadsBefore)
+      } finally {
+        controller.abort()
+        releaseLookup()
+        sessions.resolve = originalResolve
+        await pending.catch(() => {})
+      }
+      assert.equal((await jsonRequest(baseUrl, '/api/health', 'GET')).status, 200)
     })
 
     await t.test('forged MIME headers cannot turn untrusted bytes into active content', async () => {

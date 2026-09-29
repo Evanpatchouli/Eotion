@@ -1,6 +1,6 @@
-import { BadRequestException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Req, UnsupportedMediaTypeException, UseGuards, Body } from '@nestjs/common'
+import { BadRequestException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Req, Res, UnsupportedMediaTypeException, UseGuards, Body } from '@nestjs/common'
 import { FileUpdateRequestSchema, FileUploadMetadataSchema } from '@eotion/contracts'
-import type { FastifyRequest } from 'fastify'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { Readable } from 'node:stream'
 import { FileMetadataService } from '../server-domain/services/file-metadata.service'
 import type { UserRecord } from '../server-domain/types'
@@ -20,7 +20,7 @@ export class FileController {
   constructor(private readonly files: FileMetadataService) {}
 
   @Post()
-  upload(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Req() request: FastifyRequest) {
+  async upload(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Req() request: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply) {
     if (request.headers['content-type'] !== 'application/octet-stream') throw new UnsupportedMediaTypeException('Expected application/octet-stream')
     const input = parseBody(FileUploadMetadataSchema, {
       id: decodedHeader(request, 'x-eotion-file-id'),
@@ -29,7 +29,21 @@ export class FileController {
     const rawLength = request.headers['content-length']
     const contentLength = rawLength === undefined ? undefined : Number(rawLength)
     if (contentLength !== undefined && (!Number.isSafeInteger(contentLength) || contentLength < 0)) throw new BadRequestException('Invalid content length')
-    return this.files.create(user.id, parseId(workspaceId), { ...input, stream: request.body as Readable, contentLength })
+    const controller = new AbortController()
+    const abort = () => controller.abort()
+    const onRequestClose = () => { if (!request.raw.complete) abort() }
+    const onResponseClose = () => { if (!reply.raw.writableFinished) abort() }
+    request.raw.on('aborted', abort)
+    request.raw.on('close', onRequestClose)
+    reply.raw.on('close', onResponseClose)
+    if (request.raw.aborted || request.raw.destroyed && !request.raw.complete || reply.raw.destroyed && !reply.raw.writableFinished) abort()
+    try {
+      return await this.files.create(user.id, parseId(workspaceId), { ...input, stream: request.body as Readable, contentLength, signal: controller.signal })
+    } finally {
+      request.raw.off('aborted', abort)
+      request.raw.off('close', onRequestClose)
+      reply.raw.off('close', onResponseClose)
+    }
   }
 
   @Get()

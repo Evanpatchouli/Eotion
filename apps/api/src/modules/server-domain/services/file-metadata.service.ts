@@ -20,7 +20,7 @@ export class FileMetadataService {
     @Inject(FILE_OBJECT_STORAGE) private readonly storage: FileObjectStorage,
   ) {}
 
-  async create(userId: string, workspaceId: string, input: { id: string; name: string; stream: Readable; contentLength?: number }): Promise<FileMetadata> {
+  async create(userId: string, workspaceId: string, input: { id: string; name: string; stream: Readable; contentLength?: number; signal?: AbortSignal }): Promise<FileMetadata> {
     await this.permissions.assertCanWrite(userId, workspaceId)
     this.storage.assertConfigured()
     const maxBytes = this.maxUploadBytes()
@@ -42,7 +42,7 @@ export class FileMetadataService {
     })())
     let uploaded: { objectKey: string; url: string }
     try {
-      uploaded = await this.storage.upload({ stream: counted, objectKey: requestedKey, mimeType: UPLOAD_MIME_TYPE })
+      uploaded = await this.storage.upload({ stream: counted, objectKey: requestedKey, mimeType: UPLOAD_MIME_TYPE, fileName: input.name, signal: input.signal })
     } catch (error) {
       if (exceeded) throw new PayloadTooLargeException('File exceeds upload limit')
       if (error instanceof ServiceUnavailableException) throw error

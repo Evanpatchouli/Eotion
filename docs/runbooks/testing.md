@@ -19,7 +19,7 @@ $env:P4_TEST_MONGODB_URI = 'mongodb://127.0.0.1:27018/?replicaSet=eotionP44'
 pnpm --filter @eotion/api test:http
 ```
 
-HTTP 测试启动 Fastify/Nest 实例，通过真实 HTTP 请求覆盖 Session Cookie、身份边界、Workspace/Page/Block CRUD、跨用户权限、请求体运行时校验，以及 P4.4 sync 的真实本地 oplog → SDK transport → HTTP → Mongo → 本地 synced 路径、重复/并发重试与删除。P4.5 File HTTP 测试另外启动 fake ali-oss-server HTTP 服务；Eotion 仍调用真实 `@ali-oss-server/sdk@1.0.0`，不需要真实 Aliyun OSS。它覆盖文件 CRUD、对象键隔离和 OSS/Mongo 失败补偿。Domain 测试还覆盖 Mongo 未配置时的 `/api/health`。
+HTTP 测试启动 Fastify/Nest 实例，通过真实 HTTP 请求覆盖 Session Cookie、身份边界、Workspace/Page/Block CRUD、跨用户权限、请求体运行时校验，以及 P4.4 sync 的真实本地 oplog → SDK transport → HTTP → Mongo → 本地 synced 路径、重复/并发重试与删除。P4.5 File HTTP 测试另外启动 fake ali-oss-server HTTP 服务；Eotion 仍调用真实 `@ali-oss-server/sdk@1.1.0`，不需要真实 Aliyun OSS。它覆盖文件 CRUD、对象键隔离和 OSS/Mongo 失败补偿。Domain 测试还覆盖 Mongo 未配置时的 `/api/health`。
 
 ## Change-to-Test Mapping
 

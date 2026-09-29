@@ -11,8 +11,8 @@ importers:
   apps/api:
     dependencies:
       '@ali-oss-server/sdk':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 1.1.0
+        version: 1.1.0
       '@eotion/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -227,8 +227,8 @@ importers:
 
 packages:
 
-  '@ali-oss-server/sdk@1.0.0':
-    resolution: {integrity: sha512-pV278EaN2WLtfaqqsELLjvJPzZNsxpX2kiFbhdLa/qaJSFBQ5TIjXzxkz25Kk6+z9b63kz5dbHAr7YgJW1bILw==}
+  '@ali-oss-server/sdk@1.1.0':
+    resolution: {integrity: sha512-Z0oR0goOfSwORafXCAWZ5J5wkqlVzDbcbHPdggTMQC5dRXwdmureig3mdORltluhAjzPiN9snLUMlArmtdK+yA==}
     engines: {node: '>=20'}
 
   '@angular-devkit/core@22.1.8':
@@ -3988,7 +3988,7 @@ packages:
 
 snapshots:
 
-  '@ali-oss-server/sdk@1.0.0': {}
+  '@ali-oss-server/sdk@1.1.0': {}
 
   '@angular-devkit/core@22.1.8(chokidar@5.0.0)':
     dependencies:
