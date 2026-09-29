@@ -79,6 +79,12 @@ export const PageUpdateRequestSchema = z.object({
 })
 export type PageUpdateRequest = z.infer<typeof PageUpdateRequestSchema>
 
+export const PageMoveRequestSchema = z.object({
+  parentPageId: idSchema.nullable(),
+  orderKey: idSchema,
+}).strict()
+export type PageMoveRequest = z.infer<typeof PageMoveRequestSchema>
+
 export const BlockTypeSchema = z.enum(BLOCK_TYPES)
 export type BlockType = z.infer<typeof BlockTypeSchema>
 

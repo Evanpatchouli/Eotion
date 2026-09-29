@@ -123,6 +123,8 @@ async function installApi(page: Page, options: MockOptions = {}) {
       const record = records.find((item) => item.id === decodeURIComponent(match[1]!) && item.ownerId === session!.id)
       return record ? json(route, 200, record) : json(route, 404, error(404, 'Workspace not found'))
     }
+    // The product shell always loads the active workspace page tree.
+    if (/^\/api\/workspaces\/[^/]+\/pages$/.test(path) && method === 'GET') return json(route, 200, [])
     return json(route, 404, error(404, 'Not found'))
   })
 

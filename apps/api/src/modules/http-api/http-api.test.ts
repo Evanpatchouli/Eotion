@@ -411,6 +411,196 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
     );
     assert.equal(badPageUpdate.status, 400);
 
+    // Page tree: a dedicated move route and a leaf-only delete route.
+    const childPageCreate = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages",
+      "POST",
+      {
+        cookie: cookieA,
+        body: {
+          id: "page-child",
+          parentPageId: null,
+          title: "Child page",
+          orderKey: "b",
+        },
+      },
+    );
+    assert.equal(childPageCreate.status, 201);
+
+    assert.equal(
+      (
+        await request(
+          baseUrl,
+          "/api/workspaces/ws-owner/pages/page-child/move",
+          "PATCH",
+          { body: { parentPageId: null, orderKey: "z" } },
+        )
+      ).status,
+      401,
+    );
+    assert.equal(
+      (
+        await request(
+          baseUrl,
+          "/api/workspaces/ws-owner/pages/page-child",
+          "DELETE",
+        )
+      ).status,
+      401,
+    );
+
+    const moveUnderParent = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages/page-child/move",
+      "PATCH",
+      { cookie: cookieA, body: { parentPageId: "page-owner", orderKey: "b" } },
+    );
+    assert.equal(moveUnderParent.status, 200);
+    assert.equal(moveUnderParent.body.parentPageId, "page-owner");
+    assert.equal(moveUnderParent.body.workspaceId, "ws-owner");
+    assertNoSecretFields(moveUnderParent.body);
+
+    const grandchildCreate = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages",
+      "POST",
+      {
+        cookie: cookieA,
+        body: {
+          id: "page-grandchild",
+          parentPageId: "page-child",
+          title: "Grandchild",
+          orderKey: "a",
+        },
+      },
+    );
+    assert.equal(grandchildCreate.status, 201);
+
+    const selfMove = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages/page-owner/move",
+      "PATCH",
+      { cookie: cookieA, body: { parentPageId: "page-owner", orderKey: "z" } },
+    );
+    assert.equal(selfMove.status, 400);
+    const descendantMove = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages/page-child/move",
+      "PATCH",
+      { cookie: cookieA, body: { parentPageId: "page-grandchild", orderKey: "z" } },
+    );
+    assert.equal(descendantMove.status, 400);
+    assert.equal(
+      (
+        await request(
+          baseUrl,
+          "/api/workspaces/ws-owner/pages/page-child",
+          "GET",
+          { cookie: cookieA },
+        )
+      ).body.parentPageId,
+      "page-owner",
+    );
+    const unknownParentMove = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages/page-child/move",
+      "PATCH",
+      { cookie: cookieA, body: { parentPageId: "page-elsewhere", orderKey: "z" } },
+    );
+    assert.equal(unknownParentMove.status, 400);
+    const badMoveBody = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages/page-child/move",
+      "PATCH",
+      {
+        cookie: cookieA,
+        body: { parentPageId: null, orderKey: "z", workspaceId: "ws-other" },
+      },
+    );
+    assert.equal(badMoveBody.status, 400);
+    assert.equal(
+      (
+        await request(
+          baseUrl,
+          "/api/workspaces/ws-owner/pages/absent-page/move",
+          "PATCH",
+          { cookie: cookieA, body: { parentPageId: null, orderKey: "z" } },
+        )
+      ).status,
+      404,
+    );
+
+    const moveToRoot = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages/page-child/move",
+      "PATCH",
+      { cookie: cookieA, body: { parentPageId: null, orderKey: "c" } },
+    );
+    assert.equal(moveToRoot.status, 200);
+    assert.equal(moveToRoot.body.parentPageId, null);
+    assert.equal(moveToRoot.body.orderKey, "c");
+
+    const deleteWithChildren = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages/page-child",
+      "DELETE",
+      { cookie: cookieA },
+    );
+    assert.equal(deleteWithChildren.status, 400);
+    assert.equal(
+      (
+        await request(
+          baseUrl,
+          "/api/workspaces/ws-owner/pages/page-child",
+          "GET",
+          { cookie: cookieA },
+        )
+      ).status,
+      200,
+    );
+    const deleteGrandchild = await request(
+      baseUrl,
+      "/api/workspaces/ws-owner/pages/page-grandchild",
+      "DELETE",
+      { cookie: cookieA },
+    );
+    assert.equal(deleteGrandchild.status, 200);
+    assert.deepEqual(deleteGrandchild.body, { deleted: true });
+    assert.equal(
+      (
+        await request(
+          baseUrl,
+          "/api/workspaces/ws-owner/pages/page-grandchild",
+          "GET",
+          { cookie: cookieA },
+        )
+      ).status,
+      404,
+    );
+    assert.equal(
+      (
+        await request(
+          baseUrl,
+          "/api/workspaces/ws-owner/pages/page-grandchild",
+          "DELETE",
+          { cookie: cookieA },
+        )
+      ).status,
+      404,
+    );
+    assert.equal(
+      (
+        await request(
+          baseUrl,
+          "/api/workspaces/ws-owner/pages/page-child",
+          "DELETE",
+          { cookie: cookieA },
+        )
+      ).status,
+      200,
+    );
+
     const blockPayload = {
       id: "block-owner",
       parentBlockId: null,
@@ -531,33 +721,37 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
       ["/api/workspaces/ws-owner/pages/page-owner/blocks", "POST"],
       ["/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner", "GET"],
       ["/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner", "PATCH"],
+      ["/api/workspaces/ws-owner/pages/page-owner/move", "PATCH"],
+      ["/api/workspaces/ws-owner/pages/page-owner", "DELETE"],
     ] as const;
     for (const [route, method] of foreignRoutes) {
       const body =
-        method === "GET"
+        method === "GET" || method === "DELETE"
           ? undefined
-          : method === "PATCH"
-            ? route.includes("/blocks/")
-              ? { props: { text: "stolen" } }
-              : route.includes("/pages/")
-                ? { title: "stolen" }
-                : { name: "stolen" }
-            : route.endsWith("/pages")
-              ? {
-                  id: "foreign-page",
-                  parentPageId: null,
-                  title: "Stolen page",
-                  orderKey: "z",
-                }
-              : route.endsWith("/blocks")
+          : route.endsWith("/move")
+            ? { parentPageId: null, orderKey: "z" }
+            : method === "PATCH"
+              ? route.includes("/blocks/")
+                ? { props: { text: "stolen" } }
+                : route.includes("/pages/")
+                  ? { title: "stolen" }
+                  : { name: "stolen" }
+              : route.endsWith("/pages")
                 ? {
-                    id: "foreign-block",
-                    parentBlockId: null,
-                    type: "paragraph",
+                    id: "foreign-page",
+                    parentPageId: null,
+                    title: "Stolen page",
                     orderKey: "z",
-                    props: {},
                   }
-                : undefined;
+                : route.endsWith("/blocks")
+                  ? {
+                      id: "foreign-block",
+                      parentBlockId: null,
+                      type: "paragraph",
+                      orderKey: "z",
+                      props: {},
+                    }
+                  : undefined;
       const result = await request(baseUrl, route, method, {
         cookie: cookieB,
         ...(body === undefined ? {} : { body }),

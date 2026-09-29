@@ -8,7 +8,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "typecheck": "vue-tsc --noEmit",
-    "test:product": "playwright test tests/product-flow.spec.ts",
+    "test:product": "playwright test tests/product-flow.spec.ts tests/product-pages.spec.ts",
     "test:storage": "pnpm --filter @eotion/desktop build && playwright test tests/storage.spec.ts tests/desktop-storage.spec.ts"
   },
   "dependencies": {

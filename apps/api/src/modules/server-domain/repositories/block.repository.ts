@@ -47,7 +47,7 @@ export class BlockRepository {
     return !!(await this.model.findOneAndDelete({ workspaceId, pageId, id }, { session }).exec())
   }
 
-  async deleteByPage(workspaceId: string, pageId: string, session: ClientSession): Promise<void> {
+  async deleteByPage(workspaceId: string, pageId: string, session?: ClientSession): Promise<void> {
     await this.model.deleteMany({ workspaceId, pageId }, { session }).exec()
   }
 

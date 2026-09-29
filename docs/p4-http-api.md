@@ -37,3 +37,12 @@ Cookie 使用 `HttpOnly`、`SameSite=Lax`、`Path=/api` 和与 Session 到期时
 SDK 使用 `new EotionApiClient({ baseUrl })` 创建客户端，`auth` 提供 `register/login/me/logout`，资源客户端提供 `list/create/get/update`。所有请求默认使用 `credentials: 'include'`；非 2xx 响应抛出 `ApiError`，其中 `statusCode` 可用于区分 401、404 和 400。
 
 P4.4 在该基线上新增 authenticated `POST /api/sync/operations`、SDK `sync.send` 与 `EotionOperationTransport`，供 `reconnectPending` 发送真实 oplog；canonical operation、receipt 与删除语义见 [P4.4 Sync](p4-sync.md)。上文路由表及“本阶段”范围仍描述 P4.3 当时的交付，不包含 P4.4 新入口。
+
+P5.2 在相同基线上新增页面移动与删除入口：
+
+| 方法 | 路径 | 行为 |
+| --- | --- | --- |
+| PATCH | `/api/workspaces/:workspaceId/pages/:pageId/move` | 用 `{ parentPageId: string \| null, orderKey: string }` 重挂页面。 |
+| DELETE | `/api/workspaces/:workspaceId/pages/:pageId` | 删除无子页面的页面及其区块，返回 `{ deleted: true }`。 |
+
+`PageMoveRequestSchema` 是 strict schema：提交 `workspaceId`、`id`、`title` 等额外字段会得到 400。服务端在同一工作区内校验目标父级，拒绝把页面移动到自己或自己的后代（400），跨工作区父级和不存在的父级同样 400，页面不存在或不属于当前用户返回 404。`PATCH /pages/:pageId` 仍拒绝 `parentPageId`，移动只能走 `/move`。删除按叶子语义：有子页面时返回 400 `Delete child pages first`，不做级联删除也不提升子页面的父级。SDK 对应 `pages.move(workspaceId, pageId, input)` 与 `pages.delete(workspaceId, pageId)`。页面树产品链路见 [P5.2 Page Tree](p5-page-tree.md)。

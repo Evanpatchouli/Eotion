@@ -22,6 +22,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `p4-sync.md` | P4.4 canonical sync operation、HTTP transport 与 Mongo receipt 幂等语义 |
 | `p4-file-storage.md` | P4.5 File metadata、authenticated HTTP 与 ali-oss-server object lifecycle |
 | `p5-product-shell.md` | P5.1 正式产品路由、登录/会话和 Workspace 产品链路 |
+| `p5-page-tree.md` | P5.2 页面树、页面生命周期（创建/打开/重命名/移动/删除）与 move/delete API |
 | `p4-final-acceptance.md` | P4 六条退出条件的最终验收证据、测试结果与进入 P5 的结论 |
 
 ## 使用原则

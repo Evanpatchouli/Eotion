@@ -8,9 +8,10 @@ Web 继续使用 Hash Router，适用于浏览器、Electron renderer 和 Mobile
 - `/#/register`：使用邮箱和密码创建账号；注册成功后回到登录页，邮箱自动填入，用户手动输入密码登录。
 - `/#/app`：恢复会话后进入最近使用且仍可访问的工作区；没有可用记录时进入列表第一项；列表为空时创建第一个工作区。
 - `/#/app/:workspaceId`：工作区产品 Shell，可创建、切换及重命名工作区。刷新保留当前路由。
+- `/#/app/:workspaceId/page/:pageId`：P5.2 起打开该工作区中的一个页面，详情见 [P5.2 Page Tree](p5-page-tree.md)。
 - `/#/__dev/workspace`：原示例首页。原有 `mobile-p1`、`editor-p2`、`storage-p3` 开发路由不变，仍只在开发构建中注册。
 
-产品侧栏的 Pages 区域只提供占位提示。P5.2 Page Tree、P5.3 正式编辑器、P5.4 正式同步和 P5.5 附件 UI 尚未实现。
+产品侧栏的 Pages 区域在 P5.2 中已由真实页面树替换占位提示。P5.3 正式编辑器、P5.4 正式同步和 P5.5 附件 UI 尚未实现。
 
 ## 启动与账号
 
@@ -34,7 +35,7 @@ Electron 继续复用同一套产品源码。打包后的 `file://` renderer 直
 
 ## 验证入口
 
-- 产品浏览器行为：`pnpm --filter @eotion/web exec playwright test tests/product-flow.spec.ts`。
+- 产品浏览器行为：`pnpm --filter @eotion/web test:product`（`tests/product-flow.spec.ts` 与 `tests/product-pages.spec.ts`）。
 - 开发页布局、Safe Area、缩放、LocalStore 回归：Web 现有 Playwright 测试；Electron 存储测试前先构建 desktop。
 - API、SDK、Sync transaction/receipt、File 回归按 [Testing Runbook](runbooks/testing.md)。
 

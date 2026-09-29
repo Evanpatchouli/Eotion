@@ -166,7 +166,7 @@ test('server domain persists scoped records and creates the declared Mongo index
   )
   await assert.rejects(
     pages.update(userA.id, workspaceA.id, root.id, { parentPageId: child.id } as Parameters<typeof pages.update>[3]),
-    /Moving a page is not supported yet/,
+    /Moving a page is not supported here/,
   )
   await assert.rejects(
     pages.update(userA.id, workspaceA.id, root.id, { $set: { parentPageId: child.id, workspaceId: workspaceB.id } } as Parameters<typeof pages.update>[3]),
@@ -174,6 +174,54 @@ test('server domain persists scoped records and creates the declared Mongo index
   )
   assert.equal((await pages.find(userA.id, workspaceA.id, root.id))?.parentPageId, null)
   assert.equal((await pages.find(userA.id, workspaceA.id, root.id))?.workspaceId, workspaceA.id)
+
+  // Moving is a separate, validated operation: no self-parenting, no cycles, no cross-workspace parents.
+  await assert.rejects(
+    pages.move(userA.id, workspaceA.id, root.id, { parentPageId: root.id, orderKey: 'z' }),
+    /A page cannot be its own parent/,
+  )
+  await assert.rejects(
+    pages.move(userA.id, workspaceA.id, root.id, { parentPageId: child.id, orderKey: 'z' }),
+    /own descendant/,
+  )
+  await assert.rejects(
+    pages.move(userA.id, workspaceA.id, root.id, { parentPageId: foreignPage.id, orderKey: 'z' }),
+    /Parent page must belong to the same workspace/,
+  )
+  await assert.rejects(
+    pages.move(userB.id, workspaceA.id, root.id, { parentPageId: null, orderKey: 'z' }),
+    /Workspace not found/,
+  )
+  assert.equal(await pages.move(userA.id, workspaceA.id, 'page-missing', { parentPageId: null, orderKey: 'z' }), null)
+  assert.equal((await pages.find(userA.id, workspaceA.id, child.id))?.parentPageId, root.id)
+
+  const reparented = await pages.move(userA.id, workspaceA.id, child.id, { parentPageId: sibling.id, orderKey: 'z' })
+  assert.equal(reparented?.parentPageId, sibling.id)
+  assert.equal(reparented?.orderKey, 'z')
+  const rerooted = await pages.move(userA.id, workspaceA.id, child.id, { parentPageId: null, orderKey: 'c' })
+  assert.equal(rerooted?.parentPageId, null)
+  assert.equal(rerooted?.orderKey, 'c')
+  assert.equal((await pages.find(userA.id, workspaceA.id, child.id))?.parentPageId, null)
+
+  // Delete is leaf-only and removes the page together with its blocks.
+  const deleteParent = await pages.create(userA.id, workspaceA.id, { id: 'page-delete-parent', parentPageId: null, title: 'Delete parent', orderKey: 'd' })
+  const deleteChild = await pages.create(userA.id, workspaceA.id, { id: 'page-delete-child', parentPageId: deleteParent.id, title: 'Delete child', orderKey: 'a' })
+  await blocks.create(userA.id, workspaceA.id, deleteChild.id, {
+    id: 'block-delete-child',
+    pageId: deleteChild.id,
+    parentBlockId: null,
+    type: 'paragraph',
+    orderKey: 'a',
+    props: { text: 'removed with page' },
+  })
+  await assert.rejects(pages.delete(userA.id, workspaceA.id, deleteParent.id), /Delete child pages first/)
+  assert.ok(await pages.find(userA.id, workspaceA.id, deleteParent.id))
+  await assert.rejects(pages.delete(userB.id, workspaceA.id, deleteChild.id), /Workspace not found/)
+  assert.equal(await pages.delete(userA.id, workspaceA.id, deleteChild.id), true)
+  assert.equal(await pages.find(userA.id, workspaceA.id, deleteChild.id), null)
+  assert.equal(await connection.db!.collection('blocks').countDocuments({ id: 'block-delete-child' }), 0)
+  assert.equal(await pages.delete(userA.id, workspaceA.id, deleteParent.id), true)
+  assert.equal(await pages.delete(userA.id, workspaceA.id, deleteParent.id), false)
 
   const blockRoot = await blocks.create(userA.id, workspaceA.id, root.id, {
     id: 'block-root',

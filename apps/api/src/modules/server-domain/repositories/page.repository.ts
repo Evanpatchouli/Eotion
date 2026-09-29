@@ -39,6 +39,16 @@ export class PageRepository {
     return doc ? this.toRecord(doc) : null
   }
 
+  /** Reparents a page. Callers must validate the new parent inside the same workspace first. */
+  async moveInWorkspace(workspaceId: string, id: string, input: { parentPageId: string | null; orderKey: string }, session?: ClientSession): Promise<PageRecord | null> {
+    const doc = await this.model.findOneAndUpdate(
+      { workspaceId, id },
+      { $set: { parentPageId: input.parentPageId, orderKey: input.orderKey } },
+      { returnDocument: 'after', runValidators: true, session },
+    ).exec()
+    return doc ? this.toRecord(doc) : null
+  }
+
   async updateSnapshot(workspaceId: string, id: string, input: { title: string; icon: string | null; orderKey: string }, session: ClientSession): Promise<PageRecord | null> {
     const change = input.icon === null
       ? { $set: { title: input.title, orderKey: input.orderKey }, $unset: { icon: '' } }
@@ -47,11 +57,11 @@ export class PageRepository {
     return doc ? this.toRecord(doc) : null
   }
 
-  async hasChildren(workspaceId: string, id: string, session: ClientSession): Promise<boolean> {
-    return !!(await this.model.exists({ workspaceId, parentPageId: id }).session(session))
+  async hasChildren(workspaceId: string, id: string, session?: ClientSession): Promise<boolean> {
+    return !!(await this.model.exists({ workspaceId, parentPageId: id }).session(session ?? null))
   }
 
-  async deleteInWorkspace(workspaceId: string, id: string, session: ClientSession): Promise<boolean> {
+  async deleteInWorkspace(workspaceId: string, id: string, session?: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndDelete({ workspaceId, id }, { session }).exec())
   }
 

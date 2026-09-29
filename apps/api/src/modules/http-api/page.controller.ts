@@ -1,5 +1,5 @@
-import { Body, Controller, Get, NotFoundException, Param, Patch, Post, UseGuards } from '@nestjs/common'
-import { PageCreateRequestSchema, PageUpdateRequestSchema } from '@eotion/contracts'
+import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, UseGuards } from '@nestjs/common'
+import { PageCreateRequestSchema, PageMoveRequestSchema, PageUpdateRequestSchema } from '@eotion/contracts'
 import { PageService } from '../server-domain/services/page.service'
 import type { UserRecord } from '../server-domain/types'
 import { CurrentUser, SessionAuthGuard } from './auth.transport'
@@ -34,5 +34,20 @@ export class PageController {
     const page = await this.pages.update(user.id, parseId(workspaceId), parseId(pageId), input)
     if (!page) throw new NotFoundException('Page not found')
     return page
+  }
+
+  @Patch(':pageId/move')
+  async move(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('pageId') pageId: string, @Body() body: unknown) {
+    const input = parseBody(PageMoveRequestSchema, body)
+    const page = await this.pages.move(user.id, parseId(workspaceId), parseId(pageId), input)
+    if (!page) throw new NotFoundException('Page not found')
+    return page
+  }
+
+  @Delete(':pageId')
+  async delete(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('pageId') pageId: string) {
+    const deleted = await this.pages.delete(user.id, parseId(workspaceId), parseId(pageId))
+    if (!deleted) throw new NotFoundException('Page not found')
+    return { deleted: true }
   }
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { FileUpdateRequestSchema, FileUploadMetadataSchema } from '@eotion/contracts'
+import { FileUpdateRequestSchema, FileUploadMetadataSchema, PageMoveRequestSchema } from '@eotion/contracts'
 import { ApiError, EotionApiClient, EotionOperationTransport } from './index.ts'
 
 test('login sends JSON to the auth endpoint with session credentials enabled', async () => {
@@ -118,6 +118,41 @@ test('file metadata APIs use workspace routes, credentials, abort signals, and a
   for (const request of calls) assert.equal(request.credentials, 'include')
   assert.deepEqual(await calls[2].json(), { name: 'renamed.txt' })
   assert.equal(signals[0], controller.signal)
+})
+
+test('page move and delete use the dedicated move route and accept DELETE 204', async () => {
+  const calls = []
+  const pageRecord = {
+    id: 'page-1', workspaceId: 'workspace-1', parentPageId: 'page-2', title: 'Page',
+    icon: null, orderKey: 'c', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+  }
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test',
+    fetch: async (input, init) => {
+      const request = new Request(input, init)
+      calls.push(request)
+      return request.method === 'DELETE' ? new Response(null, { status: 204 }) : Response.json(pageRecord)
+    },
+  })
+
+  assert.deepEqual(await client.pages.move('workspace 1', 'page/1', { parentPageId: 'page-2', orderKey: 'c' }), pageRecord)
+  assert.equal(await client.pages.delete('workspace 1', 'page/1'), undefined)
+
+  assert.deepEqual(calls.map((request) => [request.method, new URL(request.url).pathname]), [
+    ['PATCH', '/api/workspaces/workspace%201/pages/page%2F1/move'],
+    ['DELETE', '/api/workspaces/workspace%201/pages/page%2F1'],
+  ])
+  for (const request of calls) assert.equal(request.credentials, 'include')
+  assert.deepEqual(await calls[0].json(), { parentPageId: 'page-2', orderKey: 'c' })
+})
+
+test('page move schema requires a nullable parent and rejects server-managed fields', () => {
+  assert.deepEqual(PageMoveRequestSchema.parse({ parentPageId: null, orderKey: 'c' }), { parentPageId: null, orderKey: 'c' })
+  assert.equal(PageMoveRequestSchema.safeParse({ parentPageId: 'page-1' }).success, false)
+  assert.equal(PageMoveRequestSchema.safeParse({ parentPageId: 'page-1', orderKey: 'c' }).success, true)
+  for (const forged of [{ orderKey: 'c', workspaceId: 'ws-1' }, { orderKey: 'c', id: 'page-9' }, { orderKey: 'c', title: 'Renamed' }]) {
+    assert.equal(PageMoveRequestSchema.safeParse({ parentPageId: null, ...forged }).success, false)
+  }
 })
 
 test('file request schemas reject client supplied server-managed metadata', () => {

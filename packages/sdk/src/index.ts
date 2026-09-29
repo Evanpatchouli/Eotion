@@ -11,6 +11,7 @@ import type {
   LoginRequest,
   LoginResponse,
   PageCreateRequest,
+  PageMoveRequest,
   PageResponse,
   PageUpdateRequest,
   RegisterRequest,
@@ -59,6 +60,8 @@ export class EotionApiClient {
     create: (workspaceId: string, input: PageCreateRequest, signal?: AbortSignal) => Promise<PageResponse>
     get: (workspaceId: string, pageId: string, signal?: AbortSignal) => Promise<PageResponse>
     update: (workspaceId: string, pageId: string, input: PageUpdateRequest, signal?: AbortSignal) => Promise<PageResponse>
+    move: (workspaceId: string, pageId: string, input: PageMoveRequest, signal?: AbortSignal) => Promise<PageResponse>
+    delete: (workspaceId: string, pageId: string, signal?: AbortSignal) => Promise<void>
   }
   readonly blocks: {
     list: (workspaceId: string, pageId: string, signal?: AbortSignal) => Promise<BlockResponse[]>
@@ -99,6 +102,10 @@ export class EotionApiClient {
       create: (workspaceId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages`, { method: 'POST', body: input, signal }),
       get: (workspaceId, pageId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}`, { method: 'GET', signal }),
       update: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}`, { method: 'PATCH', body: input, signal }),
+      move: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/move`, { method: 'PATCH', body: input, signal }),
+      delete: async (workspaceId, pageId, signal) => {
+        await this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}`, { method: 'DELETE', signal })
+      },
     }
     this.blocks = {
       list: (workspaceId, pageId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks`, { method: 'GET', signal }),

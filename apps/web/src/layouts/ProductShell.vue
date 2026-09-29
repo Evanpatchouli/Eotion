@@ -3,10 +3,12 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import eotionIconUrl from '../assets/eotion-icon.png'
+import PageTree from '../components/product/PageTree.vue'
 import WorkspaceCreateForm from '../components/product/WorkspaceCreateForm.vue'
 import WorkspaceRenameForm from '../components/product/WorkspaceRenameForm.vue'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
 import { useAuthStore } from '../stores/auth'
+import { useProductPagesStore } from '../stores/productPages'
 import { useProductWorkspacesStore } from '../stores/productWorkspaces'
 import '../styles/product.css'
 
@@ -14,6 +16,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const workspaces = useProductWorkspacesStore()
+const pages = useProductPagesStore()
 const { layoutMode, inputMode, runtime } = useRuntimeContext()
 
 const mobileNavOpen = ref(false)
@@ -26,7 +29,12 @@ const routeRevision = ref(0)
 const workspaceId = computed(() => typeof route.params.workspaceId === 'string' ? route.params.workspaceId : '')
 const currentWorkspace = computed(() => workspaces.items.find((item) => item.id === workspaceId.value) ?? null)
 const isUnavailable = computed(() => Boolean(workspaceId.value) && !currentWorkspace.value && workspaces.loaded)
-const breadcrumb = computed(() => currentWorkspace.value?.name ?? (workspaceId.value ? '工作区不可用' : '工作区'))
+const pageId = computed(() => typeof route.params.pageId === 'string' ? route.params.pageId : '')
+const breadcrumb = computed(() => {
+  const workspaceName = currentWorkspace.value?.name ?? (workspaceId.value ? '工作区不可用' : '工作区')
+  const pageTitle = pages.items.find((item) => item.id === pageId.value)?.title
+  return pageTitle ? `${workspaceName} / ${pageTitle}` : workspaceName
+})
 const sidebarHidden = computed(() => layoutMode.value === 'mobile' && !mobileNavOpen.value)
 
 function closeMobileNav() {
@@ -103,7 +111,14 @@ watch(() => route.fullPath, () => {
 watch(() => auth.user, (user) => {
   if (user) return
   workspaces.reset()
+  pages.reset()
   void router.replace({ name: 'login' })
+}, { immediate: true })
+
+// The page list always belongs to exactly one workspace; switching drops the previous one.
+watch(() => currentWorkspace.value?.id ?? '', (id) => {
+  if (id) void pages.load(id)
+  else pages.reset()
 }, { immediate: true })
 
 watch(() => [workspaces.loaded, workspaceId.value, auth.user?.id, currentWorkspace.value?.id] as const, ([loaded, id, userId, currentId]) => {
@@ -160,10 +175,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         </div>
       </div>
 
-      <div class="product-sidebar-section product-pages-section">
-        <div class="product-pages-heading"><span class="product-section-label">页面</span><button type="button" class="product-add-page" aria-label="新建页面（即将开放）" disabled>＋</button></div>
-        <div class="product-page-placeholder"><span aria-hidden="true">▤</span><span>页面功能即将开放</span></div>
-      </div>
+      <PageTree @navigate="closeMobileNav" />
 
       <div class="sidebar-footer product-sidebar-footer">
         <span class="product-user-email">{{ auth.user?.email }}</span>
