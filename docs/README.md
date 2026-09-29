@@ -19,6 +19,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `p4-server-domain.md` | P4.1 服务端领域、Mongo 集合与 P3/文件服务边界 |
 | `p4-auth-session.md` | P4.2 User、认证、Session 与 Workspace owner 权限基础 |
 | `p4-http-api.md` | P4.3 Typed HTTP API、Cookie Session 与 Eotion SDK |
+| `p4-sync.md` | P4.4 canonical sync operation、HTTP transport 与 Mongo receipt 幂等语义 |
 
 ## 使用原则
 

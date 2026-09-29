@@ -35,3 +35,5 @@ Cookie 使用 `HttpOnly`、`SameSite=Lax`、`Path=/api` 和与 Session 到期时
 - 本阶段没有文件上传、对象存储接入、oplog operation ID、同步幂等、revision、RBAC 或 MCP。
 
 SDK 使用 `new EotionApiClient({ baseUrl })` 创建客户端，`auth` 提供 `register/login/me/logout`，资源客户端提供 `list/create/get/update`。所有请求默认使用 `credentials: 'include'`；非 2xx 响应抛出 `ApiError`，其中 `statusCode` 可用于区分 401、404 和 400。
+
+P4.4 在该基线上新增 authenticated `POST /api/sync/operations`、SDK `sync.send` 与 `EotionOperationTransport`，供 `reconnectPending` 发送真实 oplog；canonical operation、receipt 与删除语义见 [P4.4 Sync](p4-sync.md)。上文路由表及“本阶段”范围仍描述 P4.3 当时的交付，不包含 P4.4 新入口。

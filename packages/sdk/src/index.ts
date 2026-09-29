@@ -1,4 +1,4 @@
-import { ApiErrorResponseSchema } from '@eotion/contracts'
+import { ApiErrorResponseSchema, SyncOperationSchema } from '@eotion/contracts'
 import type {
   ApiErrorResponse,
   AuthUserDto,
@@ -15,6 +15,7 @@ import type {
   WorkspaceCreateRequest,
   WorkspaceResponse,
   WorkspaceUpdateRequest,
+  SyncOperation,
 } from '@eotion/contracts'
 
 export interface EotionApiClientOptions {
@@ -63,6 +64,9 @@ export class EotionApiClient {
     get: (workspaceId: string, pageId: string, blockId: string, signal?: AbortSignal) => Promise<BlockResponse>
     update: (workspaceId: string, pageId: string, blockId: string, input: BlockUpdateRequest, signal?: AbortSignal) => Promise<BlockResponse>
   }
+  readonly sync: {
+    send: (operation: SyncOperation, signal?: AbortSignal) => Promise<void>
+  }
 
   private readonly fetchImpl: typeof fetch
 
@@ -92,6 +96,11 @@ export class EotionApiClient {
       create: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks`, { method: 'POST', body: input, signal }),
       get: (workspaceId, pageId, blockId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks/${segment(blockId)}`, { method: 'GET', signal }),
       update: (workspaceId, pageId, blockId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks/${segment(blockId)}`, { method: 'PATCH', body: input, signal }),
+    }
+    this.sync = {
+      send: async (operation, signal) => {
+        await this.request('/api/sync/operations', { method: 'POST', body: operation, signal })
+      },
     }
   }
 
@@ -129,6 +138,23 @@ export class EotionApiClient {
 
     if (response.status === 204) return undefined as T
     return await response.json() as T
+  }
+}
+
+/** Sends persisted P3 operations without changing their stable ID or sequence. */
+export class EotionOperationTransport {
+  private readonly client: EotionApiClient
+
+  constructor(client: EotionApiClient) {
+    this.client = client
+  }
+
+  async send(operation: SyncOperation & { status?: unknown }): Promise<void> {
+    // Explicitly reject pre-P4.4 local records. Their workspace and page-tree
+    // data cannot be reconstructed safely from the legacy oplog.
+    const { status: _status, ...wire } = operation
+    const parsed = SyncOperationSchema.parse(wire)
+    await this.client.sync.send(parsed)
   }
 }
 

@@ -8,7 +8,7 @@
     "build": "pnpm --filter @eotion/domain build && pnpm --filter @eotion/contracts build && nest build",
     "start": "node dist/main.js",
     "test:domain": "pnpm build && node --test dist/modules/server-domain/server-domain.test.js",
-    "test:http": "pnpm build && node --test dist/modules/http-api/http-api.test.js",
+    "test:http": "pnpm build && node --test dist/modules/http-api/http-api.test.js && node --experimental-strip-types --test src/modules/http-api/sync-http.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

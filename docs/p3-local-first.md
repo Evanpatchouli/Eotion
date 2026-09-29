@@ -2,7 +2,7 @@
 
 ## Storage contract
 
-`packages/storage` 导出 runtime/framework-neutral 的 `LocalStore`。领域输入直接使用 `PageSummary` 和 `BlockRecord`，提供 Page CRUD、Block CRUD/按 Page 查询，以及 pending/failed operation 查询和状态更新。`deletePage` 在一个本地事务中级联删除区块，记录一条 `page.delete` operation。这里没有通用 KV 接口，也没有复制未来 MongoDB 的集合结构。
+`packages/storage` 导出 runtime/framework-neutral 的 `LocalStore`。P4.4 起本地输入使用带明确 `workspaceId` 的 `LocalPageRecord`、`LocalBlockRecord`；Page 含 `parentPageId`、`orderKey`，以便原子写入可重放的 canonical operation。提供 Page CRUD、Block CRUD/按 Page 查询，以及 pending/failed operation 查询和状态更新。`deletePage` 在一个本地事务中级联删除该页区块，记录一条 `page.delete` operation；有子页面时拒绝删除。这里没有通用 KV 接口，也没有复制未来 MongoDB 的集合结构。
 
 业务层只依赖 `LocalStore`；`apps/web/src/storage/createLocalStore.ts` 是唯一平台选择点。普通 Web 和 Mobile WebView 共用同一个 IndexedDB adapter；Electron renderer 通过 typed preload IPC 调用 main process 内的 SQLite。Lynx 壳在 WebView URL 的 hash 前写入 `eotionRuntime=mobile-webview`，该标记只用于 runtime/UI 识别，不选择或改变存储 adapter。P3 开发验证页位于 `/#/__dev/storage-p3`，生产构建不注册路由。
 
@@ -22,13 +22,15 @@ IndexedDB 依赖 WebView 使用稳定的 origin 和 storage partition。query/ha
 
 ## Oplog 与恢复 invariant
 
-每条成功的本地内容 mutation 同事务写入一条 `pending` operation。operation 包含稳定的 `id`、持久 `clientId`、单调 `sequence`、`kind`、`target`、`payload`、`createdAt` 和 `status`。IndexedDB 以同一 readwrite transaction 提交内容、元数据与 oplog；SQLite 使用单一 `BEGIN IMMEDIATE`/`COMMIT`。失败的内容写入回滚，不能留下序号跳跃或孤立 oplog。应用重启后，`pending` 和 `failed` operation 仍按 sequence 可查询。Mobile WebView 使用同一 IndexedDB transaction 语义。
+每条成功的本地内容 mutation 同事务写入一条 `pending` operation。operation 包含稳定的 `id`、持久 `clientId`、单调 `sequence`、明确的 `workspaceId`、`kind`、可重放的 `payload`、`createdAt` 和本地 `status`。IndexedDB 以同一 readwrite transaction 提交内容、元数据与 oplog；SQLite 使用单一 `BEGIN IMMEDIATE`/`COMMIT`。失败的内容写入回滚，不能留下序号跳跃或孤立 oplog。应用重启后，`pending` 和 `failed` operation 仍按 sequence 可查询。Mobile WebView 使用同一 IndexedDB transaction 语义。
 
 本地新 ID 统一通过 `@eotion/storage` 的 `createLocalId()` 生成（基于 nanoid）；Page / Block 的 ID 由调用方在创建时赋予，更新时沿用原 ID。adapter 只在首次建立 client identity 和写入新 operation 时生成 ID；重试读取已有 operation，不生成新 ID。历史 Mobile bridge PoC 请求也曾使用该 helper。
 
 `reconnectPending` 只读取现有队列，按 sequence 发送；成功标记 `synced`，第一条发送失败标记 `failed` 并停止后续发送。重试不创建新 operation，沿用持久记录的 operation id。同一 JS realm 中同一 `LocalStore` 对象的并发调用共用一次执行；不同 store 对象即使指向同一数据库，也可能同时发送同一 operation。不同浏览器 tab、Electron renderer 或重载后的 JS realm 也不共享 `WeakMap`。Mobile WebView 的跨实例协调不在当前 P3 guarantee 内。
 
-P3 的语义是 **durable local oplog + at-least-once delivery + stable operation id**，不承诺客户端 exactly-once 或跨实例全局互斥。发送已被远端接收、但本地 `synced` 状态尚未提交时，后续 reconnect 会用同一 id 重试。P4 sync transport 和 server 必须按 operation id 幂等处理重复投递；这是未来服务端契约的必要条件。P3 只用 fake transport 验证本地语义，不连接服务器。
+P3 的语义是 **durable local oplog + at-least-once delivery + stable operation id**，不承诺客户端 exactly-once 或跨实例全局互斥。发送已被远端接收、但本地 `synced` 状态尚未提交时，后续 reconnect 会用同一 id 重试。P3 原始验收只使用 fake transport；P4.4 加入真实 HTTP transport 与服务端 operation ID 幂等。
+
+P4.4 已在 [真实同步契约](p4-sync.md) 补齐 P3→P4 的网络 operation、HTTP transport 与服务端 receipt。旧 P3 页面和 oplog 没有足够的工作区、父页面和排序信息，不能自动升级为可同步记录；新 mutation 必须显式给出这些值。
 
 ## 验证
 

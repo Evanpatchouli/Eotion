@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ApiError, EotionApiClient } from './index.ts'
+import { ApiError, EotionApiClient, EotionOperationTransport } from './index.ts'
 
 test('login sends JSON to the auth endpoint with session credentials enabled', async () => {
   let request
@@ -50,4 +50,28 @@ test('logout accepts the API 204 response', async () => {
 
   assert.equal(await client.auth.logout(), undefined)
   assert.equal(credentials, 'include')
+})
+
+test('sync transport sends canonical operation without local status and rejects legacy oplog', async () => {
+  const requests = []
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test',
+    fetch: async (input, init) => {
+      requests.push(new Request(input, init))
+      return Response.json({ id: 'op-1', applied: true })
+    },
+  })
+  const transport = new EotionOperationTransport(client)
+  const operation = {
+    id: 'op-1', clientId: 'client-1', sequence: 3, workspaceId: 'ws-1',
+    createdAt: '2026-01-01T00:00:00.000Z', kind: 'page.upsert',
+    payload: { id: 'page-1', parentPageId: null, title: 'Page', icon: null, orderKey: 'a' },
+    status: 'pending',
+  }
+  await transport.send(operation)
+  assert.equal(requests[0].url, 'https://eotion.test/api/sync/operations')
+  assert.equal(requests[0].credentials, 'include')
+  assert.deepEqual(await requests[0].json(), (({ status, ...wire }) => wire)(operation))
+  await assert.rejects(transport.send({ ...operation, workspaceId: undefined }))
+  assert.equal(requests.length, 1)
 })
