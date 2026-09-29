@@ -15,7 +15,11 @@ async function retryRestore() {
     await router.replace({ name: 'login', query: { redirect: route.fullPath } })
     return
   }
-  if (route.name === 'login' && auth.user) {
+  if ((route.name === 'login' || route.name === 'register') && auth.user) {
+    if (route.name === 'register') {
+      await router.replace('/app')
+      return
+    }
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
     const redirectPath = redirect.split(/[?#]/, 1)[0] ?? ''
     await router.replace(redirectPath === '/app' || redirectPath.startsWith('/app/') ? redirect : '/app')

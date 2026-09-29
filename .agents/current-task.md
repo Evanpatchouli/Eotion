@@ -39,3 +39,11 @@
 ## Commit
 
 本轮聚焦提交：`feat(p5): establish product shell and workspace flow`。不 push。
+
+## 后续增量：Auth 注册闭环（2026-09-30）
+
+- 新增正式 `/#/register`，复用 SDK `auth.register`；登录/注册双向跳转，注册成功只携邮箱回到登录页，不创建 Session。
+- Login 从 query 回填邮箱、保持密码为空并聚焦密码输入框；已登录访问 `/login` 或 `/register` 均进入产品区。
+- Product tests 覆盖双向跳转、注册路由刷新、密码不一致、pending/重复提交、服务端错误、注册后手动登录与已登录重定向。
+- `pnpm --filter @eotion/web typecheck`、`pnpm --filter @eotion/web build`、`pnpm --filter @eotion/web test:product`（10/10）及 `git diff --check` 均通过；未重跑 P1～P4 回归。
+- 本增量聚焦提交：`feat(auth): add product registration flow`。

@@ -54,6 +54,8 @@
 .product-login-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; font-size: 15px; font-weight: 700; }
 .product-login-card h1 { margin-bottom: 8px; font-size: 29px; letter-spacing: -.025em; }
 .product-login-copy { margin: 0 0 25px; color: #777672; font-size: 14px; line-height: 1.6; }
+.product-auth-switch { margin: 18px 0 0; color: #777672; text-align: center; font-size: 13px; }
+.product-auth-switch a { color: #34342f; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 .product-restore-error { margin: -8px 0 20px; }
 .product-login-submit { width: 100%; margin-top: 5px; }
 @media (max-width: 767px) {

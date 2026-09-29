@@ -25,6 +25,7 @@ export const router = createRouter({
   routes: [
     { path: '/', redirect: '/app' },
     { path: '/login', name: 'login', component: () => import('./views/LoginView.vue') },
+    { path: '/register', name: 'register', component: () => import('./views/RegisterView.vue') },
     {
       path: '/app',
       component: () => import('./layouts/ProductShell.vue'),
@@ -46,7 +47,8 @@ router.beforeEach(async (to) => {
   await auth.ensureSession()
   if (auth.restoreError) return true
 
-  if (to.name === 'login' && auth.user) {
+  if ((to.name === 'login' || to.name === 'register') && auth.user) {
+    if (to.name === 'register') return '/app'
     const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : ''
     const redirectPath = redirect.split(/[?#]/, 1)[0] ?? ''
     return redirectPath === '/app' || redirectPath.startsWith('/app/') ? redirect : '/app'

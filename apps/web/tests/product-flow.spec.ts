@@ -20,11 +20,15 @@ type MockOptions = {
 
 async function installApi(page: Page, options: MockOptions = {}) {
   let session = options.user ?? null
+  const accounts: Record<string, AuthUserDto> = { ...users }
+  const passwords: Record<string, string> = { 'ava@example.com': 'ava-password', 'ben@example.com': 'ben-password' }
   const records = [...(options.workspaces ?? [])]
   const controls = {
     loginDelayMs: 0,
+    registerDelayMs: 0,
     meDelayMs: 0,
     loginFailures: 0,
+    registerFailures: 0,
     meFailures: 0,
     workspaceListFailures: 0,
     renameFailures: 0,
@@ -62,11 +66,25 @@ async function installApi(page: Page, options: MockOptions = {}) {
         return json(route, 401, error(401, 'Invalid email or password'))
       }
       const input = body as { email?: string; password?: string } | undefined
-      const user = input?.email ? users[input.email] : undefined
-      const expectedPassword = input?.email === 'ava@example.com' ? 'ava-password' : 'ben-password'
-      if (!user || input?.password !== expectedPassword) return json(route, 401, error(401, 'Invalid email or password'))
+      const user = input?.email ? accounts[input.email] : undefined
+      if (!user || input?.password !== passwords[input.email!]) return json(route, 401, error(401, 'Invalid email or password'))
       session = user
       return json(route, 200, { user, expiresAt: later })
+    }
+    if (path === '/api/auth/register' && method === 'POST') {
+      await wait(controls.registerDelayMs)
+      if (controls.registerFailures > 0) {
+        controls.registerFailures -= 1
+        return json(route, 409, { statusCode: 409, message: 'An account with this email already exists', error: 'Conflict' })
+      }
+      const input = body as { email?: string; password?: string } | undefined
+      const registeredEmail = input?.email?.trim().toLowerCase()
+      if (!registeredEmail || !input?.password) return json(route, 400, error(400, 'Invalid registration details'))
+      if (accounts[registeredEmail]) return json(route, 409, { statusCode: 409, message: 'An account with this email already exists', error: 'Conflict' })
+      const user: AuthUserDto = { id: `user-${registeredEmail}`, email: registeredEmail, createdAt: now, updatedAt: now }
+      accounts[registeredEmail] = user
+      passwords[registeredEmail] = input.password
+      return json(route, 201, user)
     }
     if (path === '/api/auth/logout' && method === 'POST') {
       session = null
@@ -138,6 +156,71 @@ test('protects product routes, reports login failure while pending, then opens t
   await expect(page).toHaveURL(/#\/app$/)
   await expect(page.getByRole('heading', { name: '创建你的第一个工作区' })).toBeVisible()
   expect(api.getSession()?.id).toBe('user-ava')
+})
+
+test('links login and registration pages in both directions', async ({ page }) => {
+  await installApi(page)
+  await page.goto('/#/login')
+  await page.getByRole('link', { name: '没有账号，立即注册' }).click()
+  await expect(page).toHaveURL(/#\/register$/)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: '注册 Eotion' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '注册' })).toBeDisabled()
+  await page.getByRole('link', { name: '已有账号，前往登录' }).click()
+  await expect(page).toHaveURL(/#\/login$/)
+  await expect(page.getByRole('heading', { name: '登录 Eotion' })).toBeVisible()
+})
+
+test('requires matching passwords, then registers and returns to login without creating a session', async ({ page }) => {
+  const api = await installApi(page)
+  await page.goto('/#/register')
+  await page.getByLabel('邮箱').fill('new@example.com')
+  await page.getByLabel('密码', { exact: true }).fill('new-password')
+  await page.getByLabel('确认密码').fill('different-password')
+  const register = page.getByRole('button', { name: '注册' })
+  await expect(register).toBeDisabled()
+  expect(api.requests.filter((request) => request.path === '/api/auth/register')).toHaveLength(0)
+
+  await page.getByLabel('确认密码').fill('new-password')
+  await expect(register).toBeEnabled()
+  await register.click()
+  await expect(page).toHaveURL(/#\/login\?email=/)
+  await expect.poll(() => page.evaluate(() => new URLSearchParams(location.hash.split('?')[1]).get('email'))).toBe('new@example.com')
+  await expect(page.getByLabel('邮箱')).toHaveValue('new@example.com')
+  await expect(page.getByLabel('密码', { exact: true })).toHaveValue('')
+  await expect(page.getByLabel('密码', { exact: true })).toBeFocused()
+  expect(api.getSession()).toBeNull()
+  expect(api.requests.filter((request) => request.path === '/api/auth/register')).toHaveLength(1)
+
+  await page.getByLabel('密码', { exact: true }).fill('new-password')
+  await page.getByRole('button', { name: '登录' }).click()
+  await expect(page).toHaveURL(/#\/app$/)
+  expect(api.getSession()?.email).toBe('new@example.com')
+})
+
+test('disables repeat registration while pending and displays a server error', async ({ page }) => {
+  const api = await installApi(page)
+  api.controls.registerDelayMs = 200
+  api.controls.registerFailures = 1
+  await page.goto('/#/register')
+  await page.getByLabel('邮箱').fill('ava@example.com')
+  await page.getByLabel('密码', { exact: true }).fill('new-password')
+  await page.getByLabel('确认密码').fill('new-password')
+  const register = page.locator('form button[type="submit"]')
+  await register.click()
+  await expect(register).toBeDisabled()
+  await expect(page.getByRole('alert')).toContainText('An account with this email already exists')
+  await expect(register).toBeEnabled()
+  expect(api.requests.filter((request) => request.path === '/api/auth/register')).toHaveLength(1)
+})
+
+test('redirects an authenticated visitor from login and registration to the product area', async ({ page }) => {
+  await installApi(page, { user: users['ava@example.com'], workspaces: [workspace('ws-a', 'Ava space')] })
+  await page.goto('/#/login')
+  await expect(page).toHaveURL(/#\/app\/ws-a$/)
+  await page.goto('/#/register')
+  await expect(page).toHaveURL(/#\/app\/ws-a$/)
+  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
 })
 
 test('delays login until session recovery completes, and lets a failed recovery retry', async ({ page }) => {
