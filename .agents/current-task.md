@@ -1,18 +1,22 @@
-# Current Task — P4.1 TypeScript domain runtime build
+# Current Task — P4.2 Auth / Session / Workspace Permission Foundation
+
+Base: `95cb1308275d219fa92a4c04591cccc96b1f3797` (`origin/master`, 2026-09-29).
 
 ## Goal
 
-在 `186a4712ccb072ff47d2ff1cb0b381c41e51450d` 上删除 `packages/domain/src` 的手写 JS/声明文件，以单一 TypeScript 常量构建 Node 可加载的运行时产物，保持 P3/P4.1 行为。
+建立 User、email/password 认证、Mongo hash-only Session，以及 owner-only workspace 应用服务权限边界；不进入 P4.3 transport/SDK。
 
 ## Work units
 
 | ID | 模式 / 评级 | 边界与验收 | 状态 |
 | --- | --- | --- | --- |
-| W1 | investigate / S0 | 核对基线、domain package/tsconfig/exports 与所有消费者的构建边界。 | 完成：本地与远端一致；仅 API 运行时消费常量，其余均类型导入。 |
-| W2 | decide / S2 | 确定 TypeScript 构建产物格式、导出映射与 clean clone 构建顺序。 | 完成：tsc 构建 CommonJS，API dev/build 显式先构建 domain。 |
-| W3 | execute / S1 | 实现单一 TS 常量、package 构建/exports、API 命令接线、删 workaround 并同步文档。 | 完成 |
-| W4 | verify/review / S0 + Review | 执行指定验证、Node runtime smoke、独立 review、提交推送。 | 完成：指定验证与 Node 22.12 smoke 通过，独立 review 无 blocker。 |
+| W1 | investigate / S0 | 核对登录要求、P4.1 service/测试/索引及授权缺口。 | 完成：无既有登录标识约束；Mongo 集成设施可用。 |
+| W2 | decide / S2 | 定下 User、密码摘要、Session 生命周期与授权 API。 | 完成：email/password、scrypt、opaque token hash、AuthService.login 签发。 |
+| W3 | execute / S1 | 实现 User/Auth/Session schema、repository、service 与测试。 | 完成 |
+| W4 | execute / S1 | 为 Workspace/Page/Block/File 应用服务接入用户权限并补测试。 | 完成 |
+| W5 | execute / S1 | 更新 P4.2 文档和索引。 | 完成 |
+| W6 | verify/review / S0 + Review | 执行 build/typecheck/Mongo integration/health，独立 review，提交推送。 | 验证与独立 review 完成，无 blocker；提交推送记录见 Git history。 |
 
 ## Constraints
 
-不进入 P4.2，不改 Block 类型集合、P3 BlockRecord 或 P4.1 Mongo 行为；不新增 bundler，不修改 `.codex`。
+保持 P3 和 P4.1 领域模型兼容；raw password/token 不持久化或输出；Mongo disabled health；禁止 P4.3+ 能力和 `.codex` 修改。

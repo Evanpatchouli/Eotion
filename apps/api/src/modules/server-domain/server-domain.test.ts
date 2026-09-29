@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
@@ -12,10 +12,14 @@ import { ServerDomainModule } from './server-domain.module'
 import { BlockEntity } from './schemas/block.schema'
 import { FileMetadataEntity } from './schemas/file-metadata.schema'
 import { PageEntity } from './schemas/page.schema'
+import { SessionEntity } from './schemas/session.schema'
+import { UserEntity } from './schemas/user.schema'
 import { WorkspaceEntity } from './schemas/workspace.schema'
+import { AuthService } from './services/auth.service'
 import { BlockService } from './services/block.service'
 import { FileMetadataService } from './services/file-metadata.service'
 import { PageService } from './services/page.service'
+import { SessionService } from './services/session.service'
 import { WorkspaceService } from './services/workspace.service'
 
 function testMongoUri(): string {
@@ -37,6 +41,8 @@ test('server domain persists scoped records and creates the declared Mongo index
   const pages = app.get(PageService)
   const blocks = app.get(BlockService)
   const files = app.get(FileMetadataService)
+  const auth = app.get(AuthService)
+  const sessions = app.get(SessionService)
 
   t.after(async () => {
     try {
@@ -50,52 +56,102 @@ test('server domain persists scoped records and creates the declared Mongo index
   const pageModel = app.get<Model<unknown>>(getModelToken(PageEntity.name))
   const blockModel = app.get<Model<unknown>>(getModelToken(BlockEntity.name))
   const fileModel = app.get<Model<unknown>>(getModelToken(FileMetadataEntity.name))
-  await Promise.all([workspaceModel.init(), pageModel.init(), blockModel.init(), fileModel.init()])
+  const userModel = app.get<Model<unknown>>(getModelToken(UserEntity.name))
+  const sessionModel = app.get<Model<unknown>>(getModelToken(SessionEntity.name))
+  await Promise.all([
+    workspaceModel.init(), pageModel.init(), blockModel.init(), fileModel.init(), userModel.init(), sessionModel.init(),
+  ])
   assert.deepEqual((blockModel.schema.path('type') as unknown as { enumValues: string[] }).enumValues, [...BLOCK_TYPES])
   assert.equal(fileModel.collection.name, 'files')
   assert.equal(await connection.db!.listCollections({ name: 'filemetadatas' }).hasNext(), false)
 
-  const workspaceA = await workspaces.create({ id: 'workspace-a', name: 'A', ownerId: 'owner-a' })
-  const workspaceB = await workspaces.create({ id: 'workspace-b', name: 'B', ownerId: 'owner-b' })
-  assert.equal((await workspaces.findById(workspaceA.id))?.name, 'A')
+  const userA = await auth.register(' Owner@Example.com ', 'correct horse battery staple')
+  const userB = await auth.register('second@example.com', 'another password')
+  assert.equal(userA.email, 'owner@example.com')
+  assert.equal((await auth.authenticate('OWNER@example.com', 'correct horse battery staple')).id, userA.id)
+  await assert.rejects(auth.register('owner@example.com', 'different password'), /account with this email already exists/i)
+  await assert.rejects(auth.authenticate(userA.email, 'wrong password'), /Invalid credentials/)
+  assert.equal(await userModel.countDocuments({ email: 'owner@example.com' }), 1)
+  const storedUser = await userModel.findOne({ id: userA.id }).select('+passwordHash').lean() as unknown as { passwordHash: string }
+  assert.notEqual(storedUser.passwordHash, 'correct horse battery staple')
+  assert.ok(storedUser.passwordHash.length > 20)
+  assert.equal(await userModel.findOne({ id: userA.id }).lean().then((record) => 'passwordHash' in (record ?? {})), false)
+
+  const session = await auth.login(userA.email, 'correct horse battery staple')
+  assert.equal((await sessions.resolve(session.token))?.id, userA.id)
+  const storedSession = await sessionModel.findOne({ userId: userA.id }).select('+tokenHash').lean() as unknown as {
+    tokenHash: string
+    expiresAt: Date
+    revokedAt: Date | null
+  }
+  assert.notEqual(storedSession.tokenHash, session.token)
+  assert.equal(storedSession.tokenHash.length, 64)
+  assert.ok(storedSession.expiresAt.getTime() > Date.now())
+  assert.equal(storedSession.revokedAt, null)
+  assert.equal(await sessionModel.findOne({ userId: userA.id }).lean().then((record) => 'tokenHash' in (record ?? {})), false)
+  const ttlIndex = (await sessionModel.collection.indexes()).find((index) => index.name === 'expiresAt_1')
+  assert.equal(ttlIndex?.expireAfterSeconds, 0)
+  const expiringSession = await auth.login(userA.email, 'correct horse battery staple')
+  const expiringTokenHash = createHash('sha256').update(expiringSession.token).digest('hex')
+  await sessionModel.updateOne({ tokenHash: expiringTokenHash }, { $set: { expiresAt: new Date(0) } }).exec()
+  assert.equal(await sessions.resolve(expiringSession.token), null)
+  await sessions.revoke(session.token)
+  assert.equal(await sessions.resolve(session.token), null)
+  const sessionCount = await sessionModel.countDocuments()
+  await assert.rejects(auth.login(userA.email, 'wrong password'), /Invalid credentials/)
+  assert.equal(await sessionModel.countDocuments(), sessionCount)
+
+  const workspaceA = await workspaces.create(userA.id, { id: 'workspace-a', name: 'A' })
+  const workspaceB = await workspaces.create(userB.id, { id: 'workspace-b', name: 'B' })
+  assert.equal((await workspaces.findById(userA.id, workspaceA.id))?.name, 'A')
+  assert.deepEqual((await workspaces.listByOwner(userA.id)).map(({ id }) => id), [workspaceA.id])
+  await assert.rejects(workspaces.findById(userB.id, workspaceA.id), /Workspace not found/)
+  await assert.rejects(workspaces.updateName(userB.id, workspaceA.id, 'stolen'), /Workspace not found/)
+  assert.equal((await workspaces.updateName(userA.id, workspaceA.id, 'A renamed'))?.name, 'A renamed')
+  await assert.rejects(workspaces.create('missing-user', { id: 'workspace-invalid-owner', name: 'Invalid' }), /User not found/)
   await assert.rejects(
-    workspaces.create({ id: workspaceA.id, name: 'duplicate', ownerId: 'owner-a' }),
+    workspaces.create(userA.id, { id: workspaceA.id, name: 'duplicate' }),
     (error: { code?: number }) => error.code === 11000,
   )
 
-  const root = await pages.create(workspaceA.id, {
+  const root = await pages.create(userA.id, workspaceA.id, {
     id: 'page-root',
     parentPageId: null,
     title: 'Root',
     orderKey: 'b',
   })
-  const sibling = await pages.create(workspaceA.id, {
+  const sibling = await pages.create(userA.id, workspaceA.id, {
     id: 'page-sibling',
     parentPageId: null,
     title: 'Sibling',
     orderKey: 'a',
   })
-  const child = await pages.create(workspaceA.id, {
+  const child = await pages.create(userA.id, workspaceA.id, {
     id: 'page-child',
     parentPageId: root.id,
     title: 'Child',
     orderKey: 'a',
   })
-  const foreignPage = await pages.create(workspaceB.id, {
+  const foreignPage = await pages.create(userB.id, workspaceB.id, {
     id: 'page-foreign',
     parentPageId: null,
     title: 'Foreign',
     orderKey: 'a',
   })
-  assert.equal((await pages.find(workspaceA.id, child.id))?.parentPageId, root.id)
-  assert.equal(await pages.find(workspaceB.id, child.id), null)
-  assert.deepEqual((await pages.list(workspaceA.id)).map(({ id }) => id), ['page-sibling', 'page-root', 'page-child'])
+  assert.equal((await pages.find(userA.id, workspaceA.id, child.id))?.parentPageId, root.id)
+  assert.equal(await pages.find(userB.id, workspaceB.id, root.id), null)
+  await assert.rejects(pages.find(userB.id, workspaceA.id, root.id), /Workspace not found/)
+  await assert.rejects(pages.create(userB.id, workspaceA.id, {
+    id: 'unauthorized-page', parentPageId: null, title: 'Unauthorized', orderKey: 'z',
+  }), /Workspace not found/)
+  await assert.rejects(pages.update(userB.id, workspaceA.id, root.id, { title: 'stolen' }), /Workspace not found/)
+  assert.deepEqual((await pages.list(userA.id, workspaceA.id)).map(({ id }) => id), ['page-sibling', 'page-root', 'page-child'])
   await assert.rejects(
-    pages.create(workspaceB.id, { id: root.id, parentPageId: null, title: 'duplicate', orderKey: 'z' }),
+    pages.create(userA.id, workspaceA.id, { id: root.id, parentPageId: null, title: 'duplicate', orderKey: 'z' }),
     (error: { code?: number }) => error.code === 11000,
   )
   await assert.rejects(
-    pages.create(workspaceA.id, {
+    pages.create(userA.id, workspaceA.id, {
       id: 'page-invalid-parent',
       parentPageId: foreignPage.id,
       title: 'Invalid',
@@ -104,17 +160,17 @@ test('server domain persists scoped records and creates the declared Mongo index
     /Parent page must belong to the same workspace/,
   )
   await assert.rejects(
-    pages.update(workspaceA.id, root.id, { parentPageId: child.id } as Parameters<typeof pages.update>[2]),
+    pages.update(userA.id, workspaceA.id, root.id, { parentPageId: child.id } as Parameters<typeof pages.update>[3]),
     /Moving a page is not supported yet/,
   )
   await assert.rejects(
-    pages.update(workspaceA.id, root.id, { $set: { parentPageId: child.id, workspaceId: workspaceB.id } } as Parameters<typeof pages.update>[2]),
+    pages.update(userA.id, workspaceA.id, root.id, { $set: { parentPageId: child.id, workspaceId: workspaceB.id } } as Parameters<typeof pages.update>[3]),
     /Unsupported update field/,
   )
-  assert.equal((await pages.find(workspaceA.id, root.id))?.parentPageId, null)
-  assert.equal((await pages.find(workspaceA.id, root.id))?.workspaceId, workspaceA.id)
+  assert.equal((await pages.find(userA.id, workspaceA.id, root.id))?.parentPageId, null)
+  assert.equal((await pages.find(userA.id, workspaceA.id, root.id))?.workspaceId, workspaceA.id)
 
-  const blockRoot = await blocks.create(workspaceA.id, root.id, {
+  const blockRoot = await blocks.create(userA.id, workspaceA.id, root.id, {
     id: 'block-root',
     pageId: root.id,
     parentBlockId: null,
@@ -122,7 +178,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     orderKey: 'b',
     props: { text: 'root' },
   })
-  await blocks.create(workspaceA.id, root.id, {
+  await blocks.create(userA.id, workspaceA.id, root.id, {
     id: 'block-first',
     pageId: root.id,
     parentBlockId: null,
@@ -130,7 +186,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     orderKey: 'a',
     props: { text: 'first' },
   })
-  const nestedBlock = await blocks.create(workspaceA.id, root.id, {
+  const nestedBlock = await blocks.create(userA.id, workspaceA.id, root.id, {
     id: 'block-child',
     pageId: root.id,
     parentBlockId: blockRoot.id,
@@ -138,7 +194,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     orderKey: 'a',
     props: { text: 'nested' },
   })
-  const foreignBlock = await blocks.create(workspaceB.id, foreignPage.id, {
+  const foreignBlock = await blocks.create(userB.id, workspaceB.id, foreignPage.id, {
     id: 'block-foreign',
     pageId: foreignPage.id,
     parentBlockId: null,
@@ -149,11 +205,16 @@ test('server domain persists scoped records and creates the declared Mongo index
   assert.equal(typeof nestedBlock.id, 'string')
   assert.equal(nestedBlock.id, 'block-child')
   assert.equal(nestedBlock.workspaceId, workspaceA.id)
-  assert.equal(await blocks.find(workspaceB.id, root.id, blockRoot.id), null)
-  assert.equal(await blocks.find(workspaceA.id, root.id, foreignBlock.id), null)
-  assert.deepEqual((await blocks.list(workspaceA.id, root.id)).map(({ id }) => id), ['block-first', 'block-root', 'block-child'])
+  assert.equal(await blocks.find(userB.id, workspaceB.id, foreignPage.id, blockRoot.id), null)
+  assert.equal(await blocks.find(userA.id, workspaceA.id, root.id, foreignBlock.id), null)
+  await assert.rejects(blocks.find(userB.id, workspaceA.id, root.id, blockRoot.id), /Workspace not found/)
+  await assert.rejects(blocks.create(userB.id, workspaceA.id, root.id, {
+    id: 'unauthorized-block', pageId: root.id, parentBlockId: null, type: 'paragraph', orderKey: 'z', props: {},
+  }), /Workspace not found/)
+  await assert.rejects(blocks.update(userB.id, workspaceA.id, root.id, blockRoot.id, { props: { text: 'stolen' } }), /Workspace not found/)
+  assert.deepEqual((await blocks.list(userA.id, workspaceA.id, root.id)).map(({ id }) => id), ['block-first', 'block-root', 'block-child'])
   await assert.rejects(
-    blocks.create(workspaceB.id, foreignPage.id, {
+    blocks.create(userB.id, workspaceB.id, foreignPage.id, {
       id: blockRoot.id,
       pageId: foreignPage.id,
       parentBlockId: null,
@@ -164,7 +225,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     (error: { code?: number }) => error.code === 11000,
   )
   await assert.rejects(
-    blocks.create(workspaceB.id, root.id, {
+    blocks.create(userB.id, workspaceB.id, root.id, {
       id: 'wrong-workspace-block',
       pageId: root.id,
       parentBlockId: null,
@@ -175,7 +236,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     /Page not found in workspace/,
   )
   await assert.rejects(
-    blocks.create(workspaceA.id, root.id, {
+    blocks.create(userA.id, workspaceA.id, root.id, {
       id: 'mismatched-page-block',
       pageId: sibling.id,
       parentBlockId: null,
@@ -186,17 +247,17 @@ test('server domain persists scoped records and creates the declared Mongo index
     /Block pageId does not match the target page/,
   )
   await assert.rejects(
-    blocks.update(workspaceA.id, root.id, blockRoot.id, { parentBlockId: nestedBlock.id } as Parameters<typeof blocks.update>[3]),
+    blocks.update(userA.id, workspaceA.id, root.id, blockRoot.id, { parentBlockId: nestedBlock.id } as Parameters<typeof blocks.update>[4]),
     /Moving a block is not supported yet/,
   )
   await assert.rejects(
-    blocks.update(workspaceA.id, root.id, blockRoot.id, { $set: { parentBlockId: nestedBlock.id, workspaceId: workspaceB.id } } as Parameters<typeof blocks.update>[3]),
+    blocks.update(userA.id, workspaceA.id, root.id, blockRoot.id, { $set: { parentBlockId: nestedBlock.id, workspaceId: workspaceB.id } } as Parameters<typeof blocks.update>[4]),
     /Unsupported update field/,
   )
-  assert.equal((await blocks.find(workspaceA.id, root.id, blockRoot.id))?.parentBlockId, null)
-  assert.equal((await blocks.find(workspaceA.id, root.id, blockRoot.id))?.workspaceId, workspaceA.id)
+  assert.equal((await blocks.find(userA.id, workspaceA.id, root.id, blockRoot.id))?.parentBlockId, null)
+  assert.equal((await blocks.find(userA.id, workspaceA.id, root.id, blockRoot.id))?.workspaceId, workspaceA.id)
   await assert.rejects(
-    blocks.create(workspaceA.id, root.id, {
+    blocks.create(userA.id, workspaceA.id, root.id, {
       id: 'block-invalid-parent',
       pageId: root.id,
       parentBlockId: foreignBlock.id,
@@ -212,47 +273,62 @@ test('server domain persists scoped records and creates the declared Mongo index
   const fileInput = {
     id: 'file-a',
     workspaceId: workspaceA.id,
-    ownerId: 'owner-a',
     name: 'before.txt',
     mimeType: 'text/plain',
     size: 4,
     objectKey: 'objects/file-a',
   }
-  await assert.rejects(files.create(workspaceB.id, fileInput), /File workspaceId does not match the target workspace/)
+  await assert.rejects(files.create(userA.id, workspaceA.id, { ...fileInput, workspaceId: workspaceB.id }), /File workspaceId does not match the target workspace/)
   await assert.rejects(
-    files.create('missing-workspace', { ...fileInput, workspaceId: 'missing-workspace' }),
+    files.create(userA.id, 'missing-workspace', { ...fileInput, workspaceId: 'missing-workspace' }),
     /Workspace not found/,
   )
-  const file = await files.create(workspaceA.id, fileInput)
-  assert.equal((await files.find(workspaceA.id, file.id))?.objectKey, 'objects/file-a')
+  const file = await files.create(userA.id, workspaceA.id, fileInput)
+  assert.equal(file.ownerId, userA.id)
+  assert.equal((await files.find(userA.id, workspaceA.id, file.id))?.objectKey, 'objects/file-a')
   await assert.rejects(
-    files.update(workspaceA.id, file.id, { $set: { workspaceId: workspaceB.id } } as Parameters<typeof files.update>[2]),
+    files.update(userA.id, workspaceA.id, file.id, { $set: { workspaceId: workspaceB.id } } as Parameters<typeof files.update>[3]),
     /Unsupported update field/,
   )
-  assert.equal((await files.find(workspaceA.id, file.id))?.workspaceId, workspaceA.id)
-  assert.equal(await files.find(workspaceB.id, file.id), null)
-  assert.equal(await files.update(workspaceB.id, file.id, { name: 'wrong-scope.txt' }), null)
-  const updated = await files.update(workspaceA.id, file.id, { name: 'after.txt', size: 5 })
+  assert.equal((await files.find(userA.id, workspaceA.id, file.id))?.workspaceId, workspaceA.id)
+  assert.equal(await files.find(userB.id, workspaceB.id, file.id), null)
+  await assert.rejects(files.find(userB.id, workspaceA.id, file.id), /Workspace not found/)
+  await assert.rejects(files.create(userB.id, workspaceA.id, {
+    id: 'unauthorized-file', workspaceId: workspaceA.id, name: 'x', mimeType: 'text/plain', size: 1, objectKey: 'x',
+  }), /Workspace not found/)
+  await assert.rejects(files.update(userB.id, workspaceA.id, file.id, { name: 'stolen' }), /Workspace not found/)
+  await assert.rejects(files.delete(userB.id, workspaceA.id, file.id), /Workspace not found/)
+  assert.equal(await files.update(userB.id, workspaceB.id, file.id, { name: 'wrong-scope.txt' }), null)
+  const updated = await files.update(userA.id, workspaceA.id, file.id, { name: 'after.txt', size: 5 })
   assert.equal(updated?.name, 'after.txt')
   assert.equal(updated?.size, 5)
-  assert.equal(await files.delete(workspaceB.id, file.id), false)
-  assert.equal(await files.delete(workspaceA.id, file.id), true)
-  assert.equal(await files.find(workspaceA.id, file.id), null)
+  assert.equal(await files.delete(userB.id, workspaceB.id, file.id), false)
+  assert.equal(await files.delete(userA.id, workspaceA.id, file.id), true)
+  assert.equal(await files.find(userA.id, workspaceA.id, file.id), null)
 
   const expectedIndexes = [
     [workspaceModel, 'ownerId_1', { ownerId: 1 }],
     [pageModel, 'workspaceId_1_parentPageId_1_orderKey_1_id_1', { workspaceId: 1, parentPageId: 1, orderKey: 1, id: 1 }],
     [blockModel, 'workspaceId_1_pageId_1_parentBlockId_1_orderKey_1_id_1', { workspaceId: 1, pageId: 1, parentBlockId: 1, orderKey: 1, id: 1 }],
     [fileModel, 'workspaceId_1', { workspaceId: 1 }],
+    [userModel, 'email_1', { email: 1 }],
+    [userModel, 'id_1', { id: 1 }],
+    [sessionModel, 'id_1', { id: 1 }],
+    [sessionModel, 'tokenHash_1', { tokenHash: 1 }],
+    [sessionModel, 'userId_1', { userId: 1 }],
+    [sessionModel, 'expiresAt_1', { expiresAt: 1 }],
   ] as const
   for (const [model, name, key] of expectedIndexes) {
     const actual = (await model.collection.indexes()).find((index) => index.name === name)
     assert.ok(actual, `expected index ${name}`)
     assert.deepEqual(actual.key, key)
   }
-  for (const model of [workspaceModel, pageModel, blockModel, fileModel]) {
+  for (const model of [workspaceModel, pageModel, blockModel, fileModel, userModel, sessionModel]) {
     const uniqueId = (await model.collection.indexes()).find((index) => index.name === 'id_1')
     assert.equal(uniqueId?.unique, true)
+  }
+  for (const [model, name] of [[userModel, 'email_1'], [sessionModel, 'tokenHash_1']] as const) {
+    assert.equal((await model.collection.indexes()).find((index) => index.name === name)?.unique, true)
   }
 })
 

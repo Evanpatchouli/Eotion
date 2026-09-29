@@ -31,6 +31,13 @@ export interface WorkspaceRecord {
   updatedAt: string
 }
 
+export interface UserRecord {
+  id: Id
+  email: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface PageRecord {
   id: Id
   workspaceId: Id

@@ -1,34 +1,38 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import type { FileMetadata } from '../types'
 
 import { FileMetadataPatch, FileMetadataRepository } from '../repositories/file-metadata.repository'
-import { WorkspaceRepository } from '../repositories/workspace.repository'
+import { WorkspacePermissionService } from './workspace-permission.service'
 
-type FileMetadataCreate = Omit<FileMetadata, 'createdAt' | 'updatedAt'>
+type FileMetadataCreate = Omit<FileMetadata, 'ownerId' | 'createdAt' | 'updatedAt'>
 
 @Injectable()
 export class FileMetadataService {
-  constructor(private readonly files: FileMetadataRepository, private readonly workspaces: WorkspaceRepository) {}
+  constructor(private readonly files: FileMetadataRepository, private readonly permissions: WorkspacePermissionService) {}
 
-  async create(workspaceId: string, input: FileMetadataCreate) {
+  async create(userId: string, workspaceId: string, input: FileMetadataCreate) {
+    await this.permissions.assertCanWrite(userId, workspaceId)
     if (input.workspaceId !== workspaceId) throw new BadRequestException('File workspaceId does not match the target workspace')
-    if (!(await this.workspaces.findById(workspaceId))) throw new NotFoundException('Workspace not found')
-    return this.files.create(input)
+    return this.files.create({ ...input, ownerId: userId })
   }
 
-  find(workspaceId: string, id: string) {
+  async find(userId: string, workspaceId: string, id: string) {
+    await this.permissions.assertCanRead(userId, workspaceId)
     return this.files.findInWorkspace(workspaceId, id)
   }
 
-  list(workspaceId: string) {
+  async list(userId: string, workspaceId: string) {
+    await this.permissions.assertCanRead(userId, workspaceId)
     return this.files.listByWorkspace(workspaceId)
   }
 
-  update(workspaceId: string, id: string, patch: FileMetadataPatch) {
+  async update(userId: string, workspaceId: string, id: string, patch: FileMetadataPatch) {
+    await this.permissions.assertCanWrite(userId, workspaceId)
     return this.files.updateInWorkspace(workspaceId, id, patch)
   }
 
-  delete(workspaceId: string, id: string) {
+  async delete(userId: string, workspaceId: string, id: string) {
+    await this.permissions.assertCanWrite(userId, workspaceId)
     return this.files.deleteInWorkspace(workspaceId, id)
   }
 }

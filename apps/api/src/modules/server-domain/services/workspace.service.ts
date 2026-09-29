@@ -1,25 +1,35 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import type { WorkspaceRecord } from '../types'
 
 import { WorkspaceRepository } from '../repositories/workspace.repository'
+import { UserRepository } from '../repositories/user.repository'
+import { WorkspacePermissionService } from './workspace-permission.service'
 
 @Injectable()
 export class WorkspaceService {
-  constructor(private readonly workspaces: WorkspaceRepository) {}
+  constructor(
+    private readonly workspaces: WorkspaceRepository,
+    private readonly users: UserRepository,
+    private readonly permissions: WorkspacePermissionService,
+  ) {}
 
-  create(input: Pick<WorkspaceRecord, 'id' | 'name' | 'ownerId'>) {
-    return this.workspaces.create(input)
+  async create(userId: string, input: Pick<WorkspaceRecord, 'id' | 'name'>) {
+    if (!(await this.users.existsById(userId))) throw new NotFoundException('User not found')
+    return this.workspaces.create({ ...input, ownerId: userId })
   }
 
-  findById(id: string) {
+  async findById(userId: string, id: string) {
+    await this.permissions.assertCanRead(userId, id)
     return this.workspaces.findById(id)
   }
 
-  listByOwner(ownerId: string) {
-    return this.workspaces.listByOwner(ownerId)
+  async listByOwner(userId: string) {
+    if (!(await this.users.existsById(userId))) throw new NotFoundException('User not found')
+    return this.workspaces.listByOwner(userId)
   }
 
-  updateName(id: string, ownerId: string, name: string) {
-    return this.workspaces.updateOwned(id, ownerId, { name })
+  async updateName(userId: string, id: string, name: string) {
+    await this.permissions.assertCanWrite(userId, id)
+    return this.workspaces.updateOwned(id, userId, { name })
   }
 }

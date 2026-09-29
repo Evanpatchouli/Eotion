@@ -19,7 +19,7 @@
 | Editor（P2 起） | `apps/web/src/` | `roadmap.md`、architecture §6 | Tiptap、@tiptap/pm、selection、transaction、IME、slash command |
 | Desktop Shell | `apps/desktop/src/` | architecture §2 | Electron、preload、renderer、IPC |
 | Mobile Shell | `apps/mobile/src/` | `p1-mobile-demo.md`、architecture §3 | Lynx、webview、HarmonyOS、bridge、lifecycle |
-| API | `apps/api/src/` | architecture §4、`p4-server-domain.md`、`architecture/agent-integration.md` | NestJS、Fastify、health、Mongo、repository、MCP |
+| API | `apps/api/src/` | architecture §4、`p4-server-domain.md`、`p4-auth-session.md`、`architecture/agent-integration.md` | NestJS、Fastify、health、Mongo、User、Auth、Session、WorkspacePermission、repository、MCP |
 | Contracts | `packages/contracts/src/` | architecture / specs | DTO、contract、protocol、shared type |
 | Domain | `packages/domain/src/` | `p4-server-domain.md`、architecture / specs | domain model、workspace、page、block、file metadata |
 | SDK | `packages/sdk/src/` | architecture / specs | typed client、API |

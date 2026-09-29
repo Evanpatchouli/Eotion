@@ -1,12 +1,12 @@
 # P4.1 Server Domain / MongoDB Foundation
 
-本阶段只建立服务端持久化基础。认证、权限判定、HTTP CRUD、真实同步和文件上传属于后续 P4 Work Unit。
+P4.1 只建立服务端持久化基础。认证和工作区权限随后由 [P4.2](p4-auth-session.md) 补齐；HTTP CRUD、真实同步和文件上传属于更后续的 P4 Work Unit。
 
 ## 领域与集合
 
 | 集合 | 领域记录 | 边界 |
 | --- | --- | --- |
-| `workspaces` | `WorkspaceRecord` | `id`、名称、`ownerId` 和时间；`ownerId` 暂为稳定字符串引用，用户/会话模型留待 P4.2。 |
+| `workspaces` | `WorkspaceRecord` | `id`、名称、`ownerId` 和时间；P4.2 起创建时由真实用户身份填入 `ownerId`。 |
 | `pages` | `PageRecord` | 以 `workspaceId` 隔离，`parentPageId` 和 `orderKey` 支持页面树。 |
 | `blocks` | `BlockRecord` 加服务端 `workspaceId` | 以 `pageId` 引用 Page，独立存储，不把 Block 数组嵌入 Page。 |
 | `files` | `FileMetadata` | 只保存名称、类型、大小、对象键等元数据，不存文件内容。 |
