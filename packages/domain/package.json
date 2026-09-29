@@ -11,6 +11,7 @@
     },
     "./block-types": {
       "types": "./src/block-types.ts",
+      "import": "./src/block-types.ts",
       "require": "./dist/block-types.js",
       "default": "./dist/block-types.js"
     }

@@ -19,10 +19,10 @@
 | Editor（P2 起） | `apps/web/src/` | `roadmap.md`、architecture §6 | Tiptap、@tiptap/pm、selection、transaction、IME、slash command |
 | Desktop Shell | `apps/desktop/src/` | architecture §2 | Electron、preload、renderer、IPC |
 | Mobile Shell | `apps/mobile/src/` | `p1-mobile-demo.md`、architecture §3 | Lynx、webview、HarmonyOS、bridge、lifecycle |
-| API | `apps/api/src/` | architecture §4、`p4-server-domain.md`、`p4-auth-session.md`、`architecture/agent-integration.md` | NestJS、Fastify、health、Mongo、User、Auth、Session、WorkspacePermission、repository、MCP |
-| Contracts | `packages/contracts/src/` | architecture / specs | DTO、contract、protocol、shared type |
+| API | `apps/api/src/` | architecture §4、`p4-server-domain.md`、`p4-auth-session.md`、`p4-http-api.md`、`architecture/agent-integration.md` | NestJS、Fastify、health、Mongo、User、Auth、Session、WorkspacePermission、HTTP、repository、MCP |
+| Contracts | `packages/contracts/src/` | `p4-http-api.md` | DTO、runtime schema、contract、protocol、shared type |
 | Domain | `packages/domain/src/` | `p4-server-domain.md`、architecture / specs | domain model、workspace、page、block、file metadata |
-| SDK | `packages/sdk/src/` | architecture / specs | typed client、API |
+| SDK | `packages/sdk/src/` | `p4-http-api.md` | typed client、Cookie credentials、API error |
 | Local storage (P3) | `packages/storage/src/`、`apps/web/src/storage/`、`apps/desktop/src/main/sqlite-store.ts` | `p3-local-first.md`、`verification/device/p3-local-first.md` | LocalStore、Web/Mobile WebView IndexedDB、Electron SQLite、runtime marker、oplog、reconnect、origin/storage partition |
 | Roadmap / Phase | `docs/roadmap.md` | 本页 | P0…P7、exit criteria、scope |
 

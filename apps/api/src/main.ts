@@ -10,10 +10,13 @@ async function bootstrap() {
   )
 
   app.setGlobalPrefix('api')
-  app.enableCors({
-    origin: process.env.WEB_ORIGIN?.split(',').map((value) => value.trim()) ?? true,
-    credentials: true,
-  })
+  const allowedOrigins = (process.env.WEB_ORIGIN ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+  if (allowedOrigins.length > 0) {
+    app.enableCors({ origin: allowedOrigins, credentials: true })
+  }
 
   const port = Number(process.env.PORT ?? 3000)
   const host = process.env.HOST ?? '0.0.0.0'

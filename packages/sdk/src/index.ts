@@ -1,19 +1,137 @@
-import type { HealthResponse } from '@eotion/contracts'
+import { ApiErrorResponseSchema } from '@eotion/contracts'
+import type {
+  ApiErrorResponse,
+  AuthUserDto,
+  BlockCreateRequest,
+  BlockResponse,
+  BlockUpdateRequest,
+  HealthResponse,
+  LoginRequest,
+  LoginResponse,
+  PageCreateRequest,
+  PageResponse,
+  PageUpdateRequest,
+  RegisterRequest,
+  WorkspaceCreateRequest,
+  WorkspaceResponse,
+  WorkspaceUpdateRequest,
+} from '@eotion/contracts'
 
 export interface EotionApiClientOptions {
   baseUrl: string
+  fetch?: typeof fetch
+}
+
+export class ApiError extends Error {
+  readonly statusCode: number
+  readonly error?: string
+  readonly details: string | string[]
+
+  constructor(statusCode: number, body: ApiErrorResponse | undefined, fallbackMessage: string) {
+    const details = body?.message ?? fallbackMessage
+    super(Array.isArray(details) ? details.join(', ') : details)
+    this.name = 'ApiError'
+    this.statusCode = body?.statusCode ?? statusCode
+    this.error = body?.error
+    this.details = details
+  }
 }
 
 export class EotionApiClient {
   readonly baseUrl: string
+  readonly auth: {
+    register: (input: RegisterRequest, signal?: AbortSignal) => Promise<AuthUserDto>
+    login: (input: LoginRequest, signal?: AbortSignal) => Promise<LoginResponse>
+    logout: (signal?: AbortSignal) => Promise<void>
+    me: (signal?: AbortSignal) => Promise<AuthUserDto>
+  }
+  readonly workspaces: {
+    list: (signal?: AbortSignal) => Promise<WorkspaceResponse[]>
+    create: (input: WorkspaceCreateRequest, signal?: AbortSignal) => Promise<WorkspaceResponse>
+    get: (workspaceId: string, signal?: AbortSignal) => Promise<WorkspaceResponse>
+    update: (workspaceId: string, input: WorkspaceUpdateRequest, signal?: AbortSignal) => Promise<WorkspaceResponse>
+  }
+  readonly pages: {
+    list: (workspaceId: string, signal?: AbortSignal) => Promise<PageResponse[]>
+    create: (workspaceId: string, input: PageCreateRequest, signal?: AbortSignal) => Promise<PageResponse>
+    get: (workspaceId: string, pageId: string, signal?: AbortSignal) => Promise<PageResponse>
+    update: (workspaceId: string, pageId: string, input: PageUpdateRequest, signal?: AbortSignal) => Promise<PageResponse>
+  }
+  readonly blocks: {
+    list: (workspaceId: string, pageId: string, signal?: AbortSignal) => Promise<BlockResponse[]>
+    create: (workspaceId: string, pageId: string, input: BlockCreateRequest, signal?: AbortSignal) => Promise<BlockResponse>
+    get: (workspaceId: string, pageId: string, blockId: string, signal?: AbortSignal) => Promise<BlockResponse>
+    update: (workspaceId: string, pageId: string, blockId: string, input: BlockUpdateRequest, signal?: AbortSignal) => Promise<BlockResponse>
+  }
+
+  private readonly fetchImpl: typeof fetch
 
   constructor(options: EotionApiClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '')
+    this.fetchImpl = options.fetch ?? fetch
+    this.auth = {
+      register: (input, signal) => this.request('/api/auth/register', { method: 'POST', body: input, signal }),
+      login: (input, signal) => this.request('/api/auth/login', { method: 'POST', body: input, signal }),
+      logout: (signal) => this.request('/api/auth/logout', { method: 'POST', signal }),
+      me: (signal) => this.request('/api/auth/me', { method: 'GET', signal }),
+    }
+    this.workspaces = {
+      list: (signal) => this.request('/api/workspaces', { method: 'GET', signal }),
+      create: (input, signal) => this.request('/api/workspaces', { method: 'POST', body: input, signal }),
+      get: (workspaceId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}`, { method: 'GET', signal }),
+      update: (workspaceId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}`, { method: 'PATCH', body: input, signal }),
+    }
+    this.pages = {
+      list: (workspaceId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages`, { method: 'GET', signal }),
+      create: (workspaceId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages`, { method: 'POST', body: input, signal }),
+      get: (workspaceId, pageId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}`, { method: 'GET', signal }),
+      update: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}`, { method: 'PATCH', body: input, signal }),
+    }
+    this.blocks = {
+      list: (workspaceId, pageId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks`, { method: 'GET', signal }),
+      create: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks`, { method: 'POST', body: input, signal }),
+      get: (workspaceId, pageId, blockId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks/${segment(blockId)}`, { method: 'GET', signal }),
+      update: (workspaceId, pageId, blockId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks/${segment(blockId)}`, { method: 'PATCH', body: input, signal }),
+    }
   }
 
   async health(signal?: AbortSignal): Promise<HealthResponse> {
-    const response = await fetch(`${this.baseUrl}/api/health`, { signal })
-    if (!response.ok) throw new Error(`Eotion API health failed: ${response.status}`)
-    return response.json() as Promise<HealthResponse>
+    return this.request('/api/health', { method: 'GET', signal })
   }
+
+  private async request<T>(path: string, options: {
+    method: 'GET' | 'POST' | 'PATCH'
+    body?: unknown
+    signal?: AbortSignal
+  }): Promise<T> {
+    const hasBody = options.body !== undefined
+    const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+      method: options.method,
+      credentials: 'include',
+      signal: options.signal,
+      headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
+      body: hasBody ? JSON.stringify(options.body) : undefined,
+    })
+
+    if (!response.ok) {
+      let parsed: ApiErrorResponse | undefined
+      let fallback = `Eotion API request failed: ${response.status}`
+      try {
+        const payload: unknown = await response.json()
+        const result = ApiErrorResponseSchema.safeParse(payload)
+        if (result.success) parsed = result.data
+        else if (typeof payload === 'object' && payload !== null && 'message' in payload && typeof payload.message === 'string') fallback = payload.message
+      } catch {
+        // Leave the status-based fallback message for empty or non-JSON error bodies.
+      }
+      throw new ApiError(response.status, parsed, fallback)
+    }
+
+    if (response.status === 204) return undefined as T
+    return await response.json() as T
+  }
+}
+
+function segment(value: string): string {
+  return encodeURIComponent(value)
 }

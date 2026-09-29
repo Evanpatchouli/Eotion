@@ -1,22 +1,22 @@
-# Current Task — P4.2 Auth / Session / Workspace Permission Foundation
+# Current Task — P4.3 Typed HTTP API + Eotion SDK
 
-Base: `95cb1308275d219fa92a4c04591cccc96b1f3797` (`origin/master`, 2026-09-29).
+Base: `352e2ef9426a73ec884122b17c5c2268f9b591dc` (`origin/master`, 2026-09-29).
 
 ## Goal
 
-建立 User、email/password 认证、Mongo hash-only Session，以及 owner-only workspace 应用服务权限边界；不进入 P4.3 transport/SDK。
+把 P4.1/P4.2 application services 暴露为有运行时输入校验的 HTTP API，并提供共用 contracts 的浏览器 SDK。保持 opaque Cookie session、owner-only 权限与 Mongo disabled health；不进入 P4.4。
 
 ## Work units
 
 | ID | 模式 / 评级 | 边界与验收 | 状态 |
 | --- | --- | --- | --- |
-| W1 | investigate / S0 | 核对登录要求、P4.1 service/测试/索引及授权缺口。 | 完成：无既有登录标识约束；Mongo 集成设施可用。 |
-| W2 | decide / S2 | 定下 User、密码摘要、Session 生命周期与授权 API。 | 完成：email/password、scrypt、opaque token hash、AuthService.login 签发。 |
-| W3 | execute / S1 | 实现 User/Auth/Session schema、repository、service 与测试。 | 完成 |
-| W4 | execute / S1 | 为 Workspace/Page/Block/File 应用服务接入用户权限并补测试。 | 完成 |
-| W5 | execute / S1 | 更新 P4.2 文档和索引。 | 完成 |
-| W6 | verify/review / S0 + Review | 执行 build/typecheck/Mongo integration/health，独立 review，提交推送。 | 验证与独立 review 完成，无 blocker；提交推送记录见 Git history。 |
+| W1 | investigate / S0 | 精确核对 P4 文档、services、包构建与测试设施。 | 完成 |
+| W2 | decide / S2 | 定下路由、Cookie、DTO/schema、错误与包运行时边界。 | 完成 |
+| W3 | execute / S1 | contracts 运行时 schema、DTO、构建；SDK typed client。 | 完成 |
+| W4 | execute / S1 | HTTP controller/guard 与 session Cookie transport。 | 完成 |
+| W5 | execute / S1 | HTTP integration/E2E 与文档。 | 完成 |
+| W6 | verify/review / S0 + Review | typecheck/build/test/health，独立 review，提交并推送。 | 完成：相关测试与构建通过，review 问题已修复；提交推送记录见 Git history。 |
 
 ## Constraints
 
-保持 P3 和 P4.1 领域模型兼容；raw password/token 不持久化或输出；Mongo disabled health；禁止 P4.3+ 能力和 `.codex` 修改。
+不暴露 passwordHash/tokenHash；客户端不能提交 userId；Controller 仅调用 application services；不引入 sync、OSS 上传、RBAC 或 P5 UI。

@@ -4,13 +4,15 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "dev": "pnpm --filter @eotion/domain build && nest start --watch",
-    "build": "pnpm --filter @eotion/domain build && nest build",
+    "dev": "pnpm --filter @eotion/domain build && pnpm --filter @eotion/contracts build && nest start --watch",
+    "build": "pnpm --filter @eotion/domain build && pnpm --filter @eotion/contracts build && nest build",
     "start": "node dist/main.js",
     "test:domain": "pnpm build && node --test dist/modules/server-domain/server-domain.test.js",
+    "test:http": "pnpm build && node --test dist/modules/http-api/http-api.test.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@eotion/contracts": "workspace:*",
     "@eotion/domain": "workspace:*",
     "@nestjs/common": "^12.0.4",
     "@nestjs/config": "^12.0.1",
