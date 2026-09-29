@@ -21,6 +21,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `p4-http-api.md` | P4.3 Typed HTTP API、Cookie Session 与 Eotion SDK |
 | `p4-sync.md` | P4.4 canonical sync operation、HTTP transport 与 Mongo receipt 幂等语义 |
 | `p4-file-storage.md` | P4.5 File metadata、authenticated HTTP 与 ali-oss-server object lifecycle |
+| `p4-final-acceptance.md` | P4 六条退出条件的最终验收证据、测试结果与进入 P5 的结论 |
 
 ## 使用原则
 

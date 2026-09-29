@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { createHash, randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
