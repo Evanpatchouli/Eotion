@@ -121,6 +121,8 @@ Vue 3
 
 桌面端和移动端共享文档 schema/编辑器核心，但交互方式可能不同（悬停手柄 vs 长按/触摸工具栏）。
 
+P5.3 的正式页面与 P2 Demo 复用 `apps/web/src/components/editor/EotionEditor.vue`。正式页面通过 `PagePersistence` 将顶层 Tiptap 节点映射为服务端 Block，自动保存走 SDK Block HTTP；P3 LocalStore hydration 和 oplog 接线属于 P5.4，当前产品正文尚未提供离线持久化。映射与保存契约见 [P5.3 Real Page Editor](../p5-real-page-editor.md)。
+
 ## 7. Agent 集成（规划中）
 
 Eotion 将为兼容的 Agent 提供 MCP 服务。它属于 API 模块化单体，并将调用与其他 API 客户端相同的已认证应用服务。初始能力将聚焦于发现、搜索、读取，以及显式创建或更新工作区内容。见 [Agent 集成基线](agent-integration.md)。

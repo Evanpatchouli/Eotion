@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useProductPagesStore } from '../../stores/productPages'
+import { flushActivePageEditor } from '../../editor/activePageEditor'
 import { buildPageTree, flattenPageTree } from '../../utils/pageTree'
 import PageMoveForm from './PageMoveForm.vue'
 import PageRenameForm from './PageRenameForm.vue'
@@ -109,6 +110,10 @@ async function submitMove(pageId: string, parentPageId: string | null) {
 }
 
 async function confirmDelete(pageId: string, parentPageId: string | null) {
+  if (!(await flushActivePageEditor(workspaceId.value, pageId))) {
+    pages.deleteError = '正文尚未保存，请在页面中重试保存后再删除。'
+    return
+  }
   const removed = await pages.remove(workspaceId.value, pageId)
   if (!removed) return
   confirmDeleteFor.value = null

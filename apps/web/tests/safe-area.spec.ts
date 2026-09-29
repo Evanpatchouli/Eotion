@@ -40,7 +40,7 @@ test('mobile shell, drawer, and editor controls respect all four insets', async 
 
   await page.goto('/#/__dev/editor-p2')
   await page.addStyleTag({ content: ':root { --safe-top: 47px; --safe-right: 12px; --safe-bottom: 34px; --safe-left: 12px; }' })
-  const toolbarButton = await page.locator('.p2-touch-toolbar button').first().boundingBox()
+  const toolbarButton = await page.locator('.eotion-touch-toolbar button').first().boundingBox()
   expect(toolbarButton!.y + toolbarButton!.height).toBeLessThanOrEqual(810)
 
   await page.goto('/#/__dev/mobile-p1')

@@ -39,11 +39,11 @@ export class BlockRepository {
     return doc ? this.toRecord(doc) : null
   }
 
-  async hasChildren(workspaceId: string, pageId: string, id: string, session: ClientSession): Promise<boolean> {
-    return !!(await this.model.exists({ workspaceId, pageId, parentBlockId: id }).session(session))
+  async hasChildren(workspaceId: string, pageId: string, id: string, session?: ClientSession): Promise<boolean> {
+    return !!(await this.model.exists({ workspaceId, pageId, parentBlockId: id }).session(session ?? null))
   }
 
-  async deleteInWorkspace(workspaceId: string, pageId: string, id: string, session: ClientSession): Promise<boolean> {
+  async deleteInWorkspace(workspaceId: string, pageId: string, id: string, session?: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndDelete({ workspaceId, pageId, id }, { session }).exec())
   }
 

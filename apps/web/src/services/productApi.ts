@@ -1,4 +1,5 @@
 import { ApiError, EotionApiClient } from '@eotion/sdk'
+import { preserveActivePageEditor } from '../editor/activePageEditor'
 
 export const api = new EotionApiClient({
   baseUrl: import.meta.env.VITE_API_BASE_URL ?? '',
@@ -11,6 +12,7 @@ export function setSessionExpiredHandler(handler: () => void): void {
 }
 
 export function expireSessionFromApi(): void {
+  preserveActivePageEditor()
   onSessionExpired?.()
 }
 

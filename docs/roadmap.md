@@ -78,7 +78,7 @@ P4 ✅ Final Acceptance PASS。P5 按以下独立阶段验收：
 
 - P5.1 Product Shell + Auth / Workspace：✅ 已完成，见 [产品入口与运行说明](p5-product-shell.md)。
 - P5.2 Page Tree：✅ 已完成，见 [P5.2 Page Tree](p5-page-tree.md)。
-- P5.3 Real Page Editor：待开始。
+- P5.3 Real Page Editor：✅ 已完成，见 [正式页面编辑器](p5-real-page-editor.md)。
 - P5.4 Real Sync：待开始。
 - P5.5 Attachments：待开始。
 - P5 Final Acceptance：待开始。

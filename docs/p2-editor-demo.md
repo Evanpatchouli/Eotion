@@ -2,6 +2,8 @@
 
 开发模式入口：`http://localhost:7173/#/__dev/editor-p2`，也可从工作区侧栏进入。生产构建不注册该路由。编辑器仅实现于 `apps/web`，Electron 加载同一 Web renderer，Lynx 移动壳继续加载同一 Web URL。
 
+P5.3 起，P2 Demo 的 `P2Editor` 保留诊断与 benchmark，编辑器表面复用正式 Page 使用的 `EotionEditor`、BlockIdentity 和 Slash 扩展。
+
 ## 验证范围与当前结果
 
 | 项目                         | 当前证据 / 状态                                                                                                                                               |

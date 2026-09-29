@@ -7,6 +7,8 @@ import PageTree from '../components/product/PageTree.vue'
 import WorkspaceCreateForm from '../components/product/WorkspaceCreateForm.vue'
 import WorkspaceRenameForm from '../components/product/WorkspaceRenameForm.vue'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
+import { flushActivePageEditor } from '../editor/activePageEditor'
+import { hasPendingPageDraft } from '../editor/pendingPageDraft'
 import { useAuthStore } from '../stores/auth'
 import { useProductPagesStore } from '../stores/productPages'
 import { useProductWorkspacesStore } from '../stores/productWorkspaces'
@@ -95,6 +97,10 @@ async function renameWorkspace(name: string) {
 
 async function logout() {
   logoutError.value = ''
+  if (!(await flushActivePageEditor())) {
+    logoutError.value = '正文尚未保存，请在页面中重试保存后再退出。'
+    return
+  }
   const loggedOut = await auth.logout()
   if (!loggedOut) {
     logoutError.value = auth.error || '无法退出登录，请重试。'
@@ -110,9 +116,10 @@ watch(() => route.fullPath, () => {
 
 watch(() => auth.user, (user) => {
   if (user) return
+  const redirect = hasPendingPageDraft() ? route.fullPath : ''
   workspaces.reset()
   pages.reset()
-  void router.replace({ name: 'login' })
+  void router.replace({ name: 'login', query: redirect ? { redirect } : undefined })
 }, { immediate: true })
 
 // The page list always belongs to exactly one workspace; switching drops the previous one.

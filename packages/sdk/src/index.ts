@@ -68,6 +68,7 @@ export class EotionApiClient {
     create: (workspaceId: string, pageId: string, input: BlockCreateRequest, signal?: AbortSignal) => Promise<BlockResponse>
     get: (workspaceId: string, pageId: string, blockId: string, signal?: AbortSignal) => Promise<BlockResponse>
     update: (workspaceId: string, pageId: string, blockId: string, input: BlockUpdateRequest, signal?: AbortSignal) => Promise<BlockResponse>
+    delete: (workspaceId: string, pageId: string, blockId: string, signal?: AbortSignal) => Promise<void>
   }
   readonly files: {
     upload: (workspaceId: string, fileId: string, file: File, signal?: AbortSignal) => Promise<FileResponse>
@@ -112,6 +113,9 @@ export class EotionApiClient {
       create: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks`, { method: 'POST', body: input, signal }),
       get: (workspaceId, pageId, blockId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks/${segment(blockId)}`, { method: 'GET', signal }),
       update: (workspaceId, pageId, blockId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks/${segment(blockId)}`, { method: 'PATCH', body: input, signal }),
+      delete: async (workspaceId, pageId, blockId, signal) => {
+        await this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/blocks/${segment(blockId)}`, { method: 'DELETE', signal })
+      },
     }
     this.files = {
       upload: (workspaceId, fileId, file, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/files`, {

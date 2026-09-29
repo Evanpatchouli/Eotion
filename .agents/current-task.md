@@ -1,54 +1,42 @@
-# Current Task — P5.2 Page Tree
+# Current Task — P5.3 Real Page Editor
 
-## 范围
+## 目标与边界
 
-在 P5.1 产品 Shell 上把侧栏 Pages 占位替换为真实页面树，打通页面生命周期：创建根页面 / 子页面、打开页面、重命名、移动、删除、当前页面高亮、工作区隔离与 URL 刷新恢复。服务端补充独立的 move / delete 入口。
+在正式 Page 使用与 P2 同源的 Tiptap 3 编辑器，按稳定 Block ID 将顶层节点通过 server-backed Block HTTP 持久化，具备 debounce、串行保存、切页 flush、错误恢复和安全 reload。P5.4 LocalStore/oplog/sync 与 P5.5 附件不在本阶段。
 
-非目标：P5.3 正式编辑器（Tiptap 接入）、Block 产品 UI、LocalStore 接线与自动保存、P5.4 产品 Sync、离线编辑、P5.5 附件、拖拽排序与动画、CRDT、多人协作、搜索、收藏、权限体系。
+基线：`728ba1a420d5c7a6033ba14450c3cd87597510f8`。开始前工作区干净，`git pull --ff-only` 已确认最新。
+
+## 工作单元
+
+1. **调查 / 决策（S2）**：核对 P2、产品路由、Block API/SDK、测试与文档；确定顶层节点 ID、props codec、orderKey、保存与导航 invariant。
+2. **执行（S1/S2）**：补 Block HTTP DELETE、SDK 与定向测试，维持 Sync delete 幂等语义。
+3. **执行（S2 → S1）**：抽取 P2/正式产品共用编辑器核心；实现 Block codec/orderKey 与独立 save coordinator，再接 Page UI、状态、切页保护。
+4. **验证（S0）**：补正式产品测试及 P2 回归；运行要求的命令集，并尽可能跑真实 Mongo/API/Web 浏览器链路。
+5. **Review / 收尾**：独立检查数据完整性与 race；修复 blocker 后更新正式文档、复核 diff、提交聚焦 commit 并按仓库规范 push。
+
+## 关键验收
+
+- 首次 load 无 mutation；普通编辑仅更新受影响 Block；新块 ID 稳定，顺序 reload 一致。
+- 不支持的服务端 Block 安全失败；保存失败保留最新编辑并可重试。
+- IME 组合期不 flush；切页前 flush，失败阻止导航；旧 load 不能覆盖新页面。
+- P2 diagnostics、benchmark、Slash 和触摸工具栏继续可用。
 
 ## 结果
 
-**P5.2 PASS / 可以进入 P5.3 Real Page Editor。**
+**P5.3 PASS / Ready for P5.4 Real Sync。**
 
-- 路由：新增 `/#/app/:workspaceId/page/:pageId`，`/#/app/:workspaceId` 保持 Workspace Home。刷新可恢复工作区、页面树与选中页面；页面不存在或不属于当前工作区时显示“无法打开这个页面”及返回入口，不白屏。
-- 页面树：由工作区页面列表构建，`parentPageId` 为 `null` 的是根页面，同级按 `orderKey`（相同则 `id`）稳定排序；父级引用缺失或自引用时按根页面处理。支持展开 / 折叠、当前页面高亮、页面菜单（新建子页面 / 重命名 / 移动 / 删除），选中时自动展开祖先。
-- 创建：侧栏“＋”建根页面，页面菜单建子页面；标题默认 `无标题`，`id` 继续由客户端 `createLocalId()` 生成，`orderKey` 用固定 16 位零填充的“同级最大值 + 1”，未引入 fractional indexing 依赖。成功后立即入树并自动打开。
-- 重命名：复用 `PATCH /pages/:pageId`，trim、空标题禁止、与当前标题相同禁止、pending 去重、失败可见错误与重试；成功后侧栏、主标题与面包屑同步，刷新后一致。
-- 移动：新增 `PATCH /api/workspaces/:workspaceId/pages/:pageId/move`，体为 `{ parentPageId: string | null, orderKey: string }`。服务端强制“不能移动到自己 / 不能移动到后代 / 不能跨工作区 / 父级必须存在”；通用更新入口仍然拒绝 `parentPageId`。UI 提供菜单 + 选择器，不实现拖拽排序。
-- 删除：新增 `DELETE /api/workspaces/:workspaceId/pages/:pageId`，只允许删除叶子页面（先删区块再删页面，返回 `{ deleted: true }`）；有子页面时 400 `Delete child pages first`，不级联、不提升子页面。删除当前页面后回到父页面，根页面则回到 Workspace Home。
-- 内容区只显示页面标题与 ID / 父页面 / 排序键占位，正文与自动保存留给 P5.3；没有接入 Tiptap。
-- 组件与状态：新增 `stores/productPages.ts`（按工作区隔离、epoch 丢弃过期响应）、`utils/pageTree.ts`（纯函数）、`components/product/PageTree.vue`、`PageRenameForm.vue`、`PageMoveForm.vue`、`views/PageView.vue`；`ProductShell.vue` 只负责挂载与导航收口。
+- `EotionEditor` 被 P2 Demo 与正式 Page 共用；`BlockIdentity` 稳定顶层 ID，HTML/剪贴板不泄漏 ID；codec 以 `{ node: JSONContent }` 保留 marks、heading、list 等结构，不支持的 Block 阻止编辑。
+- `PagePersistence` 用 500 ms debounce、Block ID diff 和串行循环保存；切页/删除/退出前 flush，IME 中暂停；响应丢失的 mutation 在重试前按 Block ID 与服务端校准，保留编辑器最新内容。
+- Block HTTP/SDK 增加严格 page scope 的 DELETE；Sync 删除缺失目标仍幂等。
+- 独立 review 发现并修复跨页面粘贴 ID 冲突、在途保存的导航/刷新保护、响应丢失后的 create/delete 重试；P2 safe-area 测试定位同步更新。
+- 保存请求遇到 401 时在本浏览器内存保留正文，原用户重新登录后回到原页面继续保存；刷新/关闭时仍有离开提示。该暂存不构成 P5.4 离线持久化。
 
-## 验收与验证
+## 验证
 
-本轮执行的验证（未重跑 P1～P4 历史回归）：
+- Web `test:product` 44/44、`test:storage` 7/7、safe-area 2/2、build PASS。
+- API `test:domain` 2/2、`test:http` HTTP 1/1 + Sync 1/1 + File 22/22、build PASS。
+- SDK test 10/10、build PASS；Desktop build PASS；`git diff --check` PASS。
+- 真实 Mongo replica set + API + Web 浏览器链路 PASS：注册登录、工作区/页面、正文保存/reload、Block 新增/删除/reload、A/B 页面隔离、390×844 无横向溢出。未进行新一轮 Electron 原生窗口或移动真机人工验收；P2 历史真机结论保留。
+- `test:storage` 首次因 Electron 临时 profile 清理 `EPERM` 失败；目标单测和完整 7 项套件重跑均通过。
 
-- `pnpm --filter @eotion/web test:product`：22/22 PASS（`tests/product-flow.spec.ts` 10 + 新增 `tests/product-pages.spec.ts` 12）。新用例覆盖空树、创建根 / 子页面、层级与同级排序、展开折叠、打开页面、刷新恢复、重命名（trim / 空标题 / 相同标题 / pending / 失败 / 刷新后一致）、移动与移回根级、选择器排除自身与后代、服务端拒绝移动的可见错误、跨工作区隔离、删除叶子、有子页面时拒绝删除、删除当前页面后的路由恢复、页面树加载失败与重试、移动端打开页面后侧栏关闭。
-- `pnpm --filter @eotion/api test:domain`：2/2 PASS。
-- `pnpm --filter @eotion/api test:http`：22/22 PASS，包含 move / delete 的 401、成功、自父级 400、移入后代 400、未知父级 400、strict body 400、404 与重复删除 404。
-- `pnpm --filter @eotion/sdk test`：9/9 PASS，新增 move / delete 路由与 `PageMoveRequestSchema` 覆盖。
-- `pnpm --filter @eotion/web build`（含 `vue-tsc --noEmit`）：PASS。
-- `pnpm --filter @eotion/api build`：PASS。
-- `pnpm --filter @eotion/desktop build`：PASS。
-- `git diff --check`：PASS。
-- 根及 Web package 未定义 lint script，本轮没有可运行的 lint 命令。
-
-过程中修正的问题：
-
-- 产品 Shell 现在总会请求当前工作区页面列表，`tests/product-flow.spec.ts` 的受控 API 需要相应返回空列表，否则旧用例会额外出现一个页面树错误提示。
-- `PageRenameForm` 与既有 `WorkspaceRenameForm` 对齐：标题与当前值相同时禁用提交，避免无意义请求。
-- 测试中 `page.goto` 只改 hash 不会重载文档，需要显式 `reload()` 才能验证“重新加载页面列表失败”的时序；这是测试写法问题，不是产品缺陷。
-
-## 文档与收尾
-
-- 新增 `docs/p5-page-tree.md`；更新 `docs/roadmap.md`（P5.2 ✅）、`docs/README.md`、`docs/p5-product-shell.md`（路由与侧栏说明）、`docs/p4-http-api.md`（P5.2 move / delete 入口）、`docs/p4-server-domain.md`（移动走独立入口、通用 update 仍拒绝重挂）。
-- 未执行 push 以外的任何远端操作；本轮不做真实设备 / Electron 原生窗口验收，桌面部分只验证 renderer build。
-- 未在真实 MongoDB + 浏览器链路做手工验收；服务端语义由 domain / HTTP 测试覆盖，浏览器侧由受控 HTTP 响应覆盖。
-
-## Commit
-
-聚焦提交：`feat(p5): implement page tree`。
-
-## 后续
-
-下一阶段为 P5.3 Real Page Editor：把正文区域接入 Tiptap 3，建立 Page / Block 的服务端读写与自动保存。
+收尾提交：`feat(p5): integrate real page editor`。

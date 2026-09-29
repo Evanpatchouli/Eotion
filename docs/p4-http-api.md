@@ -46,3 +46,5 @@ P5.2 在相同基线上新增页面移动与删除入口：
 | DELETE | `/api/workspaces/:workspaceId/pages/:pageId` | 删除无子页面的页面及其区块，返回 `{ deleted: true }`。 |
 
 `PageMoveRequestSchema` 是 strict schema：提交 `workspaceId`、`id`、`title` 等额外字段会得到 400。服务端在同一工作区内校验目标父级，拒绝把页面移动到自己或自己的后代（400），跨工作区父级和不存在的父级同样 400，页面不存在或不属于当前用户返回 404。`PATCH /pages/:pageId` 仍拒绝 `parentPageId`，移动只能走 `/move`。删除按叶子语义：有子页面时返回 400 `Delete child pages first`，不做级联删除也不提升子页面的父级。SDK 对应 `pages.move(workspaceId, pageId, input)` 与 `pages.delete(workspaceId, pageId)`。页面树产品链路见 [P5.2 Page Tree](p5-page-tree.md)。
+
+P5.3 新增 `DELETE /api/workspaces/:workspaceId/pages/:pageId/blocks/:blockId` 与 SDK `blocks.delete(workspaceId, pageId, blockId)`。HTTP 删除严格限定 Session、owner 和页面范围；目标缺失或属于另一页面返回 404，有子 Block 返回 400，成功返回 `{ deleted: true }`。Sync 的 `block.delete` 仍保持缺失目标幂等成功语义。正式编辑器链路见 [P5.3 Real Page Editor](p5-real-page-editor.md)。

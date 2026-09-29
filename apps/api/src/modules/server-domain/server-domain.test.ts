@@ -309,6 +309,13 @@ test('server domain persists scoped records and creates the declared Mongo index
   )
   assert.equal((await blocks.find(userA.id, workspaceA.id, root.id, blockRoot.id))?.parentBlockId, null)
   assert.equal((await blocks.find(userA.id, workspaceA.id, root.id, blockRoot.id))?.workspaceId, workspaceA.id)
+  assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, sibling.id, blockRoot.id), false)
+  assert.ok(await blocks.find(userA.id, workspaceA.id, root.id, blockRoot.id))
+  await assert.rejects(blocks.deleteFromPage(userB.id, workspaceA.id, root.id, blockRoot.id), /Workspace not found/)
+  await assert.rejects(blocks.deleteFromPage(userA.id, workspaceA.id, root.id, blockRoot.id), /Delete child blocks first/)
+  assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, nestedBlock.id), true)
+  assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, blockRoot.id), true)
+  assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, blockRoot.id), false)
   await assert.rejects(
     blocks.create(userA.id, workspaceA.id, root.id, {
       id: 'block-invalid-parent',
@@ -320,7 +327,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     }),
     /Parent block must belong to the same page and workspace/,
   )
-  assert.equal(await connection.db!.collection('blocks').countDocuments(), 4)
+  assert.equal(await connection.db!.collection('blocks').countDocuments(), 2)
   assert.ok(await connection.db!.listCollections({ name: 'pages' }).hasNext())
 
   const originalClientId = process.env.ALI_OSS_CLIENT_ID

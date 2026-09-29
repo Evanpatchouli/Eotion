@@ -11,7 +11,7 @@ Web 继续使用 Hash Router，适用于浏览器、Electron renderer 和 Mobile
 - `/#/app/:workspaceId/page/:pageId`：P5.2 起打开该工作区中的一个页面，详情见 [P5.2 Page Tree](p5-page-tree.md)。
 - `/#/__dev/workspace`：原示例首页。原有 `mobile-p1`、`editor-p2`、`storage-p3` 开发路由不变，仍只在开发构建中注册。
 
-产品侧栏的 Pages 区域在 P5.2 中已由真实页面树替换占位提示。P5.3 正式编辑器、P5.4 正式同步和 P5.5 附件 UI 尚未实现。
+产品侧栏的 Pages 区域在 P5.2 中已由真实页面树替换占位提示；P5.3 的正式页面正文编辑器已接入，详见 [P5.3 Real Page Editor](p5-real-page-editor.md)。P5.4 正式同步和 P5.5 附件 UI 尚未实现。
 
 ## 启动与账号
 

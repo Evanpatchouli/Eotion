@@ -155,6 +155,26 @@ test('page move schema requires a nullable parent and rejects server-managed fie
   }
 })
 
+test('block delete encodes all scoped IDs, includes credentials, forwards abort signal, and accepts 204', async () => {
+  let request
+  let signal
+  const controller = new AbortController()
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test/',
+    fetch: async (input, init) => {
+      request = new Request(input, init)
+      signal = init.signal
+      return new Response(null, { status: 204 })
+    },
+  })
+
+  assert.equal(await client.blocks.delete('workspace 1', 'page/1', 'block#1', controller.signal), undefined)
+  assert.equal(request.url, 'https://eotion.test/api/workspaces/workspace%201/pages/page%2F1/blocks/block%231')
+  assert.equal(request.method, 'DELETE')
+  assert.equal(request.credentials, 'include')
+  assert.equal(signal, controller.signal)
+})
+
 test('file request schemas reject client supplied server-managed metadata', () => {
   assert.deepEqual(FileUploadMetadataSchema.parse({ id: 'file-1', name: 'a.txt' }), {
     id: 'file-1', name: 'a.txt',

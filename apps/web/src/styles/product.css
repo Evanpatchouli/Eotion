@@ -53,6 +53,12 @@
 .product-page-meta dt { color: #92918b; font-size: 11px; }
 .product-page-meta dd { margin: 3px 0 0; color: #4d4c47; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .product-page-content-placeholder { margin-top: 26px; padding: 22px; border: 1px dashed #dcdbd6; border-radius: 10px; color: #92918b; font-size: 13px; line-height: 1.7; }
+.product-editor-page { min-width: 0; }
+.product-editor-heading { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: 16px; }
+.product-editor-heading h1 { min-width: 0; overflow-wrap: anywhere; }
+.product-save-status { flex: none; color: #777672; font-size: 12px; }
+.product-editor-page .eotion-editor { margin-top: 24px; }
+.product-editor-error { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 12px 0; color: #a6342b; font-size: 12px; }
 .product-sidebar-footer { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .product-user-email { max-width: 100%; overflow: hidden; color: #83827d; font-size: 11px; text-overflow: ellipsis; }
 .product-logout { margin-top: 4px; }
@@ -89,6 +95,7 @@
 .product-restore-error { margin: -8px 0 20px; }
 .product-login-submit { width: 100%; margin-top: 5px; }
 @media (max-width: 767px) {
+  .product-editor-page .eotion-editor-content { padding: 16px 12px 110px; }
   .product-shell .product-sidebar { gap: 12px; }
   .product-login-page { min-height: 100%; padding: 18px; }
   .product-login-card { padding: 26px 22px; }

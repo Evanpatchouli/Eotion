@@ -87,6 +87,28 @@ export class BlockService {
     await this.blocks.deleteInWorkspace(workspaceId, existing.pageId, id, session)
   }
 
+  /** HTTP deletion is page-scoped and reports a missing block to the controller. */
+  async deleteFromPage(userId: string, workspaceId: string, pageId: string, id: string): Promise<boolean> {
+    await this.permissions.assertCanWrite(userId, workspaceId)
+    if (!(await supportsTransactions(this.connection))) return this.deleteFromPageInSession(workspaceId, pageId, id)
+    const session = await this.connection.startSession()
+    try {
+      let deleted = false
+      await session.withTransaction(async () => { deleted = await this.deleteFromPageInSession(workspaceId, pageId, id, session) })
+      return deleted
+    } finally {
+      await session.endSession()
+    }
+  }
+
+  private async deleteFromPageInSession(workspaceId: string, pageId: string, id: string, session?: ClientSession): Promise<boolean> {
+    const existing = await this.blocks.findInWorkspace(workspaceId, id, session)
+    if (!existing || existing.pageId !== pageId) return false
+    if (session && !(await this.blocks.touchStructure(workspaceId, pageId, id, session))) return false
+    if (await this.blocks.hasChildren(workspaceId, pageId, id, session)) throw new BadRequestException('Delete child blocks first')
+    return this.blocks.deleteInWorkspace(workspaceId, pageId, id, session)
+  }
+
   private async createInSession(workspaceId: string, pageId: string, input: BlockCreate, session: ClientSession): Promise<ServerBlockRecord> {
     if (!(await this.pages.touchStructure(workspaceId, pageId, session))) throw new NotFoundException('Page not found in workspace')
     const parentBlockId = input.parentBlockId ?? null

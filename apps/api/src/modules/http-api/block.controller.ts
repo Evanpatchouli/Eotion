@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Param, Patch, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, UseGuards } from '@nestjs/common'
 import { BlockCreateRequestSchema, BlockUpdateRequestSchema } from '@eotion/contracts'
 import { BlockService } from '../server-domain/services/block.service'
 import type { UserRecord } from '../server-domain/types'
@@ -36,5 +36,12 @@ export class BlockController {
     const block = await this.blocks.update(user.id, parseId(workspaceId), parseId(pageId), parseId(blockId), input)
     if (!block) throw new NotFoundException('Block not found')
     return block
+  }
+
+  @Delete(':blockId')
+  async delete(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('pageId') pageId: string, @Param('blockId') blockId: string) {
+    const deleted = await this.blocks.deleteFromPage(user.id, parseId(workspaceId), parseId(pageId), parseId(blockId))
+    if (!deleted) throw new NotFoundException('Block not found')
+    return { deleted: true }
   }
 }

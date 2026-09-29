@@ -130,6 +130,8 @@ async function installApi(page: Page, options: MockOptions = {}) {
     }
 
     const pageMatch = path.match(/^\/api\/workspaces\/([^/]+)\/pages\/([^/]+)$/)
+    const blockListMatch = path.match(/^\/api\/workspaces\/([^/]+)\/pages\/([^/]+)\/blocks$/)
+    if (blockListMatch && method === 'GET') return json(route, 200, [])
     if (pageMatch) {
       const workspaceId = decodeURIComponent(pageMatch[1]!)
       const pageId = decodeURIComponent(pageMatch[2]!)
@@ -365,8 +367,9 @@ test('moves a page under another page and back to the root', async ({ page }) =>
   await select.selectOption('page-b')
   await page.getByRole('button', { name: '移动', exact: true }).click()
 
-  await expect(page.locator('.product-page-meta dd').nth(1)).toHaveText('page-b')
   await expect(treeItem(page, 'Alpha child')).toHaveAttribute('aria-level', '2')
+  await expect(treeItem(page, 'Alpha child').getByRole('button', { name: 'Alpha child', exact: true })).toHaveAttribute('aria-current', 'page')
+  await expect(page.locator('.breadcrumb')).toHaveText('Ava space / Alpha child')
   await expect(treeItem(page, 'Bravo')).toHaveAttribute('aria-expanded', 'true')
   await expect(page.locator('.product-page-inline-form')).toHaveCount(0)
   expect(api.pages.find((record) => record.id === 'page-a1')).toMatchObject({ parentPageId: 'page-b' })

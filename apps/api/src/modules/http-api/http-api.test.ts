@@ -721,6 +721,7 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
       ["/api/workspaces/ws-owner/pages/page-owner/blocks", "POST"],
       ["/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner", "GET"],
       ["/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner", "PATCH"],
+      ["/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner", "DELETE"],
       ["/api/workspaces/ws-owner/pages/page-owner/move", "PATCH"],
       ["/api/workspaces/ws-owner/pages/page-owner", "DELETE"],
     ] as const;
@@ -762,6 +763,26 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
         `another user must not access ${method} ${route}`,
       );
     }
+
+    const blockRoute = "/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner";
+    assert.equal((await request(baseUrl, blockRoute, "DELETE")).status, 401);
+    const otherPage = await request(baseUrl, "/api/workspaces/ws-owner/pages", "POST", {
+      cookie: cookieA,
+      body: { id: "page-block-other", parentPageId: null, title: "Other", orderKey: "z" },
+    });
+    assert.equal(otherPage.status, 201);
+    assert.equal((await request(baseUrl, "/api/workspaces/ws-owner/pages/page-block-other/blocks/block-owner", "DELETE", { cookie: cookieA })).status, 404);
+    assert.equal((await request(baseUrl, blockRoute, "GET", { cookie: cookieA })).status, 200);
+    const childBlock = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/blocks", "POST", {
+      cookie: cookieA,
+      body: { id: "block-delete-child", parentBlockId: "block-owner", type: "paragraph", orderKey: "b", props: {} },
+    });
+    assert.equal(childBlock.status, 201);
+    assert.equal((await request(baseUrl, blockRoute, "DELETE", { cookie: cookieA })).status, 400);
+    assert.equal((await request(baseUrl, blockRoute.replace("block-owner", "block-delete-child"), "DELETE", { cookie: cookieA })).status, 200);
+    assert.equal((await request(baseUrl, blockRoute, "DELETE", { cookie: cookieA })).status, 200);
+    assert.equal((await request(baseUrl, blockRoute, "DELETE", { cookie: cookieA })).status, 404);
+    assert.equal(await blockModel.countDocuments({ id: "block-owner" }), 0);
 
     const logout = await request(baseUrl, "/api/auth/logout", "POST", {
       cookie: cookieA,
