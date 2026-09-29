@@ -4,8 +4,8 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "dev": "nest start --watch",
-    "build": "nest build",
+    "dev": "pnpm --filter @eotion/domain build && nest start --watch",
+    "build": "pnpm --filter @eotion/domain build && nest build",
     "start": "node dist/main.js",
     "test:domain": "pnpm build && node --test dist/modules/server-domain/server-domain.test.js",
     "typecheck": "tsc --noEmit"

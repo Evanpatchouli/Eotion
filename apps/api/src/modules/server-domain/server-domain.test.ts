@@ -5,7 +5,7 @@ import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { getConnectionToken, getModelToken, MongooseModule } from '@nestjs/mongoose'
 import { FastifyAdapter } from '@nestjs/platform-fastify'
-import { BLOCK_TYPES } from '@eotion/domain/block-types'
+import { BLOCK_TYPES } from '@eotion/domain'
 import type { Connection, Model } from 'mongoose'
 
 import { ServerDomainModule } from './server-domain.module'

@@ -7,9 +7,10 @@ export interface PageSummary {
   updatedAt: string
 }
 
-import type { BLOCK_TYPES } from './block-types.js'
+import type { BlockType } from './block-types'
 
-export type BlockType = (typeof BLOCK_TYPES)[number]
+export { BLOCK_TYPES } from './block-types'
+export type { BlockType } from './block-types'
 
 export interface BlockRecord {
   id: Id

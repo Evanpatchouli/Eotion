@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
-import { BLOCK_TYPES } from '@eotion/domain/block-types'
+import { BLOCK_TYPES } from '@eotion/domain'
 import { HydratedDocument } from 'mongoose'
 
 @Schema({ collection: 'blocks', timestamps: true, versionKey: false })

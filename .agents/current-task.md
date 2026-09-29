@@ -1,17 +1,18 @@
-# Current Task — P4.1 small hardening
+# Current Task — P4.1 TypeScript domain runtime build
 
 ## Goal
 
-在 commit `7339a80cbe9572ff9a0ed45da3039c5216eaa707` 上收敛 BlockType runtime 常量、文件集合命名，并记录未来 Sync 时间/version 与 application error 边界；不进入 P4.2。
+在 `186a4712ccb072ff47d2ff1cb0b381c41e51450d` 上删除 `packages/domain/src` 的手写 JS/声明文件，以单一 TypeScript 常量构建 Node 可加载的运行时产物，保持 P3/P4.1 行为。
 
 ## Work units
 
 | ID | 模式 / 评级 | 边界与验收 | 状态 |
 | --- | --- | --- | --- |
-| W1 | investigate / S0 | 核对 master 基线、共享类型调用、Mongo 目标及 `filemetadatas` 数据。 | 完成：本地与远端一致，配置为本机 eotion；旧/新文件集合均不存在。 |
-| W2 | execute / S1 | 单一 BlockType 常量、文件集合改名、定向测试与文档约束。 | 完成 |
-| W3 | verify/review / S0 + Review | 最小 typecheck/build/test、独立 review、diff 检查、提交推送。 | 完成：受影响验证通过，独立 review 无剩余 blocker。 |
+| W1 | investigate / S0 | 核对基线、domain package/tsconfig/exports 与所有消费者的构建边界。 | 完成：本地与远端一致；仅 API 运行时消费常量，其余均类型导入。 |
+| W2 | decide / S2 | 确定 TypeScript 构建产物格式、导出映射与 clean clone 构建顺序。 | 完成：tsc 构建 CommonJS，API dev/build 显式先构建 domain。 |
+| W3 | execute / S1 | 实现单一 TS 常量、package 构建/exports、API 命令接线、删 workaround 并同步文档。 | 完成 |
+| W4 | verify/review / S0 + Review | 执行指定验证、Node runtime smoke、独立 review、提交推送。 | 完成：指定验证与 Node 22.12 smoke 通过，独立 review 无 blocker。 |
 
 ## Constraints
 
-不迁移真实数据；不实现 Auth、Sync、OSS、MCP 或新错误模型；不改变 P3 BlockRecord 行为。
+不进入 P4.2，不改 Block 类型集合、P3 BlockRecord 或 P4.1 Mongo 行为；不新增 bundler，不修改 `.codex`。

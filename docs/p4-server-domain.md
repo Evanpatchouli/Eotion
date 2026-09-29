@@ -33,6 +33,8 @@ Repository 提供显式的工作区范围查询，例如按 `workspaceId + id` �
 
 P3 的 `PageSummary`、`BlockRecord` 和 `LocalStore` 契约保留；完整的 `PageRecord` 与 `FileMetadata` 是新增服务端领域类型。P3 oplog 的至少一次投递和稳定 operation ID 不在 P4.1 接入，幂等服务端处理留待 P4.4。
 
+`@eotion/domain` 的源文件均为 TypeScript；`BLOCK_TYPES` 是 Block 类型和 Mongo enum 的单一来源。包使用现有 TypeScript 编译器生成 CommonJS `dist/` 运行时与声明文件，API 的开发启动和构建会先编译该包。Web、Desktop、Storage 当前只导入领域类型，P3 `BlockRecord` 不受此构建边界影响。
+
 Eotion 只管理文件元数据。后续文件操作由 `apps/api` 使用 `ali-oss-server` SDK，通过独立服务访问 Aliyun OSS。`ALI_OSS_CLIENT_SECRET` 仅放服务端配置。`bucket` 和 `clientId` 属于服务配置，不重复存进每条元数据；临时签名 URL 不应持久化。
 
 ## 后续 Sync 的时间与版本边界

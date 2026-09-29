@@ -174,7 +174,11 @@ importers:
         specifier: ~6.0.3
         version: 6.0.3
 
-  packages/domain: {}
+  packages/domain:
+    devDependencies:
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
 
   packages/sdk:
     dependencies:
