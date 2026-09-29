@@ -41,7 +41,7 @@ See [`docs/bootstrap-result.md`](docs/bootstrap-result.md) for the verified comm
 pnpm dev:web
 ```
 
-Open `http://localhost:5173/#/app`. The product entry provides email/password login, session restore, and workspace creation, switching, and renaming. Start the API with MongoDB configured; see [P5.1 setup and product routes](docs/p5-product-shell.md). The original sample workspace is available in development at `/#/__dev/workspace`.
+Open `http://localhost:7173/#/app`. The product entry provides email/password login, session restore, and workspace creation, switching, and renaming. Start the API with MongoDB configured; see [P5.1 setup and product routes](docs/p5-product-shell.md). The original sample workspace is available in development at `/#/__dev/workspace`.
 
 The Web page zoom preference is listed in `apps/web/.env.example`:
 
@@ -73,12 +73,12 @@ pnpm dev:api
 Health endpoint:
 
 ```text
-GET http://localhost:3000/api/health
+GET http://localhost:7137/api/health
 ```
 
 ### Mobile shell
 
-For phone testing, the mobile build detects the development machine's LAN IPv4 address and uses port `5173` by default. To override the URL, set `EOTION_WEB_URL` in `apps/mobile/.env` (see `apps/mobile/.env.example`). Start the Web dev server in one terminal; it already listens on `0.0.0.0:5173`:
+For phone testing, the mobile build detects the development machine's LAN IPv4 address and uses port `7173` by default. To override the URL, set `EOTION_WEB_URL` in `apps/mobile/.env` (see `apps/mobile/.env.example`). Start the Web dev server in one terminal; it already listens on `0.0.0.0:7173`:
 
 ```bash
 pnpm dev:web
@@ -92,9 +92,9 @@ pnpm dev:mobile
 
 Keep both servers running while testing. Restart `pnpm dev:mobile` after changing `apps/mobile/.env` so the new URL is compiled into the bundle.
 
-For the Mobile P1 capability demo, use the development-only sidebar item or open `http://localhost:5173/#/__dev/mobile-p1`. See [`docs/p1-mobile-demo.md`](docs/p1-mobile-demo.md).
+For the Mobile P1 capability demo, use the development-only sidebar item or open `http://localhost:7173/#/__dev/mobile-p1`. See [`docs/p1-mobile-demo.md`](docs/p1-mobile-demo.md).
 
-For the Tiptap P2 editor PoC, use the development-only sidebar item or open `http://localhost:5173/#/__dev/editor-p2`. See [`docs/p2-editor-demo.md`](docs/p2-editor-demo.md) for the 5,000-block fixture and platform verification steps.
+For the Tiptap P2 editor PoC, use the development-only sidebar item or open `http://localhost:7173/#/__dev/editor-p2`. See [`docs/p2-editor-demo.md`](docs/p2-editor-demo.md) for the 5,000-block fixture and platform verification steps.
 
 ## Repository map
 

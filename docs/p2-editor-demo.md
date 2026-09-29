@@ -1,21 +1,21 @@
 # P2 编辑器概念验证
 
-开发模式入口：`http://localhost:5173/#/__dev/editor-p2`，也可从工作区侧栏进入。生产构建不注册该路由。编辑器仅实现于 `apps/web`，Electron 加载同一 Web renderer，Lynx 移动壳继续加载同一 Web URL。
+开发模式入口：`http://localhost:7173/#/__dev/editor-p2`，也可从工作区侧栏进入。生产构建不注册该路由。编辑器仅实现于 `apps/web`，Electron 加载同一 Web renderer，Lynx 移动壳继续加载同一 Web URL。
 
 ## 验证范围与当前结果
 
-| 项目 | 当前证据 / 状态 |
-| --- | --- |
-| Tiptap 3 Extension / Command | 段落、二级标题、项目列表和 Slash 菜单使用 Tiptap Command；Slash 匹配使用 Tiptap Suggestion utility。Web 与 Electron 已运行验证。 |
-| `@tiptap/pm` | 按官方 Vue 3 安装组合引入，目前没有直接调用；没有直接添加 `prosemirror-*` 依赖。当前 PoC 尚未出现必须下沉到 Selection、Transaction 或 Decoration API 的需求。 |
-| 中文 IME | 页面记录 `compositionstart/update/end`、组合期 transaction 数及 selection；Huawei Nova 14 与 iPhone XS Max 的真实输入法清单由用户人工确认通过。 |
-| Selection / Cursor | Web 浏览器中移动光标、拖选文字和 5000 区块末尾选区已验证；两台真机的光标、选区与选择手柄由用户人工确认通过。 |
-| Slash Command | Web 中 `/` 菜单、方向键、Enter、Escape 已验证；两台真机的 Slash 与 IME 交互由用户人工确认通过。 |
-| 触摸工具栏 / 长按 | 移动布局的底部工具栏在浏览器视口已显示，选区加粗命令已验证；两台真机的触摸工具栏与长按由用户人工确认通过。页面只观察 pointer/contextmenu，不阻止默认行为。 |
-| Web | 开发路由、编辑、命令、5000 区块加载与输入已实测。 |
-| Electron | 开发态 Electron 窗口实际报告 `runtime: electron`；输入、标题命令和 5000 区块加载已实测。 |
-| HarmonyOS WebView | 用户在 Huawei Nova 14（HarmonyOS 6）人工测试，确认 P2 清单全部通过；未记录精确耗时。 |
-| iOS WebView | 用户在 iPhone XS Max 人工测试，确认 P2 清单全部通过；iOS 版本和精确耗时未记录。 |
+| 项目                         | 当前证据 / 状态                                                                                                                                               |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tiptap 3 Extension / Command | 段落、二级标题、项目列表和 Slash 菜单使用 Tiptap Command；Slash 匹配使用 Tiptap Suggestion utility。Web 与 Electron 已运行验证。                              |
+| `@tiptap/pm`                 | 按官方 Vue 3 安装组合引入，目前没有直接调用；没有直接添加 `prosemirror-*` 依赖。当前 PoC 尚未出现必须下沉到 Selection、Transaction 或 Decoration API 的需求。 |
+| 中文 IME                     | 页面记录 `compositionstart/update/end`、组合期 transaction 数及 selection；Huawei Nova 14 与 iPhone XS Max 的真实输入法清单由用户人工确认通过。               |
+| Selection / Cursor           | Web 浏览器中移动光标、拖选文字和 5000 区块末尾选区已验证；两台真机的光标、选区与选择手柄由用户人工确认通过。                                                  |
+| Slash Command                | Web 中 `/` 菜单、方向键、Enter、Escape 已验证；两台真机的 Slash 与 IME 交互由用户人工确认通过。                                                               |
+| 触摸工具栏 / 长按            | 移动布局的底部工具栏在浏览器视口已显示，选区加粗命令已验证；两台真机的触摸工具栏与长按由用户人工确认通过。页面只观察 pointer/contextmenu，不阻止默认行为。    |
+| Web                          | 开发路由、编辑、命令、5000 区块加载与输入已实测。                                                                                                             |
+| Electron                     | 开发态 Electron 窗口实际报告 `runtime: electron`；输入、标题命令和 5000 区块加载已实测。                                                                      |
+| HarmonyOS WebView            | 用户在 Huawei Nova 14（HarmonyOS 6）人工测试，确认 P2 清单全部通过；未记录精确耗时。                                                                          |
+| iOS WebView                  | 用户在 iPhone XS Max 人工测试，确认 P2 清单全部通过；iOS 版本和精确耗时未记录。                                                                               |
 
 真机结论来自用户在设备上的人工测试，不是当前开发机自动运行结果。两端均确认中文输入、Slash、光标/选区、长按与触摸工具栏、虚拟键盘布局和 5000 区块可用；5000 区块的设备端耗时没有记录，因此只能判定功能与可用性，不能量化移动端性能。
 
@@ -42,7 +42,7 @@ pnpm dev:web
 
 ## 移动 WebView 人工验证与复测
 
-1. 在开发机运行 `pnpm dev:web` 和 `pnpm dev:mobile`。按 [P1 WebView 步骤](p1-mobile-demo.md)在 Huawei HarmonyOS 或 iOS 设备的 Lynx Explorer 扫码。可从侧栏进入 P2；若直达，在 `apps/mobile/.env` 设置带引号的 `EOTION_WEB_URL="http://<开发机局域网 IP>:5173/#/__dev/editor-p2"`，重启移动 dev server。
+1. 在开发机运行 `pnpm dev:web` 和 `pnpm dev:mobile`。按 [P1 WebView 步骤](p1-mobile-demo.md)在 Huawei HarmonyOS 或 iOS 设备的 Lynx Explorer 扫码。可从侧栏进入 P2；若直达，在 `apps/mobile/.env` 设置带引号的 `EOTION_WEB_URL="http://<开发机局域网 IP>:7173/#/__dev/editor-p2"`，重启移动 dev server。
 2. 确认页面和编辑区加载，记下 runtime/layout/input/width；若 runtime 显示 `web`，记录实际 UA 和 Lynx 环境，不把标签误判为编辑器已在普通浏览器运行。当前 Shell 没有显式注入 `EotionMobile` UA 标记。
 3. 使用设备上的中文输入法输入词组、删除、换行并撤销/重做。通过条件：组合事件完整，文字无重复/丢失，候选选择时光标不乱跳，Slash 菜单不在组合过程中误触发。
 4. 用手指移动光标、长按文字并拖动系统选择手柄。通过条件：选区与仪表读数一致，原生选择/复制菜单仍可用；底部触摸工具栏可执行粗体、斜体、文本、标题、列表，不意外丢失选择。

@@ -41,7 +41,7 @@ pnpm install
 pnpm dev:web
 ```
 
-打开 `http://localhost:5173`。
+打开 `http://localhost:7173`。
 
 ### Electron 桌面端
 
@@ -65,12 +65,12 @@ pnpm dev:api
 健康检查端点：
 
 ```text
-GET http://localhost:3000/api/health
+GET http://localhost:7137/api/health
 ```
 
 ### 移动端外壳
 
-移动端构建默认检测开发机器的局域网 IPv4 地址，并使用 `5173` 端口。需要覆盖地址时，在 `apps/mobile/.env` 中设置 `EOTION_WEB_URL`（见 `apps/mobile/.env.example`）。Web 开发服务器已监听 `0.0.0.0:5173`。
+移动端构建默认检测开发机器的局域网 IPv4 地址，并使用 `7173` 端口。需要覆盖地址时，在 `apps/mobile/.env` 中设置 `EOTION_WEB_URL`（见 `apps/mobile/.env.example`）。Web 开发服务器已监听 `0.0.0.0:7173`。
 
 先在一个终端运行 Web 开发服务器：
 
@@ -86,7 +86,7 @@ pnpm dev:mobile
 
 修改 `apps/mobile/.env` 后需重启 `pnpm dev:mobile`，新地址才会编译进 bundle。
 
-移动端 P1 能力演示可通过开发模式下的侧边栏入口进入，也可直接打开 `http://localhost:5173/#/__dev/mobile-p1`。操作见 [`docs/p1-mobile-demo.md`](docs/p1-mobile-demo.md)。
+移动端 P1 能力演示可通过开发模式下的侧边栏入口进入，也可直接打开 `http://localhost:7173/#/__dev/mobile-p1`。操作见 [`docs/p1-mobile-demo.md`](docs/p1-mobile-demo.md)。
 
 ## 仓库结构
 

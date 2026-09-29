@@ -6,14 +6,14 @@
 
 ## 验证结果
 
-| 命令 | 结果 |
-| --- | --- |
-| `pnpm install` | 成功，生成并更新了 `pnpm-lock.yaml`。 |
-| `pnpm dev:web` | 成功，Vite 在 `http://localhost:5173` 启动；浏览器显示 Eotion 主 UI。 |
-| `pnpm dev:desktop` | 成功，Electron Vite 编译 main/preload 并启动 renderer；`http://localhost:5173` 显示与 Web 相同的 Eotion UI。`pnpm build:desktop` 也成功，产物写入 `apps/desktop/out/renderer`。 |
-| `pnpm dev:api` | 成功；watch 编译 0 错误。`GET http://localhost:3000/api/health` 返回 HTTP 200、`status: ok`，MongoDB 为 `disabled`。 |
-| `pnpm dev:mobile` | 成功；Rspeedy 生成 Lynx 与 Web 开发 bundle，并输出 Lynx Explorer 二维码。 |
-| `pnpm build:mobile` | 成功；生成 `apps/mobile/dist/main.lynx.bundle` 和 `main.web.bundle`。两个 bundle 都包含 `<webview>` 及其 `EOTION_WEB_URL`。 |
+| 命令                | 结果                                                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install`      | 成功，生成并更新了 `pnpm-lock.yaml`。                                                                                                                                           |
+| `pnpm dev:web`      | 成功，Vite 在 `http://localhost:7173` 启动；浏览器显示 Eotion 主 UI。                                                                                                           |
+| `pnpm dev:desktop`  | 成功，Electron Vite 编译 main/preload 并启动 renderer；`http://localhost:7173` 显示与 Web 相同的 Eotion UI。`pnpm build:desktop` 也成功，产物写入 `apps/desktop/out/renderer`。 |
+| `pnpm dev:api`      | 成功；watch 编译 0 错误。`GET http://localhost:7137/api/health` 返回 HTTP 200、`status: ok`，MongoDB 为 `disabled`。                                                            |
+| `pnpm dev:mobile`   | 成功；Rspeedy 生成 Lynx 与 Web 开发 bundle，并输出 Lynx Explorer 二维码。                                                                                                       |
+| `pnpm build:mobile` | 成功；生成 `apps/mobile/dist/main.lynx.bundle` 和 `main.web.bundle`。两个 bundle 都包含 `<webview>` 及其 `EOTION_WEB_URL`。                                                     |
 
 Electron 的 renderer 根目录和 HTML 入口都指向 `apps/web`，仓库没有第二份桌面产品 UI。移动端继续由 Vue Lynx 壳加载同一 Web App。
 
@@ -27,13 +27,13 @@ pnpm 仍会报告 peer 警告（electron-vite 5 与 Vite 8、Vue Lynx CSS/templa
 
 ## Lynx Explorer 与 HarmonyOS 限制
 
-本机未检测到 Lynx Explorer、DevEco Studio、`hdc`/`hvigorw`/`ohpm`，也没有 Android AVD 或已连接设备。因此已验证 Lynx bundle 包含 `<webview>`、bundle 生成和二维码输出，但未能在 Lynx Explorer 或 HarmonyOS 原生宿主中打开该 bundle。本次独立开发运行输出的 URL 为 `http://198.18.0.1:3000/main.lynx.bundle?fullscreen=true`；设备侧可达性需在有设备的网络环境中确认。
+本机未检测到 Lynx Explorer、DevEco Studio、`hdc`/`hvigorw`/`ohpm`，也没有 Android AVD 或已连接设备。因此已验证 Lynx bundle 包含 `<webview>`、bundle 生成和二维码输出，但未能在 Lynx Explorer 或 HarmonyOS 原生宿主中打开该 bundle。本次独立开发运行输出的 URL 为 `http://198.18.0.1:7137/main.lynx.bundle?fullscreen=true`；设备侧可达性需在有设备的网络环境中确认。
 
 在有 HarmonyOS 工具链的机器上：
 
 1. 安装 DevEco Studio 和 HarmonyOS SDK，并启动 HarmonyOS 模拟器或连接设备。
 2. 按 [Lynx Explorer 快速开始](https://lynxjs.org/guide/start/quick-start.html) 安装 Harmony 模拟器 HAP；官方文档说明预构建 HAP 面向模拟器，真机需要从源码构建 Explorer。通过 `hdc install lynx_explorer-default-unsigned.hap` 安装。
 3. 先在一个终端运行 `pnpm dev:web`，再在另一个终端运行 `pnpm dev:mobile`；在 Explorer 中扫描二维码，模拟器也可粘贴终端输出的 bundle URL。
-4. `apps/mobile` 默认检测开发机局域网 IPv4 地址并访问 `5173` 端口；也可在 `apps/mobile/.env` 中设置 `EOTION_WEB_URL` 覆盖。修改 `.env` 后需要重启移动端 bundle 服务。
+4. `apps/mobile` 默认检测开发机局域网 IPv4 地址并访问 `7173` 端口；也可在 `apps/mobile/.env` 中设置 `EOTION_WEB_URL` 覆盖。修改 `.env` 后需要重启移动端 bundle 服务。
 
 完整 HarmonyOS 宿主集成需按 [Lynx Existing App 集成指南](https://lynxjs.org/guide/start/integrate-with-existing-apps.html) 在 ArkTS/HAP 工程中加入 Lynx 运行时并加载 bundle；该宿主工程不属于当前 v0.1 scaffold。
