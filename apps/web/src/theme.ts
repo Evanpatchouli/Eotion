@@ -30,7 +30,7 @@ function applyTheme(): void {
   resolved.value = theme
   document.documentElement.dataset.theme = theme
   document.documentElement.style.colorScheme = theme
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#242622' : '#f7f7f5')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#242424' : '#f7f7f5')
 }
 
 function onSystemThemeChange(): void {

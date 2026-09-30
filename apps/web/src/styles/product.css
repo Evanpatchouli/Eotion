@@ -42,6 +42,8 @@
 .product-shell .icon-button, .product-add-page, .product-page-toggle, .product-page-menu-trigger {
   display: inline-grid; width: 36px; height: 36px; flex: none; place-items: center; padding: 0;
 }
+.product-shell:not([data-layout="mobile"]) .sidebar-close,
+.product-shell:not([data-layout="mobile"]) .mobile-menu { display: none; }
 .product-shell .icon-button:hover, .product-add-page:hover:not(:disabled), .product-page-toggle:hover, .product-page-menu-trigger:hover {
   background: var(--surface-hover); color: var(--text-primary);
 }

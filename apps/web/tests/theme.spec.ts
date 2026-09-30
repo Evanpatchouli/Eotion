@@ -12,27 +12,34 @@ test('falls back from an invalid stored preference to system', async ({ page }) 
 })
 
 test('system follows changes, explicit dark ignores them, and switching back resumes following', async ({ page }) => {
-  await page.emulateMedia({ colorScheme: 'light' })
-  await page.goto('/')
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-
-  await page.emulateMedia({ colorScheme: 'dark' })
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-  expect(await page.locator('html').evaluate((element) => getComputedStyle(element).getPropertyValue('--surface').trim())).toBe('#242622')
-
-  await page.evaluate(async () => {
-    const { setThemePreference } = await import('/src/theme.ts')
-    setThemePreference('dark')
+  await page.route('**/api/**', (route) => {
+    const path = new URL(route.request().url()).pathname
+    const body = path === '/api/auth/me'
+      ? { id: 'theme-user', email: 'theme@example.com', displayName: 'Theme user', createdAt: '2026-09-30T00:00:00.000Z', updatedAt: '2026-09-30T00:00:00.000Z' }
+      : path === '/api/workspaces' ? [] : { statusCode: 404, message: 'Not found' }
+    return route.fulfill({ status: path === '/api/auth/me' || path === '/api/workspaces' ? 200 : 404, contentType: 'application/json', body: JSON.stringify(body) })
   })
   await page.emulateMedia({ colorScheme: 'light' })
+  await page.goto('/#/settings/appearance')
+  await expect(page.getByRole('radio', { name: /跟随系统/ })).toBeChecked()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  expect(await page.locator('html').evaluate((element) => getComputedStyle(element).getPropertyValue('--surface').trim())).toBe('#242424')
+
+  await page.getByRole('radio', { name: /深色/ }).check()
+  expect(await page.evaluate(() => localStorage.getItem('eotion:theme'))).toBe('dark')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await page.emulateMedia({ colorScheme: 'light' })
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 
-  await page.evaluate(async () => (await import('/src/theme.ts')).setThemePreference('system'))
+  await page.getByRole('radio', { name: /跟随系统/ }).check()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
   await page.emulateMedia({ colorScheme: 'dark' })
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 
-  await page.evaluate(async () => (await import('/src/theme.ts')).setThemePreference('light'))
+  await page.getByRole('radio', { name: /浅色/ }).check()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
@@ -75,6 +82,14 @@ test('logout and another login keep the device theme', async ({ page }) => {
   }
 
   await login()
+  await expect(page.locator('.product-shell .sidebar-close')).toBeHidden()
+  await expect(page.locator('.product-shell .mobile-menu')).toBeHidden()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.locator('.product-shell .mobile-menu')).toBeVisible()
+  await page.locator('.product-shell .mobile-menu').click()
+  await expect(page.locator('.product-shell .sidebar-close')).toBeVisible()
+  await page.locator('.product-shell .sidebar-close').click()
+  await page.setViewportSize({ width: 1280, height: 720 })
   await page.getByRole('button', { name: '退出登录' }).click()
   await expect(page).toHaveURL(/#\/login$/)
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
