@@ -1,19 +1,19 @@
-# Current Task — Connectivity polish + HTTP 500 fallback
+# Current Task — Idle / Next: P5.6 Settings & Preferences
 
-目标：仅扩展共享 transient helper 的精确白名单至 TypeError / 500 / 502 / 503 / 504；诊断详情保留原生语义并使用现有 Morphicons。
+当前无进行中的实现任务。
 
-## Work Units
+## Next planned phase
 
-1. 调查/决策 S0→S2（主 Agent）：确认 ApiError、auth/workspace/sync 的共用边界；已完成，不新增恢复流程。
-2. 执行 S1（主 Agent）：局部 helper、App summary 样式/图标、正式行为文档。
-3. 执行 S1（fast_worker）：现有 connectivity/offline/desktop 回归测试扩充。
-4. 验证 S0（主 Agent）：Web typecheck/build/product/offline、storage/desktop/real-sync 与 Visual QA。
-5. Review（独立 reviewer）：聚焦授权隔离、RouterView 保留、同步链路与 summary 可访问性，主 Agent 复核后提交。
+P5.6 Settings & Preferences，正式范围见 `docs/p5-settings.md`。
 
-## 状态
+已确定的产品边界：
 
-已完成；开始时 git 工作区干净。无版本/schema/附件/移动原生/架构扩展。
+- 宽屏 Settings 使用 list-detail 双栏；紧凑宽度使用 Settings Index → Detail，不做移动端抽屉 Sidebar。
+- 个人 / 账号资料：昵称、变更密码。
+- 外观：system / light / dark；默认 system，设备本地偏好。
+- 工作空间 / 通用：显示固定编辑工具栏；默认关闭，按 user + workspace + device 保存，不关闭移动端必要 touch/contextual editing controls。
+- 功能：MCP / Agent 只显示“即将推出”，P5.6 不实现实际能力。
+- 密码修改必须验证当前密码，成功后撤销该用户全部 Session 并要求重新登录。
+- P5.6 不创建 HarmonyOS / Android / iOS 原生宿主。
 
-Web typecheck/build 通过；product 100/100、offline-shell 1/1、storage/Electron 11/11、storage 单测 6/6、Desktop 单测 8/8、SDK 单测 17/17 通过；storage/Desktop typecheck、Desktop/SDK build 通过。真实 Mongo/API/生产 Web 1/1 通过（既有 Mongo 认证配置阻挡首次运行，隔离临时 replica set 重跑通过；临时容器已移除）。
-
-390×844 / 1366×900 Visual QA 通过：两态 SVG、Enter/Space、hover/focus-visible、reduced-motion、无溢出/overlay/pageerror；截图在 E:/Eotion-QA（仓库外）。独立 reviewer 复核后无 blocker；HTTP 状态与 body 不一致安全缺口已以 SDK 实际响应状态修复并补回归。git diff --check 和 UTF-8 无 BOM 验证通过。
+P5.4 Mobile WebView 真机完全离线重启验收仍保留为既有未完成边界，不因 P5.6 自动关闭。
