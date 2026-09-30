@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { FileUpdateRequestSchema, FileUploadMetadataSchema, PageMoveRequestSchema } from '@eotion/contracts'
+import { FileUpdateRequestSchema, FileUploadMetadataSchema, PageMoveRequestSchema, SyncOperationSchema, WorkspaceSnapshotResponseSchema } from '@eotion/contracts'
 import { ApiError, EotionApiClient, EotionOperationTransport } from './index.ts'
 
 test('login sends JSON to the auth endpoint with session credentials enabled', async () => {
@@ -211,4 +211,48 @@ test('sync transport sends canonical operation without local status and rejects 
   assert.deepEqual(await requests[0].json(), (({ status, ...wire }) => wire)(operation))
   await assert.rejects(transport.send({ ...operation, workspaceId: undefined }))
   assert.equal(requests.length, 1)
+})
+
+test('sync snapshot uses the scoped read route with session credentials and abort signal', async () => {
+  let request
+  let signal
+  const controller = new AbortController()
+  const snapshot = { pages: [], blocks: [] }
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test/',
+    fetch: async (input, init) => {
+      request = new Request(input, init)
+      signal = init.signal
+      return Response.json(snapshot)
+    },
+  })
+
+  assert.deepEqual(await client.sync.snapshot('workspace/1', controller.signal), snapshot)
+  assert.equal(request.url, 'https://eotion.test/api/sync/workspaces/workspace%2F1/snapshot')
+  assert.equal(request.method, 'GET')
+  assert.equal(request.credentials, 'include')
+  assert.equal(signal, controller.signal)
+  assert.deepEqual(WorkspaceSnapshotResponseSchema.parse(snapshot), snapshot)
+})
+
+test('page.move is a strict canonical sync operation and transport preserves its ID', async () => {
+  const requests = []
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test',
+    fetch: async (input, init) => {
+      requests.push(new Request(input, init))
+      return Response.json({ id: 'move-op', applied: true })
+    },
+  })
+  const operation = {
+    id: 'move-op', clientId: 'client-1', sequence: 4, workspaceId: 'ws-1',
+    createdAt: '2026-01-01T00:00:00.000Z', kind: 'page.move',
+    payload: { id: 'page-1', parentPageId: null, orderKey: 'z' },
+    status: 'pending',
+  }
+  await new EotionOperationTransport(client).send(operation)
+  const { status: _status, ...wire } = operation
+  assert.deepEqual(await requests[0].json(), wire)
+  assert.equal(SyncOperationSchema.safeParse(wire).success, true)
+  assert.equal(SyncOperationSchema.safeParse({ ...wire, payload: { ...wire.payload, title: 'forged' } }).success, false)
 })

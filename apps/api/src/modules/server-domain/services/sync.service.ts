@@ -1,6 +1,7 @@
-import { ConflictException, Injectable, ServiceUnavailableException } from '@nestjs/common'
+import { ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection, InjectModel } from '@nestjs/mongoose'
 import type { SyncOperation } from '@eotion/contracts'
+import type { WorkspaceSnapshotResponse } from '@eotion/contracts'
 import { createHash } from 'node:crypto'
 import type { ClientSession, Connection, Model } from 'mongoose'
 
@@ -26,6 +27,15 @@ export class SyncService {
     private readonly blocks: BlockService,
     private readonly permissions: WorkspacePermissionService,
   ) {}
+
+  async snapshot(userId: string, workspaceId: string): Promise<WorkspaceSnapshotResponse> {
+    await this.permissions.assertCanRead(userId, workspaceId)
+    const [pages, blocks] = await Promise.all([
+      this.pages.list(userId, workspaceId),
+      this.blocks.listByWorkspace(userId, workspaceId),
+    ])
+    return { pages, blocks }
+  }
 
   async apply(userId: string, operation: SyncOperation): Promise<{ id: string; applied: true }> {
     const { workspaceId, id } = operation
@@ -69,6 +79,11 @@ export class SyncService {
         break
       case 'page.delete':
         await this.pages.delete(userId, operation.workspaceId, operation.payload.id, session)
+        break
+      case 'page.move':
+        if (!(await this.pages.move(userId, operation.workspaceId, operation.payload.id, operation.payload, session))) {
+          throw new NotFoundException('Page not found in workspace')
+        }
         break
       case 'block.upsert':
         await this.blocks.upsertSnapshot(userId, operation.workspaceId, operation.payload, session)

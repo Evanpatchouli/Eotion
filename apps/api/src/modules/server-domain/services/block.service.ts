@@ -59,6 +59,11 @@ export class BlockService {
     return this.blocks.listByPage(workspaceId, pageId)
   }
 
+  async listByWorkspace(userId: string, workspaceId: string): Promise<ServerBlockRecord[]> {
+    await this.permissions.assertCanRead(userId, workspaceId)
+    return this.blocks.listByWorkspace(workspaceId)
+  }
+
   async update(userId: string, workspaceId: string, pageId: string, id: string, patch: BlockPatch, session?: ClientSession): Promise<ServerBlockRecord | null> {
     await this.permissions.assertCanWrite(userId, workspaceId)
     if ('parentBlockId' in patch) throw new BadRequestException('Moving a block is not supported yet')

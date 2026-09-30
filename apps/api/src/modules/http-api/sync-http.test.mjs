@@ -9,6 +9,7 @@ import { test } from "node:test";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { getConnectionToken } from "@nestjs/mongoose";
+import { WorkspaceSnapshotResponseSchema } from "@eotion/contracts";
 import {
   EotionApiClient,
   EotionOperationTransport,
@@ -251,6 +252,63 @@ test("authenticated real sync transport applies durable SQLite operations idempo
     assert.equal(initialPage.orderKey, "b");
     const initialBlock = await blocks.findOne({ id: blockId });
     assert.equal(initialBlock.props.text, "hello");
+
+    // Snapshot is a read-only, workspace-wide view protected by the same
+    // cookie session and owner-only hidden-404 policy as the domain routes.
+    const receiptCountBeforeSnapshot = await receipts.countDocuments();
+    const snapshot = await client.sync.snapshot(workspaceId);
+    assert.deepEqual(WorkspaceSnapshotResponseSchema.parse(snapshot), snapshot);
+    assert.deepEqual(snapshot.pages.map((page) => page.id), [pageId]);
+    assert.deepEqual(snapshot.blocks.map((block) => block.id), [blockId]);
+    assert.equal(await receipts.countDocuments(), receiptCountBeforeSnapshot);
+    assert.equal((await rawFetch(`${baseUrl}/api/sync/workspaces/${workspaceId}/snapshot`)).status, 401);
+    assert.equal((await rawFetch(`${baseUrl}/api/sync/workspaces/${workspaceId}/snapshot`, {
+      headers: { cookie: foreignCookie },
+    })).status, 404);
+    assert.equal((await rawFetch(`${baseUrl}/api/sync/workspaces/missing-workspace/snapshot`, {
+      headers: { cookie: sessionCookie },
+    })).status, 404);
+
+    // Canonical page.move must reuse PageService's tree invariants and commit
+    // its receipt with the mutation. A rejected or missing page gets no receipt.
+    const movePageId = `move-page-${database}`;
+    await client.pages.create(workspaceId, {
+      id: movePageId, parentPageId: null, title: "Movable", orderKey: "c",
+    });
+    const moveOperation = {
+      id: `move-op-${database}`, clientId: beforeFailure.clientId,
+      sequence: 40, workspaceId, createdAt: new Date().toISOString(),
+      kind: "page.move",
+      payload: { id: movePageId, parentPageId: pageId, orderKey: "d" },
+    };
+    await transport.send(moveOperation);
+    assert.equal((await pages.findOne({ id: movePageId })).parentPageId, pageId);
+    assert.equal(await receipts.countDocuments({ id: moveOperation.id }), 1);
+    const movedSnapshot = await client.sync.snapshot(workspaceId);
+    assert.deepEqual(movedSnapshot.pages.map((page) => page.id), [pageId, movePageId]);
+    assert.deepEqual(movedSnapshot.blocks.map((block) => block.id), [blockId]);
+    const movedBeforeRetry = await pages.findOne({ id: movePageId });
+    await new Promise((resolve) => setTimeout(resolve, 15));
+    await transport.send(moveOperation);
+    assert.equal((await pages.findOne({ id: movePageId })).updatedAt.getTime(), movedBeforeRetry.updatedAt.getTime());
+    for (const [suffix, targetId, parentId, expectedStatus] of [
+      ["self", movePageId, movePageId, 400],
+      ["descendant", pageId, movePageId, 400],
+      ["foreign-parent", movePageId, deferredPageId, 400],
+      ["missing-page", `absent-${database}`, null, 404],
+    ]) {
+      const id = `rejected-move-${suffix}-${database}`;
+      const result = await rawFetch(`${baseUrl}/api/sync/operations`, {
+        method: "POST",
+        headers: { cookie: sessionCookie, "content-type": "application/json" },
+        body: JSON.stringify({ ...moveOperation, id, payload: {
+          id: targetId, parentPageId: parentId, orderKey: "z",
+        } }),
+      });
+      assert.equal(result.status, expectedStatus, suffix);
+      assert.equal(await receipts.countDocuments({ id }), 0);
+    }
+    await client.pages.delete(workspaceId, movePageId);
 
     // A server success followed by a local acknowledgement failure leaves the
     // stable operation retryable. Its second delivery must hit the receipt.

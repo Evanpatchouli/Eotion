@@ -33,6 +33,10 @@ export class BlockRepository {
     return (await this.model.find({ workspaceId, pageId }).sort({ parentBlockId: 1, orderKey: 1, id: 1 }).exec()).map((doc) => this.toRecord(doc))
   }
 
+  async listByWorkspace(workspaceId: string): Promise<ServerBlockRecord[]> {
+    return (await this.model.find({ workspaceId }).sort({ pageId: 1, parentBlockId: 1, orderKey: 1, id: 1 }).exec()).map((doc) => this.toRecord(doc))
+  }
+
   async updateInWorkspace(workspaceId: string, pageId: string, id: string, patch: BlockPatch, session?: ClientSession): Promise<ServerBlockRecord | null> {
     assertUpdateFields(patch, ['type', 'orderKey', 'props'])
     const doc = await this.model.findOneAndUpdate({ workspaceId, pageId, id }, patch, { returnDocument: 'after', runValidators: true, session }).exec()

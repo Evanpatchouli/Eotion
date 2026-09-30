@@ -19,6 +19,7 @@ import type {
   WorkspaceResponse,
   WorkspaceUpdateRequest,
   SyncOperation,
+  WorkspaceSnapshotResponse,
 } from '@eotion/contracts'
 
 export interface EotionApiClientOptions {
@@ -79,6 +80,7 @@ export class EotionApiClient {
   }
   readonly sync: {
     send: (operation: SyncOperation, signal?: AbortSignal) => Promise<void>
+    snapshot: (workspaceId: string, signal?: AbortSignal) => Promise<WorkspaceSnapshotResponse>
   }
 
   private readonly fetchImpl: typeof fetch
@@ -137,6 +139,7 @@ export class EotionApiClient {
       send: async (operation, signal) => {
         await this.request('/api/sync/operations', { method: 'POST', body: operation, signal })
       },
+      snapshot: (workspaceId, signal) => this.request(`/api/sync/workspaces/${segment(workspaceId)}/snapshot`, { method: 'GET', signal }),
     }
   }
 

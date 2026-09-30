@@ -115,6 +115,15 @@ const syncOperationSchema = z.discriminatedUnion('kind', [
   }).strict(),
   z.object({
     ...syncOperationBase,
+    kind: z.literal('page.move'),
+    payload: z.object({
+      id: idSchema,
+      parentPageId: idSchema.nullable(),
+      orderKey: idSchema,
+    }).strict(),
+  }).strict(),
+  z.object({
+    ...syncOperationBase,
     kind: z.literal('block.upsert'),
     payload: z.object({
       id: idSchema,
@@ -223,6 +232,11 @@ export type WorkspaceResponse = z.infer<typeof WorkspaceRecordSchema>
 export type PageResponse = z.infer<typeof PageRecordSchema>
 export type BlockResponse = z.infer<typeof ServerBlockRecordSchema>
 export type FileResponse = z.infer<typeof FileRecordSchema>
+export const WorkspaceSnapshotResponseSchema = z.object({
+  pages: z.array(PageRecordSchema),
+  blocks: z.array(ServerBlockRecordSchema),
+}).strict()
+export type WorkspaceSnapshotResponse = z.infer<typeof WorkspaceSnapshotResponseSchema>
 export const LoginResponseSchema = z.object({
   user: UserRecordSchema,
   expiresAt: dateSchema,
