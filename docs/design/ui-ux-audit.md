@@ -113,6 +113,8 @@
 
 - 当前静态截图不能完整判断 motion；后续 Audit 需补 Sidebar collapse、popover/menu、sync state、attachment state 的动态证据。
 - Workspace switcher 与 Page action menu 后续若改成 floating popover，应统一 enter/exit、focus management 和 reduced-motion。
+- **正式 UI 不应直接显示 SDK / HTTP 工程错误文本。** 当前在后端未运行、用户点击“退出登录”时会直接显示 `Eotion API request failed: 502`，这对非技术用户不可理解，也暴露了实现层细节。
+- 退出失败本身可以接受，但用户反馈应是产品语义，例如“暂时无法连接服务，请稍后重试”或“当前无法退出登录，请检查网络后重试”；HTTP status / endpoint / raw SDK message 只应进入日志、诊断面板或开发模式。
 
 ## Surface Findings
 
@@ -224,19 +226,38 @@ High（布局比例问题），但不需要推翻 Settings IA。
 
 **Keep**
 
-> TODO：等待下一批截图。
+- 用户确认当前 Login / Register 页面没有明显 UI/UX 问题，P5.7 暂不将其作为重点重设计对象。
+- 已有 Connectivity 产品化页面的总体方向可继续保留：普通用户看到简洁说明和重试入口，技术诊断信息应折叠隐藏。
 
 **Problems**
 
-> TODO
+- **后端未运行时，从 ProductShell 点击“退出登录”会直接显示 `Eotion API request failed: 502`。**
+- 这是 SDK / HTTP transport 层诊断文本泄露到 Product UI，不符合面向普通用户的产品文案。
+- 用户可以接受“后端不可用时暂时无法退出”，但不能接受 raw 502 / raw API error 直接展示。
+- 错误转换不应只修 logout 一处；P5.7 应建立统一的 user-facing error translation 规则，避免未来 Profile、Workspace、Attachment、Sync 等 Surface 再次把底层异常直接透传给用户。
+
+**Desired error presentation**
+
+- Network / fetch failure → “无法连接服务，请检查网络或稍后重试。”
+- 500 / 502 / 503 / 504 → “服务暂时不可用，请稍后重试。”
+- 401 → “登录状态已失效，请重新登录。”
+- 403 → “你没有权限执行此操作。”
+- 404 → 根据业务上下文显示“内容不存在或已被移除”等产品语义。
+- 409 / validation / business 4xx → 使用具体、可行动的业务提示。
+- 429 → “操作过于频繁，请稍后再试。”
+- 未知错误 → “操作失败，请稍后重试。”
+- 原始 HTTP status、URL、endpoint、SDK fallback message 只进入开发日志或可展开诊断，不直接进入普通用户正文。
+
+以上是产品语义方向，最终文案应按具体操作场景做 context-aware 映射，而不是机械按 status code 生成一句通用句子。
 
 **Potential removals**
 
-> TODO
+- 普通用户界面中的 raw `Eotion API request failed: <status>`、endpoint、transport message。
+- 正常产品错误态中不必要的工程术语。
 
 **Priority**
 
-待审计。
+High。属于正式产品错误反馈基础规范，不是单个页面视觉问题。
 
 ## Repeated Anti-patterns
 
@@ -277,6 +298,7 @@ High（布局比例问题），但不需要推翻 Settings IA。
 | Nested attachment Card | High on mobile | Media documents | 有效宽度与文档感下降 | Redesign |
 | Touch toolbar 视觉过重 | Medium/High | Touch editing | 挤压正文、像控制面板 | Mobile-specific redesign |
 | Settings Detail 固定宽度偏窄 | High on wide desktop | Settings | 超宽屏比例失衡，主视图显得漂浮且局促 | responsive content width + cap |
+| Raw HTTP / SDK error 泄露到 UI | High | Error paths | 非技术用户无法理解，暴露工程细节，产品感被破坏 | 统一 user-facing error translation + diagnostics separation |
 | Dark palette 本身 | Medium | Dark mode | 当前可用，结构问题更大 | Tune after hierarchy |
 
 ## Audit Conclusion
@@ -295,7 +317,9 @@ Page/ProductShell 的 P5.7.2 Design Brief 必须重点回答：
 
 Settings 第一批已补充：整体 IA 可保留，但 Desktop Detail 需要从固定窄宽改成“随可用宽度增长、设上限”的响应式内容宽度；Sidebar footer 的设置/退出登录需要统一为整行 list-item interaction。
 
-Audit 尚未完成：下一批仍需 Login/Register、Connectivity，以及 Slash / File / upload/error 等关键状态。
+Login / Register 由用户确认当前无明显问题，暂不作为 P5.7 重设计重点。Connectivity / error feedback 已确认一个系统性问题：底层 SDK/HTTP 错误不能直接透传到正式 UI，必须建立 context-aware 的用户友好错误翻译层，并把技术细节留给日志/诊断。
+
+Audit 尚未完成：下一批主要还需 Slash / File / upload/error 等关键状态；完整 Connectivity 页面如有明显问题再补截图。
 
 ## Approval
 
