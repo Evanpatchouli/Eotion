@@ -39,6 +39,19 @@ test('API error responses become ApiError values carrying the server status', as
   })
 })
 
+for (const status of [401, 403, 500]) test(`HTTP ${status} stays authoritative when the error body disagrees`, async () => {
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test',
+    fetch: async () => Response.json({ statusCode: status === 500 ? 401 : 500, message: 'Mismatched body' }, { status }),
+  })
+  await assert.rejects(client.auth.me(), (error) => {
+    assert.ok(error instanceof ApiError)
+    assert.equal(error.statusCode, status)
+    assert.equal(error.message, 'Mismatched body')
+    return true
+  })
+})
+
 test('logout accepts the API 204 response', async () => {
   let credentials
   const client = new EotionApiClient({

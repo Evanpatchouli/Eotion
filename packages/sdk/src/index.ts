@@ -36,7 +36,8 @@ export class ApiError extends Error {
     const details = body?.message ?? fallbackMessage
     super(Array.isArray(details) ? details.join(', ') : details)
     this.name = 'ApiError'
-    this.statusCode = body?.statusCode ?? statusCode
+    // HTTP status is authoritative for authentication and offline fallback decisions.
+    this.statusCode = statusCode
     this.error = body?.error
     this.details = details
   }

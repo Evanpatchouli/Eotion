@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import EotionIcon from './components/ui/EotionIcon.vue'
@@ -7,6 +8,11 @@ import './styles/product.css'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const diagnosticsOpen = ref(false)
+
+function toggleDiagnostics(event: Event) {
+  diagnosticsOpen.value = (event.currentTarget as HTMLDetailsElement).open
+}
 
 const isDevRoute = () => route.path.startsWith('/__dev')
 
@@ -51,8 +57,11 @@ async function retryRestore() {
         <button class="product-button product-button--primary connectivity-retry" type="button" :disabled="auth.status === 'restoring'" @click="retryRestore">
           {{ auth.status === 'restoring' ? '正在重试…' : '重试' }}
         </button>
-        <details class="connectivity-diagnostics">
-          <summary>查看诊断信息</summary>
+        <details class="connectivity-diagnostics" @toggle="toggleDiagnostics">
+          <summary>
+            <span class="connectivity-diagnostics-icon"><EotionIcon :name="diagnosticsOpen ? 'chevron-down' : 'chevron-right'" :size="16" /></span>
+            <span>查看诊断信息</span>
+          </summary>
           <pre>{{ auth.restoreError }}</pre>
         </details>
       </section>
@@ -128,8 +137,36 @@ async function retryRestore() {
 }
 
 .connectivity-diagnostics summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: fit-content;
+  min-height: 28px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  list-style: none;
   cursor: pointer;
+}
+
+.connectivity-diagnostics summary::-webkit-details-marker { display: none; }
+.connectivity-diagnostics summary::marker { content: ''; }
+
+.connectivity-diagnostics summary:hover,
+.connectivity-diagnostics[open] summary {
+  background: #f7f7f5;
+  color: #44443f;
+}
+
+.connectivity-diagnostics summary:focus-visible {
+  outline: 2px solid #777672;
+  outline-offset: 2px;
+}
+
+.connectivity-diagnostics-icon {
+  display: flex;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .connectivity-diagnostics pre {

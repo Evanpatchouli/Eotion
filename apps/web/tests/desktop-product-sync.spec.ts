@@ -12,7 +12,7 @@ const preparedPage: PageResponse = {
   title: '已准备页面', orderKey: '0000000000000001', createdAt: now, updatedAt: now,
 }
 
-test('Electron SQLite keeps offline product edits through app restart and pushes before pulling', async () => {
+for (const status of [500, 502]) test(`Electron SQLite keeps offline product edits through app restart after HTTP ${status}`, async () => {
   const profile = mkdtempSync(resolve(tmpdir(), 'eotion-p54-electron-'))
   const database = resolve(profile, 'eotion-local.sqlite')
   const server: { pages: PageResponse[]; blocks: BlockResponse[] } = { pages: [preparedPage], blocks: [] }
@@ -97,7 +97,7 @@ test('Electron SQLite keeps offline product edits through app restart and pushes
     await app.close()
     // Restart with a reachable network and unavailable API proxy instead of a fetch failure.
     controls.disconnected = false
-    controls.unavailable = 502
+    controls.unavailable = status
     app = await launch()
     page = await app.firstWindow()
     await mockApi(page)

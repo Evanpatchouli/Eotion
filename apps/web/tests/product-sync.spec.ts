@@ -167,7 +167,7 @@ test('a confirmed 401 clears cached identity instead of restoring offline access
   expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).toBeNull()
 })
 
-for (const status of [400, 403, 404, 500]) test(`HTTP ${status} cannot use cached identity as an offline login`, async ({ page }) => {
+for (const status of [400, 403, 404, 501, 505]) test(`HTTP ${status} cannot use cached identity as an offline login`, async ({ page }) => {
   const api = await mockApi(page)
   await page.goto(`/#/app/${workspace.id}`)
   await expect(page.getByText('还没有页面')).toBeVisible()
@@ -179,6 +179,39 @@ for (const status of [400, 403, 404, 500]) test(`HTTP ${status} cannot use cache
   expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).not.toBeNull()
 })
 
+for (const status of [401, 403]) test(`HTTP ${status} cannot use cached identity even with a 500 error body`, async ({ page }) => {
+  await mockApi(page)
+  await page.goto(`/#/app/${workspace.id}`)
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await page.route('**/api/auth/me', (route) => route.fulfill({
+    status, contentType: 'application/json', body: JSON.stringify({ statusCode: 500, message: 'Mismatched body' }),
+  }))
+  await page.reload()
+  if (status === 401) {
+    await expect(page).toHaveURL(/#\/login/)
+    expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).toBeNull()
+  } else {
+    await expect(page.getByRole('heading', { name: '暂时无法连接 Eotion' })).toBeVisible()
+  }
+  await expect(page.locator('.product-shell')).toHaveCount(0)
+})
+
+test('HTTP 500 uses cached identity offline and restores the authenticated product on recovery', async ({ page }) => {
+  const api = await mockApi(page)
+  await page.goto(`/#/app/${workspace.id}`)
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  api.controls.authStatus = 500
+  await page.reload()
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
+  expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).not.toBeNull()
+
+  api.controls.authStatus = 0
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toHaveCount(0)
+})
+
 test('a never authenticated offline client cannot enter the product', async ({ page }) => {
   const api = await mockApi(page)
   api.controls.disconnected = true
@@ -188,7 +221,7 @@ test('a never authenticated offline client cannot enter the product', async ({ p
   expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).toBeNull()
 })
 
-for (const failure of ['network', 502, 503, 504] as const) test(`backend ${failure} restores the local product and recovers without reload`, async ({ page }) => {
+for (const failure of ['network', 500, 502, 503, 504] as const) test(`backend ${failure} restores the local product and recovers without reload`, async ({ page }) => {
   const api = await mockApi(page)
   await page.goto(`/#/app/${workspace.id}`)
   await expect(page.getByText('还没有页面')).toBeVisible()
@@ -225,7 +258,7 @@ for (const failure of ['network', 502, 503, 504] as const) test(`backend ${failu
   expect(reconnect.findIndex((r) => r.path.endsWith('/snapshot'))).toBeGreaterThan(lastPush)
 })
 
-for (const status of [502, 503, 504]) test(`workspace list ${status} restores only the current account cache`, async ({ page }) => {
+for (const status of [500, 502, 503, 504]) test(`workspace list ${status} restores only the current account cache`, async ({ page }) => {
   const api = await mockApi(page)
   await page.goto(`/#/app/${workspace.id}`)
   await expect(page.getByText('还没有页面')).toBeVisible()
@@ -238,7 +271,7 @@ for (const status of [502, 503, 504]) test(`workspace list ${status} restores on
   await expect(page.getByText('Other private')).toHaveCount(0)
 })
 
-for (const status of [400, 403, 500]) test(`workspace list ${status} cannot fall back to cached permissions`, async ({ page }) => {
+for (const status of [400, 403, 501, 505]) test(`workspace list ${status} cannot fall back to cached permissions`, async ({ page }) => {
   const api = await mockApi(page)
   await page.goto(`/#/app/${workspace.id}`)
   await expect(page.getByText('还没有页面')).toBeVisible()
@@ -252,7 +285,7 @@ for (const status of [400, 403, 500]) test(`workspace list ${status} cannot fall
 
 test('cached identity with no workspace snapshot refuses to invent an empty workspace', async ({ page }) => {
   const api = await mockApi(page)
-  api.controls.unavailable = 502
+  api.controls.unavailable = 500
   await page.addInitScript(({ user, workspace }) => {
     localStorage.setItem('eotion:last-authenticated-user', JSON.stringify(user))
     localStorage.setItem(`eotion:workspaces:${user.id}`, JSON.stringify([workspace]))
@@ -291,21 +324,73 @@ test('offline identity without workspace metadata recovers using the workspace r
   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
 })
 
-test('HTTP 502 without identity shows responsive connectivity UI and retry restores the product', async ({ page }) => {
+for (const reducedMotion of ['no-preference', 'reduce'] as const) test(`HTTP 500 without identity shows accessible responsive connectivity UI (${reducedMotion}) and retry restores the product`, async ({ page }) => {
+  await page.emulateMedia({ reducedMotion })
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
   const api = await mockApi(page)
-  api.controls.unavailable = 502
+  api.controls.unavailable = 500
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/#/app')
   await expect(page.getByRole('heading', { name: '暂时无法连接 Eotion' })).toBeVisible()
   await expect(page.getByText('无法验证登录状态，请检查服务或网络后重试')).toBeVisible()
   await expect(page.locator('.product-shell')).toHaveCount(0)
+  expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).toBeNull()
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+
+  const diagnostics = page.locator('.connectivity-diagnostics')
+  const summary = diagnostics.locator('summary')
+  const iconPath = () => summary.locator('svg path').getAttribute('d')
+  const textX = () => summary.evaluate((node) => {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT)
+    let textNode: Text | null = null
+    while (walker.nextNode()) {
+      if (walker.currentNode.textContent?.includes('查看诊断信息')) {
+        textNode = walker.currentNode as Text
+        break
+      }
+    }
+    if (!textNode) return null
+    const range = document.createRange()
+    range.selectNodeContents(textNode)
+    return range.getBoundingClientRect().x
+  })
+  const collapsedX = await textX()
+  await expect.poll(iconPath).toBe('M9 18C11 16 13 14 15 12C13 10 11 8 9 6')
+  expect(await summary.evaluate((node) => getComputedStyle(node).listStyleType)).toBe('none')
+  const idleBackground = await summary.evaluate((node) => getComputedStyle(node).backgroundColor)
+  if (process.env.EOTION_VISUAL_QA_DIR) await page.screenshot({ path: `${process.env.EOTION_VISUAL_QA_DIR}/connectivity-500-${reducedMotion}-collapsed.png` })
+
+  await summary.hover()
+  expect(await summary.evaluate((node) => node.matches(':hover'))).toBe(true)
+  expect(await summary.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe(idleBackground)
+  await summary.focus()
+  expect(await summary.evaluate((node) => node.matches(':focus'))).toBe(true)
+  await summary.press('Enter')
+  expect(await summary.evaluate((node) => node.matches(':focus-visible'))).toBe(true)
+  expect(await summary.evaluate((node) => getComputedStyle(node).outlineStyle)).toBe('solid')
+  await expect(diagnostics).toHaveAttribute('open', '')
+  await expect.poll(iconPath).toBe('M6 9C8 11 10 13 12 15C14 13 16 11 18 9')
+  expect(await textX()).toBe(collapsedX)
+  if (process.env.EOTION_VISUAL_QA_DIR) await page.screenshot({ path: `${process.env.EOTION_VISUAL_QA_DIR}/connectivity-500-${reducedMotion}-expanded.png` })
+  await summary.press('Space')
+  await expect(diagnostics).not.toHaveAttribute('open', '')
+  await summary.press('Space')
+  await expect(diagnostics).toHaveAttribute('open', '')
+  expect(await textX()).toBe(collapsedX)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.setViewportSize({ width: 1366, height: 900 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  if (process.env.EOTION_VISUAL_QA_DIR) await page.screenshot({ path: `${process.env.EOTION_VISUAL_QA_DIR}/connectivity-500-${reducedMotion}-desktop.png` })
+  expect(pageErrors).toEqual([])
+
   api.controls.unavailable = 0
   await page.getByRole('button', { name: '重试', exact: true }).click()
   await expect(page.getByText('还没有页面')).toBeVisible()
 })
 
-for (const status of [502, 503]) test(`open editor survives backend ${status} and keeps local operations`, async ({ page }) => {
+for (const status of [500, 502, 503]) test(`open editor survives backend ${status} and keeps local operations`, async ({ page }) => {
   const api = await mockApi(page)
   await page.goto(`/#/app/${workspace.id}`)
   await expect(page.getByText('还没有页面')).toBeVisible()

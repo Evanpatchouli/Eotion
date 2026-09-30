@@ -1,19 +1,19 @@
-# Current Task — P5.4 Backend Unavailable
+# Current Task — Connectivity polish + HTTP 500 fallback
 
-目标：TypeError / HTTP 502、503、504 时仅凭已有可信身份和账号隔离缓存进入本地产品；401 失效，403/其他 4xx/500 不降级。保留 LocalStore、snapshot marker、授权刷新和 Push-before-Pull。
+目标：仅扩展共享 transient helper 的精确白名单至 TypeError / 500 / 502 / 503 / 504；诊断详情保留原生语义并使用现有 Morphicons。
 
 ## Work Units
 
-1. 调查/决策 S0→S2：主 Agent 读取入口、stores、tests，确定共享 transient 判断与 Sync Push 错误传播边界。已完成。
-2. 执行 S1：fast_worker 修改 productApi/auth/workspaces/sync，复用当前缓存与同步。
-3. 执行 S1：独立 fast_worker 修改 App 启动连接界面，仅无 user 时遮挡 RouterView。
-4. 执行/验证 S1→S0：主 Agent 扩展回归用例、Visual QA，运行 Web/Desktop/storage/offline/real-sync 验证。
-5. Review：独立 reviewer 检查安全与恢复边界；主 Agent 复核、文档和提交。
+1. 调查/决策 S0→S2（主 Agent）：确认 ApiError、auth/workspace/sync 的共用边界；已完成，不新增恢复流程。
+2. 执行 S1（主 Agent）：局部 helper、App summary 样式/图标、正式行为文档。
+3. 执行 S1（fast_worker）：现有 connectivity/offline/desktop 回归测试扩充。
+4. 验证 S0（主 Agent）：Web typecheck/build/product/offline、storage/desktop/real-sync 与 Visual QA。
+5. Review（独立 reviewer）：聚焦授权隔离、RouterView 保留、同步链路与 summary 可访问性，主 Agent 复核后提交。
 
 ## 状态
 
-已完成；工作区开始时干净。无新增缓存、依赖或平台业务分支。
+已完成；开始时 git 工作区干净。无版本/schema/附件/移动原生/架构扩展。
 
-产品 91/91、存储/Electron 10/10、storage 单测 6/6、Desktop 单测 8/8、offline-shell 1/1、真实 Mongo/API/生产 Web 1/1 通过。Web/Desktop typecheck/build 与 diff check、UTF-8 无 BOM 验证通过。真实同步使用隔离临时 Mongo replica set，容器已移除。
+Web typecheck/build 通过；product 100/100、offline-shell 1/1、storage/Electron 11/11、storage 单测 6/6、Desktop 单测 8/8、SDK 单测 17/17 通过；storage/Desktop typecheck、Desktop/SDK build 通过。真实 Mongo/API/生产 Web 1/1 通过（既有 Mongo 认证配置阻挡首次运行，隔离临时 replica set 重跑通过；临时容器已移除）。
 
-真实 localhost:7173 proxy 502 Visual QA 通过：缓存身份+snapshot显示正式本地产品，无身份显示居中连接状态，390px无溢出和页面异常。截图在仓库外。独立review修复离线身份无workspace metadata时错误页重试缺口，复核无剩余blocker。正式行为/验证记录见 docs/p5-real-sync.md；Mobile原生宿主真机验收限制保持不变。
+390×844 / 1366×900 Visual QA 通过：两态 SVG、Enter/Space、hover/focus-visible、reduced-motion、无溢出/overlay/pageerror；截图在 E:/Eotion-QA（仓库外）。独立 reviewer 复核后无 blocker；HTTP 状态与 body 不一致安全缺口已以 SDK 实际响应状态修复并补回归。git diff --check 和 UTF-8 无 BOM 验证通过。

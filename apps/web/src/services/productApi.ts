@@ -12,8 +12,9 @@ export function setSessionExpiredHandler(handler: () => void): void {
 }
 
 export function isTransientServiceUnavailable(error: unknown): boolean {
+  // Explicit temporary backend failures; authentication/permission errors never qualify.
   return error instanceof TypeError
-    || (error instanceof ApiError && [502, 503, 504].includes(error.statusCode))
+    || (error instanceof ApiError && [500, 502, 503, 504].includes(error.statusCode))
 }
 
 export function expireSessionFromApi(): void {

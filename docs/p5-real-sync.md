@@ -37,9 +37,9 @@ Page Tree 的移动通过 `LocalStore.movePage()` 原子更新 Page 并记录单
 
 ## 离线身份与 Workspace 缓存
 
-成功的 `/auth/me` / 登录结果会缓存最近成功认证的用户；Workspace metadata 按 `userId` 分开缓存。`/auth/me` 明确返回 401 时清除 cached identity、workspace state 并要求重新登录，不允许离线缓存绕过失效 Session。共享的 `isTransientServiceUnavailable` 将 fetch/network `TypeError` 与 HTTP 502/503/504 视为暂时不可用，认证恢复、Workspace 列表缓存及 Sync 使用同一判断。只有本机曾成功认证的用户可进入 offline product mode；从未成功登录的用户不能凭空进入产品。403、其他 4xx 和 500 不触发缓存降级；500 可能代表应用缺陷，不据此推定基础设施离线。离线时只显示该用户缓存过的 Workspace 元数据和对应本地 Page / Block。
+成功的 `/auth/me` / 登录结果会缓存最近成功认证的用户；Workspace metadata 按 `userId` 分开缓存。`/auth/me` 明确返回 401 时清除 cached identity、workspace state 并要求重新登录，不允许离线缓存绕过失效 Session。SDK 以实际 HTTP 状态裁定 ApiError，不允许响应体的 500 覆盖 HTTP 401/403。共享的 `isTransientServiceUnavailable` 将 fetch/network `TypeError` 与 HTTP 500/502/503/504 视为暂时不可用，认证恢复、Workspace 列表缓存及 Sync 使用同一判断。只有本机曾成功认证的用户可进入 offline product mode；从未成功登录的用户不能凭空进入产品。HTTP 500 表示服务端暂时无法完成请求，允许已有可信身份使用本地缓存；403、其他 4xx 以及未列出的 5xx（如 501/505）不触发缓存降级。离线时只显示该用户缓存过的 Workspace 元数据和对应本地 Page / Block。
 
-有可用 cached identity 时，恢复进入 ready/offline 且不设置 restoreError，正式 RouterView 保持渲染。已有用户的 session 重试也不卸载编辑器。没有身份而无法验证 Session 时，全局显示 Eotion 连接状态与重试按钮，原始诊断仅在展开详情中显示。没有 Workspace cache 或 snapshot 时明确提示“此工作区尚未保存到本机，当前离线无法打开。”，不伪造空 Workspace。
+有可用 cached identity 时，恢复进入 ready/offline 且不设置 restoreError，正式 RouterView 保持渲染。已有用户的 session 重试也不卸载编辑器。没有身份而无法验证 Session 时，全局显示 Eotion 连接状态与重试按钮，原始诊断仅在原生 `<details>/<summary>` 展开详情中显示；隐藏浏览器 marker，现有 EotionIcon 使用 lucide ChevronRight/ChevronDown 数据与 morphicons/vue 动态 morph，遵循用户 reduced-motion 偏好。没有 Workspace cache 或 snapshot 时明确提示“此工作区尚未保存到本机，当前离线无法打开。”，不伪造空 Workspace。
 
 当前 workspace 缓存仅用于离线展示与路由选择。恢复在线后，发送任何 oplog 前都重新读取服务端 workspace 权限列表；缓存本身不授予同步权限。用户成功退出会清除 cached identity。
 
