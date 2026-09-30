@@ -81,8 +81,8 @@ P4 ✅ Final Acceptance PASS。P5 按以下独立阶段验收：
 - P5.3 Real Page Editor：✅ 已完成，见 [正式页面编辑器](p5-real-page-editor.md)。
 - P5.4 Real Sync：Web / Electron 实现与自动验收已完成；Mobile WebView 默认 LAN HTTP 真机离线重启待验收，完整 PASS 暂未声明。结果与边界见 [P5.4 Real Sync](p5-real-sync.md)。
 - P5.5 Attachments：✅ 已完成，正式附件、持久清理、三种布局、自动测试与线上 OSS 最小验收通过，见 [P5.5 Attachments](p5-attachments.md)。
-- P5.6 Settings & Preferences：待实施；补齐账号资料、主题、Workspace 编辑器偏好与未来 MCP / Agent 的设置 IA，见 [P5.6 Settings & Preferences](p5-settings.md)。
-- P5 Final Acceptance：P5.6 完成后再开始。
+- P5.6 Settings & Preferences：✅ 已完成；账号昵称/安全改密、三态主题、隔离的固定编辑工具栏偏好、响应式 Settings 与 Light/Dark Visual QA、独立 review 均通过，见 [P5.6 Settings & Preferences](p5-settings.md)。
+- P5 Final Acceptance：待执行；P5.6 PASS 不关闭 P5.4 Mobile WebView 真机离线重启的既有待验收边界。
 
 从本阶段开始，以真实用户流程和正式产品路由为主，不再以 `/__dev/*` PoC 页面作为主要开发载体。P1/P2/P3 开发页可以继续保留作为回归和诊断入口。
 

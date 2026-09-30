@@ -2,7 +2,7 @@
 
 ## 状态
 
-**Planned / 待实施。**
+**P5.6 Settings & Preferences：✅ 已完成 / PASS（2026-10-01）。** 产品版本保持 `0.0.1 / build 1`。本阶段通过实现、自动验证、实际截图与独立 review；不代表 P5 Final Acceptance PASS。
 
 P5.6 位于 P5.5 Attachments 之后、P5 Final Acceptance 之前。本阶段补齐 MVP 必需的账号资料、外观和编辑器偏好，并建立可继续扩展到 MCP / Agent 等未来能力的 Settings 信息架构。
 
@@ -150,7 +150,7 @@ Settings 是需要认证的独立产品 Surface，不依赖当前 Page route。
 
 ### 昵称
 
-现有 User 只有 `id/email/passwordHash/timestamps`。P5.6 增加面向产品展示的 `displayName`：
+P5.6 在原有 `id/email/passwordHash/timestamps` 上增加面向产品展示的 `displayName`：
 
 - API / Contract / SDK 返回值包含稳定的 `displayName`。
 - 昵称 trim 后不能为空，并设置合理长度上限（建议 64 字符）。
@@ -319,3 +319,39 @@ P5.6 只有在以下全部满足后才能 PASS：
 17. Visual QA 与独立 review 无 blocker。
 
 P5.6 PASS 后仍不能自动声明 P5 Final Acceptance；还需单独执行 P5 Final Acceptance，并保留 P5.4 Mobile WebView 真机离线重启的既有验收边界。
+
+## 实现入口与持久化
+
+- `apps/web/src/layouts/SettingsLayout.vue` 与 `views/settings/*` 是唯一正式设置 UI。768px 起使用固定 254px 导航 + 独立滚动详情（内容最大 620px）；更窄时显示 Index 或 Detail，导航不会成为抽屉。
+- ProductShell 用户区域“设置”传递 `returnTo` 和当前 `workspaceId`。`settingsNavigation.ts` 只接受 `/app`、`/app/:workspaceId` 或 `/app/:workspaceId/page/:pageId`（稳定 ID 字符白名单），其它值回退 `/app`。进入工作区入口后沿用原有最近工作区解析。Workspace General 必须在当前用户拥有/缓存的列表中匹配 owner；没有有效 context 显示不可配置状态，不写全局偏好。
+- `PATCH /api/auth/me` 与 SDK `auth.updateProfile` 使用 strict 昵称 schema。Repository 为 legacy user 提供 email 前缀 fallback。成功同步 `auth.user` 与 cached identity，正文只渲染文本。
+- `POST /api/auth/change-password` 与 SDK `auth.changePassword` 只发送 current/new password。现有 scrypt、长度 1～1024；确认密码只在客户端验证。当前密码错误 400，保持身份。Mongo replica-set transaction 使用旧 hash CAS，同时更新 hash、递增内部凭据版本并 revokeAll；版本比较阻止并发旧凭据登录遗留有效 Session。失败不返回成功，成功 204 清 Cookie，客户端清身份并显示“密码已更新，请重新登录”。
+- `theme.ts` + `index.html` 保存 `eotion:theme`；默认 system，显式 light/dark 优先于系统媒体变化。单例媒体 listener 在 HMR dispose 时释放。Vue 入口前内联脚本应用根 `data-theme`、`color-scheme` 和 theme-color；统一 semantic CSS tokens 驱动正式界面，中性深色避免纯黑大面积背景。
+- `stores/preferences.ts` 保存 `eotion:editor-toolbar:<encoded userId>:<encoded workspaceId>`，默认 false。PageView 只在宽度至少 768px 且偏好开启时显示固定栏；touch toolbar、Slash、快捷键与附件 picker 独立保留。Theme 和 Toolbar 不随退出或改密删除，也不云同步。
+- cached identity 可在 network/500/502/503/504 下进入 Settings。昵称/密码禁提交或显示产品化连接提示；本地设置可修改。401 清身份，403 不转换为离线授权。MCP/Agent 仅静态“即将推出”，没有详情或 toggle。
+
+## 验收证据（2026-10-01）
+
+| 命令 / 验证 | 结果 |
+| --- | --- |
+| `pnpm version:check` | 8 个 workspace 一致，0.0.1 / build 1 |
+| contracts / domain typecheck | 通过 |
+| SDK test / build | 18/18；通过 |
+| API typecheck / build / test:domain / test:http | 通过；domain 2/2，HTTP 1/1 + Sync 1/1 + File 24/24 |
+| Web typecheck / build | 通过，生产 Service Worker 生成 |
+| Web test:product | 111/111（含 Settings 11 项） |
+| `playwright test tests/theme.spec.ts` | 3/3；三态、媒体变化、异常偏好与退出/登录持久化 |
+| `playwright test --config playwright.theme-production.config.ts` | 1/1；阻断真实 production entry JS 后根主题/token/color-scheme 已正确 |
+| Web test:storage | 11/11，含真实 Electron SQLite 重启回归 |
+| Web test:offline-shell | 1/1，完全断网 reload 与浏览器重启 |
+| Web test:real-sync | 1/1，生产 Web / Nest / 临时 Mongo replica set / 双独立客户端 |
+| Desktop typecheck / build / test；storage test；Mobile build | 全通过；Desktop 8/8，storage 6/6 |
+| `git diff --check`；UTF-8 无 BOM 检查 | 通过 |
+
+真实双客户端验收同时覆盖昵称跨设备读取、错误当前密码不退出、成功改密后当前/另一会话 401、旧密码拒绝/新密码可登录；已有 Page/Block、离线 reload、附件上传/清理继续通过。对象存储回归使用真实 SDK + 隔离 fake OSS，未修改现有 Mongo/OSS 数据。临时无持久卷 `mongo:8` replica set 容器已移除。
+
+Visual QA 使用仓库 Playwright / Chrome（Browser plugin not available），实际截图保存于系统临时目录 `eotion-p56-visual-qa`，不纳入 Git。Light 和 Dark 均在 1440×900、1024×768、390×844 检查 Settings Index/Profile/Appearance、ProductShell、Page/Editor、文件/图片附件、Slash；另检查 Login/Register/Connectivity，system light/dark live 切换由浏览器媒体模拟验证。六种布局无横向溢出、Vite overlay 或页面运行时异常；账号表单在手机独立纵向滚动。修复初轮深色偏绿和桌面误显移动导航按钮，最终中性灰阶无突兀白块。附件六种截图来自生产真实上传链路。
+
+可访问性检查覆盖 nav/aria-current、Back 标签、radio 方向键、switch Space、dark focus-visible、密码错误 live region、44px compact touch target 与 reduced motion。修复离线昵称描述的 aria-describedby 目标。独立 reviewer 复核安全、缓存、路由、主题、偏好与最终截图后无确定 P1/P2 blocker；测试修正以稳定的 `/app` fallback link 与后续 workspace 解析为断言，没有削弱安全契约。
+
+P5 Final Acceptance 尚未执行；P5.4 目标 Mobile WebView/Lynx 真机完全离线重启仍待验收，浏览器媒体/布局/IndexedDB 与 Electron 结果不替代该设备边界。

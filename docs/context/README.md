@@ -28,6 +28,8 @@
 
 随着稳定模块增加再维护索引。只记录入口和关键词，不复制源码实现。
 
+P5.6 Settings 已完成：`apps/web/src/layouts/SettingsLayout.vue`、`views/settings/`、`settingsNavigation.ts`、`theme.ts`、`stores/preferences.ts`；验收入口 `tests/product-settings.spec.ts`、`tests/theme.spec.ts`、`tests/theme-production.spec.ts`，完整状态见 `docs/p5-settings.md`。账号资料链路检索 `ProfileUpdateRequestSchema`、`ChangePasswordRequestSchema`、`updateProfile`、`changePassword`、`credentialVersion`、`revokeAllByUserId`；P5 Final Acceptance 与移动宿主真机边界单独保留。
+
 ## Eotion 特有的检索约束
 
 - 先确认任务属于哪个 Roadmap Phase；除非用户明确要求，不跨 Phase 提前实现。
