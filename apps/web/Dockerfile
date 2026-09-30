@@ -10,7 +10,10 @@ COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/sdk/package.json packages/sdk/package.json
 COPY packages/storage/package.json packages/storage/package.json
 
-RUN pnpm install --frozen-lockfile --filter @eotion/web...
+RUN pnpm install \
+  --frozen-lockfile \
+  --package-import-method=copy \
+  --filter @eotion/web...
 
 COPY apps/web/index.html apps/web/index.html
 COPY apps/web/tsconfig.json apps/web/tsconfig.json
