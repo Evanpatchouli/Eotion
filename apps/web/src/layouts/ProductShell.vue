@@ -187,6 +187,10 @@ onUnmounted(() => {
       <div class="brand-row">
         <img :src="eotionIconUrl" class="brand-mark brand-mark--image" alt="" aria-hidden="true" />
         <strong>Eotion</strong>
+        <div class="product-user-identity">
+          <span class="product-user-name" :title="auth.user?.displayName">{{ auth.user?.displayName }}</span>
+          <span class="product-user-email" :title="auth.user?.email">{{ auth.user?.email }}</span>
+        </div>
         <button class="icon-button sidebar-close" type="button" aria-label="关闭导航菜单" @click="closeMobileNav"><EotionIcon :name="IconName.X" /></button>
       </div>
 
@@ -221,8 +225,6 @@ onUnmounted(() => {
       <PageTree @navigate="closeMobileNav" />
 
       <div class="sidebar-footer product-sidebar-footer">
-        <span class="product-user-name">{{ auth.user?.displayName }}</span>
-        <span class="product-user-email">{{ auth.user?.email }}</span>
         <button class="product-text-button product-settings-entry" type="button" @click="openSettings"><EotionIcon :name="IconName.Settings" :size="16" />设置</button>
         <button class="product-text-button product-logout" type="button" :disabled="auth.logoutPending" @click="logout">{{ auth.logoutPending ? '正在退出…' : '退出登录' }}</button>
         <p v-if="logoutError" class="product-message product-message--error" role="alert">{{ logoutError }}</p>
@@ -274,6 +276,10 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.brand-row { gap: 8px; }
+.brand-row > .brand-mark, .brand-row > strong { flex: none; }
+.product-user-identity { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; margin-left: 3px; }
+.product-user-identity > span { display: block; width: 100%; white-space: nowrap; }
 .product-user-name { max-width: 100%; overflow: hidden; color: var(--text-primary); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .product-settings-entry { display: inline-flex; min-height: 32px; align-items: center; gap: 7px; }
 </style>
