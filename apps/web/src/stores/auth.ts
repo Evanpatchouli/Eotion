@@ -3,7 +3,7 @@ import { ApiError } from '@eotion/sdk'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { api, errorMessage, setSessionExpiredHandler } from '../services/productApi'
+import { api, errorMessage, isTransientServiceUnavailable, setSessionExpiredHandler } from '../services/productApi'
 import { useProductWorkspacesStore } from './productWorkspaces'
 import { useProductSyncStore } from './productSync'
 
@@ -54,7 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
         expire()
         return
       }
-      if (cause instanceof TypeError) {
+      if (isTransientServiceUnavailable(cause)) {
         const remembered = cachedUser()
         if (remembered) {
           user.value = remembered

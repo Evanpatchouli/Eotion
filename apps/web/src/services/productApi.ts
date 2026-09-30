@@ -11,6 +11,11 @@ export function setSessionExpiredHandler(handler: () => void): void {
   onSessionExpired = handler
 }
 
+export function isTransientServiceUnavailable(error: unknown): boolean {
+  return error instanceof TypeError
+    || (error instanceof ApiError && [502, 503, 504].includes(error.statusCode))
+}
+
 export function expireSessionFromApi(): void {
   preserveActivePageEditor()
   onSessionExpired?.()

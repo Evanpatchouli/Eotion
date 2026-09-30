@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import { flushActivePageEditor } from '../editor/activePageEditor'
-import { api, errorMessage, expireSessionFromApi, ApiError } from '../services/productApi'
+import { api, errorMessage, expireSessionFromApi, isTransientServiceUnavailable, ApiError } from '../services/productApi'
 import { createLocalStore } from '../storage/createLocalStore'
 import { useAuthStore } from './auth'
 import { useProductWorkspacesStore } from './productWorkspaces'
@@ -57,10 +57,15 @@ export const useProductSyncStore = defineStore('product-sync', () => {
   async function store(): Promise<LocalStore> { return localStore() }
 
   async function updatePending(): Promise<void> {
+    const activeUser = userId
+    const activeEpoch = identityEpoch
     const accessible = new Set(useProductWorkspacesStore().items.map((item) => item.id))
     const local = await store()
-    pending.value = (await local.getPendingOperations()).filter((op) => accessible.has(op.workspaceId)).length
-    cleanupPending.value = (await local.listFileCleanups()).filter((task) => accessible.has(task.workspaceId)).length
+    const operations = await local.getPendingOperations()
+    const cleanups = await local.listFileCleanups()
+    if (activeEpoch !== identityEpoch || activeUser !== userId || useAuthStore().user?.id !== activeUser) return
+    pending.value = operations.filter((op) => accessible.has(op.workspaceId)).length
+    cleanupPending.value = cleanups.filter((task) => accessible.has(task.workspaceId)).length
   }
 
   async function cleanupFiles(local: LocalStore, ids: ReadonlySet<string>, currentIdentity: () => boolean): Promise<void> {
@@ -91,13 +96,14 @@ export const useProductSyncStore = defineStore('product-sync', () => {
         await local.completeFileCleanup(task.workspaceId, task.fileId)
         cleanupRetryAfter.delete(key)
       } catch (cause) {
+        if (!currentIdentity()) return
         if (cause instanceof ApiError && cause.statusCode === 401) {
           expireSessionFromApi()
           return
         }
-        if (!currentIdentity()) return
         const message = '附件清理暂未完成，联网后会重试。'
         await local.failFileCleanup(task.workspaceId, task.fileId, message)
+        if (!currentIdentity()) return
         cleanupRetryAfter.set(key, Date.now() + 30_000)
         cleanupError.value = message
       }
@@ -112,9 +118,14 @@ export const useProductSyncStore = defineStore('product-sync', () => {
   }
 
   async function prepare(workspaceId: string): Promise<boolean> {
+    const activeUser = userId
+    const activeEpoch = identityEpoch
+    const currentIdentity = () => activeEpoch === identityEpoch && activeUser === userId && !!activeUser && useAuthStore().user?.id === activeUser
     activeWorkspaceId = workspaceId
     const local = await store()
-    if (await local.hasWorkspaceSnapshot(workspaceId)) {
+    const hasSnapshot = await local.hasWorkspaceSnapshot(workspaceId)
+    if (!currentIdentity()) return false
+    if (hasSnapshot) {
       requestSync()
       return true
     }
@@ -125,12 +136,13 @@ export const useProductSyncStore = defineStore('product-sync', () => {
     // Session restore may already be fetching this first snapshot. Reuse that
     // run instead of requesting a second pull while the editor starts loading.
     const activeRun = running
-    const activeEpoch = identityEpoch
     if (activeRun) {
       await activeRun
-      if (activeEpoch === identityEpoch) return local.hasWorkspaceSnapshot(workspaceId)
+      if (!currentIdentity()) return false
+      return local.hasWorkspaceSnapshot(workspaceId)
     }
     await runSync()
+    if (!currentIdentity()) return false
     return local.hasWorkspaceSnapshot(workspaceId)
   }
 
@@ -158,16 +170,17 @@ export const useProductSyncStore = defineStore('product-sync', () => {
         if (!navigator.onLine) { state.value = 'offline'; return }
         state.value = 'syncing'
         error.value = ''
+        let transientSendFailure = false
         try {
           const workspaces = useProductWorkspacesStore()
           // Join initial recovery instead of racing it with a second list that
           // could erase an initial load failure before the user can retry.
           if (!workspaces.loaded && !offlineIdentity) {
-            if (workspaces.error) { state.value = 'failed'; error.value = workspaces.error; return }
+            if (workspaces.error && !workspaces.transientLoadFailure) { state.value = 'failed'; error.value = workspaces.error; return }
             await workspaces.load()
             if (!currentIdentity()) return
             if (!workspaces.loaded) {
-              state.value = 'failed'
+              state.value = workspaces.transientLoadFailure ? 'offline' : 'failed'
               error.value = workspaces.error || '暂时无法加载工作区，请重试。'
               return
             }
@@ -187,7 +200,8 @@ export const useProductSyncStore = defineStore('product-sync', () => {
                 if (!currentIdentity()) throw new Error('Sync identity changed')
               }
               catch (cause) {
-                if (cause instanceof ApiError && cause.statusCode === 401) expireSessionFromApi()
+                if (currentIdentity() && cause instanceof ApiError && cause.statusCode === 401) expireSessionFromApi()
+                if (isTransientServiceUnavailable(cause)) transientSendFailure = true
                 throw cause
               }
             },
@@ -197,17 +211,22 @@ export const useProductSyncStore = defineStore('product-sync', () => {
           await cleanupFiles(local, ids, currentIdentity)
           if (!currentIdentity()) return
           if (result.failed || pending.value) {
-            state.value = 'failed'
+            state.value = transientSendFailure ? 'offline' : 'failed'
             error.value = '同步失败，本地内容安全。'
             return
           }
           const id = activeWorkspaceId
           if (id && ids.has(id)) {
             if (!currentIdentity()) return
-            if (!(await flushActivePageEditor(id))) { state.value = 'idle'; return }
+            if (!(await flushActivePageEditor(id))) {
+              if (currentIdentity()) state.value = 'idle'
+              return
+            }
             // The editor may have committed new operations while we were
             // flushing; those must be pushed before any snapshot is read.
-            if ((await local.getPendingOperations()).some((op) => op.workspaceId === id)) {
+            const pendingBeforeSnapshot = await local.getPendingOperations()
+            if (!currentIdentity()) return
+            if (pendingBeforeSnapshot.some((op) => op.workspaceId === id)) {
               requested = true
               deferRetry = true
               return
@@ -215,27 +234,38 @@ export const useProductSyncStore = defineStore('product-sync', () => {
             const snapshot = await api.sync.snapshot(id)
             if (!currentIdentity()) return
             if (id !== activeWorkspaceId) { requested = true; continue }
-            if (!(await flushActivePageEditor(id))) { state.value = 'idle'; return }
+            if (!(await flushActivePageEditor(id))) {
+              if (currentIdentity()) state.value = 'idle'
+              return
+            }
             try {
               await local.replaceWorkspaceSnapshot(id, snapshot.pages, snapshot.blocks)
             } catch (cause) {
-              if ((await local.getPendingOperations()).some((op) => op.workspaceId === id)) {
+              const pendingAfterSnapshotFailure = await local.getPendingOperations()
+              if (!currentIdentity()) return
+              if (pendingAfterSnapshotFailure.some((op) => op.workspaceId === id)) {
                 requested = true
                 deferRetry = true
                 return
               }
               throw cause
             }
+            if (!currentIdentity()) return
             revision.value += 1
             snapshotRevision.value += 1
           }
-          if (!requested) state.value = 'synced'
+          if (!requested && currentIdentity()) {
+            offlineIdentity = false
+            useAuthStore().offline = false
+            state.value = 'synced'
+          }
         } catch (cause) {
+          if (!currentIdentity()) return
           if (cause instanceof ApiError && cause.statusCode === 401) {
             expireSessionFromApi()
             return
           }
-          state.value = !navigator.onLine || cause instanceof TypeError ? 'offline' : 'failed'
+          state.value = isTransientServiceUnavailable(cause) ? 'offline' : 'failed'
           error.value = errorMessage(cause, '同步失败，本地内容安全。')
           return
         }

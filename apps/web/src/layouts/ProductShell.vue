@@ -54,6 +54,11 @@ function onKeydown(event: KeyboardEvent) {
 function onConnection(): void { sync.requestSync(0) }
 function onAttention(): void { if (document.visibilityState === 'visible') sync.requestSync() }
 
+async function retryWorkspaces(): Promise<void> {
+  await workspaces.load(true)
+  if (workspaces.loaded) sync.retry()
+}
+
 function resetRouteUi() {
   formMode.value = null
   switcherOpen.value = false
@@ -236,7 +241,7 @@ onUnmounted(() => {
         <section v-if="workspaces.error" class="document product-state" aria-labelledby="workspace-load-error-title">
           <h1 id="workspace-load-error-title">暂时无法加载工作区</h1>
           <p class="lead" role="alert">{{ workspaces.error }}</p>
-          <button class="product-button product-button--primary" type="button" :disabled="workspaces.loading" @click="workspaces.load(true)">{{ workspaces.loading ? '正在重试…' : '重试' }}</button>
+          <button class="product-button product-button--primary" type="button" :disabled="workspaces.loading" @click="retryWorkspaces">{{ workspaces.loading ? '正在重试…' : '重试' }}</button>
         </section>
         <section v-else-if="workspaces.loading && !workspaces.loaded" class="product-loading" role="status">正在加载工作区…</section>
         <section v-else-if="isUnavailable" class="document product-state" aria-labelledby="workspace-unavailable-title">

@@ -1,24 +1,19 @@
-# Current Task — P5.5 Attachments
+# Current Task — P5.4 Backend Unavailable
 
-基线 master bb4a653，与 origin/master 一致；开始时工作区干净。版本保持 0.0.1 / build 1。
-
-## 目标与 invariant
-
-正式 Page Editor 图片/文件附件；二进制在线上传到既有 API / ali-oss-server，稳定 snapshot 走原有 Block / LocalStore / oplog / P5.4 sync。未知 attrs 拒绝写；每 Block 独立 fileId；删除本地提交且同步确认后才清理远端；清理状态持久化并按当前账号授权的 workspace 重试。Web 是唯一 renderer，Mobile 沿用 WebView，不新增原生宿主。
+目标：TypeError / HTTP 502、503、504 时仅凭已有可信身份和账号隔离缓存进入本地产品；401 失效，403/其他 4xx/500 不降级。保留 LocalStore、snapshot marker、授权刷新和 Push-before-Pull。
 
 ## Work Units
 
-1. 调查 S0：API/MIME 与 Storage/IPC/ack 两份独立 Evidence Pack；主 Agent 核对 Editor/UI。
-2. 决策 S2（GPT-6.1 Sol）：确定 attrs schema、MIME 流式识别、cleanup queue ack gate、上传/导航补偿；形成 Brief 后执行降为 S1。
-3. 执行 S1：Domain/Contracts/SDK/API MIME 与测试；LocalStore IndexedDB/SQLite/IPC cleanup 与测试，互不重叠。
-4. 执行 S1：Morphicons 基础层及正式系统图标；Editor node/上传/Slash/drop/paste 与正式 PageView 接线，互不重叠。
-5. 验证 S0：规定命令、产品回归、真实双客户端、Desktop/Mobile 构建；Playwright desktop/tablet/mobile Visual QA。
-6. Review：GPT-6.1 Sol High 独立 blocker review，修复后验证；文档与每个逻辑单元 commit。全部 exit criteria 满足前不标 PASS。
+1. 调查/决策 S0→S2：主 Agent 读取入口、stores、tests，确定共享 transient 判断与 Sync Push 错误传播边界。已完成。
+2. 执行 S1：fast_worker 修改 productApi/auth/workspaces/sync，复用当前缓存与同步。
+3. 执行 S1：独立 fast_worker 修改 App 启动连接界面，仅无 user 时遮挡 RouterView。
+4. 执行/验证 S1→S0：主 Agent 扩展回归用例、Visual QA，运行 Web/Desktop/storage/offline/real-sync 验证。
+5. Review：独立 reviewer 检查安全与恢复边界；主 Agent 复核、文档和提交。
 
 ## 状态
 
-实现、自动验收与独立 review 已完成。Browser plugin not available；使用已有 Playwright 验证。产品 72/72、存储/Electron 10/10、真实双客户端 1/1、API domain 2/2、HTTP 24/24、SDK 14/14、storage 6/6；规定 typecheck/build 与 version check 通过。修复了响应性、NodeView 图标事件、取消/重试并发、卸载、401、未落盘清理与首次对象删除失败等 review blocker。
+已完成；工作区开始时干净。无新增缓存、依赖或平台业务分支。
 
-P5.5 PASS：已部署 OSS 的生产 Web 双客户端完成真实 PNG/文件上传、刷新、URL 200 字节校验与删除；Mongo metadata 和已删除 OSS URL 均为 404。Desktop/Tablet/Mobile 截图已人工复核，390px 无横向溢出。早期 smoke 遗留对象依据隔离 replica set 的精确 insert oplog 恢复键并逐个清理；最终测试对象均已清理，不做 bucket prefix 扫描。线上验证未输出凭据或修改生产配置。
+产品 91/91、存储/Electron 10/10、storage 单测 6/6、Desktop 单测 8/8、offline-shell 1/1、真实 Mongo/API/生产 Web 1/1 通过。Web/Desktop typecheck/build 与 diff check、UTF-8 无 BOM 验证通过。真实同步使用隔离临时 Mongo replica set，容器已移除。
 
-已提交：`de592b0` API/契约、`19db80f` 两端清理存储、`822c51c` 正式 UI/图标/产品链；`3be7ba0` 触摸与可移植 QA 输出；文档验收作为最后单元提交。正式结果见 `docs/p5-attachments.md`。P5.4 原生宿主待验收和 P5 Final Acceptance 未关闭。本轮临时 API/preview 已停止，隔离 Mongo 测试容器已移除；截图留在仓库外。
+真实 localhost:7173 proxy 502 Visual QA 通过：缓存身份+snapshot显示正式本地产品，无身份显示居中连接状态，390px无溢出和页面异常。截图在仓库外。独立review修复离线身份无workspace metadata时错误页重试缺口，复核无剩余blocker。正式行为/验证记录见 docs/p5-real-sync.md；Mobile原生宿主真机验收限制保持不变。

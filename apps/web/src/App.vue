@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import EotionIcon from './components/ui/EotionIcon.vue'
+import './styles/product.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,13 +31,126 @@ async function retryRestore() {
 
 <template>
   <div class="app-viewport" :data-route="route.name">
-    <div v-if="!isDevRoute() && auth.status === 'restoring'" role="status" class="session-state">
-      正在恢复登录状态…
-    </div>
-    <div v-else-if="!isDevRoute() && auth.restoreError" role="alert" class="session-state">
-      <p>{{ auth.restoreError }}</p>
-      <button type="button" @click="retryRestore">重试</button>
-    </div>
+    <main v-if="!isDevRoute() && !auth.user && auth.status === 'restoring'" role="status" class="connectivity-state">
+      <section class="connectivity-card">
+        <div class="connectivity-brand">
+          <span class="connectivity-mark connectivity-mark--loading"><EotionIcon name="refresh" :size="20" /></span>
+          <span>Eotion</span>
+        </div>
+        <p class="connectivity-copy">正在恢复登录状态…</p>
+      </section>
+    </main>
+    <main v-else-if="!isDevRoute() && !auth.user && auth.restoreError" role="alert" class="connectivity-state">
+      <section class="connectivity-card" aria-labelledby="connectivity-title">
+        <div class="connectivity-brand">
+          <span class="connectivity-mark"><EotionIcon name="alert" :size="20" /></span>
+          <span>Eotion</span>
+        </div>
+        <h1 id="connectivity-title">暂时无法连接 Eotion</h1>
+        <p class="connectivity-copy">无法验证登录状态，请检查服务或网络后重试</p>
+        <button class="product-button product-button--primary connectivity-retry" type="button" :disabled="auth.status === 'restoring'" @click="retryRestore">
+          {{ auth.status === 'restoring' ? '正在重试…' : '重试' }}
+        </button>
+        <details class="connectivity-diagnostics">
+          <summary>查看诊断信息</summary>
+          <pre>{{ auth.restoreError }}</pre>
+        </details>
+      </section>
+    </main>
     <RouterView v-else />
   </div>
 </template>
+
+<style scoped>
+.connectivity-state {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  padding: 24px;
+  background: #f7f7f5;
+}
+
+.connectivity-card {
+  width: min(100%, 390px);
+  padding: 30px;
+  border: 1px solid #ecebe7;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(30, 30, 26, .05);
+}
+
+.connectivity-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.connectivity-mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid #e7e6e1;
+  border-radius: 10px;
+  background: #f8f8f6;
+  color: #55554f;
+}
+
+.connectivity-mark--loading {
+  animation: connectivity-spin 1.4s linear infinite;
+}
+
+.connectivity-card h1 {
+  margin: 0 0 8px;
+  font-size: clamp(24px, 7vw, 29px);
+  letter-spacing: -.025em;
+}
+
+.connectivity-copy {
+  margin: 0;
+  color: #777672;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.connectivity-retry {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.connectivity-diagnostics {
+  margin-top: 18px;
+  color: #777672;
+  font-size: 12px;
+}
+
+.connectivity-diagnostics summary {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.connectivity-diagnostics pre {
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: #777672;
+  font: inherit;
+  line-height: 1.55;
+}
+
+@keyframes connectivity-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connectivity-mark--loading { animation: none; }
+}
+
+@media (max-width: 420px) {
+  .connectivity-state { padding: 18px; }
+  .connectivity-card { padding: 26px 22px; }
+}
+</style>

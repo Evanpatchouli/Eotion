@@ -204,11 +204,11 @@ test('an attachment remains durable locally when its normal block sync receives 
   await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
   await insertFile(page, 'file', 'local-on-sync-error.txt', 'text/plain')
   await expect(page.locator('.attachment-file-name')).toHaveText('local-on-sync-error.txt')
-  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
   expect(api.blocks.filter((item) => item.type === 'file')).toHaveLength(0)
   await page.reload()
   await expect(page.locator('.attachment-file-name')).toHaveText('local-on-sync-error.txt')
-  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
 })
 
 test('a local attachment block upsert failure compensates the successful upload through the cleanup queue', async ({ page }) => {

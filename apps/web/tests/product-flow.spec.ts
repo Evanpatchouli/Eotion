@@ -263,18 +263,17 @@ test('redirects an authenticated visitor from login and registration to the prod
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
 })
 
-test('delays login until session recovery completes, and lets a failed recovery retry', async ({ page }) => {
+test('delays login until recovery completes and uses cached product state on transient failures', async ({ page }) => {
   const api = await installApi(page, { user: users['ava@example.com'], workspaces: [workspace('ws-a', 'Ava space')] })
   api.controls.meDelayMs = 250
   await page.goto('/#/app')
   await expect(page.getByRole('heading', { name: '登录 Eotion' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
 
-  // The server session remains valid; a transient /me error must expose a retry path.
+  // Previously authenticated clients keep the product through a transient /me failure.
   api.controls.meFailures = 1
   await page.reload()
-  await expect(page.getByRole('alert')).toBeVisible()
-  await page.getByRole('button', { name: /重试|重新加载/ }).click()
+  await expect(page.locator('.connectivity-state')).toHaveCount(0)
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
 
   // Finish the previous document's background authorization request before
@@ -282,9 +281,8 @@ test('delays login until session recovery completes, and lets a failed recovery 
   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
   api.controls.workspaceListFailures = 1
   await page.reload()
-  await expect(page.getByRole('heading', { name: '暂时无法加载工作区' })).toBeVisible()
-  await page.getByRole('button', { name: '重试', exact: true }).click()
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
+  await expect(page.getByRole('heading', { name: '暂时无法加载工作区' })).toHaveCount(0)
 })
 
 test('creates the first workspace and keeps it available after reload', async ({ page }) => {

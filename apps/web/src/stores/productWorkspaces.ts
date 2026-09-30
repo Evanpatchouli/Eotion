@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import { createLocalId } from '@eotion/storage'
-import { api, errorMessage, expireSessionFromApi } from '../services/productApi'
+import { api, errorMessage, expireSessionFromApi, isTransientServiceUnavailable } from '../services/productApi'
 import { useAuthStore } from './auth'
 
 const preferredWorkspaceKey = (userId: string) => `eotion:preferred-workspace:${userId}`
@@ -26,6 +26,7 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
   const loaded = ref(false)
   const loading = ref(false)
   const error = ref('')
+  const transientLoadFailure = ref(false)
   const createPending = ref(false)
   const renamePending = ref(false)
   const mutationError = ref('')
@@ -39,6 +40,7 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
     items.value = workspaces.filter((item) => item.ownerId === userId)
     loaded.value = true
     error.value = ''
+    transientLoadFailure.value = false
     cacheWorkspaces(userId, items.value)
   }
 
@@ -50,11 +52,12 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
     const requestId = ++loadRequestId
     loading.value = true
     error.value = ''
+    transientLoadFailure.value = false
     const auth = useAuthStore()
-    if (auth.offline && auth.user) {
+    if (auth.offline && auth.user && !force) {
       items.value = readCachedWorkspaces(auth.user.id)
       loaded.value = items.value.length > 0
-      error.value = loaded.value ? '' : '此账号尚未在本机保存工作区列表，当前离线无法打开。'
+      error.value = loaded.value ? '' : '此工作区尚未保存到本机，当前离线无法打开。'
       loading.value = false
       return Promise.resolve()
     }
@@ -63,15 +66,20 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
       acceptServerList(workspaces, auth.user?.id ?? '')
     }).catch((cause: unknown) => {
       if (requestEpoch !== sessionEpoch || requestId !== loadRequestId) return
-      if (cause instanceof TypeError && auth.user) {
+      if (cause instanceof ApiError && cause.statusCode === 401) {
+        error.value = errorMessage(cause, '无法加载工作区，请重试。')
+        expireSessionFromApi()
+        return
+      }
+      transientLoadFailure.value = isTransientServiceUnavailable(cause)
+      if (isTransientServiceUnavailable(cause) && auth.user) {
         items.value = readCachedWorkspaces(auth.user.id)
         loaded.value = items.value.length > 0
-        error.value = loaded.value ? '' : '此账号尚未在本机保存工作区列表，当前离线无法打开。'
+        error.value = loaded.value ? '' : '此工作区尚未保存到本机，当前离线无法打开。'
         loading.value = false
         return
       }
       error.value = errorMessage(cause, '无法加载工作区，请重试。')
-      if (cause instanceof ApiError && cause.statusCode === 401) expireSessionFromApi()
     }).finally(() => {
       if (requestEpoch === sessionEpoch && requestId === loadRequestId) {
         loading.value = false
@@ -89,6 +97,7 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
     loaded.value = false
     loading.value = false
     error.value = ''
+    transientLoadFailure.value = false
     createPending.value = false
     renamePending.value = false
     mutationError.value = ''
@@ -171,5 +180,5 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
     }
   }
 
-  return { items, loaded, loading, error, createPending, renamePending, mutationError, load, reset, create, rename, preferredId, remember, acceptServerList }
+  return { items, loaded, loading, error, transientLoadFailure, createPending, renamePending, mutationError, load, reset, create, rename, preferredId, remember, acceptServerList }
 })

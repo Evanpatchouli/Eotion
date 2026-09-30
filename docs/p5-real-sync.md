@@ -37,7 +37,9 @@ Page Tree 的移动通过 `LocalStore.movePage()` 原子更新 Page 并记录单
 
 ## 离线身份与 Workspace 缓存
 
-成功的 `/auth/me` / 登录结果会缓存最近成功认证的用户；Workspace metadata 按 `userId` 分开缓存。`/auth/me` 明确返回 401 时清除 cached identity、workspace state 并要求重新登录，不允许离线缓存绕过失效 Session。网络错误时，只有本机曾成功认证的用户可进入 offline product mode；从未成功登录的用户不能凭空进入产品。离线时只显示该用户缓存过的 Workspace 元数据和对应本地 Page / Block。
+成功的 `/auth/me` / 登录结果会缓存最近成功认证的用户；Workspace metadata 按 `userId` 分开缓存。`/auth/me` 明确返回 401 时清除 cached identity、workspace state 并要求重新登录，不允许离线缓存绕过失效 Session。共享的 `isTransientServiceUnavailable` 将 fetch/network `TypeError` 与 HTTP 502/503/504 视为暂时不可用，认证恢复、Workspace 列表缓存及 Sync 使用同一判断。只有本机曾成功认证的用户可进入 offline product mode；从未成功登录的用户不能凭空进入产品。403、其他 4xx 和 500 不触发缓存降级；500 可能代表应用缺陷，不据此推定基础设施离线。离线时只显示该用户缓存过的 Workspace 元数据和对应本地 Page / Block。
+
+有可用 cached identity 时，恢复进入 ready/offline 且不设置 restoreError，正式 RouterView 保持渲染。已有用户的 session 重试也不卸载编辑器。没有身份而无法验证 Session 时，全局显示 Eotion 连接状态与重试按钮，原始诊断仅在展开详情中显示。没有 Workspace cache 或 snapshot 时明确提示“此工作区尚未保存到本机，当前离线无法打开。”，不伪造空 Workspace。
 
 当前 workspace 缓存仅用于离线展示与路由选择。恢复在线后，发送任何 oplog 前都重新读取服务端 workspace 权限列表；缓存本身不授予同步权限。用户成功退出会清除 cached identity。
 
@@ -47,13 +49,17 @@ Page Tree 的移动通过 `LocalStore.movePage()` 原子更新 Page 并记录单
 
 生产 Web 构建会生成版本化 Service Worker 并缓存应用外壳与静态资源，完全断网时仍可 reload / 重启浏览器；`/api` 请求不进入该缓存。仅安全 HTTP(S) origin 注册 Service Worker，Electron `file://` 使用本地打包资源。Mobile WebView 默认开发地址是 LAN HTTP，真机上通常不具备 Service Worker 所需安全上下文；正式离线重启验收须使用稳定 HTTPS origin 或另行设计打包资源方案，并验证 origin / storage partition 持续一致。
 
-Sync Coordinator 在 session 配置、workspace prepare、本地 mutation、`online`、页面重新可见 / 获得关注时请求同步，并提供手动重试入口。短 debounce 合并重复请求，不使用高频 polling。全局顶部状态与编辑器本地保存状态分开。
+Sync Coordinator 在 session 配置、workspace prepare、本地 mutation、`online`、页面重新可见 / 获得关注时请求同步，并提供手动重试入口。短 debounce 合并重复请求，不使用高频 polling。`navigator.onLine=true` 不代表 API 可达：列表、Push、snapshot 的暂时不可用均显示“离线 · 本地已保存”，不替换正文，未确认的 oplog 保持可重试。服务恢复后先刷新权限、Push 再 Pull，成功时清除 offline identity 并回到“已同步”；初次缺失 snapshot 的页面树也会在 hydrate 后自动加载。全局顶部状态与编辑器本地保存状态分开。
 
 ## P5.3 → P5.4
 
 P5.3 的编辑器将 Page 内容通过 SDK Block HTTP CRUD 保存到 Server；P5.4 将 `PagePersistence` 的本地持久化边界接到 `LocalStore`，Page Tree 变更也先写本地并生成 oplog，再由统一 Sync Coordinator 走 P4 operation transport。Server CRUD 不再是正式 Page / Block 的主要保存路径；Snapshot 只在 push 成功后用于共享状态收敛与初次 hydrate。
 
 ## 验证状态
+
+Backend Unavailable 修复验收（2026-10-01）：Web typecheck/build、Desktop typecheck/build、产品测试 91/91、存储与 Electron 产品测试 10/10、storage 单测 6/6、Desktop SQLite 单测 8/8、offline-shell 1/1、真实 Mongo/API/生产 Web 双客户端 1/1 通过，`git diff --check` 通过。真实同步使用临时无持久卷 `mongo:8` 单节点 replica set、127.0.0.1:27018 及 `directConnection=true`，结束后已移除临时容器，未修改既有 Mongo。新增测试覆盖身份/Workspace 的瞬态降级与 4xx/500 拒绝、401 清身份、无缓存/无 snapshot、已有 editor 的 Session 重试不卸载、HTTP 502 下 SQLite 重启、Push-before-Pull 和错误页重试恢复。
+
+Visual QA 使用 Playwright（Browser plugin not available），在 `http://localhost:7173` 实际 API 不可用且 proxy 返回 502 时复核 `/#/app`、已有快照的 Page Editor、无身份连接状态；1366×900 与 390×844 无横向溢出、Vite overlay 或页面运行时异常。截图保存在仓库外。独立 review 发现并修复“离线身份无 Workspace metadata 时主重试按钮不请求服务”的缺口，复核后无剩余 blocker。Mobile WebView 仍复用 Web/IndexedDB，原生宿主真机边界继续保留如下限制。
 
 已通过 contracts typecheck、storage test/typecheck、SDK test/build、API domain/HTTP 集成与 build、Desktop test/build，以及 Web build。`pnpm --filter @eotion/web test:product` 55/55，`test:storage` 9/9。其中真实 Electron 窗口经 SQLite preload 完成离线编辑、建页、关闭/重启和重连 Push→Pull；该 Electron 测试使用可控 API 响应。独立 review 发现并修复了活跃编辑器回拉、离线应用外壳、清空已有页面的空段落保存及同步刷新引起的 Tiptap 重建。
 

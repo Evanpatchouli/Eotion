@@ -8,7 +8,7 @@ const workspace = { id: 'sync-workspace', name: '同步工作区', ownerId: user
 type Server = { pages: PageResponse[]; blocks: BlockResponse[] }
 async function mockApi(page: Page, server: Server = { pages: [], blocks: [] }) {
   const requests: Array<{ path: string; method: string; body?: any }> = []
-  const controls = { disconnected: false, failPush: false, auth401: false, auth503: false, holdPush: false, cleanupStatus: 204 }
+  const controls = { disconnected: false, unavailable: 0, authStatus: 0, workspaceStatus: 0, failPush: false, auth401: false, holdPush: false, cleanupStatus: 204 }
   let releasePush: (() => void) | null = null
   const json = (route: Route, status: number, body: unknown) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
   await page.route('**/api/**', async (route) => {
@@ -18,12 +18,13 @@ async function mockApi(page: Page, server: Server = { pages: [], blocks: [] }) {
     const body = request.postData() ? request.postDataJSON() : undefined
     requests.push({ path, method, body })
     if (controls.disconnected) return route.abort('failed')
+    if (controls.unavailable) return json(route, controls.unavailable, { statusCode: controls.unavailable, message: 'Unavailable' })
     if (path === '/api/auth/me') {
       if (controls.auth401) return json(route, 401, { statusCode: 401, message: 'Unauthorized' })
-      if (controls.auth503) return json(route, 503, { statusCode: 503, message: 'Unavailable' })
+      if (controls.authStatus) return json(route, controls.authStatus, { statusCode: controls.authStatus, message: 'Unavailable' })
       return json(route, 200, user)
     }
-    if (path === '/api/workspaces' && method === 'GET') return json(route, 200, [workspace])
+    if (path === '/api/workspaces' && method === 'GET') return json(route, controls.workspaceStatus || 200, controls.workspaceStatus ? { statusCode: controls.workspaceStatus, message: 'Unavailable' } : [workspace])
     if (path === `/api/sync/workspaces/${workspace.id}/snapshot` && method === 'GET') return json(route, 200, server)
     if (path.startsWith(`/api/workspaces/${workspace.id}/files/`) && method === 'DELETE') {
       if (controls.cleanupStatus === 204) return route.fulfill({ status: 204 })
@@ -96,11 +97,11 @@ test('attachment cleanup waits for delete acknowledgement, survives failure and 
     await (await sync.store()).deleteBlock('sync-workspace', 'attached-block')
     sync.localMutation()
   })
-  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
   expect(api.requests.filter((item) => item.method === 'DELETE')).toHaveLength(0)
   api.controls.failPush = false
   api.controls.cleanupStatus = 503
-  await page.getByRole('button', { name: /同步失败/ }).click()
+  await page.getByRole('button', { name: /离线 · 本地已保存/ }).click()
   await expect(page.locator('.product-cleanup-status')).toContainText('附件清理暂未完成')
   expect(api.server.blocks).toHaveLength(0)
   await page.reload()
@@ -145,7 +146,7 @@ test('failed push leaves local content and does not pull a stale snapshot', asyn
   const beforeEdit = api.requests.length
   await page.getByRole('button', { name: '新建根页面' }).click()
   await expect(page.getByRole('heading', { name: '无标题' })).toBeVisible()
-  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
   const afterEdit = api.requests.slice(beforeEdit)
   expect(afterEdit.some((request) => request.path === '/api/sync/operations')).toBe(true)
   expect(afterEdit.some((request) => request.path.endsWith('/snapshot'))).toBe(false)
@@ -166,13 +167,14 @@ test('a confirmed 401 clears cached identity instead of restoring offline access
   expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).toBeNull()
 })
 
-test('HTTP 503 cannot use cached identity as an offline login', async ({ page }) => {
+for (const status of [400, 403, 404, 500]) test(`HTTP ${status} cannot use cached identity as an offline login`, async ({ page }) => {
   const api = await mockApi(page)
   await page.goto(`/#/app/${workspace.id}`)
   await expect(page.getByText('还没有页面')).toBeVisible()
-  api.controls.auth503 = true
+  api.controls.authStatus = status
   await page.reload()
-  await expect(page.getByRole('alert')).toContainText('Unavailable')
+  await expect(page.getByRole('heading', { name: '暂时无法连接 Eotion' })).toBeVisible()
+  await expect(page.locator('.product-shell')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: '无标题' })).toHaveCount(0)
   expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).not.toBeNull()
 })
@@ -186,6 +188,149 @@ test('a never authenticated offline client cannot enter the product', async ({ p
   expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).toBeNull()
 })
 
+for (const failure of ['network', 502, 503, 504] as const) test(`backend ${failure} restores the local product and recovers without reload`, async ({ page }) => {
+  const api = await mockApi(page)
+  await page.goto(`/#/app/${workspace.id}`)
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await page.getByRole('button', { name: '新建根页面' }).click()
+  const editor = page.locator('.eotion-editor-content .tiptap')
+  await editor.fill('原有本地正文')
+  await expect.poll(() => JSON.stringify(api.server.blocks)).toContain('原有本地正文')
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  api.controls.disconnected = failure === 'network'
+  api.controls.unavailable = failure === 'network' ? 0 : failure
+  await page.reload()
+  await expect(editor).toContainText('原有本地正文')
+  await expect(page.locator('.product-page-title')).toContainText('无标题')
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
+  await editor.fill('恢复前本地编辑')
+  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  const pending = () => page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    return (await (await useProductSyncStore().store()).getPendingOperations()).length
+  })
+  await expect.poll(pending).toBeGreaterThan(0)
+  expect(JSON.stringify(api.server.blocks)).not.toContain('恢复前本地编辑')
+  const reconnectAt = api.requests.length
+  api.controls.disconnected = false
+  api.controls.unavailable = 0
+  await page.getByRole('button', { name: /离线 · 本地已保存/ }).click()
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  await expect(editor).toContainText('恢复前本地编辑')
+  expect(JSON.stringify(api.server.blocks)).toContain('恢复前本地编辑')
+  expect(await pending()).toBe(0)
+  const reconnect = api.requests.slice(reconnectAt)
+  const lastPush = reconnect.map((r, i) => r.path === '/api/sync/operations' ? i : -1).reduce((a, b) => Math.max(a, b), -1)
+  expect(lastPush).toBeGreaterThanOrEqual(0)
+  expect(reconnect.findIndex((r) => r.path.endsWith('/snapshot'))).toBeGreaterThan(lastPush)
+})
+
+for (const status of [502, 503, 504]) test(`workspace list ${status} restores only the current account cache`, async ({ page }) => {
+  const api = await mockApi(page)
+  await page.goto(`/#/app/${workspace.id}`)
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  await page.evaluate(() => localStorage.setItem('eotion:workspaces:other-user', JSON.stringify([{ id: 'private', name: 'Other private', ownerId: 'other-user' }])))
+  api.controls.workspaceStatus = status
+  await page.reload()
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
+  await expect(page.getByText('Other private')).toHaveCount(0)
+})
+
+for (const status of [400, 403, 500]) test(`workspace list ${status} cannot fall back to cached permissions`, async ({ page }) => {
+  const api = await mockApi(page)
+  await page.goto(`/#/app/${workspace.id}`)
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  api.controls.workspaceStatus = status
+  await page.reload()
+  await expect(page.getByRole('heading', { name: '暂时无法加载工作区' })).toBeVisible()
+  await expect(page.locator('.product-page-title')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toHaveCount(0)
+})
+
+test('cached identity with no workspace snapshot refuses to invent an empty workspace', async ({ page }) => {
+  const api = await mockApi(page)
+  api.controls.unavailable = 502
+  await page.addInitScript(({ user, workspace }) => {
+    localStorage.setItem('eotion:last-authenticated-user', JSON.stringify(user))
+    localStorage.setItem(`eotion:workspaces:${user.id}`, JSON.stringify([workspace]))
+  }, { user, workspace })
+  await page.goto(`/#/app/${workspace.id}/page/not-hydrated`)
+  await expect(page.getByRole('region', { name: '暂时无法加载页面' }).getByRole('alert')).toHaveText('此工作区尚未保存到本机，当前离线无法打开。')
+  await expect(page.locator('.eotion-editor-content .tiptap')).toHaveCount(0)
+  await expect(page.getByText('还没有页面')).toHaveCount(0)
+  api.controls.unavailable = 0
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+})
+
+test('workspace list unavailable without local cache can recover on attention', async ({ page }) => {
+  const api = await mockApi(page)
+  api.controls.workspaceStatus = 503
+  await page.goto(`/#/app/${workspace.id}`)
+  await expect(page.getByRole('heading', { name: '暂时无法加载工作区' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
+  api.controls.workspaceStatus = 0
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page.getByText('还没有页面')).toBeVisible()
+})
+
+test('offline identity without workspace metadata recovers using the workspace retry button', async ({ page }) => {
+  const api = await mockApi(page)
+  api.controls.unavailable = 502
+  await page.addInitScript((user) => localStorage.setItem('eotion:last-authenticated-user', JSON.stringify(user)), user)
+  await page.goto(`/#/app/${workspace.id}`)
+  const state = page.getByRole('region', { name: '暂时无法加载工作区' })
+  await expect(state).toBeVisible()
+  api.controls.unavailable = 0
+  await state.getByRole('button', { name: '重试', exact: true }).click()
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+})
+
+test('HTTP 502 without identity shows responsive connectivity UI and retry restores the product', async ({ page }) => {
+  const api = await mockApi(page)
+  api.controls.unavailable = 502
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/app')
+  await expect(page.getByRole('heading', { name: '暂时无法连接 Eotion' })).toBeVisible()
+  await expect(page.getByText('无法验证登录状态，请检查服务或网络后重试')).toBeVisible()
+  await expect(page.locator('.product-shell')).toHaveCount(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  api.controls.unavailable = 0
+  await page.getByRole('button', { name: '重试', exact: true }).click()
+  await expect(page.getByText('还没有页面')).toBeVisible()
+})
+
+for (const status of [502, 503]) test(`open editor survives backend ${status} and keeps local operations`, async ({ page }) => {
+  const api = await mockApi(page)
+  await page.goto(`/#/app/${workspace.id}`)
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await page.getByRole('button', { name: '新建根页面' }).click()
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  api.controls.unavailable = status
+  const editor = page.locator('.eotion-editor-content .tiptap')
+  await editor.fill('服务失联仍可编辑')
+  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
+  await expect(editor).toContainText('服务失联仍可编辑')
+  await editor.evaluate((node) => node.setAttribute('data-retained-editor', 'yes'))
+  await page.evaluate(async () => {
+    const { useAuthStore } = await import('/src/stores/auth.ts')
+    await useAuthStore().retryRestore()
+  })
+  await expect(editor).toHaveAttribute('data-retained-editor', 'yes')
+  await page.reload()
+  await expect(editor).toContainText('服务失联仍可编辑')
+  api.controls.unavailable = 0
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  expect(JSON.stringify(api.server.blocks)).toContain('服务失联仍可编辑')
+})
+
 test('offline editor saves blocks locally and restores text after reload', async ({ page }) => {
   const api = await mockApi(page)
   await page.goto(`/#/app/${workspace.id}`)
@@ -197,6 +342,11 @@ test('offline editor saves blocks locally and restores text after reload', async
   await editor.click()
   await editor.pressSequentially('离线正文')
   await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  await expect.poll(() => page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    return JSON.stringify(await local.listBlocksByPage(location.hash.split('/').at(-1)!))
+  })).toContain('离线正文')
   await page.reload()
   await expect(page.locator('.eotion-editor-content .tiptap')).toContainText('离线正文')
   api.controls.disconnected = false

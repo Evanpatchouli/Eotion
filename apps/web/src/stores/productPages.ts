@@ -33,9 +33,17 @@ export const useProductPagesStore = defineStore('product-pages', () => {
   }
 
   async function refresh(workspaceId = forWorkspaceId.value): Promise<void> {
-    if (!workspaceId || workspaceId !== forWorkspaceId.value || !loaded.value) return
+    if (!workspaceId || workspaceId !== forWorkspaceId.value) return
     const requestEpoch = epoch
-    const pages = await (await useProductSyncStore().store()).listPagesByWorkspace(workspaceId)
+    const local = await useProductSyncStore().store()
+    if (requestEpoch !== epoch || workspaceId !== forWorkspaceId.value) return
+    if (!loaded.value) {
+      if (loading.value || !(await local.hasWorkspaceSnapshot(workspaceId))) return
+      if (requestEpoch !== epoch || workspaceId !== forWorkspaceId.value) return
+      await load(workspaceId)
+      return
+    }
+    const pages = await local.listPagesByWorkspace(workspaceId)
     if (requestEpoch === epoch) items.value = pages as PageResponse[]
   }
 
