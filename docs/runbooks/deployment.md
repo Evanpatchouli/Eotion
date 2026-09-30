@@ -60,6 +60,8 @@ ALI_OSS_CLIENT_ID=<EOTION_OSS_CLIENT_ID>
 ALI_OSS_CLIENT_SECRET=<EOTION_OSS_CLIENT_SECRET>
 ALI_OSS_OBJECT_PREFIX=eotion
 ALI_OSS_MAX_UPLOAD_BYTES=20971520
+
+VITE_ALLOW_PAGE_ZOOM=false
 ```
 
 要求：
@@ -70,6 +72,8 @@ ALI_OSS_MAX_UPLOAD_BYTES=20971520
 - Eotion API 在 Docker 内访问 ali-oss-server 时使用 `http://ali-oss-server:9512`。
 - client secret 只存在服务端环境变量中，不得暴露给 Web。
 - `.env` 已被仓库 `.gitignore` 忽略。
+- `VITE_ALLOW_PAGE_ZOOM` 是 Web 构建期变量，通过 Docker Compose `build.args` 注入；修改后必须重新构建 `eotion-web` 镜像，仅重启容器不会生效。
+- `apps/web/.env` 仅用于本地 Web 开发/本机构建；线上 Docker 构建统一使用仓库根 `.env`，与 `codex-switch` 的部署方式一致。
 
 展开并检查 Compose：
 
@@ -77,7 +81,7 @@ ALI_OSS_MAX_UPLOAD_BYTES=20971520
 docker compose config
 ```
 
-重点确认 `WEB_ORIGIN`、`API_ORIGIN`、`MONGODB_URI` 和 `ALI_OSS_SERVER_URL`。
+重点确认 `WEB_ORIGIN`、`API_ORIGIN`、`MONGODB_URI`、`ALI_OSS_SERVER_URL` 和 Web build args（包括 `VITE_ALLOW_PAGE_ZOOM`）。
 
 ## First Deploy
 
@@ -191,6 +195,14 @@ git pull --ff-only origin master
 docker compose up -d --build
 docker compose ps
 ```
+
+只修改 Web 构建期变量（例如 `VITE_ALLOW_PAGE_ZOOM`）时：
+
+```bash
+docker compose up -d --build eotion-web
+```
+
+该命令会重新执行 Vite production build，并用新镜像重建 `eotion-web`；API 无需重建。
 
 更新后检查：
 
