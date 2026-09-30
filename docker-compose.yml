@@ -12,6 +12,7 @@ services:
       NODE_ENV: production
       PORT: 7137
       HOST: 0.0.0.0
+      GIT_SHA: ${GIT_SHA:-unknown}
       WEB_ORIGIN: ${WEB_ORIGIN:-}
       API_ORIGIN: ${API_ORIGIN:-}
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/eotion?replicaSet=rs0}
@@ -32,6 +33,7 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
+        GIT_SHA: ${GIT_SHA:-unknown}
         VITE_ALLOW_PAGE_ZOOM: ${VITE_ALLOW_PAGE_ZOOM:-false}
     image: eotion-web:latest
     container_name: eotion-web
