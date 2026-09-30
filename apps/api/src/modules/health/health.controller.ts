@@ -14,7 +14,11 @@ const rootManifest = JSON.parse(
 ) as RootManifest
 
 const buildNumber = rootManifest.eotion?.buildNumber
-if (!Number.isSafeInteger(buildNumber) || (buildNumber ?? 0) < 1) {
+if (
+  typeof buildNumber !== 'number' ||
+  !Number.isSafeInteger(buildNumber) ||
+  buildNumber < 1
+) {
   throw new Error('Invalid root package.json eotion.buildNumber')
 }
 
