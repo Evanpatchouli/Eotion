@@ -1,0 +1,47 @@
+services:
+  eotion-api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: eotion-api:latest
+    container_name: eotion-api
+    restart: always
+    expose:
+      - '7137'
+    environment:
+      NODE_ENV: production
+      PORT: 7137
+      HOST: 0.0.0.0
+      WEB_ORIGIN: ${WEB_ORIGIN:-https://eotion.test.evanpatchouli.sapce}
+      API_ORIGIN: ${API_ORIGIN:-https://eotion.test.evanpatchouli.sapce}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/eotion?replicaSet=rs0}
+      REDIS_URL: ${REDIS_URL:-}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-}
+      ALI_OSS_SERVER_URL: ${ALI_OSS_SERVER_URL:-}
+      ALI_OSS_CLIENT_ID: ${ALI_OSS_CLIENT_ID:-}
+      ALI_OSS_CLIENT_SECRET: ${ALI_OSS_CLIENT_SECRET:-}
+      ALI_OSS_OBJECT_PREFIX: ${ALI_OSS_OBJECT_PREFIX:-eotion}
+      ALI_OSS_MAX_UPLOAD_BYTES: ${ALI_OSS_MAX_UPLOAD_BYTES:-20971520}
+    networks:
+      - app
+      - mongo
+
+  eotion-web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: eotion-web:latest
+    container_name: eotion-web
+    restart: always
+    depends_on:
+      - eotion-api
+    ports:
+      - '8001:80'
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge
+  mongo:
+    external: true
