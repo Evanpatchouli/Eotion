@@ -301,3 +301,91 @@ test('P3 clear waits for an in-flight reconnect', async ({ page }) => {
   await expect(page.getByRole('status')).toHaveText('数据已清除')
   await expect(page.getByRole('heading', { name: 'Fake transport sent IDs (0)' })).toBeVisible()
 })
+
+test('IndexedDB file cleanup waits for source sync, respects references, and survives v1 upgrade', async ({ page }) => {
+  await page.goto('/#/__dev/storage-p3')
+  const result = await page.evaluate(async () => {
+    const { IndexedDbLocalStore } = await import('/src/storage/indexedDbStore.ts')
+    const name = `file-cleanup-${crypto.randomUUID()}`
+    const legacy = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(name, 1)
+      request.onupgradeneeded = () => {
+        const db = request.result
+        db.createObjectStore('pages', { keyPath: 'id' })
+        const blocks = db.createObjectStore('blocks', { keyPath: 'id' })
+        blocks.createIndex('pageId', 'pageId')
+        db.createObjectStore('operations', { keyPath: 'id' })
+        db.createObjectStore('meta')
+      }
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const legacyPage = { id: 'legacy-page', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Legacy', updatedAt: '2026-01-01T00:00:00.000Z' }
+    const legacyBlock = { id: 'legacy-block', workspaceId: 'ws', pageId: 'legacy-page', parentBlockId: null, type: 'paragraph', orderKey: 'a', props: {}, createdAt: legacyPage.updatedAt, updatedAt: legacyPage.updatedAt }
+    legacy.transaction(['pages', 'blocks', 'meta'], 'readwrite').objectStore('pages').put(legacyPage)
+    legacy.transaction('blocks', 'readwrite').objectStore('blocks').put(legacyBlock)
+    legacy.close()
+
+    const store = await IndexedDbLocalStore.open(name)
+    const migrated = (await store.getPage('legacy-page'))?.title === 'Legacy' && (await store.getBlock('legacy-block'))?.id === 'legacy-block'
+    const now = new Date().toISOString()
+    const pageRecord = { id: 'p', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Page', updatedAt: now }
+    const image = (id: string, fileId: string) => ({ id, workspaceId: 'ws', pageId: 'p', parentBlockId: null, type: 'image' as const, orderKey: id, props: { node: { attrs: { fileId } } }, createdAt: now, updatedAt: now })
+    await store.upsertPage(pageRecord)
+    await store.upsertBlock({ ...image('paragraph', 'ignored-file-id'), type: 'paragraph' as const })
+    await store.deleteBlock('ws', 'paragraph')
+    const paragraphNoCleanup = (await store.listFileCleanups()).length === 0
+    await store.upsertBlock(image('b1', 'shared-file'))
+    await store.upsertBlock(image('bShared', 'shared-file'))
+    await store.upsertBlock(image('b2', 'page-file-a'))
+    await store.upsertBlock(image('b3', 'page-file-b'))
+    for (const operation of await store.getPendingOperations()) await store.markOperationSynced(operation.id)
+    await store.deleteBlock('ws', 'b1')
+    const deleteBlockOp = (await store.getPendingOperations()).at(-1)!
+    const beforeAck = await store.listReadyFileCleanups()
+    await store.markOperationSynced(deleteBlockOp.id)
+    const referenced = await store.listReadyFileCleanups()
+    await store.deleteBlock('ws', 'bShared')
+    await store.markOperationSynced((await store.getPendingOperations()).at(-1)!.id)
+    const afterRemoved = await store.listReadyFileCleanups()
+    await store.failFileCleanup('ws', 'shared-file', 'offline')
+    const error = (await store.listFileCleanups()).find((item) => item.fileId === 'shared-file')?.lastError
+    await store.completeFileCleanup('ws', 'shared-file')
+    await store.upsertBlock(image('replace', 'replace-file'))
+    await store.upsertBlock({ ...image('replace', ''), type: 'paragraph', props: { text: 'replaced' } })
+    const replaceOp = (await store.getPendingOperations()).at(-1)!
+    const replaceGate = (await store.listFileCleanups()).find((item) => item.fileId === 'replace-file')
+    await store.markOperationSynced((await store.getPendingOperations()).at(-1)!.id)
+    const replacementReady = await store.listReadyFileCleanups()
+    await store.upsertBlock(image('b4', 'page-file-c'))
+    for (const operation of await store.getPendingOperations()) await store.markOperationSynced(operation.id)
+    await store.deletePage('ws', 'p')
+    const pageDelete = (await store.getPendingOperations()).at(-1)!
+    const pageTasks = (await store.listFileCleanups()).filter((item) => item.fileId.startsWith('page-file-'))
+    const pageBeforeAck = (await store.listReadyFileCleanups()).filter((item) => item.fileId.startsWith('page-file-'))
+    await store.markOperationSynced(pageDelete.id)
+    const pageReady = (await store.listReadyFileCleanups()).filter((item) => item.fileId.startsWith('page-file-'))
+    await store.enqueueFileCleanup('ws', 'compensate')
+    await store.enqueueFileCleanup('ws', 'compensate')
+    await store.enqueueFileCleanup('else', 'compensate')
+    const compensation = (await store.listReadyFileCleanups()).filter((item) => item.fileId === 'compensate')
+    await store.clearAllData()
+    const cleared = await store.listFileCleanups()
+    store.close()
+    return { migrated, paragraphNoCleanup, beforeAck: beforeAck.map((item) => item.fileId), referenced: referenced.map((item) => item.fileId), afterRemoved: afterRemoved.map((item) => item.fileId), error, replaceSource: replaceGate?.sourceOperationId, replaceExpected: replaceOp.id, replacementReady: replacementReady.some((item) => item.fileId === 'replace-file'), pageTasks: pageTasks.map((item) => item.fileId).sort(), pageBeforeAck: pageBeforeAck.map((item) => item.fileId), pageReady: pageReady.map((item) => item.fileId).sort(), compensation: compensation.map((item) => item.workspaceId).sort(), cleared }
+  })
+
+  expect(result.migrated).toBe(true)
+  expect(result.paragraphNoCleanup).toBe(true)
+  expect(result.beforeAck).toEqual([])
+  expect(result.referenced).toEqual([])
+  expect(result.afterRemoved).toEqual(['shared-file'])
+  expect(result.error).toBe('offline')
+  expect(result.replaceSource).toBe(result.replaceExpected)
+  expect(result.replacementReady).toBe(true)
+  expect(result.pageTasks).toEqual(['page-file-a', 'page-file-b', 'page-file-c'])
+  expect(result.pageBeforeAck).toEqual([])
+  expect(result.pageReady).toEqual(['page-file-a', 'page-file-b', 'page-file-c'])
+  expect(result.compensation).toEqual(['else', 'ws'])
+  expect(result.cleared).toEqual([])
+})

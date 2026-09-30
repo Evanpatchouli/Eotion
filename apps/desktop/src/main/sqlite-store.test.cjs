@@ -208,3 +208,71 @@ test('SQLite keeps a locally created workspace cached after its last page is del
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+test('SQLite file cleanup gates follow local mutations and preserve failure state', async () => {
+  const now = '2026-01-01T00:00:00.000Z'
+  const page = (id, workspaceId = 'ws') => ({ id, workspaceId, parentPageId: null, orderKey: 'a', title: id, updatedAt: now })
+  const block = (id, fileId, pageId = 'p', workspaceId = 'ws') => ({
+    id, workspaceId, pageId, parentBlockId: null, type: 'image', orderKey: 'a',
+    props: { node: { attrs: fileId ? { fileId } : {} } }, createdAt: now, updatedAt: now,
+  })
+  const directory = mkdtempSync(join(tmpdir(), 'eotion-sqlite-cleanup-'))
+  const path = join(directory, 'local.sqlite')
+  let persistent
+  try {
+      persistent = new SqliteLocalStore(path)
+      await persistent.upsertPage(page('p'))
+      await persistent.upsertBlock({ ...block('paragraph', 'ignored-file-id'), type: 'paragraph' })
+      await persistent.deleteBlock('ws', 'paragraph')
+      assert.deepEqual(await persistent.listFileCleanups(), [])
+      await persistent.upsertBlock(block('one', 'file-one'))
+      await persistent.deleteBlock('ws', 'one')
+      const afterDelete = (await persistent.getPendingOperations()).at(-1)
+      assert.equal((await persistent.listFileCleanups())[0].sourceOperationId, afterDelete.id)
+      persistent.close()
+      persistent = undefined
+      persistent = new SqliteLocalStore(path)
+      assert.equal((await persistent.listReadyFileCleanups()).some((item) => item.fileId === 'page-file-a'), false)
+      await persistent.markOperationSynced(afterDelete.id)
+      assert.deepEqual((await persistent.listReadyFileCleanups()).map((item) => item.fileId), ['file-one'])
+      await persistent.failFileCleanup('ws', 'file-one', 'remote delete failed')
+      assert.equal((await persistent.listFileCleanups())[0].lastError, 'remote delete failed')
+      await persistent.completeFileCleanup('ws', 'file-one')
+      assert.deepEqual(await persistent.listFileCleanups(), [])
+
+      await persistent.enqueueFileCleanup('ws', 'compensation')
+      await persistent.enqueueFileCleanup('ws', 'compensation')
+      assert.equal((await persistent.listReadyFileCleanups()).length, 1)
+      await persistent.enqueueFileCleanup('other', 'compensation')
+      assert.deepEqual((await persistent.listReadyFileCleanups()).map((item) => item.workspaceId).sort(), ['other', 'ws'])
+
+      await persistent.upsertBlock(block('two', 'replace-me'))
+      const upsert = (await persistent.getPendingOperations()).at(-1)
+      await persistent.upsertBlock({ ...block('two', undefined), type: 'paragraph', props: { text: 'replaced' } })
+      const replacement = (await persistent.getPendingOperations()).at(-1)
+      assert.equal((await persistent.listFileCleanups()).find((item) => item.fileId === 'replace-me').sourceOperationId, replacement.id)
+      assert.equal((await persistent.listReadyFileCleanups()).some((item) => item.fileId === 'replace-me'), false)
+      await persistent.markOperationSynced(replacement.id)
+      assert.equal((await persistent.listReadyFileCleanups()).some((item) => item.fileId === 'replace-me'), true)
+
+      await persistent.upsertBlock(block('three', 'page-file-a'))
+      await persistent.upsertBlock(block('four', 'page-file-b'))
+      const pageDeleteBefore = await persistent.getPendingOperations()
+      await persistent.markOperationSynced(pageDeleteBefore.at(-1).id)
+      await persistent.deletePage('ws', 'p')
+      const pageDelete = (await persistent.getPendingOperations()).at(-1)
+      const pageFiles = (await persistent.listFileCleanups()).filter((item) => item.fileId.startsWith('page-file-'))
+      assert.equal(pageFiles.length, 2)
+      assert.ok(pageFiles.every((item) => item.sourceOperationId === pageDelete.id))
+      assert.equal((await persistent.listReadyFileCleanups()).some((item) => item.fileId.startsWith('page-file-')), false)
+      await persistent.markOperationSynced(pageDelete.id)
+      const ready = await persistent.listReadyFileCleanups()
+      assert.ok(ready.some((item) => item.fileId === 'page-file-a'))
+      assert.ok(ready.some((item) => item.fileId === 'page-file-b'))
+      await persistent.clearAllData()
+      assert.deepEqual(await persistent.listFileCleanups(), [])
+  } finally {
+    persistent?.close()
+    rmSync(directory, { recursive: true, force: true })
+  }
+})

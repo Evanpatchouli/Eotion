@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { SyncOperation } from '@eotion/contracts'
-import { createLocalId, validateWorkspaceSnapshot, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
+import { createLocalId, validateWorkspaceSnapshot, type FileCleanupTask, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 type OperationKind = SyncOperation['kind']
 
@@ -40,6 +40,14 @@ export class SqliteLocalStore implements LocalStore {
         status TEXT NOT NULL CHECK (status IN ('pending', 'synced', 'failed'))
       );
       CREATE INDEX IF NOT EXISTS operations_by_status_sequence ON operations(status, sequence);
+      CREATE TABLE IF NOT EXISTS file_cleanups (
+        workspace_id TEXT NOT NULL,
+        file_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        source_operation_id TEXT,
+        last_error TEXT,
+        PRIMARY KEY (workspace_id, file_id)
+      );
     `)
     const operationColumns = this.database.prepare('PRAGMA table_info(operations)').all() as Array<{ name: string }>
     if (!operationColumns.some(({ name }) => name === 'workspace_id')) {
@@ -64,7 +72,7 @@ export class SqliteLocalStore implements LocalStore {
   async clearAllData(): Promise<void> {
     const clientId = createLocalId()
     this.transaction(() => {
-      this.database.exec('DELETE FROM blocks; DELETE FROM pages; DELETE FROM operations; DELETE FROM metadata;')
+      this.database.exec('DELETE FROM blocks; DELETE FROM pages; DELETE FROM operations; DELETE FROM file_cleanups; DELETE FROM metadata;')
       this.database.prepare("INSERT INTO metadata (key, value) VALUES ('client_id', ?)").run(clientId)
     })
     this.clientId = clientId
@@ -81,7 +89,7 @@ export class SqliteLocalStore implements LocalStore {
     }
   }
 
-  private appendOperation(operation: Omit<SyncOperation, 'id' | 'clientId' | 'sequence' | 'createdAt'>): void {
+  private appendOperation(operation: Omit<SyncOperation, 'id' | 'clientId' | 'sequence' | 'createdAt'>): string {
     const next = this.database.prepare("SELECT value FROM metadata WHERE key = 'next_sequence'").get() as
       | { value: string }
       | undefined
@@ -106,6 +114,15 @@ export class SqliteLocalStore implements LocalStore {
       fullOperation.kind, fullOperation.kind.startsWith('page.') ? 'page' : 'block', targetId,
       JSON.stringify(fullOperation.payload), fullOperation.createdAt,
     )
+    return fullOperation.id
+  }
+
+  private enqueueCleanup(workspaceId: string, fileId: string | undefined, sourceOperationId?: string): void {
+    if (!fileId) return
+    this.database.prepare(`
+      INSERT OR IGNORE INTO file_cleanups (workspace_id, file_id, created_at, source_operation_id)
+      VALUES (?, ?, ?, ?)
+    `).run(workspaceId, fileId, new Date().toISOString(), sourceOperationId ?? null)
   }
 
   async getPage(id: string): Promise<LocalPageRecord | undefined> {
@@ -206,8 +223,14 @@ export class SqliteLocalStore implements LocalStore {
         const candidate = JSON.parse(document) as LocalPageRecord
         return candidate.workspaceId === workspaceId && candidate.parentPageId === id
       })) throw new Error(`Page ${id} has child pages`)
+      const blocks = this.database.prepare('SELECT document FROM blocks WHERE page_id = ?').all(id) as { document: string }[]
+      const operationId = this.appendOperation({ kind: 'page.delete', workspaceId, payload: { id } })
+      for (const { document } of blocks) {
+        const block = JSON.parse(document) as LocalBlockRecord
+        if (block.workspaceId !== workspaceId) throw new Error(`Page ${id} contains blocks from a different workspace`)
+        this.enqueueCleanup(workspaceId, getAttachmentFileId(block), operationId)
+      }
       this.database.prepare('DELETE FROM pages WHERE id = ?').run(id)
-      this.appendOperation({ kind: 'page.delete', workspaceId, payload: { id } })
     })
   }
 
@@ -246,7 +269,9 @@ export class SqliteLocalStore implements LocalStore {
           page_id = excluded.page_id, order_key = excluded.order_key, document = excluded.document
       `).run(block.id, block.pageId, block.orderKey, JSON.stringify(block))
       const { id, workspaceId, pageId, parentBlockId, type, orderKey, props } = block
-      this.appendOperation({ kind: 'block.upsert', workspaceId, payload: { id, pageId, parentBlockId: parentBlockId ?? null, type, orderKey, props } })
+      const operationId = this.appendOperation({ kind: 'block.upsert', workspaceId, payload: { id, pageId, parentBlockId: parentBlockId ?? null, type, orderKey, props } })
+      const oldFileId = existing ? getAttachmentFileId(existing) : undefined
+      if (oldFileId && oldFileId !== getAttachmentFileId(block)) this.enqueueCleanup(workspaceId, oldFileId, operationId)
     })
   }
 
@@ -262,8 +287,9 @@ export class SqliteLocalStore implements LocalStore {
           return candidate.workspaceId === workspaceId && candidate.parentBlockId === id
         })) throw new Error(`Block ${id} has child blocks`)
       }
+      const operationId = this.appendOperation({ kind: 'block.delete', workspaceId, payload: { id } })
+      if (block) this.enqueueCleanup(workspaceId, getAttachmentFileId(block), operationId)
       this.database.prepare('DELETE FROM blocks WHERE id = ?').run(id)
-      this.appendOperation({ kind: 'block.delete', workspaceId, payload: { id } })
     })
   }
 
@@ -296,4 +322,56 @@ export class SqliteLocalStore implements LocalStore {
   async markOperationFailed(id: string): Promise<void> {
     this.database.prepare("UPDATE operations SET status = 'failed' WHERE id = ? AND status != 'synced'").run(id)
   }
+
+  async enqueueFileCleanup(workspaceId: string, fileId: string): Promise<void> {
+    this.enqueueCleanup(workspaceId, fileId)
+  }
+
+  async listFileCleanups(): Promise<FileCleanupTask[]> {
+    const rows = this.database.prepare(`
+      SELECT workspace_id, file_id, created_at, source_operation_id, last_error
+      FROM file_cleanups ORDER BY created_at, workspace_id, file_id
+    `).all() as Array<{ workspace_id: string; file_id: string; created_at: string; source_operation_id: string | null; last_error: string | null }>
+    return rows.map((row) => ({
+      workspaceId: row.workspace_id, fileId: row.file_id, createdAt: row.created_at,
+      ...(row.source_operation_id ? { sourceOperationId: row.source_operation_id } : {}),
+      ...(row.last_error !== null ? { lastError: row.last_error } : {}),
+    }))
+  }
+
+  async listReadyFileCleanups(): Promise<FileCleanupTask[]> {
+    const rows = this.database.prepare(`
+      SELECT workspace_id, file_id, created_at, source_operation_id, last_error
+      FROM file_cleanups ORDER BY created_at, workspace_id, file_id
+    `).all() as Array<{ workspace_id: string; file_id: string; created_at: string; source_operation_id: string | null; last_error: string | null }>
+    const tasks = rows.map((row) => ({
+      workspaceId: row.workspace_id, fileId: row.file_id, createdAt: row.created_at,
+      ...(row.source_operation_id ? { sourceOperationId: row.source_operation_id } : {}),
+      ...(row.last_error !== null ? { lastError: row.last_error } : {}),
+    }))
+    const blocks = (this.database.prepare('SELECT document FROM blocks').all() as { document: string }[])
+      .map(({ document }) => JSON.parse(document) as LocalBlockRecord)
+    return tasks.filter((task) => {
+      if (task.sourceOperationId) {
+        const operation = this.database.prepare('SELECT status, workspace_id FROM operations WHERE id = ?').get(task.sourceOperationId) as { status: string; workspace_id: string | null } | undefined
+        if (!operation || operation.status !== 'synced' || operation.workspace_id !== task.workspaceId) return false
+      }
+      return !blocks.some((block) => block.workspaceId === task.workspaceId && getAttachmentFileId(block) === task.fileId)
+    })
+  }
+
+  async completeFileCleanup(workspaceId: string, fileId: string): Promise<void> {
+    this.database.prepare('DELETE FROM file_cleanups WHERE workspace_id = ? AND file_id = ?').run(workspaceId, fileId)
+  }
+
+  async failFileCleanup(workspaceId: string, fileId: string, error: string): Promise<void> {
+    this.database.prepare('UPDATE file_cleanups SET last_error = ? WHERE workspace_id = ? AND file_id = ?').run(error, workspaceId, fileId)
+  }
+}
+
+function getAttachmentFileId(block: LocalBlockRecord): string | undefined {
+  if (block.type !== 'image' && block.type !== 'file') return undefined
+  const props = block.props as { node?: { attrs?: { fileId?: unknown } } }
+  const fileId = props.node?.attrs?.fileId
+  return typeof fileId === 'string' && fileId.length > 0 ? fileId : undefined
 }

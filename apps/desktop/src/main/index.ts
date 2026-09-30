@@ -30,6 +30,11 @@ function registerStorageBridge(store: SqliteLocalStore): void {
   handle('getPendingOperations', () => store.getPendingOperations())
   handle('markOperationSynced', (id: string) => store.markOperationSynced(id))
   handle('markOperationFailed', (id: string) => store.markOperationFailed(id))
+  handle('enqueueFileCleanup', (workspaceId: string, fileId: string) => store.enqueueFileCleanup(workspaceId, fileId))
+  handle('listFileCleanups', () => store.listFileCleanups())
+  handle('listReadyFileCleanups', () => store.listReadyFileCleanups())
+  handle('completeFileCleanup', (workspaceId: string, fileId: string) => store.completeFileCleanup(workspaceId, fileId))
+  handle('failFileCleanup', (workspaceId: string, fileId: string, error: string) => store.failFileCleanup(workspaceId, fileId, error))
 }
 
 function createWindow() {

@@ -18,6 +18,11 @@ const storage: LocalStore = {
   getPendingOperations: () => ipcRenderer.invoke('eotion:storage:getPendingOperations'),
   markOperationSynced: (id) => ipcRenderer.invoke('eotion:storage:markOperationSynced', id),
   markOperationFailed: (id) => ipcRenderer.invoke('eotion:storage:markOperationFailed', id),
+  enqueueFileCleanup: (workspaceId, fileId) => ipcRenderer.invoke('eotion:storage:enqueueFileCleanup', workspaceId, fileId),
+  listFileCleanups: () => ipcRenderer.invoke('eotion:storage:listFileCleanups'),
+  listReadyFileCleanups: () => ipcRenderer.invoke('eotion:storage:listReadyFileCleanups'),
+  completeFileCleanup: (workspaceId, fileId) => ipcRenderer.invoke('eotion:storage:completeFileCleanup', workspaceId, fileId),
+  failFileCleanup: (workspaceId, fileId, error) => ipcRenderer.invoke('eotion:storage:failFileCleanup', workspaceId, fileId, error),
 }
 
 contextBridge.exposeInMainWorld('eotionDesktop', {

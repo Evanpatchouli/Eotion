@@ -6,6 +6,15 @@ export { createLocalId } from './id.ts'
 export type OperationStatus = 'pending' | 'synced' | 'failed'
 export type OperationKind = SyncOperation['kind']
 
+/** A locally removed file whose remote object may be deleted after its source op syncs. */
+export interface FileCleanupTask {
+  workspaceId: string
+  fileId: string
+  createdAt: string
+  sourceOperationId?: string
+  lastError?: string
+}
+
 export interface LocalPageRecord extends PageSummary {
   workspaceId: string
   parentPageId: string | null
@@ -53,6 +62,11 @@ export interface LocalStore {
   getPendingOperations(): Promise<StorageOperation[]>
   markOperationSynced(id: string): Promise<void>
   markOperationFailed(id: string): Promise<void>
+  enqueueFileCleanup(workspaceId: string, fileId: string): Promise<void>
+  listFileCleanups(): Promise<FileCleanupTask[]>
+  listReadyFileCleanups(): Promise<FileCleanupTask[]>
+  completeFileCleanup(workspaceId: string, fileId: string): Promise<void>
+  failFileCleanup(workspaceId: string, fileId: string, error: string): Promise<void>
 }
 
 /** Reject malformed or partial workspace snapshots before any local content is replaced. */

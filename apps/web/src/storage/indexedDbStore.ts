@@ -1,7 +1,7 @@
 import type { SyncOperation } from '@eotion/contracts'
-import { createLocalId, validateWorkspaceSnapshot, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
+import { createLocalId, validateWorkspaceSnapshot, type FileCleanupTask, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
-const DB_VERSION = 1
+const DB_VERSION = 2
 const encoder = new TextEncoder()
 
 function sqliteBinaryCompare(left: string, right: string): number {
@@ -34,11 +34,14 @@ async function openDatabase(name: string): Promise<IDBDatabase> {
   const opening = indexedDB.open(name, DB_VERSION)
   opening.onupgradeneeded = () => {
     const db = opening.result
-    db.createObjectStore('pages', { keyPath: 'id' })
-    const blocks = db.createObjectStore('blocks', { keyPath: 'id' })
-    blocks.createIndex('pageId', 'pageId')
-    db.createObjectStore('operations', { keyPath: 'id' })
-    db.createObjectStore('meta')
+    if (!db.objectStoreNames.contains('pages')) db.createObjectStore('pages', { keyPath: 'id' })
+    if (!db.objectStoreNames.contains('blocks')) {
+      const blocks = db.createObjectStore('blocks', { keyPath: 'id' })
+      blocks.createIndex('pageId', 'pageId')
+    }
+    if (!db.objectStoreNames.contains('operations')) db.createObjectStore('operations', { keyPath: 'id' })
+    if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta')
+    if (!db.objectStoreNames.contains('fileCleanups')) db.createObjectStore('fileCleanups', { keyPath: ['workspaceId', 'fileId'] })
   }
   return request(opening)
 }
@@ -58,11 +61,12 @@ export class IndexedDbLocalStore implements LocalStore {
   }
 
   async clearAllData(): Promise<void> {
-    const tx = this.db.transaction(['pages', 'blocks', 'operations', 'meta'], 'readwrite')
+    const tx = this.db.transaction(['pages', 'blocks', 'operations', 'meta', 'fileCleanups'], 'readwrite')
     const done = completed(tx)
     tx.objectStore('pages').clear()
     tx.objectStore('blocks').clear()
     tx.objectStore('operations').clear()
+    tx.objectStore('fileCleanups').clear()
     const meta = tx.objectStore('meta')
     meta.clear()
     meta.put(createLocalId(), 'clientId')
@@ -130,17 +134,18 @@ export class IndexedDbLocalStore implements LocalStore {
     workspaceId: string,
     kind: SyncOperation['kind'],
     payload: SyncOperation['payload'],
-    change: (tx: IDBTransaction) => Promise<void> | void,
+    change: (tx: IDBTransaction, operationId: string) => Promise<void> | void,
   ): Promise<void> {
-    const tx = this.db.transaction(['pages', 'blocks', 'operations', 'meta'], 'readwrite')
+    const tx = this.db.transaction(['pages', 'blocks', 'operations', 'meta', 'fileCleanups'], 'readwrite')
     const done = completed(tx)
     try {
       const meta = tx.objectStore('meta')
       const clientId = await request<string>(meta.get('clientId'))
       const sequence = (await request<number>(meta.get('sequence'))) + 1
-      await change(tx)
+      const operationId = createLocalId()
+      await change(tx, operationId)
       const operation = {
-        id: createLocalId(), clientId, sequence, workspaceId, kind, payload,
+        id: operationId, clientId, sequence, workspaceId, kind, payload,
         createdAt: new Date().toISOString(), status: 'pending',
       } as StorageOperation
       tx.objectStore('operations').put(operation)
@@ -223,7 +228,7 @@ export class IndexedDbLocalStore implements LocalStore {
   }
 
   deletePage(workspaceId: string, id: string): Promise<void> {
-    return this.mutate(workspaceId, 'page.delete', { id }, async (tx) => {
+    return this.mutate(workspaceId, 'page.delete', { id }, async (tx, operationId) => {
       const pages = tx.objectStore('pages')
       const page = await request<LocalPageRecord | undefined>(pages.get(id))
       if (page && page.workspaceId !== workspaceId) throw new Error(`Page ${id} belongs to a different workspace`)
@@ -235,6 +240,7 @@ export class IndexedDbLocalStore implements LocalStore {
       const blocks = tx.objectStore('blocks')
       const pageBlocks = await request<LocalBlockRecord[]>(blocks.index('pageId').getAll(id))
       if (pageBlocks.some((block) => block.workspaceId !== workspaceId)) throw new Error(`Page ${id} contains blocks from a different workspace`)
+      for (const block of pageBlocks) this.enqueueCleanupInTransaction(tx, workspaceId, getAttachmentFileId(block), operationId)
       pageBlocks.forEach((block) => blocks.delete(block.id))
     })
   }
@@ -243,7 +249,7 @@ export class IndexedDbLocalStore implements LocalStore {
     const { id, pageId, parentBlockId, type, orderKey, props } = block
     return this.mutate(block.workspaceId, 'block.upsert', {
       id, pageId, parentBlockId: parentBlockId ?? null, type, orderKey, props,
-    }, async (tx) => {
+    }, async (tx, operationId) => {
       const page = await request<LocalPageRecord | undefined>(tx.objectStore('pages').get(pageId))
       if (!page) {
         throw new Error(`Page ${block.pageId} does not exist`)
@@ -254,16 +260,19 @@ export class IndexedDbLocalStore implements LocalStore {
       if (existing && (existing.workspaceId !== block.workspaceId || existing.pageId !== pageId || (existing.parentBlockId ?? null) !== (parentBlockId ?? null))) {
         throw new Error(`Block ${id} workspace, page, and parent are immutable`)
       }
+      const oldFileId = existing ? getAttachmentFileId(existing) : undefined
+      const newFileId = getAttachmentFileId(block)
       if (parentBlockId) {
         const parent = await request<LocalBlockRecord | undefined>(blocks.get(parentBlockId))
         if (!parent || parent.pageId !== pageId || parent.workspaceId !== block.workspaceId) throw new Error(`Parent block ${parentBlockId} is unavailable in this workspace page`)
       }
       blocks.put(block)
+      if (oldFileId && oldFileId !== newFileId) this.enqueueCleanupInTransaction(tx, block.workspaceId, oldFileId, operationId)
     })
   }
 
   deleteBlock(workspaceId: string, id: string): Promise<void> {
-    return this.mutate(workspaceId, 'block.delete', { id }, async (tx) => {
+    return this.mutate(workspaceId, 'block.delete', { id }, async (tx, operationId) => {
       const blocks = tx.objectStore('blocks')
       const block = await request<LocalBlockRecord | undefined>(blocks.get(id))
       if (block && block.workspaceId !== workspaceId) throw new Error(`Block ${id} belongs to a different workspace`)
@@ -273,6 +282,7 @@ export class IndexedDbLocalStore implements LocalStore {
           throw new Error(`Block ${id} has child blocks`)
         }
       }
+      if (block) this.enqueueCleanupInTransaction(tx, workspaceId, getAttachmentFileId(block), operationId)
       tx.objectStore('blocks').delete(id)
     })
   }
@@ -307,4 +317,64 @@ export class IndexedDbLocalStore implements LocalStore {
   markOperationFailed(id: string): Promise<void> {
     return this.setStatus(id, 'failed')
   }
+
+  private enqueueCleanupInTransaction(tx: IDBTransaction, workspaceId: string, fileId: string | undefined, sourceOperationId?: string): void {
+    if (!fileId) return
+    const store = tx.objectStore('fileCleanups')
+    const key = [workspaceId, fileId]
+    const existing = store.get(key)
+    existing.onsuccess = () => {
+      if (!existing.result) store.put({ workspaceId, fileId, createdAt: new Date().toISOString(), ...(sourceOperationId ? { sourceOperationId } : {}) } satisfies FileCleanupTask)
+    }
+  }
+
+  async enqueueFileCleanup(workspaceId: string, fileId: string): Promise<void> {
+    const tx = this.db.transaction('fileCleanups', 'readwrite')
+    const done = completed(tx)
+    this.enqueueCleanupInTransaction(tx, workspaceId, fileId)
+    await done
+  }
+
+  listFileCleanups(): Promise<FileCleanupTask[]> {
+    return this.all('fileCleanups')
+  }
+
+  async listReadyFileCleanups(): Promise<FileCleanupTask[]> {
+    const tx = this.db.transaction(['fileCleanups', 'operations', 'blocks'], 'readonly')
+    const done = completed(tx)
+    const [tasks, operations, blocks] = await Promise.all([
+      request<FileCleanupTask[]>(tx.objectStore('fileCleanups').getAll()),
+      request<StorageOperation[]>(tx.objectStore('operations').getAll()),
+      request<LocalBlockRecord[]>(tx.objectStore('blocks').getAll()),
+    ])
+    await done
+    return tasks.filter((task) =>
+      (!task.sourceOperationId || operations.some((operation) => operation.id === task.sourceOperationId && operation.workspaceId === task.workspaceId && operation.status === 'synced')) &&
+      !blocks.some((block) => block.workspaceId === task.workspaceId && getAttachmentFileId(block) === task.fileId),
+    )
+  }
+
+  async completeFileCleanup(workspaceId: string, fileId: string): Promise<void> {
+    const tx = this.db.transaction('fileCleanups', 'readwrite')
+    const done = completed(tx)
+    tx.objectStore('fileCleanups').delete([workspaceId, fileId])
+    await done
+  }
+
+  async failFileCleanup(workspaceId: string, fileId: string, error: string): Promise<void> {
+    const tx = this.db.transaction('fileCleanups', 'readwrite')
+    const done = completed(tx)
+    const store = tx.objectStore('fileCleanups')
+    const key = [workspaceId, fileId]
+    const current = await request<FileCleanupTask | undefined>(store.get(key))
+    if (current) store.put({ ...current, lastError: error })
+    await done
+  }
+}
+
+function getAttachmentFileId(block: LocalBlockRecord): string | undefined {
+  if (block.type !== 'image' && block.type !== 'file') return undefined
+  const props = block.props as { node?: { attrs?: { fileId?: unknown } } }
+  const fileId = props.node?.attrs?.fileId
+  return typeof fileId === 'string' && fileId.length > 0 ? fileId : undefined
 }
