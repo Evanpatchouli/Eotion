@@ -18,6 +18,9 @@ export class SessionEntity {
   @Prop({ type: Date, default: null })
   revokedAt!: Date | null
 
+  @Prop({ type: Number, default: 0 })
+  credentialVersion?: number
+
   createdAt!: Date
   updatedAt!: Date
 }

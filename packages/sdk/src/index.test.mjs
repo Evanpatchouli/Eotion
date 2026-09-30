@@ -66,6 +66,27 @@ test('logout accepts the API 204 response', async () => {
   assert.equal(credentials, 'include')
 })
 
+test('profile and password methods use the authenticated current-user routes', async () => {
+  const requests = []
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test',
+    fetch: async (input, init) => {
+      requests.push(new Request(input, init))
+      return requests.length === 1
+        ? Response.json({ id: 'user-1', email: 'a@example.com', displayName: 'Ada', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' })
+        : new Response(null, { status: 204 })
+    },
+  })
+  assert.equal((await client.auth.updateProfile({ displayName: 'Ada' })).displayName, 'Ada')
+  assert.equal(await client.auth.changePassword({ currentPassword: 'old', newPassword: 'new' }), undefined)
+  assert.deepEqual(requests.map((request) => [request.method, request.url, request.credentials]), [
+    ['PATCH', 'https://eotion.test/api/auth/me', 'include'],
+    ['POST', 'https://eotion.test/api/auth/change-password', 'include'],
+  ])
+  assert.deepEqual(await requests[0].json(), { displayName: 'Ada' })
+  assert.deepEqual(await requests[1].json(), { currentPassword: 'old', newPassword: 'new' })
+})
+
 test('file upload sends a raw File body and encoded metadata headers', async () => {
   let request
   let forwardedSignal

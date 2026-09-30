@@ -1,6 +1,8 @@
-import { Body, Controller, Get, InternalServerErrorException, Post, Req, Res, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, InternalServerErrorException, Patch, Post, Req, Res, UseGuards } from '@nestjs/common'
 import {
+  ChangePasswordRequestSchema,
   LoginRequestSchema,
+  ProfileUpdateRequestSchema,
   RegisterRequestSchema,
 } from '@eotion/contracts'
 import type { FastifyReply } from 'fastify'
@@ -48,5 +50,24 @@ export class AuthController {
   @UseGuards(SessionAuthGuard)
   me(@CurrentUser() user: UserRecord): UserRecord {
     return user
+  }
+
+  @Patch('me')
+  @UseGuards(SessionAuthGuard)
+  updateProfile(@CurrentUser() user: UserRecord, @Body() body: unknown): Promise<UserRecord> {
+    const input = parseBody(ProfileUpdateRequestSchema, body)
+    return this.auth.updateProfile(user.id, input.displayName)
+  }
+
+  @Post('change-password')
+  @UseGuards(SessionAuthGuard)
+  async changePassword(
+    @CurrentUser() user: UserRecord,
+    @Body() body: unknown,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const input = parseBody(ChangePasswordRequestSchema, body)
+    await this.auth.changePassword(user.id, input.currentPassword, input.newPassword)
+    reply.header('Set-Cookie', clearSessionCookie()).code(204).send()
   }
 }

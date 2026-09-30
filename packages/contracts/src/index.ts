@@ -35,6 +35,7 @@ const idSchema = z.string().trim().min(1)
 const nameSchema = z.string().trim().min(1).max(200)
 const emailSchema = z.string().trim().min(1).max(320).pipe(z.email())
 const passwordSchema = z.string().min(1).max(1024)
+const displayNameSchema = z.string().trim().min(1).max(64)
 const dateSchema = z.iso.datetime()
 const propsSchema = z.record(z.string(), z.unknown())
 
@@ -49,6 +50,17 @@ export const LoginRequestSchema = z.object({
   password: passwordSchema,
 }).strict()
 export type LoginRequest = z.infer<typeof LoginRequestSchema>
+
+export const ProfileUpdateRequestSchema = z.object({
+  displayName: displayNameSchema,
+}).strict()
+export type ProfileUpdateRequest = z.infer<typeof ProfileUpdateRequestSchema>
+
+export const ChangePasswordRequestSchema = z.object({
+  currentPassword: passwordSchema,
+  newPassword: passwordSchema,
+}).strict()
+export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>
 
 export const WorkspaceCreateRequestSchema = z.object({
   id: idSchema,
@@ -196,6 +208,7 @@ export type FileUploadMetadata = z.infer<typeof FileUploadMetadataSchema>
 const userRecordSchema = z.object({
   id: idSchema,
   email: emailSchema,
+  displayName: displayNameSchema,
   createdAt: dateSchema,
   updatedAt: dateSchema,
 }).strict()

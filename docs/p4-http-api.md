@@ -9,6 +9,8 @@ P4.3 把现有 application services 暴露为 `/api` 下的 HTTP 路由。客户
 | POST | `/api/auth/register` | 用 email/password 注册，返回不含密码摘要的用户。 |
 | POST | `/api/auth/login` | 登录并设置 Session Cookie，返回用户和到期时间。 |
 | GET | `/api/auth/me` | 从有效 Session 恢复当前用户。 |
+| PATCH | `/api/auth/me` | 更新当前用户昵称；请求仅含 `displayName`，返回当前 `AuthUserDto`。 |
+| POST | `/api/auth/change-password` | 校验当前密码并更新密码；请求仅含 `currentPassword`、`newPassword`，成功撤销全部 Session、清除 Cookie 并返回 204。 |
 | POST | `/api/auth/logout` | 撤销当前 Session 并清除 Cookie。 |
 | GET / POST | `/api/workspaces` | 列出当前用户的工作区 / 创建工作区。 |
 | GET / PATCH | `/api/workspaces/:workspaceId` | 读取 / 重命名工作区。 |
@@ -35,6 +37,8 @@ Cookie 使用 `HttpOnly`、`SameSite=Lax`、`Path=/api` 和与 Session 到期时
 - 本阶段没有文件上传、对象存储接入、oplog operation ID、同步幂等、revision、RBAC 或 MCP。
 
 SDK 使用 `new EotionApiClient({ baseUrl })` 创建客户端，`auth` 提供 `register/login/me/logout`，资源客户端提供 `list/create/get/update`。所有请求默认使用 `credentials: 'include'`；非 2xx 响应抛出 `ApiError`，其中 `statusCode` 以实际 HTTP 响应状态为准，可用于区分 401、403、404 和 400；响应体中的状态码不能覆盖 HTTP 身份/权限边界，消息与详情仍来自合法响应体。
+
+P5.6 的 SDK 另提供 `auth.updateProfile({ displayName })` 和 `auth.changePassword({ currentPassword, newPassword })`。所有 `AuthUserDto`（注册、登录、`/auth/me` 与昵称更新）均包含稳定 `displayName`。昵称请求 trim 后须为 1～64 字符，密码沿用注册的 1～1024 字符约束。当前密码错误返回 400，不代表 Session 无效；修改成功返回 204，客户端应清理本地身份并进入登录页。密码与内部凭据版本不进入响应。
 
 P4.4 在该基线上新增 authenticated `POST /api/sync/operations`、SDK `sync.send` 与 `EotionOperationTransport`，供 `reconnectPending` 发送真实 oplog；canonical operation、receipt 与删除语义见 [P4.4 Sync](p4-sync.md)。上文路由表及“本阶段”范围仍描述 P4.3 当时的交付，不包含 P4.4 新入口。
 

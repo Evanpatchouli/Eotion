@@ -5,6 +5,7 @@ import type {
   BlockCreateRequest,
   BlockResponse,
   BlockUpdateRequest,
+  ChangePasswordRequest,
   FileResponse,
   FileUpdateRequest,
   HealthResponse,
@@ -14,6 +15,7 @@ import type {
   PageMoveRequest,
   PageResponse,
   PageUpdateRequest,
+  ProfileUpdateRequest,
   RegisterRequest,
   WorkspaceCreateRequest,
   WorkspaceResponse,
@@ -50,6 +52,8 @@ export class EotionApiClient {
     login: (input: LoginRequest, signal?: AbortSignal) => Promise<LoginResponse>
     logout: (signal?: AbortSignal) => Promise<void>
     me: (signal?: AbortSignal) => Promise<AuthUserDto>
+    updateProfile: (input: ProfileUpdateRequest, signal?: AbortSignal) => Promise<AuthUserDto>
+    changePassword: (input: ChangePasswordRequest, signal?: AbortSignal) => Promise<void>
   }
   readonly workspaces: {
     list: (signal?: AbortSignal) => Promise<WorkspaceResponse[]>
@@ -94,6 +98,10 @@ export class EotionApiClient {
       login: (input, signal) => this.request('/api/auth/login', { method: 'POST', body: input, signal }),
       logout: (signal) => this.request('/api/auth/logout', { method: 'POST', signal }),
       me: (signal) => this.request('/api/auth/me', { method: 'GET', signal }),
+      updateProfile: (input, signal) => this.request('/api/auth/me', { method: 'PATCH', body: input, signal }),
+      changePassword: async (input, signal) => {
+        await this.request('/api/auth/change-password', { method: 'POST', body: input, signal })
+      },
     }
     this.workspaces = {
       list: (signal) => this.request('/api/workspaces', { method: 'GET', signal }),

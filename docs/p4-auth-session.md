@@ -5,7 +5,7 @@ P4.2 为后续 HTTP、同步与 MCP 适配器建立同一套服务端身份和�
 ## User 与密码
 
 - `users` 集合使用稳定字符串 `id`（创建时生成 UUID）、规范化的唯一 `email`、`passwordHash`、`createdAt` 和 `updatedAt`。email 在注册和认证时执行 `trim` 与小写转换。
-- `UserRecord` 只包含 `id`、`email` 和时间字段；应用服务、返回值和普通异常不暴露 `passwordHash`。
+- P4.2 时 `UserRecord` 只包含 `id`、`email` 和时间字段；P5.6 增加稳定的 `displayName`。应用服务、返回值和普通异常不暴露 `passwordHash` 或内部凭据版本。
 - 密码使用 Node 内置异步 `crypto.scrypt`，随机盐与参数同摘要一起保存，并以 `timingSafeEqual` 验证。数据库不保存明文密码。
 - 认证失败统一返回无效凭据，不区分用户不存在和密码错误。
 
@@ -25,3 +25,9 @@ P4.2 为后续 HTTP、同步与 MCP 适配器建立同一套服务端身份和�
 ## 后续边界
 
 P4.3 再定义 Cookie transport、HTTP Controller、contracts DTO 和 SDK。真实 oplog 同步与 operation 幂等性属于 P4.4；对象存储 SDK、MCP、协作及复杂权限均不在 P4.2。
+
+## P5.6 账号资料与密码变更
+
+`UserRecord` 现在稳定返回 `displayName`（产品文案为“昵称”）。旧 `users` 记录无需迁移：未保存昵称时，服务端返回 email 的 `@` 前缀作为 fallback；首次修改后持久化最多 64 字符、非空的 trim 后昵称。密码仍使用既有 scrypt 格式和注册相同的长度约束。
+
+修改密码必须重新验证当前密码。服务端在 Mongo replica set 事务中同时更新密码摘要、递增内部 `credentialVersion` 并撤销该用户全部 Session；事务失败不报告成功。Session 解析会比较内部版本，防止并发登录在密码更新后插入旧凭据 Session。旧 User/Session 缺失版本字段时按 0 读取。成功响应清除当前 Cookie，所有设备需重新登录。

@@ -22,6 +22,7 @@ export class SessionService {
     if (!isValidToken(token)) return null
     const session = await this.sessions.findByTokenHash(tokenHash(token))
     if (!session || session.revokedAt !== null || session.expiresAt.getTime() <= Date.now()) return null
+    if ((await this.users.findCredentialVersionById(session.userId)) !== session.credentialVersion) return null
     return this.users.findById(session.userId)
   }
 

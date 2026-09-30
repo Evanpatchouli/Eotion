@@ -1,6 +1,6 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
@@ -10,6 +10,7 @@ import type { Connection, Model } from "mongoose";
 import { BlockEntity } from "../server-domain/schemas/block.schema";
 import { SessionEntity } from "../server-domain/schemas/session.schema";
 import { UserEntity } from "../server-domain/schemas/user.schema";
+import { SessionRepository } from "../server-domain/repositories/session.repository";
 
 function testMongoUri(): string {
   const base =
@@ -796,6 +797,79 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
       logout.headers.get("set-cookie") ?? "",
       /(?:Max-Age=0|Expires=Thu, 01 Jan 1970)/i,
     );
+
+    // Legacy users have no stored nickname or credential version.
+    await userModel.updateOne({ id: registerAUser.id }, { $unset: { displayName: 1, credentialVersion: 1 } });
+    const profileLogin = await request(baseUrl, "/api/auth/login", "POST", { body: credentialsA });
+    assert.equal(profileLogin.status, 201);
+    const profileCookie = cookieFrom(profileLogin);
+    await sessionModel.updateOne(
+      { tokenHash: createHash("sha256").update(profileCookie.split("=")[1]!).digest("hex") },
+      { $unset: { credentialVersion: 1 } },
+    );
+    assert.equal(onlyUser(profileLogin.body).displayName, "owner");
+    assert.equal((await request(baseUrl, "/api/auth/me", "GET", { cookie: profileCookie })).body.displayName, "owner");
+    assert.equal((await request(baseUrl, "/api/auth/me", "PATCH", { body: { displayName: "Imposter" } })).status, 401);
+    for (const displayName of ["  ", "x".repeat(65)]) {
+      assert.equal((await request(baseUrl, "/api/auth/me", "PATCH", { cookie: profileCookie, body: { displayName } })).status, 400);
+    }
+    assert.equal((await request(baseUrl, "/api/auth/me", "PATCH", { cookie: profileCookie, body: { displayName: "Stolen", userId: registerAUser.id } })).status, 400);
+    const profileUpdate = await request(baseUrl, "/api/auth/me", "PATCH", { cookie: profileCookie, body: { displayName: "  Eotion Owner  " } });
+    assert.equal(profileUpdate.status, 200);
+    assert.equal(profileUpdate.body.displayName, "Eotion Owner");
+    assertNoSecretFields(profileUpdate.body);
+    assert.equal((await request(baseUrl, "/api/auth/me", "GET", { cookie: profileCookie })).body.displayName, "Eotion Owner");
+    const otherSession = await request(baseUrl, "/api/auth/login", "POST", { body: credentialsA });
+    assert.equal(otherSession.status, 201);
+    const otherCookie = cookieFrom(otherSession);
+    const passwordRoute = "/api/auth/change-password";
+    const passwordBody = { currentPassword: credentialsA.password, newPassword: "a different strong password" };
+    assert.equal((await request(baseUrl, passwordRoute, "POST", { body: passwordBody })).status, 401);
+    const wrongPassword = await request(baseUrl, passwordRoute, "POST", { cookie: profileCookie, body: { ...passwordBody, currentPassword: "incorrect" } });
+    assert.equal(wrongPassword.status, 400);
+    assert.match(String(wrongPassword.body.message), /当前密码不正确/);
+    assert.equal((await request(baseUrl, "/api/auth/me", "GET", { cookie: profileCookie })).status, 200);
+    assert.equal((await request(baseUrl, passwordRoute, "POST", { cookie: profileCookie, body: { ...passwordBody, confirmPassword: passwordBody.newPassword } })).status, 400);
+
+    // A failed second write must roll back the password update and keep both sessions valid.
+    const sessionRepository = app.get(SessionRepository);
+    const revokeAll = sessionRepository.revokeAllByUserId.bind(sessionRepository);
+    sessionRepository.revokeAllByUserId = async () => { throw new Error("injected revocation failure"); };
+    try {
+      const failedMutation = await request(baseUrl, passwordRoute, "POST", { cookie: profileCookie, body: passwordBody });
+      assert.equal(failedMutation.status, 500);
+      assert.doesNotMatch(JSON.stringify(failedMutation.body), /correct horse|different strong password/);
+    } finally {
+      sessionRepository.revokeAllByUserId = revokeAll;
+    }
+    assert.equal((await request(baseUrl, "/api/auth/me", "GET", { cookie: profileCookie })).status, 200);
+    assert.equal((await request(baseUrl, "/api/auth/me", "GET", { cookie: otherCookie })).status, 200);
+    const oldPasswordStillWorks = await request(baseUrl, "/api/auth/login", "POST", { body: credentialsA });
+    assert.equal(oldPasswordStillWorks.status, 201);
+
+    const passwordChanged = await request(baseUrl, passwordRoute, "POST", { cookie: profileCookie, body: passwordBody });
+    assert.equal(passwordChanged.status, 204);
+    assert.match(passwordChanged.headers.get("set-cookie") ?? "", /Max-Age=0/);
+    assert.equal((await request(baseUrl, "/api/auth/me", "GET", { cookie: profileCookie })).status, 401);
+    assert.equal((await request(baseUrl, "/api/auth/me", "GET", { cookie: otherCookie })).status, 401);
+    assert.equal((await request(baseUrl, "/api/auth/me", "GET", { cookie: cookieFrom(oldPasswordStillWorks) })).status, 401);
+    // Simulates a login that verified the old password before the transaction committed,
+    // then inserted its session afterward. The credential version rejects that race.
+    const staleToken = randomBytes(32).toString("base64url");
+    await sessionModel.create({
+      id: randomUUID(), userId: registerAUser.id,
+      tokenHash: createHash("sha256").update(staleToken).digest("hex"),
+      expiresAt: new Date(Date.now() + 60_000), revokedAt: null, credentialVersion: 0,
+    });
+    assert.equal((await request(baseUrl, "/api/auth/me", "GET", { cookie: `eotion_session=${staleToken}` })).status, 401);
+    assert.equal((await request(baseUrl, "/api/auth/login", "POST", { body: credentialsA })).status, 401);
+    const newPasswordLogin = await request(baseUrl, "/api/auth/login", "POST", { body: { email: credentialsA.email, password: passwordBody.newPassword } });
+    assert.equal(newPasswordLogin.status, 201);
+    assert.equal(onlyUser(newPasswordLogin.body).displayName, "Eotion Owner");
+    assertNoSecretFields(newPasswordLogin.body);
+    const storedNewHash = await userModel.findOne({ id: registerAUser.id }).select("+passwordHash").lean() as unknown as { passwordHash: string };
+    assert.match(storedNewHash.passwordHash, /^scrypt\$16384\$8\$1\$/);
+    assert.notEqual(storedNewHash.passwordHash, passwordBody.newPassword);
   } finally {
     // The after hook drops the isolated database. Restore the import-time environment if startup fails early.
     if (!app) {

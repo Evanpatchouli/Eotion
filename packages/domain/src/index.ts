@@ -34,6 +34,7 @@ export interface WorkspaceRecord {
 export interface UserRecord {
   id: Id
   email: string
+  displayName: string
   createdAt: string
   updatedAt: string
 }
