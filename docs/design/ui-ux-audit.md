@@ -34,8 +34,8 @@
 | Sidebar / Workspace switcher | 已提供 | 已提供 | 已提供 | 已提供 drawer | 当前批次 |
 | Page Tree | 已提供 | 已提供 | 已提供 | 已提供 drawer | 当前批次 |
 | Page / Editor | 已提供 | 已提供 | 已提供 | 已提供 | 当前批次 |
-| Slash menu | TODO | TODO | TODO | TODO | 后续补交互状态 |
-| Attachments | 部分 | 部分 | 部分 | 已提供图片 | 仍需文件/上传/error 状态 |
+| Slash menu | 已提供 | 未单独提供 | 已提供结构 | 已提供结构 | 结构可保留；需移除中英双语重复 |
+| Attachments | 已提供文件/上传中/失败 | 部分 | 部分 | 已提供图片 | 关键状态已具备，足够完成本轮 Audit |
 | Settings | TODO | TODO | TODO | TODO | 后续批次 |
 | Empty / Error / Offline | TODO | TODO | TODO | TODO | 后续批次 |
 
@@ -82,6 +82,9 @@
 - 但 Editor 自身仍通过大边框持续表达“这里是一个编辑器”，Chrome 仍然过强。
 - 中等宽度/touch 环境底部 toolbar 视觉重量很高，按钮等宽大框排列，更像独立控制面板而不是 keyboard accessory/contextual editing。
 - Mobile fixed touch toolbar 占据明显垂直空间；后续应重新设计信息密度、图标/文字策略、横向 overflow 和键盘联动，而不是只换颜色。
+- Slash Menu 的浮层尺寸、层次和选中态总体可用，不是 P5.7 重点推翻对象；当前主要问题是每项“英文标题 + 中文解释”实际在重复表达同一件事，造成无必要的信息密度。
+- Slash Menu 应遵循当前界面语言，只显示一套本地化文本，例如“文本 / 标题 / 项目列表 / 图片 / 文件”。未来 i18n 通过翻译资源切换语言，不在同一菜单项同时展示中英文。
+- 如未来确实需要 secondary description，应提供补充语义而不是翻译重复，例如“图片 — 从设备上传”，而不是“Image / 插入图片附件”。
 
 ### Interaction density
 
@@ -185,21 +188,36 @@
 **Keep**
 
 - 图片 inline 出现在正文中的基本行为。
-- 文件名与更多操作仍需要可发现。
+- 文件附件保留文件名、类型/大小和更多操作的基本信息结构是合理的。
+- 上传中支持取消、失败后支持重试，这些能力应保留。
+- “正文仍可继续编辑，附件任务独立处理”的产品语义应继续保留。
 
 **Problems**
 
 - Mobile 图片被包进独立 bordered Card，再嵌在 bordered Editor 中，层级太重。
 - 图片上下留白与 footer 占据较多空间，视觉更像上传组件而非文档内容。
+- **上传中 placeholder 当前固定出现在 Editor 内容顶部**，与用户实际插入附件的位置脱节。它更像“全局上传任务面板”，并且上传成功/失败后会造成正文上方明显布局变化。
+- 对 document-first 编辑器，更自然的方向是：上传 placeholder 尽量出现在最终附件将存在的文档位置，成功后原位 morph/替换成真实附件节点；如果确实存在全局任务，则使用独立、轻量、不挤压正文的 transient status。
+- **上传失败存在重复反馈。** 当前同一个故障会同时出现：
+  1. 页面顶部“1 个附件待清理，联网同步后自动重试 / 重试清理”；
+  2. 上传任务条目中的“附件服务暂时不可用，请稍后重试 / 重试”；
+  3. Editor 内额外红色“附件服务暂时不可用，请稍后重试”。
+  三层信息表达同一事故，视觉和认知噪音都过高。
+- “附件清理 / 重试清理 / cleanup pending”是对象补偿与垃圾清理的内部实现概念，不属于普通用户 mental model。只要数据安全仍有保障，应自动后台处理，不要求用户理解“清理队列”。
+- 如果 cleanup 确实长期失败并产生用户需要行动的风险，也应翻译成结果导向的产品语言，例如“有 1 个未完成的附件任务，将在联网后自动处理”，而不是暴露 cleanup 技术术语。
+- 成功后的文件 block 结构基本可用，但当前 full-width bordered card 与 Editor 外框叠加，整体仍偏“控件组件”，应在取消 Editor Card 后重新评估是否还需要完整边框。
 
 **Potential removals**
 
 - 默认附件 Card 外壳；图片可研究更接近 inline media，caption/actions 按需出现。
 - 永久可见的 footer chrome（需在可发现性与简洁之间重新设计）。
+- 独立于插入位置的 Editor 顶部上传任务区域（优先研究 inline placeholder）。
+- 对普通用户可见的“附件清理 / cleanup”技术状态。
+- 同一上传失败的重复错误条 / alert；一个任务应有一个主要错误 Surface，必要时辅以全局汇总，但不能三处重复。
 
 **Priority**
 
-High。仍需补 File block / uploading / failed 状态后完成附件审计。
+**P0 / High。** 附件是正文体验的一部分，上传中/失败应在 P5.7 与 Editor 一起重设计，而不是单独做成文件管理控件。
 
 ### Settings
 
@@ -301,6 +319,10 @@ High。属于正式产品错误反馈基础规范，不是单个页面视觉问�
 | Page action inline menu 推动 tree | High | Frequent page management | 导航跳动、视觉过重 | Floating interaction |
 | Workspace expanded panel 过重/重复 | High | Workspace switching | Sidebar hierarchy 混乱 | Redesign |
 | Nested attachment Card | High on mobile | Media documents | 有效宽度与文档感下降 | Redesign |
+| Upload placeholder 脱离插入位置 | High | Attachment upload | 像全局任务面板、造成正文布局跳动 | 优先 inline placeholder / in-place transition |
+| Attachment failure 重复三层反馈 | High | Upload failure | 同一事故重复占据注意力 | 单一 primary error + 必要汇总 |
+| Cleanup 技术术语暴露 | High | Failed upload / compensation | 用户被迫理解内部对象生命周期 | 后台自动处理 + 产品语义翻译 |
+| Slash Menu 双语重复 | Medium | Every slash command use | 信息密度高且不利于 i18n | 单语言翻译资源 |
 | Touch toolbar 视觉过重 | Medium/High | Touch editing | 挤压正文、像控制面板 | Mobile-specific redesign |
 | Settings Detail 固定宽度偏窄 | High on wide desktop | Settings | 超宽屏比例失衡，主视图显得漂浮且局促 | responsive content width + cap |
 | Raw HTTP / SDK error 泄露到 UI | High | Error paths | 非技术用户无法理解，暴露工程细节，产品感被破坏 | 统一 user-facing error translation + diagnostics separation |
@@ -324,10 +346,12 @@ Settings 第一批已补充：整体 IA 可保留，但 Desktop Detail 需要从
 
 Login / Register 由用户确认当前无明显问题，暂不作为 P5.7 重设计重点。Connectivity / error feedback 已确认一个系统性问题：底层 SDK/HTTP 错误不能直接透传到正式 UI，必须建立 context-aware 的用户友好错误翻译层，并把技术细节留给日志/诊断。
 
-Audit 尚未完成：下一批主要还需 Slash / File / upload/error 等关键状态；完整 Connectivity 页面如有明显问题再补截图。
+Slash / Attachment 关键状态也已完成第一轮审计：Slash Menu 结构基本可保留但必须移除中英双语重复；Attachment 的主要问题集中在“上传 placeholder 脱离正文插入位置、失败反馈重复、cleanup 技术术语暴露、Card 嵌套过重”。
+
+至此 P5.7.1 的核心 Surface 已具备足够证据，可以进入收口；若后续发现新的明显问题，可继续补充 Audit，但不必为了穷举所有状态阻塞 P5.7.2 Design Brief。
 
 ## Approval
 
 - Reviewer: User + ChatGPT
 - Date: 2026-10-01
-- Status: IN PROGRESS — Page / ProductShell first batch complete
+- Status: READY FOR CLOSEOUT — core Product/Page/Settings/Error/Slash/Attachment evidence complete
