@@ -15,7 +15,7 @@
 
 | 领域 / 模块 | 代码入口 | 关键文档 | 常用检索线索 |
 | --- | --- | --- | --- |
-| Web 主 UI | `apps/web/src/` | `architecture/architecture.md`、`p5-product-shell.md`、`p5-page-tree.md`、`p5-real-sync.md` | Vue、router、ProductShell、auth、productWorkspaces、productPages、productSync、PageTree、PageView、runtime、layout、input |
+| Web 主 UI | `apps/web/src/` | `architecture/architecture.md`、`p5-product-shell.md`、`p5-page-tree.md`、`p5-real-sync.md`、`p5-settings.md` | Vue、router、ProductShell、auth、productWorkspaces、productPages、productSync、PageTree、PageView、Settings、Theme、preferences、runtime、layout、input |
 | Editor（P2 / P5.3～P5.5） | `apps/web/src/components/editor/`、`apps/web/src/editor/`、`apps/web/src/views/PageView.vue` | `roadmap.md`、`p2-editor-demo.md`、`p5-real-page-editor.md`、`p5-real-sync.md`、`p5-attachments.md`、architecture §6 | Tiptap、BlockIdentity、blockCodec、PagePersistence、LocalStore、sync、IME、slash command、eotionImage、eotionFile、attachmentCleanup、Morphicons |
 | Desktop Shell | `apps/desktop/src/` | architecture §2 | Electron、preload、renderer、IPC |
 | Mobile Shell | `apps/mobile/src/` | `p1-mobile-demo.md`、architecture §3 | Lynx、webview、HarmonyOS、bridge、lifecycle |
