@@ -14,12 +14,14 @@ import { useAuthStore } from '../stores/auth'
 import { useProductPagesStore } from '../stores/productPages'
 import { useProductWorkspacesStore } from '../stores/productWorkspaces'
 import { useProductSyncStore } from '../stores/productSync'
+import { usePreferencesStore } from '../stores/preferences'
 
 const route = useRoute()
 const pages = useProductPagesStore()
 const auth = useAuthStore()
 const workspaces = useProductWorkspacesStore()
 const sync = useProductSyncStore()
+const preferences = usePreferencesStore()
 const { layoutMode, inputMode } = useRuntimeContext()
 
 const workspaceId = computed(() => typeof route.params.workspaceId === 'string' ? route.params.workspaceId : '')
@@ -169,6 +171,7 @@ onBeforeUnmount(() => {
         :key="`${workspaceId}:${pageId}:${editorRevision}`"
         :content="document"
         :workspace-id="workspaceId"
+        :fixed-toolbar="layoutMode !== 'mobile' && preferences.toolbarVisible(auth.user?.id ?? '', workspaceId)"
         :commit-attachment="commitAttachment"
         :touch-toolbar="layoutMode === 'mobile' || inputMode !== 'mouse'"
         aria-label="页面正文编辑区域"

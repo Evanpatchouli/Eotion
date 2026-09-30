@@ -97,6 +97,11 @@ test('Mongo + API + built Web: two clients converge and an offline reload keeps 
   await page.getByRole('button', { name: '新建根页面' }).click()
   await expect(page.locator('.eotion-editor-content .tiptap')).toBeVisible()
   const pageId = new URL(page.url()).hash.split('/').at(-1)!
+  // Enable the optional toolbar through its real product surface for this insertion flow.
+  await page.getByRole('button', { name: '设置', exact: true }).click()
+  await page.getByRole('link', { name: '通用', exact: true }).click()
+  await page.getByRole('switch', { name: '显示固定编辑工具栏' }).click()
+  await page.getByRole('link', { name: '返回工作区', exact: true }).click()
   const editorA = page.locator('.eotion-editor-content .tiptap')
   await editorA.fill('A 初始正文')
   await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()

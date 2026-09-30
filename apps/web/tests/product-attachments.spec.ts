@@ -142,6 +142,7 @@ test('slash image command and picker upload become one local block, sync operati
 })
 
 test('file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('eotion:editor-toolbar:attachment-user:attachment-workspace', 'true'))
   const api = await installApi(page)
   api.controls.uploadStatuses = [503, 201]
   await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)

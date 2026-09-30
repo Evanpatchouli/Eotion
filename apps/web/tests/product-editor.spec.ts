@@ -125,6 +125,7 @@ test('empty page loads without mutations, then debounces edits with a stable blo
 })
 
 test('persists marks, heading and list structure and restores them after reload', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('eotion:editor-toolbar:user-ava:ws-a', 'true'))
   const api = await installApi(page, {
     pages: [pageRecord('page-a', 'Alpha', 1)],
     blocks: [
