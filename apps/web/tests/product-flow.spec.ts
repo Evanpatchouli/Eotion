@@ -23,6 +23,8 @@ async function installApi(page: Page, options: MockOptions = {}) {
   const accounts: Record<string, AuthUserDto> = { ...users }
   const passwords: Record<string, string> = { 'ava@example.com': 'ava-password', 'ben@example.com': 'ben-password' }
   const records = [...(options.workspaces ?? [])]
+  const pagesByWorkspace = new Map<string, any[]>()
+  const blocksByWorkspace = new Map<string, any[]>()
   const controls = {
     loginDelayMs: 0,
     registerDelayMs: 0,
@@ -91,8 +93,46 @@ async function installApi(page: Page, options: MockOptions = {}) {
       return route.fulfill({ status: 204 })
     }
 
-    if (!path.startsWith('/api/workspaces')) return json(route, 404, error(404, 'Not found'))
     if (!session) return json(route, 401, error(401, 'Unauthorized'))
+    const snapshotMatch = path.match(/^\/api\/sync\/workspaces\/([^/]+)\/snapshot$/)
+    if (snapshotMatch && method === 'GET') {
+      const workspaceId = decodeURIComponent(snapshotMatch[1]!)
+      const owned = records.some((record) => record.id === workspaceId && record.ownerId === session!.id)
+      if (!owned) return json(route, 404, error(404, 'Workspace not found'))
+      pagesByWorkspace.set(workspaceId, pagesByWorkspace.get(workspaceId) ?? [])
+      blocksByWorkspace.set(workspaceId, blocksByWorkspace.get(workspaceId) ?? [])
+      return json(route, 200, { pages: pagesByWorkspace.get(workspaceId), blocks: blocksByWorkspace.get(workspaceId) })
+    }
+    if (path === '/api/sync/operations' && method === 'POST') {
+      const operation = body as { id: string; kind: string; workspaceId: string; payload: any }
+      const owned = records.some((record) => record.id === operation.workspaceId && record.ownerId === session!.id)
+      if (!owned) return json(route, 404, error(404, 'Workspace not found'))
+      const pages = pagesByWorkspace.get(operation.workspaceId) ?? []
+      const blocks = blocksByWorkspace.get(operation.workspaceId) ?? []
+      const item = operation.payload
+      if (operation.kind === 'page.upsert') {
+        const index = pages.findIndex((record) => record.id === item.id)
+        const record = { ...item, workspaceId: operation.workspaceId, createdAt: now, updatedAt: later }
+        if (index < 0) pages.push(record); else pages[index] = record
+      } else if (operation.kind === 'page.move') {
+        const record = pages.find((page) => page.id === item.id)
+        if (record) Object.assign(record, { parentPageId: item.parentPageId, orderKey: item.orderKey, updatedAt: later })
+      } else if (operation.kind === 'page.delete') {
+        const index = pages.findIndex((record) => record.id === item.id)
+        if (index >= 0) pages.splice(index, 1)
+      } else if (operation.kind === 'block.upsert') {
+        const index = blocks.findIndex((record) => record.id === item.id)
+        const record = { ...item, workspaceId: operation.workspaceId, createdAt: now, updatedAt: later }
+        if (index < 0) blocks.push(record); else blocks[index] = record
+      } else if (operation.kind === 'block.delete') {
+        const index = blocks.findIndex((record) => record.id === item.id)
+        if (index >= 0) blocks.splice(index, 1)
+      }
+      pagesByWorkspace.set(operation.workspaceId, pages)
+      blocksByWorkspace.set(operation.workspaceId, blocks)
+      return json(route, 200, { id: operation.id, status: 'applied' })
+    }
+    if (!path.startsWith('/api/workspaces')) return json(route, 404, error(404, 'Not found'))
     if (path === '/api/workspaces' && method === 'GET') {
       if (controls.workspaceListFailures > 0) {
         controls.workspaceListFailures -= 1
@@ -123,8 +163,6 @@ async function installApi(page: Page, options: MockOptions = {}) {
       const record = records.find((item) => item.id === decodeURIComponent(match[1]!) && item.ownerId === session!.id)
       return record ? json(route, 200, record) : json(route, 404, error(404, 'Workspace not found'))
     }
-    // The product shell always loads the active workspace page tree.
-    if (/^\/api\/workspaces\/[^/]+\/pages$/.test(path) && method === 'GET') return json(route, 200, [])
     return json(route, 404, error(404, 'Not found'))
   })
 
@@ -252,7 +290,7 @@ test('creates the first workspace and keeps it available after reload', async ({
   await expect(page.getByRole('heading', { name: '创建你的第一个工作区' })).toBeVisible()
   await page.getByLabel('工作区名称').fill('  Ava space  ')
   await page.getByRole('button', { name: '创建工作区' }).click()
-  await expect(page.getByRole('status')).toContainText('工作区已创建')
+  await expect(page.locator('.product-operation-status')).toContainText('工作区已创建')
   await expect(page).toHaveURL(/#\/app\/[^/]+$/)
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
   expect(api.records).toHaveLength(1)
@@ -286,7 +324,7 @@ test('switches workspaces, selects the most recent one, and validates rename wit
   await page.getByRole('button', { name: '保存名称' }).click()
   await expect(page.getByRole('alert')).toBeVisible()
   await page.getByRole('button', { name: '保存名称' }).click()
-  await expect(page.getByRole('status')).toContainText('工作区名称已更新')
+  await expect(page.locator('.product-operation-status')).toContainText('工作区名称已更新')
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Renamed room')
   await page.reload()
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Renamed room')

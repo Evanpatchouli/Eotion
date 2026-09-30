@@ -1,178 +1,135 @@
 import type { PageResponse } from '@eotion/contracts'
-import { ApiError } from '@eotion/sdk'
 import { createLocalId } from '@eotion/storage'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { api, errorMessage, expireSessionFromApi } from '../services/productApi'
 import { nextOrderKey } from '../utils/pageTree'
+import { useProductSyncStore } from './productSync'
 
 export const DEFAULT_PAGE_TITLE = '无标题'
+export const OFFLINE_WORKSPACE_MESSAGE = '此工作区尚未保存到本机，当前离线无法打开。'
 
-/**
- * Page state for one workspace at a time.
- *
- * The store is keyed by workspace: switching workspaces clears the previous
- * list immediately, and every mutation checks that it still belongs to the
- * active workspace so a stale response cannot leak pages across workspaces.
- */
 export const useProductPagesStore = defineStore('product-pages', () => {
   const forWorkspaceId = ref('')
   const items = ref<PageResponse[]>([])
   const loaded = ref(false)
   const loading = ref(false)
   const error = ref('')
-
-  const createPending = ref(false)
-  const createError = ref('')
-  const renamePending = ref(false)
-  const renameError = ref('')
-  const movePending = ref(false)
-  const moveError = ref('')
-  const deletePending = ref(false)
-  const deleteError = ref('')
-
+  const createPending = ref(false), createError = ref('')
+  const renamePending = ref(false), renameError = ref('')
+  const movePending = ref(false), moveError = ref('')
+  const deletePending = ref(false), deleteError = ref('')
   let epoch = 0
-  let loadRequestId = 0
   let loadPromise: Promise<void> | null = null
-
-  function clearMutationState(): void {
-    createPending.value = false
-    createError.value = ''
-    renamePending.value = false
-    renameError.value = ''
-    movePending.value = false
-    moveError.value = ''
-    deletePending.value = false
-    deleteError.value = ''
-  }
-
-  function replace(updated: PageResponse): void {
-    const index = items.value.findIndex((page) => page.id === updated.id)
-    if (index !== -1) items.value[index] = updated
-  }
-
-  function expired(cause: unknown): void {
-    if (cause instanceof ApiError && cause.statusCode === 401) expireSessionFromApi()
-  }
-
-  function load(workspaceId: string, force = false): Promise<void> {
-    if (workspaceId === forWorkspaceId.value && loaded.value && !force) return Promise.resolve()
-    if (workspaceId === forWorkspaceId.value && loading.value && loadPromise && !force) return loadPromise
-
-    epoch += 1
-    const requestEpoch = epoch
-    const requestId = ++loadRequestId
-    forWorkspaceId.value = workspaceId
-    items.value = []
-    loaded.value = false
-    loading.value = true
-    error.value = ''
-    clearMutationState()
-    const request = api.pages.list(workspaceId).then((pages) => {
-      if (requestEpoch !== epoch || requestId !== loadRequestId) return
-      items.value = pages
-      loaded.value = true
-    }).catch((cause: unknown) => {
-      if (requestEpoch !== epoch || requestId !== loadRequestId) return
-      error.value = errorMessage(cause, '无法加载页面，请重试。')
-      expired(cause)
-    }).finally(() => {
-      if (requestEpoch === epoch && requestId === loadRequestId) {
-        loading.value = false
-        loadPromise = null
-      }
-    })
-    loadPromise = request
-    return request
-  }
 
   function reset(): void {
     epoch += 1
-    loadRequestId += 1
     forWorkspaceId.value = ''
     items.value = []
     loaded.value = false
     loading.value = false
     error.value = ''
-    clearMutationState()
     loadPromise = null
   }
 
+  async function refresh(workspaceId = forWorkspaceId.value): Promise<void> {
+    if (!workspaceId || workspaceId !== forWorkspaceId.value || !loaded.value) return
+    const requestEpoch = epoch
+    const pages = await (await useProductSyncStore().store()).listPagesByWorkspace(workspaceId)
+    if (requestEpoch === epoch) items.value = pages as PageResponse[]
+  }
+
+  function load(workspaceId: string, force = false): Promise<void> {
+    if (workspaceId === forWorkspaceId.value && loaded.value && !force) return Promise.resolve()
+    if (workspaceId === forWorkspaceId.value && loadPromise && !force) return loadPromise
+    const requestEpoch = ++epoch
+    forWorkspaceId.value = workspaceId
+    items.value = []
+    loaded.value = false
+    loading.value = true
+    error.value = ''
+    const request = (async () => {
+      try {
+        const sync = useProductSyncStore()
+        const ready = await sync.prepare(workspaceId)
+        if (requestEpoch !== epoch) return
+        if (!ready) {
+          error.value = sync.state === 'offline' ? OFFLINE_WORKSPACE_MESSAGE : (sync.error || '暂时无法加载工作区快照，请重试。')
+          return
+        }
+        items.value = await (await sync.store()).listPagesByWorkspace(workspaceId) as PageResponse[]
+        loaded.value = true
+      } catch (cause) {
+        if (requestEpoch === epoch) error.value = cause instanceof Error ? cause.message : '无法加载本地页面。'
+      } finally {
+        if (requestEpoch === epoch) { loading.value = false; loadPromise = null }
+      }
+    })()
+    loadPromise = request
+    return request
+  }
+
   async function create(workspaceId: string, parentPageId: string | null): Promise<PageResponse | null> {
-    if (workspaceId !== forWorkspaceId.value || !loaded.value || loading.value || error.value || createPending.value) return null
+    if (workspaceId !== forWorkspaceId.value || !loaded.value || loading.value || createPending.value) return null
     createPending.value = true
     createError.value = ''
     const requestEpoch = epoch
     try {
-      const siblings = items.value.filter((page) => page.parentPageId === parentPageId)
-      const created = await api.pages.create(workspaceId, {
-        id: createLocalId(),
-        parentPageId,
-        title: DEFAULT_PAGE_TITLE,
-        orderKey: nextOrderKey(siblings),
-      })
-      if (requestEpoch !== epoch) return null
-      items.value.push(created)
-      return created
-    } catch (cause: unknown) {
-      if (requestEpoch === epoch) {
-        createError.value = errorMessage(cause, '创建页面失败，请重试。')
-        expired(cause)
+      const now = new Date().toISOString()
+      const created: PageResponse = {
+        id: createLocalId(), workspaceId, parentPageId, title: DEFAULT_PAGE_TITLE,
+        orderKey: nextOrderKey(items.value.filter((page) => page.parentPageId === parentPageId)),
+        createdAt: now, updatedAt: now,
       }
+      await (await useProductSyncStore().store()).upsertPage(created)
+      if (requestEpoch === epoch) items.value.push(created)
+      useProductSyncStore().localMutation()
+      return requestEpoch === epoch ? created : null
+    } catch (cause) {
+      if (requestEpoch === epoch) createError.value = cause instanceof Error ? cause.message : '创建页面失败。'
       return null
-    } finally {
-      if (requestEpoch === epoch) createPending.value = false
-    }
+    } finally { if (requestEpoch === epoch) createPending.value = false }
   }
 
   async function rename(workspaceId: string, pageId: string, title: string): Promise<PageResponse | null> {
-    if (workspaceId !== forWorkspaceId.value) return null
-    const trimmedTitle = title.trim()
-    renameError.value = ''
-    if (!trimmedTitle || trimmedTitle.length > 200) {
-      renameError.value = !trimmedTitle ? '请输入页面标题。' : '页面标题不能超过 200 个字符。'
-      return null
-    }
-    if (renamePending.value) return null
+    if (workspaceId !== forWorkspaceId.value || renamePending.value) return null
+    const trimmed = title.trim()
+    renameError.value = !trimmed ? '请输入页面标题。' : trimmed.length > 200 ? '页面标题不能超过 200 个字符。' : ''
+    if (renameError.value) return null
+    const old = items.value.find((item) => item.id === pageId)
+    if (!old) return null
     renamePending.value = true
     const requestEpoch = epoch
     try {
-      const updated = await api.pages.update(workspaceId, pageId, { title: trimmedTitle })
-      if (requestEpoch !== epoch) return null
-      replace(updated)
-      return updated
-    } catch (cause: unknown) {
-      if (requestEpoch === epoch) {
-        renameError.value = errorMessage(cause, '重命名页面失败，请重试。')
-        expired(cause)
-      }
+      const updated = { ...old, title: trimmed, updatedAt: new Date().toISOString() }
+      await (await useProductSyncStore().store()).upsertPage(updated)
+      if (requestEpoch === epoch) items.value = items.value.map((item) => item.id === pageId ? updated : item)
+      useProductSyncStore().localMutation()
+      return requestEpoch === epoch ? updated : null
+    } catch (cause) {
+      if (requestEpoch === epoch) renameError.value = cause instanceof Error ? cause.message : '重命名页面失败。'
       return null
-    } finally {
-      if (requestEpoch === epoch) renamePending.value = false
-    }
+    } finally { if (requestEpoch === epoch) renamePending.value = false }
   }
 
   async function move(workspaceId: string, pageId: string, parentPageId: string | null): Promise<PageResponse | null> {
     if (workspaceId !== forWorkspaceId.value || movePending.value) return null
+    const old = items.value.find((item) => item.id === pageId)
+    if (!old) return null
     movePending.value = true
     moveError.value = ''
     const requestEpoch = epoch
     try {
-      const siblings = items.value.filter((page) => page.parentPageId === parentPageId && page.id !== pageId)
-      const moved = await api.pages.move(workspaceId, pageId, { parentPageId, orderKey: nextOrderKey(siblings) })
-      if (requestEpoch !== epoch) return null
-      replace(moved)
-      return moved
-    } catch (cause: unknown) {
-      if (requestEpoch === epoch) {
-        moveError.value = errorMessage(cause, '移动页面失败，请重试。')
-        expired(cause)
-      }
+      const orderKey = nextOrderKey(items.value.filter((page) => page.parentPageId === parentPageId && page.id !== pageId))
+      await (await useProductSyncStore().store()).movePage(workspaceId, pageId, parentPageId, orderKey)
+      const updated = { ...old, parentPageId, orderKey, updatedAt: new Date().toISOString() }
+      if (requestEpoch === epoch) items.value = items.value.map((item) => item.id === pageId ? updated : item)
+      useProductSyncStore().localMutation()
+      return requestEpoch === epoch ? updated : null
+    } catch (cause) {
+      if (requestEpoch === epoch) moveError.value = cause instanceof Error ? cause.message : '移动页面失败。'
       return null
-    } finally {
-      if (requestEpoch === epoch) movePending.value = false
-    }
+    } finally { if (requestEpoch === epoch) movePending.value = false }
   }
 
   async function remove(workspaceId: string, pageId: string): Promise<boolean> {
@@ -181,45 +138,16 @@ export const useProductPagesStore = defineStore('product-pages', () => {
     deleteError.value = ''
     const requestEpoch = epoch
     try {
-      await api.pages.delete(workspaceId, pageId)
-      if (requestEpoch !== epoch) return false
-      items.value = items.value.filter((page) => page.id !== pageId)
-      return true
-    } catch (cause: unknown) {
-      if (requestEpoch === epoch) {
-        deleteError.value = errorMessage(cause, '删除页面失败，请重试。')
-        expired(cause)
-      }
+      await (await useProductSyncStore().store()).deletePage(workspaceId, pageId)
+      if (requestEpoch === epoch) items.value = items.value.filter((item) => item.id !== pageId)
+      useProductSyncStore().localMutation()
+      return requestEpoch === epoch
+    } catch (cause) {
+      if (requestEpoch === epoch) deleteError.value = cause instanceof Error ? cause.message : '删除页面失败。'
       return false
-    } finally {
-      if (requestEpoch === epoch) deletePending.value = false
-    }
+    } finally { if (requestEpoch === epoch) deletePending.value = false }
   }
 
-  function pageById(pageId: string): PageResponse | null {
-    return items.value.find((page) => page.id === pageId) ?? null
-  }
-
-  return {
-    forWorkspaceId,
-    items,
-    loaded,
-    loading,
-    error,
-    createPending,
-    createError,
-    renamePending,
-    renameError,
-    movePending,
-    moveError,
-    deletePending,
-    deleteError,
-    load,
-    reset,
-    create,
-    rename,
-    move,
-    remove,
-    pageById,
-  }
+  function pageById(pageId: string): PageResponse | null { return items.value.find((page) => page.id === pageId) ?? null }
+  return { forWorkspaceId, items, loaded, loading, error, createPending, createError, renamePending, renameError, movePending, moveError, deletePending, deleteError, load, refresh, reset, create, rename, move, remove, pageById }
 })

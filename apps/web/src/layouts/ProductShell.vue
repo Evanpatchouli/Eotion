@@ -12,6 +12,7 @@ import { hasPendingPageDraft } from '../editor/pendingPageDraft'
 import { useAuthStore } from '../stores/auth'
 import { useProductPagesStore } from '../stores/productPages'
 import { useProductWorkspacesStore } from '../stores/productWorkspaces'
+import { useProductSyncStore } from '../stores/productSync'
 import '../styles/product.css'
 
 const route = useRoute()
@@ -19,6 +20,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const workspaces = useProductWorkspacesStore()
 const pages = useProductPagesStore()
+const sync = useProductSyncStore()
 const { layoutMode, inputMode, runtime } = useRuntimeContext()
 
 const mobileNavOpen = ref(false)
@@ -46,6 +48,8 @@ function closeMobileNav() {
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && mobileNavOpen.value) closeMobileNav()
 }
+function onConnection(): void { sync.requestSync(0) }
+function onAttention(): void { if (document.visibilityState === 'visible') sync.requestSync() }
 
 function resetRouteUi() {
   formMode.value = null
@@ -115,6 +119,7 @@ watch(() => route.fullPath, () => {
 })
 
 watch(() => auth.user, (user) => {
+  sync.configure(user?.id ?? '', auth.offline)
   if (user) return
   const redirect = hasPendingPageDraft() ? route.fullPath : ''
   workspaces.reset()
@@ -122,10 +127,16 @@ watch(() => auth.user, (user) => {
   void router.replace({ name: 'login', query: redirect ? { redirect } : undefined })
 }, { immediate: true })
 
+watch(() => auth.offline, (offline) => {
+  sync.configure(auth.user?.id ?? '', offline)
+})
+
+watch(() => sync.revision, () => { void pages.refresh() })
+
 // The page list always belongs to exactly one workspace; switching drops the previous one.
 watch(() => currentWorkspace.value?.id ?? '', (id) => {
   if (id) void pages.load(id)
-  else pages.reset()
+  else { sync.leaveWorkspace(); pages.reset() }
 }, { immediate: true })
 
 watch(() => [workspaces.loaded, workspaceId.value, auth.user?.id, currentWorkspace.value?.id] as const, ([loaded, id, userId, currentId]) => {
@@ -139,10 +150,18 @@ watch(() => [workspaces.loaded, workspaceId.value, auth.user?.id, currentWorkspa
 
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
+  window.addEventListener('online', onConnection)
+  window.addEventListener('focus', onAttention)
+  document.addEventListener('visibilitychange', onAttention)
   void workspaces.load()
 })
 
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('online', onConnection)
+  window.removeEventListener('focus', onAttention)
+  document.removeEventListener('visibilitychange', onAttention)
+})
 </script>
 
 <template>
@@ -197,6 +216,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
       <header class="topbar product-topbar">
         <button class="icon-button mobile-menu" type="button" aria-label="打开导航菜单" @click="mobileNavOpen = true">☰</button>
         <div class="breadcrumb">{{ breadcrumb }}</div>
+        <button v-if="sync.state === 'failed' || sync.state === 'offline'" class="product-text-button" type="button" @click="sync.retry()">{{ sync.state === 'offline' ? '离线 · 本地已保存' : `同步失败 · ${sync.pending} 项待同步 · 重试` }}</button>
+        <span v-else class="product-save-status" role="status">{{ sync.state === 'syncing' ? '正在同步…' : sync.pending ? `${sync.pending} 项待同步` : sync.state === 'synced' ? '已同步' : '' }}</span>
       </header>
 
       <article class="document-wrap">

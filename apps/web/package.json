@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 7173",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vue-tsc --noEmit && vite build && node scripts/generate-sw.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "typecheck": "vue-tsc --noEmit",
-    "test:product": "playwright test tests/product-flow.spec.ts tests/product-pages.spec.ts tests/product-editor.spec.ts",
-    "test:storage": "pnpm --filter @eotion/desktop build && playwright test tests/storage.spec.ts tests/desktop-storage.spec.ts"
+    "test:product": "playwright test tests/product-flow.spec.ts tests/product-pages.spec.ts tests/product-editor.spec.ts tests/product-sync.spec.ts",
+    "test:storage": "pnpm --filter @eotion/desktop build && playwright test tests/storage.spec.ts tests/desktop-storage.spec.ts tests/desktop-product-sync.spec.ts",
+    "test:offline-shell": "playwright test --config playwright.offline-shell.config.ts",
+    "test:real-sync": "playwright test --config playwright.real.config.ts"
   },
   "dependencies": {
     "@eotion/contracts": "workspace:*",

@@ -11,11 +11,13 @@ import { clearPageDraft, hasPendingPageDraft, pendingPageDraft } from '../editor
 import { useAuthStore } from '../stores/auth'
 import { useProductPagesStore } from '../stores/productPages'
 import { useProductWorkspacesStore } from '../stores/productWorkspaces'
+import { useProductSyncStore } from '../stores/productSync'
 
 const route = useRoute()
 const pages = useProductPagesStore()
 const auth = useAuthStore()
 const workspaces = useProductWorkspacesStore()
+const sync = useProductSyncStore()
 const { layoutMode, inputMode } = useRuntimeContext()
 
 const workspaceId = computed(() => typeof route.params.workspaceId === 'string' ? route.params.workspaceId : '')
@@ -34,6 +36,7 @@ const persistence = shallowRef<PagePersistence | null>(null)
 let removeActive: (() => void) | null = null
 let loadController: AbortController | null = null
 let loadEpoch = 0
+const editorRevision = ref(0)
 
 function releaseCurrent(): void {
   loadController?.abort()
@@ -46,6 +49,7 @@ function releaseCurrent(): void {
 
 async function loadBlocks(): Promise<void> {
   const epoch = ++loadEpoch
+  editorRevision.value += 1
   releaseCurrent()
   document.value = null
   blockError.value = ''
@@ -98,11 +102,23 @@ async function guardNavigation(): Promise<boolean> {
 onBeforeRouteUpdate(guardNavigation)
 onBeforeRouteLeave(guardNavigation)
 
-watch(() => [workspaceId.value, pageId.value, settled.value, !!page.value] as const, () => { void loadBlocks() }, { immediate: true })
+watch([workspaceId, pageId, settled, () => !!page.value], () => { void loadBlocks() }, { immediate: true })
+watch(() => sync.snapshotRevision, () => {
+  const current = persistence.value
+  const id = pageId.value
+  const workspace = workspaceId.value
+  if (!settled.value || !page.value || !current || current.hasPendingWork) return
+  void (async () => {
+    const blocks = await (await sync.store()).listBlocksByPage(id)
+    if (persistence.value !== current || pageId.value !== id || workspaceId.value !== workspace || current.hasPendingWork) return
+    if (!current.matchesLocalBlocks(blocks)) await loadBlocks()
+  })()
+})
 window.addEventListener('beforeunload', beforeUnload)
 onBeforeUnmount(() => {
   loadEpoch += 1
   releaseCurrent()
+  useProductSyncStore().requestSync(0)
   window.removeEventListener('beforeunload', beforeUnload)
 })
 </script>
@@ -124,7 +140,7 @@ onBeforeUnmount(() => {
   </section>
   <div v-else class="document product-editor-page">
     <p class="product-section-label">{{ currentWorkspace?.name ?? '工作区' }}</p>
-    <div class="product-editor-heading"><h1>{{ page.title }}</h1><span v-if="!blockError" class="product-save-status" role="status">{{ saveStatus === 'loading' ? '正在加载…' : saveStatus === 'saved' ? '已保存' : saveStatus === 'saving' ? '正在保存…' : '保存失败' }}</span></div>
+    <div class="product-editor-heading"><h1>{{ page.title }}</h1><span v-if="!blockError" class="product-save-status" role="status">{{ saveStatus === 'loading' ? '正在加载…' : saveStatus === 'saved' ? '已保存到本地' : saveStatus === 'saving' ? '正在保存…' : '本地保存失败' }}</span></div>
     <p v-if="blockError" class="product-message product-message--error" role="alert">{{ blockError }}</p>
     <button v-if="blockError" class="product-button" type="button" :disabled="blockLoading" @click="loadBlocks">{{ blockLoading ? '正在重试…' : '重试加载' }}</button>
     <p v-else-if="blockLoading || !document" class="product-loading" role="status">正在加载正文…</p>
@@ -134,7 +150,7 @@ onBeforeUnmount(() => {
         <button class="product-text-button" type="button" @click="persistence?.retry()">重试保存</button>
       </div>
       <EotionEditor
-        :key="`${workspaceId}:${pageId}`"
+        :key="`${workspaceId}:${pageId}:${editorRevision}`"
         :content="document"
         :touch-toolbar="layoutMode === 'mobile' || inputMode !== 'mouse'"
         aria-label="页面正文编辑区域"

@@ -5,8 +5,21 @@ import { ref } from 'vue'
 
 import { createLocalId } from '@eotion/storage'
 import { api, errorMessage, expireSessionFromApi } from '../services/productApi'
+import { useAuthStore } from './auth'
 
 const preferredWorkspaceKey = (userId: string) => `eotion:preferred-workspace:${userId}`
+const workspaceCacheKey = (userId: string) => `eotion:workspaces:${userId}`
+
+function readCachedWorkspaces(userId: string): WorkspaceResponse[] {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(workspaceCacheKey(userId)) ?? '[]')
+    return Array.isArray(value) ? value.filter((item): item is WorkspaceResponse => item && typeof item.id === 'string' && item.ownerId === userId && typeof item.name === 'string') : []
+  } catch { return [] }
+}
+
+function cacheWorkspaces(userId: string, workspaces: WorkspaceResponse[]): void {
+  try { localStorage.setItem(workspaceCacheKey(userId), JSON.stringify(workspaces.filter((item) => item.ownerId === userId))) } catch { /* Optional cache. */ }
+}
 
 export const useProductWorkspacesStore = defineStore('product-workspaces', () => {
   const items = ref<WorkspaceResponse[]>([])
@@ -21,6 +34,14 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
   let loadRequestId = 0
   let loadPromise: Promise<void> | null = null
 
+  function acceptServerList(workspaces: WorkspaceResponse[], userId: string): void {
+    if (useAuthStore().user?.id !== userId) return
+    items.value = workspaces.filter((item) => item.ownerId === userId)
+    loaded.value = true
+    error.value = ''
+    cacheWorkspaces(userId, items.value)
+  }
+
   function load(force = false): Promise<void> {
     if (loaded.value && !force) return Promise.resolve()
     if (loading.value && loadPromise && !force) return loadPromise
@@ -29,12 +50,26 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
     const requestId = ++loadRequestId
     loading.value = true
     error.value = ''
+    const auth = useAuthStore()
+    if (auth.offline && auth.user) {
+      items.value = readCachedWorkspaces(auth.user.id)
+      loaded.value = items.value.length > 0
+      error.value = loaded.value ? '' : '此账号尚未在本机保存工作区列表，当前离线无法打开。'
+      loading.value = false
+      return Promise.resolve()
+    }
     const request = api.workspaces.list().then((workspaces) => {
       if (requestEpoch !== sessionEpoch || requestId !== loadRequestId) return
-      items.value = workspaces
-      loaded.value = true
+      acceptServerList(workspaces, auth.user?.id ?? '')
     }).catch((cause: unknown) => {
       if (requestEpoch !== sessionEpoch || requestId !== loadRequestId) return
+      if (cause instanceof TypeError && auth.user) {
+        items.value = readCachedWorkspaces(auth.user.id)
+        loaded.value = items.value.length > 0
+        error.value = loaded.value ? '' : '此账号尚未在本机保存工作区列表，当前离线无法打开。'
+        loading.value = false
+        return
+      }
       error.value = errorMessage(cause, '无法加载工作区，请重试。')
       if (cause instanceof ApiError && cause.statusCode === 401) expireSessionFromApi()
     }).finally(() => {
@@ -75,6 +110,7 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
       if (requestEpoch !== sessionEpoch) return null
       items.value.push(workspace)
       loaded.value = true
+      cacheWorkspaces(workspace.ownerId, items.value)
       return workspace
     } catch (cause: unknown) {
       if (requestEpoch === sessionEpoch) {
@@ -102,6 +138,7 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
       if (requestEpoch !== sessionEpoch) return null
       const index = items.value.findIndex((item) => item.id === id)
       if (index !== -1) items.value[index] = workspace
+      cacheWorkspaces(workspace.ownerId, items.value)
       return workspace
     } catch (cause: unknown) {
       if (requestEpoch === sessionEpoch) {
@@ -134,5 +171,5 @@ export const useProductWorkspacesStore = defineStore('product-workspaces', () =>
     }
   }
 
-  return { items, loaded, loading, error, createPending, renamePending, mutationError, load, reset, create, rename, preferredId, remember }
+  return { items, loaded, loading, error, createPending, renamePending, mutationError, load, reset, create, rename, preferredId, remember, acceptServerList }
 })

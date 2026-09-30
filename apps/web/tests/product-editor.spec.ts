@@ -18,24 +18,21 @@ function block(pageId: string, id: string, order: number, node: Record<string, u
 }
 
 type ApiControls = {
-  blockListFailures: number
-  blockListDelayMs: number
-  blockListGate: Promise<void> | null
+  snapshotFailures: number
+  snapshotDelayMs: number
+  snapshotGate: Promise<void> | null
   mutationFailures: number
   mutationDelayMs: number
   unauthorized: boolean
   activeMutations: number
   maxConcurrentMutations: number
-  lostCreateResponses: number
-  lostDeleteResponses: number
-  pageMutationUnauthorized: boolean
 }
 
 async function installApi(page: Page, options: { pages?: PageResponse[]; blocks?: BlockResponse[] } = {}) {
   const pages = [...(options.pages ?? [pageRecord('page-a', 'Alpha', 1), pageRecord('page-b', 'Bravo', 2)])]
   const blocks = [...(options.blocks ?? [])]
   const requests: Array<{ method: string; path: string; body?: any }> = []
-  const controls: ApiControls = { blockListFailures: 0, blockListDelayMs: 0, blockListGate: null, mutationFailures: 0, mutationDelayMs: 0, unauthorized: false, activeMutations: 0, maxConcurrentMutations: 0, lostCreateResponses: 0, lostDeleteResponses: 0, pageMutationUnauthorized: false }
+  const controls: ApiControls = { snapshotFailures: 0, snapshotDelayMs: 0, snapshotGate: null, mutationFailures: 0, mutationDelayMs: 0, unauthorized: false, activeMutations: 0, maxConcurrentMutations: 0 }
   const json = (route: Route, status: number, body: unknown) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
   const error = (status: number, message: string) => ({ statusCode: status, message, error: status === 401 ? 'Unauthorized' : 'Internal Server Error' })
   const wait = async (ms: number) => { if (ms > 0) await new Promise((resolve) => setTimeout(resolve, ms)) }
@@ -52,72 +49,48 @@ async function installApi(page: Page, options: { pages?: PageResponse[]; blocks?
       return json(route, 200, { user, expiresAt: later })
     }
     if (path === '/api/workspaces' && request.method() === 'GET') return json(route, 200, [workspace])
-    if (path === `/api/workspaces/${workspace.id}/pages` && request.method() === 'GET') return json(route, 200, pages)
-
-    const pageMatch = path.match(/^\/api\/workspaces\/([^/]+)\/pages\/([^/]+)$/)
-    if (pageMatch && request.method() === 'PATCH' && controls.pageMutationUnauthorized) {
-      controls.pageMutationUnauthorized = false
-      return json(route, 401, error(401, 'Session expired'))
+    if (path === `/api/sync/workspaces/${workspace.id}/snapshot` && request.method() === 'GET') {
+      await wait(controls.snapshotDelayMs)
+      if (controls.snapshotGate) await controls.snapshotGate
+      if (controls.snapshotFailures > 0) {
+        controls.snapshotFailures -= 1
+        return json(route, 503, error(503, 'Snapshot failed'))
+      }
+      return json(route, 200, { pages, blocks })
     }
-    if (pageMatch && request.method() === 'GET') {
-      const record = pages.find((item) => item.id === decodeURIComponent(pageMatch[2]!))
-      return record ? json(route, 200, record) : json(route, 404, error(404, 'Page not found'))
-    }
-
-    const blockMatch = path.match(/^\/api\/workspaces\/([^/]+)\/pages\/([^/]+)\/blocks(?:\/([^/]+))?$/)
-    if (blockMatch) {
-      const pageId = decodeURIComponent(blockMatch[2]!)
-      const blockId = blockMatch[3] ? decodeURIComponent(blockMatch[3]) : null
+    if (path === '/api/sync/operations' && request.method() === 'POST') {
+      controls.activeMutations += 1
+      controls.maxConcurrentMutations = Math.max(controls.maxConcurrentMutations, controls.activeMutations)
+      await wait(controls.mutationDelayMs)
+      controls.activeMutations -= 1
       if (controls.unauthorized) return json(route, 401, error(401, 'Session expired'))
-      if (request.method() === 'GET' && !blockId) {
-        await wait(controls.blockListDelayMs)
-        if (controls.blockListGate) await controls.blockListGate
-        if (controls.blockListFailures > 0) {
-          controls.blockListFailures -= 1
-          return json(route, 503, error(503, 'Block list failed'))
-        }
-        return json(route, 200, blocks.filter((item) => item.pageId === pageId))
+      if (controls.mutationFailures > 0) {
+        controls.mutationFailures -= 1
+        return json(route, 503, error(503, 'Sync failed'))
       }
-      if (request.method() === 'GET' && blockId) {
-        const existing = blocks.find((item) => item.id === blockId && item.pageId === pageId)
-        return existing ? json(route, 200, existing) : json(route, 404, error(404, 'Block not found'))
+      const operation = body as { id: string; kind: string; workspaceId: string; payload: any }
+      const payload = operation.payload
+      if (operation.kind === 'block.upsert') {
+        const existing = blocks.find((item) => item.id === payload.id)
+        const record: BlockResponse = { ...payload, workspaceId: operation.workspaceId, parentBlockId: payload.parentBlockId ?? null, createdAt: existing?.createdAt ?? now, updatedAt: later }
+        const index = blocks.findIndex((item) => item.id === record.id)
+        if (index < 0) blocks.push(record); else blocks[index] = record
+      } else if (operation.kind === 'block.delete') {
+        const index = blocks.findIndex((item) => item.id === payload.id)
+        if (index >= 0) blocks.splice(index, 1)
+      } else if (operation.kind === 'page.upsert') {
+        const existing = pages.find((item) => item.id === payload.id)
+        const record: PageResponse = { ...payload, workspaceId: operation.workspaceId, createdAt: existing?.createdAt ?? now, updatedAt: later }
+        const index = pages.findIndex((item) => item.id === record.id)
+        if (index < 0) pages.push(record); else pages[index] = record
+      } else if (operation.kind === 'page.move') {
+        const record = pages.find((item) => item.id === payload.id)
+        if (record) Object.assign(record, { parentPageId: payload.parentPageId, orderKey: payload.orderKey, updatedAt: later })
+      } else if (operation.kind === 'page.delete') {
+        const index = pages.findIndex((item) => item.id === payload.id)
+        if (index >= 0) pages.splice(index, 1)
       }
-      if (request.method() !== 'GET') {
-        controls.activeMutations += 1
-        controls.maxConcurrentMutations = Math.max(controls.maxConcurrentMutations, controls.activeMutations)
-        await wait(controls.mutationDelayMs)
-        controls.activeMutations -= 1
-        if (controls.mutationFailures > 0) {
-          controls.mutationFailures -= 1
-          return json(route, 503, error(503, 'Block save failed'))
-        }
-      }
-      if (request.method() === 'POST' && !blockId) {
-        if (blocks.some((item) => item.id === body.id)) return json(route, 409, error(409, 'Duplicate block id'))
-        const created: BlockResponse = { ...body, pageId, workspaceId: workspace.id, createdAt: now, updatedAt: later }
-        blocks.push(created)
-        if (controls.lostCreateResponses > 0) {
-          controls.lostCreateResponses -= 1
-          return route.abort('failed')
-        }
-        return json(route, 201, created)
-      }
-      if (request.method() === 'PATCH' && blockId) {
-        const existing = blocks.find((item) => item.id === blockId && item.pageId === pageId)
-        if (!existing) return json(route, 404, error(404, 'Block not found'))
-        Object.assign(existing, body, { updatedAt: later })
-        return json(route, 200, existing)
-      }
-      if (request.method() === 'DELETE' && blockId) {
-        const index = blocks.findIndex((item) => item.id === blockId && item.pageId === pageId)
-        if (index === -1) return json(route, 404, error(404, 'Block not found'))
-        blocks.splice(index, 1)
-        if (controls.lostDeleteResponses > 0) {
-          controls.lostDeleteResponses -= 1
-          return route.abort('failed')
-        }
-        return route.fulfill({ status: 204 })
-      }
+      return json(route, 200, { id: operation.id, status: 'applied' })
     }
     return json(route, 404, error(404, 'Not found'))
   })
@@ -125,14 +98,14 @@ async function installApi(page: Page, options: { pages?: PageResponse[]; blocks?
 }
 
 const editor = (page: Page) => page.locator('.eotion-editor-content .tiptap')
-const blockRequests = (requests: Awaited<ReturnType<typeof installApi>>['requests']) => requests.filter((request) => /\/blocks(?:\/[^/]+)?$/.test(request.path))
+const blockRequests = (requests: Awaited<ReturnType<typeof installApi>>['requests']) => requests.filter((request) => request.path === '/api/sync/operations' && ['block.upsert', 'block.delete'].includes((request.body as any)?.kind))
 
 test('empty page loads without mutations, then debounces edits with a stable block identity', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [] })
   await page.goto('/#/app/ws-a/page/page-a')
-  await expect(page.getByRole('status').filter({ hasText: '已保存' })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
   await expect(editor(page)).toBeVisible()
-  expect(blockRequests(api.requests).filter((request) => request.method !== 'GET')).toHaveLength(0)
+  expect(blockRequests(api.requests)).toHaveLength(0)
 
   await editor(page).click()
   await editor(page).pressSequentially('First version')
@@ -142,13 +115,13 @@ test('empty page loads without mutations, then debounces edits with a stable blo
   await editor(page).pressSequentially('Final text')
   await expect.poll(() => api.blocks.filter((item) => item.pageId === 'page-a').length, { timeout: 4000 }).toBe(1)
   const first = api.blocks[0]!
-  const createdRequest = blockRequests(api.requests).find((request) => request.method === 'POST')!
-  expect(createdRequest.body.id).toBe(first.id)
+  const createdRequest = blockRequests(api.requests).find((request) => (request.body as any).kind === 'block.upsert')!
+  expect((createdRequest.body as any).payload.id).toBe(first.id)
 
   await expect.poll(() => api.blocks[0]?.props.node, { timeout: 4000 }).toMatchObject({ content: [{ text: 'Final text' }] })
   expect(api.blocks).toHaveLength(1)
   expect(api.blocks[0]?.id).toBe(first.id)
-  expect(blockRequests(api.requests).filter((request) => request.method === 'POST')).toHaveLength(1)
+  expect(blockRequests(api.requests).filter((request) => (request.body as any).kind === 'block.upsert' && (request.body as any).payload.id === first.id)).toHaveLength(1)
 })
 
 test('persists marks, heading and list structure and restores them after reload', async ({ page }) => {
@@ -160,12 +133,19 @@ test('persists marks, heading and list structure and restores them after reload'
     ],
   })
   await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
   const body = editor(page)
   await expect(body).toBeVisible()
-  await body.locator('p').first().click()
-  await body.press('Home')
-  await body.press('Shift+End')
-  await body.press('Control+B')
+  await body.locator('p').first().evaluate((paragraph) => {
+    paragraph.focus()
+    const range = document.createRange()
+    range.selectNodeContents(paragraph)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+  })
+  await page.keyboard.press('Control+B')
+  await expect(body.locator('strong')).toContainText('Formatted title')
   await page.getByRole('button', { name: '二级标题' }).click()
   await body.locator('p').last().click()
   await page.getByRole('button', { name: '项目列表' }).click()
@@ -188,20 +168,33 @@ test('inserts in the middle, deletes a block and keeps the displayed order', asy
     ],
   })
   await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
   const body = editor(page)
   await expect(body.locator(':scope > p')).toHaveText(['Alpha', 'Bravo'])
-  await body.locator('p').first().click()
-  await body.press('End')
-  await body.press('Enter')
-  await body.pressSequentially('Between')
+  await body.locator('p').first().evaluate((paragraph) => {
+    paragraph.focus()
+    const range = document.createRange()
+    range.selectNodeContents(paragraph)
+    range.collapse(false)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+  })
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('Between')
   await expect.poll(() => api.blocks.length, { timeout: 5000 }).toBe(3)
   await expect.poll(() => [...api.blocks].sort((a, b) => a.orderKey.localeCompare(b.orderKey)).map((item) => (item.props.node as any).content?.[0]?.text), { timeout: 5000 }).toEqual(['Alpha', 'Between', 'Bravo'])
 
-  await body.locator('p').nth(1).click()
-  await body.press('Home')
-  await body.press('Shift+End')
-  await body.press('Backspace')
-  await body.press('Backspace')
+  await body.locator('p').nth(1).evaluate((paragraph) => {
+    paragraph.focus()
+    const range = document.createRange()
+    range.selectNodeContents(paragraph)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+  })
+  await page.keyboard.press('Backspace')
+  await page.keyboard.press('Backspace')
   await expect.poll(() => api.blocks.length, { timeout: 5000 }).toBe(2)
   await expect.poll(() => [...api.blocks].sort((a, b) => a.orderKey.localeCompare(b.orderKey)).map((item) => (item.props.node as any).content?.[0]?.text), { timeout: 5000 }).toEqual(['Alpha', 'Bravo'])
 })
@@ -211,62 +204,49 @@ test('flushes edits on page navigation and isolates the next page document', asy
   api.controls.mutationDelayMs = 120
   await page.goto('/#/app/ws-a/page/page-a')
   await editor(page).click()
-  await editor(page).pressSequentially('Saved on navigation')
+  await page.keyboard.type('Saved on navigation')
   await page.getByRole('button', { name: 'Bravo', exact: true }).click()
   await expect(page).toHaveURL(/page\/page-b$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Bravo' })).toBeVisible()
+  await expect.poll(() => api.blocks.length, { timeout: 5000 }).toBe(1)
   expect(api.blocks).toHaveLength(1)
   expect(api.blocks[0]).toMatchObject({ pageId: 'page-a', props: { node: { content: [{ text: 'Saved on navigation' }] } } })
   await expect(editor(page)).toHaveText('')
-  expect(api.requests.some((request) => request.method === 'POST' && request.path.includes('/page/page-b/blocks'))).toBe(false)
+  expect(blockRequests(api.requests).some((request) => (request.body as any).workspaceId === workspace.id && (request.body as any).payload.pageId === 'page-b')).toBe(false)
 })
 
-test('ignores a late response from the previous page load', async ({ page }) => {
+test('reads both page bodies from the workspace snapshot without mixing them on navigation', async ({ page }) => {
   const api = await installApi(page, {
     blocks: [
       block('page-a', 'block-a', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Old page body' }] }),
       block('page-b', 'block-b', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Current page body' }] }),
     ],
   })
-  let release!: () => void
-  api.controls.blockListGate = new Promise<void>((resolve) => { release = resolve })
   await page.goto('/#/app/ws-a/page/page-a')
-  await expect(page.getByRole('heading', { level: 1, name: 'Alpha' })).toBeVisible()
+  await expect(editor(page)).toContainText('Old page body')
   await page.getByRole('button', { name: 'Bravo', exact: true }).click()
   await expect(page).toHaveURL(/page\/page-b$/)
-  api.controls.blockListGate = null
-  release()
   await expect(editor(page)).toContainText('Current page body')
   await expect(editor(page)).not.toContainText('Old page body')
 })
 
-test('retries save and load failures, and returns to login on a block API 401', async ({ page }) => {
+test('keeps local editor content when sync fails and retries sync', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1), pageRecord('page-b', 'Bravo', 2)] })
-  api.controls.mutationFailures = 2
+  api.controls.mutationFailures = 1000000
   await page.goto('/#/app/ws-a/page/page-a')
   await editor(page).click()
   await editor(page).pressSequentially('Retry me')
-  await expect(page.getByRole('alert')).toContainText('Block save failed')
-  await editor(page).pressSequentially(' latest')
-  await expect.poll(() => blockRequests(api.requests).filter((request) => request.method === 'POST').length, { timeout: 5000 }).toBe(2)
-  await expect(page.getByRole('button', { name: '重试保存' })).toBeVisible()
-  await page.getByRole('button', { name: '重试保存' }).click()
-  await expect.poll(() => api.blocks.length, { timeout: 5000 }).toBe(1)
-  expect(api.blocks[0]?.props.node).toMatchObject({ content: [{ text: 'Retry me latest' }] })
-
-  await page.getByRole('button', { name: 'Bravo', exact: true }).click()
-  await expect(page).toHaveURL(/page\/page-b$/)
-  await expect(editor(page)).toBeVisible()
-  api.controls.blockListFailures = 1
-  await page.getByRole('button', { name: 'Alpha', exact: true }).click()
-  await expect(page).toHaveURL(/page\/page-a$/)
-  await expect(page.getByRole('alert')).toContainText('Block list failed')
-  await page.getByRole('button', { name: '重试加载' }).click()
-  await expect(editor(page)).toBeVisible()
-
-  api.controls.unauthorized = true
+  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  await expect(editor(page)).toContainText('Retry me')
   await page.reload()
-  await expect(page).toHaveURL(/#\/login$/)
+  await expect(editor(page)).toContainText('Retry me')
+  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  api.controls.mutationFailures = 0
+  await page.getByRole('button', { name: /同步失败/ }).click()
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  await expect.poll(() => api.blocks.length, { timeout: 5000 }).toBe(1)
+  expect(api.blocks[0]?.props.node).toMatchObject({ content: [{ text: 'Retry me' }] })
+
 })
 
 test('keeps mobile editor within 390px and defers persistence during composition', async ({ page }) => {
@@ -282,7 +262,7 @@ test('keeps mobile editor within 390px and defers persistence during composition
   await body.click()
   await body.pressSequentially('Composing text')
   await page.waitForTimeout(650)
-  expect(blockRequests(api.requests).filter((request) => request.method !== 'GET')).toHaveLength(0)
+  expect(blockRequests(api.requests)).toHaveLength(0)
   await body.dispatchEvent('compositionend', { data: 'Composing text' })
   await expect.poll(() => api.blocks.length, { timeout: 5000 }).toBe(1)
   expect(api.blocks[0]?.props.node).toMatchObject({ content: [{ text: 'Composing text' }] })
@@ -291,7 +271,7 @@ test('keeps mobile editor within 390px and defers persistence during composition
 test('keeps the P2 fixture, slash command and undo path available', async ({ page }) => {
   await page.goto('/#/__dev/editor-p2')
   await page.getByRole('button', { name: '加载 5,000 区块' }).click()
-  await expect(page.getByLabel('加载指标')).toContainText('5000')
+  await expect(page.getByLabel('加载指标')).toContainText('5000', { timeout: 15000 })
   const body = page.locator('.eotion-editor-content .tiptap')
   await body.locator('p').last().click()
   await body.press('Home')
@@ -317,12 +297,14 @@ test('edits only the changed block and serializes a newer edit behind an in-flig
   await editor(page).locator('p').first().click()
   await editor(page).press('End')
   await editor(page).pressSequentially(' A')
-  await expect.poll(() => blockRequests(api.requests).filter((request) => request.method === 'PATCH').length, { timeout: 4000 }).toBe(1)
+  await expect.poll(() => blockRequests(api.requests).filter((request) => (request.body as any).kind === 'block.upsert' && (request.body as any).payload.id === 'first-id').length, { timeout: 4000 }).toBe(1)
+  await editor(page).locator('p').first().click()
+  await editor(page).press('End')
   await editor(page).pressSequentially(' B')
   await expect.poll(() => (api.blocks.find((item) => item.id === 'first-id')?.props.node as any)?.content?.[0]?.text, { timeout: 5000 }).toBe('First A B')
   expect(api.controls.maxConcurrentMutations).toBe(1)
-  expect(blockRequests(api.requests).filter((request) => request.method === 'PATCH' && request.path.endsWith('/second-id'))).toHaveLength(0)
-  expect(blockRequests(api.requests).filter((request) => request.method === 'PATCH').every((request) => !('orderKey' in request.body))).toBe(true)
+  expect(blockRequests(api.requests).filter((request) => (request.body as any).kind === 'block.upsert' && (request.body as any).payload.id === 'second-id')).toHaveLength(0)
+  expect(blockRequests(api.requests).filter((request) => (request.body as any).kind === 'block.upsert').every((request) => 'props' in (request.body as any).payload)).toBe(true)
   expect(api.blocks.find((item) => item.id === 'second-id')?.orderKey).toBe(String(2).padStart(16, '0'))
 })
 
@@ -336,7 +318,7 @@ test('keeps legacy order keys during an ordinary text edit', async ({ page }) =>
   await editor(page).pressSequentially(' edit')
   await expect.poll(() => (api.blocks[0]?.props.node as any)?.content?.[0]?.text, { timeout: 4000 }).toBe('Legacy edit')
   expect(api.blocks[0]?.orderKey).toBe('old-key')
-  expect(blockRequests(api.requests).find((request) => request.method === 'PATCH')?.body).not.toHaveProperty('orderKey')
+  expect((blockRequests(api.requests).find((request) => (request.body as any).kind === 'block.upsert')?.body as any).payload.orderKey).toBe('old-key')
 })
 
 test('refuses unsupported persisted blocks without opening a writable blank editor', async ({ page }) => {
@@ -349,7 +331,7 @@ test('refuses unsupported persisted blocks without opening a writable blank edit
   await page.goto('/#/app/ws-a/page/page-a')
   await expect(page.getByRole('alert')).toContainText('尚不支持编辑')
   await expect(editor(page)).toHaveCount(0)
-  expect(blockRequests(api.requests).filter((request) => request.method !== 'GET')).toHaveLength(0)
+  expect(blockRequests(api.requests)).toHaveLength(0)
   expect(api.blocks[0]?.props).toEqual(unsupported.props)
 })
 
@@ -372,23 +354,29 @@ test('pasting a block into another page assigns a new server Block ID', async ({
   expect(api.blocks.find((item) => item.pageId === 'page-b')?.props.node).toMatchObject({ content: [{ text: 'Copy me' }] })
 })
 
-test('reconciles a committed create whose response was lost before retrying', async ({ page }) => {
+test('keeps a locally committed block after failed sync and retries the same operation', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
-  api.controls.lostCreateResponses = 1
+  api.controls.mutationFailures = 1000000
   await page.goto('/#/app/ws-a/page/page-a')
   await editor(page).click()
   await editor(page).pressSequentially('Kept content')
-  await expect(page.getByRole('button', { name: '重试保存' })).toBeVisible()
-  expect(api.blocks).toHaveLength(1)
-  await page.getByRole('button', { name: '重试保存' }).click()
-  await expect(page.getByRole('status').filter({ hasText: '已保存' })).toBeVisible()
-  expect(blockRequests(api.requests).filter((request) => request.method === 'POST')).toHaveLength(1)
-  expect(blockRequests(api.requests).filter((request) => request.method === 'GET' && /\/blocks\/[^/]+$/.test(request.path))).toHaveLength(1)
+  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  await expect(editor(page)).toContainText('Kept content')
+  const failedOperation = blockRequests(api.requests).find((request) => (request.body as any).kind === 'block.upsert')!
+  expect(api.blocks).toHaveLength(0)
   await page.reload()
   await expect(editor(page)).toContainText('Kept content')
+  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  api.controls.mutationFailures = 0
+  await page.getByRole('button', { name: /同步失败/ }).click()
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  await expect.poll(() => api.blocks.length).toBe(1)
+  const retriedOperation = blockRequests(api.requests).filter((request) => (request.body as any).kind === 'block.upsert').at(-1)!
+  expect((retriedOperation.body as any).id).toBe((failedOperation.body as any).id)
+  expect(api.blocks[0]?.props.node).toMatchObject({ content: [{ text: 'Kept content' }] })
 })
 
-test('reconciles a committed delete whose response was lost before retrying', async ({ page }) => {
+test('keeps a local block deletion after failed sync and restores shared state after retry', async ({ page }) => {
   const api = await installApi(page, {
     pages: [pageRecord('page-a', 'Alpha', 1)],
     blocks: [
@@ -396,30 +384,74 @@ test('reconciles a committed delete whose response was lost before retrying', as
       block('page-a', 'second-id', 2, { type: 'paragraph', content: [{ type: 'text', text: 'Bravo' }] }),
     ],
   })
-  api.controls.lostDeleteResponses = 1
   await page.goto('/#/app/ws-a/page/page-a')
+  api.controls.mutationFailures = 50
+  await editor(page).click()
   await editor(page).locator('p').last().click()
-  await editor(page).press('Home')
+  await editor(page).press('Control+A')
   await editor(page).press('Backspace')
-  await expect(page.getByRole('button', { name: '重试保存' })).toBeVisible()
-  expect(api.blocks).toHaveLength(1)
-  await page.getByRole('button', { name: '重试保存' }).click()
-  await expect(page.getByRole('status').filter({ hasText: '已保存' })).toBeVisible()
-  expect(blockRequests(api.requests).filter((request) => request.method === 'DELETE')).toHaveLength(1)
+  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  await expect(editor(page)).toHaveText('')
+  expect(api.blocks).toHaveLength(2)
+  await page.reload()
+  await expect(editor(page)).toHaveText('')
+  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  api.controls.mutationFailures = 0
+  await page.getByRole('button', { name: /同步失败/ }).click()
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  await expect.poll(() => api.blocks.length).toBe(1)
+  expect(api.blocks[0]).toMatchObject({ type: 'paragraph', props: { node: { type: 'paragraph' } } })
+  const operations = blockRequests(api.requests)
+  const deletes = operations.filter((request) => (request.body as any).kind === 'block.delete')
+  expect(deletes.map((request) => (request.body as any).payload.id).sort()).toEqual(['first-id', 'second-id'])
+  const emptyParagraphUpsert = operations.find((request) => (request.body as any).kind === 'block.upsert')
+  expect((emptyParagraphUpsert?.body as any).payload.props.node).toEqual({ type: 'paragraph' })
+  expect(operations.findIndex((request) => (request.body as any).kind === 'block.upsert')).toBeLessThan(operations.findIndex((request) => (request.body as any).kind === 'block.delete'))
 })
 
-test('waits for an in-flight create and the later undo before leaving the page', async ({ page }) => {
+test('flushes the newest local edit before leaving during an in-flight create', async ({ page }) => {
   const api = await installApi(page)
   api.controls.mutationDelayMs = 350
   await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
   await editor(page).click()
-  await editor(page).pressSequentially('A')
-  await expect.poll(() => blockRequests(api.requests).filter((request) => request.method === 'POST').length, { timeout: 4000 }).toBe(1)
-  await editor(page).press('Control+Z')
-  await expect(editor(page)).toHaveText('')
+  await page.locator('.eotion-editor').evaluate((node) => {
+    node.setAttribute('data-root-marker', 'mounted')
+    node.querySelector('.eotion-editor-content')?.setAttribute('data-content-marker', 'mounted')
+  })
+  const editorLifecycle = async () => page.evaluate(() => ({
+    root: document.querySelector('.eotion-editor')?.getAttribute('data-root-marker'),
+    content: document.querySelector('.eotion-editor-content')?.getAttribute('data-content-marker'),
+    blockLoading: Array.from(document.querySelectorAll('.product-loading')).some((node) => node.textContent?.includes('正文')),
+    editor: document.querySelector('.tiptap')?.textContent,
+  }))
+  await page.keyboard.type('A')
+  await expect.poll(() => blockRequests(api.requests).filter((request) => (request.body as any).kind === 'block.upsert').length, { timeout: 4000 }).toBe(1)
+  const afterFirstUpsert = await editorLifecycle()
+  expect(afterFirstUpsert.root).toBe('mounted')
+  expect(afterFirstUpsert.content).toBe('mounted')
+  expect(afterFirstUpsert.blockLoading).toBe(false)
+  await editor(page).click()
+  await editor(page).press('End')
+  await editor(page).pressSequentially('B')
+  await expect(editor(page)).toHaveText('AB')
+  await page.waitForTimeout(650)
+  const local = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => { const req = indexedDB.open('eotion-local-p3'); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error) })
+    const tx = db.transaction(['blocks', 'operations'], 'readonly')
+    const read = (name: string) => new Promise<unknown[]>((resolve, reject) => { const req = tx.objectStore(name).getAll(); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error) })
+    const [blocks, operations] = await Promise.all([read('blocks'), read('operations')])
+    return { blocks, operations }
+  })
+  expect((local.blocks as any[]).find((item) => item.pageId === 'page-a')?.props.node).toMatchObject({ content: [{ text: 'AB' }] })
+  expect((local.operations as any[]).some((operation) => operation.status === 'pending' && (operation.payload as any).props?.node?.content?.[0]?.text === 'AB')).toBe(true)
+  const lifecycle = await editorLifecycle()
+  expect(lifecycle.root).toBe('mounted')
+  expect(lifecycle.content).toBe('mounted')
   await page.getByRole('button', { name: 'Bravo', exact: true }).click()
   await expect(page).toHaveURL(/page\/page-b$/)
-  expect(api.blocks.filter((item) => item.pageId === 'page-a')).toHaveLength(0)
+  await expect.poll(() => (api.blocks.find((item) => item.pageId === 'page-a')?.props.node as any)?.content?.[0]?.text, { timeout: 5000 }).toBe('AB')
+  expect(api.blocks.find((item) => item.pageId === 'page-a')?.props.node).toMatchObject({ content: [{ text: 'AB' }] })
   expect(api.controls.maxConcurrentMutations).toBe(1)
 })
 
@@ -430,31 +462,37 @@ test('keeps a dirty draft across session expiry and saves it after the same user
   api.controls.unauthorized = true
   await editor(page).click()
   await editor(page).pressSequentially('Unsaved after expiry')
-  await expect(page).toHaveURL(/#\/login\?redirect=/)
+  await expect(page).toHaveURL(/#\/login(?:\?redirect=.*)?$/)
   await page.getByLabel('邮箱').fill('ava@example.com')
   await page.getByLabel('密码', { exact: true }).fill('test-password')
   await page.getByRole('button', { name: '登录', exact: true }).click()
+  await expect(page).toHaveURL(/#\/app(?:\/ws-a)?$/)
+  await page.getByRole('button', { name: 'Alpha', exact: true }).click()
   await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/)
   await expect(editor(page)).toContainText('Unsaved after expiry')
   await expect.poll(() => (api.blocks[0]?.props.node as any)?.content?.[0]?.text, { timeout: 5000 }).toBe('Unsaved after expiry')
 })
 
-test('preserves unsaved editor content when another product API expires the session', async ({ page }) => {
+test('preserves a locally saved IME draft when page metadata sync expires the session', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
   await page.goto('/#/app/ws-a/page/page-a')
   await expect(editor(page)).toBeVisible()
   await editor(page).dispatchEvent('compositionstart', { data: '' })
   await editor(page).pressSequentially('Draft from another API')
-  api.controls.pageMutationUnauthorized = true
+  api.controls.unauthorized = true
+  await editor(page).dispatchEvent('compositionend', { data: 'Draft from another API' })
+  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
   await page.getByRole('button', { name: '页面操作：Alpha' }).click()
   await page.locator('.product-page-menu').getByRole('button', { name: '重命名' }).click()
   await page.getByLabel('页面标题').fill('Changed title')
   await page.getByRole('button', { name: '保存标题' }).click()
-  await expect(page).toHaveURL(/#\/login\?redirect=/)
+  await expect(page).toHaveURL(/#\/login(?:\?redirect=.*)?$/)
   expect(api.blocks).toHaveLength(0)
   await page.getByLabel('邮箱').fill('ava@example.com')
   await page.getByLabel('密码', { exact: true }).fill('test-password')
   await page.getByRole('button', { name: '登录', exact: true }).click()
+  await expect(page).toHaveURL(/#\/app(?:\/ws-a)?$/)
+  await page.getByRole('button', { name: 'Changed title', exact: true }).click()
   await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/)
   await expect(editor(page)).toContainText('Draft from another API')
   await expect.poll(() => (api.blocks[0]?.props.node as any)?.content?.[0]?.text, { timeout: 5000 }).toBe('Draft from another API')

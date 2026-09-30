@@ -5,6 +5,23 @@ import { ref } from 'vue'
 
 import { api, errorMessage, setSessionExpiredHandler } from '../services/productApi'
 import { useProductWorkspacesStore } from './productWorkspaces'
+import { useProductSyncStore } from './productSync'
+
+const cachedIdentityKey = 'eotion:last-authenticated-user'
+function cacheUser(user: AuthUserDto | null): void {
+  try {
+    if (user) localStorage.setItem(cachedIdentityKey, JSON.stringify(user))
+    else localStorage.removeItem(cachedIdentityKey)
+  } catch { /* Storage can be unavailable. */ }
+}
+function cachedUser(): AuthUserDto | null {
+  try {
+    const value = localStorage.getItem(cachedIdentityKey)
+    const user: unknown = value ? JSON.parse(value) : null
+    if (user && typeof user === 'object' && 'id' in user && 'email' in user && typeof user.id === 'string' && typeof user.email === 'string') return user as AuthUserDto
+  } catch { /* Corrupt or unavailable cache is ignored. */ }
+  return null
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthUserDto | null>(null)
@@ -13,6 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loginPending = ref(false)
   const logoutPending = ref(false)
   const error = ref('')
+  const offline = ref(false)
 
   let epoch = 0
   let restorePromise: Promise<void> | null = null
@@ -27,13 +45,23 @@ export const useAuthStore = defineStore('auth', () => {
     const request = api.auth.me().then((currentUser) => {
       if (requestEpoch !== epoch) return
       user.value = currentUser
+      offline.value = false
+      cacheUser(currentUser)
       status.value = 'ready'
     }).catch((cause: unknown) => {
       if (requestEpoch !== epoch) return
       if (cause instanceof ApiError && cause.statusCode === 401) {
-        user.value = null
-        status.value = 'ready'
+        expire()
         return
+      }
+      if (cause instanceof TypeError) {
+        const remembered = cachedUser()
+        if (remembered) {
+          user.value = remembered
+          offline.value = true
+          status.value = 'ready'
+          return
+        }
       }
       restoreError.value = errorMessage(cause, '暂时无法连接服务，请重试。')
       status.value = 'ready'
@@ -62,6 +90,8 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.auth.login({ email, password })
       if (requestEpoch !== epoch) return false
       user.value = response.user
+      offline.value = false
+      cacheUser(response.user)
       status.value = 'ready'
       restoreError.value = ''
       useProductWorkspacesStore().reset()
@@ -96,13 +126,16 @@ export const useAuthStore = defineStore('auth', () => {
     epoch += 1
     restorePromise = null
     user.value = null
+    offline.value = false
+    cacheUser(null)
     status.value = 'ready'
     restoreError.value = ''
     error.value = ''
     useProductWorkspacesStore().reset()
+    useProductSyncStore().configure('', false)
   }
 
   setSessionExpiredHandler(expire)
 
-  return { user, status, restoreError, loginPending, logoutPending, error, ensureSession, retryRestore, login, logout, expire }
+  return { user, status, restoreError, loginPending, logoutPending, error, offline, ensureSession, retryRestore, login, logout, expire }
 })

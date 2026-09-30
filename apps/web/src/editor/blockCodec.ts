@@ -72,12 +72,18 @@ export function blocksToDocument(blocks: BlockResponse[]): JSONContent {
 }
 
 /** The editor snapshot contains semantic block JSON, never selection/UI state. */
-export function documentToBlocks(document: JSONContent, baseline: BlockResponse[]): EditorBlock[] {
+export function documentToBlocks(document: JSONContent, baseline: BlockResponse[], keepEmptyPlaceholder = false): EditorBlock[] {
   const content = document.content ?? []
   if (document.type !== 'doc' || content.some((node) => !node.type || !(node.type in nodeTypes) || !validNode(node))) {
     throw new Error('编辑器包含尚不支持保存的内容。')
   }
-  if (baseline.length === 0 && content.length === 1 && isEmptyPlaceholder(content[0]!)) return []
+  // Some select-all/delete transactions leave a temporarily empty doc rather
+  // than an empty paragraph. Keep one existing block so clearing a page never
+  // turns it into an accidental delete of every server block.
+  if (baseline.length > 0 && content.length === 0) {
+    return [{ id: baseline[0]!.id, type: 'paragraph', orderKey: '', props: { node: { type: 'paragraph' } } }]
+  }
+  if (!keepEmptyPlaceholder && baseline.length === 0 && content.length === 1 && isEmptyPlaceholder(content[0]!)) return []
   const seen = new Set<string>()
   return content.map((node) => {
     const id = node.attrs?.blockId

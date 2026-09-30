@@ -1,7 +1,8 @@
-import type { BlockResponse, BlockCreateRequest, BlockUpdateRequest } from '@eotion/contracts'
+import type { BlockResponse, BlockUpdateRequest } from '@eotion/contracts'
 import type { JSONContent } from '@tiptap/core'
 
-import { api, errorMessage, expireSessionFromApi, ApiError } from '../services/productApi'
+import { errorMessage } from '../services/productApi'
+import { useProductSyncStore } from '../stores/productSync'
 import { assignBlockOrder } from './blockOrder'
 import { blocksToDocument, documentToBlocks, type EditorBlock } from './blockCodec'
 import { rememberPageDraft } from './pendingPageDraft'
@@ -12,12 +13,12 @@ export class PagePersistence {
   status: SaveStatus = 'loading'
   error = ''
   private baseline = new Map<string, BlockResponse>()
+  private hasStoredBlocks = false
   private document: JSONContent | null = null
   private timer: ReturnType<typeof setTimeout> | null = null
   private saving: Promise<boolean> | null = null
   private composing = false
   private disposed = false
-  private uncertainBlockId: string | null = null
 
   constructor(
     private readonly userId: string,
@@ -32,26 +33,21 @@ export class PagePersistence {
     if (!this.disposed) this.onChange(status, error)
   }
 
-  private expireWithDraft(): void {
-    this.preserveDraft()
-    expireSessionFromApi()
-  }
-
   preserveDraft(): void {
     if (this.document && this.hasPendingWork) rememberPageDraft(this.userId, this.workspaceId, this.pageId, this.document)
   }
 
-  async load(signal?: AbortSignal): Promise<JSONContent> {
+  async load(_signal?: AbortSignal): Promise<JSONContent> {
     this.state('loading')
     try {
-      const blocks = await api.blocks.list(this.workspaceId, this.pageId, signal)
+      const blocks = await (await useProductSyncStore().store()).listBlocksByPage(this.pageId)
       const document = blocksToDocument(blocks)
       this.baseline = new Map(blocks.map((block) => [block.id, block]))
+      this.hasStoredBlocks = blocks.length > 0
       this.document = document
       this.state('saved')
       return document
     } catch (cause) {
-      if (cause instanceof ApiError && cause.statusCode === 401) this.expireWithDraft()
       this.state('error', errorMessage(cause, '无法加载区块，请重试。'))
       throw cause
     }
@@ -72,7 +68,10 @@ export class PagePersistence {
   setComposing(value: boolean): void {
     this.composing = value
     if (value) this.clearTimer()
-    else if (this.document) this.schedule()
+    else if (this.document) {
+      this.schedule()
+      useProductSyncStore().requestSync()
+    }
   }
 
   get dirty(): boolean {
@@ -81,7 +80,16 @@ export class PagePersistence {
   }
 
   get hasPendingWork(): boolean {
-    return this.saving !== null || this.uncertainBlockId !== null || this.dirty
+    return this.composing || this.saving !== null || this.dirty
+  }
+
+  matchesLocalBlocks(blocks: BlockResponse[]): boolean {
+    if (blocks.length !== this.baseline.size) return false
+    return blocks.every((block) => {
+      const old = this.baseline.get(block.id)
+      return old?.type === block.type && old.orderKey === block.orderKey &&
+        JSON.stringify(old.props) === JSON.stringify(block.props)
+    })
   }
 
   retry(): Promise<boolean> {
@@ -94,22 +102,28 @@ export class PagePersistence {
       this.state('error', '请先完成当前输入，再重试保存。')
       return false
     }
-    if (this.saving) return this.saving
+    if (this.saving) {
+      const inFlight = this.saving
+      if (!(await inFlight)) return false
+      if (!this.dirty) return true
+      if (this.saving === inFlight) this.saving = null
+      return this.flush()
+    }
+    let run: Promise<boolean> | null = null
     try {
-      if (!this.dirty && !this.uncertainBlockId) {
+      if (!this.dirty) {
         this.state('saved')
         return true
       }
       this.state('saving')
-      const run = this.drain()
+      run = this.drain()
       this.saving = run
       return await run
     } catch (cause) {
-      if (cause instanceof ApiError && cause.statusCode === 401) this.expireWithDraft()
       this.state('error', errorMessage(cause, '保存失败，请重试。'))
       return false
     } finally {
-      this.saving = null
+      if (this.saving === run) this.saving = null
     }
   }
 
@@ -130,7 +144,7 @@ export class PagePersistence {
 
   private currentBlocks(): EditorBlock[] {
     if (!this.document) return []
-    const decoded = documentToBlocks(this.document, [...this.baseline.values()])
+    const decoded = documentToBlocks(this.document, [...this.baseline.values()], this.hasStoredBlocks)
     return assignBlockOrder(decoded, new Map([...this.baseline].map(([id, block]) => [id, block.orderKey])))
   }
 
@@ -138,9 +152,6 @@ export class PagePersistence {
     const current = this.currentBlocks()
     const byId = new Map(current.map((block) => [block.id, block]))
     const changes: Array<{ kind: 'create' | 'update' | 'delete'; block: EditorBlock | BlockResponse; patch?: BlockUpdateRequest }> = []
-    for (const old of this.baseline.values()) {
-      if (!byId.has(old.id)) changes.push({ kind: 'delete', block: old })
-    }
     for (const block of current) {
       const old = this.baseline.get(block.id)
       if (!old) {
@@ -153,12 +164,16 @@ export class PagePersistence {
       if (JSON.stringify(old.props) !== JSON.stringify(block.props)) patch.props = block.props
       if (Object.keys(patch).length) changes.push({ kind: 'update', block, patch })
     }
+    for (const old of this.baseline.values()) {
+      if (!byId.has(old.id)) changes.push({ kind: 'delete', block: old })
+    }
     return changes
   }
 
   private async drain(): Promise<boolean> {
     try {
-      await this.reconcileUncertainMutation()
+      const sync = useProductSyncStore()
+      const local = await sync.store()
       while (!this.composing) {
         const next = this.changes()[0]
         if (!next) {
@@ -167,43 +182,35 @@ export class PagePersistence {
         }
         try {
           if (next.kind === 'delete') {
-            await api.blocks.delete(this.workspaceId, this.pageId, next.block.id)
+            await local.deleteBlock(this.workspaceId, next.block.id)
             this.baseline.delete(next.block.id)
           } else if (next.kind === 'create') {
             const block = next.block as EditorBlock
-            const created = await api.blocks.create(this.workspaceId, this.pageId, {
-              id: block.id, parentBlockId: null, type: block.type, orderKey: block.orderKey, props: block.props,
-            } satisfies BlockCreateRequest)
+            const now = new Date().toISOString()
+            const created: BlockResponse = {
+              id: block.id, workspaceId: this.workspaceId, pageId: this.pageId, parentBlockId: null,
+              type: block.type, orderKey: block.orderKey, props: block.props, createdAt: now, updatedAt: now,
+            }
+            await local.upsertBlock(created)
             this.baseline.set(created.id, created)
+            this.hasStoredBlocks = true
           } else {
-            const updated = await api.blocks.update(this.workspaceId, this.pageId, next.block.id, next.patch!)
+            const old = this.baseline.get(next.block.id)!
+            const updated: BlockResponse = { ...old, ...next.patch!, updatedAt: new Date().toISOString() }
+            await local.upsertBlock(updated)
             this.baseline.set(updated.id, updated)
+            this.hasStoredBlocks = true
           }
+          sync.localMutation()
         } catch (cause) {
-          this.uncertainBlockId = next.block.id
           throw cause
         }
       }
       return false
     } catch (cause) {
-      if (cause instanceof ApiError && cause.statusCode === 401) this.expireWithDraft()
       this.state('error', errorMessage(cause, '保存失败，请重试。'))
       return false
     }
   }
 
-  private async reconcileUncertainMutation(): Promise<void> {
-    const id = this.uncertainBlockId
-    if (!id) return
-    try {
-      const block = await api.blocks.get(this.workspaceId, this.pageId, id)
-      // A remote block with unsupported content must not be overwritten.
-      blocksToDocument([block])
-      this.baseline.set(id, block)
-    } catch (cause) {
-      if (!(cause instanceof ApiError) || cause.statusCode !== 404) throw cause
-      this.baseline.delete(id)
-    }
-    this.uncertainBlockId = null
-  }
 }

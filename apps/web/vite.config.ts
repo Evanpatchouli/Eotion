@@ -16,6 +16,14 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    preview: {
+      proxy: {
+        "/api": {
+          target: env.EOTION_API_PROXY_TARGET || "http://127.0.0.1:7137",
+          changeOrigin: false,
+        },
+      },
+    },
     build: {
       target: "es2022",
     },
