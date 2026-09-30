@@ -45,7 +45,7 @@ async function savePassword() {
       <form class="settings-form" @submit.prevent="saveProfile">
         <label class="settings-field" for="settings-display-name">昵称</label>
         <div class="settings-inline-control"><input id="settings-display-name" v-model="displayName" maxlength="64" autocomplete="nickname" :aria-describedby="auth.offline ? 'settings-profile-offline' : undefined" /><button class="settings-primary-button" type="submit" :disabled="!canSaveProfile">{{ auth.profilePending ? '保存中…' : '保存昵称' }}</button></div>
-        <p class="settings-feedback" :class="{ 'settings-feedback--error': profileFeedback !== '昵称已保存' }" role="status" aria-live="polite">{{ profileFeedback || (auth.offline ? '当前离线，联网后可修改昵称。' : ' ') }}</p>
+        <p id="settings-profile-offline" class="settings-feedback" :class="{ 'settings-feedback--error': profileFeedback !== '昵称已保存' }" role="status" aria-live="polite">{{ profileFeedback || (auth.offline ? '当前离线，联网后可修改昵称。' : ' ') }}</p>
       </form>
     </section>
     <section class="settings-section" aria-labelledby="settings-profile-password">
