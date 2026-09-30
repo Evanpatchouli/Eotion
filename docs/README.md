@@ -26,6 +26,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `p5-page-tree.md` | P5.2 页面树、页面生命周期（创建/打开/重命名/移动/删除）与 move/delete API |
 | `p5-real-page-editor.md` | P5.3 正式 Tiptap Page Editor、Block 映射、自动保存与阶段边界 |
 | `p5-real-sync.md` | P5.4 LocalStore 正式保存、服务端 snapshot、push-before-pull、离线恢复及验收状态 |
+| `p5-attachments.md` | P5.5 图片/文件节点、在线上传、MIME 安全、持久 cleanup 与验收 |
 | `p4-final-acceptance.md` | P4 六条退出条件的最终验收证据、测试结果与进入 P5 的结论 |
 
 ## 使用原则

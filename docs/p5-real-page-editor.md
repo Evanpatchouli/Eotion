@@ -4,7 +4,7 @@
 
 ## Editor ↔ Block
 
-一个 Tiptap 顶层节点对应一个 Eotion Block。当前映射：`paragraph`、`heading`、`bulletList`、`orderedList`、`blockquote`、`codeBlock`、`horizontalRule` 分别对应 `paragraph`、`heading`、`bulleted-list`、`numbered-list`、`quote`、`code`、`divider`。`image` 与 `todo` 留待后续阶段。服务端 Block 的 `props` 格式为 `{ "node": <Tiptap JSONContent> }`，保存节点结构和 marks，不保存 selection、UI 或诊断状态。遇到不支持的 Block 类型、子 Block、未知节点或 props 时，页面停止进入编辑态并显示错误，避免覆盖原数据。
+一个 Tiptap 顶层节点对应一个 Eotion Block。当前映射：`paragraph`、`heading`、`bulletList`、`orderedList`、`blockquote`、`codeBlock`、`horizontalRule` 分别对应 `paragraph`、`heading`、`bulleted-list`、`numbered-list`、`quote`、`code`、`divider`。P5.5 增加 `eotionImage` → `image`、`eotionFile` → `file` 与 `eotionTodo` → `todo`，附件 attrs、上传和删除语义见 [P5.5 Attachments](p5-attachments.md)。服务端 Block 的 `props` 格式为 `{ "node": <Tiptap JSONContent> }`，保存节点结构和 marks，不保存 selection、UI 或诊断状态。遇到不支持的 Block 类型、子 Block、未知节点或 props 时，页面停止进入编辑态并显示错误，避免覆盖原数据。
 
 顶层节点通过 `BlockIdentity` Tiptap 扩展持有 `blockId`。初次创建、分割或粘贴产生缺失/重复 ID 时用 `createLocalId()` 补齐。ID 不渲染到 HTML/剪贴板，跨页面粘贴会获得新 ID。扩展只在缺失/重复时追加一次 ProseMirror transaction；顶层 Block ID 不按数组位置推导，保存 props 时移除身份属性。该 transaction 不直接调用 HTTP，持久化层只对语义快照做 diff。
 
@@ -29,3 +29,7 @@ P5.3 仍以 Server 为正文来源。没有把 P3 LocalStore mutation/oplog、`r
 本次通过：Web `test:product` 44/44（包含正式编辑器、P2 5,000 块/Slash/撤销回归）、`test:storage` 7/7、safe-area 2/2、Web 与 Desktop build；API `test:domain` 2/2、`test:http` 的 HTTP 1/1 + Sync 1/1 + File 22/22、API build；SDK test 10/10 与 build；`git diff --check`。
 
 真实链路使用本机 Mongo replica set、Nest API 与 Vite Web（独立测试数据库及端口），在 Chromium 浏览器中完成注册登录、建 Workspace/Page、正文保存与 reload、新增及删除 Block、A/B 页面隔离和 390×844 横向溢出检查，均通过。该浏览器验收没有替代 Electron 原生窗口或移动真机验收。P2 真机结论仍以 [P2 编辑器演示](p2-editor-demo.md)中既有记录为准，本阶段的浏览器组合事件测试不等同于真实中文输入法验证。
+
+## 后续集成
+
+P5.4 已将正式正文保存切换到 LocalStore/oplog 与 push-before-pull；以上 server-backed 描述记录 P5.3 历史边界，当前实现见 [P5.4 Real Sync](p5-real-sync.md)。P5.5 附件 Block 共用这一保存链，二进制在线上传，清理队列独立于正文 snapshot 持久保存。

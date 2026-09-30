@@ -1,28 +1,24 @@
-# Current Task — P5.4 Real Sync
+# Current Task — P5.5 Attachments
 
-基线：`2dc9ae49e3b7025f05c6dcacf8cd889ce1bc04c9`；开始时工作区干净，`git pull --ff-only` 已确认最新。
+基线 master bb4a653，与 origin/master 一致；开始时工作区干净。版本保持 0.0.1 / build 1。
 
-## 目标与数据安全约束
+## 目标与 invariant
 
-正式 Page Tree 和 Editor 先写 durable LocalStore 与 oplog，后台 Push 再 Pull。任何 workspace 仍有 pending/failed operation 时拒绝远端 snapshot replace；离线重启仍可进入已缓存的账号和工作区并继续写。401 必须撤销缓存身份。P5.5、CRDT、实时协作不进入本任务。
+正式 Page Editor 图片/文件附件；二进制在线上传到既有 API / ali-oss-server，稳定 snapshot 走原有 Block / LocalStore / oplog / P5.4 sync。未知 attrs 拒绝写；每 Block 独立 fileId；删除本地提交且同步确认后才清理远端；清理状态持久化并按当前账号授权的 workspace 重试。Web 是唯一 renderer，Mobile 沿用 WebView，不新增原生宿主。
 
-## 工作单元
+## Work Units
 
-1. **调查/决策（S0→S2）**：分别核对 storage/IPC、API/contracts/SDK、Web 产品链路和测试，写出数据流、事务/权限 invariant 与最小接口。
-2. **执行（S1/S2）**：snapshot 只读 API、contract/SDK；`page.move` canonical operation 与服务端复用 PageService。
-3. **执行（S1/S2）**：LocalStore 两端实现 workspace 查询、page move、原子 remote replace 及 pending 拒绝，补数据完整性测试。
-4. **执行（S2→S1）**：独立 ProductSyncCoordinator、按当前账号可访问 workspace 过滤发送、离线 auth/workspace cache、Page Tree 与 Editor 本地优先接线和状态。
-5. **验证（S0）**：定向单元/集成、Web 产品测试、要求的全套命令、尽可能真实 Mongo/API/Web 双客户端及 Electron 路径。
-6. **Review/收尾**：独立 review 重点检查覆盖风险、重试 ID、跨账号、active editor；修复 blocker，更新正式文档、复核 diff，按逻辑单元提交并 push。
+1. 调查 S0：API/MIME 与 Storage/IPC/ack 两份独立 Evidence Pack；主 Agent 核对 Editor/UI。
+2. 决策 S2（GPT-6.1 Sol）：确定 attrs schema、MIME 流式识别、cleanup queue ack gate、上传/导航补偿；形成 Brief 后执行降为 S1。
+3. 执行 S1：Domain/Contracts/SDK/API MIME 与测试；LocalStore IndexedDB/SQLite/IPC cleanup 与测试，互不重叠。
+4. 执行 S1：Morphicons 基础层及正式系统图标；Editor node/上传/Slash/drop/paste 与正式 PageView 接线，互不重叠。
+5. 验证 S0：规定命令、产品回归、真实双客户端、Desktop/Mobile 构建；Playwright desktop/tablet/mobile Visual QA。
+6. Review：GPT-6.1 Sol High 独立 blocker review，修复后验证；文档与每个逻辑单元 commit。全部 exit criteria 满足前不标 PASS。
 
-## 当前状态
+## 状态
 
-代码、文档与独立 review 已完成；review/旧测试揭示的活跃 Editor 回拉、Web 离线 app shell、空段落保存与同步刷新导致编辑器重建均已修复。contracts、storage、SDK、API、Desktop、Web `test:product` 55/55、`test:storage` 9/9、真实 Mongo/API/Web 双客户端与完整断网 app shell 测试已通过。Mobile WebView 默认 LAN HTTP 真机离线重启未验收，在该边界闭合前不标记完整 P5.4 PASS；后续验收交接见 `.agents/handoff.md`。
+实现、自动验收与独立 review 已完成。Browser plugin not available；使用已有 Playwright 验证。产品 72/72、存储/Electron 10/10、真实双客户端 1/1、API domain 2/2、HTTP 24/24、SDK 14/14、storage 6/6；规定 typecheck/build 与 version check 通过。修复了响应性、NodeView 图标事件、取消/重试并发、卸载、401、未落盘清理与首次对象删除失败等 review blocker。
 
+P5.5 PASS：已部署 OSS 的生产 Web 双客户端完成真实 PNG/文件上传、刷新、URL 200 字节校验与删除；Mongo metadata 和已删除 OSS URL 均为 404。Desktop/Tablet/Mobile 截图已人工复核，390px 无横向溢出。早期 smoke 遗留对象依据隔离 replica set 的精确 insert oplog 恢复键并逐个清理；最终测试对象均已清理，不做 bucket prefix 扫描。线上验证未输出凭据或修改生产配置。
 
-## 版本体系维护（2026-09-30，已完成）
-
-- 根 `package.json` 是唯一产品版本源；当前保持 `0.0.1`，`eotion.buildNumber=1`。
-- `scripts/version.mjs` 提供 check/sync/build/patch/minor/major/set，并自动扫描 `apps/*`、`packages/*` package manifest。
-- Web / Desktop renderer / Mobile Lynx 统一注入 version、buildNumber、gitSha；API `/api/health` 暴露同一套构建信息。
-- Docker 部署通过 `GIT_SHA` 注入 commit；正式规则见 `docs/runbooks/versioning.md`。
+已提交：`de592b0` API/契约、`19db80f` 两端清理存储、`822c51c` 正式 UI/图标/产品链；`3be7ba0` 触摸与可移植 QA 输出；文档验收作为最后单元提交。正式结果见 `docs/p5-attachments.md`。P5.4 原生宿主待验收和 P5 Final Acceptance 未关闭。本轮临时 API/preview 已停止，隔离 Mongo 测试容器已移除；截图留在仓库外。

@@ -6,7 +6,7 @@ Eotion 通过 authenticated workspace HTTP API 管理文件元数据。二进制
 
 所有路由均位于 `/api/workspaces/:workspaceId/files`，需要有效的 Eotion Session，沿用 workspace owner-only 权限。跨用户访问继续返回 404。`POST /` 上传，`GET /` 列表，`GET /:fileId` 读取，`PATCH /:fileId` 仅重命名，`DELETE /:fileId` 删除对象和元数据。
 
-上传请求体是原始 `application/octet-stream`；`X-Eotion-File-Id`、`X-Eotion-File-Name` 的值由 `encodeURIComponent` 编码。浏览器 SDK 的 `files.upload(workspaceId, fileId, file, signal?)` 直接将 `File` 作为请求体，服务端按收到的流计数和限制大小。文件 ID 和名称由客户端提供；`workspaceId` 来自路由，`ownerId` 来自 Session，`mimeType` 在本阶段由服务端固定为 `application/octet-stream`（不信任浏览器声明的类型），`size` 来自服务端实际读取字节数，`objectKey` 与 `url` 来自 ali-oss-server SDK 返回结果。客户端不能在 DTO 中指定归属、大小、对象键或 URL。PATCH 只接受 `name`。
+上传请求体是原始 `application/octet-stream`；`X-Eotion-File-Id`、`X-Eotion-File-Name` 的值由 `encodeURIComponent` 编码。可选 `X-Eotion-File-Mime-Type` 是编码后的浏览器 MIME 提示，不决定持久化类型。浏览器 SDK 的 `files.upload(workspaceId, fileId, file, signal?)` 直接将 `File` 作为请求体，服务端按收到的流计数和限制大小。文件 ID 和名称由客户端提供；`workspaceId` 来自路由，`ownerId` 来自 Session，`mimeType` 由服务端读取最多 512 字节前缀识别 PNG/JPEG/WebP/GIF/AVIF，其余内容固定为 `application/octet-stream`（不信任浏览器声明的类型），`size` 来自服务端实际读取字节数，`objectKey` 与 `url` 来自 ali-oss-server SDK 返回结果。客户端不能在 DTO 中指定归属、大小、对象键或 URL。PATCH 只接受 `name`。
 
 `@eotion/sdk` 提供 `files.upload/list/get/update/delete`。沿用 `credentials: include`、`AbortSignal` 和 `ApiError`。API 将请求体提前中断或响应连接关闭转换为上传 `AbortSignal`，经 File service 和 object storage adapter 传给 ali-oss-server SDK；SDK 取消上游请求并销毁输入流。真实文件名也传给 SDK，由其处理 ASCII 或 Unicode 文件名请求头。SDK 内无 Node-only OSS 代码或 Eotion 之外的 token 管理。
 
@@ -22,4 +22,4 @@ ali-oss-server 1.1.0 契约规定返回的 `url` 是稳定对象地址，并非�
 
 只在 `apps/api` 配置 `ALI_OSS_SERVER_URL`、`ALI_OSS_CLIENT_ID`、`ALI_OSS_CLIENT_SECRET`。可选 `ALI_OSS_OBJECT_PREFIX` 和 `ALI_OSS_MAX_UPLOAD_BYTES` 控制 namespace 和上传上限。未配置 OSS 时 File 操作明确失败；health、Workspace/Page/Block 与 sync 继续启动和运行。标准集成测试使用 fake ali-oss-server HTTP server，但 Eotion 仍调用真实 `@ali-oss-server/sdk@1.1.0`；测试不需要真实 Aliyun OSS。
 
-P5 附件 UI、Tiptap 扩展、离线二进制同步、file oplog、图片处理及 signed URL 系统不属于本阶段。
+P5.5 正式附件 UI、严格 attrs、持久清理队列和取消补偿见 [P5.5 Attachments](p5-attachments.md)。同一 API 进程中的 DELETE 等待在途 upload 完成；已确认对象的取消先确保 metadata，再删除对象与 metadata，删除失败保留 metadata 供重试。默认 20 MiB 上限按真实输入流计数；前缀识别后重放，不缓存整文件。离线二进制同步、独立 file oplog、图片处理和 signed URL 不在本轮范围。
