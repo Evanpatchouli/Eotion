@@ -127,6 +127,7 @@ export class EotionApiClient {
           'Content-Type': 'application/octet-stream',
           'X-Eotion-File-Id': segment(fileId),
           'X-Eotion-File-Name': segment(file.name),
+          'X-Eotion-File-Mime-Type': segment(file.type || 'application/octet-stream'),
         },
         signal,
       }),

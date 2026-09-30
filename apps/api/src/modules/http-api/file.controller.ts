@@ -14,6 +14,22 @@ function decodedHeader(request: FastifyRequest, name: string): string {
   catch { throw new BadRequestException('Invalid file upload metadata') }
 }
 
+function normalizedMimeHint(request: FastifyRequest): string | undefined {
+  const value = request.headers['x-eotion-file-mime-type']
+  if (value === undefined) return undefined
+  if (typeof value !== 'string') throw new BadRequestException('Invalid file upload metadata')
+  let decoded: string
+  try { decoded = decodeURIComponent(value) }
+  catch { throw new BadRequestException('Invalid file upload metadata') }
+  const [rawMimeType, ...parameters] = decoded.split(';')
+  const mimeType = rawMimeType.trim().toLowerCase()
+  const validParameters = parameters.every((parameter) => /^\s*[a-z0-9!#$&^_.+-]+\s*=\s*(?:"[^"\r\n]*"|[a-z0-9!#$&^_.+-]+)\s*$/i.test(parameter))
+  if (decoded.length > 512 || mimeType.length > 256 || (mimeType && !/^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/.test(mimeType)) || !validParameters) {
+    throw new BadRequestException('Invalid file upload metadata')
+  }
+  return mimeType || undefined
+}
+
 @Controller('workspaces/:workspaceId/files')
 @UseGuards(SessionAuthGuard)
 export class FileController {
@@ -26,6 +42,7 @@ export class FileController {
       id: decodedHeader(request, 'x-eotion-file-id'),
       name: decodedHeader(request, 'x-eotion-file-name'),
     })
+    const mimeTypeHint = normalizedMimeHint(request)
     const rawLength = request.headers['content-length']
     const contentLength = rawLength === undefined ? undefined : Number(rawLength)
     if (contentLength !== undefined && (!Number.isSafeInteger(contentLength) || contentLength < 0)) throw new BadRequestException('Invalid content length')
@@ -38,7 +55,7 @@ export class FileController {
     reply.raw.on('close', onResponseClose)
     if (request.raw.aborted || request.raw.destroyed && !request.raw.complete || reply.raw.destroyed && !reply.raw.writableFinished) abort()
     try {
-      return await this.files.create(user.id, parseId(workspaceId), { ...input, stream: request.body as Readable, contentLength, signal: controller.signal })
+      return await this.files.create(user.id, parseId(workspaceId), { ...input, mimeTypeHint, stream: request.body as Readable, contentLength, signal: controller.signal })
     } finally {
       request.raw.off('aborted', abort)
       request.raw.off('close', onRequestClose)

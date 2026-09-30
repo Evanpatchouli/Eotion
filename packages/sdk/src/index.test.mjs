@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { FileUpdateRequestSchema, FileUploadMetadataSchema, PageMoveRequestSchema, SyncOperationSchema, WorkspaceSnapshotResponseSchema } from '@eotion/contracts'
+import { AttachmentAttrsSchema, FileUpdateRequestSchema, FileUploadMetadataSchema, PageMoveRequestSchema, SAFE_IMAGE_MIME_TYPES, SyncOperationSchema, WorkspaceSnapshotResponseSchema } from '@eotion/contracts'
 import { ApiError, EotionApiClient, EotionOperationTransport } from './index.ts'
 
 test('login sends JSON to the auth endpoint with session credentials enabled', async () => {
@@ -81,9 +81,35 @@ test('file upload sends a raw File body and encoded metadata headers', async () 
   assert.equal(request.headers.get('content-type'), 'application/octet-stream')
   assert.equal(request.headers.get('x-eotion-file-id'), 'file%2F1')
   assert.equal(request.headers.get('x-eotion-file-name'), 'r%C3%A9sum%C3%A9%20%231.png')
-  assert.equal(request.headers.has('x-eotion-file-mime-type'), false)
+  assert.equal(request.headers.get('x-eotion-file-mime-type'), 'image%2Fpng')
   assert.deepEqual(new Uint8Array(await request.arrayBuffer()), new Uint8Array([97, 98, 99]))
   assert.equal(forwardedSignal, controller.signal)
+})
+
+test('file upload uses octet-stream as the MIME hint when File.type is empty', async () => {
+  let request
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test',
+    fetch: async (input, init) => {
+      request = new Request(input, init)
+      return Response.json({})
+    },
+  })
+
+  await client.files.upload('workspace-1', 'file-1', new File(['data'], 'unknown.bin'))
+
+  assert.equal(request.headers.get('x-eotion-file-mime-type'), 'application%2Foctet-stream')
+})
+
+test('attachment attrs are bounded, normalized, and accept only credential-free HTTP URLs', () => {
+  assert.deepEqual(SAFE_IMAGE_MIME_TYPES, ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'])
+  const attrs = AttachmentAttrsSchema.parse({ fileId: 'file-1', name: 'image.png', mimeType: ' IMAGE/PNG ', size: 0, url: 'https://objects.example/image.png' })
+  assert.equal(attrs.mimeType, 'image/png')
+  for (const url of ['javascript:alert(1)', 'https://user:pass@objects.example/image.png']) {
+    assert.equal(AttachmentAttrsSchema.safeParse({ ...attrs, url }).success, false)
+  }
+  assert.equal(AttachmentAttrsSchema.safeParse({ ...attrs, size: Number.MAX_SAFE_INTEGER + 1 }).success, false)
+  assert.equal(AttachmentAttrsSchema.safeParse({ ...attrs, extra: true }).success, false)
 })
 
 test('file metadata APIs use workspace routes, credentials, abort signals, and accept DELETE 204', async () => {

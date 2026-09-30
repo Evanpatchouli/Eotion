@@ -7,6 +7,7 @@ export const BLOCK_TYPES = [
   'quote',
   'code',
   'image',
+  'file',
   'divider',
 ] as const
 

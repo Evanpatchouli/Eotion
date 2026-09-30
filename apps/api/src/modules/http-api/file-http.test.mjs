@@ -326,6 +326,48 @@ test('File HTTP lifecycle uses the real ali-oss-server SDK and preserves OSS/Mon
       }
     })
 
+    await t.test('client abort during MIME prefix sniff destroys the pending request stream', async () => {
+      const id = `file-${randomUUID()}`
+      const route = `${baseUrl}/api/workspaces/${workspaceId}/files`
+      const controller = new AbortController()
+      let releaseBody
+      let prefixSent
+      const bodyRelease = new Promise((resolve) => { releaseBody = resolve })
+      const sent = new Promise((resolve) => { prefixSent = resolve })
+      const uploadsBefore = oss.uploaded.length
+      const pending = fetch(route, {
+        method: 'POST',
+        headers: {
+          cookie: owner.cookie,
+          'content-type': 'application/octet-stream',
+          'x-eotion-file-id': encodeURIComponent(id),
+          'x-eotion-file-name': encodeURIComponent('partial-signature.bin'),
+        },
+        body: Readable.from((async function* () {
+          yield Buffer.from([0x89, 0x50, 0x4e])
+          prefixSent()
+          await bodyRelease
+          yield Buffer.alloc(1024)
+        })()),
+        duplex: 'half',
+        signal: controller.signal,
+      })
+      try {
+        await Promise.race([sent, new Promise((_, reject) => setTimeout(() => reject(new Error('request did not send its prefix')), 5000))])
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        controller.abort()
+        releaseBody()
+        await assert.rejects(pending, (error) => error.name === 'AbortError')
+        assert.equal(oss.uploaded.length, uploadsBefore)
+        assert.equal(await files.countDocuments({ id }), 0)
+        assert.equal((await jsonRequest(baseUrl, '/api/health', 'GET')).status, 200)
+      } finally {
+        controller.abort()
+        releaseBody()
+        await pending.catch(() => {})
+      }
+    })
+
     await t.test('abort with uncertain upstream result retains object for safe reconciliation', async () => {
       const id = `file-${randomUUID()}`
       const controller = new AbortController()
@@ -416,6 +458,51 @@ test('File HTTP lifecycle uses the real ali-oss-server SDK and preserves OSS/Mon
         assert.equal(oss.uploaded.at(-1).mimeType, 'application/octet-stream')
         assertSafe(record)
       }
+    })
+
+    await t.test('image MIME metadata comes from bounded file signatures, not the client hint', async () => {
+      const images = [
+        ['image/png', Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])],
+        ['image/jpeg', Buffer.from([0xff, 0xd8, 0xff, 0x00])],
+        ['image/webp', Buffer.from('RIFF\x04\x00\x00\x00WEBP')],
+        ['image/gif', Buffer.from('GIF89a\x00')],
+        ['image/avif', Buffer.from([0x00, 0x00, 0x00, 0x14, ...Buffer.from('ftyp'), ...Buffer.from('mif1'), 0, 0, 0, 0, ...Buffer.from('avis')])],
+        ['image/avif', Buffer.from([0x00, 0x00, 0x00, 0x10, ...Buffer.from('ftyp'), ...Buffer.from('avif'), 0, 0, 0, 0])],
+      ]
+      for (const [expectedMime, bytes] of images) {
+        const id = `file-${randomUUID()}`
+        const hint = expectedMime === 'image/png' ? 'IMAGE/PNG; charset=binary' : 'image/gif'
+        const response = await fetch(`${baseUrl}/api/workspaces/${workspaceId}/files`, {
+          method: 'POST',
+          headers: {
+            cookie: owner.cookie,
+            'content-type': 'application/octet-stream',
+            'x-eotion-file-id': encodeURIComponent(id),
+            'x-eotion-file-name': encodeURIComponent('image.bin'),
+            'x-eotion-file-mime-type': encodeURIComponent(hint),
+          },
+          body: bytes,
+        })
+        assert.equal(response.status, 201)
+        const record = await response.json()
+        assert.equal(record.mimeType, expectedMime)
+        assert.equal((await files.findOne({ id })).mimeType, expectedMime)
+        assert.equal(oss.uploaded.at(-1).mimeType, expectedMime)
+        assert.deepEqual(oss.objects.get(record.objectKey), bytes)
+      }
+
+      const badHint = await fetch(`${baseUrl}/api/workspaces/${workspaceId}/files`, {
+        method: 'POST',
+        headers: {
+          cookie: owner.cookie,
+          'content-type': 'application/octet-stream',
+          'x-eotion-file-id': encodeURIComponent(`file-${randomUUID()}`),
+          'x-eotion-file-name': encodeURIComponent('bad.bin'),
+          'x-eotion-file-mime-type': encodeURIComponent('image/png; broken'),
+        },
+        body: Buffer.from('bytes'),
+      })
+      assert.equal(badHint.status, 400)
     })
 
     await t.test('dot-segment file ID produces a safe namespace and uploads successfully', async () => {

@@ -24,6 +24,8 @@ import { FILE_OBJECT_STORAGE, type FileObjectStorage } from './services/file-obj
 import { PageService } from './services/page.service'
 import { SessionService } from './services/session.service'
 import { WorkspaceService } from './services/workspace.service'
+import { FileMetadataRepository } from './repositories/file-metadata.repository'
+import { WorkspacePermissionService } from './services/workspace-permission.service'
 
 function testMongoUri(): string {
   const base = process.env.P4_TEST_MONGODB_URI?.trim() || 'mongodb://127.0.0.1:27017'
@@ -346,6 +348,124 @@ test('server domain persists scoped records and creates the declared Mongo index
   const file = await files.create(userA.id, workspaceA.id, fileInput)
   assert.equal(file.ownerId, userA.id)
   assert.match((await files.find(userA.id, workspaceA.id, file.id))?.objectKey ?? '', /^domain-test\/eotion\/workspaces\//)
+  const abortController = new AbortController()
+  const uploadedKeys: string[] = []
+  const deletedKeys: string[] = []
+  const originalUpload = storage.upload.bind(storage)
+  const originalDelete = storage.delete.bind(storage)
+  storage.upload = async ({ objectKey, stream }) => {
+    for await (const _chunk of stream) { /* consume the upload stream */ }
+    const uploadedKey = `domain-test/${objectKey}`
+    uploadedKeys.push(uploadedKey)
+    abortController.abort()
+    return { objectKey: uploadedKey, url: 'https://example.test/aborted-file' }
+  }
+  storage.delete = async (objectKey) => { deletedKeys.push(objectKey) }
+  try {
+    await assert.rejects(files.create(userA.id, workspaceA.id, {
+      id: 'file-aborted-after-upload', name: 'aborted.txt', stream: Readable.from(['bytes']), signal: abortController.signal,
+    }), /File upload was aborted/)
+    assert.equal(await files.find(userA.id, workspaceA.id, 'file-aborted-after-upload'), null)
+    assert.deepEqual(deletedKeys, uploadedKeys)
+  } finally {
+    storage.upload = originalUpload
+    storage.delete = originalDelete
+  }
+  const fileRepository = app.get(FileMetadataRepository)
+  const permissions = app.get(WorkspacePermissionService)
+  const barrierFileId = 'file-delete-waits-for-upload'
+  let releaseRepositoryCreate!: () => void
+  let repositoryCreateEntered!: () => void
+  const repositoryCreateBarrier = new Promise<void>((resolve) => { releaseRepositoryCreate = resolve })
+  const repositoryCreateStarted = new Promise<void>((resolve) => { repositoryCreateEntered = resolve })
+  const originalRepositoryCreate = fileRepository.create.bind(fileRepository)
+  const originalRepositoryFind = fileRepository.findInWorkspace.bind(fileRepository)
+  const originalPermissionCheck = permissions.assertCanWrite.bind(permissions)
+  const originalStorageUpload = storage.upload.bind(storage)
+  const originalStorageDelete = storage.delete.bind(storage)
+  const objectDeletes: string[] = []
+  const successfulObjectDeletes: string[] = []
+  let uploadedBarrierObjectKey: string | undefined
+  let simulatedObjectPresent = false
+  let metadataPresentAtFirstDeleteFailure = false
+  let failFirstObjectDelete = true
+  let watchDeletePermission = false
+  let releaseDeletePermission!: () => void
+  let deletePermissionEntered!: () => void
+  let deletePermissionReturned!: () => void
+  const deletePermissionBarrier = new Promise<void>((resolve) => { releaseDeletePermission = resolve })
+  const deletePermissionStarted = new Promise<void>((resolve) => { deletePermissionEntered = resolve })
+  const deletePermissionFinished = new Promise<void>((resolve) => { deletePermissionReturned = resolve })
+  let deleteLookups = 0
+  fileRepository.create = async (input) => {
+    if (input.id === barrierFileId) {
+      repositoryCreateEntered()
+      await repositoryCreateBarrier
+    }
+    return originalRepositoryCreate(input)
+  }
+  fileRepository.findInWorkspace = async (workspaceId, id) => {
+    if (id === barrierFileId) deleteLookups += 1
+    return originalRepositoryFind(workspaceId, id)
+  }
+  permissions.assertCanWrite = async (userId, workspaceId) => {
+    await originalPermissionCheck(userId, workspaceId)
+    if (watchDeletePermission) {
+      watchDeletePermission = false
+      deletePermissionEntered()
+      await deletePermissionBarrier
+      deletePermissionReturned()
+    }
+  }
+  storage.delete = async (objectKey) => {
+    objectDeletes.push(objectKey)
+    if (failFirstObjectDelete) {
+      failFirstObjectDelete = false
+      metadataPresentAtFirstDeleteFailure = (await fileRepository.findInWorkspace(workspaceA.id, barrierFileId)) !== null
+      throw new Error('synthetic first object delete failure')
+    }
+    await originalStorageDelete(objectKey)
+    successfulObjectDeletes.push(objectKey)
+    simulatedObjectPresent = false
+  }
+  storage.upload = async (input) => {
+    const uploaded = await originalStorageUpload(input)
+    uploadedBarrierObjectKey = uploaded.objectKey
+    simulatedObjectPresent = true
+    return uploaded
+  }
+  const uploadAbort = new AbortController()
+  const pendingCreate = files.create(userA.id, workspaceA.id, {
+    id: barrierFileId, name: 'cancel-during-save.txt', stream: Readable.from(['cancel me']), signal: uploadAbort.signal,
+  })
+  try {
+    await repositoryCreateStarted
+    uploadAbort.abort()
+    watchDeletePermission = true
+    const pendingDelete = files.delete(userA.id, workspaceA.id, barrierFileId)
+    await deletePermissionStarted
+    releaseDeletePermission()
+    await deletePermissionFinished
+    await Promise.resolve()
+    assert.equal(deleteLookups, 0, 'DELETE must wait for this service instance’s pending upload')
+    releaseRepositoryCreate()
+    await assert.rejects(pendingCreate, /File upload was aborted and created data cleanup failed/)
+    assert.equal(await pendingDelete, true)
+    assert.equal(await fileModel.countDocuments({ id: barrierFileId }), 0)
+    assert.equal(metadataPresentAtFirstDeleteFailure, true)
+    assert.deepEqual(objectDeletes, [uploadedBarrierObjectKey, uploadedBarrierObjectKey])
+    assert.deepEqual(successfulObjectDeletes, [uploadedBarrierObjectKey])
+    assert.equal(simulatedObjectPresent, false)
+  } finally {
+    releaseDeletePermission()
+    releaseRepositoryCreate()
+    fileRepository.create = originalRepositoryCreate
+    fileRepository.findInWorkspace = originalRepositoryFind
+    permissions.assertCanWrite = originalPermissionCheck
+    storage.delete = originalStorageDelete
+    storage.upload = originalStorageUpload
+    await pendingCreate.catch(() => {})
+  }
   await assert.rejects(
     files.update(userA.id, workspaceA.id, file.id, { $set: { workspaceId: workspaceB.id } } as unknown as Parameters<typeof files.update>[3]),
     /Unsupported update field/,

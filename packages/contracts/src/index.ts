@@ -88,6 +88,24 @@ export type PageMoveRequest = z.infer<typeof PageMoveRequestSchema>
 export const BlockTypeSchema = z.enum(BLOCK_TYPES)
 export type BlockType = z.infer<typeof BlockTypeSchema>
 
+export const SAFE_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'] as const
+
+const attachmentFileIdSchema = z.string().trim().min(1).max(256)
+const attachmentMimeTypeSchema = z.string().trim().toLowerCase().min(1).max(256)
+const attachmentUrlSchema = z.url().refine((value) => {
+  const url = new URL(value)
+  return (url.protocol === 'http:' || url.protocol === 'https:') && url.username === '' && url.password === ''
+}, 'Expected an HTTP or HTTPS URL without credentials')
+
+export const AttachmentAttrsSchema = z.object({
+  fileId: attachmentFileIdSchema,
+  name: nameSchema,
+  mimeType: attachmentMimeTypeSchema,
+  size: z.number().int().min(0).refine(Number.isSafeInteger, 'Expected a safe integer'),
+  url: attachmentUrlSchema,
+}).strict()
+export type AttachmentAttrs = z.infer<typeof AttachmentAttrsSchema>
+
 const syncOperationBase = {
   id: idSchema,
   clientId: idSchema,
