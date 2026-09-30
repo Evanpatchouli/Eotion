@@ -95,8 +95,11 @@ git pull --ff-only origin master
 构建并启动：
 
 ```bash
-docker compose up -d --build
+pnpm version:check
+GIT_SHA="$(git rev-parse --short=12 HEAD)" docker compose up -d --build
 ```
+
+`GIT_SHA` 会注入 Web 构建和 API 运行时，便于通过页面构建信息与 `/api/health` 追踪当前部署 commit。
 
 检查状态：
 
@@ -192,14 +195,15 @@ docker exec mongodb sh -lc '
 
 ```bash
 git pull --ff-only origin master
-docker compose up -d --build
+pnpm version:check
+GIT_SHA="$(git rev-parse --short=12 HEAD)" docker compose up -d --build
 docker compose ps
 ```
 
 只修改 Web 构建期变量（例如 `VITE_ALLOW_PAGE_ZOOM`）时：
 
 ```bash
-docker compose up -d --build eotion-web
+GIT_SHA="$(git rev-parse --short=12 HEAD)" docker compose up -d --build eotion-web
 ```
 
 该命令会重新执行 Vite production build，并用新镜像重建 `eotion-web`；API 无需重建。
@@ -212,6 +216,8 @@ docker logs --tail=100 eotion-api
 ```
 
 不要使用 `docker compose down -v` 清理环境。Eotion 自身当前没有数据库 volume，但同机 MongoDB 等服务可能依赖 Docker volume；运维时不要进行无差别 volume prune。
+
+版本号、build number 与 Git SHA 的管理规则见 [`versioning.md`](versioning.md)。
 
 ## Rollback
 
