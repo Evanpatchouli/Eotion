@@ -1,26 +1,24 @@
 # Deployment Runbook
 
-> Eotion 正式环境的构建、部署、验证与回滚流程。当前部署模式为宿主机 Nginx + Docker Compose；MongoDB 与 ali-oss-server 作为独立服务，通过 Docker external network 接入。
+> Eotion 正式环境的构建、部署、验证与回滚流程。公网入口由独立 `nginx-config` 仓库维护的 Nginx 容器提供；Eotion、MongoDB 与 ali-oss-server 通过 Docker network 互联。
 
 ## Topology
 
 ```text
 Internet
   ↓
-https://<EOTION_DOMAIN>
+https://eotion.evanpatchouli.space
   ↓
-Host Nginx :443
-  ↓
-127.0.0.1:8001
-  ↓
-eotion-web (nginx)
+nginx container :443
+  ↓ eotion-app
+eotion-web:80
   ├─ static web
   └─ /api/* → eotion-api:7137
                    ├─ mongo network → mongodb:27017
                    └─ ali-oss network → ali-oss-server:9512
 ```
 
-公网只需要开放 80/443。Eotion API 不映射宿主机端口；Web 仅绑定 `127.0.0.1:8001`。
+公网只需要开放 80/443。Eotion API 不映射宿主机端口；Web 的 `127.0.0.1:8001` 仅保留给宿主机诊断，生产 Nginx 通过固定 Docker 网络 `eotion-app` 直接访问 `eotion-web:80`。
 
 ## Prerequisites
 
@@ -32,8 +30,8 @@ eotion-web (nginx)
 - MongoDB 已创建 Eotion 专用用户，并具有 `eotion` 数据库的 `readWrite` 权限。
 - 外部 Docker network `ali-oss` 已存在，且 `ali-oss-server` 容器已加入。
 - ali-oss-server 已创建供 Eotion 使用的 client id / client secret。
-- 正式域名 A/AAAA 记录已经指向服务器。
-- 宿主机 Nginx 可用。
+- `eotion.evanpatchouli.space` 的 DNS 已指向服务器。
+- `nginx-config` 仓库已部署，并可将 nginx 容器加入 external network `eotion-app`。
 
 检查外部网络：
 
@@ -49,8 +47,8 @@ MongoDB 与 ali-oss-server 应分别出现在对应 network 的 Containers 中�
 在仓库根目录创建未提交的 `.env`：
 
 ```env
-WEB_ORIGIN=https://eotion.example.com
-API_ORIGIN=https://eotion.example.com
+WEB_ORIGIN=https://eotion.evanpatchouli.space
+API_ORIGIN=https://eotion.evanpatchouli.space
 
 MONGODB_URI=mongodb://eotion:<EOTION_MONGO_PASSWORD>@mongodb:27017/eotion?authSource=eotion&replicaSet=rs0
 
@@ -66,7 +64,7 @@ ALI_OSS_MAX_UPLOAD_BYTES=20971520
 
 要求：
 
-- 将 `eotion.example.com` 替换为正式域名，Origin 不要带末尾 `/`。
+- 正式 Origin 为 `https://eotion.evanpatchouli.space`，不要带末尾 `/`。
 - MongoDB 密码取 MongoDB 部署配置中的 Eotion 专用用户密码。
 - Eotion API 在 Docker 内访问 MongoDB 时使用 `mongodb:27017`，不要使用 `127.0.0.1`。
 - Eotion API 在 Docker 内访问 ali-oss-server 时使用 `http://ali-oss-server:9512`。
@@ -120,56 +118,42 @@ curl http://127.0.0.1:8001/api/health
 
 `/api/health` 只能证明 API 链路和配置基本正常；MongoDB 最终需要通过实际注册、登录、页面写入和同步验证。
 
-## Host Nginx
+## Edge Nginx
 
-示例配置：
+线上 Nginx 配置由独立仓库 `Evanpatchouli/nginx-config` 维护。Eotion Compose 将内部 `app` 网络固定命名为 `eotion-app`，Nginx 容器加入该 external network 后直接代理到 `eotion-web:80`。
 
-```nginx
-server {
-    listen 80;
-    server_name eotion.example.com;
-
-    client_max_body_size 25m;
-
-    location / {
-        proxy_pass http://127.0.0.1:8001;
-        proxy_http_version 1.1;
-
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host $host;
-
-        proxy_read_timeout 120s;
-        proxy_send_timeout 120s;
-    }
-}
-```
-
-注意：
-
-- 外层 Nginx 必须配置 `client_max_body_size 25m`，否则附件可能在到达 Eotion 前被默认 1 MB 限制拒绝。
-- 必须传递 `X-Forwarded-Proto`，使内层反向代理继续向 API 传递真实 HTTPS scheme。
-
-检查并加载：
+先确认网络和 Eotion Web：
 
 ```bash
-nginx -t
-systemctl reload nginx
+docker network inspect eotion-app
+docker ps --filter name=eotion-web
 ```
+
+然后部署 Nginx：
+
+```bash
+cd /nginx
+git pull --ff-only origin main
+bash deploy-eotion.sh
+```
+
+实际站点配置位于 `nginx-config/conf.d/eotion.conf`。其中：
+
+- `client_max_body_size 25m` 为附件上传保留余量。
+- `X-Forwarded-Proto` / `X-Forwarded-Host` 会继续传给 Eotion 内层 Nginx 和 API。
+- upstream 使用 `http://eotion-web:80`，不经过宿主机 `127.0.0.1:8001`。
+- `proxy_read_timeout` / `proxy_send_timeout` 均为 120 秒。
 
 ## HTTPS
 
-生产环境必须使用 HTTPS。使用 Certbot 时可执行：
+生产环境必须使用 HTTPS。首次证书申请和后续重复部署由 `nginx-config/deploy-eotion.sh` 负责：
 
 ```bash
-certbot --nginx -d eotion.example.com
-nginx -t
-systemctl reload nginx
+cd /nginx
+bash deploy-eotion.sh
 ```
 
-正式环境 `NODE_ENV=production`，Session Cookie 使用安全属性；同时 Web Service Worker / 离线恢复也应在安全 Origin 下验收。
+该脚本使用 Certbot Webroot 为 `eotion.evanpatchouli.space` 管理独立证书。正式环境 `NODE_ENV=production`，Session Cookie 使用安全属性；Web Service Worker / 离线恢复也应在安全 Origin 下验收。
 
 ## Acceptance
 
@@ -245,6 +229,6 @@ git checkout master
 - 不向公网开放 MongoDB 27017、Eotion API 7137、Eotion Web 8001 或 ali-oss-server 9512。
 - 不把 MongoDB 密码、OSS client secret 或其他生产凭据提交到 Eotion 仓库。
 - 不执行 `docker compose down -v`、`docker volume prune` 或带 `--volumes` 的全局 prune，除非明确知道会删除哪些数据。
-- 正式部署前确认外部 `mongo` 与 `ali-oss` network 存在。
-- 对上传链路保持宿主机与容器内 Nginx 的 body-size 限制一致。
+- 正式部署前确认 `mongo`、`ali-oss` 与固定名 `eotion-app` network 均处于预期状态。
+- 对上传链路保持边缘 Nginx 与 Eotion 内层 Nginx 的 body-size 限制一致。
 - 生产域名切换后同步更新 `WEB_ORIGIN` 与 `API_ORIGIN`。
