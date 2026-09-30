@@ -34,9 +34,15 @@ export interface LocalStore {
   clearAllData(): Promise<void>
   getPage(id: string): Promise<LocalPageRecord | undefined>
   listPages(): Promise<LocalPageRecord[]>
+  listPagesByWorkspace(workspaceId: string): Promise<LocalPageRecord[]>
+  hasWorkspaceSnapshot(workspaceId: string): Promise<boolean>
   upsertPage(page: LocalPageRecord): Promise<void>
+  /** Moves an existing page and records exactly one page.move operation. */
+  movePage(workspaceId: string, id: string, parentPageId: string | null, orderKey: string): Promise<void>
   /** Deletes the page and its blocks atomically, represented by one page.delete operation. */
   deletePage(workspaceId: string, id: string): Promise<void>
+  /** Atomically replaces one workspace with a verified server snapshot, without producing operations. */
+  replaceWorkspaceSnapshot(workspaceId: string, pages: LocalPageRecord[], blocks: LocalBlockRecord[]): Promise<void>
 
   getBlock(id: string): Promise<LocalBlockRecord | undefined>
   listBlocksByPage(pageId: string): Promise<LocalBlockRecord[]>
@@ -47,6 +53,44 @@ export interface LocalStore {
   getPendingOperations(): Promise<StorageOperation[]>
   markOperationSynced(id: string): Promise<void>
   markOperationFailed(id: string): Promise<void>
+}
+
+/** Reject malformed or partial workspace snapshots before any local content is replaced. */
+export function validateWorkspaceSnapshot(workspaceId: string, pages: LocalPageRecord[], blocks: LocalBlockRecord[]): void {
+  const pageById = new Map<string, LocalPageRecord>()
+  for (const page of pages) {
+    if (!page.id || page.workspaceId !== workspaceId || pageById.has(page.id)) throw new Error('Invalid workspace page snapshot')
+    pageById.set(page.id, page)
+  }
+  for (const page of pages) {
+    const visited = new Set<string>([page.id])
+    let parentId = page.parentPageId
+    while (parentId !== null) {
+      if (visited.has(parentId)) throw new Error(`Page ${page.id} has a cyclic parent`)
+      visited.add(parentId)
+      const parent = pageById.get(parentId)
+      if (!parent) throw new Error(`Parent page ${parentId} is missing from snapshot`)
+      parentId = parent.parentPageId
+    }
+  }
+  const blockById = new Map<string, LocalBlockRecord>()
+  for (const block of blocks) {
+    if (!block.id || block.workspaceId !== workspaceId || blockById.has(block.id) || !pageById.has(block.pageId)) {
+      throw new Error('Invalid workspace block snapshot')
+    }
+    blockById.set(block.id, block)
+  }
+  for (const block of blocks) {
+    const visited = new Set<string>([block.id])
+    let parentId = block.parentBlockId ?? null
+    while (parentId !== null) {
+      if (visited.has(parentId)) throw new Error(`Block ${block.id} has a cyclic parent`)
+      visited.add(parentId)
+      const parent = blockById.get(parentId)
+      if (!parent || parent.pageId !== block.pageId) throw new Error(`Parent block ${parentId} is missing from snapshot page`)
+      parentId = parent.parentBlockId ?? null
+    }
+  }
 }
 
 /** Sends one canonical operation; adapters retain the stable id for retries. */
@@ -61,7 +105,7 @@ export interface ReconnectResult {
 
 // Coalesces calls only for the same object in this JS realm; it is not a
 // cross-instance, cross-tab, or cross-renderer lock.
-const inFlight = new WeakMap<LocalStore, Promise<ReconnectResult>>()
+const inFlight = new WeakMap<LocalStore, { key: string; promise: Promise<ReconnectResult> }>()
 
 /**
  * Retries the persisted queue in order, without generating a new operation.
@@ -69,15 +113,22 @@ const inFlight = new WeakMap<LocalStore, Promise<ReconnectResult>>()
  * reconnects for the same store object in this JS realm share one attempt.
  * Delivery is at least once: if send succeeds but the local status update
  * fails, the persisted operation is sent again with the same id. The future
- * transport/server must deduplicate by operation id.
+ * transport/server must deduplicate by operation id. When allowedWorkspaceIds
+ * is provided, operations from other workspaces stay queued and do not block
+ * this attempt. Different filters on the same store execute serially.
  */
-export function reconnectPending(store: LocalStore, transport: OperationTransport): Promise<ReconnectResult> {
+export function reconnectPending(store: LocalStore, transport: OperationTransport, allowedWorkspaceIds?: ReadonlySet<string>): Promise<ReconnectResult> {
+  const key = allowedWorkspaceIds ? JSON.stringify([...allowedWorkspaceIds].sort()) : '*'
   const active = inFlight.get(store)
-  if (active) return active
+  if (active) {
+    if (active.key === key) return active.promise
+    return active.promise.then(() => reconnectPending(store, transport, allowedWorkspaceIds))
+  }
 
   const attempt = (async (): Promise<ReconnectResult> => {
     const result: ReconnectResult = { synced: 0, failed: 0 }
     for (const operation of await store.getPendingOperations()) {
+      if (allowedWorkspaceIds && !allowedWorkspaceIds.has(operation.workspaceId)) continue
       try {
         await transport.send(operation)
       } catch {
@@ -91,7 +142,7 @@ export function reconnectPending(store: LocalStore, transport: OperationTranspor
     return result
   })()
 
-  inFlight.set(store, attempt)
+  inFlight.set(store, { key, promise: attempt })
   void attempt.then(
     () => inFlight.delete(store),
     () => inFlight.delete(store),

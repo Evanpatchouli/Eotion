@@ -115,6 +115,94 @@ test('SQLite upgrades the old operation table without inventing missing sync fie
     assert.equal(operation.sequence, 1)
     assert.equal(operation.workspaceId, undefined)
     assert.equal(operation.payload.title, 'Old page')
+    await store.replaceWorkspaceSnapshot('current-workspace', [], [])
+    assert.equal(await store.hasWorkspaceSnapshot('current-workspace'), true)
+    assert.equal((await store.getPendingOperations())[0].id, 'legacy-op')
+    store.close()
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('SQLite move creates one page.move and rejects invalid ancestry without changing sequence', async () => {
+  const store = new SqliteLocalStore(':memory:')
+  const now = '2026-01-01T00:00:00.000Z'
+  const page = (id, workspaceId, parentPageId = null) => ({ id, workspaceId, parentPageId, orderKey: 'a', title: id, updatedAt: now })
+  try {
+    await store.upsertPage(page('root', 'ws'))
+    await store.upsertPage(page('child', 'ws', 'root'))
+    await store.upsertPage(page('other', 'else'))
+    const before = await store.getPendingOperations()
+    for (const parent of ['root', 'other', 'missing']) {
+      await assert.rejects(store.movePage('ws', 'root', parent, 'b'))
+    }
+    await assert.rejects(store.movePage('ws', 'root', 'child', 'b'))
+    assert.deepEqual(await store.getPage('root'), page('root', 'ws'))
+    assert.deepEqual(await store.getPendingOperations(), before)
+    await store.movePage('ws', 'child', null, 'b')
+    assert.equal((await store.getPage('child')).parentPageId, null)
+    assert.equal((await store.getPage('child')).orderKey, 'b')
+    const after = await store.getPendingOperations()
+    assert.deepEqual(after.map((op) => op.sequence), [1, 2, 3, 4])
+    assert.equal(after[3].kind, 'page.move')
+    assert.deepEqual(after[3].payload, { id: 'child', parentPageId: null, orderKey: 'b' })
+  } finally {
+    store.close()
+  }
+})
+
+test('SQLite snapshot replacement is workspace scoped, atomic, and preserves operation identity', async () => {
+  const store = new SqliteLocalStore(':memory:')
+  const now = '2026-01-01T00:00:00.000Z'
+  const page = (id, workspaceId) => ({ id, workspaceId, parentPageId: null, orderKey: 'a', title: id, updatedAt: now })
+  const block = (id, workspaceId, pageId) => ({ id, workspaceId, pageId, parentBlockId: null, type: 'paragraph', orderKey: 'a', props: {}, createdAt: now, updatedAt: now })
+  try {
+    await store.upsertPage(page('old', 'ws'))
+    await store.upsertBlock(block('old-block', 'ws', 'old'))
+    await store.upsertPage(page('other', 'else'))
+    const operations = await store.getPendingOperations()
+    await assert.rejects(store.replaceWorkspaceSnapshot('ws', [page('new', 'ws')], []), /unsynced/)
+    assert.deepEqual(await store.listPagesByWorkspace('ws'), [page('old', 'ws')])
+    for (const operation of operations.filter((op) => op.workspaceId === 'ws')) await store.markOperationSynced(operation.id)
+    await assert.rejects(store.replaceWorkspaceSnapshot('ws', [page('other', 'ws')], []), /another workspace/)
+    await assert.rejects(store.replaceWorkspaceSnapshot('ws', [page('broken', 'ws')], [block('bad', 'ws', 'missing')]), /Invalid/)
+    const circular = { ...page('circular', 'ws') }
+    circular.self = circular
+    await assert.rejects(store.replaceWorkspaceSnapshot('ws', [circular], []), /circular/i)
+    assert.deepEqual(await store.listPagesByWorkspace('ws'), [page('old', 'ws')])
+    assert.deepEqual(await store.listBlocksByPage('old'), [block('old-block', 'ws', 'old')])
+    assert.equal(await store.hasWorkspaceSnapshot('ws'), true)
+    assert.equal(await store.hasWorkspaceSnapshot('never'), false)
+    await store.replaceWorkspaceSnapshot('ws', [page('new', 'ws')], [block('new-block', 'ws', 'new')])
+    assert.deepEqual(await store.listPagesByWorkspace('ws'), [page('new', 'ws')])
+    assert.equal(await store.getBlock('old-block'), undefined)
+    assert.deepEqual(await store.listBlocksByPage('new'), [block('new-block', 'ws', 'new')])
+    assert.deepEqual(await store.listPagesByWorkspace('else'), [page('other', 'else')])
+    assert.deepEqual(await store.getPendingOperations(), operations.filter((op) => op.workspaceId === 'else'))
+    await store.replaceWorkspaceSnapshot('ws', [], [])
+    assert.equal(await store.hasWorkspaceSnapshot('ws'), true)
+    assert.deepEqual(await store.listPagesByWorkspace('ws'), [])
+    await store.upsertPage(page('after', 'ws'))
+    const [pendingOther, pendingAfter] = await store.getPendingOperations()
+    assert.equal(pendingOther.id, operations[2].id)
+    assert.equal(pendingAfter.sequence, 4)
+    assert.equal(pendingAfter.clientId, operations[0].clientId)
+  } finally {
+    store.close()
+  }
+})
+
+test('SQLite keeps a locally created workspace cached after its last page is deleted', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'eotion-sqlite-empty-'))
+  const path = join(directory, 'local.sqlite')
+  try {
+    let store = new SqliteLocalStore(path)
+    await store.upsertPage({ id: 'only', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Only', updatedAt: '2026-01-01T00:00:00.000Z' })
+    await store.deletePage('ws', 'only')
+    store.close()
+    store = new SqliteLocalStore(path)
+    assert.deepEqual(await store.listPagesByWorkspace('ws'), [])
+    assert.equal(await store.hasWorkspaceSnapshot('ws'), true)
     store.close()
   } finally {
     rmSync(directory, { recursive: true, force: true })

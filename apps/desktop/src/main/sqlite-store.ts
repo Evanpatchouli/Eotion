@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { SyncOperation } from '@eotion/contracts'
-import { createLocalId, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
+import { createLocalId, validateWorkspaceSnapshot, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 type OperationKind = SyncOperation['kind']
 
@@ -120,6 +120,15 @@ export class SqliteLocalStore implements LocalStore {
     return rows.map((row) => JSON.parse(row.document) as LocalPageRecord)
   }
 
+  async listPagesByWorkspace(workspaceId: string): Promise<LocalPageRecord[]> {
+    return (await this.listPages()).filter((page) => page.workspaceId === workspaceId)
+  }
+
+  async hasWorkspaceSnapshot(workspaceId: string): Promise<boolean> {
+    const marker = this.database.prepare('SELECT value FROM metadata WHERE key = ?').get(`snapshot:${workspaceId}`)
+    return Boolean(marker) || (await this.listPagesByWorkspace(workspaceId)).length > 0
+  }
+
   async upsertPage(page: LocalPageRecord): Promise<void> {
     this.transaction(() => {
       const existingRow = this.database.prepare('SELECT document FROM pages WHERE id = ?').get(page.id) as { document: string } | undefined
@@ -134,8 +143,56 @@ export class SqliteLocalStore implements LocalStore {
       }
       this.database.prepare('INSERT INTO pages (id, document) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET document = excluded.document')
         .run(page.id, JSON.stringify(page))
+      this.database.prepare("INSERT INTO metadata (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = '1'").run(`snapshot:${page.workspaceId}`)
       const { id, workspaceId, parentPageId, title, icon, orderKey } = page
       this.appendOperation({ kind: 'page.upsert', workspaceId, payload: { id, parentPageId, title, icon: icon ?? null, orderKey } })
+    })
+  }
+
+  async movePage(workspaceId: string, id: string, parentPageId: string | null, orderKey: string): Promise<void> {
+    this.transaction(() => {
+      const row = this.database.prepare('SELECT document FROM pages WHERE id = ?').get(id) as { document: string } | undefined
+      const page = row ? JSON.parse(row.document) as LocalPageRecord : undefined
+      if (!page || page.workspaceId !== workspaceId) throw new Error(`Page ${id} is unavailable in this workspace`)
+      if (parentPageId === id) throw new Error(`Page ${id} cannot be its own parent`)
+      let ancestorId = parentPageId
+      const visited = new Set<string>()
+      while (ancestorId !== null) {
+        if (visited.has(ancestorId)) throw new Error('Existing page tree is cyclic')
+        visited.add(ancestorId)
+        const ancestorRow = this.database.prepare('SELECT document FROM pages WHERE id = ?').get(ancestorId) as { document: string } | undefined
+        const ancestor = ancestorRow ? JSON.parse(ancestorRow.document) as LocalPageRecord : undefined
+        if (!ancestor || ancestor.workspaceId !== workspaceId) throw new Error(`Parent page ${ancestorId} is unavailable in this workspace`)
+        if (ancestor.parentPageId === id) throw new Error(`Page ${id} cannot move under its descendant`)
+        ancestorId = ancestor.parentPageId
+      }
+      this.database.prepare('UPDATE pages SET document = ? WHERE id = ?').run(JSON.stringify({ ...page, parentPageId, orderKey }), id)
+      this.appendOperation({ kind: 'page.move', workspaceId, payload: { id, parentPageId, orderKey } })
+    })
+  }
+
+  async replaceWorkspaceSnapshot(workspaceId: string, pages: LocalPageRecord[], blocks: LocalBlockRecord[]): Promise<void> {
+    validateWorkspaceSnapshot(workspaceId, pages, blocks)
+    this.transaction(() => {
+      const unsynced = this.database.prepare("SELECT 1 FROM operations WHERE status IN ('pending', 'failed') AND workspace_id = ? LIMIT 1").get(workspaceId)
+      if (unsynced) throw new Error(`Workspace ${workspaceId} has unsynced operations`)
+      const existingPages = this.database.prepare('SELECT document FROM pages').all() as { document: string }[]
+      const currentPages = existingPages.map(({ document }) => JSON.parse(document) as LocalPageRecord)
+      const existingBlocks = this.database.prepare('SELECT document FROM blocks').all() as { document: string }[]
+      const currentBlocks = existingBlocks.map(({ document }) => JSON.parse(document) as LocalBlockRecord)
+      if (pages.some((page) => currentPages.some((existing) => existing.id === page.id && existing.workspaceId !== workspaceId)) ||
+        blocks.some((block) => currentBlocks.some((existing) => existing.id === block.id && existing.workspaceId !== workspaceId))) {
+        throw new Error('Snapshot ID belongs to another workspace')
+      }
+      const deleteBlock = this.database.prepare('DELETE FROM blocks WHERE id = ?')
+      const deletePage = this.database.prepare('DELETE FROM pages WHERE id = ?')
+      currentBlocks.filter((block) => block.workspaceId === workspaceId).forEach((block) => deleteBlock.run(block.id))
+      currentPages.filter((page) => page.workspaceId === workspaceId).forEach((page) => deletePage.run(page.id))
+      const insertPage = this.database.prepare('INSERT INTO pages (id, document) VALUES (?, ?)')
+      pages.forEach((page) => insertPage.run(page.id, JSON.stringify(page)))
+      const insertBlock = this.database.prepare('INSERT INTO blocks (id, page_id, order_key, document) VALUES (?, ?, ?, ?)')
+      blocks.forEach((block) => insertBlock.run(block.id, block.pageId, block.orderKey, JSON.stringify(block)))
+      this.database.prepare("INSERT INTO metadata (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = '1'").run(`snapshot:${workspaceId}`)
     })
   }
 

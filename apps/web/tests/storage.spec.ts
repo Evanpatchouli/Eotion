@@ -3,6 +3,48 @@ import { resolve } from 'node:path'
 
 const storageModuleUrl = `/@fs/${resolve('../..', 'packages/storage/src/index.ts').replaceAll('\\', '/')}`
 
+test('IndexedDB move and workspace hydrate preserve unrelated data and local operation identity', async ({ page }) => {
+  await page.goto('/#/__dev/storage-p3')
+  const result = await page.evaluate(async () => {
+    const { IndexedDbLocalStore } = await import('/src/storage/indexedDbStore.ts')
+    const name = `p5-hydrate-${crypto.randomUUID()}`
+    const store = await IndexedDbLocalStore.open(name)
+    const now = '2026-01-01T00:00:00.000Z'
+    const record = (id: string, workspaceId: string, parentPageId: string | null = null) => ({ id, workspaceId, parentPageId, orderKey: 'a', title: id, updatedAt: now })
+    try {
+      await store.upsertPage(record('root', 'ws'))
+      await store.upsertPage(record('child', 'ws', 'root'))
+      await store.upsertPage(record('other', 'else'))
+      await store.upsertPage(record('ephemeral', 'local-empty'))
+      await store.deletePage('local-empty', 'ephemeral')
+      const localEmptyPresent = await store.hasWorkspaceSnapshot('local-empty')
+      const first = await store.getPendingOperations()
+      let rejectedMove = 0
+      for (const parent of ['root', 'child', 'other', 'missing']) {
+        try { await store.movePage('ws', 'root', parent, 'b') } catch { rejectedMove += 1 }
+      }
+      const unchanged = (await store.getPendingOperations()).length === first.length && (await store.getPage('root'))?.orderKey === 'a'
+      await store.movePage('ws', 'child', null, 'b')
+      const moved = await store.getPendingOperations()
+      let rejectedHydrate = false
+      try { await store.replaceWorkspaceSnapshot('ws', [], []) } catch { rejectedHydrate = true }
+      for (const op of moved.filter((op) => op.workspaceId === 'ws')) await store.markOperationSynced(op.id)
+      let rejectedCollision = false
+      try { await store.replaceWorkspaceSnapshot('ws', [record('other', 'ws')], []) } catch { rejectedCollision = true }
+      await store.replaceWorkspaceSnapshot('ws', [record('server', 'ws')], [])
+      const hydrated = (await store.listPagesByWorkspace('ws')).map((item) => item.id)
+      const untouched = (await store.listPagesByWorkspace('else')).map((item) => item.id)
+      await store.replaceWorkspaceSnapshot('ws', [], [])
+      const emptyPresent = await store.hasWorkspaceSnapshot('ws')
+      const neverPresent = await store.hasWorkspaceSnapshot('never')
+      await store.upsertPage(record('later', 'ws'))
+      const pending = await store.getPendingOperations()
+      return { rejectedMove, unchanged, moveKind: moved.at(-1)?.kind, moveSequence: moved.at(-1)?.sequence, rejectedHydrate, rejectedCollision, hydrated, untouched, emptyPresent, localEmptyPresent, neverPresent, pendingSequence: pending.at(-1)?.sequence, sameClient: pending.at(-1)?.clientId === first[0]?.clientId }
+    } finally { store.close() }
+  })
+  expect(result).toEqual({ rejectedMove: 4, unchanged: true, moveKind: 'page.move', moveSequence: 6, rejectedHydrate: true, rejectedCollision: true, hydrated: ['server'], untouched: ['other'], emptyPresent: true, localEmptyPresent: true, neverPresent: false, pendingSequence: 7, sameClient: true })
+})
+
 test('IndexedDB content and operation log survive reopen, reject partial writes, and reconnect once', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))

@@ -136,3 +136,28 @@ test('retry after a delivered send and failed local acknowledgement keeps the op
   assert.deepEqual(sent, ['op-1', 'op-1'])
   assert.equal(queue.length, 1)
 })
+
+test('reconnect filters allowed workspaces and serializes different filters on one store', async () => {
+  const { store, queue } = queueStore([
+    { ...operation(1), workspaceId: 'old-account' },
+    { ...operation(2), workspaceId: 'current' },
+  ])
+  const sent: string[] = []
+  let release!: () => void
+  const gate = new Promise<void>((resolve) => { release = resolve })
+  const transport = {
+    async send(item: StorageOperation) {
+      sent.push(item.id)
+      if (item.workspaceId === 'current') await gate
+    },
+  }
+  const current = reconnectPending(store, transport, new Set(['current']))
+  const old = reconnectPending(store, transport, new Set(['old-account']))
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  assert.deepEqual(sent, ['op-2'])
+  release()
+  assert.deepEqual(await current, { synced: 1, failed: 0 })
+  assert.deepEqual(await old, { synced: 1, failed: 0 })
+  assert.deepEqual(sent, ['op-2', 'op-1'])
+  assert.deepEqual(queue.map(({ status }) => status), ['synced', 'synced'])
+})

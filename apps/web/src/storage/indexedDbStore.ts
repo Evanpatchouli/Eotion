@@ -1,5 +1,5 @@
 import type { SyncOperation } from '@eotion/contracts'
-import { createLocalId, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
+import { createLocalId, validateWorkspaceSnapshot, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 const DB_VERSION = 1
 const encoder = new TextEncoder()
@@ -105,6 +105,15 @@ export class IndexedDbLocalStore implements LocalStore {
     return this.all('pages')
   }
 
+  async listPagesByWorkspace(workspaceId: string): Promise<LocalPageRecord[]> {
+    return (await this.listPages()).filter((page) => page.workspaceId === workspaceId)
+  }
+
+  async hasWorkspaceSnapshot(workspaceId: string): Promise<boolean> {
+    if (await this.read<boolean>('meta', `snapshot:${workspaceId}`)) return true
+    return (await this.listPagesByWorkspace(workspaceId)).length > 0
+  }
+
   getBlock(id: string): Promise<LocalBlockRecord | undefined> {
     return this.read('blocks', id)
   }
@@ -159,7 +168,58 @@ export class IndexedDbLocalStore implements LocalStore {
         if (!parent || parent.workspaceId !== page.workspaceId) throw new Error(`Parent page ${parentPageId} is unavailable in this workspace`)
       }
       pages.put(page)
+      tx.objectStore('meta').put(true, `snapshot:${page.workspaceId}`)
     })
+  }
+
+  movePage(workspaceId: string, id: string, parentPageId: string | null, orderKey: string): Promise<void> {
+    return this.mutate(workspaceId, 'page.move', { id, parentPageId, orderKey }, async (tx) => {
+      const pages = tx.objectStore('pages')
+      const page = await request<LocalPageRecord | undefined>(pages.get(id))
+      if (!page || page.workspaceId !== workspaceId) throw new Error(`Page ${id} is unavailable in this workspace`)
+      if (parentPageId === id) throw new Error(`Page ${id} cannot be its own parent`)
+      let ancestorId = parentPageId
+      const visited = new Set<string>()
+      while (ancestorId !== null) {
+        if (visited.has(ancestorId)) throw new Error('Existing page tree is cyclic')
+        visited.add(ancestorId)
+        const ancestor = await request<LocalPageRecord | undefined>(pages.get(ancestorId))
+        if (!ancestor || ancestor.workspaceId !== workspaceId) throw new Error(`Parent page ${ancestorId} is unavailable in this workspace`)
+        if (ancestor.parentPageId === id) throw new Error(`Page ${id} cannot move under its descendant`)
+        ancestorId = ancestor.parentPageId
+      }
+      pages.put({ ...page, parentPageId, orderKey })
+    })
+  }
+
+  async replaceWorkspaceSnapshot(workspaceId: string, pages: LocalPageRecord[], blocks: LocalBlockRecord[]): Promise<void> {
+    validateWorkspaceSnapshot(workspaceId, pages, blocks)
+    const tx = this.db.transaction(['pages', 'blocks', 'operations', 'meta'], 'readwrite')
+    const done = completed(tx)
+    try {
+      const currentPages = await request<LocalPageRecord[]>(tx.objectStore('pages').getAll())
+      const currentBlocks = await request<LocalBlockRecord[]>(tx.objectStore('blocks').getAll())
+      const operations = await request<StorageOperation[]>(tx.objectStore('operations').getAll())
+      if (operations.some((op) => op.status !== 'synced' && op.workspaceId === workspaceId)) {
+        throw new Error(`Workspace ${workspaceId} has unsynced operations`)
+      }
+      if (pages.some((page) => currentPages.some((existing) => existing.id === page.id && existing.workspaceId !== workspaceId)) ||
+        blocks.some((block) => currentBlocks.some((existing) => existing.id === block.id && existing.workspaceId !== workspaceId))) {
+        throw new Error('Snapshot ID belongs to another workspace')
+      }
+      const pageStore = tx.objectStore('pages')
+      const blockStore = tx.objectStore('blocks')
+      currentBlocks.filter((block) => block.workspaceId === workspaceId).forEach((block) => blockStore.delete(block.id))
+      currentPages.filter((page) => page.workspaceId === workspaceId).forEach((page) => pageStore.delete(page.id))
+      pages.forEach((page) => pageStore.put(page))
+      blocks.forEach((block) => blockStore.put(block))
+      tx.objectStore('meta').put(true, `snapshot:${workspaceId}`)
+      await done
+    } catch (error) {
+      try { tx.abort() } catch { /* transaction already completed */ }
+      await done.catch(() => undefined)
+      throw error
+    }
   }
 
   deletePage(workspaceId: string, id: string): Promise<void> {
