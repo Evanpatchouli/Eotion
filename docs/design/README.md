@@ -2,17 +2,19 @@
 
 本目录用于 P5.7 UI/UX Foundation 的设计 source of truth。
 
-当前阶段只建立文档骨架；Gate A 前不修改正式 Product UI。
+当前处于 P5.7.2 Stitch Direction Exploration；Gate A 前不修改正式 Product UI。
 
 推荐阅读顺序：
 
-1. [UI/UX Audit](ui-ux-audit.md)
-2. [Design Direction](design-direction.md)
-3. [Design System v1](design-system-v1.md)
-4. [Core Screen Design](core-screen-spec.md)
-5. 用户批准 Gate A
-6. 实施（实施计划在 Gate A 后另建）
-7. [Visual Acceptance](visual-acceptance.md)
+1. [UI/UX Audit](ui-ux-audit.md) — P5.7.1 已完成
+2. [Stitch Design Brief](stitch-design-brief.md) — 当前阶段输入
+3. Stitch 同屏多方向探索
+4. [Design Direction](design-direction.md) — 选定方向后冻结
+5. [Design System v1](design-system-v1.md)
+6. [Core Screen Design](core-screen-spec.md)
+7. 用户批准 Gate A
+8. 实施（实施计划在 Gate A 后另建）
+9. [Visual Acceptance](visual-acceptance.md)
 
 总计划见 [P5.7 UI/UX Foundation](../p5-ui-ux-foundation.md)。
 
