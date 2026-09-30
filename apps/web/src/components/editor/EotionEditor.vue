@@ -406,6 +406,9 @@ defineExpose({ editor })
 .eotion-upload-alert { margin: 0; padding: 8px 12px; border-bottom: 1px solid #e5e5e1; color: #98483e; font-size: 13px; }
 .eotion-cleanup-retry { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #e5e5e1; color: #98483e; font-size: 13px; }
 .eotion-cleanup-retry button { min-height: 40px; border: 1px solid #dcdfd9; border-radius: 5px; padding: 5px 9px; background: #fff; cursor: pointer; }
+@media (max-width: 767px), (pointer: coarse) {
+  .eotion-editor-toolbar button, .eotion-upload-item button, .eotion-cleanup-retry button { min-width: 44px; min-height: 44px; }
+}
 </style>
 
 <style>

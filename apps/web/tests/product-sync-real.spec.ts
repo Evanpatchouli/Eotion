@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { mkdirSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { deflateSync } from 'node:zlib'
 import { expect, test, type Page } from '@playwright/test'
 
 const email = `p54-${randomUUID()}@example.test`
 const password = 'P54-real-sync-2026!'
-const screenshotDirectory = 'C:/Users/evanpatchouli/.codex/visualizations/2026/09/30/01a0f2a0-4009-77a3-bfc4-f79f82300a0b'
+const screenshotDirectory = process.env.EOTION_VISUAL_QA_DIR ?? join(tmpdir(), 'eotion-p55-visual-qa')
 // A large, deterministic raster exercises real image sizing, not just a 1px icon.
 function landscapePng(): Buffer {
   const width = 1200, height = 720
