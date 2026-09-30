@@ -1,20 +1,10 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(scriptDir, "..");
 const rootManifestPath = resolve(rootDir, "package.json");
-const workspaceManifestPaths = [
-  "apps/api/package.json",
-  "apps/desktop/package.json",
-  "apps/mobile/package.json",
-  "apps/web/package.json",
-  "packages/contracts/package.json",
-  "packages/domain/package.json",
-  "packages/sdk/package.json",
-  "packages/storage/package.json",
-];
 
 function fail(message) {
   console.error(`[version] ${message}`);
@@ -27,6 +17,29 @@ async function readJson(path) {
 
 async function writeJson(path, value) {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+async function getWorkspaceManifestPaths() {
+  const manifests = [];
+
+  for (const group of ["apps", "packages"]) {
+    const groupDir = resolve(rootDir, group);
+    const entries = await readdir(groupDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+
+      const relativePath = `${group}/${entry.name}/package.json`;
+      try {
+        await readFile(resolve(rootDir, relativePath), "utf8");
+        manifests.push(relativePath);
+      } catch (error) {
+        if (error?.code !== "ENOENT") throw error;
+      }
+    }
+  }
+
+  return manifests.sort();
 }
 
 function parseStableVersion(version) {
@@ -50,9 +63,9 @@ function bumpVersion(version, release) {
   return `${major}.${minor}.${patch + 1}`;
 }
 
-async function syncWorkspaceVersions(version) {
+async function syncWorkspaceVersions(version, manifestPaths) {
   const changed = [];
-  for (const relativePath of workspaceManifestPaths) {
+  for (const relativePath of manifestPaths) {
     const path = resolve(rootDir, relativePath);
     const manifest = await readJson(path);
     if (manifest.version === version) continue;
@@ -63,12 +76,12 @@ async function syncWorkspaceVersions(version) {
   return changed;
 }
 
-async function check(rootManifest) {
+async function check(rootManifest, manifestPaths) {
   parseStableVersion(rootManifest.version);
   assertBuildNumber(rootManifest.eotion?.buildNumber);
 
   const mismatches = [];
-  for (const relativePath of workspaceManifestPaths) {
+  for (const relativePath of manifestPaths) {
     const manifest = await readJson(resolve(rootDir, relativePath));
     if (manifest.version !== rootManifest.version) {
       mismatches.push(`${relativePath}: ${manifest.version} != ${rootManifest.version}`);
@@ -81,23 +94,25 @@ async function check(rootManifest) {
   }
 
   console.log(
-    `[version] Eotion ${rootManifest.version} (build ${rootManifest.eotion.buildNumber}) is consistent across the workspace.`,
+    `[version] Eotion ${rootManifest.version} (build ${rootManifest.eotion.buildNumber}) is consistent across ${manifestPaths.length} workspace packages.`,
   );
 }
 
 async function main() {
   const command = process.argv[2] ?? "check";
   const rootManifest = await readJson(rootManifestPath);
+  const manifestPaths = await getWorkspaceManifestPaths();
+
   parseStableVersion(rootManifest.version);
   assertBuildNumber(rootManifest.eotion?.buildNumber);
 
   if (command === "check") {
-    await check(rootManifest);
+    await check(rootManifest, manifestPaths);
     return;
   }
 
   if (command === "sync") {
-    const changed = await syncWorkspaceVersions(rootManifest.version);
+    const changed = await syncWorkspaceVersions(rootManifest.version, manifestPaths);
     console.log(
       changed.length === 0
         ? `[version] workspace already matches ${rootManifest.version}.`
@@ -139,7 +154,7 @@ async function main() {
   rootManifest.version = nextVersion;
   rootManifest.eotion.buildNumber += 1;
   await writeJson(rootManifestPath, rootManifest);
-  const changed = await syncWorkspaceVersions(nextVersion);
+  const changed = await syncWorkspaceVersions(nextVersion, manifestPaths);
 
   console.log(
     `[version] Eotion ${previousVersion} -> ${nextVersion}; build ${rootManifest.eotion.buildNumber}.`,
