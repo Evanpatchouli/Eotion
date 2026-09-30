@@ -121,6 +121,15 @@ async function logout() {
   await router.replace({ name: 'login' })
 }
 
+async function openSettings() {
+  operationError.value = ''
+  if (!(await flushActivePageEditor())) {
+    operationError.value = '正文尚未保存，请重试后打开设置。'
+    return
+  }
+  await router.push({ name: 'settings-index', query: { returnTo: route.path, ...(currentWorkspace.value ? { workspaceId: currentWorkspace.value.id } : {}) } })
+}
+
 watch(() => route.fullPath, () => {
   routeRevision.value += 1
   resetRouteUi()
@@ -212,7 +221,9 @@ onUnmounted(() => {
       <PageTree @navigate="closeMobileNav" />
 
       <div class="sidebar-footer product-sidebar-footer">
+        <span class="product-user-name">{{ auth.user?.displayName }}</span>
         <span class="product-user-email">{{ auth.user?.email }}</span>
+        <button class="product-text-button product-settings-entry" type="button" @click="openSettings"><EotionIcon :name="IconName.Settings" :size="16" />设置</button>
         <button class="product-text-button product-logout" type="button" :disabled="auth.logoutPending" @click="logout">{{ auth.logoutPending ? '正在退出…' : '退出登录' }}</button>
         <p v-if="logoutError" class="product-message product-message--error" role="alert">{{ logoutError }}</p>
       </div>
@@ -261,3 +272,8 @@ onUnmounted(() => {
     </main>
   </div>
 </template>
+
+<style scoped>
+.product-user-name { max-width: 100%; overflow: hidden; color: var(--text-primary); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.product-settings-entry { display: inline-flex; min-height: 32px; align-items: center; gap: 7px; }
+</style>

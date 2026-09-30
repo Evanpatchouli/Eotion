@@ -3,6 +3,7 @@ import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-rou
 import { useAuthStore } from './stores/auth'
 import WorkspaceLayout from './layouts/WorkspaceLayout.vue'
 import WorkspaceView from './views/WorkspaceView.vue'
+import { safeProductReturnTo } from './settingsNavigation'
 
 const devRoutes: RouteRecordRaw[] = import.meta.env.DEV
   ? [
@@ -36,6 +37,17 @@ export const router = createRouter({
         { path: ':workspaceId/page/:pageId', name: 'product-page', component: () => import('./views/PageView.vue') },
       ],
     },
+    {
+      path: '/settings',
+      component: () => import('./layouts/SettingsLayout.vue'),
+      meta: { requiresAuth: true },
+      children: [
+        { path: '', name: 'settings-index', component: () => import('./views/settings/SettingsIndexView.vue') },
+        { path: 'profile', name: 'settings-profile', component: () => import('./views/settings/ProfileSettingsView.vue') },
+        { path: 'appearance', name: 'settings-appearance', component: () => import('./views/settings/AppearanceSettingsView.vue') },
+        { path: 'workspace/general', name: 'settings-workspace-general', component: () => import('./views/settings/WorkspaceGeneralSettingsView.vue') },
+      ],
+    },
     ...devRoutes,
     { path: '/:pathMatch(.*)*', redirect: '/app' },
   ],
@@ -50,12 +62,12 @@ router.beforeEach(async (to) => {
 
   if ((to.name === 'login' || to.name === 'register') && auth.user) {
     if (to.name === 'register') return '/app'
-    const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : ''
-    const redirectPath = redirect.split(/[?#]/, 1)[0] ?? ''
-    return redirectPath === '/app' || redirectPath.startsWith('/app/') ? redirect : '/app'
+    const redirect = to.query.redirect
+    if (typeof redirect === 'string' && /^\/settings(?:\/(?:profile|appearance|workspace\/general))?$/.test(redirect.split('?', 1)[0] ?? '')) return redirect
+    return safeProductReturnTo(redirect)
   }
   if (to.meta.requiresAuth && !auth.user) {
-    return { name: 'login', query: { redirect: to.fullPath.startsWith('/app') ? to.fullPath : '/app' } }
+    return { name: 'login', query: { redirect: to.path.startsWith('/settings') ? to.fullPath : safeProductReturnTo(to.path) } }
   }
   return true
 })

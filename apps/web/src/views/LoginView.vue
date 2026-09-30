@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import eotionIconUrl from '../assets/eotion-icon.png'
 import { useAuthStore } from '../stores/auth'
+import { safeProductReturnTo } from '../settingsNavigation'
 import '../styles/product.css'
 
 const auth = useAuthStore()
@@ -26,8 +27,8 @@ watch(() => route.query.email, applyRegistrationEmail)
 
 function internalAppRedirect(): string {
   const value = route.query.redirect
-  if (typeof value !== 'string' || !(value === '/app' || value.startsWith('/app/'))) return '/app'
-  return value
+  if (typeof value === 'string' && /^\/settings(?:\/(?:profile|appearance|workspace\/general))?(?:\?.*)?$/.test(value)) return value
+  return safeProductReturnTo(value)
 }
 
 async function submit() {
@@ -48,6 +49,7 @@ async function retrySession() {
       <div class="product-login-brand"><img :src="eotionIconUrl" class="brand-mark brand-mark--image" alt="" aria-hidden="true" /><span>Eotion</span></div>
       <h1 id="login-title">登录 Eotion</h1>
       <p class="product-login-copy">登录后继续整理你的工作区。</p>
+      <p v-if="route.query.notice === 'password-updated'" class="product-message product-message--success" role="status">密码已更新，请重新登录</p>
       <div v-if="auth.restoreError" class="product-restore-error">
         <p class="product-message product-message--error" role="alert">{{ auth.restoreError }}</p>
         <button class="product-text-button" type="button" @click="retrySession">重试</button>
