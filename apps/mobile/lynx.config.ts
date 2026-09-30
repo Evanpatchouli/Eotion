@@ -5,6 +5,8 @@ import { pluginQRCode } from "@lynx-js/qrcode-rsbuild-plugin";
 import { defineConfig } from "@lynx-js/rspeedy";
 import { pluginVueLynx } from "vue-lynx/plugin";
 
+import { getEotionBuildInfo } from "../../scripts/build-info.mjs";
+
 loadDotenv({ path: fileURLToPath(new URL("./.env", import.meta.url)) });
 
 function getLanIPv4(): string | undefined {
@@ -41,6 +43,7 @@ function getLanIPv4(): string | undefined {
   return candidates[0]?.address;
 }
 
+const buildInfo = getEotionBuildInfo();
 const configuredWebUrl = process.env.EOTION_WEB_URL?.trim();
 const lanIPv4 = getLanIPv4();
 const eotionWebUrl =
@@ -60,6 +63,9 @@ export default defineConfig({
   source: {
     define: {
       __EOTION_WEB_URL__: JSON.stringify(eotionWebUrl),
+      __EOTION_VERSION__: JSON.stringify(buildInfo.version),
+      __EOTION_BUILD_NUMBER__: JSON.stringify(buildInfo.buildNumber),
+      __EOTION_GIT_SHA__: JSON.stringify(buildInfo.gitSha),
     },
   },
   tools: {
