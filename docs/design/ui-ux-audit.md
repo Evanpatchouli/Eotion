@@ -132,6 +132,8 @@
 - Workspace panel 和 Page menu 都使用较重的 bordered surface。
 - 页面树节点的 active/highlight/controls 同时出现时视觉噪音偏高。
 - 账号信息、Workspace 管理、Page tree、Settings/Logout 在窄 Sidebar 中缺少更清晰的层级节奏。
+- **Sidebar footer 的“设置 / 退出登录”不是整行可点击。** 当前点击热区只包住文字/图标本身，hover 也没有形成整行背景反馈，与上方 Workspace / Page 列表项的交互语言不一致。
+- Sidebar footer 应统一为完整 row interaction：整行 hit area、统一左右 padding、hover/active/focus-visible surface，与其它 Sidebar list item 使用同一套 density / state 规则；“退出登录”可以保持 danger/secondary 语义，但不应表现成孤立文本链接。
 - 用户在 PC-Light 中以红框明确标记 Workspace dropdown、Workspace 展开 panel、Page row、Page action menu、child row 为重点不满意区域。
 
 **Potential removals**
@@ -196,19 +198,27 @@ High。仍需补 File block / uploading / failed 状态后完成附件审计。
 
 **Keep**
 
-> TODO：等待下一批截图。
+- Settings 作为独立 Surface 的整体信息架构基本成立。
+- Desktop 左侧设置导航 + 右侧 Detail 的 list-detail 结构可以保留。
+- 导航分组（个人 / 外观 / 工作空间 / 功能）清晰。
+- Appearance 三态选择的基本信息结构合理。
+- Compact Index → Detail 的既有产品方向继续保留。
 
 **Problems**
 
-> TODO
+- **Desktop Detail 当前固定内容宽度过窄。** 在约 1280px 宽度时尚可，但屏幕继续增宽后内容仍维持同样窄度，右侧留白明显失衡，页面显得像“窄表单漂在大画布中间”。
+- Settings Detail 的宽度策略应从固定 max-width 改为 responsive content width：随可用宽度适度增长，同时保留上限，避免超宽屏文本行无限拉长。
+- 当前 Appearance 内容本身并不拥挤，因此问题不是“需要铺满整个屏幕”，而是缺少随 viewport 扩展的中间增长区间。
+- Settings 顶部 title / 返回区当前可用，但后续高保真设计仍需统一其与 ProductShell topbar 的视觉语言。
 
 **Potential removals**
 
-> TODO
+- 暂无明确需要删除的核心 Settings 内容。
+- 后续可重新评估 section description 的密度，但当前不是主要问题。
 
 **Priority**
 
-待审计。
+High（布局比例问题），但不需要推翻 Settings IA。
 
 ### Login / Register / Connectivity
 
@@ -260,11 +270,13 @@ High。仍需补 File block / uploading / failed 状态后完成附件审计。
 | --- | --- | --- | --- | --- |
 | Editor 作为巨大 bordered Card | Critical | Every Page | 直接决定产品气质 | Redesign |
 | Desktop/Tablet Sidebar 不可折叠 | High | Every non-mobile session | 侵占内容/缺少 focus mode | Redesign + implement |
+| Sidebar footer 不是整行交互 | High | Every session | hit area 小、hover 语言不一致 | 统一 row anatomy / states |
 | Context/status 重复 | High | Every Page | 持续视觉噪音 | Remove/merge |
 | Page action inline menu 推动 tree | High | Frequent page management | 导航跳动、视觉过重 | Floating interaction |
 | Workspace expanded panel 过重/重复 | High | Workspace switching | Sidebar hierarchy 混乱 | Redesign |
 | Nested attachment Card | High on mobile | Media documents | 有效宽度与文档感下降 | Redesign |
 | Touch toolbar 视觉过重 | Medium/High | Touch editing | 挤压正文、像控制面板 | Mobile-specific redesign |
+| Settings Detail 固定宽度偏窄 | High on wide desktop | Settings | 超宽屏比例失衡，主视图显得漂浮且局促 | responsive content width + cap |
 | Dark palette 本身 | Medium | Dark mode | 当前可用，结构问题更大 | Tune after hierarchy |
 
 ## Audit Conclusion
@@ -281,7 +293,9 @@ Page/ProductShell 的 P5.7.2 Design Brief 必须重点回答：
 6. Mobile Page 如何减少 nested card / persistent chrome，并重新定义 touch editing bar。
 7. Attachment 如何从“上传控件 Card”转成“文档内容”。
 
-Audit 尚未完成：下一批仍需 Settings、Login/Register、Connectivity，以及 Slash / File / upload/error 等关键状态。
+Settings 第一批已补充：整体 IA 可保留，但 Desktop Detail 需要从固定窄宽改成“随可用宽度增长、设上限”的响应式内容宽度；Sidebar footer 的设置/退出登录需要统一为整行 list-item interaction。
+
+Audit 尚未完成：下一批仍需 Login/Register、Connectivity，以及 Slash / File / upload/error 等关键状态。
 
 ## Approval
 
