@@ -1,13 +1,46 @@
-# Current Task — P5.6 Completed / Next: P5 Final Acceptance
+# Current Task — P5.7 Design First / Next: P5.7.1 Audit
 
-P5.6 Settings & Preferences：PASS（2026-10-01）。产品版本保持 0.0.1 / build 1。
+P5.6 Settings & Preferences 已 PASS（2026-10-01）。产品版本保持 0.0.1 / build 1。
 
-WU1 Account 已完成：legacy nickname、strict profile API/SDK、scrypt 改密、事务/CAS、credentialVersion fence 与全部会话撤销。
-WU2 Surface 已完成：独立认证 Settings，宽屏双栏/compact pane replacement，安全 return/context，Morphicons。
-WU3 Theme 已完成：device-local system/light/dark、live media、early production bootstrap、统一中性主题 tokens。
-WU4 Toolbar 已完成：默认 OFF，user/workspace/device 隔离；compact 不重复，touch/Slash 保留。
-WU5 验证/文档/独立 Review 已完成：正式验收证据与命令见 docs/p5-settings.md。
+当前不进入 P5 Final Acceptance。用户决定先完成 P5.7 UI/UX Foundation & Product Redesign，以尽早冻结 Eotion 的正确 UI/UX 基调和 Design System。
 
-验证：Web product 111/111、Settings 专项 11/11、theme 3/3 + production 1/1、Web/Electron storage 11/11、offline-shell 1/1、真实 Mongo/API/生产 Web 双客户端 1/1；SDK 18/18、API domain 2/2 + HTTP/Sync/File 26/26、Desktop 8/8、storage 6/6；相关 typecheck/build、version:check、diff/编码检查通过。截图在系统临时目录 eotion-p56-visual-qa，不提交 Git。独立 reviewer 无确定 P1/P2 blocker。
+## Current phase
 
-下一步单独执行 P5 Final Acceptance。P5.4 Mobile WebView/Lynx 真机完全离线重启仍待验收，不以本轮浏览器/Electron测试替代。临时 Mongo replica-set 容器已清理，现有本机服务与数据不变。
+P5.7.1 — UX / Visual Audit。
+
+主计划：`docs/p5-ui-ux-foundation.md`。
+
+设计工作区：`docs/design/README.md`。
+
+当前工作表：
+
+- `docs/design/ui-ux-audit.md`
+- `docs/design/design-direction.md`
+- `docs/design/design-system-v1.md`
+- `docs/design/core-screen-spec.md`
+- `docs/design/visual-acceptance.md`
+
+## Hard gate
+
+P5.7.1～P5.7.4 是 Design First 阶段。
+
+在用户明确批准以下内容前，不得修改正式 Product UI：
+
+1. Design Direction。
+2. Design System v1。
+3. 核心高保真页面。
+
+批准后才进入 P5.7.5 Implementation。
+
+## Current constraints
+
+- 不新增业务功能。
+- 不进入 P6 MCP / Agent。
+- 不创建 HarmonyOS / Android / iOS 原生 UI。
+- Morphicons 图标体系继续保留。
+- P5.1～P5.6 已验收的功能、安全、Local-first、附件与 Settings 行为不得因未来视觉重构回归。
+- P5.4 Mobile WebView/Lynx 真机完全离线重启仍保留为既有待验收边界。
+
+## Next action
+
+只执行 P5.7.1 UI/UX Audit：收集正式 Surface 当前截图、建立问题清单、识别可删除 UI、保留项和优先级；不要改正式 UI 代码。
