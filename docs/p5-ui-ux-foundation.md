@@ -65,6 +65,8 @@ P5.7 要解决的不是单个按钮或某个页面，而是：
 
 ### P5.7.1 — UX / Visual Audit
 
+**✅ PASS（2026-10-01）。**
+
 目标：只审计现状，不改正式 UI。
 
 输出：
@@ -82,27 +84,27 @@ P5.7 要解决的不是单个按钮或某个页面，而是：
 
 正式工作表：[`design/ui-ux-audit.md`](design/ui-ux-audit.md)。
 
-### P5.7.2 — Design Direction
+### P5.7.2 — Stitch Design Brief & Direction Exploration
 
-目标：回答“Eotion 应该长什么样，以及为什么”。
+**当前阶段。**
 
-输出：
+目标：把 P5.7.1 的真实问题转换成严格 Design Brief，并通过 Stitch 对同一核心 Page Screen 做多方向视觉探索；先看到真实方案，再冻结 Design Direction。
 
-- Product design principles。
-- Visual mood。
-- Content density。
-- Surface hierarchy。
-- Navigation philosophy。
-- Editor interaction philosophy。
-- Desktop / Tablet / Mobile 的体验原则。
-- Light / Dark 策略。
-- 参考产品与明确“不照搬”的部分。
+第一轮要求：
 
-正式工作表：[`design/design-direction.md`](design/design-direction.md)。
+- 使用统一 1440×900 Desktop Page 内容作为比较基准。
+- 至少探索 3 个明显不同、但都符合 Eotion 产品约束的方向。
+- 功能内容保持一致，只比较视觉 hierarchy、density、surface、navigation 和 interaction presentation。
+- 不直接生成或修改 production UI。
+- 不在第一轮提前冻结 Design System。
 
-### P5.7.3 — Design System v1
+正式输入：[`design/stitch-design-brief.md`](design/stitch-design-brief.md)。
 
-目标：将设计方向转换为可实施的系统。
+探索完成后，把最终采用/组合的设计方向写入 [`design/design-direction.md`](design/design-direction.md) 并冻结。
+
+### P5.7.3 — Design Direction Freeze & Design System v1
+
+目标：在 Stitch 方向探索被用户选定后，将最终 Design Direction 转换为可实施的系统。
 
 至少定义：
 
@@ -138,7 +140,7 @@ P5.7 要解决的不是单个按钮或某个页面，而是：
 5. Dark / Page。
 6. Empty / Offline / Connectivity state。
 
-可以使用 Figma、高保真 HTML/CSS prototype、静态设计稿或其他可稳定评审的形式。
+当前优先使用 Stitch 作为高保真设计工作台；也可以辅以 Figma、高保真 HTML/CSS prototype 或其它可稳定评审的形式。
 
 每张设计必须包含必要 interaction annotation，而不仅是截图。
 
@@ -153,6 +155,7 @@ P5.7 要解决的不是单个按钮或某个页面，而是：
 - Design Direction。
 - Design System v1。
 - 核心页面设计。
+- 至少两个关键 Interactive Prototype / flow（若 Stitch 能稳定表达）。
 
 才能开始 P5.7.5。
 
@@ -268,10 +271,11 @@ P5.7 可以使用多个模型作为 Design Partner。
 
 P5.7 PASS 后才进入 P5 Final Acceptance。
 
-## 当前待填充文档
+## 当前设计文档
 
-- [UI/UX Audit](design/ui-ux-audit.md)
-- [Design Direction](design/design-direction.md)
+- [UI/UX Audit](design/ui-ux-audit.md) — ✅ P5.7.1 PASS
+- [Stitch Design Brief](design/stitch-design-brief.md) — P5.7.2 当前输入
+- [Design Direction](design/design-direction.md) — 等 Stitch exploration 后冻结
 - [Design System v1](design/design-system-v1.md)
 - [Core Screen Spec](design/core-screen-spec.md)
 - [Visual Acceptance](design/visual-acceptance.md)
