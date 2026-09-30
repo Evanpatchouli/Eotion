@@ -32,6 +32,14 @@ P3 的语义是 **durable local oplog + at-least-once delivery + stable operatio
 
 P4.4 已在 [真实同步契约](p4-sync.md) 补齐 P3→P4 的网络 operation、HTTP transport 与服务端 receipt。旧 P3 页面和 oplog 没有足够的工作区、父页面和排序信息，不能自动升级为可同步记录；新 mutation 必须显式给出这些值。
 
+## P5.4 产品链路补充
+
+P5.4 将 `LocalStore` 用作正式 Page / Block 内容的 durable source of truth。成功 mutation 在同一 adapter 事务中写入内容和 pending oplog；编辑器本地保存完成后即可继续使用，远端同步由 Web 产品 Sync Coordinator 在后台处理。完整产品流程和验收状态见 [P5.4 Real Sync](p5-real-sync.md)。
+
+`LocalStore` 增加 `hasWorkspaceSnapshot(workspaceId)` 与 `replaceWorkspaceSnapshot(workspaceId, pages, blocks)`。replace 先验证 page/block 归属、引用和树结构，再在单一 IndexedDB / SQLite 事务中仅替换指定 workspace；它不创建 operation、不增加 sequence、不更换 `clientId`，也会清理 snapshot 中已删除的本地对象。只要目标 workspace 仍有 pending/failed operation，replace 就拒绝执行。空的远端 workspace 也会持久化 snapshot marker，因而可与“从未 hydrate、尚无本地副本”区分。
+
+正式同步执行 Push → Pull → replace：先将当前账号可访问 workspace 的 pending/failed operation 按 sequence 投递，全部成功后才请求 snapshot。Push 失败时停止，不以远端内容替换本地副本。账号无权访问的旧 oplog 留在本机，不阻塞合法 workspace 同步，也不会发送给当前账号。IndexedDB 用于 Web / Mobile WebView，Electron 继续经 preload IPC 使用主进程 SQLite；平台选择仍集中在 `createLocalStore()`。
+
 ## 验证
 
 真机人工验收进度见 [P3 真机测试清单](verification/device/p3-local-first.md)。

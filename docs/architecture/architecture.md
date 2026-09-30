@@ -99,6 +99,8 @@ P3 已实现的本地存储基础详见 [P3 本地优先基础](../p3-local-firs
 
 Mobile WebView 的 IndexedDB 持久性依赖稳定的 origin 和 storage partition；query/hash 不应造成分区变化，reload、升级和应用重启不能主动清除站点数据。远程 origin 改为 bundled/local origin，或 origin / storage partition 变化时，需重新评估迁移并重新验证。
 
+生产 Web 在安全 HTTP(S) origin 下注册预缓存静态应用外壳的 Service Worker，供完全断网后的浏览器 reload / 重启使用；`/api` 不缓存。Electron `file://` 使用本地打包资源，不注册该 Service Worker。Mobile WebView 默认 LAN HTTP 开发地址无法作为真机离线外壳的验收依据；需稳定 HTTPS origin 或经迁移评估的打包资源。
+
 P3 reconnect 依赖持久 oplog，以稳定 operation id 至少一次投递；同一 JS realm 中同一 store 对象的并发调用会合并，但跨实例和跨 renderer 不互斥。P4 的 sync transport/server 必须按 operation id 幂等。
 
 ## 6. 编辑器方向
@@ -121,7 +123,7 @@ Vue 3
 
 桌面端和移动端共享文档 schema/编辑器核心，但交互方式可能不同（悬停手柄 vs 长按/触摸工具栏）。
 
-P5.3 的正式页面与 P2 Demo 复用 `apps/web/src/components/editor/EotionEditor.vue`。正式页面通过 `PagePersistence` 将顶层 Tiptap 节点映射为服务端 Block，自动保存走 SDK Block HTTP；P3 LocalStore hydration 和 oplog 接线属于 P5.4，当前产品正文尚未提供离线持久化。映射与保存契约见 [P5.3 Real Page Editor](../p5-real-page-editor.md)。
+P5.3 的正式页面与 P2 Demo 复用 `apps/web/src/components/editor/EotionEditor.vue`。P5.4 中 `PagePersistence` 将顶层 Tiptap 节点映射为 Block 并写入 `LocalStore`；Page Tree mutation 也写入同一 store，由 Web 产品 Sync Coordinator 推送 oplog 并读取 workspace snapshot。编辑器的“已保存”表示本地持久化，和远端同步状态分开。P5.4 的 push-before-pull、离线恢复和当前验证边界见 [P5.4 Real Sync](../p5-real-sync.md)。
 
 ## 7. Agent 集成（规划中）
 

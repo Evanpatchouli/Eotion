@@ -15,15 +15,15 @@
 
 | 领域 / 模块 | 代码入口 | 关键文档 | 常用检索线索 |
 | --- | --- | --- | --- |
-| Web 主 UI | `apps/web/src/` | `architecture/architecture.md`、`p5-product-shell.md`、`p5-page-tree.md` | Vue、router、ProductShell、auth、productWorkspaces、productPages、pageTree、PageTree、PageView、runtime、layout、input |
-| Editor（P2 / P5.3） | `apps/web/src/components/editor/`、`apps/web/src/editor/`、`apps/web/src/views/PageView.vue` | `roadmap.md`、`p2-editor-demo.md`、`p5-real-page-editor.md`、architecture §6 | Tiptap、BlockIdentity、blockCodec、PagePersistence、IME、slash command |
+| Web 主 UI | `apps/web/src/` | `architecture/architecture.md`、`p5-product-shell.md`、`p5-page-tree.md`、`p5-real-sync.md` | Vue、router、ProductShell、auth、productWorkspaces、productPages、productSync、PageTree、PageView、runtime、layout、input |
+| Editor（P2 / P5.3 / P5.4） | `apps/web/src/components/editor/`、`apps/web/src/editor/`、`apps/web/src/views/PageView.vue` | `roadmap.md`、`p2-editor-demo.md`、`p5-real-page-editor.md`、`p5-real-sync.md`、architecture §6 | Tiptap、BlockIdentity、blockCodec、PagePersistence、LocalStore、sync、IME、slash command |
 | Desktop Shell | `apps/desktop/src/` | architecture §2 | Electron、preload、renderer、IPC |
 | Mobile Shell | `apps/mobile/src/` | `p1-mobile-demo.md`、architecture §3 | Lynx、webview、HarmonyOS、bridge、lifecycle |
 | API | `apps/api/src/` | architecture §4、`p4-server-domain.md`、`p4-auth-session.md`、`p4-http-api.md`、`p4-sync.md`、`p4-file-storage.md`、`architecture/agent-integration.md` | NestJS、Fastify、health、Mongo、User、Auth、Session、WorkspacePermission、HTTP、repository、sync receipt、FileObjectStorage、MCP |
 | Contracts | `packages/contracts/src/` | `p4-http-api.md`、`p4-sync.md` | DTO、runtime schema、contract、protocol、sync operation |
 | Domain | `packages/domain/src/` | `p4-server-domain.md`、architecture / specs | domain model、workspace、page、block、file metadata |
 | SDK | `packages/sdk/src/` | `p4-http-api.md`、`p4-sync.md` | typed client、Cookie credentials、API error、OperationTransport |
-| Local storage (P3) | `packages/storage/src/`、`apps/web/src/storage/`、`apps/desktop/src/main/sqlite-store.ts` | `p3-local-first.md`、`verification/device/p3-local-first.md` | LocalStore、Web/Mobile WebView IndexedDB、Electron SQLite、runtime marker、oplog、reconnect、origin/storage partition |
+| Local storage / product sync (P3 / P5.4) | `packages/storage/src/`、`apps/web/src/storage/`、`apps/web/src/stores/productSync.ts`、`apps/desktop/src/main/sqlite-store.ts` | `p3-local-first.md`、`p4-sync.md`、`p5-real-sync.md`、`verification/device/p3-local-first.md` | LocalStore、snapshot hydrate、Push-before-Pull、page.move、Web/Mobile WebView IndexedDB、Electron SQLite、offline auth、oplog、reconnect |
 | Roadmap / Phase | `docs/roadmap.md` | 本页 | P0…P7、exit criteria、scope |
 
 随着稳定模块增加再维护索引。只记录入口和关键词，不复制源码实现。

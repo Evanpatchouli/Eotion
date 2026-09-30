@@ -13,7 +13,7 @@ P4.4 将 P3 的持久 oplog 经 `@eotion/sdk` 的 `EotionOperationTransport` 发
 | `block.upsert` | `{ id, pageId, parentBlockId, type, orderKey, props }` |
 | `block.delete` | `{ id }` |
 
-`workspaceId` 必填，不能从当前 UI 工作区推断。Page/Block upsert 携带服务器重放所需完整字段；服务端 `createdAt`/`updatedAt` 仍由 Mongo 生成，不从 operation 时间复制。当前不同 operation 修改同一资源时，服务端按实际成功提交顺序应用，不使用客户端时间做 last-write-wins。父级和归属不可通过 upsert 移动；此类操作由后续独立功能定义。
+`workspaceId` 必填，不能从当前 UI 工作区推断。Page/Block upsert 携带服务器重放所需完整字段；服务端 `createdAt`/`updatedAt` 仍由 Mongo 生成，不从 operation 时间复制。当前不同 operation 修改同一资源时，服务端按实际成功提交顺序应用，不使用客户端时间做 last-write-wins。父级和归属不可通过 upsert 移动；P5.4 为 Page 层级变化增加独立的 `page.move` operation，payload 为 `{ id, parentPageId, orderKey }`，服务端沿用 Page service 的树约束拒绝移动到自身、后代或 foreign parent。此操作同样以稳定 operation ID 幂等应用。
 
 P3 旧 PageSummary/oplog 无法恢复 `workspaceId`、`parentPageId` 和 `orderKey`。本地旧记录保持原样，不凭空填值；发送前的严格 schema 会拒绝旧 operation 并留在 `failed`。旧 PoC 数据需要由用户明确提供目标工作区与完整树/排序信息后重新创建，或在开发验证页明确清空。不要将其静默迁移为可同步记录。
 
@@ -28,3 +28,7 @@ Receipt 与 Page/Block mutation 在同一 Mongo 事务提交。并发同 ID 请�
 支持事务的 Mongo 上，普通 HTTP 创建子 Page 或 Block 也在事务内写父资源的内部 `structureFence`，与同步删除父资源形成写冲突，避免创建和删除交错留下孤儿。该字段只用于数据完整性，不是客户端 revision 或冲突算法。standalone Mongo 保持 P4.3 的普通 HTTP 创建路径；由于它不支持事务，sync mutation 会返回 503。
 
 本阶段只保证可靠投递和幂等应用；没有 revision、CRDT、冲突合并、多用户协作或全局客户端发送锁。
+
+## P5.4 产品同步补充
+
+P5.4 增加只读 `GET /api/sync/workspaces/:workspaceId/snapshot`，经 Cookie Session 和 workspace owner 权限返回正式 Page / Block DTO，不创建 receipt。SDK 入口为 `api.sync.snapshot(workspaceId)`。产品在 push 全部成功后才读取 snapshot；因此单用户多设备顺序使用可以通过最后一次成功同步后的服务端状态收敛。并发修改同一 Block 时，最后成功到达服务端的 mutation 生效；这不是并发合并保证。snapshot 与客户端接线及尚待完成的真实 E2E 见 [P5.4 Real Sync](p5-real-sync.md)。
