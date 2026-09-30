@@ -82,7 +82,8 @@ P4 ✅ Final Acceptance PASS。P5 按以下独立阶段验收：
 - P5.4 Real Sync：Web / Electron 实现与自动验收已完成；Mobile WebView 默认 LAN HTTP 真机离线重启待验收，完整 PASS 暂未声明。结果与边界见 [P5.4 Real Sync](p5-real-sync.md)。
 - P5.5 Attachments：✅ 已完成，正式附件、持久清理、三种布局、自动测试与线上 OSS 最小验收通过，见 [P5.5 Attachments](p5-attachments.md)。
 - P5.6 Settings & Preferences：✅ 已完成；账号昵称/安全改密、三态主题、隔离的固定编辑工具栏偏好、响应式 Settings 与 Light/Dark Visual QA、独立 review 均通过，见 [P5.6 Settings & Preferences](p5-settings.md)。
-- P5 Final Acceptance：待执行；P5.6 PASS 不关闭 P5.4 Mobile WebView 真机离线重启的既有待验收边界。
+- P5.7 UI/UX Foundation & Product Redesign：待实施；先完成 Audit → Design Direction → Design System → 核心高保真设计并经过 Gate A，再进入正式 UI 实现与 Visual Acceptance，见 [P5.7 UI/UX Foundation](p5-ui-ux-foundation.md)。
+- P5 Final Acceptance：P5.7 完成后再执行；P5.6 PASS 不关闭 P5.4 Mobile WebView 真机离线重启的既有待验收边界。
 
 从本阶段开始，以真实用户流程和正式产品路由为主，不再以 `/__dev/*` PoC 页面作为主要开发载体。P1/P2/P3 开发页可以继续保留作为回归和诊断入口。
 
@@ -97,6 +98,7 @@ P4 ✅ Final Acceptance PASS。P5 按以下独立阶段验收：
 - 图片 / 文件附件接入 P4 的 File domain，由 Eotion Server 通过 `ali-oss-server` SDK 处理对象存储。
 - Settings 作为独立产品 Surface：账号昵称/密码、system/light/dark 主题、按 user + workspace + device 保存的固定编辑 Toolbar 偏好，以及 MCP / Agent 的“即将推出”预留 IA。
 - Settings 在宽屏采用双栏 list-detail，在紧凑宽度采用 Index → Detail 单栏导航；不把桌面 Sidebar 强行塞进手机。
+- 在 P5 Final Acceptance 前完成 P5.7：正式冻结 Eotion 的 UI/UX Design Direction、Design System v1、核心高保真页面和 visual regression 基线，避免 P6+ 在未定型的视觉语言上继续叠加。
 - 桌面 / 平板 / 手机共用 `apps/web`，完成正式 Workspace / Page / Settings 页面所需的响应式交互。
 - 在核心编辑链路稳定后，再补最近页面、收藏和基础搜索等 MVP 辅助能力。
 
@@ -108,6 +110,7 @@ P5 退出条件：
 - 第二个客户端可以读取已同步内容，核心单用户多设备路径可闭环。
 - 文件 / 图片附件链路可用。
 - Settings 可完成昵称/密码管理，Theme 支持 system/light/dark，固定编辑 Toolbar 默认关闭且偏好隔离正确；宽屏/紧凑 Settings 交互通过响应式验收。
+- P5.7 Design Gate、正式 UI 实现与 Visual Acceptance 完成，核心 Surface 有稳定设计基线并通过视觉回归。
 - P1/P2/P3 中验证过的高风险基础能力没有因正式产品集成而回归。
 
 P5 不要求实现多人实时协作、完整权限体系、模板市场、复杂导入导出或大规模异步基础设施。
