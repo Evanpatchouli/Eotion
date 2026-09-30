@@ -4,6 +4,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.34.2 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
+COPY scripts/build-info.mjs scripts/build-info.mjs
 COPY apps/web/package.json apps/web/package.json
 COPY packages/domain/package.json packages/domain/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
@@ -30,7 +31,9 @@ COPY packages/sdk/tsconfig.json packages/sdk/tsconfig.json
 COPY packages/storage/src packages/storage/src
 COPY packages/storage/tsconfig.json packages/storage/tsconfig.json
 
+ARG GIT_SHA=unknown
 ARG VITE_ALLOW_PAGE_ZOOM=false
+ENV GIT_SHA=${GIT_SHA}
 ENV VITE_ALLOW_PAGE_ZOOM=${VITE_ALLOW_PAGE_ZOOM}
 
 RUN pnpm --filter @eotion/web build
