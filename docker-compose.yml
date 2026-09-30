@@ -25,6 +25,7 @@ services:
     networks:
       - app
       - mongo
+      - ali-oss
 
   eotion-web:
     build:
@@ -36,7 +37,7 @@ services:
     depends_on:
       - eotion-api
     ports:
-      - '8001:80'
+      - '127.0.0.1:8001:80'
     networks:
       - app
 
@@ -44,4 +45,6 @@ networks:
   app:
     driver: bridge
   mongo:
+    external: true
+  ali-oss:
     external: true
