@@ -2,9 +2,9 @@
 
 ## 状态
 
-**TODO / 待填充。**
+**WAITING FOR STITCH EXPLORATION / 待方向选择。**
 
-本文件在 UI/UX Audit 完成后填写，用于冻结 Eotion 的产品设计方向。
+P5.7.1 Audit 已完成。当前先使用 `stitch-design-brief.md` 对同一核心 Desktop Page 做多方向探索；用户选定或组合方向后，再填写并冻结本文件。
 
 ## Product Personality
 
@@ -112,9 +112,9 @@
 | --- | --- | --- |
 | TODO | TODO | TODO |
 
-## Model Design Exploration
+## Stitch / Model Design Exploration
 
-> TODO：可记录 Claude / Kimi / GPT 等独立设计方案及优缺点。
+> TODO：记录 Stitch 第一轮各视觉方向，以及 Claude / Kimi / GPT 等 Design Partner 的 critique。所有方案必须使用同一功能内容，避免因页面不同而无法比较。
 
 | Proposal | Strengths | Weaknesses | Adopted parts |
 | --- | --- | --- | --- |
