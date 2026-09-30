@@ -15,7 +15,7 @@
 
 | 领域 / 模块 | 代码入口 | 关键文档 | 常用检索线索 |
 | --- | --- | --- | --- |
-| Web 主 UI | `apps/web/src/` | `architecture/architecture.md`、`p5-product-shell.md`、`p5-page-tree.md`、`p5-real-sync.md`、`p5-settings.md` | Vue、router、ProductShell、auth、productWorkspaces、productPages、productSync、PageTree、PageView、Settings、Theme、preferences、runtime、layout、input |
+| Web 主 UI | `apps/web/src/` | `architecture/architecture.md`、`p5-product-shell.md`、`p5-page-tree.md`、`p5-real-sync.md`、`p5-settings.md`、`p5-ui-ux-foundation.md`、`design/*` | Vue、router、ProductShell、auth、productWorkspaces、productPages、productSync、PageTree、PageView、Settings、Theme、preferences、UI/UX audit、design system、visual baseline、runtime、layout、input |
 | Editor（P2 / P5.3～P5.5） | `apps/web/src/components/editor/`、`apps/web/src/editor/`、`apps/web/src/views/PageView.vue` | `roadmap.md`、`p2-editor-demo.md`、`p5-real-page-editor.md`、`p5-real-sync.md`、`p5-attachments.md`、architecture §6 | Tiptap、BlockIdentity、blockCodec、PagePersistence、LocalStore、sync、IME、slash command、eotionImage、eotionFile、attachmentCleanup、Morphicons |
 | Desktop Shell | `apps/desktop/src/` | architecture §2 | Electron、preload、renderer、IPC |
 | Mobile Shell | `apps/mobile/src/` | `p1-mobile-demo.md`、architecture §3 | Lynx、webview、HarmonyOS、bridge、lifecycle |
@@ -52,3 +52,6 @@ P5.6 Settings 已完成：`apps/web/src/layouts/SettingsLayout.vue`、`views/set
 - 必须遵守的架构/兼容性约束。
 
 不要因为模型支持大窗口就把整个 monorepo 塞入上下文。
+
+
+P5.7 UI/UX Foundation 当前处于 Design First 阶段：先读取 `docs/p5-ui-ux-foundation.md`，再按子阶段进入 `docs/design/ui-ux-audit.md`、`design-direction.md`、`design-system-v1.md`、`core-screen-spec.md`。在 Gate A（用户明确批准 Design Direction + Design System + 核心页面）之前，不修改正式 Product UI。Visual Acceptance 见 `docs/design/visual-acceptance.md`。
