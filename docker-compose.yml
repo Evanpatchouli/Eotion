@@ -43,6 +43,7 @@ services:
 
 networks:
   app:
+    name: eotion-app
     driver: bridge
   mongo:
     external: true
