@@ -18,6 +18,16 @@
     "build:mobile": "pnpm --filter @eotion/mobile build",
     "build:api": "pnpm --filter @eotion/api build",
     "build": "pnpm build:web && pnpm build:desktop && pnpm build:mobile && pnpm build:api",
-    "typecheck": "pnpm --filter @eotion/web typecheck && pnpm --filter @eotion/desktop typecheck && pnpm --filter @eotion/api typecheck"
+    "typecheck": "pnpm --filter @eotion/web typecheck && pnpm --filter @eotion/desktop typecheck && pnpm --filter @eotion/api typecheck",
+    "version:check": "node scripts/version.mjs check",
+    "version:sync": "node scripts/version.mjs sync",
+    "version:patch": "node scripts/version.mjs patch",
+    "version:minor": "node scripts/version.mjs minor",
+    "version:major": "node scripts/version.mjs major",
+    "version:set": "node scripts/version.mjs set",
+    "build:bump": "node scripts/version.mjs build"
+  },
+  "eotion": {
+    "buildNumber": 1
   }
 }
