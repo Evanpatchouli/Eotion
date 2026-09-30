@@ -1,46 +1,59 @@
-# Current Task — P5.7 Design First / Next: P5.7.1 Audit
+# Current Task — P5.7.2 Stitch Design Brief & Direction Exploration
 
 P5.6 Settings & Preferences 已 PASS（2026-10-01）。产品版本保持 0.0.1 / build 1。
 
-当前不进入 P5 Final Acceptance。用户决定先完成 P5.7 UI/UX Foundation & Product Redesign，以尽早冻结 Eotion 的正确 UI/UX 基调和 Design System。
+P5.7.1 UI/UX Audit 已 PASS（2026-10-01），见 `docs/design/ui-ux-audit.md`。
+
+当前不进入 P5 Final Acceptance，也不修改正式 Product UI。
 
 ## Current phase
 
-P5.7.1 — UX / Visual Audit。
+P5.7.2 — Stitch Design Brief & Direction Exploration。
 
 主计划：`docs/p5-ui-ux-foundation.md`。
 
-设计工作区：`docs/design/README.md`。
+当前设计输入：
 
-当前工作表：
-
+- `docs/design/stitch-design-brief.md`
 - `docs/design/ui-ux-audit.md`
+
+等待探索后填写：
+
 - `docs/design/design-direction.md`
 - `docs/design/design-system-v1.md`
 - `docs/design/core-screen-spec.md`
-- `docs/design/visual-acceptance.md`
+
+## Current action
+
+使用 Stitch 对**同一个 1440×900 Desktop Page 场景**进行至少 3 个视觉方向探索。
+
+要求：
+
+- 功能内容完全一致，只比较视觉语言与 interaction presentation。
+- 必须解决 Audit 中的核心问题：Editor giant card、Sidebar collapse、Workspace/Page inline menus、状态重复、附件 document integration。
+- 展开 Sidebar 右上/右下圆角。
+- 中文 Slash Menu 不做中英双语重复。
+- 不设计无关新功能。
+- 不把 Stitch 生成代码直接作为 production source。
+
+用户选中或组合方案后，才进入 Design Direction Freeze 和 Design System v1。
 
 ## Hard gate
 
-P5.7.1～P5.7.4 是 Design First 阶段。
+Gate A 前不得重构正式 Product UI。
 
-在用户明确批准以下内容前，不得修改正式 Product UI：
+Gate A 至少需要：
 
-1. Design Direction。
-2. Design System v1。
-3. 核心高保真页面。
+1. 用户批准 Design Direction。
+2. 用户批准 Design System v1。
+3. 用户批准核心高保真页面。
+4. 关键 Prototype / flow 通过评审。
 
-批准后才进入 P5.7.5 Implementation。
-
-## Current constraints
+## Existing constraints
 
 - 不新增业务功能。
 - 不进入 P6 MCP / Agent。
 - 不创建 HarmonyOS / Android / iOS 原生 UI。
-- Morphicons 图标体系继续保留。
-- P5.1～P5.6 已验收的功能、安全、Local-first、附件与 Settings 行为不得因未来视觉重构回归。
+- Morphicons 图标体系保留。
+- P5.1～P5.6 的功能、安全、Local-first、附件、Settings 行为不得回归。
 - P5.4 Mobile WebView/Lynx 真机完全离线重启仍保留为既有待验收边界。
-
-## Next action
-
-只执行 P5.7.1 UI/UX Audit：收集正式 Surface 当前截图、建立问题清单、识别可删除 UI、保留项和优先级；不要改正式 UI 代码。
