@@ -12,8 +12,8 @@ services:
       NODE_ENV: production
       PORT: 7137
       HOST: 0.0.0.0
-      WEB_ORIGIN: ${WEB_ORIGIN:-https://eotion.test.evanpatchouli.sapce}
-      API_ORIGIN: ${API_ORIGIN:-https://eotion.test.evanpatchouli.sapce}
+      WEB_ORIGIN: ${WEB_ORIGIN:-}
+      API_ORIGIN: ${API_ORIGIN:-}
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/eotion?replicaSet=rs0}
       REDIS_URL: ${REDIS_URL:-}
       KAFKA_BROKERS: ${KAFKA_BROKERS:-}
