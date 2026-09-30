@@ -2,13 +2,15 @@
 
 ## 状态
 
-**TODO / 待填充。**
+**IN PROGRESS / 第一批 Page & ProductShell 证据已审计。**
 
 本阶段只审计，不修改正式产品 UI。
 
 ## 审计目标
 
-> TODO：填写本轮 Audit 的目标、范围、评审人和日期。
+本轮先审计正式 ProductShell / Page / Editor 在 Desktop、约 1024px 中等宽度和 390px Mobile 下的真实表现；后续再补 Settings、Login/Register、Connectivity、完整附件状态等 Surface。
+
+当前证据由用户在 2026-10-01 提供，包括 Desktop Light（带红框标注）、Desktop Dark、中等宽度 Light/Dark、Mobile Sidebar drawer、Mobile Page + 图片附件。红框表示用户明确不满意、要求后续重新设计的重点区域；本阶段只记录，不修改正式 UI。
 
 ## Screenshot Baseline
 
@@ -16,63 +18,101 @@
 
 | Surface | Desktop Light | Desktop Dark | Tablet | Mobile | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Login | TODO | TODO | TODO | TODO | |
-| Register | TODO | TODO | TODO | TODO | |
-| Connectivity | TODO | TODO | TODO | TODO | |
-| ProductShell | TODO | TODO | TODO | TODO | |
-| Sidebar / Workspace switcher | TODO | TODO | TODO | TODO | |
-| Page Tree | TODO | TODO | TODO | TODO | |
-| Page / Editor | TODO | TODO | TODO | TODO | |
-| Slash menu | TODO | TODO | TODO | TODO | |
-| Attachments | TODO | TODO | TODO | TODO | |
-| Settings | TODO | TODO | TODO | TODO | |
-| Empty / Error / Offline | TODO | TODO | TODO | TODO | |
+| Login | Excessive persistent chrome | Editor border、Workspace panel、Page active row、inline menus、Attachment card 同屏叠加 | 产品更像工程表单/后台，而不是文档工具 | P5.7 以 content-first / low-chrome 重新分层 |
+| Duplicate context/status | Workspace 多处重复；已同步 + 已保存到本地并列 | 稳定态仍持续抢占注意力 | 合并、弱化或按需显示 |
+| Inline menus disturb layout | Workspace 展开 panel / Page action menu 推动后续内容 | 导航树节奏跳动，操作与内容混在一层 | 优先评估 anchored popover/menu |
+| Fixed non-mobile sidebar | 1024px/desktop 均不能 collapse | 中等宽度侵占正文，缺少专注模式 | 设计 desktop/tablet collapse + reopen + persistence |
+| Desktop-density copied to touch | Mobile drawer tree/menu 与 touch toolbar 仍偏桌面控件思路 | 手机空间利用率和聚焦感差 | Mobile presentation 单独设计，能力共享但 UI 不硬复用 | 后续批次 |
+| Register | Editor outer Card | 表达编辑区域边界 | 高概率可以移除 | Canvas 本身即编辑区；focus/context 通过局部反馈 |
+| 正文 Workspace label | 显示所在 Workspace | 高概率可以移除/降级 | breadcrumb / Sidebar 已提供上下文 |
+| 永久 local-save 文案 | 表达本地持久化 | 稳定态可弱化/隐藏 | 变化或异常时显示；正常态采用轻量 feedback |
+| Inline Page action menu | Page CRUD | UI 布局应移除，能力保留 | anchored popover/context menu |
+| Workspace 展开态重复 current row | 表示当前选择 | 可合并 | trigger 自身承担 current state，popover 列其他 Workspace/actions |
+| Attachment Card chrome | 图片文件元信息/操作 | 图片场景可大幅减少 | inline media + contextual actions/caption | 后续批次 |
+| Connectivity | TODO | TODO | TODO | TODO | 后续批次 |
+| ProductShell | 已提供 | 已提供 | 已提供 | 已提供 | 当前批次 |
+| Sidebar / Workspace switcher | 已提供 | 已提供 | 已提供 | 已提供 drawer | 当前批次 |
+| Page Tree | 已提供 | 已提供 | 已提供 | 已提供 drawer | 当前批次 |
+| Page / Editor | 已提供 | 已提供 | 已提供 | 已提供 | 当前批次 |
+| Slash menu | TODO | TODO | TODO | TODO | 后续补交互状态 |
+| Attachments | 部分 | 部分 | 部分 | 已提供图片 | 仍需文件/上传/error 状态 |
+| Settings | TODO | TODO | TODO | TODO | 后续批次 |
+| Empty / Error / Offline | TODO | TODO | TODO | TODO | 后续批次 |
 
 ## Global Findings
 
 ### Information hierarchy
 
-> TODO
+- Page 同时长期显示 topbar breadcrumb、正文上方 Workspace 名、Page Title、topbar “已同步”、正文区“已保存到本地”，上下文与状态存在明显重复。
+- Workspace 名在 Sidebar、Workspace selector、展开的 Workspace panel、正文上方再次出现，层级过多而信息增量很低。
+- “已同步”与“已保存到本地”语义不同，但在正常稳定态同时长期可见，视觉上被理解为两个并列状态，干扰 document-first。
+- Page Title 应成为正文区域第一视觉焦点；当前其周围存在 Workspace label、远端保存状态以及大 Editor container，焦点被分散。
 
 ### Typography
 
-> TODO
+- Page Title 的视觉权重基本成立，可以作为后续方向的保留候选。
+- UI 文本、正文、Sidebar label、状态文字的字号层级存在，但缺少更明确的系统节奏；多个 11～13px 灰字在同一屏同时出现，造成“工程状态面板”感。
+- Editor 内容标题与 Page Title 都较粗，配合大边框容器后容易产生“两层卡片标题”感。
+- 后续应以 Design System 统一 Page title / body / UI / caption，而不是局部继续调整。
 
 ### Spacing / rhythm
 
-> TODO
+- Desktop 主内容在超宽屏上横向居中基本合理，但纵向首屏留白偏多，Page Title 与实际正文之间被大 Editor container 强化分隔。
+- Sidebar 内 Workspace selector、展开 panel、Pages heading、Page tree 使用不同的 padding/radius/gap 组合，节奏不统一。
+- Page tree 打开 inline action menu 后会把子页面整体向下推，破坏树本身的纵向节奏。
+- Mobile 在 390px 下 Editor 外框 + Attachment 内框形成多层 gutter，实际内容宽度被连续吃掉。
 
 ### Surface / Card / Border usage
 
-> TODO
+- **高优先级问题：Editor 被做成一个巨大有边框、圆角的 Card。** 这让 Eotion 更像“表单里的富文本输入框”，而不是 document canvas。
+- Attachment 图片再次被放进有边框 Card，形成 “Editor Card → Attachment Card” 的嵌套框层级，Mobile 尤其拥挤。
+- Workspace switcher 展开区域、Page action menu、active Page row 都大量依赖矩形 surface/border，Sidebar 呈现明显的“框框叠框框”。
+- 后续 Design Direction 应明确默认 **无 Card / 无 Border**，只有真正需要边界、浮层或控件语义时再出现 Surface。
 
 ### Navigation
 
-> TODO
+- **明确 UX 缺陷：非 mobile 宽度当前无法收起 Sidebar。** 这在 1024px 等中等宽度明显侵占文档空间，也剥夺 Desktop 用户专注写作模式；P5.7 必须设计 desktop/tablet collapse/reopen 行为。
+- Mobile drawer 的基本模式可保留，但 drawer 内同时展开 Workspace panel 与 Page action menu 时信息密度过高。
+- Topbar breadcrumb 对定位有价值，但与正文 Workspace label 重复；后续应只保留一套主要位置上下文。
+- Desktop/Tablet Sidebar collapse 不应简单复制 Mobile drawer；需要明确折叠态、恢复入口、是否记忆状态以及窄宽度下的自动行为。
 
 ### Editor chrome
 
-> TODO
+- 默认关闭 fixed toolbar 的方向正确，符合 document-first。
+- 但 Editor 自身仍通过大边框持续表达“这里是一个编辑器”，Chrome 仍然过强。
+- 中等宽度/touch 环境底部 toolbar 视觉重量很高，按钮等宽大框排列，更像独立控制面板而不是 keyboard accessory/contextual editing。
+- Mobile fixed touch toolbar 占据明显垂直空间；后续应重新设计信息密度、图标/文字策略、横向 overflow 和键盘联动，而不是只换颜色。
 
 ### Interaction density
 
-> TODO
+- Page row 同时承载展开箭头、文档图标、标题、active background、ellipsis；打开 menu 后又插入四个纵向动作，单个树节点的视觉重量过高。
+- Workspace switcher 打开后重复显示当前 Workspace，并永久展示“新建工作区 / 重命名当前工作区”两项动作，作为切换器显得过重。
+- Settings / Logout 固定在 Sidebar 底部目前可以使用，但账号、Workspace、Page 管理三类操作散落在不同区域，后续应重新审视入口层级。
 
 ### Responsive / compact behavior
 
-> TODO
+- 1024px 下 Sidebar 仍固定占宽，且不能 collapse，是当前最明确的 responsive UX 问题。
+- Mobile drawer 覆盖内容的方式基本合理，但 tree/menu 的 Desktop 信息密度直接搬入 drawer，仍有“桌面 UI 塞进手机”的痕迹。
+- Mobile Page 的正文 gutter 尚可，但外层 Editor Card + 内层 Attachment Card 使 390px 有效内容宽度不足。
+- Touch toolbar 在 Mobile 作为独立底栏存在有合理性，但当前控件尺寸/边框/文字组合过重，需要作为 Mobile 专属组件重新设计。
 
 ### Light / Dark consistency
 
-> TODO
+- Light / Dark 的结构一致，Dark 已经避免明显纯黑大面，但两套主题都共享同样的 Surface/Border 过量问题。
+- Dark 中 Sidebar 的多个 active/panel/editor 灰色矩形更加明显，使“层层容器”的问题被放大。
+- P5.7 应优先修正 hierarchy / surface 结构，再调 palette；仅优化 Dark 色值无法解决当前观感。
 
 ### Accessibility / touch
 
-> TODO
+- Mobile drawer close、tree actions 和 touch toolbar 都已有可见触控入口，基础可用性可保留。
+- P5.7 设计阶段需确认 Desktop Sidebar collapse control 同时具备 icon、tooltip/aria-label、keyboard 可达性。
+- Touch toolbar redesign 不能为了极简牺牲约 44px touch target。
+- Page tree hover-only actions 在 Desktop 与触摸设备之间需要明确不同暴露策略。
 
 ### Motion / feedback
 
-> TODO
+- 当前静态截图不能完整判断 motion；后续 Audit 需补 Sidebar collapse、popover/menu、sync state、attachment state 的动态证据。
+- Workspace switcher 与 Page action menu 后续若改成 floating popover，应统一 enter/exit、focus management 和 reduced-motion。
 
 ## Surface Findings
 
@@ -80,61 +120,83 @@
 
 **Keep**
 
-> TODO
+- 左侧 Sidebar 作为 Workspace / Page 导航的总体信息架构。
+- Mobile 使用 drawer 而不是永久占宽。
+- Page tree、Workspace switch 的核心能力。
+- Morphicons 图标体系。
 
 **Problems**
 
-> TODO
+- Desktop/Tablet Sidebar 无 collapse/reopen。
+- Workspace selector 展开后当前 Workspace 被重复渲染，且 action panel 直接参与文档流。
+- Workspace panel 和 Page menu 都使用较重的 bordered surface。
+- 页面树节点的 active/highlight/controls 同时出现时视觉噪音偏高。
+- 账号信息、Workspace 管理、Page tree、Settings/Logout 在窄 Sidebar 中缺少更清晰的层级节奏。
+- 用户在 PC-Light 中以红框明确标记 Workspace dropdown、Workspace 展开 panel、Page row、Page action menu、child row 为重点不满意区域。
 
 **Potential removals**
 
-> TODO
+- 正文区域重复的 Workspace label（与 breadcrumb/sidebar 三重复，待 P5.7.2 决策）。
+- Workspace switcher 展开态中重复显示当前 Workspace 的一整行（可考虑把 trigger 本身作为 current state）。
+- Page action menu 的 inline 占位布局；能力保留，但 UI 应改成 anchored floating menu/popover。
+- 非必要的 Page row 永久背景块/边框。
 
 **Priority**
 
-> TODO
+**P0 / P5.7 核心重设计对象。**
 
 ### Page / Editor
 
 **Keep**
 
-> TODO
+- 大标题 + 正文的基本 document-first 方向。
+- fixed toolbar 默认关闭。
+- Slash / keyboard / contextual 能力继续作为隐藏复杂度的主要入口。
 
 **Problems**
 
-> TODO
+- Editor 巨大 border/radius container 让正文像表单输入框。
+- Workspace label、breadcrumb、sync/local-save 状态重复。
+- “已保存到本地”长期漂在标题右侧，距离正文和状态上下文都较远。
+- 空白文档也维持巨大 Editor 框，内容量与容器视觉重量不匹配。
+- Mobile 中嵌套 Card 严重压缩正文宽度。
 
 **Potential removals**
 
-> TODO
+- 默认 Editor 外边框与 Card surface。
+- 正文上方重复 Workspace label。
+- 正常稳定态长期显示的一个或多个 save/sync 文案；应研究按需/弱化反馈。
 
 **Priority**
 
-> TODO
+**P0 / 定义 Eotion 产品气质的首要 Surface。**
 
 ### Attachments
 
 **Keep**
 
-> TODO
+- 图片 inline 出现在正文中的基本行为。
+- 文件名与更多操作仍需要可发现。
 
 **Problems**
 
-> TODO
+- Mobile 图片被包进独立 bordered Card，再嵌在 bordered Editor 中，层级太重。
+- 图片上下留白与 footer 占据较多空间，视觉更像上传组件而非文档内容。
 
 **Potential removals**
 
-> TODO
+- 默认附件 Card 外壳；图片可研究更接近 inline media，caption/actions 按需出现。
+- 永久可见的 footer chrome（需在可发现性与简洁之间重新设计）。
 
 **Priority**
 
-> TODO
+High。仍需补 File block / uploading / failed 状态后完成附件审计。
 
 ### Settings
 
 **Keep**
 
-> TODO
+> TODO：等待下一批截图。
 
 **Problems**
 
@@ -146,13 +208,13 @@
 
 **Priority**
 
-> TODO
+待审计。
 
 ### Login / Register / Connectivity
 
 **Keep**
 
-> TODO
+> TODO：等待下一批截图。
 
 **Problems**
 
@@ -164,7 +226,7 @@
 
 **Priority**
 
-> TODO
+待审计。
 
 ## Repeated Anti-patterns
 
@@ -184,20 +246,45 @@
 
 ## Strengths Worth Preserving
 
-> TODO：明确哪些现有设计已经有效，避免重构把好东西一起推翻。
+- Page title + body 是正确的核心信息架构，应围绕它减法而不是推翻。
+- Sidebar / Page Tree / Workspace 的功能分区本身合理。
+- Mobile drawer 比“手机永久 Sidebar”正确。
+- fixed editor toolbar 默认 OFF 的产品决策正确。
+- Slash Command、keyboard、contextual/touch controls 是实现 Progressive Disclosure 的现成基础。
+- Light/Dark 已共享 token 体系，P5.7 应重设 token/层级而不是回退到两套样式。
+- Morphicons + EotionIcon 继续作为统一 icon/motion 基础。
 
 ## Priority Matrix
 
 | Finding | Severity | Frequency | User impact | P5.7 action |
 | --- | --- | --- | --- | --- |
-| TODO | TODO | TODO | TODO | TODO |
+| Editor 作为巨大 bordered Card | Critical | Every Page | 直接决定产品气质 | Redesign |
+| Desktop/Tablet Sidebar 不可折叠 | High | Every non-mobile session | 侵占内容/缺少 focus mode | Redesign + implement |
+| Context/status 重复 | High | Every Page | 持续视觉噪音 | Remove/merge |
+| Page action inline menu 推动 tree | High | Frequent page management | 导航跳动、视觉过重 | Floating interaction |
+| Workspace expanded panel 过重/重复 | High | Workspace switching | Sidebar hierarchy 混乱 | Redesign |
+| Nested attachment Card | High on mobile | Media documents | 有效宽度与文档感下降 | Redesign |
+| Touch toolbar 视觉过重 | Medium/High | Touch editing | 挤压正文、像控制面板 | Mobile-specific redesign |
+| Dark palette 本身 | Medium | Dark mode | 当前可用，结构问题更大 | Tune after hierarchy |
 
 ## Audit Conclusion
 
-> TODO：填写审计总结和必须进入 P5.7.2 的设计问题。
+第一批证据已经确认：当前最主要的问题不是单个颜色、圆角或字体，而是 **产品层级仍以“容器 + 控件 + 状态”驱动，而不是以文档内容驱动**。
+
+Page/ProductShell 的 P5.7.2 Design Brief 必须重点回答：
+
+1. Eotion Page 是否可以默认接近“标题 + 正文”，Editor container 视觉上消失。
+2. 正常稳定态究竟需要保留哪些 save/sync feedback。
+3. Workspace context 只在哪一个位置承担主要定位。
+4. Page tree action、Workspace switching 如何改成不推动布局的 contextual/floating interaction。
+5. Desktop/Tablet Sidebar 如何 collapse/reopen，并在中等宽度形成真正的 focus mode。
+6. Mobile Page 如何减少 nested card / persistent chrome，并重新定义 touch editing bar。
+7. Attachment 如何从“上传控件 Card”转成“文档内容”。
+
+Audit 尚未完成：下一批仍需 Settings、Login/Register、Connectivity，以及 Slash / File / upload/error 等关键状态。
 
 ## Approval
 
-- Reviewer: TODO
-- Date: TODO
-- Status: TODO
+- Reviewer: User + ChatGPT
+- Date: 2026-10-01
+- Status: IN PROGRESS — Page / ProductShell first batch complete
