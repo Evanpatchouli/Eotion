@@ -18,3 +18,11 @@
 ## 当前状态
 
 代码、文档与独立 review 已完成；review/旧测试揭示的活跃 Editor 回拉、Web 离线 app shell、空段落保存与同步刷新导致编辑器重建均已修复。contracts、storage、SDK、API、Desktop、Web `test:product` 55/55、`test:storage` 9/9、真实 Mongo/API/Web 双客户端与完整断网 app shell 测试已通过。Mobile WebView 默认 LAN HTTP 真机离线重启未验收，在该边界闭合前不标记完整 P5.4 PASS；后续验收交接见 `.agents/handoff.md`。
+
+
+## 版本体系维护（2026-09-30，已完成）
+
+- 根 `package.json` 是唯一产品版本源；当前保持 `0.0.1`，`eotion.buildNumber=1`。
+- `scripts/version.mjs` 提供 check/sync/build/patch/minor/major/set，并自动扫描 `apps/*`、`packages/*` package manifest。
+- Web / Desktop renderer / Mobile Lynx 统一注入 version、buildNumber、gitSha；API `/api/health` 暴露同一套构建信息。
+- Docker 部署通过 `GIT_SHA` 注入 commit；正式规则见 `docs/runbooks/versioning.md`。
