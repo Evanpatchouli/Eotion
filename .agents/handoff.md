@@ -10,9 +10,14 @@
 - Files changed: `packages/contracts`、`packages/sdk`、`packages/storage`、`apps/api`、`apps/web`、`apps/desktop` 与 P5.4 文档/测试，详见本阶段提交。
 - Validation completed: Web `test:product` 55/55、`test:storage` 9/9、`test:real-sync` 1/1、`test:offline-shell` 1/1；storage 6/6、Desktop 7/7、SDK 12/12、API domain 2/2、HTTP/Sync/File 全通过；相关 typecheck/build 与 `git diff --check` 通过。
 - Decisions: 本地内容是 durable source of truth；Push 成功且无未同步本地 operation 才允许指定 workspace 的 snapshot replace；顺序多设备采用 Server 最后成功提交的 mutation，无 CRDT/revision merge。
-- Next recommended action: 安排 Mobile WebView 稳定安全 origin 与真机离线重启验收；通过后更新 Roadmap 为 P5.4 PASS 并清理本 handoff。
+- Next recommended action: 用户当前决定先推进 P5.6 Settings & Preferences；原生移动宿主暂缓。P5.6 范围见 `docs/p5-settings.md`。之后在 P5 Final Acceptance 前仍需处理或明确 P5.4 Mobile WebView 真机离线重启验收。
 - Risks / blockers: Mobile LAN HTTP 无 Service Worker；IndexedDB pending 查询目前读取整个 oplog，历史 synced 记录很多时有性能成本（不影响当前数据正确性）。
 
 ## P5.5 后续上下文
 
 P5.5 Attachments 已 PASS，见 `docs/p5-attachments.md`。附件通过既有 Block/oplog 同步；二进制在线上传，IndexedDB/SQLite cleanup queue 按 delete ack、存活引用与当前授权清理。产品回归更新为 72/72，storage/Electron 为 10/10，真实双客户端为 1/1；另完成线上 OSS 图片/文件、刷新、第二客户端、URL 字节和删除后 404 验收。GPT-6.1 Sol 独立 review 无剩余确定 blocker。P5.5 没有新增原生宿主，以上 P5.4 真机待验收依旧保留，也没有关闭整个 P5。
+
+
+## P5.6 后续上下文
+
+P5.6 Settings & Preferences 已完成产品设计、尚未实施，见 `docs/p5-settings.md`。宽屏采用双栏 list-detail，compact 采用 Settings Index → Detail；账号资料实现昵称和当前密码验证后的密码变更，密码变更成功后撤销该用户全部 Session；Theme 为 device-local system/light/dark；固定编辑 Toolbar 默认关闭并按 user + workspace + device 保存；MCP / Agent 本阶段仅展示“即将推出”。Settings Search、头像、邮箱修改、通知、语言、MCP/Agent 实际配置与原生移动 Settings 均不在 P5.6。
