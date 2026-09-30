@@ -18,6 +18,12 @@ export default defineConfig({
   },
   webServer: [
     {
+      command: 'node scripts/fake-oss-server.mjs',
+      url: 'http://127.0.0.1:7141/health',
+      reuseExistingServer: false,
+      timeout: 10_000,
+    },
+    {
       command: 'pnpm --filter @eotion/api start',
       url: 'http://127.0.0.1:7137/api/health',
       reuseExistingServer: false,
@@ -26,6 +32,9 @@ export default defineConfig({
         MONGODB_URI: mongoUri.toString(),
         PORT: '7137',
         WEB_ORIGIN: 'http://127.0.0.1:4173',
+        ALI_OSS_SERVER_URL: 'http://127.0.0.1:7141',
+        ALI_OSS_CLIENT_ID: 'eotion-real-sync-test',
+        ALI_OSS_CLIENT_SECRET: 'synthetic-test',
       },
     },
     {

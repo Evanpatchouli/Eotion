@@ -8,7 +8,7 @@ const workspace = { id: 'sync-workspace', name: '同步工作区', ownerId: user
 type Server = { pages: PageResponse[]; blocks: BlockResponse[] }
 async function mockApi(page: Page, server: Server = { pages: [], blocks: [] }) {
   const requests: Array<{ path: string; method: string; body?: any }> = []
-  const controls = { disconnected: false, failPush: false, auth401: false, auth503: false, holdPush: false }
+  const controls = { disconnected: false, failPush: false, auth401: false, auth503: false, holdPush: false, cleanupStatus: 204 }
   let releasePush: (() => void) | null = null
   const json = (route: Route, status: number, body: unknown) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
   await page.route('**/api/**', async (route) => {
@@ -25,6 +25,10 @@ async function mockApi(page: Page, server: Server = { pages: [], blocks: [] }) {
     }
     if (path === '/api/workspaces' && method === 'GET') return json(route, 200, [workspace])
     if (path === `/api/sync/workspaces/${workspace.id}/snapshot` && method === 'GET') return json(route, 200, server)
+    if (path.startsWith(`/api/workspaces/${workspace.id}/files/`) && method === 'DELETE') {
+      if (controls.cleanupStatus === 204) return route.fulfill({ status: 204 })
+      return json(route, controls.cleanupStatus, { statusCode: controls.cleanupStatus, message: 'Synthetic cleanup failure' })
+    }
     if (path === '/api/sync/operations' && method === 'POST') {
       if (controls.holdPush) await new Promise<void>((resolve) => { releasePush = resolve })
       if (controls.failPush) return json(route, 503, { statusCode: 503, message: 'Sync failed' })
@@ -34,7 +38,10 @@ async function mockApi(page: Page, server: Server = { pages: [], blocks: [] }) {
         server.pages = server.pages.filter((item) => item.id !== op.payload.id)
         server.pages.push({ id: op.payload.id, workspaceId: workspace.id, parentPageId: op.payload.parentPageId, title: op.payload.title, orderKey: op.payload.orderKey, icon: op.payload.icon ?? undefined, createdAt: old?.createdAt ?? now, updatedAt: now })
       }
-      if (op.kind === 'page.delete') server.pages = server.pages.filter((item) => item.id !== op.payload.id)
+      if (op.kind === 'page.delete') {
+        server.pages = server.pages.filter((item) => item.id !== op.payload.id)
+        server.blocks = server.blocks.filter((item) => item.pageId !== op.payload.id)
+      }
       if (op.kind === 'page.move') server.pages = server.pages.map((item) => item.id === op.payload.id ? { ...item, parentPageId: op.payload.parentPageId, orderKey: op.payload.orderKey } : item)
       if (op.kind === 'block.upsert') {
         const old = server.blocks.find((item) => item.id === op.payload.id)
@@ -71,6 +78,63 @@ test('hydrates an empty workspace, keeps offline page edits across reload, then 
   expect(reconnect.findIndex((request) => request.path === '/api/sync/operations')).toBeGreaterThanOrEqual(0)
   expect(reconnect.findIndex((request) => request.path.endsWith('/snapshot'))).toBeGreaterThan(reconnect.findIndex((request) => request.path === '/api/sync/operations'))
   expect(api.server.pages.some((item) => item.id === createdId)).toBe(true)
+})
+
+test('attachment cleanup waits for delete acknowledgement, survives failure and reload, and accepts 404', async ({ page }) => {
+  const server: Server = {
+    pages: [{ id: 'attached-page', workspaceId: workspace.id, parentPageId: null, title: '附件页面', orderKey: '1', createdAt: now, updatedAt: now }],
+    blocks: [{ id: 'attached-block', workspaceId: workspace.id, pageId: 'attached-page', parentBlockId: null, type: 'file', orderKey: '1',
+      props: { node: { type: 'eotionFile', attrs: { fileId: 'owned-file', name: 'notes.txt', mimeType: 'application/octet-stream', size: 12, url: 'https://objects.example.test/notes.txt' } } }, createdAt: now, updatedAt: now }],
+  }
+  const api = await mockApi(page, server)
+  await page.goto(`/#/app/${workspace.id}/page/attached-page`)
+  await expect(page.locator('.attachment-file')).toContainText('notes.txt')
+  api.controls.failPush = true
+  await page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const sync = useProductSyncStore()
+    await (await sync.store()).deleteBlock('sync-workspace', 'attached-block')
+    sync.localMutation()
+  })
+  await expect(page.getByRole('button', { name: /同步失败/ })).toBeVisible()
+  expect(api.requests.filter((item) => item.method === 'DELETE')).toHaveLength(0)
+  api.controls.failPush = false
+  api.controls.cleanupStatus = 503
+  await page.getByRole('button', { name: /同步失败/ }).click()
+  await expect(page.locator('.product-cleanup-status')).toContainText('附件清理暂未完成')
+  expect(api.server.blocks).toHaveLength(0)
+  await page.reload()
+  await expect(page.locator('.attachment-file')).toHaveCount(0)
+  await expect(page.locator('.product-cleanup-status')).toContainText('附件清理暂未完成')
+  const requestCount = api.requests.filter((item) => item.method === 'DELETE').length
+  await page.waitForTimeout(600)
+  expect(api.requests.filter((item) => item.method === 'DELETE')).toHaveLength(requestCount)
+  api.controls.cleanupStatus = 404
+  await page.getByRole('button', { name: '重试清理' }).click()
+  await expect(page.locator('.product-cleanup-status')).toHaveCount(0)
+  const firstDelete = api.requests.findIndex((item) => item.method === 'DELETE')
+  const appliedDelete = api.requests.findIndex((item) => item.path === '/api/sync/operations' && item.body?.kind === 'block.delete')
+  expect(firstDelete).toBeGreaterThan(appliedDelete)
+})
+
+test('cleanup only sends freshly authorized workspaces and invalidates the session on 401', async ({ page }) => {
+  const api = await mockApi(page)
+  await page.goto(`/#/app/${workspace.id}`)
+  await expect(page.getByText('还没有页面')).toBeVisible()
+  await page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const sync = useProductSyncStore()
+    const local = await sync.store()
+    await local.enqueueFileCleanup('other-account-workspace', 'private-file')
+    await local.enqueueFileCleanup('sync-workspace', 'orphan-file')
+  })
+  api.controls.cleanupStatus = 401
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page).toHaveURL(/#\/login/)
+  const deletions = api.requests.filter((item) => item.method === 'DELETE')
+  expect(deletions).toHaveLength(1)
+  expect(deletions[0]!.path).toBe('/api/workspaces/sync-workspace/files/orphan-file')
+  expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).toBeNull()
 })
 
 test('failed push leaves local content and does not pull a stale snapshot', async ({ page }) => {

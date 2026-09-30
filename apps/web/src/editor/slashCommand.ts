@@ -1,15 +1,20 @@
 import { Extension } from '@tiptap/core'
 import Suggestion, { type SuggestionProps } from '@tiptap/suggestion'
+import { h, render } from 'vue'
 
-type SlashItem = { id: 'text' | 'heading' | 'bullet'; label: string; hint: string }
+import EotionIcon from '../components/ui/EotionIcon.vue'
+
+type SlashItem = { id: 'text' | 'heading' | 'bullet' | 'image' | 'file'; label: string; hint: string; icon: 'image' | 'file-text' | 'heading' | 'list' | 'text' }
 
 const items: SlashItem[] = [
-  { id: 'text', label: 'Text', hint: '普通段落' },
-  { id: 'heading', label: 'Heading', hint: '二级标题' },
-  { id: 'bullet', label: 'Bullet List', hint: '项目列表' },
+  { id: 'text', label: 'Text', hint: '普通段落', icon: 'text' },
+  { id: 'heading', label: 'Heading', hint: '二级标题', icon: 'heading' },
+  { id: 'bullet', label: 'Bullet List', hint: '项目列表', icon: 'list' },
+  { id: 'image', label: 'Image', hint: '插入图片附件', icon: 'image' },
+  { id: 'file', label: 'File', hint: '插入文件附件', icon: 'file-text' },
 ]
 
-export function createSlashCommand(isComposing: () => boolean) {
+export function createSlashCommand(isComposing: () => boolean, onAttachmentCommand?: (type: 'image' | 'file') => void, attachmentsEnabled = true) {
   return Extension.create({
     name: 'p2SlashCommand',
     addProseMirrorPlugins() {
@@ -19,8 +24,8 @@ export function createSlashCommand(isComposing: () => boolean) {
           char: '/',
           startOfLine: true,
           allow: () => !isComposing(),
-          items: ({ query }) => items.filter(item =>
-            `${item.label} ${item.hint}`.toLowerCase().includes(query.toLowerCase()),
+          items: ({ query }) => items.filter(item => (attachmentsEnabled || !['image', 'file'].includes(item.id)) &&
+            `${item.label} ${item.hint} ${item.id === 'image' ? '图片 photo' : item.id === 'file' ? '文件 attachment' : ''}`.toLowerCase().includes(query.toLowerCase()),
           ),
           command: ({ editor, range, props: item }) => {
             if (isComposing()) return
@@ -29,15 +34,22 @@ export function createSlashCommand(isComposing: () => boolean) {
             if (item.id === 'text') chain.setParagraph().run()
             if (item.id === 'heading') chain.setHeading({ level: 2 }).run()
             if (item.id === 'bullet') chain.setParagraph().toggleBulletList().run()
+            if (item.id === 'image' || item.id === 'file') {
+              chain.setParagraph().run()
+              onAttachmentCommand?.(item.id)
+            }
           },
           render: () => {
             let element: HTMLElement | undefined
             let unmount: (() => void) | undefined
             let current: SuggestionProps<SlashItem, SlashItem> | undefined
             let selected = 0
+            let mountedIcons: HTMLElement[] = []
 
             const paint = () => {
               if (!element || !current) return
+              mountedIcons.forEach((container) => render(null, container))
+              mountedIcons = []
               element.replaceChildren()
               current.items.forEach((item, index) => {
                 const button = document.createElement('button')
@@ -45,7 +57,20 @@ export function createSlashCommand(isComposing: () => boolean) {
                 button.className = 'p2-slash-item'
                 button.setAttribute('role', 'option')
                 button.setAttribute('aria-selected', String(index === selected))
-                button.textContent = `${item.label} · ${item.hint}`
+                const icon = document.createElement('span')
+                icon.className = 'p2-slash-icon'
+                render(h(EotionIcon, { name: item.icon, size: 18 }), icon)
+                mountedIcons.push(icon)
+                const text = document.createElement('span')
+                text.className = 'p2-slash-copy'
+                const title = document.createElement('span')
+                title.className = 'p2-slash-title'
+                title.textContent = item.label
+                const hint = document.createElement('span')
+                hint.className = 'p2-slash-hint'
+                hint.textContent = item.hint
+                text.append(title, hint)
+                button.append(icon, text)
                 button.addEventListener('mousedown', event => event.preventDefault())
                 button.addEventListener('click', () => current?.command(item))
                 element?.append(button)
@@ -69,6 +94,8 @@ export function createSlashCommand(isComposing: () => boolean) {
               },
               onUpdate(props) {
                 if (isComposing()) {
+                  mountedIcons.forEach((container) => render(null, container))
+                  mountedIcons = []
                   unmount?.()
                   unmount = undefined
                   element = undefined
@@ -96,6 +123,8 @@ export function createSlashCommand(isComposing: () => boolean) {
                 return false
               },
               onExit() {
+                mountedIcons.forEach((container) => render(null, container))
+                mountedIcons = []
                 unmount?.()
                 unmount = undefined
                 element = undefined

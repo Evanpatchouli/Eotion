@@ -8,7 +8,7 @@
     "build": "vue-tsc --noEmit && vite build && node scripts/generate-sw.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "typecheck": "vue-tsc --noEmit",
-    "test:product": "playwright test tests/product-flow.spec.ts tests/product-pages.spec.ts tests/product-editor.spec.ts tests/product-sync.spec.ts",
+    "test:product": "playwright test tests/product-flow.spec.ts tests/product-pages.spec.ts tests/product-editor.spec.ts tests/product-sync.spec.ts tests/product-attachments.spec.ts",
     "test:storage": "pnpm --filter @eotion/desktop build && playwright test tests/storage.spec.ts tests/desktop-storage.spec.ts tests/desktop-product-sync.spec.ts",
     "test:offline-shell": "playwright test --config playwright.offline-shell.config.ts",
     "test:real-sync": "playwright test --config playwright.real.config.ts"
@@ -23,6 +23,8 @@
     "@tiptap/starter-kit": "^3.31.3",
     "@tiptap/suggestion": "^3.31.3",
     "@tiptap/vue-3": "^3.31.3",
+    "lucide": "^1.49.0",
+    "morphicons": "^1.7.1",
     "pinia": "^4.0.3",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1"

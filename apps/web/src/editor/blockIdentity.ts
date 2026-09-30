@@ -2,7 +2,7 @@ import { Extension } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
 import { createLocalId } from '@eotion/storage'
 
-const blockNodes = ['paragraph', 'heading', 'bulletList', 'orderedList', 'blockquote', 'codeBlock', 'horizontalRule']
+const blockNodes = ['paragraph', 'heading', 'bulletList', 'orderedList', 'blockquote', 'codeBlock', 'horizontalRule', 'eotionImage', 'eotionFile', 'eotionTodo']
 
 /** A top-level node owns one stable server Block ID, including across split and paste. */
 export const BlockIdentity = Extension.create({
@@ -64,14 +64,13 @@ export const BlockIdentity = Extension.create({
         state.doc.forEach((node, offset) => {
           if (!blockNodes.includes(node.type.name)) return
           const id = node.attrs.blockId
-          if (typeof id === 'string' && id && !seen.has(id) && (preferred.get(id) === undefined || preferred.get(id) === offset)) {
-            seen.add(id)
-            return
-          }
+          const keepId = typeof id === 'string' && !!id && !seen.has(id) && (preferred.get(id) === undefined || preferred.get(id) === offset)
           const candidate = inherited.get(offset)
-          const nextId = candidate && !seen.has(candidate) ? candidate : createLocalId()
+          const nextId = keepId ? id! : candidate && !seen.has(candidate) ? candidate : createLocalId()
           seen.add(nextId)
-          transaction = transaction.setNodeMarkup(offset, undefined, { ...node.attrs, blockId: nextId })
+          if (keepId) return
+          const attrs = { ...node.attrs, blockId: nextId }
+          transaction = transaction.setNodeMarkup(offset, undefined, attrs)
         })
         return transaction.docChanged ? transaction : null
       },

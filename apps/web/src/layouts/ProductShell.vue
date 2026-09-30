@@ -3,11 +3,14 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import eotionIconUrl from '../assets/eotion-icon.png'
+import EotionIcon from '../components/ui/EotionIcon.vue'
+import { IconName } from '../components/ui/icons'
 import PageTree from '../components/product/PageTree.vue'
 import WorkspaceCreateForm from '../components/product/WorkspaceCreateForm.vue'
 import WorkspaceRenameForm from '../components/product/WorkspaceRenameForm.vue'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
 import { flushActivePageEditor } from '../editor/activePageEditor'
+import { flushAttachmentCleanups, pendingAttachmentCleanups } from '../editor/attachmentCleanup'
 import { hasPendingPageDraft } from '../editor/pendingPageDraft'
 import { useAuthStore } from '../stores/auth'
 import { useProductPagesStore } from '../stores/productPages'
@@ -170,7 +173,7 @@ onUnmounted(() => {
       <div class="brand-row">
         <img :src="eotionIconUrl" class="brand-mark brand-mark--image" alt="" aria-hidden="true" />
         <strong>Eotion</strong>
-        <button class="icon-button sidebar-close" type="button" aria-label="关闭导航菜单" @click="closeMobileNav">×</button>
+        <button class="icon-button sidebar-close" type="button" aria-label="关闭导航菜单" @click="closeMobileNav"><EotionIcon :name="IconName.X" /></button>
       </div>
 
       <div class="product-sidebar-section">
@@ -178,7 +181,7 @@ onUnmounted(() => {
         <button class="product-workspace-trigger" type="button" aria-label="切换工作区" :aria-expanded="switcherOpen" @click="switcherOpen = !switcherOpen; formMode = null; operationError = ''">
           <span class="product-workspace-avatar" aria-hidden="true">{{ currentWorkspace?.name.slice(0, 1) || 'E' }}</span>
           <span class="product-workspace-name">{{ currentWorkspace?.name ?? (workspaces.loading ? '正在加载…' : '选择工作区') }}</span>
-          <span class="product-chevron" aria-hidden="true">⌄</span>
+          <span class="product-chevron" aria-hidden="true"><EotionIcon :name="IconName.ChevronDown" :size="16" /></span>
         </button>
         <div v-if="switcherOpen" class="product-switcher-panel">
           <p v-if="workspaces.loading" class="product-message" role="status">正在加载工作区…</p>
@@ -188,7 +191,7 @@ onUnmounted(() => {
               <button class="product-workspace-option" type="button" :aria-current="item.id === workspaceId ? 'page' : undefined" @click="selectWorkspace(item.id)">
                 <span class="product-workspace-avatar" aria-hidden="true">{{ item.name.slice(0, 1) }}</span>
                 <span class="product-workspace-name">{{ item.name }}</span>
-                <span v-if="item.id === workspaceId" class="product-check" aria-label="当前工作区">✓</span>
+                <span v-if="item.id === workspaceId" class="product-check" aria-label="当前工作区"><EotionIcon :name="IconName.Check" :size="16" /></span>
               </button>
             </li>
           </ul>
@@ -214,14 +217,22 @@ onUnmounted(() => {
 
     <main class="main-pane">
       <header class="topbar product-topbar">
-        <button class="icon-button mobile-menu" type="button" aria-label="打开导航菜单" @click="mobileNavOpen = true">☰</button>
+        <button class="icon-button mobile-menu" type="button" aria-label="打开导航菜单" @click="mobileNavOpen = true"><EotionIcon :name="IconName.Menu" /></button>
         <div class="breadcrumb">{{ breadcrumb }}</div>
-        <button v-if="sync.state === 'failed' || sync.state === 'offline'" class="product-text-button" type="button" @click="sync.retry()">{{ sync.state === 'offline' ? '离线 · 本地已保存' : `同步失败 · ${sync.pending} 项待同步 · 重试` }}</button>
+        <button v-if="sync.state === 'failed' || sync.state === 'offline'" class="product-text-button product-sync-action" type="button" @click="sync.retry()"><EotionIcon name="refresh" :size="16" />{{ sync.state === 'offline' ? '离线 · 本地已保存' : `同步失败 · ${sync.pending} 项待同步 · 重试` }}</button>
         <span v-else class="product-save-status" role="status">{{ sync.state === 'syncing' ? '正在同步…' : sync.pending ? `${sync.pending} 项待同步` : sync.state === 'synced' ? '已同步' : '' }}</span>
       </header>
 
       <article class="document-wrap">
-        <p v-if="operationStatus" class="product-message product-message--success product-operation-status" role="status">{{ operationStatus }}</p>
+      <p v-if="pendingAttachmentCleanups.length" class="product-message product-cleanup-status" role="alert">
+        附件清理尚未写入本机，请重试后再关闭页面。
+        <button class="product-text-button product-sync-action" type="button" @click="flushAttachmentCleanups"><EotionIcon name="refresh" :size="16" />重试记录清理</button>
+      </p>
+      <p v-if="sync.cleanupPending" class="product-message product-cleanup-status" role="status">
+        {{ sync.cleanupError || `${sync.cleanupPending} 个附件待清理，联网同步后自动重试。` }}
+        <button class="product-text-button product-sync-action" type="button" @click="sync.retry()"><EotionIcon name="refresh" :size="16" />重试清理</button>
+      </p>
+      <p v-if="operationStatus" class="product-message product-message--success product-operation-status" role="status">{{ operationStatus }}</p>
         <section v-if="workspaces.error" class="document product-state" aria-labelledby="workspace-load-error-title">
           <h1 id="workspace-load-error-title">暂时无法加载工作区</h1>
           <p class="lead" role="alert">{{ workspaces.error }}</p>
@@ -229,13 +240,13 @@ onUnmounted(() => {
         </section>
         <section v-else-if="workspaces.loading && !workspaces.loaded" class="product-loading" role="status">正在加载工作区…</section>
         <section v-else-if="isUnavailable" class="document product-state" aria-labelledby="workspace-unavailable-title">
-          <div class="product-state-icon" aria-hidden="true">⌕</div>
+          <div class="product-state-icon" aria-hidden="true"><EotionIcon :name="IconName.Search" :size="24" /></div>
           <h1 id="workspace-unavailable-title">无法打开这个工作区</h1>
           <p class="lead">它可能已被移除，或暂时无法使用。你可以返回工作区列表并选择其他工作区。</p>
           <div class="product-state-actions"><RouterLink class="product-button product-button--primary" :to="{ name: 'product-home' }">返回工作区</RouterLink><button v-for="item in workspaces.items" :key="item.id" class="product-button" type="button" @click="selectWorkspace(item.id)">{{ item.name }}</button></div>
         </section>
         <section v-else-if="!workspaceId && workspaces.loaded && workspaces.items.length === 0" class="document product-state" aria-labelledby="workspace-create-title">
-          <div class="product-state-icon" aria-hidden="true">＋</div>
+          <div class="product-state-icon" aria-hidden="true"><EotionIcon :name="IconName.Plus" :size="24" /></div>
           <h1 id="workspace-create-title">创建你的第一个工作区</h1>
           <p class="lead">工作区可以帮助你整理页面和想法。先为它取一个容易辨认的名字。</p>
           <WorkspaceCreateForm :pending="workspaces.createPending" :error="operationError || workspaces.mutationError" @submit="createWorkspace" />

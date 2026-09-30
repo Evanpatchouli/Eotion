@@ -4,8 +4,10 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { RouterLink, onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router'
 
 import EotionEditor from '../components/editor/EotionEditor.vue'
+import EotionIcon from '../components/ui/EotionIcon.vue'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
 import { registerActivePageEditor } from '../editor/activePageEditor'
+import { flushAttachmentCleanups, pendingAttachmentCleanups } from '../editor/attachmentCleanup'
 import { PagePersistence, type SaveStatus } from '../editor/pagePersistence'
 import { clearPageDraft, hasPendingPageDraft, pendingPageDraft } from '../editor/pendingPageDraft'
 import { useAuthStore } from '../stores/auth'
@@ -87,14 +89,28 @@ function onEditorUpdate(updated: JSONContent): void {
   persistence.value?.update(updated)
 }
 
+async function commitAttachment(blockId: string): Promise<boolean> {
+  const current = persistence.value
+  const workspace = workspaceId.value
+  const id = pageId.value
+  if (!current) return false
+  await current.flush()
+  // A later unrelated mutation can fail after this attachment was committed.
+  // Check its durable identity instead of compensating a valid local block.
+  const block = await (await sync.store()).getBlock(blockId)
+  return !!block && block.workspaceId === workspace && block.pageId === id &&
+    (block.type === 'image' || block.type === 'file')
+}
+
 function beforeUnload(event: BeforeUnloadEvent): void {
-  if (!persistence.value?.hasPendingWork) return
+  if (!persistence.value?.hasPendingWork && pendingAttachmentCleanups.value.length === 0) return
   event.preventDefault()
   event.returnValue = ''
 }
 
 async function guardNavigation(): Promise<boolean> {
-  if (!auth.user && hasPendingPageDraft()) return true
+  if (!auth.user) return true
+  if (!(await flushAttachmentCleanups())) return false
   if (!persistence.value?.hasPendingWork) return true
   return persistence.value.flush()
 }
@@ -131,7 +147,7 @@ onBeforeUnmount(() => {
   </section>
   <section v-else-if="!settled" class="product-loading" role="status">正在加载页面…</section>
   <section v-else-if="!page" class="document product-state" aria-labelledby="page-unavailable-title">
-    <div class="product-state-icon" aria-hidden="true">⌕</div>
+    <div class="product-state-icon" aria-hidden="true"><EotionIcon name="search" :size="24" /></div>
     <h1 id="page-unavailable-title">无法打开这个页面</h1>
     <p class="lead">它可能已被删除，或者不属于当前工作区。</p>
     <div class="product-state-actions">
@@ -152,6 +168,8 @@ onBeforeUnmount(() => {
       <EotionEditor
         :key="`${workspaceId}:${pageId}:${editorRevision}`"
         :content="document"
+        :workspace-id="workspaceId"
+        :commit-attachment="commitAttachment"
         :touch-toolbar="layoutMode === 'mobile' || inputMode !== 'mouse'"
         aria-label="页面正文编辑区域"
         @update="onEditorUpdate"

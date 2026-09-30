@@ -151,6 +151,12 @@ importers:
       '@tiptap/vue-3':
         specifier: ^3.31.3
         version: 3.31.3(@floating-ui/dom@1.8.0)(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(vue@3.5.43(typescript@6.0.3))
+      lucide:
+        specifier: ^1.49.0
+        version: 1.49.0
+      morphicons:
+        specifier: ^1.7.1
+        version: 1.7.1(vue@3.5.43(typescript@6.0.3))
       pinia:
         specifier: ^4.0.3
         version: 4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.43(typescript@6.0.3))
@@ -2769,6 +2775,9 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
+  lucide@1.49.0:
+    resolution: {integrity: sha512-Dyl20SJao+7GUAYqa1Wz/x5wiIYzVRlDXwtFDvf44HULQObsb8YjXE81YGv24WMFQQYLqlxHu86ikEAqG4Mbww==}
+
   magic-string-ast@1.0.3:
     resolution: {integrity: sha512-CvkkH1i81zl7mmb94DsRiFeG9V2fR2JeuK8yDgS8oiZSFa++wWLEgZ5ufEOyLHbvSbD1gTRKv9NdX69Rnvr9JA==}
     engines: {node: '>=20.19.0'}
@@ -2923,6 +2932,26 @@ packages:
   mongoose@9.10.2:
     resolution: {integrity: sha512-oFcFL3dsX5tDzMwBD+GGoDqKIj6RNG3bu3oqlvcUIgPulHP14/6N7c07j3s0XgbrlT7U/lbiXOD89hmPtEXnfQ==}
     engines: {node: '>=20.19.0'}
+
+  morphicons@1.7.1:
+    resolution: {integrity: sha512-q5ylxy5/d7vBg0OAzanlooXf05PekovMYDuuQVpr6vAQZxl99lrJbaIi+jJ32PXQf9WEEaDO2pbNBsx1ZhEnFQ==}
+    peerDependencies:
+      react: '>=18'
+      react-native: '>=0.71'
+      react-native-svg: '>=14'
+      svelte: '>=5'
+      vue: '>=3.3'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-native:
+        optional: true
+      react-native-svg:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
 
   mpath@0.9.0:
     resolution: {integrity: sha512-ikJRQTk8hw5DEoFVxHG1Gn9T/xcjtdnOKIU1JTmGjZZlg9LST2mBLmcX3/ICIbgJydT2GOc15RnNy5mHmzfSew==}
@@ -6673,6 +6702,8 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
+  lucide@1.49.0: {}
+
   magic-string-ast@1.0.3:
     dependencies:
       magic-string: 0.30.21
@@ -6775,6 +6806,10 @@ snapshots:
       - mongodb-client-encryption
       - snappy
       - socks
+
+  morphicons@1.7.1(vue@3.5.43(typescript@6.0.3)):
+    optionalDependencies:
+      vue: 3.5.43(typescript@6.0.3)
 
   mpath@0.9.0: {}
 

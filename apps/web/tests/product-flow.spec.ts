@@ -277,10 +277,13 @@ test('delays login until session recovery completes, and lets a failed recovery 
   await page.getByRole('button', { name: /重试|重新加载/ }).click()
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
 
+  // Finish the previous document's background authorization request before
+  // assigning the one-shot failure to the next document's initial recovery.
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
   api.controls.workspaceListFailures = 1
   await page.reload()
   await expect(page.getByRole('heading', { name: '暂时无法加载工作区' })).toBeVisible()
-  await page.getByRole('button', { name: '重试' }).click()
+  await page.getByRole('button', { name: '重试', exact: true }).click()
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
 })
 

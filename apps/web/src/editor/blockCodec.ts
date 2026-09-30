@@ -1,4 +1,5 @@
 import type { BlockResponse, BlockCreateRequest } from '@eotion/contracts'
+import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
 import type { JSONContent } from '@tiptap/core'
 
 export type EditorBlock = Pick<BlockCreateRequest, 'id' | 'type' | 'orderKey' | 'props'>
@@ -11,20 +12,25 @@ const nodeTypes = {
   blockquote: 'quote',
   codeBlock: 'code',
   horizontalRule: 'divider',
+  eotionImage: 'image',
+  eotionFile: 'file',
+  eotionTodo: 'todo',
 } as const
 
 const blockNodes = Object.fromEntries(Object.entries(nodeTypes).map(([node, type]) => [type, node])) as Record<string, string>
-const nestedTypes = new Set(['text', 'paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'codeBlock', 'hardBreak', 'horizontalRule'])
+const nestedTypes = new Set(['text', 'paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'codeBlock', 'hardBreak', 'horizontalRule', 'eotionImage', 'eotionFile', 'eotionTodo'])
 const markTypes = new Set(['bold', 'italic', 'strike', 'code'])
 const allowedAttrs: Record<string, string[]> = {
   text: [], paragraph: [], heading: ['level'], bulletList: [], orderedList: ['start'],
   listItem: [], blockquote: [], codeBlock: ['language'], hardBreak: [], horizontalRule: [],
+  eotionImage: ['fileId', 'name', 'mimeType', 'size', 'url'], eotionFile: ['fileId', 'name', 'mimeType', 'size', 'url'], eotionTodo: ['checked'],
 }
 const allowedChildren: Record<string, string[] | null> = {
   text: null, paragraph: ['text', 'hardBreak'], heading: ['text', 'hardBreak'],
   bulletList: ['listItem'], orderedList: ['listItem'], listItem: ['paragraph', 'bulletList', 'orderedList'],
   blockquote: ['paragraph', 'heading', 'bulletList', 'orderedList', 'blockquote', 'codeBlock', 'horizontalRule'],
   codeBlock: ['text'], hardBreak: null, horizontalRule: null,
+  eotionImage: null, eotionFile: null, eotionTodo: ['text', 'hardBreak'],
 }
 
 function validNode(node: JSONContent): boolean {
@@ -34,6 +40,13 @@ function validNode(node: JSONContent): boolean {
   if (type !== 'text' && node.text !== undefined) return false
   if (Object.keys(node).some((key) => !['type', 'text', 'attrs', 'content', 'marks'].includes(key))) return false
   if (Object.keys(node.attrs ?? {}).some((attribute) => attribute !== 'blockId' && !allowedAttrs[type]!.includes(attribute))) return false
+  if (type === 'eotionImage' || type === 'eotionFile') {
+    if (node.content !== undefined || node.marks !== undefined) return false
+    const { blockId: _blockId, ...attrs } = node.attrs ?? {}
+    if (!AttachmentAttrsSchema.safeParse(attrs).success) return false
+    if (type === 'eotionImage' && !SAFE_IMAGE_MIME_TYPES.includes(String(attrs.mimeType) as typeof SAFE_IMAGE_MIME_TYPES[number])) return false
+  }
+  if (type === 'eotionTodo' && typeof node.attrs?.checked !== 'boolean') return false
   if (type === 'heading' && node.attrs?.level !== undefined && ![1, 2, 3, 4, 5, 6].includes(node.attrs.level)) return false
   if (node.marks?.some((mark) => !markTypes.has(mark.type) || Object.keys(mark.attrs ?? {}).length > 0)) return false
   const children = allowedChildren[type]
@@ -61,10 +74,16 @@ function isEmptyPlaceholder(node: JSONContent): boolean {
 export function blocksToDocument(blocks: BlockResponse[]): JSONContent {
   const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0
   const sorted = [...blocks].sort((a, b) => compare(a.orderKey, b.orderKey) || compare(a.id, b.id))
+  const fileIds = new Set<string>()
   const content = sorted.map((block) => {
     const node = block.props.node as JSONContent | undefined
     if (block.parentBlockId || Object.keys(block.props).some((key) => key !== 'node') || !node || blockNodes[block.type] !== node.type || !validNode(node) || hasIdentity(node)) {
       throw new Error('此页面包含尚不支持编辑的区块。为保护原内容，编辑已暂停。')
+    }
+    if (node.type === 'eotionImage' || node.type === 'eotionFile') {
+      const fileId = node.attrs?.fileId
+      if (typeof fileId !== 'string' || fileIds.has(fileId)) throw new Error('页面附件身份重复，为保护原文件，编辑已暂停。')
+      fileIds.add(fileId)
     }
     return { ...node, attrs: { ...node.attrs, blockId: block.id } }
   })
@@ -85,10 +104,16 @@ export function documentToBlocks(document: JSONContent, baseline: BlockResponse[
   }
   if (!keepEmptyPlaceholder && baseline.length === 0 && content.length === 1 && isEmptyPlaceholder(content[0]!)) return []
   const seen = new Set<string>()
+  const fileIds = new Set<string>()
   return content.map((node) => {
     const id = node.attrs?.blockId
     if (typeof id !== 'string' || !id || seen.has(id)) throw new Error('区块身份尚未就绪，无法安全保存。')
     seen.add(id)
+    if (node.type === 'eotionImage' || node.type === 'eotionFile') {
+      const fileId = node.attrs?.fileId
+      if (typeof fileId !== 'string' || fileIds.has(fileId)) throw new Error('附件身份重复，无法安全保存。')
+      fileIds.add(fileId)
+    }
     return {
       id,
       type: nodeTypes[node.type as keyof typeof nodeTypes],

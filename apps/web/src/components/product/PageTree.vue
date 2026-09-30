@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useProductPagesStore } from '../../stores/productPages'
+import EotionIcon from '../ui/EotionIcon.vue'
+import { IconName } from '../ui/icons'
 import { flushActivePageEditor } from '../../editor/activePageEditor'
 import { buildPageTree, flattenPageTree } from '../../utils/pageTree'
 import PageMoveForm from './PageMoveForm.vue'
@@ -137,7 +139,7 @@ watch(workspaceId, () => { closePanels(); expanded.value = new Set() })
   <div class="product-sidebar-section product-pages-section">
     <div class="product-pages-heading">
       <span class="product-section-label">页面</span>
-      <button class="product-add-page" type="button" aria-label="新建根页面" :disabled="!canCreate" @click="createRoot">＋</button>
+      <button class="product-add-page" type="button" aria-label="新建根页面" :disabled="!canCreate" @click="createRoot"><EotionIcon :name="IconName.Plus" /></button>
     </div>
 
     <p v-if="pages.createError" class="product-message product-message--error" role="alert">{{ pages.createError }}</p>
@@ -147,17 +149,18 @@ watch(workspaceId, () => { closePanels(); expanded.value = new Set() })
       <p class="product-message product-message--error" role="alert">{{ pages.error }}</p>
       <button class="product-text-button" type="button" :disabled="pages.loading" @click="retry">{{ pages.loading ? '正在重试…' : '重试' }}</button>
     </template>
-    <p v-else-if="pages.loaded && pages.items.length === 0" class="product-page-placeholder"><span aria-hidden="true">▤</span><span>还没有页面</span></p>
+    <p v-else-if="pages.loaded && pages.items.length === 0" class="product-page-placeholder"><EotionIcon :name="IconName.FileText" :size="16" /><span>还没有页面</span></p>
     <ul v-else class="product-page-tree" role="tree" aria-label="页面树">
       <li v-for="row in rows" :key="row.page.id" class="product-page-node" role="treeitem" :aria-level="row.depth + 1" :aria-selected="row.page.id === currentPageId" :aria-expanded="row.hasChildren ? row.expanded : undefined">
         <div class="product-page-row" :style="{ paddingLeft: `${8 + row.depth * 14}px` }">
-          <button v-if="row.hasChildren" class="product-page-toggle" type="button" :aria-label="`${row.expanded ? '收起' : '展开'}${row.page.title}的子页面`" @click="toggle(row.page.id)">{{ row.expanded ? '▾' : '▸' }}</button>
+          <button v-if="row.hasChildren" class="product-page-toggle" type="button" :aria-label="`${row.expanded ? '收起' : '展开'}${row.page.title}的子页面`" @click="toggle(row.page.id)"><EotionIcon :name="row.expanded ? IconName.ChevronDown : IconName.ChevronRight" :size="16" /></button>
           <span v-else class="product-page-toggle product-page-toggle--empty" aria-hidden="true"></span>
           <button class="product-page-link" type="button" :aria-current="row.page.id === currentPageId ? 'page' : undefined" @click="openPage(row.page.id)">
-            <span class="product-page-icon" aria-hidden="true">{{ row.page.icon ?? '▤' }}</span>
+            <span v-if="row.page.icon" class="product-page-icon" aria-hidden="true">{{ row.page.icon }}</span>
+            <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
             <span class="product-page-title">{{ row.page.title }}</span>
           </button>
-          <button class="product-page-menu-trigger" type="button" :aria-label="`页面操作：${row.page.title}`" :aria-expanded="menuFor === row.page.id" @click="toggleMenu(row.page.id)">⋯</button>
+          <button class="product-page-menu-trigger" type="button" :aria-label="`页面操作：${row.page.title}`" :aria-expanded="menuFor === row.page.id" @click="toggleMenu(row.page.id)"><EotionIcon :name="IconName.More" /></button>
         </div>
 
         <div v-if="menuFor === row.page.id" class="product-page-menu" role="group" :aria-label="`${row.page.title} 的操作`">

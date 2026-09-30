@@ -24,6 +24,8 @@ export const useProductSyncStore = defineStore('product-sync', () => {
   const error = ref('')
   const revision = ref(0)
   const snapshotRevision = ref(0)
+  const cleanupPending = ref(0)
+  const cleanupError = ref('')
   let userId = ''
   let activeWorkspaceId = ''
   let identityEpoch = 0
@@ -31,6 +33,7 @@ export const useProductSyncStore = defineStore('product-sync', () => {
   let running: Promise<void> | null = null
   let requested = false
   let timer: ReturnType<typeof setTimeout> | null = null
+  const cleanupRetryAfter = new Map<string, number>()
 
   function configure(id: string, offline: boolean): void {
     if (userId !== id) {
@@ -43,6 +46,9 @@ export const useProductSyncStore = defineStore('product-sync', () => {
       state.value = offline ? 'offline' : 'idle'
       error.value = ''
       pending.value = 0
+      cleanupPending.value = 0
+      cleanupError.value = ''
+      cleanupRetryAfter.clear()
     }
     offlineIdentity = offline
     if (id && !offline) requestSync()
@@ -52,7 +58,51 @@ export const useProductSyncStore = defineStore('product-sync', () => {
 
   async function updatePending(): Promise<void> {
     const accessible = new Set(useProductWorkspacesStore().items.map((item) => item.id))
-    pending.value = (await (await store()).getPendingOperations()).filter((op) => accessible.has(op.workspaceId)).length
+    const local = await store()
+    pending.value = (await local.getPendingOperations()).filter((op) => accessible.has(op.workspaceId)).length
+    cleanupPending.value = (await local.listFileCleanups()).filter((task) => accessible.has(task.workspaceId)).length
+  }
+
+  async function cleanupFiles(local: LocalStore, ids: ReadonlySet<string>, currentIdentity: () => boolean): Promise<void> {
+    cleanupError.value = ''
+    for (const task of await local.listReadyFileCleanups()) {
+      if (!currentIdentity() || !navigator.onLine) return
+      if (!ids.has(task.workspaceId)) continue
+      const key = JSON.stringify([task.workspaceId, task.fileId])
+      if ((cleanupRetryAfter.get(key) ?? 0) > Date.now()) {
+        cleanupError.value = '附件清理暂未完成，联网后会重试。'
+        continue
+      }
+      if (!(await flushActivePageEditor(task.workspaceId))) continue
+      if (!currentIdentity()) return
+      // An undo or another editor may have produced a newer mutation. Push it
+      // before considering cleanup, even when the original delete is acked.
+      if ((await local.getPendingOperations()).some((op) => op.workspaceId === task.workspaceId)) {
+        requested = true
+        continue
+      }
+      if (!(await local.listReadyFileCleanups()).some((ready) => ready.workspaceId === task.workspaceId && ready.fileId === task.fileId)) continue
+      try {
+        try { await api.files.delete(task.workspaceId, task.fileId) }
+        catch (cause) {
+          if (!(cause instanceof ApiError && cause.statusCode === 404)) throw cause
+        }
+        if (!currentIdentity()) return
+        await local.completeFileCleanup(task.workspaceId, task.fileId)
+        cleanupRetryAfter.delete(key)
+      } catch (cause) {
+        if (cause instanceof ApiError && cause.statusCode === 401) {
+          expireSessionFromApi()
+          return
+        }
+        if (!currentIdentity()) return
+        const message = '附件清理暂未完成，联网后会重试。'
+        await local.failFileCleanup(task.workspaceId, task.fileId, message)
+        cleanupRetryAfter.set(key, Date.now() + 30_000)
+        cleanupError.value = message
+      }
+    }
+    if (currentIdentity()) await updatePending()
   }
 
   function localMutation(): void {
@@ -109,6 +159,19 @@ export const useProductSyncStore = defineStore('product-sync', () => {
         state.value = 'syncing'
         error.value = ''
         try {
+          const workspaces = useProductWorkspacesStore()
+          // Join initial recovery instead of racing it with a second list that
+          // could erase an initial load failure before the user can retry.
+          if (!workspaces.loaded && !offlineIdentity) {
+            if (workspaces.error) { state.value = 'failed'; error.value = workspaces.error; return }
+            await workspaces.load()
+            if (!currentIdentity()) return
+            if (!workspaces.loaded) {
+              state.value = 'failed'
+              error.value = workspaces.error || '暂时无法加载工作区，请重试。'
+              return
+            }
+          }
           // A fresh server list authorizes every send. Cached metadata is display-only.
           const authorized = await api.workspaces.list()
           if (!currentIdentity()) return
@@ -131,6 +194,8 @@ export const useProductSyncStore = defineStore('product-sync', () => {
           }, ids)
           if (!currentIdentity()) return
           await updatePending()
+          await cleanupFiles(local, ids, currentIdentity)
+          if (!currentIdentity()) return
           if (result.failed || pending.value) {
             state.value = 'failed'
             error.value = '同步失败，本地内容安全。'
@@ -182,6 +247,6 @@ export const useProductSyncStore = defineStore('product-sync', () => {
     return running
   }
 
-  function retry(): void { requestSync(0) }
-  return { state, pending, error, revision, snapshotRevision, configure, store, updatePending, localMutation, prepare, leaveWorkspace, requestSync, runSync, retry }
+  function retry(): void { cleanupRetryAfter.clear(); requestSync(0) }
+  return { state, pending, error, revision, snapshotRevision, cleanupPending, cleanupError, configure, store, updatePending, localMutation, prepare, leaveWorkspace, requestSync, runSync, retry }
 })
