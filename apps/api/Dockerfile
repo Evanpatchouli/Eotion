@@ -1,7 +1,7 @@
-FROM node:24-alpine AS build
+FROM node:22-alpine3.23 AS build
 
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
+RUN corepack enable && corepack prepare pnpm@10.34.2 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY apps/api/package.json apps/api/package.json
@@ -22,11 +22,11 @@ COPY packages/contracts/tsconfig.json packages/contracts/tsconfig.json
 
 RUN pnpm --filter @eotion/api build
 
-FROM node:24-alpine AS runtime
+FROM node:22-alpine3.23 AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production
-RUN corepack enable && corepack prepare pnpm@10.33.2 --activate
+RUN corepack enable && corepack prepare pnpm@10.34.2 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json apps/api/package.json
