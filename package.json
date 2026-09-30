@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "description": "Eotion - a Notion-inspired web-first knowledge workspace",
-  "packageManager": "pnpm@10.33.2",
+  "packageManager": "pnpm@10.34.2",
   "engines": {
     "node": ">=22.12 <27",
     "pnpm": ">=10 <11"
