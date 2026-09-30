@@ -95,7 +95,6 @@ git pull --ff-only origin master
 构建并启动：
 
 ```bash
-pnpm version:check
 GIT_SHA="$(git rev-parse --short=12 HEAD)" docker compose up -d --build
 ```
 
