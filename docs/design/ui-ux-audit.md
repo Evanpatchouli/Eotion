@@ -145,6 +145,11 @@
 - Page action menu 的 inline 占位布局；能力保留，但 UI 应改成 anchored floating menu/popover。
 - 非必要的 Page row 永久背景块/边框。
 
+**Explicit visual preference**
+
+- 用户希望展开的 Sidebar 作为独立 Surface 时，右上角与右下角使用圆角；左侧继续贴窗口边缘，不要求四角都圆。
+- Desktop/Tablet 展开 Sidebar 与 Mobile drawer 都应在高保真阶段验证这一处理是否统一、自然；具体 radius 由 Design System v1 决定，不在 Audit 阶段提前定像素值。
+
 **Priority**
 
 **P0 / P5.7 核心重设计对象。**
