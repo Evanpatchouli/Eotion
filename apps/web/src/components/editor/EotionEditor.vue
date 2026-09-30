@@ -19,7 +19,7 @@ type UploadPhase = 'uploading' | 'saving' | 'success' | 'failed' | 'cancelled'
 type UploadTask = { id: string; fileId: string; file: File; phase: UploadPhase; error: string; objectUrl?: string; controller?: AbortController; started: boolean; durable: boolean; epoch: number; running?: Promise<void> }
 const pendingCleanup = pendingAttachmentCleanups
 
-const props = defineProps<{ content: JSONContent; touchToolbar: boolean; ariaLabel?: string; workspaceId?: string; commitAttachment?: (blockId: string) => Promise<boolean> }>()
+const props = defineProps<{ content: JSONContent; touchToolbar: boolean; fixedToolbar?: boolean; ariaLabel?: string; workspaceId?: string; commitAttachment?: (blockId: string) => Promise<boolean> }>()
 const emit = defineEmits<{
   update: [document: JSONContent]
   composition: [active: boolean, event: CompositionEvent]
@@ -321,7 +321,7 @@ defineExpose({ editor })
 
 <template>
   <section class="eotion-editor" :class="{ 'eotion-editor--drop-active': draggingFiles }" aria-label="Tiptap 编辑器">
-    <div class="eotion-editor-toolbar" role="toolbar" aria-label="块类型">
+    <div v-if="fixedToolbar ?? !workspaceId" class="eotion-editor-toolbar" role="toolbar" aria-label="块类型">
       <button type="button" :aria-pressed="editor?.isActive('paragraph') ?? false" :disabled="!editor" @click="editor?.chain().focus().setParagraph().run()">段落</button>
       <button type="button" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">二级标题</button>
       <button type="button" :aria-pressed="editor?.isActive('bulletList') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBulletList().run()">项目列表</button>
@@ -378,13 +378,13 @@ defineExpose({ editor })
 </template>
 
 <style scoped>
-.eotion-editor { min-width: 0; border: 1px solid #e5e5e1; border-radius: 10px; background: #fff; }
-.eotion-editor--drop-active { border-color: #8d9e83; box-shadow: 0 0 0 2px #8d9e8326; }
-.eotion-editor-toolbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; border-bottom: 1px solid #e5e5e1; }
-.eotion-editor-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 5px 10px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: #424640; font: inherit; font-size: 13px; cursor: pointer; }
-.eotion-editor-toolbar button[aria-pressed="true"] { border-color: #e0e2dd; background: #f1f2ee; }
-.eotion-editor-toolbar button:hover { background: #f1f2ee; }
-.eotion-editor-toolbar button:focus-visible { outline: 2px solid #87967c; outline-offset: 2px; }
+.eotion-editor { min-width: 0; border: 1px solid var(--border-editor); border-radius: 10px; background: var(--surface-raised); }
+.eotion-editor--drop-active { border-color: var(--editor-focus); box-shadow: 0 0 0 2px var(--editor-drop-ring); }
+.eotion-editor-toolbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; border-bottom: 1px solid var(--border-editor); }
+.eotion-editor-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 5px 10px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--editor-text); font: inherit; font-size: 13px; cursor: pointer; }
+.eotion-editor-toolbar button[aria-pressed="true"] { border-color: var(--border-strong); background: var(--surface-editor-hover); }
+.eotion-editor-toolbar button:hover { background: var(--surface-editor-hover); }
+.eotion-editor-toolbar button:focus-visible { outline: 2px solid var(--editor-focus); outline-offset: 2px; }
 .eotion-editor-toolbar button:disabled { cursor: default; opacity: .5; }
 .eotion-editor-content { min-width: 0; min-height: 260px; padding: 20px 22px; line-height: 1.75; }
 .eotion-editor-content :deep(.tiptap) { min-width: 0; min-height: 220px; outline: none; overflow-wrap: anywhere; }
@@ -392,32 +392,32 @@ defineExpose({ editor })
 .eotion-editor-content :deep(.tiptap ul), .eotion-editor-content :deep(.tiptap ol) { padding-left: 1.5em; }
 .eotion-editor-content :deep(.tiptap h2) { line-height: 1.3; }
 .eotion-editor-content :deep(.tiptap pre) { max-width: 100%; overflow-x: auto; }
-.eotion-touch-toolbar { position: fixed; z-index: 15; right: 0; left: 0; display: flex; gap: 6px; overflow-x: auto; padding: 9px max(12px, var(--safe-right)) calc(9px + var(--safe-bottom)) max(12px, var(--safe-left)); border-top: 1px solid #d9ded6; background: #fff; box-shadow: 0 -5px 20px #0001; }
-.eotion-touch-toolbar button { flex: 1 0 auto; min-width: 54px; min-height: 44px; font: inherit; font-size: 13px; color: #424640; padding: 7px 10px; border: 1px solid #dce2d7; border-radius: 7px; background: #f7f9f5; }
+.eotion-touch-toolbar { position: fixed; z-index: 15; right: 0; left: 0; display: flex; gap: 6px; overflow-x: auto; padding: 9px max(12px, var(--safe-right)) calc(9px + var(--safe-bottom)) max(12px, var(--safe-left)); border-top: 1px solid var(--border-strong); background: var(--surface-raised); box-shadow: var(--shadow-toolbar); }
+.eotion-touch-toolbar button { flex: 1 0 auto; min-width: 54px; min-height: 44px; font: inherit; font-size: 13px; color: var(--editor-text); padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface-editor); }
 .eotion-touch-toolbar button:disabled { opacity: .5; }
 .eotion-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
-.eotion-upload-list { display: grid; gap: 7px; padding: 10px 12px; border-bottom: 1px solid #e5e5e1; }
-.eotion-upload-item { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #e6e8e3; border-radius: 7px; background: #fafbf9; }
+.eotion-upload-list { display: grid; gap: 7px; padding: 10px 12px; border-bottom: 1px solid var(--border-editor); }
+.eotion-upload-item { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border-editor); border-radius: 7px; background: var(--surface-editor); }
 .eotion-upload-preview { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 5px; object-fit: cover; }
 .eotion-upload-copy { display: grid; min-width: 0; flex: 1; gap: 3px; font-size: 13px; }
 .eotion-upload-copy strong, .eotion-upload-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.eotion-upload-copy span { color: #777d74; font-size: 12px; }
-.eotion-upload-item button { display: inline-flex; min-height: 40px; min-width: 40px; align-items: center; justify-content: center; gap: 4px; border: 1px solid #dcdfd9; border-radius: 5px; padding: 4px 7px; background: white; cursor: pointer; }
-.eotion-upload-alert { margin: 0; padding: 8px 12px; border-bottom: 1px solid #e5e5e1; color: #98483e; font-size: 13px; }
-.eotion-cleanup-retry { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-bottom: 1px solid #e5e5e1; color: #98483e; font-size: 13px; }
-.eotion-cleanup-retry button { min-height: 40px; border: 1px solid #dcdfd9; border-radius: 5px; padding: 5px 9px; background: #fff; cursor: pointer; }
+.eotion-upload-copy span { color: var(--editor-muted); font-size: 12px; }
+.eotion-upload-item button { display: inline-flex; min-height: 40px; min-width: 40px; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--border-strong); border-radius: 5px; padding: 4px 7px; background: var(--surface-raised); cursor: pointer; }
+.eotion-upload-alert { margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--border-editor); color: var(--danger); font-size: 13px; }
+.eotion-cleanup-retry { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--border-editor); color: var(--danger); font-size: 13px; }
+.eotion-cleanup-retry button { min-height: 40px; border: 1px solid var(--border-strong); border-radius: 5px; padding: 5px 9px; background: var(--surface-raised); cursor: pointer; }
 @media (max-width: 767px), (pointer: coarse) {
   .eotion-editor-toolbar button, .eotion-upload-item button, .eotion-cleanup-retry button { min-width: 44px; min-height: 44px; }
 }
 </style>
 
 <style>
-.p2-slash-menu { z-index: 20; min-width: 220px; padding: 5px; border: 1px solid #deded9; border-radius: 8px; background: white; box-shadow: 0 8px 24px #0002; color: #2b2e29; font-size: 13px; }
+.p2-slash-menu { z-index: 20; min-width: 220px; padding: 5px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-raised); box-shadow: var(--shadow-menu); color: var(--editor-text); font-size: 13px; }
 .p2-slash-item { display: block; width: 100%; padding: 8px 10px; border: 0; border-radius: 5px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.p2-slash-item[aria-selected="true"], .p2-slash-item:hover { background: #f1f2ee; }
+.p2-slash-item[aria-selected="true"], .p2-slash-item:hover { background: var(--surface-editor-hover); }
 .p2-slash-icon { display: inline-flex; flex: 0 0 auto; align-items: center; margin-right: 10px; }
 .p2-slash-item { display: flex; align-items: center; }
 .p2-slash-copy { display: grid; gap: 2px; }
 .p2-slash-title { font-weight: 600; }
-.p2-slash-hint { color: #747a70; font-size: 12px; }
+.p2-slash-hint { color: var(--editor-muted); font-size: 12px; }
 </style>

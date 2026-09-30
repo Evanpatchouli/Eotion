@@ -4,9 +4,11 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { router } from './router'
 import { applyWebRuntimePreferences } from './webRuntimePreferences'
+import { initializeTheme } from './theme'
 import './styles/base.css'
 
 applyWebRuntimePreferences()
+initializeTheme()
 const pinia = createPinia()
 createApp(App).use(pinia).use(router).mount('#app')
 

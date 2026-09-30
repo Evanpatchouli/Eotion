@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f7f7f5" />
+    <script>
+      let savedTheme = null
+      try {
+        savedTheme = localStorage.getItem('eotion:theme')
+      } catch {
+        // Storage can be unavailable in restricted browser contexts.
+      }
+      const theme = savedTheme === 'light' || savedTheme === 'dark'
+        ? savedTheme
+        : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      document.documentElement.dataset.theme = theme
+      document.documentElement.style.colorScheme = theme
+      document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#242622' : '#f7f7f5'
+    </script>
     <link rel="icon" type="image/png" href="/eotion-icon.png" />
     <link rel="apple-touch-icon" href="/eotion-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />

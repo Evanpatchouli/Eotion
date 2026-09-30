@@ -76,16 +76,16 @@ async function retryRestore() {
   min-height: 100%;
   place-items: center;
   padding: 24px;
-  background: #f7f7f5;
+  background: var(--surface-muted);
 }
 
 .connectivity-card {
   width: min(100%, 390px);
   padding: 30px;
-  border: 1px solid #ecebe7;
+  border: 1px solid var(--border);
   border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 12px 40px rgba(30, 30, 26, .05);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-card);
 }
 
 .connectivity-brand {
@@ -102,10 +102,10 @@ async function retryRestore() {
   width: 38px;
   height: 38px;
   place-items: center;
-  border: 1px solid #e7e6e1;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #f8f8f6;
-  color: #55554f;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
 }
 
 .connectivity-mark--loading {
@@ -120,7 +120,7 @@ async function retryRestore() {
 
 .connectivity-copy {
   margin: 0;
-  color: #777672;
+  color: var(--text-muted);
   font-size: 14px;
   line-height: 1.65;
 }
@@ -132,7 +132,7 @@ async function retryRestore() {
 
 .connectivity-diagnostics {
   margin-top: 18px;
-  color: #777672;
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -153,12 +153,12 @@ async function retryRestore() {
 
 .connectivity-diagnostics summary:hover,
 .connectivity-diagnostics[open] summary {
-  background: #f7f7f5;
-  color: #44443f;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
 }
 
 .connectivity-diagnostics summary:focus-visible {
-  outline: 2px solid #777672;
+  outline: 2px solid var(--text-muted);
   outline-offset: 2px;
 }
 
@@ -173,7 +173,7 @@ async function retryRestore() {
   margin: 10px 0 0;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
-  color: #777672;
+  color: var(--text-muted);
   font: inherit;
   line-height: 1.55;
 }

@@ -92,33 +92,33 @@ const AttachmentActions = defineComponent({
 </template>
 
 <style scoped>
-.attachment { position: relative; box-sizing: border-box; max-width: 100%; margin: 14px 0; border: 1px solid #e5e5e1; border-radius: 9px; background: #fff; color: #343832; }
+.attachment { position: relative; box-sizing: border-box; max-width: 100%; margin: 14px 0; border: 1px solid var(--border-editor); border-radius: 9px; background: var(--surface-raised); color: var(--editor-text); }
 .attachment-image { width: min(100%, 720px); max-width: 100%; overflow: visible; }
-.attachment-image-frame { position: relative; display: grid; min-width: 160px; min-height: 96px; max-width: min(100%, 720px); max-height: 520px; place-items: center; overflow: hidden; border-radius: 8px 8px 0 0; background: #f6f7f4; }
-.attachment-image-frame--loading { background: linear-gradient(100deg, #f1f2ef 30%, #fafbf9 50%, #f1f2ef 70%); background-size: 220% 100%; animation: attachment-shimmer 1.5s ease-in-out infinite; }
-.attachment-image-skeleton { color: #777d74; font-size: 13px; }
+.attachment-image-frame { position: relative; display: grid; min-width: 160px; min-height: 96px; max-width: min(100%, 720px); max-height: 520px; place-items: center; overflow: hidden; border-radius: 8px 8px 0 0; background: var(--surface-subtle); }
+.attachment-image-frame--loading { background: linear-gradient(100deg, var(--surface-editor-hover) 30%, var(--surface-editor) 50%, var(--surface-editor-hover) 70%); background-size: 220% 100%; animation: attachment-shimmer 1.5s ease-in-out infinite; }
+.attachment-image-skeleton { color: var(--editor-muted); font-size: 13px; }
 .attachment-image-frame a { display: block; max-width: 100%; max-height: 520px; }
 .attachment-image-frame img { display: block; max-width: 100%; max-height: 520px; object-fit: contain; }
-.attachment-image-fallback { display: flex; min-height: 90px; align-items: center; gap: 10px; padding: 16px; color: #6e746b; }
-.attachment-caption { display: flex; min-height: 34px; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 8px 2px 12px; border-top: 1px solid #ededea; }
+.attachment-image-fallback { display: flex; min-height: 90px; align-items: center; gap: 10px; padding: 16px; color: var(--editor-muted); }
+.attachment-caption { display: flex; min-height: 34px; align-items: center; justify-content: space-between; gap: 12px; padding: 2px 8px 2px 12px; border-top: 1px solid var(--border); }
 .attachment-caption-name, .attachment-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.attachment-caption-name { flex: 1; color: #777672; font-size: 12px; }
+.attachment-caption-name { flex: 1; color: var(--text-muted); font-size: 12px; }
 .attachment-file { display: flex; min-height: 62px; align-items: center; gap: 12px; padding: 10px 12px; }
-.attachment-file-icon { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border-radius: 8px; background: #f3f5f1; color: #62695f; }
+.attachment-file-icon { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border-radius: 8px; background: var(--surface-editor-hover); color: var(--editor-muted); }
 .attachment-file-link { display: grid; min-width: 0; flex: 1; gap: 4px; color: inherit; text-decoration: none; }
 .attachment-file-link:hover .attachment-file-name { text-decoration: underline; }
-.attachment-file-meta { overflow: hidden; color: #777d74; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.attachment-file-meta { overflow: hidden; color: var(--editor-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 :deep(.attachment-actions) { position: relative; display: inline-flex; flex: 0 0 auto; }
-:deep(.attachment-more) { display: grid; width: 40px; height: 40px; place-items: center; border: 0; border-radius: 6px; background: transparent; color: #686e64; cursor: pointer; }
-:deep(.attachment-more):hover, :deep(.attachment-more):focus-visible { background: #f1f3ef; }
-:deep(.attachment-menu) { position: absolute; z-index: 12; top: calc(100% + 3px); right: 0; display: grid; min-width: 148px; gap: 2px; padding: 5px; border: 1px solid #e1e3de; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px #0002; }
-:deep(.attachment-menu button) { display: flex; min-height: 34px; align-items: center; gap: 7px; border: 0; border-radius: 5px; padding: 5px 8px; background: transparent; color: #373b35; text-align: left; cursor: pointer; }
-:deep(.attachment-menu button):hover, :deep(.attachment-menu button):focus-visible { background: #f2f4f0; }
-:deep(.attachment-confirm-label) { padding: 6px 8px 3px; color: #6c7169; font-size: 12px; }
+:deep(.attachment-more) { display: grid; width: 40px; height: 40px; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--editor-muted); cursor: pointer; }
+:deep(.attachment-more):hover, :deep(.attachment-more):focus-visible { background: var(--surface-editor-hover); }
+:deep(.attachment-menu) { position: absolute; z-index: 12; top: calc(100% + 3px); right: 0; display: grid; min-width: 148px; gap: 2px; padding: 5px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface-raised); box-shadow: var(--shadow-menu); }
+:deep(.attachment-menu button) { display: flex; min-height: 34px; align-items: center; gap: 7px; border: 0; border-radius: 5px; padding: 5px 8px; background: transparent; color: var(--editor-text); text-align: left; cursor: pointer; }
+:deep(.attachment-menu button):hover, :deep(.attachment-menu button):focus-visible { background: var(--surface-editor-hover); }
+:deep(.attachment-confirm-label) { padding: 6px 8px 3px; color: var(--editor-muted); font-size: 12px; }
 .attachment-todo { display: flex; align-items: baseline; gap: 9px; }
-.attachment-todo input { width: 16px; height: 16px; accent-color: #687d61; }
+.attachment-todo input { width: 16px; height: 16px; accent-color: var(--editor-accent); }
 .attachment-todo-content { min-width: 0; }
 @media (max-width: 767px), (pointer: coarse) { :deep(.attachment-more), :deep(.attachment-menu button) { min-width: 44px; min-height: 44px; } }
 @keyframes attachment-shimmer { to { background-position: -220% 0; } }
-@media (prefers-reduced-motion: reduce) { .attachment-image-frame--loading { animation: none; background: #f1f2ef; } }
+@media (prefers-reduced-motion: reduce) { .attachment-image-frame--loading { animation: none; background: var(--surface-editor-hover); } }
 </style>
