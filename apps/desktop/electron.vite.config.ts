@@ -1,10 +1,49 @@
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
 
-import { getEotionBuildInfo } from '../../scripts/build-info.mjs'
+type RootManifest = {
+  version: string
+  eotion?: {
+    buildNumber?: number
+  }
+}
 
-const buildInfo = getEotionBuildInfo()
+const rootDir = resolve(__dirname, '../..')
+const rootManifest = JSON.parse(
+  readFileSync(resolve(rootDir, 'package.json'), 'utf8'),
+) as RootManifest
+const buildNumber = rootManifest.eotion?.buildNumber
+if (
+  typeof buildNumber !== 'number' ||
+  !Number.isSafeInteger(buildNumber) ||
+  buildNumber < 1
+) {
+  throw new Error('Invalid root package.json eotion.buildNumber')
+}
+
+function getGitSha(): string {
+  const configured = process.env.GIT_SHA?.trim()
+  if (configured && configured !== 'unknown') return configured.slice(0, 12)
+
+  try {
+    return execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    return configured || 'unknown'
+  }
+}
+
+const buildInfo = {
+  version: rootManifest.version,
+  buildNumber,
+  gitSha: getGitSha(),
+}
 
 export default defineConfig({
   main: {},
