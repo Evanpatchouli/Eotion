@@ -8,7 +8,10 @@ COPY apps/api/package.json apps/api/package.json
 COPY packages/domain/package.json packages/domain/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 
-RUN pnpm install --frozen-lockfile --filter @eotion/api...
+RUN pnpm install \
+  --frozen-lockfile \
+  --package-import-method=copy \
+  --filter @eotion/api...
 
 COPY apps/api/tsconfig.json apps/api/tsconfig.json
 COPY apps/api/src apps/api/src
@@ -30,7 +33,11 @@ COPY apps/api/package.json apps/api/package.json
 COPY packages/domain/package.json packages/domain/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 
-RUN pnpm install --frozen-lockfile --prod --filter @eotion/api...
+RUN pnpm install \
+  --frozen-lockfile \
+  --prod \
+  --package-import-method=copy \
+  --filter @eotion/api...
 
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY --from=build /app/packages/domain/dist packages/domain/dist
