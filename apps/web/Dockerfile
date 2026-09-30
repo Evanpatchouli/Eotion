@@ -29,6 +29,9 @@ COPY packages/sdk/tsconfig.json packages/sdk/tsconfig.json
 COPY packages/storage/src packages/storage/src
 COPY packages/storage/tsconfig.json packages/storage/tsconfig.json
 
+ARG VITE_ALLOW_PAGE_ZOOM=false
+ENV VITE_ALLOW_PAGE_ZOOM=${VITE_ALLOW_PAGE_ZOOM}
+
 RUN pnpm --filter @eotion/web build
 
 FROM nginx:1.27-alpine AS runtime
