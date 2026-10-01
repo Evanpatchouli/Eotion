@@ -73,7 +73,33 @@ warning         #9E6B34
 danger          #A8423F
 ```
 
-Dark tokens: NOT FROZEN.
+## Dark semantic colors
+
+```text
+canvas          #1C1B1A
+sidebar         #181716
+surface         #242321
+surface-subtle  #22211F
+elevated        #242321
+overlay         rgba(0,0,0,0.45)
+
+hover           #2B2A27
+selected        #33322E
+focus           #C8C5BD
+border          #2E2D2A
+border-subtle   #262522
+
+text-primary    #EDECE8
+text-secondary  #A3A199
+text-muted      #8F8D86
+
+accent          #EDECE8
+success         #6E9B7B
+warning         #C28D52
+danger          #D06A66
+```
+
+Dark palette is frozen. Do not substitute the rejected Stitch draft values `text-muted #73716A` or `danger #C9615D`.
 
 ## Typography
 
@@ -229,7 +255,6 @@ Never expose raw SDK fallback strings.
 
 Do not invent these:
 
-- Dark palette
 - Settings responsive width cap
 - Sidebar expanded width
 - exact breakpoints
