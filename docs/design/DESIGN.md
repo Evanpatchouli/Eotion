@@ -1,320 +1,94 @@
 # Eotion DESIGN.md — Quiet Studio
 
-Status: DRAFT / P5.7.3  
-Human source of truth: `docs/design/design-direction.md` + `docs/design/design-system-v1.md`
+Status: P5.7 Design Freeze
 
-This file is the compact AI / implementation-facing design contract. If this file conflicts with the two human design documents above, the human documents win.
+This document is the implementation-facing design contract.
+
+## Source of Truth
+
+Human design sources:
+
+- `docs/design/design-direction.md`
+- `docs/design/design-system-v1.md`
+
+Implementation rules must follow the sources above. This file only records product-level constraints and must not duplicate design tokens.
 
 ## Direction
 
-Quiet Studio:
+Quiet Studio is:
 
 - document-first
-- low chrome
-- warm neutral
-- sans-serif
+- local-first
 - open canvas
+- warm neutral
+- low noise
 - contextual interaction
-- local-first truthful feedback
 
 Never turn Eotion into:
 
 - SaaS dashboard
-- admin panel
+- admin console
 - card-heavy editor
-- purple / gradient AI product
-- glassmorphism UI
-- Material-style component demo
-- literary serif writing app
+- AI marketing UI
+- glassmorphism interface
 
-## Core rules
+## Core Product Rules
 
-- No outer Editor / Document card.
-- Fixed editor toolbar is OFF by default.
+- Document content is rendered directly on canvas.
+- No outer editor/document card.
 - Sidebar is flush to the left edge.
-- Expanded Sidebar has only top-right and bottom-right 16px radius.
-- Desktop / Tablet Sidebar must support collapse + reopen.
-- Workspace and Page management use anchored floating popovers.
-- Sidebar footer Settings / Logout are full-row interactions.
-- Stable synced state: `已同步`.
-- Offline local-only state: `离线 · 本地已保存`.
-- Do not show both states at once in stable conditions.
-- Raw HTTP / SDK / cleanup / object-storage language never appears in normal product UI.
-- Slash Menu follows the active locale only; do not show bilingual duplicate labels.
-- Attachment upload / success / failure happens in place at the final document insertion point.
-- One failure has one primary error surface.
-- Do not invent product metadata or actions not present in Eotion.
-- Production icons: EotionIcon + morphicons/vue + Lucide data.
-- Stitch HTML, Tailwind and Material Symbols are not production requirements.
+- Sidebar collapse/reopen must preserve document reading stability.
+- Workspace and page actions use anchored floating popovers.
+- Upload states stay at the insertion location.
+- Local-first states must distinguish synced and local-only states.
+- Do not expose infrastructure terminology in product UI.
+- Do not invent product actions, metadata, or settings.
 
-## Light semantic colors
+## Layout Baseline
 
-```text
-canvas          #FAF9F6
-sidebar         #F5F4F0
-surface         #FFFFFF
-surface-subtle  #F7F6F3
-elevated        #FFFFFF
-overlay         rgba(31,31,30,0.20)
+- Document reading width: 720–740px
+- Desktop tree row height: 32px
+- Sidebar right radius: 16px
+- Settings navigation width: 240px
+- Settings detail width: max 740px
 
-hover           #EEEDE8
-selected        #E6E4DD
-focus           #3D3C38
-border          #E8E6E1
-border-subtle   #EFEEE9
+## Interaction Rules
 
-text-primary    #1F1F1E
-text-secondary  #5A5852
-text-muted      #706E67
+Popovers:
 
-accent          #3D3C38
-success         #4B6B54
-warning         #9E6B34
-danger          #A8423F
-```
+- anchored to trigger
+- never push document/tree layout
+- support ESC close
+- restore focus to trigger
 
-## Dark semantic colors
+Attachments:
 
-```text
-canvas          #1C1B1A
-sidebar         #181716
-surface         #242321
-surface-subtle  #22211F
-elevated        #242321
-overlay         rgba(0,0,0,0.45)
-
-hover           #2B2A27
-selected        #33322E
-focus           #C8C5BD
-border          #2E2D2A
-border-subtle   #262522
-
-text-primary    #EDECE8
-text-secondary  #A3A199
-text-muted      #8F8D86
-
-accent          #EDECE8
-success         #6E9B7B
-warning         #C28D52
-danger          #D06A66
-```
-
-Dark palette is frozen. Do not substitute the rejected Stitch draft values `text-muted #73716A` or `danger #C9615D`.
-
-## Typography
-
-Sans-serif only:
-
-```text
-Inter,
--apple-system,
-BlinkMacSystemFont,
-"Segoe UI",
-"PingFang SC",
-"Hiragino Sans GB",
-"Microsoft YaHei",
-sans-serif
-```
-
-```text
-Page Title   36 / 45 / 600 / -0.015em
-Heading 1    24 / 32 / 600 / -0.01em
-Heading 2    20 / 27 / 600 / -0.01em
-Body         15 / 26 / 400
-UI           14 / 20 / 400–500
-Metadata     13 / 18 / 400–500
-Caption      12 / 18 / 400
-```
-
-No Newsreader. No default serif headings.
-
-## Spacing
-
-Primary scale:
-
-```text
-4, 8, 12, 16, 20, 24, 32, 40, 48, 64
-```
-
-Use 6px / 10px only for justified optical correction or popover offset.
-
-## Layout baseline
-
-```text
-Topbar: 44px
-Document reading width: 720–740px
-Tree row height: 32px
-Sidebar right radius: 16px
-```
-
-Main Product Sidebar width and exact responsive breakpoints: NOT FROZEN.
-
-Desktop collapsed Sidebar:
-```text
-sidebar: fully out of main content
-document: stays centered
-reopen control: one 32×32px visual icon button before breadcrumb
-radius: 6px
-tooltip: 展开侧边栏
-```
-Implementation may use a 36–40px pointer hit area while preserving the 32px visual size.
-
-Desktop Settings:
-```text
-navigation width: 240px
-detail min: 520px
-detail target:
-  1280 viewport → ~620px
-  1440 viewport → ~700–720px
-  1600+ viewport → 740px max
-outer horizontal gutters:
-  1280 → 48px
-  1440 → 64px
-  1600+ → 80px
-```
-
-Do not implement Settings as a full-width admin form. Do not wrap every section in a card.
-
-## Radius
-
-```text
-control  6px
-block    8px
-popover  10px
-dialog   12px
-sidebar  16px
-```
-
-Do not add a surface just to use a radius.
-
-## Surface hierarchy
-
-Only:
-
-```text
-Canvas
-Sidebar
-Surface-subtle
-Surface
-Elevated
-Overlay
-```
-
-Avoid decorative borders.
-
-## Motion draft
-
-```text
-fast    120ms
-normal  180ms
-slow    240ms
-```
-
-Respect reduced motion.
-
-## Popovers
-
-- anchored to the trigger
-- do not change document/tree layout
-- elevated surface
-- Light: border `#E8E6E1`, radius `10px`, shadow `0 4px 16px rgba(0,0,0,0.06)`
-- ESC and click-outside close
-- keyboard navigation required
-- focus returns to trigger after close
-
-Workspace popover:
-- width ≈ 240px
-- offset ≈ 6px below trigger
-- only existing workspace actions
-
-Page action popover:
-- min-width 160px
-- 4px inner padding
-- anchored to page-row ellipsis
-- actions: 新建子页面 / 重命名 / 移动 / 删除
-- 删除 uses restrained danger semantics and is not default initial focus
-
-## Editor
-
-- Page title directly on canvas.
-- Body directly on canvas.
-- No Editor outer border.
-- Slash / keyboard / selection / contextual controls provide advanced actions.
-- Mobile touch controls are separately designed.
-
-## Attachments
-
-Uploading block:
-- final insertion position
-- filename
-- restrained progress
-- only real product actions/data
-
-Success:
-- same position
-- lightweight document-native file/image block
-
-Failure:
-- same position
-- exact primary state copy: 上传中断
-- recovery: 重试
+- uploading, success and failure remain in-place
+- failure primary text: 上传中断
+- recovery action: 重试
 - secondary action: 移除
-- use surface-subtle + block radius 8px
-- danger emphasizes state only; do not tint the whole block red
-- no duplicate global error
-- no cleanup/object-storage/compensation terminology
-- no invented bytes/timestamp/download/share
 
 ## Settings
 
-- Desktop / wide keeps list-detail IA.
-- Settings navigation: 240px.
-- Category labels: 12px muted.
-- Navigation row: 34px.
-- Standard setting row: 48–56px.
-- Setting anatomy: 18px icon + 14px/500 title + optional 13px subtitle + right accessory.
-- Use typography, spacing and subtle dividers before cards.
-- Section rhythm: 8 / 32 / 12 / 40px for title-description / description-section / heading-controls / section-section.
-- No Settings-only radius or border token.
-- MCP / Agent remain “即将推出”; do not invent settings.
-
-## Error language
-
-Classify transport errors internally, but display context-aware product copy.
-
-Examples:
-
-```text
-network / transient service unavailable
-→ 服务暂时不可用，请稍后重试。
-
-401
-→ 登录状态已失效，请重新登录。
-
-403
-→ 你没有权限执行此操作。
-```
-
-Never expose raw SDK fallback strings.
+- Prefer typography and spacing over containers.
+- Do not build admin-style full-width forms.
+- Preserve Quiet Studio information hierarchy.
+- MCP / Agent remain 即将推出 until implemented.
 
 ## Accessibility
 
-- touch target ≈ 44×44px
-- visible keyboard focus
-- color is not the only status signal
-- reduced motion respected
-- popover focus return
-- target WCAG 2.2 AA
+- Minimum touch target around 44×44px.
+- Visible keyboard focus required.
+- Status must not rely only on color.
+- Respect reduced motion.
+- Target WCAG 2.2 AA.
 
-## Not frozen yet
+## Non-frozen Items
 
-Do not invent these:
+Do not invent:
 
-- Sidebar expanded width
-- exact breakpoints
-- collapse persistence rules
-- Mobile touch toolbar anatomy
-- Dialog visual details
-- final image/file border strength
-
-Wait for P5.7.3 / P5.7.4 approval.
+- sidebar exact width
+- unsupported breakpoints
+- mobile toolbar details
+- dialog details
+- future product capabilities
