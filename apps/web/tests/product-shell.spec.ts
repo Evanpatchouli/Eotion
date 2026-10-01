@@ -41,6 +41,27 @@ async function screenshot(page: Page, name: string) {
   await page.screenshot({ path: path.join(process.env.EOTION_VISUAL_QA_DIR, `${name}.png`) })
 }
 
+test('shared navigation rows retain pressed states through shell styles and mobile row geometry', async ({ page }) => {
+  await openShell(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  for (const name of ['设置', '项目笔记']) {
+    if (name === '项目笔记') await page.getByRole('button', { name: '切换工作区', exact: true }).click()
+    const button = page.getByRole('button', { name, exact: true })
+    const row = button.locator('..')
+    await button.hover()
+    await expect(row).toHaveCSS('background-color', 'rgb(238, 237, 232)')
+    await page.mouse.down()
+    await expect(row).toHaveCSS('background-color', 'rgb(230, 228, 221)')
+    await expect(button).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+    await page.mouse.move(800, 22)
+    await page.mouse.up()
+  }
+  await page.keyboard.press('Escape')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole('button', { name: '打开导航菜单', exact: true }).click()
+  await expect(page.locator('.product-page-row').first()).toHaveCSS('height', '44px')
+})
+
 test('desktop shell collapses completely, restores focus and keeps page content mounted', async ({ page }) => {
   await openShell(page)
   const sidebar = page.getByLabel('工作区导航', { exact: true })

@@ -1,4 +1,6 @@
 export { default as EotionButton } from './EotionButton.vue'
+export { default as EotionCommandOverlay } from './EotionCommandOverlay.vue'
+export { default as EotionNavItem } from './EotionNavItem.vue'
 export { default as EotionDivider } from './EotionDivider.vue'
 export { default as EotionIcon } from './EotionIcon.vue'
 export { default as EotionIconButton } from './EotionIconButton.vue'

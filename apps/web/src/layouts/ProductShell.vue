@@ -4,9 +4,11 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import eotionIconUrl from '../assets/eotion-icon.png'
 import EotionIcon from '../components/ui/EotionIcon.vue'
+import EotionNavItem from '../components/ui/EotionNavItem.vue'
 import EotionPopover from '../components/ui/EotionPopover.vue'
 import { IconName } from '../components/ui/icons'
 import PageTree from '../components/product/PageTree.vue'
+import SyncStatus from '../components/product/SyncStatus.vue'
 import WorkspaceCreateForm from '../components/product/WorkspaceCreateForm.vue'
 import WorkspaceRenameForm from '../components/product/WorkspaceRenameForm.vue'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
@@ -228,11 +230,11 @@ onUnmounted(() => {
           <p v-else-if="workspaces.items.length === 0" class="product-message">还没有工作区</p>
           <ul v-else class="product-workspace-list" aria-label="可用工作区">
             <li v-for="item in workspaces.items" :key="item.id">
-              <button class="product-workspace-option" type="button" role="button" data-popover-item :aria-current="item.id === workspaceId ? 'page' : undefined" @click="selectWorkspace(item.id)">
-                <span class="product-workspace-avatar" aria-hidden="true">{{ item.name.slice(0, 1) }}</span>
+              <EotionNavItem :active="item.id === workspaceId" row-class="product-workspace-option-row" class="product-workspace-option" role="button" data-popover-item @click="selectWorkspace(item.id)">
+                <template #icon><span class="product-workspace-avatar" aria-hidden="true">{{ item.name.slice(0, 1) }}</span></template>
                 <span class="product-workspace-name">{{ item.name }}</span>
-                <span v-if="item.id === workspaceId" class="product-check" aria-label="当前工作区"><EotionIcon :name="IconName.Check" :size="16" /></span>
-              </button>
+                <template #trailing><span v-if="item.id === workspaceId" class="product-check" aria-label="当前工作区"><EotionIcon :name="IconName.Check" :size="16" /></span></template>
+              </EotionNavItem>
             </li>
           </ul>
           <div class="product-switcher-actions">
@@ -248,8 +250,12 @@ onUnmounted(() => {
       <div class="product-page-scroll"><PageTree @navigate="closeMobileNav" /></div>
 
       <div class="sidebar-footer product-sidebar-footer">
-        <button class="product-text-button product-settings-entry" type="button" @click="openSettings"><EotionIcon :name="IconName.Settings" :size="16" />设置</button>
-        <button class="product-text-button product-logout" type="button" :disabled="auth.logoutPending" @click="logout"><EotionIcon :name="IconName.LogOut" :size="16" />{{ auth.logoutPending ? '正在退出…' : '退出登录' }}</button>
+        <EotionNavItem class="product-text-button product-settings-entry" @click="openSettings">
+          <template #icon><EotionIcon :name="IconName.Settings" :size="16" /></template>设置
+        </EotionNavItem>
+        <EotionNavItem class="product-text-button product-logout" :disabled="auth.logoutPending" @click="logout">
+          <template #icon><EotionIcon :name="IconName.LogOut" :size="16" /></template>{{ auth.logoutPending ? '正在退出…' : '退出登录' }}
+        </EotionNavItem>
         <p v-if="logoutError" class="product-message product-message--error" role="alert">{{ logoutError }}</p>
       </div>
     </aside>
@@ -261,8 +267,7 @@ onUnmounted(() => {
         <button class="icon-button mobile-menu" type="button" aria-label="打开导航菜单" @click="mobileNavOpen = true"><EotionIcon :name="IconName.Menu" /></button>
         <button v-if="layoutMode !== 'mobile' && desktopSidebarCollapsed" ref="sidebarReopenButton" class="icon-button product-sidebar-reopen" type="button" aria-label="展开侧边栏" title="展开侧边栏" @click="toggleDesktopSidebar"><EotionIcon :name="IconName.SidebarOpen" /></button>
         <div class="breadcrumb">{{ breadcrumb }}</div>
-        <button v-if="sync.state === 'failed' || sync.state === 'offline'" class="product-text-button product-sync-action" type="button" @click="sync.retry()"><EotionIcon name="refresh" :size="16" />{{ sync.state === 'offline' ? '离线 · 本地已保存' : `同步失败 · ${sync.pending} 项待同步 · 重试` }}</button>
-        <span v-else class="product-save-status" role="status">{{ sync.state === 'syncing' ? '正在同步…' : sync.pending ? `${sync.pending} 项待同步` : sync.state === 'synced' ? '已同步' : '' }}</span>
+        <SyncStatus />
       </header>
 
       <article class="document-wrap">

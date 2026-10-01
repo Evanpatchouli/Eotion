@@ -32,6 +32,8 @@ P5.6 Settings 已完成：`apps/web/src/layouts/SettingsLayout.vue`、`views/set
 
 ## Eotion 特有的检索约束
 
+P5.7.5.3 共享交互入口：`components/ui/EotionNavItem.vue`、`components/product/SyncStatus.vue`、`components/ui/EotionCommandOverlay.vue`；契约与验证见 `docs/design/interaction-foundation-implementation.md`，Playwright 入口 `tests/interaction-foundation.spec.ts`。Command 本阶段只提供容器，后续 Search / Command 消费。
+
 - 先确认任务属于哪个 Roadmap Phase；除非用户明确要求，不跨 Phase 提前实现。
 - UI 问题首先从 `apps/web` 查起，因为 Browser / Electron / Mobile WebView 共用同一套主 UI。
 - 平台差异再沿 Desktop preload/IPC 或 Mobile WebView/bridge 向外检索，不先复制业务逻辑到平台壳。

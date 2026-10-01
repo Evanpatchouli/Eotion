@@ -32,8 +32,7 @@
   font-family: var(--e-type-family);
 }
 
-.product-shell .product-topbar > .product-save-status,
-.product-shell .product-topbar > .product-sync-action {
+.product-shell .product-topbar > .product-sync-status {
   margin-left: auto;
 }
 
@@ -127,8 +126,7 @@
   color: var(--e-color-text-secondary);
 }
 
-.product-shell .product-workspace-trigger:focus-visible,
-.product-shell .product-page-link:focus-visible {
+.product-shell .product-workspace-trigger:focus-visible {
   outline: var(--e-focus-ring-width) solid var(--e-color-focus);
   outline-offset: -2px;
 }
@@ -148,7 +146,6 @@
 }
 
 .product-shell .product-sidebar-footer button:hover:not(:disabled) {
-  background: var(--e-color-hover);
   color: var(--e-color-text-primary);
   text-decoration: none;
 }
@@ -158,23 +155,8 @@
   cursor: not-allowed;
 }
 
-.product-shell:not([data-layout="mobile"]) .product-page-node > .product-page-row {
-  height: 32px;
-  min-height: 32px;
-  padding-block: 0;
-  border-radius: var(--e-radius-control);
-}
-
-.product-shell:not([data-layout="mobile"]) .product-page-node > .product-page-row:hover {
-  background: var(--e-color-hover);
-}
-
-.product-shell:not([data-layout="mobile"]) .product-page-node[aria-selected="true"] > .product-page-row,
-.product-shell:not([data-layout="mobile"]) .product-page-node[aria-selected="true"] > .product-page-row:hover {
-  background: var(--e-color-selected);
-}
-
-.product-shell:not([data-layout="mobile"]) .product-page-link[aria-current="page"] {
+.product-shell .product-page-link[aria-current="page"],
+.product-shell .product-workspace-option[aria-current="page"] {
   background: transparent;
   color: var(--e-color-text-primary);
 }
@@ -221,12 +203,12 @@
 }
 
 .product-workspace-popover .product-workspace-option:not([aria-current="page"]):hover {
-  background: var(--e-color-hover);
+  background: transparent;
 }
 
 .product-workspace-popover .product-workspace-option[aria-current="page"],
 .product-workspace-popover .product-workspace-option[aria-current="page"]:hover {
-  background: var(--e-color-selected);
+  background: transparent;
 }
 
 .product-workspace-popover .product-workspace-option:focus-visible,
@@ -295,6 +277,10 @@
   flex: 1;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.product-shell[data-layout="mobile"] .eotion-nav-item {
+  height: 44px;
 }
 
 .product-shell[data-layout="mobile"] .product-topbar {

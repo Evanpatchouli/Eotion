@@ -19,6 +19,12 @@ const devRoutes: RouteRecordRaw[] = import.meta.env.DEV
         ],
       },
       {
+        path: '/__dev/interaction-foundation',
+        name: 'interaction-foundation',
+        meta: { title: 'Interaction Foundation 展示' },
+        component: () => import('./views/InteractionFoundationDemoView.vue'),
+      },
+      {
         path: '/__dev/ui-foundation',
         name: 'ui-foundation',
         meta: { title: 'UI Foundation 展示' },
