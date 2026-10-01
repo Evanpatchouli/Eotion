@@ -431,16 +431,14 @@ Accent 应克制并服从内容。
 
 ## Dark Theme Mood
 
-尚未视觉冻结。
+**P5.7.3 已完成视觉与语义色值冻结。** 具体 token 以 `design-system-v1.md` 为准。
 
-原则已冻结：
+继续遵守：
 
 - 不使用纯黑大面积；
 - 保持 Quiet Studio 的层级与温度；
 - 不变成“黑色 + 高饱和 accent”；
 - 不靠更多 surface/card 弥补对比。
-
-具体 Dark tokens / screen 在 P5.7.3～P5.7.4 完成。
 
 ---
 
@@ -497,8 +495,6 @@ Accent 应克制并服从内容。
 
 以下不在 P5.7.2 猜测冻结：
 
-- Dark Theme 最终色值。
-- Settings detail 精确 responsive width curve / cap。
 - Sidebar expanded width。
 - Desktop / medium / compact 精确 breakpoint。
 - Sidebar 用户手动折叠状态的持久化与 breakpoint 优先级。
@@ -507,7 +503,7 @@ Accent 应克制并服从内容。
 - Dialog / confirmation 的最终视觉规格。
 - 全套 spacing / radius / motion token。
 
-进入 P5.7.3 / P5.7.4 后解决。
+其余项进入 P5.7.3 / P5.7.4 后解决；已在后续阶段冻结的值以 `design-system-v1.md` 为准。
 
 ---
 
