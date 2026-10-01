@@ -4,12 +4,15 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch, type ComponentP
 const props = withDefaults(defineProps<{
   disabled?: boolean
   label?: string
+  panelWidth?: string
+  mode?: 'menu' | 'dialog'
 }>(), {
   disabled: false,
   label: '菜单',
+  mode: 'menu',
 })
 
-const open = ref(false)
+const open = defineModel<boolean>('open', { default: false })
 const panelId = useId()
 const triggerElement = ref<HTMLElement | null>(null)
 const panelElement = ref<HTMLElement | null>(null)
@@ -26,10 +29,10 @@ function setTriggerElement(element: Element | ComponentPublicInstance | null) {
 const triggerProps = computed(() => ({
   ref: setTriggerElement,
   type: 'button',
-  'aria-haspopup': 'menu',
-  'aria-expanded': String(open.value),
+  'aria-haspopup': props.mode,
+  'aria-expanded': open.value,
   'aria-controls': panelId,
-  'aria-disabled': props.disabled ? 'true' : undefined,
+  'aria-disabled': props.disabled || undefined,
   disabled: props.disabled || undefined,
   onClick: toggle,
   onKeydown: onTriggerKeydown,
@@ -50,16 +53,22 @@ function close(restoreFocus = true) {
   if (!open.value) return
   pendingFocus = null
   open.value = false
-  if (restoreFocus) void nextTick(() => triggerElement.value?.focus())
+  if (restoreFocus) void nextTick(() => { if (!disposed) triggerElement.value?.focus() })
 }
 
 function menuItems() {
-  return [...(panelElement.value?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"]):not(:disabled)') ?? [])]
+  const selector = props.mode === 'dialog'
+    ? '[data-popover-item]:not([aria-disabled="true"]):not(:disabled)'
+    : '[role="menuitem"]:not([aria-disabled="true"]):not(:disabled)'
+  return [...(panelElement.value?.querySelectorAll<HTMLElement>(selector) ?? [])]
 }
 
 function focusMenuItem(edge: 'first' | 'last' | 'initial') {
   const items = menuItems()
-  if (!items.length) return
+  if (!items.length) {
+    if (props.mode === 'dialog') panelElement.value?.focus()
+    return
+  }
   if (edge === 'initial') {
     const safeItem = items.find(item => !item.matches('[data-danger="true"], [data-destructive="true"], [data-variant="danger"], .eotion-button--danger'))
     safeItem?.focus()
@@ -85,7 +94,22 @@ function onTriggerKeydown(event: KeyboardEvent) {
 
 function onPanelKeydown(event: KeyboardEvent) {
   if (event.key === 'Tab') {
-    close(false)
+    if (props.mode === 'menu') {
+      close(false)
+      return
+    }
+    const focusable = [...(panelElement.value?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"]):not([aria-disabled="true"])') ?? [])]
+      .filter(item => !item.hidden && item.getAttribute('aria-hidden') !== 'true')
+    const first = focusable[0]
+    const last = focusable.at(-1)
+    if (!first || !last) return
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
     return
   }
   if (event.key === 'Escape') {
@@ -96,6 +120,7 @@ function onPanelKeydown(event: KeyboardEvent) {
 
   const items = menuItems()
   const activeIndex = items.indexOf(document.activeElement as HTMLElement)
+  if (props.mode === 'dialog' && activeIndex === -1) return
   if (event.key === 'Home') {
     event.preventDefault()
     items[0]?.focus()
@@ -127,16 +152,20 @@ function updatePosition() {
   const above = rect.top - gap - margin
   const placement = naturalHeight <= below || below >= above ? 'bottom' : 'top'
   const maxHeight = Math.max(0, placement === 'bottom' ? below : above)
-  const top = placement === 'bottom'
+  const viewportTop = placement === 'bottom'
     ? Math.min(rect.bottom + gap, window.innerHeight - margin)
     : Math.max(margin, rect.top - gap - Math.min(naturalHeight, maxHeight))
   const left = Math.max(margin, Math.min(rect.left, window.innerWidth - panelRect.width - margin))
-  position.value = { left, top, maxHeight, placement }
+  position.value = { left: left + window.scrollX, top: viewportTop + window.scrollY, maxHeight, placement }
 }
 
-function onOutsidePointer(event: PointerEvent) {
+function onOutsideClick(event: MouseEvent) {
   const target = event.target as Node | null
-  if (target && !triggerElement.value?.contains(target) && !panelElement.value?.contains(target)) close()
+  if (target && !triggerElement.value?.contains(target) && !panelElement.value?.contains(target)) {
+    const element = target instanceof Element ? target : target.parentElement
+    const receivesPointerFocus = Boolean(element?.closest('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [contenteditable="true"], [tabindex]:not([tabindex="-1"])'))
+    close(!receivesPointerFocus)
+  }
 }
 
 function onDocumentKeydown(event: KeyboardEvent) {
@@ -146,7 +175,7 @@ function onDocumentKeydown(event: KeyboardEvent) {
 function addPositionListeners() {
   window.addEventListener('resize', updatePosition)
   window.addEventListener('scroll', updatePosition, true)
-  document.addEventListener('pointerdown', onOutsidePointer)
+  document.addEventListener('click', onOutsideClick)
   document.addEventListener('keydown', onDocumentKeydown)
   if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(updatePosition)
@@ -158,7 +187,7 @@ function addPositionListeners() {
 function removePositionListeners() {
   window.removeEventListener('resize', updatePosition)
   window.removeEventListener('scroll', updatePosition, true)
-  document.removeEventListener('pointerdown', onOutsidePointer)
+  document.removeEventListener('click', onOutsideClick)
   document.removeEventListener('keydown', onDocumentKeydown)
   resizeObserver?.disconnect()
   resizeObserver = undefined
@@ -198,10 +227,11 @@ onBeforeUnmount(() => {
       ref="panelElement"
       :id="panelId"
       class="eotion-popover-panel"
-      role="menu"
+      :role="mode"
+      :tabindex="mode === 'dialog' ? -1 : undefined"
       :aria-label="label"
       :data-placement="position.placement"
-      :style="{ left: `${position.left}px`, top: `${position.top}px`, maxHeight: `${position.maxHeight}px` }"
+      :style="{ left: `${position.left}px`, top: `${position.top}px`, maxHeight: `${position.maxHeight}px`, ...(panelWidth ? { width: panelWidth } : {}) }"
       @keydown="onPanelKeydown"
     ><slot :close="close" /></div>
   </Teleport>
@@ -210,7 +240,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .eotion-popover-anchor { display: contents; }
 .eotion-popover-panel {
-  position: fixed;
+  position: absolute;
   z-index: 1000;
   min-width: 160px;
   max-width: calc(100vw - 16px);

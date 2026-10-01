@@ -55,7 +55,7 @@ Popover 本身提供有标签的 `role="menu"`、方向键/Home/End 导航、ESC
 
 `data-danger` 不自动提供菜单行样式；演示页中的整行、hover、focus 和 danger CSS 目前仅在演示页生效。接入正式菜单前应提取共享菜单行契约，不能只复制上面的 markup 就认为视觉状态已完整。
 
-当前 Popover 是动作菜单：不承载任意表单；组件外层 `class` / `style` 也没有明确的 Teleport 面板转发入口。ProductShell 的 workspace 浮层宽度及新建/重命名表单语义须在接入阶段确定。必要前置项见 [P5.7.5.1.5 Token Audit](quiet-studio-token-audit.md)。
+P5.7.5.2 为 ProductShell 接入增加 `mode="dialog"`、`panel-width` 与 `v-model:open`。默认 `menu` 模式保持原有菜单行为；包含 workspace 表单的浮层使用非模态 dialog，列表按钮通过 `data-popover-item` 参与方向键导航，输入框保持原生方向键行为。`panel-width="240px"` 显式设置 Teleport 面板宽度，外层 `class` / `style` 不作为面板样式入口。壳层实现与验证见 [Product Shell Implementation](product-shell-implementation.md)；之前的接入问题保留在 [Token Audit](quiet-studio-token-audit.md) 中作为审计记录。
 
 Danger 文本使用冻结的 `danger` 色值与 `surface-subtle` 背景搭配（包括 hover），以维持 Dark 小字号文本的 AA 对比度；不要将它直接置于更亮的 `surface` / `hover` 上。Hover 可通过下划线反馈，keyboard focus 仍使用 focus ring。
 

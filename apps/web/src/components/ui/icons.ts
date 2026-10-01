@@ -14,6 +14,7 @@ import {
   Image,
   Italic,
   List,
+  LogOut,
   Menu,
   Moon,
   MoreHorizontal,
@@ -25,6 +26,8 @@ import {
   Palette,
   UserRound,
   PanelsTopLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
   RefreshCw,
   Search,
   Trash2,
@@ -36,6 +39,9 @@ import type { IconNode } from 'morphicons/vue'
 
 export enum IconName {
   Menu = 'menu',
+  SidebarClose = 'sidebar-close',
+  SidebarOpen = 'sidebar-open',
+  LogOut = 'log-out',
   X = 'x',
   Plus = 'plus',
   ChevronRight = 'chevron-right',
@@ -71,6 +77,9 @@ export enum IconName {
 
 export const iconNodes: Record<IconName, IconNode> = {
   [IconName.Menu]: Menu,
+  [IconName.SidebarClose]: PanelLeftClose,
+  [IconName.SidebarOpen]: PanelLeftOpen,
+  [IconName.LogOut]: LogOut,
   [IconName.X]: X,
   [IconName.Plus]: Plus,
   [IconName.ChevronRight]: ChevronRight,

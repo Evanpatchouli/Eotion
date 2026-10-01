@@ -1,0 +1,309 @@
+.product-shell {
+  background: var(--e-color-canvas);
+  transition: grid-template-columns var(--e-motion-normal) ease;
+}
+
+.product-shell .product-sidebar {
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0 var(--e-radius-sidebar) var(--e-radius-sidebar) 0;
+  background: var(--e-color-sidebar);
+  color: var(--e-color-text-primary);
+  font: var(--e-type-ui-weight) var(--e-type-ui-size) / var(--e-type-ui-line) var(--e-type-family);
+  transition: opacity var(--e-motion-normal) ease, transform var(--e-motion-normal) ease, visibility 0s linear 0s;
+}
+
+.product-shell .main-pane,
+.product-shell .document-wrap {
+  background: var(--e-color-canvas);
+}
+
+.product-shell .product-topbar {
+  height: 44px;
+  border: 0;
+  background: var(--e-color-canvas);
+  backdrop-filter: none;
+}
+
+.product-shell .breadcrumb,
+.product-shell .product-save-status {
+  color: var(--e-color-text-secondary);
+  font-family: var(--e-type-family);
+}
+
+.product-shell .product-topbar > .product-save-status,
+.product-shell .product-topbar > .product-sync-action {
+  margin-left: auto;
+}
+
+.product-shell .product-sidebar-collapse,
+.product-shell .product-sidebar-reopen {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  margin-left: auto;
+  color: var(--e-color-text-secondary);
+}
+
+.product-shell .product-sidebar-reopen {
+  margin-left: 0;
+}
+
+.product-shell .product-sidebar-collapse:hover,
+.product-shell .product-sidebar-reopen:hover {
+  background: var(--e-color-hover);
+}
+
+.product-shell .product-sidebar-collapse:focus-visible,
+.product-shell .product-sidebar-reopen:focus-visible,
+.product-shell .product-sidebar-footer button:focus-visible {
+  outline: var(--e-focus-ring-width) solid var(--e-color-focus);
+  outline-offset: 1px;
+}
+
+.product-shell .product-page-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.product-shell .brand-row,
+.product-shell > .sidebar > .product-sidebar-section {
+  flex: none;
+}
+
+.product-shell .product-sidebar-footer {
+  flex: none;
+  align-items: stretch;
+  gap: 2px;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--e-color-border);
+}
+
+.product-shell .product-sidebar-section {
+  min-width: 0;
+}
+
+.product-shell .product-workspace-trigger {
+  min-height: 32px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: var(--e-radius-control);
+  background: transparent;
+  color: var(--e-color-text-secondary);
+}
+
+.product-shell .product-workspace-trigger:hover {
+  background: var(--e-color-hover);
+  color: var(--e-color-text-primary);
+}
+
+.product-shell .product-workspace-avatar {
+  background: var(--e-color-surface-subtle);
+  border-color: var(--e-color-border);
+  color: var(--e-color-text-primary);
+}
+
+.product-shell .product-section-label {
+  color: var(--e-color-text-muted);
+  font: var(--e-type-caption-weight) var(--e-type-caption-size) / var(--e-type-caption-line) var(--e-type-family);
+  letter-spacing: normal;
+}
+
+.product-shell .product-workspace-name,
+.product-shell .product-page-link,
+.product-shell .product-sidebar-footer .product-text-button {
+  font-size: var(--e-type-ui-size);
+  line-height: var(--e-type-ui-line);
+}
+
+.product-shell .product-page-link,
+.product-shell .product-page-icon {
+  color: var(--e-color-text-secondary);
+}
+
+.product-shell .product-workspace-trigger:focus-visible,
+.product-shell .product-page-link:focus-visible {
+  outline: var(--e-focus-ring-width) solid var(--e-color-focus);
+  outline-offset: -2px;
+}
+
+.product-shell .product-sidebar-footer .product-settings-entry,
+.product-shell .product-sidebar-footer .product-logout {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 0 8px;
+  border-radius: var(--e-radius-control);
+  color: var(--e-color-text-secondary);
+  text-decoration: none;
+}
+
+.product-shell .product-sidebar-footer button:hover:not(:disabled) {
+  background: var(--e-color-hover);
+  color: var(--e-color-text-primary);
+  text-decoration: none;
+}
+
+.product-shell .product-sidebar-footer button:disabled {
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.product-shell:not([data-layout="mobile"]) .product-page-node > .product-page-row {
+  height: 32px;
+  min-height: 32px;
+  padding-block: 0;
+  border-radius: var(--e-radius-control);
+}
+
+.product-shell:not([data-layout="mobile"]) .product-page-node > .product-page-row:hover {
+  background: var(--e-color-hover);
+}
+
+.product-shell:not([data-layout="mobile"]) .product-page-node[aria-selected="true"] > .product-page-row,
+.product-shell:not([data-layout="mobile"]) .product-page-node[aria-selected="true"] > .product-page-row:hover {
+  background: var(--e-color-selected);
+}
+
+.product-shell:not([data-layout="mobile"]) .product-page-link[aria-current="page"] {
+  background: transparent;
+  color: var(--e-color-text-primary);
+}
+
+.product-shell:not([data-layout="mobile"]) .product-page-toggle,
+.product-shell:not([data-layout="mobile"]) .product-page-toggle--empty {
+  width: 24px;
+  height: 32px;
+}
+
+.product-shell:not([data-layout="mobile"]) .product-page-menu-trigger {
+  width: 28px;
+  height: 32px;
+}
+
+.product-workspace-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-space-2);
+}
+
+.product-workspace-popover .product-workspace-avatar {
+  background: var(--e-color-surface-subtle);
+  border-color: var(--e-color-border);
+  color: var(--e-color-text-primary);
+}
+
+.product-workspace-popover .product-workspace-name,
+.product-workspace-popover .product-switcher-actions .product-text-button {
+  font-size: var(--e-type-ui-size);
+  line-height: var(--e-type-ui-line);
+}
+
+.product-workspace-popover .product-workspace-list {
+  max-height: 180px;
+  gap: 2px;
+}
+
+.product-workspace-popover .product-workspace-option {
+  min-height: 32px;
+  padding: 3px 6px;
+  border-radius: var(--e-radius-control);
+  color: var(--e-color-text-secondary);
+}
+
+.product-workspace-popover .product-workspace-option:not([aria-current="page"]):hover {
+  background: var(--e-color-hover);
+}
+
+.product-workspace-popover .product-workspace-option[aria-current="page"],
+.product-workspace-popover .product-workspace-option[aria-current="page"]:hover {
+  background: var(--e-color-selected);
+}
+
+.product-workspace-popover .product-workspace-option:focus-visible,
+.product-workspace-popover [data-popover-item]:focus-visible {
+  outline: var(--e-focus-ring-width) solid var(--e-color-focus);
+  outline-offset: 1px;
+}
+
+.product-workspace-popover .product-switcher-actions {
+  align-items: stretch;
+  gap: 2px;
+  padding-top: var(--e-space-2);
+  border-color: var(--e-color-border);
+}
+
+.product-workspace-popover .product-switcher-actions .product-text-button {
+  min-height: 32px;
+  padding: 5px 6px;
+  border-radius: var(--e-radius-control);
+  color: var(--e-color-text-secondary);
+  text-decoration: none;
+}
+
+.product-workspace-popover .product-switcher-actions .product-text-button:hover:not(:disabled) {
+  background: var(--e-color-hover);
+  color: var(--e-color-text-primary);
+}
+
+.product-shell:not([data-layout="mobile"]) {
+  grid-template-columns: 252px minmax(0, 1fr);
+}
+
+.product-shell[data-layout="tablet"]:not(.product-shell--sidebar-collapsed) {
+  grid-template-columns: 210px minmax(0, 1fr);
+}
+
+.product-shell.product-shell--sidebar-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+.product-shell.product-shell--sidebar-collapsed .product-sidebar {
+  transition: opacity var(--e-motion-normal) ease, transform var(--e-motion-normal) ease, visibility 0s linear var(--e-motion-normal);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+.product-shell[data-layout="mobile"] {
+  transition: none;
+}
+
+.product-shell[data-layout="mobile"] .product-sidebar {
+  border-radius: 0 var(--e-radius-sidebar) var(--e-radius-sidebar) 0;
+  background: var(--e-color-sidebar);
+  transition: transform 160ms ease;
+}
+
+.product-shell[data-layout="mobile"] .product-sidebar-collapse,
+.product-shell[data-layout="mobile"] .product-sidebar-reopen {
+  display: none;
+}
+
+.product-shell[data-layout="mobile"] .product-page-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.product-shell[data-layout="mobile"] .product-topbar {
+  height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-shell,
+  .product-shell .product-sidebar {
+    transition-duration: 0.01ms;
+  }
+}
