@@ -86,7 +86,7 @@ P5.7 要解决的不是单个按钮或某个页面，而是：
 
 ### P5.7.2 — Stitch Design Brief & Direction Exploration
 
-**当前阶段。**
+**✅ PASS / FROZEN（2026-10-01）。**
 
 目标：把 P5.7.1 的真实问题转换成严格 Design Brief，并通过 Stitch 对同一核心 Page Screen 做多方向视觉探索；先看到真实方案，再冻结 Design Direction。
 
@@ -100,11 +100,20 @@ P5.7 要解决的不是单个按钮或某个页面，而是：
 
 正式输入：[`design/stitch-design-brief.md`](design/stitch-design-brief.md)。
 
-探索完成后，把最终采用/组合的设计方向写入 [`design/design-direction.md`](design/design-direction.md) 并冻结。
+探索完成后已将正式方向冻结为 **Quiet Studio**，见 [`design/design-direction.md`](design/design-direction.md)。Stitch 后续只作为视觉稿 / companion-state 工具，不再作为规范 authority。
 
-### P5.7.3 — Design Direction Freeze & Design System v1
+### P5.7.3 — Design System v1
 
-目标：在 Stitch 方向探索被用户选定后，将最终 Design Direction 转换为可实施的系统。
+**当前阶段。**
+
+Quiet Studio Design Direction 已冻结；本阶段把它转换为 Eotion 自己维护、内部一致、实现无关的 Design System。
+
+当前文档：
+
+- [`design/design-system-v1.md`](design/design-system-v1.md) — 人类可读规范。
+- [`design/DESIGN.md`](design/DESIGN.md) — AI / implementation-facing contract。
+
+Stitch 导出规范不直接作为 source of truth。
 
 至少定义：
 
@@ -274,8 +283,9 @@ P5.7 PASS 后才进入 P5 Final Acceptance。
 ## 当前设计文档
 
 - [UI/UX Audit](design/ui-ux-audit.md) — ✅ P5.7.1 PASS
-- [Stitch Design Brief](design/stitch-design-brief.md) — P5.7.2 当前输入
-- [Design Direction](design/design-direction.md) — 等 Stitch exploration 后冻结
-- [Design System v1](design/design-system-v1.md)
+- [Stitch Design Brief](design/stitch-design-brief.md) — ✅ P5.7.2 exploration input
+- [Design Direction](design/design-direction.md) — ✅ Quiet Studio FROZEN
+- [Design System v1](design/design-system-v1.md) — P5.7.3 current DRAFT
+- [DESIGN.md](design/DESIGN.md) — P5.7.3 AI-facing DRAFT
 - [Core Screen Spec](design/core-screen-spec.md)
 - [Visual Acceptance](design/visual-acceptance.md)
