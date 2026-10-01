@@ -1,42 +1,54 @@
-# Current Task — P5.7.2 Stitch Design Brief & Direction Exploration
+# Current Task — P5.7.3 Design System v1
 
 P5.6 Settings & Preferences 已 PASS（2026-10-01）。产品版本保持 0.0.1 / build 1。
 
-P5.7.1 UI/UX Audit 已 PASS（2026-10-01），见 `docs/design/ui-ux-audit.md`。
+P5.7.1 UI/UX Audit 已 PASS。
+P5.7.2 Design Direction 已冻结为 **Quiet Studio**。
 
 当前不进入 P5 Final Acceptance，也不修改正式 Product UI。
 
 ## Current phase
 
-P5.7.2 — Stitch Design Brief & Direction Exploration。
+P5.7.3 — Design System v1。
 
-主计划：`docs/p5-ui-ux-foundation.md`。
+正式设计 source of truth：
 
-当前设计输入：
+- `docs/design/design-direction.md` — Quiet Studio FROZEN
+- `docs/design/design-system-v1.md` — human-readable DRAFT
+- `docs/design/DESIGN.md` — AI / implementation-facing DRAFT
 
-- `docs/design/stitch-design-brief.md`
-- `docs/design/ui-ux-audit.md`
+## Current decisions already frozen
 
-等待探索后填写：
+- Document-first / Open Canvas。
+- Low Chrome。
+- Warm-neutral Quiet Studio。
+- Sans Serif only。
+- Fixed Editor Toolbar 默认 OFF。
+- Expanded Sidebar 仅右上 / 右下圆角。
+- Desktop / Tablet Sidebar 必须支持 collapse / reopen。
+- Workspace / Page management 使用 anchored floating popover。
+- Sidebar footer 为 full-row interaction。
+- Stable synced：`已同步`。
+- Offline/local-only：`离线 · 本地已保存`。
+- Attachment upload/error 在最终插入位置原位转换。
+- Slash Menu 单语言。
+- Production icons 使用 EotionIcon + Morphicons + Lucide。
+- Stitch 的 Tailwind / Material Symbols / Newsreader / Material token 不是 production spec。
 
-- `docs/design/design-direction.md`
-- `docs/design/design-system-v1.md`
-- `docs/design/core-screen-spec.md`
+## Still open
 
-## Current action
+不要提前猜：
 
-使用 Stitch 对**同一个 1440×900 Desktop Page 场景**进行至少 3 个视觉方向探索。
+- Dark palette。
+- Settings detail width curve / cap。
+- Sidebar expanded width。
+- exact responsive breakpoints。
+- collapse preference persistence。
+- Mobile touch toolbar anatomy。
+- Dialog/confirm visual spec。
+- Image/File block 最终 border/background 强度。
 
-要求：
-
-- 功能内容完全一致，只比较视觉语言与 interaction presentation。
-- 必须解决 Audit 中的核心问题：Editor giant card、Sidebar collapse、Workspace/Page inline menus、状态重复、附件 document integration。
-- 展开 Sidebar 右上/右下圆角。
-- 中文 Slash Menu 不做中英双语重复。
-- 不设计无关新功能。
-- 不把 Stitch 生成代码直接作为 production source。
-
-用户选中或组合方案后，才进入 Design Direction Freeze 和 Design System v1。
+这些通过 P5.7.3 / P5.7.4 后续高保真状态稿再冻结。
 
 ## Hard gate
 
@@ -44,16 +56,20 @@ Gate A 前不得重构正式 Product UI。
 
 Gate A 至少需要：
 
-1. 用户批准 Design Direction。
-2. 用户批准 Design System v1。
-3. 用户批准核心高保真页面。
+1. Design Direction（已满足）。
+2. Design System v1 PASS。
+3. Core Screens approved。
 4. 关键 Prototype / flow 通过评审。
 
-## Existing constraints
+## Next action
 
-- 不新增业务功能。
-- 不进入 P6 MCP / Agent。
-- 不创建 HarmonyOS / Android / iOS 原生 UI。
-- Morphicons 图标体系保留。
-- P5.1～P5.6 的功能、安全、Local-first、附件、Settings 行为不得回归。
-- P5.4 Mobile WebView/Lynx 真机完全离线重启仍保留为既有待验收边界。
+补齐 Design System 尚未冻结的部分，并进入 P5.7.4 核心页面/状态设计：
+
+- Dark Page。
+- Desktop Settings。
+- Mobile Page。
+- Mobile Settings。
+- Connectivity / Offline。
+- Sidebar collapsed / workspace popover / page action / attachment failure companion states。
+
+Stitch 只负责视觉稿，不再负责最终 DESIGN.md。
