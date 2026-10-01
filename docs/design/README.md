@@ -2,26 +2,46 @@
 
 本目录用于 P5.7 UI/UX Foundation 的设计 source of truth。
 
-当前处于 P5.7.2 Stitch Direction Exploration；Gate A 前不修改正式 Product UI。
+当前阶段：**P5.7.3 Design System v1**。Gate A 前不修改正式 Product UI。
 
-推荐阅读顺序：
+## Reading order
 
-1. [UI/UX Audit](ui-ux-audit.md) — P5.7.1 已完成
-2. [Stitch Design Brief](stitch-design-brief.md) — 当前阶段输入
-3. Stitch 同屏多方向探索
-4. [Design Direction](design-direction.md) — 选定方向后冻结
-5. [Design System v1](design-system-v1.md)
-6. [Core Screen Design](core-screen-spec.md)
+1. [UI/UX Audit](ui-ux-audit.md) — ✅ P5.7.1 PASS
+2. [Stitch Design Brief](stitch-design-brief.md) — ✅ P5.7.2 探索输入
+3. [Design Direction — Quiet Studio](design-direction.md) — ✅ P5.7.2 FROZEN
+4. [Design System v1](design-system-v1.md) — 当前人类可读规范，DRAFT
+5. [DESIGN.md](DESIGN.md) — 当前 AI / implementation-facing contract，DRAFT
+6. [Core Screen Design](core-screen-spec.md) — P5.7.4
 7. 用户批准 Gate A
-8. 实施（实施计划在 Gate A 后另建）
+8. Implementation（Gate A 后另建计划）
 9. [Visual Acceptance](visual-acceptance.md)
 
 总计划见 [P5.7 UI/UX Foundation](../p5-ui-ux-foundation.md)。
 
+## Authority
+
+设计 source of truth 优先级：
+
+```text
+design-direction.md
+        ↓
+design-system-v1.md
+        ↓
+DESIGN.md
+        ↓
+approved core screen designs
+        ↓
+implementation
+```
+
+如 Stitch 导出的 `DESIGN.md` / HTML / Tailwind / Material Symbols 与本目录正式文档冲突，以本目录正式文档为准。
+
 ## Rules
 
+- Design Direction 已冻结为 Quiet Studio，不再重新做视觉方向探索。
 - 设计决策先写文档，再进入实现。
 - 不把当前代码里的偶然 CSS 数值直接视为 Design System。
-- 多模型方案可以并行探索，但最终必须收敛到一套 Eotion 设计语言。
-- 视觉 source of truth 必须可持续引用；临时聊天截图不是最终设计源。
-- 用户明确批准 Design Direction、Design System 和核心页面前，不进入 P5.7.5。
+- Stitch 负责视觉稿 / 状态稿，不再作为最终规范 authority。
+- 多模型可以 critique，但不能各自修改 production UI。
+- Gate A 前不进入 P5.7.5。
+- P5.7.3 不猜测尚未设计的 Dark / Mobile / responsive 精确值；这些进入 P5.7.4 后再冻结。
