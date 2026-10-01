@@ -35,11 +35,15 @@ P5.7.3 — Design System v1。
 - Production icons 使用 EotionIcon + Morphicons + Lucide。
 - Stitch 的 Tailwind / Material Symbols / Newsreader / Material token 不是 production spec。
 
+## Completed in current phase
+
+- Quiet Studio Dark Desktop Page 已批准。
+- Dark semantic palette 已冻结，并修正 text-muted / danger 的 WCAG 对比度。
+
 ## Still open
 
 不要提前猜：
 
-- Dark palette。
 - Settings detail width curve / cap。
 - Sidebar expanded width。
 - exact responsive breakpoints。
@@ -63,13 +67,24 @@ Gate A 至少需要：
 
 ## Next action
 
-补齐 Design System 尚未冻结的部分，并进入 P5.7.4 核心页面/状态设计：
+下一项：**Desktop Settings 高保真推演**。
 
-- Dark Page。
-- Desktop Settings。
-- Mobile Page。
-- Mobile Settings。
-- Connectivity / Offline。
-- Sidebar collapsed / workspace popover / page action / attachment failure companion states。
+目标只解决：
+
+- Quiet Studio Settings visual language。
+- Settings navigation density。
+- setting-row anatomy。
+- 1280 / 1440 / 1600 下的 detail width curve / max cap。
+- form/control treatment。
+
+Settings IA 保持 P5.6 已验收的 list-detail，不新增设置项，不把 Settings 设计成 Card dashboard。
+
+后续顺序：
+
+1. Desktop Settings。
+2. Sidebar collapsed / workspace popover / page action / attachment failure companion states。
+3. Mobile Page。
+4. Mobile Settings。
+5. Connectivity / Offline。
 
 Stitch 只负责视觉稿，不再负责最终 DESIGN.md。
