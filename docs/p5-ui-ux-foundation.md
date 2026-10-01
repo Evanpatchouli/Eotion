@@ -115,6 +115,13 @@ Quiet Studio Design Direction 已冻结；本阶段把它转换为 Eotion 自己
 
 Stitch 导出规范不直接作为 source of truth。
 
+当前进度：
+
+- ✅ Light semantic palette frozen。
+- ✅ Dark semantic palette frozen（2026-10-02）。
+- ⏳ Desktop Settings width / control anatomy。
+- ⏳ Mobile / responsive / remaining interaction primitives。
+
 至少定义：
 
 - Typography。
