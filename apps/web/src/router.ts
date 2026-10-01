@@ -18,6 +18,12 @@ const devRoutes: RouteRecordRaw[] = import.meta.env.DEV
           { path: 'storage-p3', name: 'storage-p3', meta: { title: '本地存储 P3 演示' }, component: () => import('./views/StorageP3DemoView.vue') },
         ],
       },
+      {
+        path: '/__dev/ui-foundation',
+        name: 'ui-foundation',
+        meta: { title: 'UI Foundation 展示' },
+        component: () => import('./views/UiFoundationDemoView.vue'),
+      },
     ]
   : []
 

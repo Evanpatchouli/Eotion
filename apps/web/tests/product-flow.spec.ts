@@ -269,6 +269,9 @@ test('delays login until recovery completes and uses cached product state on tra
   await page.goto('/#/app')
   await expect(page.getByRole('heading', { name: '登录 Eotion' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
+  // The workspace label precedes snapshot hydration. Establish the cached
+  // product state before interrupting recovery with a reload and /me failure.
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
 
   // Previously authenticated clients keep the product through a transient /me failure.
   api.controls.meFailures = 1

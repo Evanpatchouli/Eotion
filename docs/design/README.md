@@ -18,6 +18,8 @@
 - `stitch-design-brief.md`：设计探索输入，不是 source of truth。
 - `core-screen-spec.md`：核心页面规格。
 - `visual-acceptance.md`：视觉验收标准。
+- `implementation-notes.md`：P5.7.5 UI Foundation 演示实现、token 使用与迁移边界。
+- `../../apps/web/src/views/UiFoundationDemoView.vue`：仅开发环境可访问的组件展示页。
 
 ## Reading order
 
@@ -27,6 +29,7 @@
 4. [DESIGN.md](DESIGN.md)
 5. [Core Screen Design](core-screen-spec.md)
 6. [Visual Acceptance](visual-acceptance.md)
+7. [Implementation Notes](implementation-notes.md)
 
 ## Authority
 
