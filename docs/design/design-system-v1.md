@@ -8,7 +8,7 @@ P5.7.2 Design Direction 已冻结为 **Quiet Studio**。
 
 本文件是 Eotion 自己维护的设计系统 source of truth，不直接采用 Stitch 导出的 DESIGN.md。Stitch 输出只作为视觉探索证据；其中的 Newsreader、Material 风格 token、Tailwind / Material Symbols、虚构业务内容等均不进入本规范。
 
-当前已冻结 Desktop Light / Dark 视觉基线和核心语义。Mobile、Settings 宽度曲线、完整 responsive 断点和部分 component anatomy 仍需在 P5.7.3～P5.7.4 继续确认。
+当前已冻结 Desktop Light / Dark 视觉基线、Desktop Settings 规格和核心语义。Mobile、完整 responsive 断点和部分 component anatomy 仍需在 P5.7.3～P5.7.4 继续确认。
 
 ---
 
