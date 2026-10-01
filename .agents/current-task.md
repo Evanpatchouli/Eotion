@@ -42,6 +42,8 @@ P5.7.3 — Design System v1。
 - Quiet Studio Desktop Settings visual language 已批准。
 - Settings navigation = 240px；detail = 520px min / 740px max，并冻结 1280 / 1440 / 1600 的目标宽度行为。
 - Light text-muted 已修正为 #706E67，以满足 12–13px muted text 的 AA 基线。
+- Desktop companion states 已批准：Collapsed Sidebar、Workspace Switcher Popover、Page Action Popover、Attachment Upload Failed。
+- Popover focus-return / ESC / click-outside / zero-layout-shift 和附件单一原位错误 Surface 已冻结。
 
 ## Still open
 
@@ -69,27 +71,26 @@ Gate A 至少需要：
 
 ## Next action
 
-下一项：**Desktop interaction companion states**。
+下一项：**Mobile Page 高保真推演**。
 
-只补现有 Quiet Studio Page 的状态变体，不重新设计页面：
+目标只解决移动端尚未冻结的 presentation：
 
-1. Collapsed Sidebar + exact reopen control。
-2. Workspace Switcher Popover。
-3. Page Action Popover。
-4. Attachment Upload Failed。
+- 390×844 baseline。
+- Product Sidebar → drawer。
+- Mobile topbar / gutters。
+- Open Canvas 在窄宽下的 typography / rhythm。
+- touch editing controls。
+- soft keyboard / IME coexistence。
+- attachment block 在窄宽下的表现。
+- uploading in-place。
+- sync/offline feedback 在 Mobile 的位置和密度。
 
-目标冻结：
-
-- Sidebar collapse / reopen presentation。
-- anchored popover geometry / focus-return behavior。
-- page tree zero-layout-shift interaction。
-- attachment failure 的单一、原位、可行动错误 Surface。
+原则：不是 Desktop 缩小版；能力语义保持一致，但 presentation 可针对 touch 重组。
 
 后续顺序：
 
-1. Desktop interaction companion states。
-2. Mobile Page。
-3. Mobile Settings。
-4. Connectivity / Offline。
+1. Mobile Page。
+2. Mobile Settings。
+3. Connectivity / Offline。
 
 Stitch 只负责视觉稿，不再负责最终 DESIGN.md。
