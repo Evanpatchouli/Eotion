@@ -1,34 +1,21 @@
-# Current Task — P5.7.5.1 Quiet Studio Token Foundation
+# Current Task — P5.7.5.1.5 Quiet Studio Token Audit
 
-状态：完成（2026-10-02）。本轮用户已明确授权 Design Freeze 后基础设施实现；不代表整个 P5.7 页面迁移或 Visual Acceptance 已完成。
+状态：完成（2026-10-02）。此次只补充报告和使用边界，不改变页面、布局或组件 API。
 
 ## Work Units
 
-- S0 investigate：scout 定位 theme/bootstrap、图标体系与现有验证入口，完成。
-- S2 decide：主 Agent 确定新 --e-* token 与旧页面变量并存、复用设备主题，不迁移业务页面，完成。
-- S1 execute：fast_worker 落地 token、七类 primitive、DEV 展示页、交互测试与使用文档，完成。
-- S0 verify：scout 执行工程与浏览器验证；主 Agent 复核实际截图、编码与 diff，完成。
-- Review：独立 reviewer 复核最终实现、缓存测试前置条件及 danger 对比度，无 blocker。
+- S0 investigate：主 Agent 核对 token、冻结规范、主题启动与 literal colors；scout 独立定位 ProductShell primitive/API 缺口。
+- S2 decide：主 Agent 决定仅写回使用边界与必要接入前置项，不改变组件公共 API、页面或布局。
+- S1 execute：补充 token audit 报告、实现说明与设计文档索引。
+- S0 verify/review：主 Agent 执行相关最小验证，复核 scout 证据、最终 diff 和 UTF-8 无 BOM。
 
-## Implementation boundaries
+## Boundaries
 
-- 颜色值来自 docs/design/design-system-v1.md；Light/Dark 共用语义名称及几何 token。
-- 保留现有 Settings 的 Light/Dark/System、localStorage key、启动前主题脚本和业务页面旧变量。
-- 未修改 auth/sync/storage/API 或 ProductShell、Sidebar、Editor、Settings、Page Tree、附件业务 UI。
-- 基础组件统一使用 EotionIcon/Morphicons；/__dev/ui-foundation 不进入生产路由或产品导航。
-- Danger 文本配 surface-subtle，避免在更亮 Dark surface/hover 上不足 AA。
-- 缓存恢复测试先等待首次已同步，再注入 /me 失败和 reload；原有恢复断言全部保留。
+不 redesign，不迁移 ProductShell，不新增 token，不调整布局。Token Foundation 可保留；共享 Menu Item、显式面板样式入口、workspace 表单与 menu 语义边界列为接入前必要工作。
 
 ## Verification
 
-- pnpm typecheck：通过（Web/Desktop/API）。
-- pnpm build:web：通过（最终版本，含 vue-tsc、Vite、SW）。
-- 11 个相关 Playwright spec、workers=2：128/128 通过，无跳过/重试。
-- playwright.theme-production.config.ts：2/2 通过，入口 JS 被阻断时新主题 token 仍可用。
-- Light/Dark 1440×900 桌面截图复核：颜色生效、几何相同，无 overlay/console error；Popover 开合无布局位移。
-- UTF-8 无 BOM、git diff --check、最终范围复核：通过。
-- 独立 HEAD 基线用于定位缓存测试时序；临时 worktree 已归档清理。
-
-## Handoff
-
-基础设施入口及 token 使用见 docs/design/implementation-notes.md。后续页面迁移按独立任务逐页进行，不能以本阶段完成为由扩大范围。
+- Foundation / Theme Playwright：7/7 通过。
+- Production theme Playwright：2/2 通过；包含重新 Web build/typecheck。
+- 新 ui/showcase literal palette 检索无匹配；18 个主题颜色逐项与冻结规范核对一致。
+- 审计报告：docs/design/quiet-studio-token-audit.md。

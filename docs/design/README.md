@@ -19,6 +19,7 @@
 - `core-screen-spec.md`：核心页面规格。
 - `visual-acceptance.md`：视觉验收标准。
 - `implementation-notes.md`：P5.7.5 UI Foundation 演示实现、token 使用与迁移边界。
+- [quiet-studio-token-audit.md](quiet-studio-token-audit.md)：P5.7.5.1.5 token / API 审计及 ProductShell 接入必要前置项。
 - `../../apps/web/src/views/UiFoundationDemoView.vue`：仅开发环境可访问的组件展示页。
 
 ## Reading order

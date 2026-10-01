@@ -53,6 +53,10 @@ Popover 的 trigger 应是可访问的原生按钮，将 slot 提供的 props �
 
 Popover 本身提供有标签的 `role="menu"`、方向键/Home/End 导航、ESC/outside 关闭和触发器焦点返回。危险项通过 `data-danger="true"` 标记；它不应抢占打开菜单后的初始焦点。
 
+`data-danger` 不自动提供菜单行样式；演示页中的整行、hover、focus 和 danger CSS 目前仅在演示页生效。接入正式菜单前应提取共享菜单行契约，不能只复制上面的 markup 就认为视觉状态已完整。
+
+当前 Popover 是动作菜单：不承载任意表单；组件外层 `class` / `style` 也没有明确的 Teleport 面板转发入口。ProductShell 的 workspace 浮层宽度及新建/重命名表单语义须在接入阶段确定。必要前置项见 [P5.7.5.1.5 Token Audit](quiet-studio-token-audit.md)。
+
 Danger 文本使用冻结的 `danger` 色值与 `surface-subtle` 背景搭配（包括 hover），以维持 Dark 小字号文本的 AA 对比度；不要将它直接置于更亮的 `surface` / `hover` 上。Hover 可通过下划线反馈，keyboard focus 仍使用 focus ring。
 
 ## 主题与范围
