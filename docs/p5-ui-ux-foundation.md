@@ -119,7 +119,8 @@ Stitch 导出规范不直接作为 source of truth。
 
 - ✅ Light semantic palette frozen。
 - ✅ Dark semantic palette frozen（2026-10-02）。
-- ⏳ Desktop Settings width / control anatomy。
+- ✅ Desktop Settings width / control anatomy frozen（2026-10-02）。
+- ⏳ Desktop companion states。
 - ⏳ Mobile / responsive / remaining interaction primitives。
 
 至少定义：
