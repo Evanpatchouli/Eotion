@@ -542,10 +542,34 @@ Settings 高保真后冻结的视觉原则：
 
 ### Popover
 
+**✅ Desktop companion states 已冻结（2026-10-02）。**
+
+通用：
+
 - 必须 anchored；
 - 不参与原文档/树布局；
 - 使用 `elevated` + border + light shadow；
-- 关闭逻辑与 keyboard/focus 明确。
+- Light popover baseline：`border: #E8E6E1`、`radius: 10px`、`shadow: 0 4px 16px rgba(0,0,0,0.06)`；
+- menu row 使用 full-row hit area；
+- ESC / click-outside 关闭；
+- 关闭后 focus 回到 trigger；
+- keyboard arrow navigation / focus-visible 必须可用；
+- menu 打开/关闭不得造成 Page Tree 或 Document layout shift。
+
+Workspace Switcher：
+
+- 宽度约 **240px**；
+- 与 workspace trigger 相距约 **6px**；
+- 当前 workspace selection 克制表达；
+- 只包含现有 workspace 行为，不扩展管理能力。
+
+Page Action Popover：
+
+- `min-width: 160px`；
+- 内衬 **4px**；
+- 锚定当前 Page row 的 ellipsis；
+- actions 固定为：`新建子页面`、`重命名`、`移动`、`删除`；
+- `删除` 使用 danger 语义，但不作为默认初始焦点。
 
 ### Dialog / Confirm
 
@@ -621,13 +645,28 @@ Document-native。
 
 #### Error
 
+**✅ Desktop failure state 已冻结（2026-10-02）。**
+
 原位显示：
 
-- 上传中断 / context-aware message；
-- 重试；
-- 移除。
+- 文件名；
+- `上传中断`；
+- `重试`；
+- `移除`。
 
-不能同时再出现重复全局 error。
+规则：
+
+- 保持在原最终插入位置；
+- block 继续使用 `surface-subtle` + `block radius 8px`；
+- danger 只强调错误状态，不把整个 block 染红；
+- `重试` 是主要恢复动作；
+- `移除` 是次要/放弃动作；
+- 同一次失败只保留一个主要错误 surface；
+- 不出现顶部重复 error banner；
+- 不暴露 cleanup / object-storage / compensation 等技术术语；
+- 不虚构 byte totals / timestamp / download / share。
+
+Desktop pointer 下 recovery actions 目标区域不得小于约 32px。
 
 ---
 
@@ -700,6 +739,10 @@ raw HTTP / SDK / endpoint / cleanup 只进入：
 
 - Sidebar 默认 presentation：expanded candidate。
 - Document 保持 720–740px reading width。
+- Sidebar collapsed 时完全退出主内容区，document reading column 继续稳定居中。
+- collapsed topbar 在 breadcrumb 前提供唯一 reopen control。
+- reopen control 视觉按钮约 32×32px、control radius 6px；实现可将 pointer hit area 扩大到约 36–40px，而不放大视觉尺寸。
+- tooltip：`展开侧边栏`。
 - 具体 wide threshold 待 P5.7.4。
 
 ### Medium / Tablet
@@ -772,6 +815,7 @@ Gate A 后、Implementation 前，由 Codex 调查现有 token/hard-code 后填�
 
 - Quiet Studio Light / Dark visual direction。
 - Desktop Settings visual language / width behavior。
+- Desktop companion states：Sidebar collapse/reopen、Workspace Popover、Page Action Popover、Attachment Upload Failed。
 - Sans Serif only。
 - Open Canvas。
 - Light semantic palette。
@@ -797,7 +841,7 @@ Gate A 后、Implementation 前，由 Codex 调查现有 token/hard-code 后填�
 - Touch toolbar final anatomy。
 - Dialog/confirm visual spec。
 - Image/File attachment exact border/background treatment。
-- Full interactive companion states。
+
 - Core screen visual approval。
 
 ---
