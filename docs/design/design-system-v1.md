@@ -147,15 +147,26 @@ comfortable reading width: 720–740px
 
 ### Settings detail
 
-**TBD。**
+**✅ FROZEN（2026-10-02）**
 
-冻结原则：
+Quiet Studio Desktop Settings 已通过 Light Theme 高保真推演与人工 review。Stitch 导出的三档 viewport / HTML 宽度存在不一致，因此正式规范采用人工归一化后的视觉行为，而不是逐字复制 prototype 数值。
 
-- 1280 左右保持紧凑；
-- 1440 / 1600 / wider 时适度增长；
-- 有 max cap；
-- 不铺满大屏；
-- 具体 clamp / cap 在 Settings 高保真稿后确定。
+- Settings navigation width：**240px**。
+- Detail minimum width：**520px**。
+- Detail preferred behavior：随可用空间温和增长。
+- Detail maximum width：**740px**。
+- 视觉目标：
+  - 1280 viewport：约 **620px**。
+  - 1440 viewport：约 **700–720px**。
+  - 1600+ viewport：**740px cap**。
+- Outer horizontal gutter：
+  - 1280：**48px**。
+  - 1440：**64px**。
+  - 1600+：**80px**。
+
+实现不要求机械使用某个固定 `48vw`；允许通过 `clamp()` / container calculation 达到上述视觉行为。
+
+Settings 继续保持 P5.6 已验收的 Desktop list-detail IA。不得扩展成 full-width admin form，也不得重新把每个 section 包成 Card。
 
 ### Mobile gutters
 
@@ -212,7 +223,7 @@ comfortable reading width: 720–740px
 | --- | --- | --- |
 | text-primary | `#1F1F1E` | Title / body |
 | text-secondary | `#5A5852` | UI / metadata |
-| text-muted | `#8F8D86` | secondary status / hint |
+| text-muted | `#706E67` | secondary status / hint |
 
 ### Functional
 
@@ -224,6 +235,8 @@ comfortable reading width: 720–740px
 | danger | `#A8423F` | destructive / failed |
 
 这些色值是当前 Quiet Studio Light baseline。P5.7.4 Visual QA 可做小幅 optical tune，但不得改回冷蓝 SaaS / purple AI 方向。
+
+Light `text-muted` 已从 Stitch 初始 `#8F8D86` 修正为 `#706E67`：在 `sidebar #F5F4F0` 上约 4.64:1，在 `canvas #FAF9F6` 上约 4.85:1，适用于 12–13px muted text 的 AA 基线。
 
 ---
 
@@ -508,7 +521,13 @@ Keyboard focus 必须清楚，但不长期像 selected state。
 
 ### Switch / Radio
 
-保留 P5.6 已验证的 accessibility 语义；视觉进入 Settings 高保真后再微调。
+保留 P5.6 已验证的 accessibility 语义。
+
+Settings 高保真后冻结的视觉原则：
+
+- bounded choice 仅在确有离散选项承载需要时使用轻量边界；
+- 不把每个 setting row 都做成独立 Card；
+- keyboard focus 使用清晰 2px 左右 focus ring，避免被外层 radius 裁切。
 
 ### Menu Item
 
@@ -640,6 +659,41 @@ raw HTTP / SDK / endpoint / cleanup 只进入：
 
 ---
 
+## Settings Primitives
+
+### Navigation
+
+- width：240px。
+- category label：12px / muted。
+- navigation item：34px row height。
+- selected 使用既有 `selected` token。
+- 与主 Product Sidebar 同源，但不做像素级镜像。
+
+### Setting row
+
+标准 anatomy：
+
+```text
+[18px Icon]  [Title 14px / 500]
+             [Subtitle 13px / 400]      [Accessory]
+```
+
+- row height：约 48–56px（取决于是否有 subtitle）。
+- full-row interaction。
+- accessory 右对齐。
+- 必要时使用 `border-subtle` 做轻分隔，不默认加 Card。
+- selected/checked state 不改变布局。
+
+### Section rhythm
+
+- Title → description：8px。
+- Description → section heading：32px。
+- Section heading → control group：12px。
+- Section → section：40px。
+- 不新增 Settings-only radius / border token。
+
+---
+
 ## Responsive Density
 
 ### Wide Desktop
@@ -717,6 +771,7 @@ Gate A 后、Implementation 前，由 Codex 调查现有 token/hard-code 后填�
 已可作为 P5.7.4 source of truth：
 
 - Quiet Studio Light / Dark visual direction。
+- Desktop Settings visual language / width behavior。
 - Sans Serif only。
 - Open Canvas。
 - Light semantic palette。
@@ -735,8 +790,6 @@ Gate A 后、Implementation 前，由 Codex 调查现有 token/hard-code 后填�
 
 ## Still open before Design System PASS
 
-- Dark semantic palette。
-- Settings width curve/cap。
 - Sidebar expanded width。
 - Exact responsive breakpoints。
 - Sidebar collapse preference behavior。
