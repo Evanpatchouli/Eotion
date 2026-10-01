@@ -149,6 +149,16 @@ Sidebar right radius: 16px
 
 Main Product Sidebar width and exact responsive breakpoints: NOT FROZEN.
 
+Desktop collapsed Sidebar:
+```text
+sidebar: fully out of main content
+document: stays centered
+reopen control: one 32×32px visual icon button before breadcrumb
+radius: 6px
+tooltip: 展开侧边栏
+```
+Implementation may use a 36–40px pointer hit area while preserving the 32px visual size.
+
 Desktop Settings:
 ```text
 navigation width: 240px
@@ -207,9 +217,22 @@ Respect reduced motion.
 - anchored to the trigger
 - do not change document/tree layout
 - elevated surface
-- subtle border
-- light shadow: `0 4px 16px rgba(0,0,0,0.06)`
-- keyboard/focus return required
+- Light: border `#E8E6E1`, radius `10px`, shadow `0 4px 16px rgba(0,0,0,0.06)`
+- ESC and click-outside close
+- keyboard navigation required
+- focus returns to trigger after close
+
+Workspace popover:
+- width ≈ 240px
+- offset ≈ 6px below trigger
+- only existing workspace actions
+
+Page action popover:
+- min-width 160px
+- 4px inner padding
+- anchored to page-row ellipsis
+- actions: 新建子页面 / 重命名 / 移动 / 删除
+- 删除 uses restrained danger semantics and is not default initial focus
 
 ## Editor
 
@@ -233,11 +256,14 @@ Success:
 
 Failure:
 - same position
-- user-friendly error
-- retry
-- remove if product supports it
+- exact primary state copy: 上传中断
+- recovery: 重试
+- secondary action: 移除
+- use surface-subtle + block radius 8px
+- danger emphasizes state only; do not tint the whole block red
 - no duplicate global error
-- no cleanup terminology
+- no cleanup/object-storage/compensation terminology
+- no invented bytes/timestamp/download/share
 
 ## Settings
 
