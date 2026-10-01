@@ -65,7 +65,7 @@ border-subtle   #EFEEE9
 
 text-primary    #1F1F1E
 text-secondary  #5A5852
-text-muted      #8F8D86
+text-muted      #706E67
 
 accent          #3D3C38
 success         #4B6B54
@@ -147,7 +147,23 @@ Tree row height: 32px
 Sidebar right radius: 16px
 ```
 
-Sidebar width and exact responsive breakpoints: NOT FROZEN.
+Main Product Sidebar width and exact responsive breakpoints: NOT FROZEN.
+
+Desktop Settings:
+```text
+navigation width: 240px
+detail min: 520px
+detail target:
+  1280 viewport → ~620px
+  1440 viewport → ~700–720px
+  1600+ viewport → 740px max
+outer horizontal gutters:
+  1280 → 48px
+  1440 → 64px
+  1600+ → 80px
+```
+
+Do not implement Settings as a full-width admin form. Do not wrap every section in a card.
 
 ## Radius
 
@@ -223,6 +239,19 @@ Failure:
 - no duplicate global error
 - no cleanup terminology
 
+## Settings
+
+- Desktop / wide keeps list-detail IA.
+- Settings navigation: 240px.
+- Category labels: 12px muted.
+- Navigation row: 34px.
+- Standard setting row: 48–56px.
+- Setting anatomy: 18px icon + 14px/500 title + optional 13px subtitle + right accessory.
+- Use typography, spacing and subtle dividers before cards.
+- Section rhythm: 8 / 32 / 12 / 40px for title-description / description-section / heading-controls / section-section.
+- No Settings-only radius or border token.
+- MCP / Agent remain “即将推出”; do not invent settings.
+
 ## Error language
 
 Classify transport errors internally, but display context-aware product copy.
@@ -255,7 +284,6 @@ Never expose raw SDK fallback strings.
 
 Do not invent these:
 
-- Settings responsive width cap
 - Sidebar expanded width
 - exact breakpoints
 - collapse persistence rules
