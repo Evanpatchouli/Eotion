@@ -30,9 +30,10 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `p5-settings.md` | P5.6 已完成：Settings 实现入口、账号安全契约、Theme/Toolbar scope、响应式与 Visual QA 验收 |
 | `p5-ui-ux-foundation.md` | P5.7 UI/UX Foundation 主计划、Design Gate、实施与 Visual Acceptance 边界 |
 | `design/ui-ux-audit.md` | P5.7.1 已完成：现有 UI/UX 审计与重设计问题清单 |
-| `design/stitch-design-brief.md` | P5.7.2 当前输入：Stitch 多方向探索的统一 Design Brief |
-| `design/design-direction.md` | P5.7.2 产品设计方向与冻结决策 |
-| `design/design-system-v1.md` | P5.7.3 Design System v1 token / primitive 工作表 |
+| `design/stitch-design-brief.md` | P5.7.2 已完成：Stitch 多方向探索的统一 Design Brief |
+| `design/design-direction.md` | P5.7.2 已冻结：Quiet Studio 正式产品设计方向 |
+| `design/design-system-v1.md` | P5.7.3 当前：Quiet Studio Design System v1 人类可读规范（DRAFT） |
+| `design/DESIGN.md` | P5.7.3 当前：给 AI / 实现 Agent 使用的精简设计契约（DRAFT） |
 | `design/core-screen-spec.md` | P5.7.4 核心高保真页面与 Gate A |
 | `design/visual-acceptance.md` | P5.7.6 Visual QA / screenshot regression / 最终视觉验收 |
 | `p4-final-acceptance.md` | P4 六条退出条件的最终验收证据、测试结果与进入 P5 的结论 |
