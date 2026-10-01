@@ -8,7 +8,7 @@ P5.7.2 Design Direction 已冻结为 **Quiet Studio**。
 
 本文件是 Eotion 自己维护的设计系统 source of truth，不直接采用 Stitch 导出的 DESIGN.md。Stitch 输出只作为视觉探索证据；其中的 Newsreader、Material 风格 token、Tailwind / Material Symbols、虚构业务内容等均不进入本规范。
 
-当前只冻结已经充分验证的 Desktop Light 基线和核心语义。Dark、Mobile、Settings 宽度曲线、完整 responsive 断点和部分 component anatomy 仍需在 P5.7.3～P5.7.4 继续确认。
+当前已冻结 Desktop Light / Dark 视觉基线和核心语义。Mobile、Settings 宽度曲线、完整 responsive 断点和部分 component anatomy 仍需在 P5.7.3～P5.7.4 继续确认。
 
 ---
 
@@ -229,17 +229,58 @@ comfortable reading width: 720–740px
 
 ## Dark Semantic Colors
 
-**TBD / 未冻结。**
+**✅ FROZEN（2026-10-02）**
 
-必须通过 Dark Page 高保真稿后填写。
+Quiet Studio Dark 已通过 1440×900 Desktop Page 高保真推演与人工 review。保持与 Light 相同的 typography、spacing、geometry、surface hierarchy 和 interaction pattern，只替换主题语义色值。
 
-约束：
+### Surfaces
 
-- 不是简单 invert。
-- 不使用大面积纯 `#000`。
-- 保持 Quiet Studio 的低眩光和 warm-neutral 感。
-- surface hierarchy 不能因为 dark 而增加层级。
-- success / warning / danger 保持低饱和、可读。
+| Token | Value | Usage |
+| --- | --- | --- |
+| canvas | `#1C1B1A` | Dark document open canvas |
+| sidebar | `#181716` | Dark Sidebar |
+| surface | `#242321` | bounded controls / panel surface |
+| surface-subtle | `#22211F` | attachment / embedded subtle block |
+| elevated | `#242321` | popover / menu |
+| overlay | `rgba(0,0,0,0.45)` | modal overlay |
+
+### Interaction
+
+| Token | Value | Usage |
+| --- | --- | --- |
+| hover | `#2B2A27` | Sidebar / menu row hover |
+| selected | `#33322E` | selected row |
+| focus | `#C8C5BD` | keyboard focus |
+| border | `#2E2D2A` | structural border |
+| border-subtle | `#262522` | very subtle separation |
+
+### Text
+
+| Token | Value | Usage |
+| --- | --- | --- |
+| text-primary | `#EDECE8` | Title / body |
+| text-secondary | `#A3A199` | UI / metadata |
+| text-muted | `#8F8D86` | weak metadata / hints |
+
+### Functional
+
+| Token | Value | Usage |
+| --- | --- | --- |
+| accent | `#EDECE8` | restrained primary emphasis |
+| success | `#6E9B7B` | synced |
+| warning | `#C28D52` | offline / pending |
+| danger | `#D06A66` | destructive / failed |
+
+### Accessibility notes
+
+Stitch 原始提议中的 `text-muted #73716A` 与 `danger #C9615D` 在关键 dark surfaces 上对比不足，因此正式规范采用上表修正版：
+
+- `text-muted #8F8D86`：在 `surface-subtle #22211F` 上约 4.84:1。
+- `danger #D06A66`：在 `surface-subtle #22211F` 上约 4.55:1。
+
+`border #2E2D2A` 保持低对比，仅作为 subtle structure；当某 interactive control 的边界是唯一可识别线索时，不得只依赖该 border，需要 focus / state / surface 等共同表达。
+
+Dark Theme 不是简单 invert，也不得增加额外 Card / Surface 层级。
 
 ---
 
@@ -675,7 +716,7 @@ Gate A 后、Implementation 前，由 Codex 调查现有 token/hard-code 后填�
 
 已可作为 P5.7.4 source of truth：
 
-- Quiet Studio Light visual direction。
+- Quiet Studio Light / Dark visual direction。
 - Sans Serif only。
 - Open Canvas。
 - Light semantic palette。
