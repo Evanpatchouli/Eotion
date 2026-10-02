@@ -200,7 +200,7 @@ test('Mongo + API + built Web: two clients converge and an offline reload keeps 
     await second.getByRole('button', { name: '打开导航菜单' }).click()
     await second.getByRole('button', { name: '页面操作：无标题' }).first().click()
     await second.getByRole('menu', { name: '无标题 的操作' }).getByRole('menuitem', { name: '删除', exact: true }).click()
-    await second.getByRole('button', { name: '确认删除' }).click()
+    await second.getByRole('dialog', { name: '删除页面？' }).getByRole('button', { name: '删除', exact: true }).click()
     await expect(second.getByRole('status').filter({ hasText: '已同步' })).toBeVisible({ timeout: 20_000 })
     await expect.poll(async () => (await uploadedObjects()).count).toBe(0, { timeout: 20_000 })
     await page.evaluate(() => window.dispatchEvent(new Event('focus')))

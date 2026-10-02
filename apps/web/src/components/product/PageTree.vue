@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useProductPagesStore } from '../../stores/productPages'
@@ -7,6 +7,8 @@ import EotionIcon from '../ui/EotionIcon.vue'
 import EotionNavItem from '../ui/EotionNavItem.vue'
 import EotionContextMenu from '../ui/EotionContextMenu.vue'
 import EotionPopover from '../ui/EotionPopover.vue'
+import EotionCommandOverlay from '../ui/EotionCommandOverlay.vue'
+import EotionButton from '../ui/EotionButton.vue'
 import { IconName } from '../ui/icons'
 import { flushActivePageEditor } from '../../editor/activePageEditor'
 import { buildPageTree, flattenPageTree } from '../../utils/pageTree'
@@ -19,10 +21,9 @@ const pages = useProductPagesStore()
 const emit = defineEmits<{ navigate: [] }>()
 
 const expanded = ref(new Set<string>())
-const menuFor = ref<string | null>(null)
-const renameFor = ref<string | null>(null)
-const moveFor = ref<string | null>(null)
+const activePopover = ref<{ pageId: string; mode: 'menu' | 'rename' | 'move' } | null>(null)
 const confirmDeleteFor = ref<string | null>(null)
+const deleteSubmitting = ref(false)
 
 const workspaceId = computed(() => typeof route.params.workspaceId === 'string' ? route.params.workspaceId : '')
 const currentPageId = computed(() => typeof route.params.pageId === 'string' ? route.params.pageId : '')
@@ -39,9 +40,7 @@ function pageMenuItems(pageId: string) {
 }
 
 function closePanels() {
-  menuFor.value = null
-  renameFor.value = null
-  moveFor.value = null
+  activePopover.value = null
   confirmDeleteFor.value = null
   pages.createError = ''
   pages.renameError = ''
@@ -68,29 +67,69 @@ function toggle(pageId: string) {
   closePanels()
 }
 
-function setMenuOpen(pageId: string, isOpen: boolean) {
+function setPopoverOpen(pageId: string, isOpen: boolean) {
   if (!isOpen) {
-    if (menuFor.value === pageId) closePanels()
+    if (activePopover.value?.pageId !== pageId) return
+    if (activePopover.value.mode === 'rename' && pages.renamePending) return
+    if (activePopover.value.mode === 'move' && pages.movePending) return
+    closePanels()
     return
   }
   closePanels()
-  menuFor.value = pageId
+  activePopover.value = { pageId, mode: 'menu' }
+}
+
+async function focusPopoverItem(mode: 'menu' | 'rename' | 'move') {
+  await nextTick()
+  const selector = mode === 'rename'
+    ? '.eotion-popover-panel [data-page-rename-input]'
+    : mode === 'move'
+      ? '.eotion-popover-panel input[type="radio"]:checked'
+      : '.eotion-popover-panel [data-popover-item]'
+  document.querySelector<HTMLElement>(selector)?.focus()
+}
+
+async function focusPageTrigger(pageId: string) {
+  await nextTick()
+  document.querySelector<HTMLElement>(`[data-page-id="${CSS.escape(pageId)}"] .product-page-menu-trigger`)?.focus()
+}
+
+function dismissPopover(pageId: string) {
+  if (activePopover.value?.pageId !== pageId) return
+  activePopover.value = null
+  void focusPageTrigger(pageId)
 }
 
 function startRename(pageId: string) {
-  closePanels()
-  renameFor.value = pageId
+  pages.renameError = ''
+  activePopover.value = { pageId, mode: 'rename' }
+  void focusPopoverItem('rename')
 }
 
 function startMove(pageId: string) {
-  closePanels()
-  moveFor.value = pageId
+  pages.moveError = ''
+  activePopover.value = { pageId, mode: 'move' }
+  void focusPopoverItem('move')
 }
 
-function startDelete(pageId: string) {
+async function startDelete(pageId: string) {
+  const trigger = document.querySelector<HTMLElement>(`[data-page-id="${CSS.escape(pageId)}"] .product-page-menu-trigger`)
   closePanels()
+  await nextTick()
+  trigger?.focus()
+  pages.deleteError = ''
   confirmDeleteFor.value = pageId
 }
+
+const deleteOverlayOpen = computed({
+  get: () => confirmDeleteFor.value !== null,
+  set: (isOpen: boolean) => {
+    if (!isOpen && !deleteSubmitting.value) {
+      confirmDeleteFor.value = null
+      pages.deleteError = ''
+    }
+  },
+})
 
 async function openPage(pageId: string) {
   closePanels()
@@ -116,31 +155,36 @@ async function createChild(parentPageId: string) {
 
 async function submitRename(pageId: string, title: string) {
   const updated = await pages.rename(workspaceId.value, pageId, title)
-  if (updated) renameFor.value = null
+  if (updated) dismissPopover(pageId)
 }
 
 async function submitMove(pageId: string, parentPageId: string | null) {
   const moved = await pages.move(workspaceId.value, pageId, parentPageId)
   if (!moved) return
-  moveFor.value = null
-  menuFor.value = null
+  dismissPopover(pageId)
   if (parentPageId !== null) expanded.value.add(parentPageId)
 }
 
 async function confirmDelete(pageId: string, parentPageId: string | null) {
-  if (!(await flushActivePageEditor(workspaceId.value, pageId))) {
-    pages.deleteError = '正文尚未保存，请在页面中重试保存后再删除。'
-    return
+  if (deleteSubmitting.value) return
+  deleteSubmitting.value = true
+  try {
+    if (!(await flushActivePageEditor(workspaceId.value, pageId))) {
+      pages.deleteError = '正文尚未保存，请在页面中重试保存后再删除。'
+      return
+    }
+    const removed = await pages.remove(workspaceId.value, pageId)
+    if (!removed) return
+    confirmDeleteFor.value = null
+    activePopover.value = null
+    expanded.value.delete(pageId)
+    if (currentPageId.value !== pageId) return
+    if (parentPageId !== null) await router.push({ name: 'product-page', params: { workspaceId: workspaceId.value, pageId: parentPageId } })
+    else await router.push({ name: 'product-workspace', params: { workspaceId: workspaceId.value } })
+    emit('navigate')
+  } finally {
+    deleteSubmitting.value = false
   }
-  const removed = await pages.remove(workspaceId.value, pageId)
-  if (!removed) return
-  confirmDeleteFor.value = null
-  menuFor.value = null
-  expanded.value.delete(pageId)
-  if (currentPageId.value !== pageId) return
-  if (parentPageId !== null) await router.push({ name: 'product-page', params: { workspaceId: workspaceId.value, pageId: parentPageId } })
-  else await router.push({ name: 'product-workspace', params: { workspaceId: workspaceId.value } })
-  emit('navigate')
 }
 
 function retry() {
@@ -148,7 +192,11 @@ function retry() {
 }
 
 watch(() => [currentPageId.value, pages.items] as const, () => expandAncestors(currentPageId.value), { immediate: true })
-watch(workspaceId, () => { closePanels(); expanded.value = new Set() })
+watch(workspaceId, () => {
+  closePanels()
+  confirmDeleteFor.value = null
+  expanded.value = new Set()
+})
 </script>
 
 <template>
@@ -167,12 +215,14 @@ watch(workspaceId, () => { closePanels(); expanded.value = new Set() })
     </template>
     <p v-else-if="pages.loaded && pages.items.length === 0" class="product-page-placeholder"><EotionIcon :name="IconName.FileText" :size="16" /><span>还没有页面</span></p>
     <ul v-else class="product-page-tree" role="tree" aria-label="页面树">
-      <li v-for="row in rows" :key="row.page.id" class="product-page-node" role="treeitem" :aria-level="row.depth + 1" :aria-selected="row.page.id === currentPageId" :aria-expanded="row.hasChildren ? row.expanded : undefined">
+      <li v-for="row in rows" :key="row.page.id" class="product-page-node" :data-page-id="row.page.id" role="treeitem" :aria-level="row.depth + 1" :aria-selected="row.page.id === currentPageId" :aria-expanded="row.hasChildren ? row.expanded : undefined">
         <EotionPopover
-          :open="menuFor === row.page.id"
+          :open="activePopover?.pageId === row.page.id"
+          :mode="activePopover?.pageId === row.page.id && activePopover.mode !== 'menu' ? 'dialog' : 'menu'"
           context
-          :label="`${row.page.title} 的操作`"
-          @update:open="setMenuOpen(row.page.id, $event)"
+          :label="activePopover?.pageId === row.page.id && activePopover.mode !== 'menu' ? (activePopover.mode === 'rename' ? '重命名页面' : '移动页面') : `${row.page.title} 的操作`"
+          :panel-width="activePopover?.pageId === row.page.id && activePopover.mode !== 'menu' ? '280px' : undefined"
+          @update:open="setPopoverOpen(row.page.id, $event)"
         >
           <template #trigger="{ triggerProps, openAt }">
             <div class="product-page-context" @contextmenu="openAt">
@@ -206,21 +256,40 @@ watch(workspaceId, () => { closePanels(); expanded.value = new Set() })
               </EotionNavItem>
             </div>
           </template>
-          <EotionContextMenu class="product-page-menu" :items="pageMenuItems(row.page.id)" />
+          <template v-if="activePopover?.pageId !== row.page.id || activePopover.mode === 'menu'">
+            <EotionContextMenu class="product-page-menu" :items="pageMenuItems(row.page.id)" />
+          </template>
+          <PageRenameForm
+            v-else-if="activePopover.mode === 'rename'"
+            :initial-title="row.page.title"
+            :pending="pages.renamePending"
+            :error="pages.renameError"
+            @submit="submitRename(row.page.id, $event)"
+            @cancel="dismissPopover(row.page.id)"
+          />
+          <PageMoveForm
+            v-else
+            :pages="pages.items"
+            :page-id="row.page.id"
+            :current-parent-id="row.page.parentPageId"
+            :pending="pages.movePending"
+            :error="pages.moveError"
+            @submit="submitMove(row.page.id, $event)"
+            @cancel="dismissPopover(row.page.id)"
+          />
         </EotionPopover>
-
-        <PageRenameForm v-if="renameFor === row.page.id" :initial-title="row.page.title" :pending="pages.renamePending" :error="pages.renameError" @submit="submitRename(row.page.id, $event)" @cancel="renameFor = null" />
-        <PageMoveForm v-if="moveFor === row.page.id" :pages="pages.items" :page-id="row.page.id" :current-parent-id="row.page.parentPageId" :pending="pages.movePending" :error="pages.moveError" @submit="submitMove(row.page.id, $event)" @cancel="moveFor = null" />
-
-        <div v-if="confirmDeleteFor === row.page.id" class="product-page-confirm">
-          <p class="product-message">确定删除“{{ row.page.title }}”吗？</p>
-          <p v-if="pages.deleteError" class="product-message product-message--error" role="alert">{{ pages.deleteError }}</p>
-          <div class="product-inline-actions">
-            <button class="product-button product-button--primary" type="button" :disabled="pages.deletePending" @click="confirmDelete(row.page.id, row.page.parentPageId)">{{ pages.deletePending ? '正在删除…' : '确认删除' }}</button>
-            <button class="product-button" type="button" :disabled="pages.deletePending" @click="confirmDeleteFor = null; pages.deleteError = ''">取消</button>
-          </div>
-        </div>
       </li>
     </ul>
+    <EotionCommandOverlay v-model:open="deleteOverlayOpen" label="删除页面？" :shortcut="false" :dismissible="!deleteSubmitting && !pages.deletePending">
+      <section v-if="confirmDeleteFor" class="product-page-delete-dialog" aria-labelledby="product-page-delete-title">
+        <h2 id="product-page-delete-title">删除页面？</h2>
+        <p>确定删除“{{ pages.items.find(page => page.id === confirmDeleteFor)?.title ?? '' }}”吗？</p>
+        <p v-if="pages.deleteError" class="product-message product-message--error" role="alert">{{ pages.deleteError }}</p>
+        <div class="product-popover-form__actions">
+          <EotionButton :disabled="deleteSubmitting || pages.deletePending" @click="deleteOverlayOpen = false">取消</EotionButton>
+          <EotionButton variant="danger" :disabled="deleteSubmitting || pages.deletePending" @click="confirmDelete(confirmDeleteFor, pages.items.find(page => page.id === confirmDeleteFor)?.parentPageId ?? null)">{{ deleteSubmitting || pages.deletePending ? '正在删除…' : '删除' }}</EotionButton>
+        </div>
+      </section>
+    </EotionCommandOverlay>
   </div>
 </template>

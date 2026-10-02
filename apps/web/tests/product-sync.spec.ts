@@ -473,13 +473,13 @@ test('offline page rename, move and delete stay durable after reload', async ({ 
 
   await page.getByRole('button', { name: '页面操作：Bravo' }).click()
   await page.getByRole('menu', { name: 'Bravo 的操作' }).getByRole('menuitem', { name: '移动' }).click()
-  await page.getByLabel('移动到').selectOption('page-alpha')
+  await page.getByRole('radiogroup', { name: '移动到' }).getByRole('radio', { name: 'Offline Alpha', exact: true }).check()
   await page.getByRole('button', { name: '移动', exact: true }).click()
   await expect(page.getByRole('treeitem', { name: /Bravo/ })).toHaveAttribute('aria-level', '2')
 
   await page.getByRole('button', { name: '页面操作：Bravo' }).click()
   await page.getByRole('menu', { name: 'Bravo 的操作' }).getByRole('menuitem', { name: '删除' }).click()
-  await page.getByRole('button', { name: '确认删除' }).click()
+  await page.getByRole('dialog', { name: '删除页面？' }).getByRole('button', { name: '删除', exact: true }).click()
   await expect(page.locator('.product-page-title')).toHaveText(['Offline Alpha'])
   await page.reload()
   await expect(page.locator('.product-page-title')).toHaveText(['Offline Alpha'])

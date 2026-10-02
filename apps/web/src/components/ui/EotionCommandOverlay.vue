@@ -4,9 +4,11 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 const props = withDefaults(defineProps<{
   label?: string
   shortcut?: boolean
+  dismissible?: boolean
 }>(), {
   label: '命令',
   shortcut: true,
+  dismissible: true,
 })
 
 const open = defineModel<boolean>('open', { default: false })
@@ -69,7 +71,7 @@ function syncDialog(isOpen: boolean) {
 }
 
 function close() {
-  if (open.value) open.value = false
+  if (props.dismissible && open.value) open.value = false
 }
 
 function onDialogCancel(event: Event) {

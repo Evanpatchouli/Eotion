@@ -3,6 +3,9 @@ import { computed, ref } from 'vue'
 import type { PageResponse } from '@eotion/contracts'
 
 import { buildPageTree, collectSubtreeIds, flattenPageTree } from '../../utils/pageTree'
+import EotionButton from '../ui/EotionButton.vue'
+import EotionIcon from '../ui/EotionIcon.vue'
+import { IconName } from '../ui/icons'
 
 const props = defineProps<{
   pages: PageResponse[]
@@ -26,7 +29,6 @@ const destinations = computed(() => {
   const expandedIds = new Set(props.pages.map((page) => page.id))
   return flattenPageTree(buildPageTree(props.pages), expandedIds)
     .filter((row) => !excluded.value.has(row.page.id))
-    .map((row) => ({ id: row.page.id, label: `${'　'.repeat(row.depth)}${row.page.title}` }))
 })
 const canSubmit = computed(() => !props.pending && selection.value !== (props.currentParentId ?? ''))
 
@@ -37,18 +39,34 @@ function submit() {
 </script>
 
 <template>
-  <form class="product-form product-page-inline-form" @submit.prevent="submit">
-    <label class="product-field">
-      <span>移动到</span>
-      <select v-model="selection" aria-label="移动到" :disabled="pending">
-        <option value="">根级</option>
-        <option v-for="destination in destinations" :key="destination.id" :value="destination.id">{{ destination.label }}</option>
-      </select>
-    </label>
+  <form class="product-popover-form product-page-move-form" @submit.prevent="submit">
+    <fieldset class="product-page-move-options" role="radiogroup" aria-label="移动到" :disabled="pending">
+      <legend>移动到</legend>
+      <label class="product-page-move-option">
+        <input v-model="selection" type="radio" name="page-move-destination" value="" />
+        <span class="product-page-move-option__icon" aria-hidden="true"><EotionIcon :name="IconName.FileText" :size="16" /></span>
+        <span class="product-page-move-option__title">根级</span>
+        <EotionIcon v-if="selection === ''" class="product-page-move-option__check" :name="IconName.Check" :size="16" aria-hidden="true" />
+      </label>
+      <label
+        v-for="destination in destinations"
+        :key="destination.page.id"
+        class="product-page-move-option"
+        :style="{ paddingLeft: `calc(var(--e-space-3) + ${destination.depth} * var(--e-space-5))` }"
+      >
+        <input v-model="selection" type="radio" name="page-move-destination" :value="destination.page.id" />
+        <span class="product-page-move-option__icon" aria-hidden="true">
+          <span v-if="destination.page.icon">{{ destination.page.icon }}</span>
+          <EotionIcon v-else :name="IconName.FileText" :size="16" />
+        </span>
+        <span class="product-page-move-option__title">{{ destination.page.title }}</span>
+        <EotionIcon v-if="selection === destination.page.id" class="product-page-move-option__check" :name="IconName.Check" :size="16" aria-hidden="true" />
+      </label>
+    </fieldset>
     <p v-if="error" class="product-message product-message--error" role="alert">{{ error }}</p>
-    <div class="product-inline-actions">
-      <button class="product-button product-button--primary" type="submit" :disabled="!canSubmit">{{ pending ? '正在移动…' : '移动' }}</button>
-      <button class="product-button" type="button" :disabled="pending" @click="emit('cancel')">取消</button>
+    <div class="product-popover-form__actions">
+      <EotionButton type="submit" variant="primary" :disabled="!canSubmit">{{ pending ? '正在移动…' : '移动' }}</EotionButton>
+      <EotionButton :disabled="pending" @click="emit('cancel')">取消</EotionButton>
     </div>
   </form>
 </template>

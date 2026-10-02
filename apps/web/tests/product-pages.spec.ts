@@ -1,10 +1,23 @@
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, PageResponse, WorkspaceResponse } from '@eotion/contracts'
+import { mkdir } from 'node:fs/promises'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
 
 const ava: AuthUserDto = { id: 'user-ava', email: 'ava@example.com', createdAt: now, updatedAt: now }
+const browserErrors = new WeakMap<Page, string[]>()
+
+test.beforeEach(async ({ page }) => {
+  const errors: string[] = []
+  browserErrors.set(page, errors)
+  page.on('pageerror', (error) => errors.push(error.message))
+})
+
+test.afterEach(async ({ page }) => {
+  expect(browserErrors.get(page) ?? []).toEqual([])
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+})
 
 /** Mirrors the client's fixed-width order key so assertions read the real wire value. */
 function key(value: number): string {
@@ -104,6 +117,28 @@ async function installApi(page: Page, options: MockOptions = {}) {
 /** The tree item whose page link carries exactly this title. */
 function treeItem(page: Page, title: string): Locator {
   return page.locator('[role="treeitem"]').filter({ has: page.getByRole('button', { name: title, exact: true }) })
+}
+
+function moveTarget(page: Page, title: string): Locator {
+  return page.getByRole('radiogroup', { name: '移动到' }).getByRole('radio', { name: title, exact: true })
+}
+
+async function treeGeometry(page: Page): Promise<Array<{ x: number; y: number; width: number; height: number }>> {
+  const boxes = await page.getByRole('treeitem').evaluateAll((rows) => rows.map((row) => {
+    const box = row.getBoundingClientRect()
+    return { x: box.x, y: box.y, width: box.width, height: box.height }
+  }))
+  return boxes
+}
+
+function expectSameGeometry(actual: Awaited<ReturnType<typeof treeGeometry>>, expected: Awaited<ReturnType<typeof treeGeometry>>): void {
+  expect(actual).toHaveLength(expected.length)
+  for (const [index, box] of actual.entries()) {
+    expect(box.x).toBeCloseTo(expected[index]!.x, 1)
+    expect(box.y).toBeCloseTo(expected[index]!.y, 1)
+    expect(box.width).toBeCloseTo(expected[index]!.width, 1)
+    expect(box.height).toBeCloseTo(expected[index]!.height, 1)
+  }
 }
 
 async function openPageMenu(page: Page, title: string): Promise<void> {
@@ -280,6 +315,232 @@ test('renames a page with trimming, validation, pending state, and error recover
   await expect.poll(() => api.pages[0]?.title).toBe('Failing')
 })
 
+test('rename focuses automatically, submits with Enter, and cancels without writing on Escape or outside click', async ({ page }) => {
+  const api = await installApi(page, {
+    workspaces: [workspace('ws-a', '工作空间')],
+    pages: [pageRecord('page-a', 'ws-a', '研究计划', null, key(1))],
+  })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const operationCount = () => api.requests.filter((request) => request.path === '/api/sync/operations').length
+  const initialOperationCount = operationCount()
+
+  await openAction(page, '研究计划', '重命名')
+  const title = page.getByLabel('页面标题')
+  await expect(title).toBeFocused()
+  await title.fill('取消的标题')
+  await title.press('Escape')
+  await expect(title).toHaveCount(0)
+  await expect(treeItem(page, '研究计划')).toHaveCount(1)
+  expect(operationCount()).toBe(initialOperationCount)
+
+  await openAction(page, '研究计划', '重命名')
+  await expect(title).toBeFocused()
+  await title.fill('外部点击取消')
+  await page.getByRole('heading', { level: 1, name: '研究计划' }).click()
+  await expect(title).toHaveCount(0)
+  expect(operationCount()).toBe(initialOperationCount)
+
+  await openAction(page, '研究计划', '重命名')
+  await expect(title).toBeFocused()
+  await title.fill('已提交计划')
+  await title.press('Enter')
+  await expect(page.getByRole('heading', { level: 1, name: '已提交计划' })).toBeVisible()
+  await expect.poll(() => api.pages[0]?.title).toBe('已提交计划')
+  expect(operationCount()).toBe(initialOperationCount + 1)
+})
+
+test('keeps page tree rows steady through rename, move and delete controls and captures desktop states', async ({ page }) => {
+  const consoleErrors: string[] = []
+  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const api = await installApi(page, {
+    workspaces: [workspace('ws-a', '工作空间')],
+    pages: [
+      pageRecord('page-project', 'ws-a', '研究计划', null, key(1)),
+      pageRecord('page-notes', 'ws-a', '实验记录', 'page-project', key(1)),
+      pageRecord('page-draft', 'ws-a', '实验草稿', 'page-notes', key(1)),
+      pageRecord('page-reference', 'ws-a', '参考资料', null, key(2)),
+    ],
+  })
+  await page.goto('/#/app/ws-a/page/page-project')
+  await page.getByRole('button', { name: '展开研究计划的子页面' }).click()
+  await page.getByRole('button', { name: '展开实验记录的子页面' }).click()
+  const visualDir = process.env.EOTION_VISUAL_QA_DIR
+  if (visualDir) await mkdir(visualDir, { recursive: true })
+  const screenshot = async (name: string) => {
+    if (visualDir) await page.screenshot({ path: `${visualDir}/${name}.png`, fullPage: true })
+  }
+
+  let before = await treeGeometry(page)
+  await openAction(page, '研究计划', '重命名')
+  expectSameGeometry(await treeGeometry(page), before)
+  await screenshot('rename')
+  const title = page.getByLabel('页面标题')
+  await title.fill('项目路线图')
+  await title.press('Escape')
+  await expect(title).toHaveCount(0)
+  expectSameGeometry(await treeGeometry(page), before)
+
+  before = await treeGeometry(page)
+  await openAction(page, '研究计划', '移动')
+  const targets = page.getByRole('radiogroup', { name: '移动到' })
+  await expect(targets.locator('select')).toHaveCount(0)
+  await expect(moveTarget(page, '根级')).toBeChecked()
+  await expect(moveTarget(page, '研究计划')).toHaveCount(0)
+  await expect(moveTarget(page, '实验记录')).toHaveCount(0)
+  await expect(moveTarget(page, '实验草稿')).toHaveCount(0)
+  await expect(moveTarget(page, '参考资料')).toBeVisible()
+  await moveTarget(page, '参考资料').check()
+  expectSameGeometry(await treeGeometry(page), before)
+  await expect.poll(() => api.requests.filter((request) => request.path === '/api/sync/operations' && (request.body as any)?.kind === 'page.move')).toHaveLength(0)
+  await screenshot('move')
+  await page.getByRole('heading', { level: 1, name: '研究计划' }).click()
+  await expect(targets).toHaveCount(0)
+  expectSameGeometry(await treeGeometry(page), before)
+
+  await openAction(page, '研究计划', '移动')
+  await moveTarget(page, '参考资料').check()
+  await page.keyboard.press('Escape')
+  await expect(targets).toHaveCount(0)
+  expectSameGeometry(await treeGeometry(page), before)
+
+  await openAction(page, '参考资料', '移动')
+  await expect(moveTarget(page, '根级')).toBeFocused()
+  const padding = async (name: string) => moveTarget(page, name).evaluate(element => Number.parseFloat(getComputedStyle(element.parentElement!).paddingLeft))
+  expect(await padding('实验记录')).toBeGreaterThan(await padding('研究计划'))
+  expect(await padding('实验草稿')).toBeGreaterThan(await padding('实验记录'))
+  await screenshot('move-hierarchy')
+  await page.getByRole('button', { name: '取消', exact: true }).click()
+  await expect(targets).toHaveCount(0)
+  expectSameGeometry(await treeGeometry(page), before)
+
+  const originalX = (await treeItem(page, '研究计划').locator('.product-page-title').boundingBox())!.x
+  await openAction(page, '研究计划', '移动')
+  await moveTarget(page, '参考资料').check()
+  await page.getByRole('button', { name: '移动', exact: true }).click()
+  await expect(treeItem(page, '研究计划')).toHaveAttribute('aria-level', '2')
+  expect((await treeItem(page, '研究计划').locator('.product-page-title').boundingBox())!.x).toBeGreaterThan(originalX)
+  await expect.poll(() => api.pages.find((record) => record.id === 'page-project')?.parentPageId).toBe('page-reference')
+
+  before = await treeGeometry(page)
+  await openAction(page, '实验记录', '删除')
+  const dialog = page.getByRole('dialog', { name: '删除页面？' })
+  const cancel = dialog.getByRole('button', { name: '取消' })
+  const remove = dialog.getByRole('button', { name: '删除', exact: true })
+  await expect(cancel).toBeFocused()
+  expectSameGeometry(await treeGeometry(page), before)
+  await page.keyboard.press('Shift+Tab')
+  await expect(remove).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(cancel).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  expectSameGeometry(await treeGeometry(page), before)
+
+  await openAction(page, '实验记录', '删除')
+  const openDialog = page.getByRole('dialog', { name: '删除页面？' })
+  await screenshot('delete')
+  await page.mouse.click(8, 8)
+  await expect(openDialog).toBeVisible()
+  expectSameGeometry(await treeGeometry(page), before)
+  await openDialog.getByRole('button', { name: '取消' }).click()
+  await expect(openDialog).toHaveCount(0)
+  expectSameGeometry(await treeGeometry(page), before)
+  expect(consoleErrors).toEqual([])
+})
+
+test('pending rename and move retain their popover and do not restore focus on Escape', async ({ page }) => {
+  await installApi(page, {
+    workspaces: [workspace('ws-a', '工作空间')],
+    pages: [pageRecord('page-a', 'ws-a', '工作笔记', null, key(1)), pageRecord('page-b', 'ws-a', '阅读清单', null, key(2))],
+  })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.locator('.eotion-editor-content')).toBeVisible()
+  for (const action of ['重命名', '移动']) {
+    await page.evaluate(async (mode) => {
+      const { useProductPagesStore } = await import('/src/stores/productPages.ts')
+      const store = useProductPagesStore()
+      let finish!: () => void
+      const waiting = new Promise<void>(resolve => { finish = resolve })
+      ;(window as any).__finishPageAction = finish
+      if (mode === '重命名') {
+        store.rename = async () => {
+          store.renamePending = true
+          await waiting
+          store.renamePending = false
+          store.renameError = '标题保存失败'
+          return null
+        }
+      } else {
+        store.move = async () => {
+          store.movePending = true
+          await waiting
+          store.movePending = false
+          store.moveError = '页面移动失败'
+          return null
+        }
+      }
+    }, action)
+    await openAction(page, '工作笔记', action)
+    if (action === '重命名') await page.getByLabel('页面标题').fill('新标题')
+    else await moveTarget(page, '阅读清单').check()
+    const popover = page.getByRole('dialog', { name: action === '重命名' ? '重命名页面' : '移动页面' })
+    await popover.getByRole('button', { name: action === '重命名' ? '保存标题' : '移动', exact: true }).click()
+    await expect(popover.getByRole('button', { name: '取消' })).toBeDisabled()
+    await page.keyboard.press('Escape')
+    await expect(popover).toBeVisible()
+    await expect(page.getByRole('button', { name: '页面操作：工作笔记' })).not.toBeFocused()
+    await page.evaluate(() => (window as any).__finishPageAction())
+    await expect(popover.getByRole('alert')).toContainText('失败')
+    await popover.getByRole('button', { name: '取消' }).click()
+    await expect(popover).toHaveCount(0)
+  }
+})
+
+test('keeps delete confirmation open while editor flush is pending and blocks duplicate flushes', async ({ page }) => {
+  const api = await installApi(page, {
+    workspaces: [workspace('ws-a', '工作空间')],
+    pages: [pageRecord('page-a', 'ws-a', '待删除页面', null, key(1))],
+  })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.getByRole('heading', { level: 1, name: '待删除页面' })).toBeVisible()
+  await expect(page.locator('.eotion-editor-content')).toBeVisible()
+  await page.evaluate(async () => {
+    const { registerActivePageEditor } = await import('/src/editor/activePageEditor.ts')
+    let finish!: (saved: boolean) => void
+    let calls = 0
+    const waiting = new Promise<boolean>((resolve) => { finish = resolve })
+    const dispose = registerActivePageEditor({
+      workspaceId: 'ws-a',
+      pageId: 'page-a',
+      flush: () => { calls += 1; return waiting },
+      preserve: () => undefined,
+    })
+    ;(window as any).__deleteFlushFixture = { finish, calls: () => calls, dispose }
+  })
+
+  await openAction(page, '待删除页面', '删除')
+  const dialog = page.getByRole('dialog', { name: '删除页面？' })
+  const remove = dialog.locator('button.eotion-button--danger')
+  const cancel = dialog.getByRole('button', { name: '取消' })
+  await remove.click()
+  await expect.poll(() => page.evaluate(() => (window as any).__deleteFlushFixture.calls())).toBe(1)
+  await expect(cancel).toBeDisabled()
+  await expect(remove).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeVisible()
+  await cancel.evaluate((element) => (element as HTMLButtonElement).click())
+  await expect(dialog).toBeVisible()
+  await remove.evaluate((element) => (element as HTMLButtonElement).click())
+  await expect.poll(() => page.evaluate(() => (window as any).__deleteFlushFixture.calls())).toBe(1)
+
+  await page.evaluate(() => (window as any).__deleteFlushFixture.finish(false))
+  await expect(dialog.getByRole('alert')).toContainText('正文尚未保存')
+  await expect(dialog).toBeVisible()
+  expect(api.requests.some((request) => request.path === '/api/sync/operations' && (request.body as any)?.kind === 'page.delete')).toBe(false)
+  await page.evaluate(() => (window as any).__deleteFlushFixture.dispose())
+})
+
 test('moves a page under another page and back to the root', async ({ page }) => {
   const api = await installApi(page, {
     workspaces: [workspace('ws-a', 'Ava space')],
@@ -292,16 +553,29 @@ test('moves a page under another page and back to the root', async ({ page }) =>
   await page.goto('/#/app/ws-a/page/page-a1')
 
   await openAction(page, 'Alpha child', '移动')
-  const select = page.getByLabel('移动到')
-  await expect(select.locator('option')).toHaveText(['根级', 'Alpha', 'Bravo'])
-  await select.selectOption('page-b')
+  const targets = page.getByRole('radiogroup', { name: '移动到' })
+  await expect(targets.getByRole('radio')).toHaveCount(3)
+  await expect(moveTarget(page, 'Alpha')).toBeChecked()
+  await expect(moveTarget(page, 'Alpha')).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect(page.getByRole('button', { name: '取消', exact: true })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(moveTarget(page, 'Alpha')).toBeFocused()
+  await page.keyboard.press('ArrowDown')
+  await expect(moveTarget(page, 'Bravo')).toBeChecked()
+  await page.keyboard.press('ArrowUp')
+  await expect(moveTarget(page, 'Alpha')).toBeChecked()
+  await expect(moveTarget(page, '根级')).toBeVisible()
+  await expect(moveTarget(page, 'Bravo')).toBeVisible()
+  await moveTarget(page, 'Bravo').check()
+  await expect.poll(() => api.requests.filter((request) => request.path === '/api/sync/operations' && (request.body as any)?.kind === 'page.move')).toHaveLength(0)
   await page.getByRole('button', { name: '移动', exact: true }).click()
 
   await expect(treeItem(page, 'Alpha child')).toHaveAttribute('aria-level', '2')
   await expect(treeItem(page, 'Alpha child').getByRole('button', { name: 'Alpha child', exact: true })).toHaveAttribute('aria-current', 'page')
   await expect(page.locator('.breadcrumb')).toHaveText('Ava space / Alpha child')
   await expect(treeItem(page, 'Bravo')).toHaveAttribute('aria-expanded', 'true')
-  await expect(page.locator('.product-page-inline-form')).toHaveCount(0)
+  await expect(page.getByRole('radiogroup', { name: '移动到' })).toHaveCount(0)
   await expect.poll(() => api.pages.find((record) => record.id === 'page-a1')).toMatchObject({ parentPageId: 'page-b' })
   expect(api.requests.find((request) => request.path === '/api/sync/operations' && (request.body as any)?.kind === 'page.move')?.body).toMatchObject({ payload: { id: 'page-a1', parentPageId: 'page-b', orderKey: key(1) } })
 
@@ -309,7 +583,7 @@ test('moves a page under another page and back to the root', async ({ page }) =>
   await expect(treeItem(page, 'Alpha child')).toHaveAttribute('aria-level', '2')
 
   await openAction(page, 'Alpha child', '移动')
-  await page.getByLabel('移动到').selectOption('')
+  await moveTarget(page, '根级').check()
   await page.getByRole('button', { name: '移动', exact: true }).click()
   await expect(treeItem(page, 'Alpha child')).toHaveAttribute('aria-level', '1')
   await expect.poll(() => api.pages.find((record) => record.id === 'page-a1')).toMatchObject({ parentPageId: null, orderKey: key(3) })
@@ -326,12 +600,16 @@ test('never offers the page itself or its descendants and preserves a local move
   })
   await page.goto('/#/app/ws-a/page/page-a')
   await openAction(page, 'Alpha', '移动')
-  await expect(page.getByLabel('移动到').locator('option')).toHaveText(['根级', 'Bravo'])
+  const targets = page.getByRole('radiogroup', { name: '移动到' })
+  await expect(targets.getByRole('radio')).toHaveCount(2)
+  await expect(moveTarget(page, 'Bravo')).toBeVisible()
+  await expect(moveTarget(page, 'Alpha')).toHaveCount(0)
+  await expect(moveTarget(page, 'Alpha child')).toHaveCount(0)
 
   api.controls.pushFailures = 1000000
-  await page.getByLabel('移动到').selectOption('page-b')
+  await moveTarget(page, 'Bravo').check()
   await page.getByRole('button', { name: '移动', exact: true }).click()
-  await expect(page.locator('.product-page-inline-form')).toHaveCount(0)
+  await expect(page.getByRole('radiogroup', { name: '移动到' })).toHaveCount(0)
   await expect(treeItem(page, 'Alpha')).toHaveAttribute('aria-level', '2')
   await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
   await page.reload()
@@ -374,16 +652,17 @@ test('deletes a leaf page, rejects a page with children, and recovers the route'
   await page.goto('/#/app/ws-a/page/page-a1')
 
   await openAction(page, 'Alpha', '删除')
-  await page.getByRole('button', { name: '确认删除' }).click()
-  await expect(page.locator('.product-page-confirm').getByRole('alert')).toContainText('Page page-a has child pages')
+  const deleteDialog = page.getByRole('dialog', { name: '删除页面？' })
+  await deleteDialog.getByRole('button', { name: '删除', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '删除页面？' }).getByRole('alert')).toContainText('Page page-a has child pages')
   await expect(treeItem(page, 'Alpha')).toHaveCount(1)
   await expect(page.getByRole('heading', { level: 1, name: 'Alpha child' })).toBeVisible()
-  await page.getByRole('button', { name: '取消' }).click()
-  await expect(page.locator('.product-page-confirm')).toHaveCount(0)
+  await page.getByRole('dialog', { name: '删除页面？' }).getByRole('button', { name: '取消' }).click()
+  await expect(page.getByRole('dialog', { name: '删除页面？' })).toHaveCount(0)
 
   // Deleting the open child page falls back to its parent page.
   await openAction(page, 'Alpha child', '删除')
-  await page.getByRole('button', { name: '确认删除' }).click()
+  await page.getByRole('dialog', { name: '删除页面？' }).getByRole('button', { name: '删除', exact: true }).click()
   await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/)
   await expect(page.getByRole('heading', { level: 1, name: 'Alpha' })).toBeVisible()
   await expect(treeItem(page, 'Alpha child')).toHaveCount(0)
@@ -394,7 +673,7 @@ test('deletes a leaf page, rejects a page with children, and recovers the route'
 
   // Deleting an open root page returns to the workspace home.
   await openAction(page, 'Alpha', '删除')
-  await page.getByRole('button', { name: '确认删除' }).click()
+  await page.getByRole('dialog', { name: '删除页面？' }).getByRole('button', { name: '删除', exact: true }).click()
   await expect(page).toHaveURL(/#\/app\/ws-a$/)
   await expect(page.locator('.product-page-link .product-page-title')).toHaveText(['Bravo'])
   await expect(page.getByText('还没有页面')).toHaveCount(0)

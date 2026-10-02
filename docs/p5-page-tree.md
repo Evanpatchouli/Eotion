@@ -15,7 +15,7 @@ P5.2 用真实页面树替换 P5.1 侧栏中的 Pages 占位提示，接通“�
 
 - 数据来源是当前工作区的 `GET /api/workspaces/:workspaceId/pages`；侧栏不额外请求页面。
 - `parentPageId` 为 `null` 的是根页面；同一父级下按 `orderKey` 升序排列，`orderKey` 相同时按 `id` 兜底，保证顺序稳定。父级引用缺失或指向自身时该页面按根页面处理，不会从树上消失。
-- 侧栏支持展开 / 折叠、当前页面高亮（`aria-current="page"`）、以及由页面菜单触发的“新建子页面 / 重命名 / 移动 / 删除”。打开页面会在移动端自动关闭侧栏抽屉。
+- 侧栏支持展开 / 折叠、当前页面高亮（`aria-current="page"`）、以及由页面菜单触发的“新建子页面 / 重命名 / 移动 / 删除”。每行共用一个 popover：菜单、重命名和移动在同一面板内切换；表单模式使用 dialog 语义，宽度约 280px，切换后焦点落在输入框或当前选项。打开页面会在移动端自动关闭侧栏抽屉。
 - 选中页面时自动展开其祖先，因此从 URL 直接进入深层页面仍能定位到该页面。
 
 ### 创建
@@ -30,18 +30,19 @@ P5.2 用真实页面树替换 P5.1 侧栏中的 Pages 占位提示，接通“�
 
 - 走既有 `PATCH /api/workspaces/:workspaceId/pages/:pageId`（仅 `title`）。
 - 标题 trim 后不能为空，也不能与当前标题相同（提交按钮保持禁用）；提交中禁止重复提交，失败时在表单内显示可见错误并允许重试。
+- 重命名表单使用共享输入与按钮样式；取消、成功保存后焦点回到该页面的操作触发器。
 - 成功后侧栏标题、主区域标题和面包屑同时更新，刷新后仍然一致。
 
 ### 移动
 
-- 移动使用独立入口 `PATCH /api/workspaces/:workspaceId/pages/:pageId/move`，请求体为 `{ parentPageId: string | null, orderKey: string }`。选择器提供“根级”和当前工作区内除自身及其后代以外的页面；移动后 `orderKey` 取目标同级列表末尾。
+- 移动使用独立入口 `PATCH /api/workspaces/:workspaceId/pages/:pageId/move`，请求体为 `{ parentPageId: string | null, orderKey: string }`。选择器以原生 radio group 提供“根级”和当前工作区内除自身及其后代以外的页面，显示页面图标和层级缩进，并选中当前父级；移动后 `orderKey` 取目标同级列表末尾。
 - 服务端是唯一权威校验：拒绝把页面移动到自己（`A page cannot be its own parent`）、移动到自己的后代（`A page cannot be moved under its own descendant`）、移动到其他工作区或不存在的父级。通用更新入口继续拒绝 `parentPageId`，不会绕过这些校验。
 - 本阶段不实现拖拽排序，只提供菜单 + 选择器。
 
 ### 删除
 
 - `DELETE /api/workspaces/:workspaceId/pages/:pageId` 只删除叶子页面：先删该页区块再删页面，返回 `{ deleted: true }`。
-- 有子页面时返回 400 `Delete child pages first`；不级联删除，也不把子页面提升到父级。删除前需要在页面菜单里二次确认。
+- 有子页面时返回 400 `Delete child pages first`；不级联删除，也不把子页面提升到父级。删除前通过一个无快捷键的 modal 二次确认；空闲时可用 Esc 或取消关闭，点击背景不关闭。正文 flush 与删除运行期间保留对话框并禁止重复提交或关闭；对话框取消在前、危险删除在后，显示页面标题与错误，并持续限制焦点在对话框内。
 - 删除当前打开的页面后，路由回到其父页面；没有父页面时回到 Workspace Home。刷新同样不会停在已删除页面。
 
 ## 事务环境
@@ -52,7 +53,7 @@ P5.2 用真实页面树替换 P5.1 侧栏中的 Pages 占位提示，接通“�
 
 - `stores/productPages.ts`（Pinia setup store，`product-pages`）持有单个工作区的页面列表与 loading / error / empty 以及 create / rename / move / delete 的 pending 与 error。切换工作区立即清空旧列表，并用请求 epoch 丢弃过期响应；任何变更都先确认仍属于当前工作区，避免跨工作区串数据。
 - `utils/pageTree.ts` 是不依赖 Vue 的纯函数：`buildPageTree`、`flattenPageTree`、`nextOrderKey`、`collectSubtreeIds`。树在渲染前被压平成带 `depth` 的行列表，展开 / 折叠只是过滤，不使用递归组件。
-- `components/product/PageTree.vue` 是与 `ProductShell.vue`、`WorkspaceSwitcher` 平级的侧栏区块，`PageRenameForm.vue` 与 `PageMoveForm.vue` 负责内联表单；`views/PageView.vue` 只显示标题与页面元信息占位，正文区域留给 P5.3。
+- `components/product/PageTree.vue` 是与 `ProductShell.vue`、`WorkspaceSwitcher` 平级的侧栏区块，`PageRenameForm.vue` 与 `PageMoveForm.vue` 负责 popover 内表单；删除复用树外 `EotionCommandOverlay`。表单和确认操作在关闭后把焦点还给页面操作触发器；页面删除后触发器已不存在时跳过焦点恢复。`views/PageView.vue` 只显示标题与页面元信息占位，正文区域留给 P5.3。
 - 401 会统一触发会话失效处理，回到登录流程。
 
 ## 验证入口

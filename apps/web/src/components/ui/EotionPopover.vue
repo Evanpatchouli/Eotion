@@ -72,7 +72,7 @@ function close(restoreFocus = true) {
   pendingFocus = null
   pointerPosition = null
   open.value = false
-  if (restoreFocus) void nextTick(() => { if (!disposed) triggerElement.value?.focus() })
+  if (restoreFocus) void nextTick(() => { if (!disposed && !open.value) triggerElement.value?.focus() })
 }
 
 function menuItems() {
@@ -118,8 +118,13 @@ function onPanelKeydown(event: KeyboardEvent) {
       close(false)
       return
     }
-    const focusable = [...(panelElement.value?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"]):not([aria-disabled="true"])') ?? [])]
-      .filter(item => !item.hidden && item.getAttribute('aria-hidden') !== 'true')
+    const candidates = [...(panelElement.value?.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"]):not([aria-disabled="true"])') ?? [])]
+      .filter(item => item.tabIndex >= 0 && !item.hidden && item.getAttribute('aria-hidden') !== 'true')
+    const focusable = candidates.filter(item => {
+      if (!(item instanceof HTMLInputElement) || item.type !== 'radio' || !item.name) return true
+      const group = candidates.filter((candidate): candidate is HTMLInputElement => candidate instanceof HTMLInputElement && candidate.type === 'radio' && candidate.name === item.name && candidate.form === item.form)
+      return item === (group.find(radio => radio.checked) ?? group[0])
+    })
     const first = focusable[0]
     const last = focusable.at(-1)
     if (!first || !last) return
@@ -186,6 +191,10 @@ function updatePosition() {
 
 function onOutsideClick(event: MouseEvent) {
   const target = event.target as Node | null
+  // A menu action can replace its clicked item before this document listener runs.
+  // The event path still identifies the panel where that interaction started.
+  const path = event.composedPath()
+  if ((panelElement.value && path.includes(panelElement.value)) || (triggerElement.value && path.includes(triggerElement.value))) return
   if (target && !triggerElement.value?.contains(target) && !panelElement.value?.contains(target)) {
     const element = target instanceof Element ? target : target.parentElement
     const receivesPointerFocus = Boolean(element?.closest('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [contenteditable="true"], [tabindex]:not([tabindex="-1"])'))

@@ -360,7 +360,7 @@ test('deleting a page queues cleanup for all attachment metadata after block del
   await expect(page.locator('.attachment')).toHaveCount(2)
   await page.getByRole('button', { name: `页面操作：${pageRecord.title}` }).click()
   await page.getByRole('menu', { name: `${pageRecord.title} 的操作` }).getByRole('menuitem', { name: '删除' }).click()
-  await page.getByRole('button', { name: '确认删除' }).click()
+  await page.getByRole('dialog', { name: '删除页面？' }).getByRole('button', { name: '删除', exact: true }).click()
   await expect(page.getByText('还没有页面')).toBeVisible()
   await expect.poll(() => api.requests.filter((item) => item.method === 'DELETE').length).toBe(2)
   expect(api.requests.filter((item) => item.method === 'DELETE').map((item) => item.path).sort()).toEqual([

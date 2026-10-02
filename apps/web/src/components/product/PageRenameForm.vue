@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import EotionButton from '../ui/EotionButton.vue'
+import EotionInput from '../ui/EotionInput.vue'
+
 const props = defineProps<{
   initialTitle: string
   pending: boolean
@@ -23,15 +26,15 @@ function submit() {
 </script>
 
 <template>
-  <form class="product-form product-page-inline-form" @submit.prevent="submit">
-    <label class="product-field">
+  <form class="product-popover-form product-page-rename-form" @submit.prevent="submit">
+    <label class="product-page-rename-field">
       <span>页面标题</span>
-      <input v-model="title" aria-label="页面标题" maxlength="200" required />
+      <EotionInput v-model="title" data-page-rename-input aria-label="页面标题" maxlength="200" required :disabled="pending" />
     </label>
     <p v-if="error" class="product-message product-message--error" role="alert">{{ error }}</p>
-    <div class="product-inline-actions">
-      <button class="product-button product-button--primary" type="submit" :disabled="!canSubmit">{{ pending ? '正在保存…' : '保存标题' }}</button>
-      <button class="product-button" type="button" :disabled="pending" @click="emit('cancel')">取消</button>
+    <div class="product-popover-form__actions">
+      <EotionButton type="submit" variant="primary" :disabled="!canSubmit">{{ pending ? '正在保存…' : '保存标题' }}</EotionButton>
+      <EotionButton :disabled="pending" @click="emit('cancel')">取消</EotionButton>
     </div>
   </form>
 </template>
