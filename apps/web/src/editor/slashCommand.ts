@@ -3,15 +3,23 @@ import Suggestion, { type SuggestionProps } from '@tiptap/suggestion'
 import { h, render } from 'vue'
 
 import EotionIcon from '../components/ui/EotionIcon.vue'
+import { runBlockCommand, type BlockCommand } from './blockCommands'
+import type { IconName } from '../components/ui/icons'
 
-type SlashItem = { id: 'text' | 'heading' | 'bullet' | 'image' | 'file'; label: string; hint: string; icon: 'image' | 'file-text' | 'heading' | 'list' | 'text' }
+type SlashItem = { id: BlockCommand | 'image' | 'file'; label: string; group: '基础' | '块' | '媒体'; icon: `${IconName}`; search?: string }
 
 const items: SlashItem[] = [
-  { id: 'text', label: 'Text', hint: '普通段落', icon: 'text' },
-  { id: 'heading', label: 'Heading', hint: '二级标题', icon: 'heading' },
-  { id: 'bullet', label: 'Bullet List', hint: '项目列表', icon: 'list' },
-  { id: 'image', label: 'Image', hint: '插入图片附件', icon: 'image' },
-  { id: 'file', label: 'File', hint: '插入文件附件', icon: 'file-text' },
+  { id: 'paragraph', label: '文本', group: '基础', icon: 'text', search: 'text paragraph' },
+  { id: 'heading1', label: '一级标题', group: '基础', icon: 'heading', search: 'h1 heading' },
+  { id: 'heading2', label: '二级标题', group: '基础', icon: 'heading', search: 'h2 heading' },
+  { id: 'bulletList', label: '项目列表', group: '基础', icon: 'list', search: 'bullet list' },
+  { id: 'orderedList', label: '编号列表', group: '基础', icon: 'list-ordered', search: 'ordered numbered list' },
+  { id: 'todo', label: '待办', group: '基础', icon: 'list-todo', search: 'todo task' },
+  { id: 'blockquote', label: '引用', group: '块', icon: 'quote', search: 'quote' },
+  { id: 'codeBlock', label: '代码块', group: '块', icon: 'code', search: 'code' },
+  { id: 'horizontalRule', label: '分割线', group: '块', icon: 'minus', search: 'divider rule' },
+  { id: 'image', label: '图片', group: '媒体', icon: 'image', search: 'image photo' },
+  { id: 'file', label: '文件', group: '媒体', icon: 'file-text', search: 'file attachment' },
 ]
 
 export function createSlashCommand(isComposing: () => boolean, onAttachmentCommand?: (type: 'image' | 'file') => void, attachmentsEnabled = true) {
@@ -25,19 +33,15 @@ export function createSlashCommand(isComposing: () => boolean, onAttachmentComma
           startOfLine: true,
           allow: () => !isComposing(),
           items: ({ query }) => items.filter(item => (attachmentsEnabled || !['image', 'file'].includes(item.id)) &&
-            `${item.label} ${item.hint} ${item.id === 'image' ? '图片 photo' : item.id === 'file' ? '文件 attachment' : ''}`.toLowerCase().includes(query.toLowerCase()),
+            `${item.label} ${item.search ?? ''}`.toLowerCase().includes(query.toLowerCase()),
           ),
           command: ({ editor, range, props: item }) => {
             if (isComposing()) return
 
-            const chain = editor.chain().focus().deleteRange(range)
-            if (item.id === 'text') chain.setParagraph().run()
-            if (item.id === 'heading') chain.setHeading({ level: 2 }).run()
-            if (item.id === 'bullet') chain.setParagraph().toggleBulletList().run()
             if (item.id === 'image' || item.id === 'file') {
-              chain.setParagraph().run()
+              editor.chain().focus().deleteRange(range).setParagraph().run()
               onAttachmentCommand?.(item.id)
-            }
+            } else runBlockCommand(editor, item.id, range)
           },
           render: () => {
             let element: HTMLElement | undefined
@@ -52,6 +56,12 @@ export function createSlashCommand(isComposing: () => boolean, onAttachmentComma
               mountedIcons = []
               element.replaceChildren()
               current.items.forEach((item, index) => {
+                if (index === 0 || current?.items[index - 1]?.group !== item.group) {
+                  const group = document.createElement('div')
+                  group.className = 'p2-slash-group'
+                  group.textContent = item.group
+                  element?.append(group)
+                }
                 const button = document.createElement('button')
                 button.type = 'button'
                 button.className = 'p2-slash-item'
@@ -61,22 +71,24 @@ export function createSlashCommand(isComposing: () => boolean, onAttachmentComma
                 icon.className = 'p2-slash-icon'
                 render(h(EotionIcon, { name: item.icon, size: 18 }), icon)
                 mountedIcons.push(icon)
-                const text = document.createElement('span')
-                text.className = 'p2-slash-copy'
-                const title = document.createElement('span')
-                title.className = 'p2-slash-title'
-                title.textContent = item.label
-                const hint = document.createElement('span')
-                hint.className = 'p2-slash-hint'
-                hint.textContent = item.hint
-                text.append(title, hint)
-                button.append(icon, text)
+                const label = document.createElement('span')
+                label.className = 'p2-slash-title'
+                label.textContent = item.label
+                button.append(icon, label)
                 button.addEventListener('mousedown', event => event.preventDefault())
                 button.addEventListener('click', () => current?.command(item))
                 element?.append(button)
               })
               if (current.items.length === 0) {
                 element.textContent = '没有匹配的命令'
+              } else {
+                const active = element.querySelector<HTMLElement>('[aria-selected="true"]')
+                if (active && element.isConnected) {
+                  const menuRect = element.getBoundingClientRect()
+                  const activeRect = active.getBoundingClientRect()
+                  if (activeRect.top < menuRect.top + 2) element.scrollTop -= menuRect.top + 2 - activeRect.top
+                  else if (activeRect.bottom > menuRect.bottom - 2) element.scrollTop += activeRect.bottom - menuRect.bottom + 2
+                }
               }
             }
 

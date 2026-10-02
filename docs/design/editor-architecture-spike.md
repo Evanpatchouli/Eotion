@@ -50,3 +50,10 @@ PageView → EotionEditor update → EditorDocument → PagePersistence
 - Mobile / coarse pointer 的底部工具栏保留粗体、斜体、文本、二级标题、项目列表、图片、文件原有命令和顺序。控件使用 Morphicons；前两项及附件为纯图标，块类型使用图标和短标签。格式状态以 `aria-pressed` 和 Quiet Studio selected surface 表达。
 - 工具栏保留横向滚动、44px 触摸目标、`visualViewport` 键盘避让和 safe-area 内边距；编辑器末尾按工具栏高度与键盘 inset 预留滚动空间。键盘出现且编辑器有焦点时，当前光标及后续输入位置滚动到工具栏上方。Mobile Page 标题和本地保存状态纵向排列，Desktop / Tablet 排列不变。
 - `product-editor.spec.ts` 覆盖 390px 长标题、短视口、safe-area、模拟键盘 inset、格式状态及 Mobile Light / Dark 截图。
+
+## P5.8.5 已支持块与格式入口
+
+- Slash 菜单按「基础 / 块 / 媒体」展示 11 项中文命令：文本、一级标题、二级标题、项目列表、编号列表、待办、引用、代码块、分割线、图片、文件。保留搜索、上下键 / Enter / Esc 和 IME 输入保护；图片、文件继续使用原附件流程。
+- Slash 与可选 Desktop fixed toolbar 共用块命令。Fixed toolbar 只显示文本、H1、H2、列表、编号列表、图片、文件，仍默认关闭。Mobile Touch Toolbar 保持 P5.8.4 的七项及顺序。
+- Bold / Italic 仍可通过 Touch Toolbar 使用；Strike 使用 `Ctrl/⌘+Shift+S`，Inline Code 使用 `Ctrl/⌘+E`。这两个低频 mark 留待后续上下文格式入口，不加入主 Touch Toolbar。
+- `blockCodec` 的 Block 类型映射不变。编号列表仅兼容 Tiptap 3 生成的 `type: null` 默认 marker，并在保存时去掉该无语义属性；其他 marker 值仍拒绝。回归覆盖新建块与 Strike / Inline Code 的保存、重载，以及菜单交互和响应式视觉。

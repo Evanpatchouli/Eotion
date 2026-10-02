@@ -215,7 +215,7 @@ test('toolbar defaults off, slash and attachment picker work, and preferences st
   await editor.click()
   await editor.pressSequentially('/')
   await expect(page.locator('.p2-slash-menu')).toBeVisible()
-  await page.locator('.p2-slash-menu').getByRole('option', { name: /Image/ }).click()
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '图片' }).click()
   await expect(page.getByLabel('选择图片附件')).toHaveAttribute('type', 'file')
   await expect(page.getByLabel('选择文件附件')).toHaveAttribute('type', 'file')
 

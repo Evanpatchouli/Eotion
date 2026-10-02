@@ -1,23 +1,23 @@
-# Current Task — P5.8.4 Touch Editing Experience
+# Current Task — P5.8.5 Block & Formatting Capability Completion
 
 ## Scope
 
-仅收敛 Mobile / coarse pointer 底部编辑工具栏和 Mobile Page 标题密度，不修改命令、编辑器业务、附件生命周期、同步或 Desktop fixed toolbar。
+将已有 schema / blockCodec 能力开放到正式 Slash 菜单与紧凑 Desktop fixed toolbar；Touch Toolbar 保持 P5.8.4 布局。保留现有附件流程和持久化语义。
 
 ## Work Units
 
-- S0 investigate：定位现有工具栏、标题布局、viewport/safe-area 与视觉回归入口。
-- S2 decide：沿用原七项顺序与命令；图标和短标签表达、格式 selected 状态、Mobile 纵向标题。
-- S1 execute：局部调整模板/CSS，补充移动端视觉与交互契约测试、同步设计文档。
-- S0 verify / Review：运行 Web typecheck、build 和相关 Playwright；检查截图、diff 与编码，独立复核并提交。
+- S0 investigate：核对 Slash、Toolbar、Tiptap 扩展、图标、blockCodec 与现有回归。
+- S2 decide：共用一组块命令；Slash 分组、中文、键盘与 IME 语义；低频 mark 先使用 Tiptap 快捷键，留待 Bubble Menu。
+- S1 execute：局部修改 Slash、图标、Desktop fixed toolbar；补行为与保存重载回归；更新编辑器文档。
+- S0 verify / Review：typecheck、build、相关 Playwright、Light / Dark / Mobile 截图、diff 和编码检查；独立复核后提交。
 
 ## Invariants
 
-- `useDocumentEditor`、EditorDocument、blockCodec、BlockIdentity、PagePersistence、LocalStore / Sync、API、Slash、attachment lifecycle 不变。
-- Touch Toolbar 不依赖 Desktop fixed toolbar preference；`visualViewport` 和 safe-area 保持原有计算。
+- 不改 EditorDocument、useDocumentEditor、blockCodec 映射、LocalStore / Sync / API、附件生命周期、页面树或 Sidebar。
+- Touch Toolbar 七项及顺序不变。
 
 ## Validation
 
-- Web typecheck、build 通过；`product-editor.spec.ts` 与 `product-attachments.spec.ts` 35/35 通过，覆盖 IME、附件、Desktop fixed toolbar、390px Mobile Light / Dark、短视口、safe-area、键盘 inset 和长标题。
-- 截图输出到工作区外的 Codex visualizations 目录并已人工查看；`git diff --check` 与 UTF-8 无 BOM 检查通过。
-- 独立 reviewer 发现并复核了键盘保持开启后的末段光标遮挡风险；按 inset 补足滚动空间后，20 次换行和末行可见性定向回归通过；无剩余 blocker。
+- Web typecheck 与 build 通过；Editor、Attachment、Sync、Settings Playwright 101/101 通过，最后新增的 Mobile 主题截图与编号列表默认属性断言 2/2 通过。
+- Desktop Light / Dark、Mobile Light / Dark Slash 截图已人工查看；390px 页面无横向溢出。
+- 独立 reviewer 未发现阻断问题；提交前检查最终 diff、UTF-8 无 BOM 与 `git diff --check`。

@@ -292,9 +292,9 @@ test('persists marks, heading and list structure and restores them after reload'
   })
   await page.keyboard.press('Control+B')
   await expect(body.locator('strong')).toContainText('Formatted title')
-  await page.getByRole('button', { name: '二级标题' }).click()
+  await page.getByRole('button', { name: 'H2' }).click()
   await body.locator('p').last().click()
-  await page.getByRole('button', { name: '项目列表' }).click()
+  await page.getByRole('button', { name: '列表', exact: true }).click()
   await expect.poll(() => api.blocks.some((item) => item.type === 'bulleted-list') && api.blocks.some((item) => item.type === 'heading'), { timeout: 5000 }).toBe(true)
   expect(api.blocks.map((item) => item.id)).toContain('stable-heading-id')
   expect(api.blocks.map((item) => item.id)).toContain('stable-list-id')
@@ -511,6 +511,161 @@ test('keeps the P2 fixture, slash command and undo path available', async ({ pag
   await body.press('Control+Z')
   await expect(body).not.toContainText('Undo me')
 })
+
+test('slash lists Chinese grouped commands, filters, navigates and respects IME and Escape', async ({ page }) => {
+  await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  await body.click()
+  await body.pressSequentially('/')
+  const menu = page.locator('.p2-slash-menu')
+  await expect(menu.getByRole('option')).toHaveText([
+    '文本', '一级标题', '二级标题', '项目列表', '编号列表', '待办', '引用', '代码块', '分割线', '图片', '文件',
+  ])
+  await expect(menu.locator('.p2-slash-group')).toHaveText(['基础', '块', '媒体'])
+  await page.keyboard.press('ArrowUp')
+  await expect(menu.getByRole('option', { name: '文件' })).toHaveAttribute('aria-selected', 'true')
+  expect(await menu.evaluate(node => {
+    const selected = node.querySelector('[aria-selected="true"]')!.getBoundingClientRect()
+    const visible = node.getBoundingClientRect()
+    return selected.top >= visible.top && selected.bottom <= visible.bottom
+  })).toBe(true)
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await body.press('Control+A')
+  await body.press('Backspace')
+  await body.evaluate(node => node.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true })))
+  await body.pressSequentially('/')
+  await expect(menu).toHaveCount(0)
+  await body.evaluate(node => node.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true })))
+  await body.press('Control+A')
+  await body.press('Backspace')
+  await body.pressSequentially('/列表')
+  await expect(menu.getByRole('option')).toHaveText(['项目列表', '编号列表'])
+  await page.keyboard.press('ArrowDown')
+  await expect(menu.getByRole('option', { name: '编号列表' })).toHaveAttribute('aria-selected', 'true')
+  await page.keyboard.press('ArrowUp')
+  await expect(menu.getByRole('option', { name: '项目列表' })).toHaveAttribute('aria-selected', 'true')
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('Enter')
+  await expect(body.locator('ol')).toBeVisible()
+})
+
+test('desktop toolbar and slash stay compact in light, dark and mobile layouts', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('eotion:editor-toolbar:user-ava:ws-a', 'true'))
+  await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const toolbar = page.locator('.eotion-editor-toolbar')
+  await expect(toolbar.getByRole('button')).toHaveText(['文本', 'H1', 'H2', '列表', '编号列表', '图片', '文件'])
+  await editor(page).click()
+  await editor(page).pressSequentially('/')
+  await expect(page.locator('.p2-slash-menu')).toBeVisible()
+  expect(await page.locator('.p2-slash-menu').evaluate(node => node.getBoundingClientRect().width)).toBeGreaterThanOrEqual(200)
+  await canvasScreenshot(page, 'p585-desktop-light')
+  await page.evaluate(() => localStorage.setItem('eotion:theme', 'dark'))
+  await page.reload()
+  await editor(page).click()
+  await editor(page).press('Control+A')
+  await editor(page).pressSequentially('/')
+  await expect(page.locator('.p2-slash-menu')).toBeVisible()
+  await canvasScreenshot(page, 'p585-desktop-dark')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.evaluate(() => localStorage.setItem('eotion:theme', 'light'))
+  await page.addInitScript(() => {
+    const nativeMatchMedia = window.matchMedia.bind(window)
+    window.matchMedia = (query: string) => {
+      const result = nativeMatchMedia(query)
+      if (query === '(pointer: coarse)') Object.defineProperty(result, 'matches', { configurable: true, value: true })
+      return result
+    }
+  })
+  await page.reload()
+  await expect(toolbar).toHaveCount(0)
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
+  await editor(page).click()
+  await editor(page).press('Control+A')
+  await editor(page).pressSequentially('/')
+  await expect(page.locator('.p2-slash-menu')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  await canvasScreenshot(page, 'p585-mobile-slash')
+  await page.evaluate(() => localStorage.setItem('eotion:theme', 'dark'))
+  await page.reload()
+  await editor(page).click()
+  await editor(page).press('Control+A')
+  await editor(page).pressSequentially('/')
+  await expect(page.locator('.p2-slash-menu')).toBeVisible()
+  await page.keyboard.press('ArrowUp')
+  await expect(page.locator('.p2-slash-menu').getByRole('option', { name: '文件' })).toHaveAttribute('aria-selected', 'true')
+  await canvasScreenshot(page, 'p585-mobile-slash-media')
+})
+
+test('fixed toolbar converts a list item back to a top-level paragraph', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('eotion:editor-toolbar:user-ava:ws-a', 'true'))
+  await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  await body.click()
+  await body.pressSequentially('List item')
+  await page.locator('.eotion-editor-toolbar').getByRole('button', { name: '编号列表' }).click()
+  await expect(body.locator('ol')).toBeVisible()
+  await page.locator('.eotion-editor-toolbar').getByRole('button', { name: '文本' }).click()
+  await expect(body.locator(':scope > p').first()).toHaveText('List item')
+  await expect(body.locator('ol')).toHaveCount(0)
+})
+
+for (const { label, type, selector } of [
+  { label: '文本', type: 'paragraph', selector: 'p' },
+  { label: '一级标题', type: 'heading', selector: 'h1' },
+  { label: '二级标题', type: 'heading', selector: 'h2' },
+  { label: '项目列表', type: 'bulleted-list', selector: 'ul' },
+  { label: '编号列表', type: 'numbered-list', selector: 'ol' },
+  { label: '待办', type: 'todo', selector: '.attachment-todo' },
+  { label: '引用', type: 'quote', selector: 'blockquote' },
+  { label: '代码块', type: 'code', selector: 'pre' },
+  { label: '分割线', type: 'divider', selector: 'hr' },
+]) {
+  test(`slash ${label} saves and reloads the supported block`, async ({ page }) => {
+    const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
+    await page.goto('/#/app/ws-a/page/page-a')
+    const body = editor(page)
+    await body.click()
+    await body.pressSequentially('/')
+    await page.locator('.p2-slash-menu').getByRole('option', { name: label, exact: true }).click()
+    await expect(body.locator(selector)).toBeVisible()
+    if (type === 'todo') await body.getByRole('checkbox', { name: '完成事项' }).check()
+    if (type !== 'todo' && type !== 'divider') await body.pressSequentially(`P585 ${label}`)
+    await expect.poll(() => api.blocks.some(block => block.type === type), { timeout: 5000 }).toBe(true)
+    const saved = api.blocks.find(block => block.type === type)!
+    if (label === '一级标题') expect((saved.props.node as any).attrs?.level).toBe(1)
+    if (label === '二级标题') expect((saved.props.node as any).attrs?.level).toBe(2)
+    if (type === 'numbered-list') expect((saved.props.node as any).attrs).toEqual({ start: 1 })
+    if (type === 'todo') expect((saved.props.node as any).attrs?.checked).toBe(true)
+    await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+    await page.reload()
+    await expect(editor(page).locator(selector)).toBeVisible()
+    if (type === 'todo') await expect(editor(page).getByRole('checkbox', { name: '完成事项' })).toBeChecked()
+  })
+}
+
+for (const { shortcut, mark, selector } of [
+  { shortcut: 'Control+Shift+S', mark: 'strike', selector: 's' },
+  { shortcut: 'Control+E', mark: 'code', selector: 'code' },
+]) {
+  test(`${mark} keyboard command saves and reloads its mark`, async ({ page }) => {
+    const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
+    await page.goto('/#/app/ws-a/page/page-a')
+    const body = editor(page)
+    await body.click()
+    await body.pressSequentially(mark)
+    await body.press('Shift+Home')
+    await page.keyboard.press(shortcut)
+    await expect(body.locator(selector)).toHaveText(mark)
+    await expect.poll(() => api.blocks.some(block => JSON.stringify(block.props.node).includes(`"type":"${mark}"`)), { timeout: 5000 }).toBe(true)
+    await page.reload()
+    await expect(editor(page).locator(selector)).toHaveText(mark)
+  })
+}
 
 test('edits only the changed block and serializes a newer edit behind an in-flight save', async ({ page }) => {
   const api = await installApi(page, {

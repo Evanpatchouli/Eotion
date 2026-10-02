@@ -8,6 +8,7 @@ import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
 import { BlockIdentity } from '../../editor/blockIdentity'
+import { runBlockCommand, type BlockCommand } from '../../editor/blockCommands'
 import { enqueueAttachmentCleanup, pendingAttachmentCleanups } from '../../editor/attachmentCleanup'
 import { createSlashCommand } from '../../editor/slashCommand'
 import type { EditorDocument } from '../../editor/editorDocument'
@@ -330,15 +331,21 @@ function onCompositionEnd(event: CompositionEvent) {
   for (const finish of [...compositionWaiters]) finish()
 }
 
+function selectBlock(command: BlockCommand) {
+  if (editor.value && !composing.value) runBlockCommand(editor.value, command)
+}
+
 defineExpose({ editor })
 </script>
 
 <template>
   <section class="eotion-editor" :class="{ 'eotion-editor--drop-active': draggingFiles, 'eotion-editor--touch-toolbar': touchToolbar }" :style="touchToolbar ? { '--touch-keyboard-inset': `${keyboardInset}px` } : undefined" aria-label="Tiptap 编辑器">
     <div v-if="fixedToolbar ?? !workspaceId" class="eotion-editor-toolbar" role="toolbar" aria-label="块类型">
-      <button type="button" :aria-pressed="editor?.isActive('paragraph') ?? false" :disabled="!editor" @click="editor?.chain().focus().setParagraph().run()">段落</button>
-      <button type="button" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">二级标题</button>
-      <button type="button" :aria-pressed="editor?.isActive('bulletList') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBulletList().run()">项目列表</button>
+      <button type="button" :aria-pressed="editor?.isActive('paragraph') ?? false" :disabled="!editor" @click="selectBlock('paragraph')"><EotionIcon name="text" :size="16" /> 文本</button>
+      <button type="button" :aria-pressed="editor?.isActive('heading', { level: 1 }) ?? false" :disabled="!editor" @click="selectBlock('heading1')"><EotionIcon name="heading" :size="16" /> H1</button>
+      <button type="button" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="selectBlock('heading2')"><EotionIcon name="heading" :size="16" /> H2</button>
+      <button type="button" :aria-pressed="editor?.isActive('bulletList') ?? false" :disabled="!editor" @click="selectBlock('bulletList')"><EotionIcon name="list" :size="16" /> 列表</button>
+      <button type="button" :aria-pressed="editor?.isActive('orderedList') ?? false" :disabled="!editor" @click="selectBlock('orderedList')"><EotionIcon name="list-ordered" :size="16" /> 编号列表</button>
       <button v-if="workspaceId" type="button" :disabled="!editor" @click="openPicker('image')"><EotionIcon name="image" :size="16" /> 图片</button>
       <button v-if="workspaceId" type="button" :disabled="!editor" @click="openPicker('file')"><EotionIcon name="paperclip" :size="16" /> 文件</button>
     </div>
@@ -395,7 +402,7 @@ defineExpose({ editor })
 .eotion-editor { min-width: 0; }
 .eotion-editor--drop-active .eotion-editor-content { outline: 2px dashed var(--e-color-focus); outline-offset: 6px; }
 .eotion-editor-toolbar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--e-space-4); }
-.eotion-editor-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 28px; padding: 4px 8px; border: 0; border-radius: var(--e-radius-control); background: transparent; color: var(--e-color-text-muted); font: var(--e-type-metadata-weight) var(--e-type-metadata-size) / var(--e-type-metadata-line) var(--e-type-family); cursor: pointer; }
+.eotion-editor-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 28px; padding: 4px 8px; border: 0; border-radius: var(--e-radius-control); background: transparent; color: var(--e-color-text-muted); font: 500 14px / 1.4 var(--e-type-family); cursor: pointer; }
 .eotion-editor-toolbar button[aria-pressed="true"] { background: var(--e-color-selected); color: var(--e-color-text-primary); }
 .eotion-editor-toolbar button:hover { background: var(--e-color-hover); color: var(--e-color-text-primary); }
 .eotion-editor-toolbar button:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset: 2px; }
@@ -426,12 +433,10 @@ defineExpose({ editor })
 </style>
 
 <style>
-.p2-slash-menu { z-index: 20; min-width: 220px; padding: 5px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-raised); box-shadow: var(--shadow-menu); color: var(--editor-text); font-size: 13px; }
-.p2-slash-item { display: block; width: 100%; padding: 8px 10px; border: 0; border-radius: 5px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.p2-slash-menu { z-index: 20; box-sizing: border-box; min-width: min(220px, calc(100vw - 24px)); max-width: calc(100vw - 24px); max-height: min(352px, calc(100dvh - 24px)); overflow-y: auto; overscroll-behavior: contain; padding: 5px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-control); background: var(--e-color-surface); box-shadow: var(--shadow-menu); color: var(--e-color-text-primary); font: 500 14px / 1.4 var(--e-type-family); }
+.p2-slash-group { padding: 8px 10px 3px; color: var(--e-color-text-muted); font-size: 12px; }
+.p2-slash-item { display: flex; align-items: center; width: 100%; min-height: 34px; padding: 6px 10px; border: 0; border-radius: var(--e-radius-control); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .p2-slash-item[aria-selected="true"], .p2-slash-item:hover { background: var(--surface-editor-hover); }
 .p2-slash-icon { display: inline-flex; flex: 0 0 auto; align-items: center; margin-right: 10px; }
-.p2-slash-item { display: flex; align-items: center; }
-.p2-slash-copy { display: grid; gap: 2px; }
-.p2-slash-title { font-weight: 600; }
-.p2-slash-hint { color: var(--editor-muted); font-size: 12px; }
+.p2-slash-item:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset: -2px; }
 </style>

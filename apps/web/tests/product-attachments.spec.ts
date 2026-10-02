@@ -120,7 +120,7 @@ test('slash image command and picker upload become one local block, sync operati
   await editor(page).click()
   await editor(page).pressSequentially('/')
   await expect(page.locator('.p2-slash-menu')).toBeVisible()
-  await page.locator('.p2-slash-menu').getByRole('option', { name: /Image/ }).click()
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '图片' }).click()
   const imageInput = page.getByLabel('选择图片附件')
   await expect(imageInput).toHaveAttribute('accept', 'image/png,image/jpeg,image/webp,image/gif,image/avif')
   await insertFile(page, 'image', 'tiny.png', 'image/png', Buffer.from('png'))

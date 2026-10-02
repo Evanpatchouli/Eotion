@@ -22,7 +22,7 @@ const blockNodes = Object.fromEntries(Object.entries(nodeTypes).map(([node, type
 const nestedTypes = new Set(['text', 'paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'codeBlock', 'hardBreak', 'horizontalRule', 'eotionImage', 'eotionFile', 'eotionTodo'])
 const markTypes = new Set(['bold', 'italic', 'strike', 'code'])
 const allowedAttrs: Record<string, string[]> = {
-  text: [], paragraph: [], heading: ['level'], bulletList: [], orderedList: ['start'],
+  text: [], paragraph: [], heading: ['level'], bulletList: [], orderedList: ['start', 'type'],
   listItem: [], blockquote: [], codeBlock: ['language'], hardBreak: [], horizontalRule: [],
   eotionImage: ['fileId', 'name', 'mimeType', 'size', 'url'], eotionFile: ['fileId', 'name', 'mimeType', 'size', 'url'], eotionTodo: ['checked'],
 }
@@ -49,6 +49,8 @@ function validNode(node: JSONContent): boolean {
   }
   if (type === 'eotionTodo' && typeof node.attrs?.checked !== 'boolean') return false
   if (type === 'heading' && node.attrs?.level !== undefined && ![1, 2, 3, 4, 5, 6].includes(node.attrs.level)) return false
+  // Tiptap 3 includes a null marker style on ordinary numbered lists.
+  if (type === 'orderedList' && node.attrs?.type !== undefined && node.attrs.type !== null) return false
   if (node.marks?.some((mark) => !markTypes.has(mark.type) || Object.keys(mark.attrs ?? {}).length > 0)) return false
   const children = allowedChildren[type]
   if (children === null && node.content?.length) return false
@@ -59,6 +61,7 @@ function validNode(node: JSONContent): boolean {
 
 function stripIdentity(node: JSONContent): JSONContent {
   const { blockId: _id, ...attrs } = node.attrs ?? {}
+  if (node.type === 'orderedList' && attrs.type === null) delete attrs.type
   const { attrs: _oldAttrs, ...rest } = node
   return { ...rest, ...(Object.keys(attrs).length ? { attrs } : {}), ...(node.content ? { content: node.content.map(stripIdentity) } : {}) }
 }
