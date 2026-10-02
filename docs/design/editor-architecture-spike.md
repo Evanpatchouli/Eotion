@@ -57,3 +57,10 @@ PageView → EotionEditor update → EditorDocument → PagePersistence
 - Slash 与可选 Desktop fixed toolbar 共用块命令。Fixed toolbar 只显示文本、H1、H2、列表、编号列表、图片、文件，仍默认关闭。Mobile Touch Toolbar 保持 P5.8.4 的七项及顺序。
 - Bold / Italic 仍可通过 Touch Toolbar 使用；Strike 使用 `Ctrl/⌘+Shift+S`，Inline Code 使用 `Ctrl/⌘+E`。这两个低频 mark 留待后续上下文格式入口，不加入主 Touch Toolbar。
 - `blockCodec` 的 Block 类型映射不变。编号列表仅兼容 Tiptap 3 生成的 `type: null` 默认 marker，并在保存时去掉该无语义属性；其他 marker 值仍拒绝。回归覆盖新建块与 Strike / Inline Code 的保存、重载，以及菜单交互和响应式视觉。
+
+## P5.8.6 选区格式菜单
+
+- 正式 `EotionEditor` 在可格式化的非空文本选区附近使用 Tiptap Vue `BubbleMenu` 展示粗体、斜体、删除线和行内代码；不扩展 Mark / Block schema，也不改变固定或触摸工具栏命令。
+- 菜单由编辑器焦点、文本选区、可格式化文本、IME 和 Slash 状态控制。Escape、选区折叠和失焦会关闭菜单；菜单按钮保留选区并调用既有 Tiptap mark 命令。
+- 位置由 Tiptap 的 Floating UI 在选区上方计算，并允许翻转、平移以避开视口边缘。菜单浮于正文，不影响阅读列布局；触摸端保留原七项底部工具栏。
+- 回归入口为 `apps/web/tests/product-editor.spec.ts` 的选区菜单交互、持久化/重载、边缘定位、Light / Dark 和 390px 触摸视口用例；附件和共享编辑器的原有回归仍适用。

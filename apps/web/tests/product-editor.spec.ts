@@ -100,7 +100,20 @@ async function installApi(page: Page, options: { pages?: PageResponse[]; blocks?
 }
 
 const editor = (page: Page) => page.locator('.eotion-editor-content .tiptap')
+const bubble = (page: Page) => page.getByRole('toolbar', { name: '选区格式' })
 const blockRequests = (requests: Awaited<ReturnType<typeof installApi>>['requests']) => requests.filter((request) => request.path === '/api/sync/operations' && ['block.upsert', 'block.delete'].includes((request.body as any)?.kind))
+
+async function selectParagraphText(paragraph: Locator) {
+  await paragraph.evaluate(node => {
+    const body = node.closest<HTMLElement>('.tiptap')!
+    body.focus()
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+  })
+}
 
 async function canvasScreenshot(page: Page, name: string) {
   const directory = process.env.EOTION_VISUAL_QA_DIR
@@ -519,6 +532,7 @@ test('slash lists Chinese grouped commands, filters, navigates and respects IME 
   await body.click()
   await body.pressSequentially('/')
   const menu = page.locator('.p2-slash-menu')
+  await expect(bubble(page)).toHaveCount(0)
   await expect(menu.getByRole('option')).toHaveText([
     '文本', '一级标题', '二级标题', '项目列表', '编号列表', '待办', '引用', '代码块', '分割线', '图片', '文件',
   ])
@@ -666,6 +680,155 @@ for (const { shortcut, mark, selector } of [
     await expect(editor(page).locator(selector)).toHaveText(mark)
   })
 }
+
+test('selection bubble toggles four existing marks, combines marks and reloads saved content', async ({ page }) => {
+  const api = await installApi(page, {
+    pages: [pageRecord('page-a', 'Alpha', 1)],
+    blocks: [
+      block('page-a', 'bubble-a', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Combined marks' }] }),
+      block('page-a', 'bubble-b', 2, { type: 'paragraph', content: [{ type: 'text', text: 'Inline code' }] }),
+    ],
+  })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  const menu = bubble(page)
+  await expect(menu).toHaveCount(0)
+  await selectParagraphText(body.locator('p').first())
+  await expect(menu).toBeVisible()
+  await canvasScreenshot(page, 'p586-desktop-light-selection')
+  await expect(menu.getByRole('button')).toHaveCount(4)
+  await menu.getByRole('button', { name: '粗体' }).click()
+  await expect(menu.getByRole('button', { name: '粗体' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(body.locator('p').first().locator('strong')).toHaveText('Combined marks')
+  await menu.getByRole('button', { name: '粗体' }).click()
+  await expect(menu.getByRole('button', { name: '粗体' })).toHaveAttribute('aria-pressed', 'false')
+  await expect(body.locator('p').first().locator('strong')).toHaveCount(0)
+  for (const name of ['粗体', '斜体', '删除线']) {
+    await menu.getByRole('button', { name }).click()
+    await expect(menu.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true')
+  }
+  await expect(body.locator('p').first().locator('strong em s')).toHaveText('Combined marks')
+  await canvasScreenshot(page, 'p586-multiple-active-marks')
+
+  await selectParagraphText(body.locator('p').nth(1))
+  await expect(menu).toBeVisible()
+  await menu.getByRole('button', { name: '行内代码' }).click()
+  await expect(menu.getByRole('button', { name: '行内代码' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(body.locator('p').nth(1).locator('code')).toHaveText('Inline code')
+  await expect.poll(() => api.blocks.map(item => JSON.stringify(item.props.node)), { timeout: 5000 }).toEqual([
+    expect.stringContaining('"type":"bold"'),
+    expect.stringContaining('"type":"code"'),
+  ])
+  expect(JSON.stringify(api.blocks[0]?.props.node)).toContain('"type":"italic"')
+  expect(JSON.stringify(api.blocks[0]?.props.node)).toContain('"type":"strike"')
+  await page.reload()
+  await expect(editor(page).locator('p').first().locator('strong em s')).toHaveText('Combined marks')
+  await expect(editor(page).locator('p').nth(1).locator('code')).toHaveText('Inline code')
+})
+
+test('selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark', async ({ page }) => {
+  const browserErrors: string[] = []
+  page.on('pageerror', error => browserErrors.push(error.message))
+  await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [block('page-a', 'bubble-a', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Selection near viewport edge' }] })] })
+  await page.setViewportSize({ width: 740, height: 420 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  const menu = bubble(page)
+  await body.locator('p').click()
+  await expect(menu).toHaveCount(0)
+  await selectParagraphText(body.locator('p'))
+  await expect(menu).toBeVisible()
+  const position = await menu.evaluate(node => {
+    const rect = node.getBoundingClientRect()
+    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: innerWidth, height: innerHeight }
+  })
+  expect(position.left).toBeGreaterThanOrEqual(0)
+  expect(position.right).toBeLessThanOrEqual(position.width)
+  expect(position.top).toBeGreaterThanOrEqual(0)
+  expect(position.bottom).toBeLessThanOrEqual(position.height)
+  await body.locator('p').evaluate(node => { (node as HTMLElement).style.textAlign = 'right' })
+  await selectParagraphText(body.locator('p'))
+  await expect(menu).toBeVisible()
+  const rightEdge = await menu.boundingBox()
+  expect(rightEdge).not.toBeNull()
+  expect(rightEdge!.x + rightEdge!.width).toBeLessThanOrEqual(740)
+  await body.locator('p').evaluate(node => { (node as HTMLElement).style.textAlign = '' })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await selectParagraphText(body.locator('p'))
+  await expect(menu).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await body.locator('p').click()
+  await expect(menu).toHaveCount(0)
+  await selectParagraphText(body.locator('p'))
+  await expect(menu).toBeVisible()
+  await page.locator('.eotion-bubble-menu-host').focus()
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await body.locator('p').click()
+  await selectParagraphText(body.locator('p'))
+  await expect(menu).toBeVisible()
+  await menu.getByRole('button', { name: '粗体' }).focus()
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await body.locator('p').click()
+  await selectParagraphText(body.locator('p'))
+  await expect(menu).toBeVisible()
+  await body.evaluate(node => node.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true })))
+  await expect(menu).toHaveCount(0)
+  await body.evaluate(node => node.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true })))
+  await body.evaluate(node => (node as HTMLElement).blur())
+  await expect(menu).toHaveCount(0)
+  await page.evaluate(() => localStorage.setItem('eotion:theme', 'dark'))
+  await page.reload()
+  await selectParagraphText(editor(page).locator('p'))
+  await expect(bubble(page)).toBeVisible()
+  await canvasScreenshot(page, 'p586-desktop-dark-selection')
+  expect(browserErrors).toEqual([])
+})
+
+test('mobile selection bubble avoids horizontal overflow and leaves touch toolbar available', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeMatchMedia = window.matchMedia.bind(window)
+    window.matchMedia = (query: string) => {
+      const result = nativeMatchMedia(query)
+      if (query === '(pointer: coarse)') Object.defineProperty(result, 'matches', { configurable: true, value: true })
+      return result
+    }
+  })
+  await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [block('page-a', 'bubble-a', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Mobile selection' }] })] })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await selectParagraphText(editor(page).locator('p'))
+  await expect(bubble(page)).toBeVisible()
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  const rect = await bubble(page).boundingBox()
+  expect(rect).not.toBeNull()
+  expect(rect!.x).toBeGreaterThanOrEqual(0)
+  expect(rect!.x + rect!.width).toBeLessThanOrEqual(390)
+  await canvasScreenshot(page, 'p586-mobile-selection')
+})
+
+test('non-formatable code block and attachment selection never open the text formatting bubble', async ({ page }) => {
+  const attachment = block('page-a', 'bubble-image', 2, {
+    type: 'eotionImage', attrs: { fileId: 'image-file', name: 'image.png', mimeType: 'image/png', size: 10, url: 'https://example.com/image.png' },
+  })
+  attachment.type = 'image'
+  const codeBlock = block('page-a', 'bubble-code-block', 3, { type: 'codeBlock', content: [{ type: 'text', text: 'No marks here' }] })
+  codeBlock.type = 'code'
+  await installApi(page, {
+    pages: [pageRecord('page-a', 'Alpha', 1)],
+    blocks: [block('page-a', 'bubble-text', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Format this' }] }), attachment, codeBlock],
+  })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await selectParagraphText(editor(page).locator('p'))
+  await expect(bubble(page)).toBeVisible()
+  await page.locator('.attachment-image .attachment-caption-name').click()
+  await expect(bubble(page)).toHaveCount(0)
+  await selectParagraphText(editor(page).locator('pre'))
+  await expect(bubble(page)).toHaveCount(0)
+})
 
 test('edits only the changed block and serializes a newer edit behind an in-flight save', async ({ page }) => {
   const api = await installApi(page, {

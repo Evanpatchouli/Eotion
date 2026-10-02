@@ -1,23 +1,25 @@
-# Current Task — P5.8.5 Block & Formatting Capability Completion
+# Current Task — P5.8.6 Selection / Bubble Formatting Menu
 
 ## Scope
 
-将已有 schema / blockCodec 能力开放到正式 Slash 菜单与紧凑 Desktop fixed toolbar；Touch Toolbar 保持 P5.8.4 布局。保留现有附件流程和持久化语义。
+为正式 EotionEditor 的非空文本选区提供 Bold、Italic、Strike、Inline Code 浮动格式入口；复用现有 Tiptap marks、Quiet Studio tokens 与持久化路径。
 
 ## Work Units
 
-- S0 investigate：核对 Slash、Toolbar、Tiptap 扩展、图标、blockCodec 与现有回归。
-- S2 decide：共用一组块命令；Slash 分组、中文、键盘与 IME 语义；低频 mark 先使用 Tiptap 快捷键，留待 Bubble Menu。
-- S1 execute：局部修改 Slash、图标、Desktop fixed toolbar；补行为与保存重载回归；更新编辑器文档。
-- S0 verify / Review：typecheck、build、相关 Playwright、Light / Dark / Mobile 截图、diff 和编码检查；独立复核后提交。
+- S0 investigate：核对 Tiptap Vue BubbleMenu、编辑器焦点/选区/IME、Slash、Touch Toolbar、图标与现有回归。
+- S2 decide：使用 Vue BubbleMenu 与 Floating UI 定位；仅文本选区且可格式化内容显示；composition / Slash / Escape 抑制；按钮保持焦点与选区。
+- S1 execute：独立 Bubble Menu 组件、编辑器挂载、必要图标；补交互与保存重载测试、文档。
+- S0 verify / Review：相关 Playwright、typecheck、build、Light / Dark / Mobile 截图、diff 与独立 review，最后提交。
 
 ## Invariants
 
-- 不改 EditorDocument、useDocumentEditor、blockCodec 映射、LocalStore / Sync / API、附件生命周期、页面树或 Sidebar。
-- Touch Toolbar 七项及顺序不变。
+- 不改 EditorDocument、blockCodec 业务语义、useDocumentEditor、BlockIdentity、PagePersistence、LocalStore / Sync / API、Slash Command 列表、Touch Toolbar 七项布局或 Desktop Fixed Toolbar。
+- 不新增 Mark / Block 或 command registry；Bubble Menu 不参与正文布局。
 
 ## Validation
 
-- Web typecheck 与 build 通过；Editor、Attachment、Sync、Settings Playwright 101/101 通过，最后新增的 Mobile 主题截图与编号列表默认属性断言 2/2 通过。
-- Desktop Light / Dark、Mobile Light / Dark Slash 截图已人工查看；390px 页面无横向溢出。
-- 独立 reviewer 未发现阻断问题；提交前检查最终 diff、UTF-8 无 BOM 与 `git diff --check`。
+- `pnpm --filter @eotion/web typecheck` 和 `pnpm --filter @eotion/web build` 通过。
+- Editor、Attachment、Sync、共享编辑器 Playwright 99/99 通过；包含四个新 Bubble Menu 用例。
+- 已人工查看 Desktop Light / Dark、多 Mark active、390px Mobile 截图；浮动菜单无横向溢出，Touch Toolbar 七项仍在。
+- 独立 reviewer 提出的 Escape 键盘焦点与编辑器卸载问题已修复并回归；`git diff --check` 和 UTF-8 无 BOM 检查通过。
+- 浏览器自动化使用模拟 coarse pointer；系统文本选择手柄和真实软键盘仍需真机验收。

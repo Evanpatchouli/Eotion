@@ -15,6 +15,7 @@ import type { EditorDocument } from '../../editor/editorDocument'
 import { useDocumentEditor } from '../../editor/useDocumentEditor'
 import { ApiError, api, errorMessage, expireSessionFromApi } from '../../services/productApi'
 import EotionIcon from '../ui/EotionIcon.vue'
+import EotionBubbleMenu from './EotionBubbleMenu.vue'
 
 type AttachmentKind = 'image' | 'file'
 type UploadPhase = 'uploading' | 'saving' | 'success' | 'failed' | 'cancelled'
@@ -386,6 +387,7 @@ defineExpose({ editor })
       @dragleave="onDragLeave"
       @paste="onPaste"
     />
+    <EotionBubbleMenu v-if="editor" :editor="editor" :composing="composing" />
     <div v-if="touchToolbar" ref="touchToolbarElement" class="eotion-touch-toolbar" role="toolbar" aria-label="触摸编辑工具栏" :style="{ bottom: `${keyboardInset}px` }">
       <button type="button" aria-label="粗体" :aria-pressed="editor?.isActive('bold') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBold().run()"><EotionIcon name="bold" :size="18" /></button>
       <button type="button" aria-label="斜体" :aria-pressed="editor?.isActive('italic') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleItalic().run()"><EotionIcon name="italic" :size="18" /></button>

@@ -29,6 +29,7 @@ import {
   Quote,
   Code,
   Settings,
+  Strikethrough,
   Sun,
   Palette,
   UserRound,
@@ -87,6 +88,7 @@ export enum IconName {
   Text = 'text',
   Bold = 'bold',
   Italic = 'italic',
+  Strike = 'strike',
 }
 
 export const iconNodes: Record<IconName, IconNode> = {
@@ -132,4 +134,5 @@ export const iconNodes: Record<IconName, IconNode> = {
   [IconName.Text]: Type,
   [IconName.Bold]: Bold,
   [IconName.Italic]: Italic,
+  [IconName.Strike]: Strikethrough,
 }
