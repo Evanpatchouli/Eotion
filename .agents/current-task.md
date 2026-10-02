@@ -1,29 +1,31 @@
-# Current Task — P5.7.5.3 Quiet Studio Interaction Foundation
+# Current Task — P5.8.1 Real Document Canvas / Editor Architecture Spike
 
-状态：完成（2026-10-02）；独立复核无剩余阻塞项。
+状态：完成（2026-10-02）；独立 reviewer 未发现阻塞项。
 
 ## Work Units
 
-- S0 investigate：scout 定位已有 UI / ProductShell 测试、fixture、截图与环境边界。
-- S2 decide：主 Agent 确定导航行独立按钮 slot、只读同步状态映射及原生 modal dialog 的 Command 容器契约。
-- S1 execute：两个独立 fast_worker 分别实现 NavItem + SyncStatus 接入，以及 Command Overlay；主 Agent 整合 export、开发验证入口、回归和文档。
-- S0 verify：Web typecheck、build、existing Playwright 与新回归；截图在仓库外输出。
-- Review：一次独立 reviewer；主 Agent 复核证据、diff、编码并提交。
+- S0 investigate：主 Agent 读取依赖、现有 Editor、设计契约；scout 独立定位验证命令与 CSS / production 隔离证据。
+- S2 decide：新增 DocumentEditor，保留既有产品 Editor；初始 JSON 输入、JSON update、动态 editable、focus()，实例仅组件持有。
+- S1 execute：fast_worker 按 Brief 实现 primitive、隔离开发入口、回归与架构文档。
+- S0 verify：typecheck、build、常规浏览器 regression、1440×900 / 390×844 截图。
+- Review：一次独立 reviewer，主 Agent 复核最终 diff / 编码 / 提交。
 
-## Boundaries / Implementation Brief
+## Implementation Brief
 
-只改变共享交互 primitive 和 ProductShell / PageTree 的展示接入；不改 Editor、Block、业务页面、LocalStore 或同步逻辑。NavItem 的 leading / trailing 与主按钮互为 sibling。同步 failed/offline 优先于 pending；idle 空队列不显示已同步。Command 使用 showModal，支持 Mod+K、Tab 约束、ESC、关闭恢复焦点和卸载清理；不实现搜索，不提前接入业务命令。仅开发页面展示 Command 基础。
+复用已安装 @tiptap/vue-3、StarterKit 3.31.3。DocumentEditor 只接收初始 content（更换文档用 Vue key 重建），editable 默认 true、ariaLabel；update 输出 JSON-safe 深拷贝；expose 仅 focus(): void。useEditor 已拥有 mount/create 与 unmount/destroy。输入亦深拷贝，不共享 attrs 引用。StarterKit 禁用 link / underline，其他基础默认。不直接用 ProseMirror API、不接 API / store / blockCodec / 附件。采用 Quiet Studio tokens 和 740px open canvas，无 toolbar / 卡片。DEV lazy route /__dev/editor-foundation；开发按钮 readonly / reset / focus / mount，序列化与输入不变证据。真实浏览器测试 lifecycle、初始内容、键盘编辑/格式/JSON、readonly、focus、重置与对象隔离、双尺寸无错误无溢出。
 
-## Acceptance
+## Scope
 
-导航 active/hover/pressed/focus-visible/disabled 与 trailing action；同步四态与 retry 原行为；Command 模态焦点、快捷键、ESC 和恢复；相关现有回归、新 Playwright、light/dark/mobile 截图；正式架构/行为文档；UTF-8 无 BOM 和单个逻辑 commit。
+不修改正式 Product 页面和原 EotionEditor；不实现 persistence / autosave / sync / Block Model / 附件或其他 Forbidden 项。单一聚焦 commit。
 
 ## Verification
 
-- Web typecheck 与最终 production build（含 vue-tsc / Service Worker）通过。
-- 全部常规浏览器 suite 最终 149/149 通过：141 个既有回归 + 8 个新增回归。
-- 独立复核发现旧 hover 背景覆盖 pressed、DEV fixture 影响真实同步状态；分别清理旧背景与隔离 Pinia，并补回归，定向复核通过。
-- 最终截图采集禁用过渡动画，Interaction suite 7/7 再次通过；主 Agent 核对 Light / Dark / 390×844 touch 与正式壳层截图。
-- Electron / Mongo / offline-shell / theme-production 的独立宿主或生产验收未运行，本次未修改对应实现。
-- 16 个修改文件 UTF-8 无 BOM；最终 diff 与禁止范围已检查。
-- 截图和验证日志保存在仓库外 C:/Users/evanpatchouli/.codex/visualizations/2026/10/02/eotion-interaction-foundation。
+- 根目录 pnpm typecheck 通过（Web / Desktop / API）。
+- pnpm build 通过（Web / Desktop / Mobile / API）。
+- 14 个既有常规浏览器 spec：149/149 通过；新 Editor suite：3/3 通过。
+- 真实 production build + preview 路由隔离：1/1 通过，开发入口 fallback 到登录；开发页与新原语无 production assets。
+- 主 Agent 检查 1440×900 和 390×844 截图；真实输入、只读、JSON、focus、reset、mount/unmount、无错误/溢出均通过。
+- 独立 reviewer 无 blocker；输出对象主动修改测试为可选增强，当前深拷贝机制已复核。
+- 11 个修改/新增文本文件 UTF-8 无 BOM，diff 检查通过；现有产品 Editor / LocalStore / sync / domain 均未修改。
+- 截图与既有回归日志位于仓库外 C:/Users/evanpatchouli/.codex/visualizations/2026/10/02/eotion-editor-foundation。
+- Electron 运行时、移动 WebView 真机、Mongo 集成与 offline-shell 未运行；本轮无相应链路改动。

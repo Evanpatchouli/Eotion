@@ -30,6 +30,12 @@ const devRoutes: RouteRecordRaw[] = import.meta.env.DEV
         meta: { title: 'UI Foundation 展示' },
         component: () => import('./views/UiFoundationDemoView.vue'),
       },
+      {
+        path: '/__dev/editor-foundation',
+        name: 'editor-foundation',
+        meta: { title: 'Editor Foundation 展示' },
+        component: () => import('./views/EditorFoundationDemoView.vue'),
+      },
     ]
   : []
 

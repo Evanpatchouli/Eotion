@@ -36,6 +36,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `design/DESIGN.md` | P5.7.3 当前：给 AI / 实现 Agent 使用的精简设计契约（DRAFT） |
 | `design/product-shell-implementation.md` | P5.7.5.2 桌面 ProductShell、Sidebar 折叠、Workspace Popover 与验证入口 |
 | `design/interaction-foundation-implementation.md` | P5.7.5.3 NavItem、SyncStatus、Command Overlay 契约与回归入口 |
+| `design/editor-architecture-spike.md` | P5.8.1 独立 Tiptap 文档画布原语、边界与浏览器回归入口 |
 | `design/core-screen-spec.md` | P5.7.4 核心高保真页面与 Gate A |
 | `design/visual-acceptance.md` | P5.7.6 Visual QA / screenshot regression / 最终视觉验收 |
 | `p4-final-acceptance.md` | P4 六条退出条件的最终验收证据、测试结果与进入 P5 的结论 |
