@@ -249,6 +249,10 @@
   gap: 2px;
 }
 
+.product-workspace-popover .product-workspace-option-row {
+  padding-right: 6px;
+}
+
 .product-workspace-popover .product-workspace-option {
   min-height: 32px;
   padding: 3px 6px;
