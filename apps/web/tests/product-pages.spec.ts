@@ -124,7 +124,7 @@ function moveTarget(page: Page, title: string): Locator {
 }
 
 async function treeGeometry(page: Page): Promise<Array<{ x: number; y: number; width: number; height: number }>> {
-  const boxes = await page.getByRole('treeitem').evaluateAll((rows) => rows.map((row) => {
+  const boxes = await page.locator('[role="treeitem"]').evaluateAll((rows) => rows.map((row) => {
     const box = row.getBoundingClientRect()
     return { x: box.x, y: box.y, width: box.width, height: box.height }
   }))
@@ -449,13 +449,16 @@ test('keeps page tree rows steady through rename, move and delete controls and c
   expect(consoleErrors).toEqual([])
 })
 
-test('pending rename and move retain their popover and do not restore focus on Escape', async ({ page }) => {
+for (const width of [1440, 390]) {
+test(`pending rename and move retain their surface and focus on Escape at ${width}px`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 844 })
   await installApi(page, {
     workspaces: [workspace('ws-a', '工作空间')],
     pages: [pageRecord('page-a', 'ws-a', '工作笔记', null, key(1)), pageRecord('page-b', 'ws-a', '阅读清单', null, key(2))],
   })
   await page.goto('/#/app/ws-a/page/page-a')
   await expect(page.locator('.eotion-editor-content')).toBeVisible()
+  if (width < 768) await page.getByRole('button', { name: '打开导航菜单' }).click()
   for (const action of ['重命名', '移动']) {
     await page.evaluate(async (mode) => {
       const { useProductPagesStore } = await import('/src/stores/productPages.ts')
@@ -489,13 +492,14 @@ test('pending rename and move retain their popover and do not restore focus on E
     await expect(popover.getByRole('button', { name: '取消' })).toBeDisabled()
     await page.keyboard.press('Escape')
     await expect(popover).toBeVisible()
-    await expect(page.getByRole('button', { name: '页面操作：工作笔记' })).not.toBeFocused()
+    await expect(page.locator('button[aria-label="页面操作：工作笔记"]')).not.toBeFocused()
     await page.evaluate(() => (window as any).__finishPageAction())
     await expect(popover.getByRole('alert')).toContainText('失败')
     await popover.getByRole('button', { name: '取消' }).click()
     await expect(popover).toHaveCount(0)
   }
 })
+}
 
 test('keeps delete confirmation open while editor flush is pending and blocks duplicate flushes', async ({ page }) => {
   const api = await installApi(page, {
@@ -693,6 +697,110 @@ test('reports page tree load failures and retries', async ({ page }) => {
   // A cached snapshot remains usable when the server cannot refresh it.
   await page.goto('/#/app/ws-a/page/page-x')
   await expect(page.getByRole('heading', { level: 1, name: '无法打开这个页面' })).toBeVisible()
+})
+
+test.describe('touch page action dialogs', () => {
+test.use({ hasTouch: true })
+test('mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  const consoleErrors: string[] = []
+  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
+  const api = await installApi(page, {
+    workspaces: [workspace('ws-a', '工作空间')],
+    pages: [
+      pageRecord('page-a', 'ws-a', '工作笔记', null, key(1)),
+      pageRecord('page-a1', 'ws-a', '今日记录', 'page-a', key(1)),
+      pageRecord('page-a2', 'ws-a', '记录草稿', 'page-a1', key(1)),
+      ...Array.from({ length: 30 }, (_, index) => pageRecord(`target-${index}`, 'ws-a', `阅读清单 ${index + 1}`, null, key(index + 2))),
+    ],
+  })
+  await page.goto('/#/app/ws-a/page/page-a1')
+  await expect(page.locator('.eotion-editor-content')).toBeVisible()
+  await page.getByRole('button', { name: '打开导航菜单' }).click()
+  await expect.poll(() => page.locator('.product-sidebar').evaluate(element => element.getBoundingClientRect().x)).toBe(0)
+  const before = await treeGeometry(page)
+  const visualDir = process.env.EOTION_VISUAL_QA_DIR
+  if (visualDir) await mkdir(visualDir, { recursive: true })
+  const screenshot = async (name: string) => {
+    if (visualDir) await page.screenshot({ path: `${visualDir}/${name}.png`, animations: 'disabled' })
+  }
+  await openAction(page, '今日记录', '重命名')
+  const rename = page.getByRole('dialog', { name: '重命名页面' })
+  await expect(rename).toHaveAttribute('aria-modal', 'true')
+  expect(await rename.evaluate(element => element.matches(':modal'))).toBe(true)
+  await expect(page.locator('.eotion-popover-panel')).toHaveCount(0)
+  const title = rename.getByLabel('页面标题')
+  await expect(title).toBeFocused()
+  expectSameGeometry(await treeGeometry(page), before)
+  await title.fill('今日计划')
+  await page.keyboard.press('Shift+Tab')
+  await expect(rename.getByRole('button', { name: '取消' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(title).toBeFocused()
+  await screenshot('mobile-rename')
+  await page.mouse.click(4, 4)
+  await expect(rename).toBeVisible()
+  await title.press('Enter')
+  await expect(rename).toBeHidden()
+  await expect(page.getByRole('heading', { level: 1, name: '今日计划' })).toBeVisible()
+  await expect.poll(() => api.pages.find(record => record.id === 'page-a1')?.title).toBe('今日计划')
+  await expect(page.getByRole('button', { name: '页面操作：今日计划' })).toBeFocused()
+
+  const moveBefore = await treeGeometry(page)
+  await openAction(page, '今日计划', '移动')
+  const move = page.getByRole('dialog', { name: '移动页面' })
+  expect(await move.evaluate(element => element.matches(':modal'))).toBe(true)
+  await expect(moveTarget(page, '工作笔记')).toBeChecked()
+  await expect(moveTarget(page, '工作笔记')).toBeFocused()
+  await expect(moveTarget(page, '今日计划')).toHaveCount(0)
+  await expect(moveTarget(page, '记录草稿')).toHaveCount(0)
+  await expect(move.locator('select')).toHaveCount(0)
+  expectSameGeometry(await treeGeometry(page), moveBefore)
+  await page.keyboard.press('Shift+Tab')
+  await expect(move.getByRole('button', { name: '取消' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(moveTarget(page, '工作笔记')).toBeFocused()
+  const options = move.getByRole('radiogroup', { name: '移动到' })
+  expect(await options.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
+  await screenshot('mobile-move')
+  await page.setViewportSize({ width: 390, height: 380 })
+  await moveTarget(page, '阅读清单 30').check()
+  const submit = move.getByRole('button', { name: '移动', exact: true })
+  await expect(submit).toBeInViewport()
+  await expect(move.getByRole('button', { name: '取消' })).toBeInViewport()
+  expect(await move.evaluate(element => element.scrollHeight <= element.clientHeight + 1)).toBe(true)
+  await screenshot('mobile-move-short')
+  await submit.click()
+  await expect(move).toBeHidden()
+  await expect.poll(() => api.pages.find(record => record.id === 'page-a1')?.parentPageId).toBe('target-29')
+  expect(consoleErrors).toEqual([])
+})
+})
+
+test('page action presentation uses the mobile breakpoint and preserves an open draft across resize', async ({ page }) => {
+  await installApi(page, {
+    workspaces: [workspace('ws-a', '工作空间')],
+    pages: [pageRecord('page-a', 'ws-a', '工作笔记', null, key(1))],
+  })
+  await page.setViewportSize({ width: 767, height: 844 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.locator('.eotion-editor-content')).toBeVisible()
+  await page.getByRole('button', { name: '打开导航菜单' }).click()
+  await openAction(page, '工作笔记', '重命名')
+  const rename = page.getByRole('dialog', { name: '重命名页面' })
+  expect(await rename.evaluate(element => element.matches(':modal'))).toBe(true)
+  await rename.getByLabel('页面标题').fill('保留的草稿')
+  await page.setViewportSize({ width: 768, height: 844 })
+  await expect(rename.getByLabel('页面标题')).toHaveValue('保留的草稿')
+  expect(await rename.evaluate(element => element.matches(':modal'))).toBe(true)
+  await page.keyboard.press('Escape')
+  await expect(rename).toBeHidden()
+  await openAction(page, '工作笔记', '移动')
+  const move = page.getByRole('dialog', { name: '移动页面' })
+  expect(await move.evaluate(element => element.matches(':modal'))).toBe(false)
+  await expect(move).toHaveClass(/eotion-popover-panel/)
+  await move.getByRole('button', { name: '取消' }).click()
 })
 
 test('closes the mobile sidebar after opening a page from the tree', async ({ page }) => {

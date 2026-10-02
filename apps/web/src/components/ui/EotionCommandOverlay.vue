@@ -31,9 +31,20 @@ function focusableElements() {
   const dialog = dialogElement.value
   if (!dialog) return []
 
-  return [...dialog.querySelectorAll<HTMLElement>(
+  const candidates = [...dialog.querySelectorAll<HTMLElement>(
     'a[href], button, input, select, textarea, [tabindex]:not([tabindex^="-"]), [contenteditable="true"]',
-  )].filter(isFocusable).sort((a, b) => (a.tabIndex || Infinity) - (b.tabIndex || Infinity))
+  )].filter(isFocusable)
+  const tabStops = candidates.filter(element => {
+    if (!(element instanceof HTMLInputElement) || element.type !== 'radio' || !element.name) return true
+    const group = candidates.filter((candidate): candidate is HTMLInputElement =>
+      candidate instanceof HTMLInputElement
+      && candidate.type === 'radio'
+      && candidate.name === element.name
+      && candidate.form === element.form,
+    )
+    return element === (group.find(radio => radio.checked) ?? group[0])
+  })
+  return tabStops.sort((a, b) => (a.tabIndex || Infinity) - (b.tabIndex || Infinity))
 }
 
 function restoreFocus() {
@@ -123,6 +134,15 @@ function hasAnotherModalDialog() {
     .some(dialog => dialog !== dialogElement.value && dialog.open && dialog.matches(':modal'))
 }
 
+function onModalKeydown(event: KeyboardEvent) {
+  // Disabling the focused submit control can temporarily move focus to body.
+  // Consume Escape there too so a pending modal cannot dismiss its background.
+  if (event.key === 'Escape' && open.value && !dialogElement.value?.contains(event.target as Node) && !hasAnotherModalDialog()) {
+    onDialogKeydown(event)
+    if (open.value) dialogElement.value?.focus()
+  }
+}
+
 function onDocumentKeydown(event: KeyboardEvent) {
   if (
     event.key.toLowerCase() !== 'k'
@@ -159,10 +179,12 @@ watch(() => props.shortcut, enabled => {
 onMounted(() => {
   syncDialog(open.value)
   addShortcutListener()
+  document.addEventListener('keydown', onModalKeydown, true)
 })
 
 onBeforeUnmount(() => {
   removeShortcutListener()
+  document.removeEventListener('keydown', onModalKeydown, true)
   const dialog = dialogElement.value
   if (dialog?.open) {
     expectedCloseEvents += 1

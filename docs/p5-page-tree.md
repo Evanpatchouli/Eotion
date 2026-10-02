@@ -15,7 +15,7 @@ P5.2 用真实页面树替换 P5.1 侧栏中的 Pages 占位提示，接通“�
 
 - 数据来源是当前工作区的 `GET /api/workspaces/:workspaceId/pages`；侧栏不额外请求页面。
 - `parentPageId` 为 `null` 的是根页面；同一父级下按 `orderKey` 升序排列，`orderKey` 相同时按 `id` 兜底，保证顺序稳定。父级引用缺失或指向自身时该页面按根页面处理，不会从树上消失。
-- 侧栏支持展开 / 折叠、当前页面高亮（`aria-current="page"`）、以及由页面菜单触发的“新建子页面 / 重命名 / 移动 / 删除”。每行共用一个 popover：菜单、重命名和移动在同一面板内切换；表单模式使用 dialog 语义，宽度约 280px，切换后焦点落在输入框或当前选项。打开页面会在移动端自动关闭侧栏抽屉。
+- 侧栏支持展开 / 折叠、当前页面高亮（`aria-current="page"`）、以及由页面菜单触发的“新建子页面 / 重命名 / 移动 / 删除”。菜单使用每行共用的 popover；桌面和 tablet 的重命名 / 移动表单继续在该 popover 内切换，移动布局使用无快捷键的模态 dialog。表单切换后焦点落在输入框或当前选项，关闭后回到页面操作触发器。打开表单时选择的容器保持到关闭，即使窗口在此期间跨过 768px 断点也保留表单草稿。打开页面会在移动端自动关闭侧栏抽屉。
 - 选中页面时自动展开其祖先，因此从 URL 直接进入深层页面仍能定位到该页面。
 
 ### 创建
@@ -30,12 +30,12 @@ P5.2 用真实页面树替换 P5.1 侧栏中的 Pages 占位提示，接通“�
 
 - 走既有 `PATCH /api/workspaces/:workspaceId/pages/:pageId`（仅 `title`）。
 - 标题 trim 后不能为空，也不能与当前标题相同（提交按钮保持禁用）；提交中禁止重复提交，失败时在表单内显示可见错误并允许重试。
-- 重命名表单使用共享输入与按钮样式；取消、成功保存后焦点回到该页面的操作触发器。
+- 重命名表单使用共享输入与按钮样式；移动端 dialog 标题为“重命名页面”。取消、成功保存后焦点回到该页面的操作触发器。
 - 成功后侧栏标题、主区域标题和面包屑同时更新，刷新后仍然一致。
 
 ### 移动
 
-- 移动使用独立入口 `PATCH /api/workspaces/:workspaceId/pages/:pageId/move`，请求体为 `{ parentPageId: string | null, orderKey: string }`。选择器以原生 radio group 提供“根级”和当前工作区内除自身及其后代以外的页面，显示页面图标和层级缩进，并选中当前父级；移动后 `orderKey` 取目标同级列表末尾。
+- 移动使用独立入口 `PATCH /api/workspaces/:workspaceId/pages/:pageId/move`，请求体为 `{ parentPageId: string | null, orderKey: string }`。选择器以原生 radio group 提供“根级”和当前工作区内除自身及其后代以外的页面，显示页面图标和层级缩进，并选中当前父级；移动后 `orderKey` 取目标同级列表末尾。移动端 dialog 标题为“移动页面”，目标列表独立滚动，操作按钮保持可见。
 - 服务端是唯一权威校验：拒绝把页面移动到自己（`A page cannot be its own parent`）、移动到自己的后代（`A page cannot be moved under its own descendant`）、移动到其他工作区或不存在的父级。通用更新入口继续拒绝 `parentPageId`，不会绕过这些校验。
 - 本阶段不实现拖拽排序，只提供菜单 + 选择器。
 

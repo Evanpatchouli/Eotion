@@ -12,16 +12,19 @@ import EotionButton from '../ui/EotionButton.vue'
 import { IconName } from '../ui/icons'
 import { flushActivePageEditor } from '../../editor/activePageEditor'
 import { buildPageTree, flattenPageTree } from '../../utils/pageTree'
+import { useRuntimeContext } from '../../composables/useRuntimeContext'
 import PageMoveForm from './PageMoveForm.vue'
 import PageRenameForm from './PageRenameForm.vue'
 
 const route = useRoute()
 const router = useRouter()
 const pages = useProductPagesStore()
+const { layoutMode } = useRuntimeContext()
 const emit = defineEmits<{ navigate: [] }>()
 
 const expanded = ref(new Set<string>())
 const activePopover = ref<{ pageId: string; mode: 'menu' | 'rename' | 'move' } | null>(null)
+const formDialog = ref<{ pageId: string; mode: 'rename' | 'move' } | null>(null)
 const confirmDeleteFor = ref<string | null>(null)
 const deleteSubmitting = ref(false)
 
@@ -41,6 +44,7 @@ function pageMenuItems(pageId: string) {
 
 function closePanels() {
   activePopover.value = null
+  formDialog.value = null
   confirmDeleteFor.value = null
   pages.createError = ''
   pages.renameError = ''
@@ -70,6 +74,7 @@ function toggle(pageId: string) {
 function setPopoverOpen(pageId: string, isOpen: boolean) {
   if (!isOpen) {
     if (activePopover.value?.pageId !== pageId) return
+    if (formDialog.value?.pageId === pageId) return
     if (activePopover.value.mode === 'rename' && pages.renamePending) return
     if (activePopover.value.mode === 'move' && pages.movePending) return
     closePanels()
@@ -79,13 +84,14 @@ function setPopoverOpen(pageId: string, isOpen: boolean) {
   activePopover.value = { pageId, mode: 'menu' }
 }
 
-async function focusPopoverItem(mode: 'menu' | 'rename' | 'move') {
+async function focusPopoverItem(mode: 'menu' | 'rename' | 'move', inDialog = false) {
   await nextTick()
+  const container = inDialog ? 'dialog.eotion-command-overlay .product-page-action-dialog' : '.eotion-popover-panel'
   const selector = mode === 'rename'
-    ? '.eotion-popover-panel [data-page-rename-input]'
+    ? `${container} [data-page-rename-input]`
     : mode === 'move'
-      ? '.eotion-popover-panel input[type="radio"]:checked'
-      : '.eotion-popover-panel [data-popover-item]'
+      ? `${container} input[type="radio"]:checked`
+      : `${container} [data-popover-item]`
   document.querySelector<HTMLElement>(selector)?.focus()
 }
 
@@ -100,17 +106,32 @@ function dismissPopover(pageId: string) {
   void focusPageTrigger(pageId)
 }
 
-function startRename(pageId: string) {
+function dismissFormDialog(pageId: string) {
+  if (formDialog.value?.pageId !== pageId) return
+  if (formDialog.value.mode === 'rename' && pages.renamePending) return
+  if (formDialog.value.mode === 'move' && pages.movePending) return
+  formDialog.value = null
   pages.renameError = ''
-  activePopover.value = { pageId, mode: 'rename' }
-  void focusPopoverItem('rename')
+  pages.moveError = ''
 }
 
-function startMove(pageId: string) {
-  pages.moveError = ''
-  activePopover.value = { pageId, mode: 'move' }
-  void focusPopoverItem('move')
+async function startForm(pageId: string, mode: 'rename' | 'move') {
+  pages[mode === 'rename' ? 'renameError' : 'moveError'] = ''
+  if (layoutMode.value !== 'mobile') {
+    activePopover.value = { pageId, mode }
+    void focusPopoverItem(mode)
+    return
+  }
+
+  activePopover.value = null
+  await nextTick()
+  await focusPageTrigger(pageId)
+  formDialog.value = { pageId, mode }
+  await focusPopoverItem(mode, true)
 }
+
+function startRename(pageId: string) { void startForm(pageId, 'rename') }
+function startMove(pageId: string) { void startForm(pageId, 'move') }
 
 async function startDelete(pageId: string) {
   const trigger = document.querySelector<HTMLElement>(`[data-page-id="${CSS.escape(pageId)}"] .product-page-menu-trigger`)
@@ -130,6 +151,15 @@ const deleteOverlayOpen = computed({
     }
   },
 })
+
+const formDialogOpen = computed({
+  get: () => formDialog.value !== null,
+  set: (isOpen: boolean) => {
+    const current = formDialog.value
+    if (!isOpen && current) dismissFormDialog(current.pageId)
+  },
+})
+const formDialogPending = computed(() => formDialog.value?.mode === 'rename' ? pages.renamePending : pages.movePending)
 
 async function openPage(pageId: string) {
   closePanels()
@@ -155,13 +185,17 @@ async function createChild(parentPageId: string) {
 
 async function submitRename(pageId: string, title: string) {
   const updated = await pages.rename(workspaceId.value, pageId, title)
-  if (updated) dismissPopover(pageId)
+  if (updated) {
+    if (formDialog.value?.pageId === pageId && formDialog.value.mode === 'rename') dismissFormDialog(pageId)
+    else dismissPopover(pageId)
+  }
 }
 
 async function submitMove(pageId: string, parentPageId: string | null) {
   const moved = await pages.move(workspaceId.value, pageId, parentPageId)
   if (!moved) return
-  dismissPopover(pageId)
+  if (formDialog.value?.pageId === pageId && formDialog.value.mode === 'move') dismissFormDialog(pageId)
+  else dismissPopover(pageId)
   if (parentPageId !== null) expanded.value.add(parentPageId)
 }
 
@@ -260,7 +294,7 @@ watch(workspaceId, () => {
             <EotionContextMenu class="product-page-menu" :items="pageMenuItems(row.page.id)" />
           </template>
           <PageRenameForm
-            v-else-if="activePopover.mode === 'rename'"
+            v-if="activePopover?.pageId === row.page.id && activePopover.mode === 'rename'"
             :initial-title="row.page.title"
             :pending="pages.renamePending"
             :error="pages.renameError"
@@ -268,7 +302,7 @@ watch(workspaceId, () => {
             @cancel="dismissPopover(row.page.id)"
           />
           <PageMoveForm
-            v-else
+            v-else-if="activePopover?.pageId === row.page.id && activePopover.mode === 'move'"
             :pages="pages.items"
             :page-id="row.page.id"
             :current-parent-id="row.page.parentPageId"
@@ -280,6 +314,29 @@ watch(workspaceId, () => {
         </EotionPopover>
       </li>
     </ul>
+    <EotionCommandOverlay v-model:open="formDialogOpen" :label="formDialog?.mode === 'rename' ? '重命名页面' : '移动页面'" :shortcut="false" :dismissible="!formDialogPending">
+      <section v-if="formDialog" class="product-page-action-dialog" :aria-labelledby="`product-page-action-title-${formDialog.pageId}`">
+        <h2 :id="`product-page-action-title-${formDialog.pageId}`">{{ formDialog.mode === 'rename' ? '重命名页面' : '移动页面' }}</h2>
+        <PageRenameForm
+          v-if="formDialog.mode === 'rename'"
+          :initial-title="pages.items.find(page => page.id === formDialog?.pageId)?.title ?? ''"
+          :pending="pages.renamePending"
+          :error="pages.renameError"
+          @submit="submitRename(formDialog.pageId, $event)"
+          @cancel="dismissFormDialog(formDialog.pageId)"
+        />
+        <PageMoveForm
+          v-else
+          :pages="pages.items"
+          :page-id="formDialog.pageId"
+          :current-parent-id="pages.items.find(page => page.id === formDialog?.pageId)?.parentPageId ?? null"
+          :pending="pages.movePending"
+          :error="pages.moveError"
+          @submit="submitMove(formDialog.pageId, $event)"
+          @cancel="dismissFormDialog(formDialog.pageId)"
+        />
+      </section>
+    </EotionCommandOverlay>
     <EotionCommandOverlay v-model:open="deleteOverlayOpen" label="删除页面？" :shortcut="false" :dismissible="!deleteSubmitting && !pages.deletePending">
       <section v-if="confirmDeleteFor" class="product-page-delete-dialog" aria-labelledby="product-page-delete-title">
         <h2 id="product-page-delete-title">删除页面？</h2>

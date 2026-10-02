@@ -73,6 +73,15 @@
 .product-page-delete-dialog { display: flex; flex-direction: column; gap: var(--e-space-3); }
 .product-page-delete-dialog h2 { margin: 0; color: var(--e-color-text-primary); font-size: 18px; line-height: 1.35; }
 .product-page-delete-dialog > p:not(.product-message) { margin: 0; color: var(--e-color-text-secondary); line-height: 1.5; }
+dialog.eotion-command-overlay:has(> .product-page-action-dialog) { width: min(calc(100% - 32px), 26rem); padding: var(--e-space-4); }
+.product-page-action-dialog { display: flex; min-height: 0; max-height: calc(100dvh - 64px); flex-direction: column; gap: var(--e-space-3); }
+.product-page-action-dialog h2 { flex: none; margin: 0; color: var(--e-color-text-primary); font-size: 18px; line-height: 1.35; }
+.product-page-action-dialog .product-popover-form { min-height: 0; padding: 0; }
+.product-page-action-dialog:has(.product-page-move-form) { flex: 1; }
+.product-page-action-dialog:has(.product-page-move-form) .product-page-move-form { flex: 1; overflow: hidden; }
+.product-page-action-dialog .product-page-move-options { min-height: 0; max-height: none; flex: 1; }
+.product-page-action-dialog:has(.product-page-move-form) .product-popover-form__actions { flex: none; }
+dialog.eotion-command-overlay:has(.product-page-action-dialog .product-page-move-form) { display: flex; height: min(34rem, calc(100dvh - 32px)); flex-direction: column; overflow: hidden; }
 @media (pointer: coarse) { .product-popover-form__actions .eotion-button { min-height: 44px; } }
 .product-page-meta { display: flex; flex-wrap: wrap; gap: 8px 34px; margin: 26px 0 0; padding: 14px 0 0; border-top: 1px solid var(--border); }
 .product-page-meta dt { color: var(--text-faint); font-size: 11px; }
@@ -120,6 +129,7 @@
 .product-restore-error { margin: -8px 0 20px; }
 .product-login-submit { width: 100%; margin-top: 5px; }
 @media (max-width: 767px) {
+  .product-page-action-dialog .product-page-move-option { min-height: 44px; }
   .product-editor-page .eotion-editor-content { padding: 16px 12px 110px; }
   .product-shell .product-sidebar { gap: 12px; }
   .product-login-page { min-height: 100%; padding: 18px; }
