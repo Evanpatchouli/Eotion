@@ -266,3 +266,35 @@ test('danger controls retain AA text contrast with the frozen palette in both th
     await page.keyboard.press('Escape')
   }
 })
+
+test('shared buttons use a compact height for every variant on desktop and touch', async ({ page, browser }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#/__dev/ui-foundation')
+  await expect(page.getByRole('heading', { name: 'Quiet Studio 基础组件' })).toBeVisible()
+  const verifyButtons = async (surface: typeof page, height: number) => {
+    for (const variant of ['primary', 'secondary', 'ghost', 'danger']) {
+      await expect(surface.locator(`.eotion-button--${variant}`).first()).toHaveCSS('min-height', `${height}px`)
+    }
+    const dimensions = await surface.locator('.eotion-button').evaluateAll(buttons => buttons.map(button => ({
+      height: button.getBoundingClientRect().height,
+      lineHeight: Number.parseFloat(getComputedStyle(button).lineHeight),
+    })))
+    expect(dimensions.length).toBeGreaterThan(0)
+    for (const button of dimensions) {
+      expect(button.height).toBe(height)
+      expect(button.lineHeight).toBeLessThan(button.height)
+    }
+  }
+  await verifyButtons(page, 28)
+  const touch = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true })
+  try {
+    const mobile = await touch.newPage()
+    await mobile.goto('/#/__dev/ui-foundation')
+    await expect(mobile.getByRole('heading', { name: 'Quiet Studio 基础组件' })).toBeVisible()
+    expect(await mobile.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true)
+    await verifyButtons(mobile, 36)
+    await expect(mobile.locator('vite-error-overlay')).toHaveCount(0)
+  } finally {
+    await touch.close()
+  }
+})

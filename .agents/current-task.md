@@ -20,4 +20,15 @@
 状态：移动 Dialog 已完成（2026-10-02）。
 
 ## 用户追加工作
-共享 EotionButton 默认高度统一为 desktop 28px / touch 36px，移除页面操作区的高度覆盖；独立验证并提交。
+共享 EotionButton 默认高度统一为 desktop 28px / touch 36px，移除页面操作区的高度覆盖；已完成，独立提交。
+
+## Compact Button Verification
+- 两项 UI 变更的独立复核无剩余 blocker。
+- Button 四种 variant、disabled、实际桌面重命名与触屏表单高度覆盖；文档 DESIGN.md / design-system-v1.md 已同步。
+- 最终相关套件共 48 项，47 项首轮通过；一项既有离线恢复按钮点击与自动恢复竞态已定位，改用既有 online 事件并断言同步和服务端父级。该项与新增实际高度断言、截图场景复测 4/4 通过。
+- 最终 Web 生产 build（含 vue-tsc）通过；独立 typecheck 在移动 Dialog 实现后通过。
+- 390×844 touch / 390×380 短屏最终截图人工核对，无裁切；正常交互无 console/page errors 或 Vite overlay。
+- git diff --check 与 UTF-8 无 BOM 验证通过。
+- 移动 Dialog commit：37e9fea；按钮 commit：fix(ui): standardize compact button heights。
+
+整体状态：完成（2026-10-02）。

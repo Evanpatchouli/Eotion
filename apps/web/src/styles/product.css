@@ -59,7 +59,7 @@
 .product-page-rename-field { display: flex; flex-direction: column; gap: var(--e-space-2); color: var(--e-color-text-secondary); font-size: var(--e-type-ui-size); font-weight: 550; }
 .product-popover-form .eotion-input { width: 100%; }
 .product-popover-form__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--e-space-2); }
-.product-popover-form__actions .eotion-button { min-height: 30px; padding-inline: var(--e-space-3); font-size: 12px; }
+.product-popover-form__actions .eotion-button { padding-inline: var(--e-space-3); font-size: 12px; }
 .product-page-move-options { display: flex; min-width: 0; max-height: min(45vh, 320px); flex-direction: column; gap: 2px; margin: 0; padding: 0; overflow-y: auto; border: 0; }
 .product-page-move-options legend { margin-bottom: var(--e-space-2); color: var(--e-color-text-secondary); font-size: var(--e-type-ui-size); font-weight: 550; }
 .product-page-move-option { position: relative; display: flex; min-width: 0; min-height: 34px; align-items: center; gap: var(--e-space-2); padding: var(--e-space-1) var(--e-space-2); border-radius: var(--e-radius-control); color: var(--e-color-text-secondary); cursor: pointer; }
@@ -82,7 +82,6 @@ dialog.eotion-command-overlay:has(> .product-page-action-dialog) { width: min(ca
 .product-page-action-dialog .product-page-move-options { min-height: 0; max-height: none; flex: 1; }
 .product-page-action-dialog:has(.product-page-move-form) .product-popover-form__actions { flex: none; }
 dialog.eotion-command-overlay:has(.product-page-action-dialog .product-page-move-form) { display: flex; height: min(34rem, calc(100dvh - 32px)); flex-direction: column; overflow: hidden; }
-@media (pointer: coarse) { .product-popover-form__actions .eotion-button { min-height: 44px; } }
 .product-page-meta { display: flex; flex-wrap: wrap; gap: 8px 34px; margin: 26px 0 0; padding: 14px 0 0; border-top: 1px solid var(--border); }
 .product-page-meta dt { color: var(--text-faint); font-size: 11px; }
 .product-page-meta dd { margin: 3px 0 0; color: var(--text-secondary); font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

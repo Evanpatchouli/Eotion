@@ -15,7 +15,7 @@ withDefaults(defineProps<{
 <style scoped>
 .eotion-button {
   display: inline-flex;
-  min-height: 32px;
+  min-height: 28px;
   align-items: center;
   justify-content: center;
   gap: var(--e-space-2);
@@ -29,7 +29,7 @@ withDefaults(defineProps<{
 }
 .eotion-button:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset: 2px; }
 .eotion-button:disabled { cursor: not-allowed; opacity: 0.55; }
-@media (pointer: coarse) { .eotion-button { min-height: 44px; } }
+@media (pointer: coarse) { .eotion-button { min-height: 36px; } }
 .eotion-button--primary { background: var(--e-color-accent); color: var(--e-color-canvas); }
 .eotion-button--primary:hover:not(:disabled) { background: var(--e-color-text-primary); }
 .eotion-button--secondary { border-color: var(--e-color-border); background: var(--e-color-surface); }

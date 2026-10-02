@@ -375,6 +375,7 @@ test('keeps page tree rows steady through rename, move and delete controls and c
   await openAction(page, '研究计划', '重命名')
   expectSameGeometry(await treeGeometry(page), before)
   await screenshot('rename')
+  await expect(page.getByRole('button', { name: '保存标题' })).toHaveCSS('min-height', '28px')
   const title = page.getByLabel('页面标题')
   await title.fill('项目路线图')
   await title.press('Escape')
@@ -620,8 +621,11 @@ test('never offers the page itself or its descendants and preserves a local move
   await expect(treeItem(page, 'Alpha')).toHaveAttribute('aria-level', '2')
   await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
   api.controls.pushFailures = 0
-  await page.getByRole('button', { name: /离线 · 本地已保存/ }).click()
+  // Automatic recovery can replace the offline button before Playwright clicks it.
+  // Trigger the existing connectivity path and assert the recovered server state.
+  await page.evaluate(() => window.dispatchEvent(new Event('online')))
   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  await expect.poll(() => api.pages.find(record => record.id === 'page-a')?.parentPageId).toBe('page-b')
 })
 
 test('keeps page trees isolated per workspace and drops the previous page id', async ({ page }) => {
@@ -733,6 +737,7 @@ test('mobile page actions use modal dialogs with focus, stable tree and a scroll
   const title = rename.getByLabel('页面标题')
   await expect(title).toBeFocused()
   expectSameGeometry(await treeGeometry(page), before)
+  await expect(rename.getByRole('button', { name: '保存标题' })).toHaveCSS('min-height', '36px')
   await title.fill('今日计划')
   await page.keyboard.press('Shift+Tab')
   await expect(rename.getByRole('button', { name: '取消' })).toBeFocused()

@@ -503,6 +503,7 @@ Keyboard focus 必须清楚，但不长期像 selected state。
 
 ### Button
 
+- 共享 `EotionButton` 默认采用紧凑高度：desktop pointer 28px，coarse pointer 36px；各 variant 共用高度，页面操作区不再重复覆盖（2026-10-02 用户确认）。
 - Primary 使用克制 accent，不做彩色渐变。
 - Secondary / ghost 尽量由 typography + hover 表达。
 - Danger 只在 destructive action 使用。

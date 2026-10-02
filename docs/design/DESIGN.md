@@ -78,6 +78,7 @@ Attachments:
 ## Accessibility
 
 - Minimum touch target around 44×44px.
+- User-approved compact `EotionButton` height: 28px for desktop pointer and 36px for coarse pointer (2026-10-02); keep sizing in the shared component rather than action-specific overrides.
 - Visible keyboard focus required.
 - Status must not rely only on color.
 - Respect reduced motion.
