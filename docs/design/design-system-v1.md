@@ -503,7 +503,8 @@ Keyboard focus 必须清楚，但不长期像 selected state。
 
 ### Button
 
-- 共享 `EotionButton` 默认采用紧凑高度：desktop pointer 28px，coarse pointer 36px；各 variant 共用高度，页面操作区不再重复覆盖（2026-10-02 用户确认）。
+- 共享 `EotionButton` 默认采用紧凑高度：desktop pointer 28px，coarse/touch pointer 36px；各 variant 共用高度，页面操作区不再重复覆盖。
+- 这是 2026-10-02 用户基于实际视觉检查主动要求的密度调整：此前按钮高度肉眼观感偏高，因此 36px 是有意保留的 compact text-button 规格，而不是待修复的 44px 缺失。除非后续真机可用性验证表明确有问题，不要机械恢复为 44px。
 - Primary 使用克制 accent，不做彩色渐变。
 - Secondary / ghost 尽量由 typography + hover 表达。
 - Danger 只在 destructive action 使用。
@@ -761,7 +762,7 @@ raw HTTP / SDK / endpoint / cleanup 只进入：
 
 ## Accessibility Baseline
 
-- Touch target：约 44×44px。
+- Touch target：icon-only、导航、disclosure 等高精度点击目标原则上约 44×44px；共享紧凑文本按钮 `EotionButton` 是已批准例外，coarse/touch pointer 高度为 36px（2026-10-02 用户实测确认此前高度偏高）。
 - Keyboard：所有 Sidebar / Menu / Settings / Editor command 关键路径可操作。
 - Focus-visible：必须可见。
 - Reduced motion：尊重用户偏好。
