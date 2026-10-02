@@ -1,3 +1,5 @@
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 
@@ -100,6 +102,13 @@ async function installApi(page: Page, options: { pages?: PageResponse[]; blocks?
 const editor = (page: Page) => page.locator('.eotion-editor-content .tiptap')
 const blockRequests = (requests: Awaited<ReturnType<typeof installApi>>['requests']) => requests.filter((request) => request.path === '/api/sync/operations' && ['block.upsert', 'block.delete'].includes((request.body as any)?.kind))
 
+async function canvasScreenshot(page: Page, name: string) {
+  const directory = process.env.EOTION_VISUAL_QA_DIR
+  if (!directory) return
+  await mkdir(directory, { recursive: true })
+  await page.screenshot({ path: path.join(directory, `${name}.png`), animations: 'disabled' })
+}
+
 async function pasteHtml(target: Locator, html: string, text: string) {
   await target.click()
   await target.press('Control+End')
@@ -110,6 +119,105 @@ async function pasteHtml(target: Locator, html: string, text: string) {
     element.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData }))
   }, { html, text })
 }
+
+test('product page keeps title and editor in one open reading column across themes and mobile', async ({ page }) => {
+  const browserErrors: string[] = []
+  page.on('pageerror', error => browserErrors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') browserErrors.push(message.text()) })
+  await installApi(page, {
+    pages: [pageRecord('page-a', 'Quiet Studio 文档', 1)],
+    blocks: [block('page-a', 'block-a', 1, { type: 'paragraph', content: [{ type: 'text', text: '正文直接从画布开始。' }] })],
+  })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page).toHaveTitle('Eotion')
+  await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/)
+  await expect(editor(page)).toContainText('正文直接从画布开始。')
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+  await expect(page.locator('.eotion-editor-toolbar')).toHaveCount(0)
+
+  const desktop = await page.evaluate(() => {
+    const readingColumn = document.querySelector('.product-editor-page')!
+    const title = document.querySelector('.product-editor-heading')!
+    const shell = document.querySelector('.eotion-editor')!
+    const content = document.querySelector('.eotion-editor-content')!
+    const body = document.querySelector('.eotion-editor-content .tiptap')!
+    const shellStyle = getComputedStyle(shell)
+    const contentStyle = getComputedStyle(content)
+    const bodyStyle = getComputedStyle(body)
+    return {
+      columnWidth: readingColumn.getBoundingClientRect().width,
+      titleLeft: title.getBoundingClientRect().left,
+      editorLeft: body.getBoundingClientRect().left,
+      border: shellStyle.borderTopWidth,
+      radius: shellStyle.borderTopLeftRadius,
+      background: shellStyle.backgroundColor,
+      shadow: shellStyle.boxShadow,
+      padding: contentStyle.paddingLeft,
+      bodyFont: bodyStyle.font,
+      bodyColor: bodyStyle.color,
+    }
+  })
+  expect(desktop.columnWidth).toBeGreaterThanOrEqual(720)
+  expect(desktop.columnWidth).toBeLessThanOrEqual(740)
+  expect(desktop.editorLeft).toBe(desktop.titleLeft)
+  expect(desktop).toMatchObject({ border: '0px', radius: '0px', background: 'rgba(0, 0, 0, 0)', shadow: 'none', padding: '0px' })
+  await canvasScreenshot(page, 'p583-desktop-light')
+
+  await page.setViewportSize({ width: 1024, height: 768 })
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'tablet')
+  const readingWidth = () => page.locator('.product-editor-page').evaluate(node => node.getBoundingClientRect().width)
+  await expect.poll(readingWidth).toBe(740)
+  await page.getByRole('button', { name: '收起侧边栏' }).click()
+  await expect.poll(readingWidth).toBe(740)
+  await page.getByRole('button', { name: '展开侧边栏' }).click()
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  await page.evaluate(() => {
+    localStorage.setItem('eotion:theme', 'dark')
+    localStorage.setItem('eotion:editor-toolbar:user-ava:ws-a', 'true')
+  })
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await expect(page.locator('.eotion-editor-toolbar')).toBeVisible()
+  expect(await page.locator('.eotion-editor-toolbar').evaluate(node => {
+    const style = getComputedStyle(node)
+    return { border: style.borderBottomWidth, background: style.backgroundColor, shadow: style.boxShadow }
+  })).toEqual({ border: '0px', background: 'rgba(0, 0, 0, 0)', shadow: 'none' })
+  await canvasScreenshot(page, 'p583-desktop-dark-toolbar')
+
+  await page.evaluate(() => localStorage.setItem('eotion:theme', 'light'))
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => {
+    const nativeMatchMedia = window.matchMedia.bind(window)
+    window.matchMedia = (query: string) => {
+      const result = nativeMatchMedia(query)
+      if (query === '(pointer: coarse)') Object.defineProperty(result, 'matches', { configurable: true, value: true })
+      return result
+    }
+  })
+  await page.reload()
+  await expect(page.locator('.eotion-editor-toolbar')).toHaveCount(0)
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' })).toBeVisible()
+  const mobile = await page.evaluate(() => ({
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+    titleLeft: document.querySelector('.product-editor-heading')!.getBoundingClientRect().left,
+    editorLeft: document.querySelector('.eotion-editor-content .tiptap')!.getBoundingClientRect().left,
+  }))
+  expect(mobile.documentWidth).toBeLessThanOrEqual(mobile.viewportWidth)
+  expect(mobile.editorLeft).toBe(mobile.titleLeft)
+  await canvasScreenshot(page, 'p583-mobile-390-light')
+
+  await page.goto('/#/__dev/editor-foundation')
+  await expect(page.locator('.document-editor .tiptap')).toBeVisible()
+  const foundationBody = await page.locator('.document-editor .tiptap').evaluate(node => {
+    const style = getComputedStyle(node)
+    return { font: style.font, color: style.color }
+  })
+  expect(foundationBody).toEqual({ font: desktop.bodyFont, color: desktop.bodyColor })
+  expect(browserErrors).toEqual([])
+})
 
 test('pasting unsupported link and underline marks saves and reloads plain text', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [] })

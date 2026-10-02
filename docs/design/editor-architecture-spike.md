@@ -37,3 +37,10 @@ PageView → EotionEditor update → EditorDocument → PagePersistence
 - P5.8.1 开发验证入口：`/#/__dev/editor-foundation`；浏览器回归：`apps/web/tests/editor-foundation.spec.ts`，覆盖初始内容、JSON 更新、输入/输出隔离、动态只读、focus、卸载/重挂，以及 link/underline 粘贴边界。
 - 正式编辑器、附件和持久化回归入口：`apps/web/tests/product-editor.spec.ts`、`product-attachments.spec.ts`、`product-sync.spec.ts`。其中正式编辑器测试覆盖相同的 link/underline 粘贴边界以及保存和重载。
 - 生产路由隔离回归：`pnpm --filter @eotion/web exec playwright test --config playwright.editor-production.config.ts`。
+
+## P5.8.3 正式文档画布视觉收敛
+
+- 正式 Page 的 `.product-editor-page` 控制唯一阅读列：Desktop 最大 740px，Mobile 使用 16px 两侧 gutter。Page 标题、保存状态和正文保持在同一列，编辑器自身不再限制正文宽度或提供卡片外框、背景、圆角、阴影与独立正文内边距。
+- `DocumentEditor` 与 `EotionEditor` 通过 `styles/editor-content.css` 共用正文排版规则，包括正文颜色与字体、标题、列表缩进、引用和代码块。组件继续分别保留所需的最小编辑高度。
+- 固定工具栏仍由 `fixedToolbar` 和现有用户偏好决定，只呈现紧凑的无边框文档控件；Mobile 的 `touchToolbar` 和键盘避让逻辑保持原样。附件上传、重试、清理及节点行为保持原样，仅上传状态外观对齐文档列。
+- 视觉契约回归位于 `product-editor.spec.ts`，覆盖 Desktop / Tablet 展开与收栏时最大 740px 的阅读列、无编辑器卡片、工具栏开关、Light / Dark、390px Mobile 无横向溢出和 `DocumentEditor` 正文字体一致性。设置 `EOTION_VISUAL_QA_DIR` 可输出 Desktop Light / Dark 与 Mobile 截图。

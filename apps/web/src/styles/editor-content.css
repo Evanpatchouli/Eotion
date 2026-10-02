@@ -1,0 +1,15 @@
+:is(.document-editor, .eotion-editor-content) { min-width: 0; }
+:is(.document-editor, .eotion-editor-content) .tiptap {
+  min-width: 0;
+  outline: none;
+  overflow-wrap: anywhere;
+  color: var(--e-color-text-primary);
+  font: var(--e-type-body-weight) var(--e-type-body-size) / var(--e-type-body-line) var(--e-type-family);
+}
+:is(.document-editor, .eotion-editor-content) .tiptap > :first-child { margin-top: 0; }
+:is(.document-editor, .eotion-editor-content) .tiptap h1 { font-size: var(--e-type-page-title-size); line-height: var(--e-type-page-title-line); font-weight: var(--e-type-page-title-weight); letter-spacing: var(--e-type-page-title-tracking); }
+:is(.document-editor, .eotion-editor-content) .tiptap h2 { font-size: var(--e-type-heading-1-size); line-height: var(--e-type-heading-1-line); font-weight: var(--e-type-heading-1-weight); }
+:is(.document-editor, .eotion-editor-content) .tiptap :is(ul, ol) { padding-left: 1.5em; }
+:is(.document-editor, .eotion-editor-content) .tiptap blockquote { margin-inline: 0; padding-left: var(--e-space-4); border-left: 2px solid var(--e-color-border); color: var(--e-color-text-secondary); }
+:is(.document-editor, .eotion-editor-content) .tiptap pre { max-width: 100%; overflow-x: auto; padding: var(--e-space-3); background: var(--e-color-surface-subtle); font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
+:is(.document-editor, .eotion-editor-content) .tiptap code { overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }

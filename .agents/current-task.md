@@ -1,36 +1,29 @@
-# Current Task — P5.8.2 Editor Architecture Convergence
+# Current Task — P5.8.3 Real Document Canvas Visual Convergence
 
 ## Scope
 
-统一 `DocumentEditor` 与 `EotionEditor` 的 Tiptap 创建、生命周期、StarterKit 基线及 `EditorDocument` JSON 边界；保留产品编辑器的扩展、事件、附件与现有持久化行为。单一聚焦提交。
+仅收敛正式 Page Editor 的 Quiet Studio 视觉：去掉历史 Editor Card，统一 `DocumentEditor` 正文排版，使 Page 标题、保存状态与正文共用阅读列，并压低固定工具栏视觉层级。保留编辑器、附件及持久化业务行为。
 
 ## Work Units
 
-- S0 investigate：核对两组件、`blockCodec`、实际实例 consumer 和回归入口。
-- S2 decide：共享 core 仅拥有 `useEditor` 生命周期、基础扩展、初始/输出 JSON 副本、editable、aria 和 focus；产品扩展与 Tiptap 回调从 `EotionEditor` 提供。StarterKit 关闭 link、underline，以匹配现有 `blockCodec` mark 范围。P2 基准页仍需实例，保留当前仅开发链使用的 expose。
-- S1 execute：新增轻量 composable，迁移两组件；正式页面链路使用既有 `EditorDocument` 类型；补充边界回归并修正文档。
-- S0 verify / Review：执行 typecheck、build、编辑器/附件/持久化回归、Desktop/Mobile viewport 烟测；独立复核最终 diff，完成单一提交。
+- S0 investigate：核对 `EotionEditor`、`DocumentEditor`、`PageView`、样式层级、设计约束与回归入口。
+- S2 decide：阅读宽度由正式 Page 容器负责；共享正文 CSS 仅承载两个编辑器相同的排版规则；上传状态与工具栏仅做外观调整。
+- S1 execute：局部修改组件和样式、补充视觉契约回归、同步编辑器设计文档。
+- S0 verify / Review：运行直接相关测试与构建，核对 Desktop Light / Dark 与 390px Mobile 截图，复核 diff 并提交。
 
 ## Invariants
 
-- `DocumentEditor` 仍只公开 `focus()`，不引入产品依赖。
-- `EotionEditor` 保留 BlockIdentity、附件、Slash、IME、事件、工具栏和 visualViewport 行为。
-- `blockCodec` 保持唯一 Block ↔ Editor JSON 映射，业务映射语义不变。
-- Core 不依赖 API、LocalStore、Sync、PagePersistence、workspace、附件或 Block。
+- 不修改 `useDocumentEditor`、schema、Block/附件/持久化/同步/API 或 Slash 业务。
+- 保留 `fixedToolbar`、`touchToolbar` 与用户偏好语义。
+- 无常态 editor 外框、圆角、背景、阴影或正文独立 padding；页面宽度由同一阅读列控制。
 
 ## Validation
 
-- Web `typecheck` 通过；最终 Web `build`（含 vue-tsc）通过。
-- `editor-foundation.spec.ts` 5/5、`product-editor.spec.ts` 18/18、`product-attachments.spec.ts` 15/15、`product-sync.spec.ts` 41/41 通过。
-- 编辑器开发页生产隔离 1/1 通过；Desktop 宽度与 390px Mobile 宽度的浏览器回归无明显 UI 问题。
-- 一次并行套件中的 P2 Slash 用例未出现菜单；该用例单独及串行完整 suite 重跑通过。初次基础页 JSON 输出失败已定位为 core 注册未提供的 Tiptap callback，修复后 5/5 通过。
-- 独立 review 未发现 blocker；最终 diff check 与 UTF-8 无 BOM 检查通过。
+- Web typecheck 与 build 通过；正式编辑器、DocumentEditor、附件、同步/持久化、设置相关 Playwright 回归 91/91 通过。
+- 生产构建中的开发编辑器路由隔离回归 1/1 通过。
+- 视觉契约测试覆盖 Desktop Light、Desktop Dark 固定工具栏、1024px Tablet 展开/收栏、390px Mobile 触摸工具栏与无横向溢出；修正平板旧 `.document` 宽度规则的级联优先级后复测通过。
+- 截图输出到工作区外的 Codex visualizations 目录，已人工查看；最终 `git diff --check` 与 UTF-8 无 BOM 检查通过。
 
 ## Limits
 
-- 本轮未运行 Electron 原生窗口或移动真机输入法；Desktop/Mobile UI 以浏览器宽度和移动 runtime 回归覆盖。
-- P2 5,000 块 fixture、Slash 与撤销回归通过；长文连续输入时的额外 JSON 克隆成本尚未单独测量。
-
-## Status
-
-完成（2026-10-02），提交主题：`refactor(editor): converge document editor architecture`。
+- 浏览器视口代替 Electron 原生窗口和移动真机；本轮未测试真机输入法。

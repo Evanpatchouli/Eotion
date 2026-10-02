@@ -5,6 +5,7 @@ import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
 import { createLocalId } from '@eotion/storage'
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
+import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
 import { BlockIdentity } from '../../editor/blockIdentity'
 import { enqueueAttachmentCleanup, pendingAttachmentCleanups } from '../../editor/attachmentCleanup'
@@ -375,26 +376,21 @@ defineExpose({ editor })
 </template>
 
 <style scoped>
-.eotion-editor { min-width: 0; border: 1px solid var(--border-editor); border-radius: 10px; background: var(--surface-raised); }
-.eotion-editor--drop-active { border-color: var(--editor-focus); box-shadow: 0 0 0 2px var(--editor-drop-ring); }
-.eotion-editor-toolbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; border-bottom: 1px solid var(--border-editor); }
-.eotion-editor-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 5px 10px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--editor-text); font: inherit; font-size: 13px; cursor: pointer; }
-.eotion-editor-toolbar button[aria-pressed="true"] { border-color: var(--border-strong); background: var(--surface-editor-hover); }
-.eotion-editor-toolbar button:hover { background: var(--surface-editor-hover); }
-.eotion-editor-toolbar button:focus-visible { outline: 2px solid var(--editor-focus); outline-offset: 2px; }
+.eotion-editor { min-width: 0; }
+.eotion-editor--drop-active .eotion-editor-content { outline: 2px dashed var(--e-color-focus); outline-offset: 6px; }
+.eotion-editor-toolbar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: var(--e-space-4); }
+.eotion-editor-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 28px; padding: 4px 8px; border: 0; border-radius: var(--e-radius-control); background: transparent; color: var(--e-color-text-muted); font: var(--e-type-metadata-weight) var(--e-type-metadata-size) / var(--e-type-metadata-line) var(--e-type-family); cursor: pointer; }
+.eotion-editor-toolbar button[aria-pressed="true"] { background: var(--e-color-selected); color: var(--e-color-text-primary); }
+.eotion-editor-toolbar button:hover { background: var(--e-color-hover); color: var(--e-color-text-primary); }
+.eotion-editor-toolbar button:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset: 2px; }
 .eotion-editor-toolbar button:disabled { cursor: default; opacity: .5; }
-.eotion-editor-content { min-width: 0; min-height: 260px; padding: 20px 22px; line-height: 1.75; }
-.eotion-editor-content :deep(.tiptap) { min-width: 0; min-height: 220px; outline: none; overflow-wrap: anywhere; }
-.eotion-editor-content :deep(.tiptap > :first-child) { margin-top: 0; }
-.eotion-editor-content :deep(.tiptap ul), .eotion-editor-content :deep(.tiptap ol) { padding-left: 1.5em; }
-.eotion-editor-content :deep(.tiptap h2) { line-height: 1.3; }
-.eotion-editor-content :deep(.tiptap pre) { max-width: 100%; overflow-x: auto; }
+.eotion-editor-content :deep(.tiptap) { min-height: 220px; }
 .eotion-touch-toolbar { position: fixed; z-index: 15; right: 0; left: 0; display: flex; gap: 6px; overflow-x: auto; padding: 9px max(12px, var(--safe-right)) calc(9px + var(--safe-bottom)) max(12px, var(--safe-left)); border-top: 1px solid var(--border-strong); background: var(--surface-raised); box-shadow: var(--shadow-toolbar); }
 .eotion-touch-toolbar button { flex: 1 0 auto; min-width: 54px; min-height: 44px; font: inherit; font-size: 13px; color: var(--editor-text); padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface-editor); }
 .eotion-touch-toolbar button:disabled { opacity: .5; }
 .eotion-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
-.eotion-upload-list { display: grid; gap: 7px; padding: 10px 12px; border-bottom: 1px solid var(--border-editor); }
-.eotion-upload-item { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border-editor); border-radius: 7px; background: var(--surface-editor); }
+.eotion-upload-list { display: grid; gap: 7px; margin-bottom: var(--e-space-4); }
+.eotion-upload-item { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-block); background: var(--e-color-surface-subtle); }
 .eotion-upload-preview { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 5px; object-fit: cover; }
 .eotion-upload-copy { display: grid; min-width: 0; flex: 1; gap: 3px; font-size: 13px; }
 .eotion-upload-copy strong, .eotion-upload-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -86,11 +86,11 @@ dialog.eotion-command-overlay:has(.product-page-action-dialog .product-page-move
 .product-page-meta dt { color: var(--text-faint); font-size: 11px; }
 .product-page-meta dd { margin: 3px 0 0; color: var(--text-secondary); font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .product-page-content-placeholder { margin-top: 26px; padding: 22px; border: 1px dashed var(--border-strong); border-radius: 10px; color: var(--text-faint); font-size: 13px; line-height: 1.7; }
-.product-editor-page { min-width: 0; }
+.workspace-shell.product-shell .document.product-editor-page { width: min(740px, calc(100% - 48px)); min-width: 0; }
 .product-editor-heading { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: 16px; }
-.product-editor-heading h1 { min-width: 0; overflow-wrap: anywhere; }
+.product-editor-heading h1 { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--e-color-text-primary); font: var(--e-type-page-title-weight) var(--e-type-page-title-size) / var(--e-type-page-title-line) var(--e-type-family); letter-spacing: var(--e-type-page-title-tracking); }
 .product-save-status { flex: none; color: var(--text-muted); font-size: 12px; }
-.product-editor-page .eotion-editor { margin-top: 24px; }
+.product-editor-page .eotion-editor { margin-top: var(--e-space-6); }
 .product-editor-error { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 12px 0; color: var(--danger); font-size: 12px; }
 .product-sidebar-footer { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .product-user-email { max-width: 100%; overflow: hidden; color: var(--text-muted); font-size: 11px; text-overflow: ellipsis; }
@@ -129,7 +129,7 @@ dialog.eotion-command-overlay:has(.product-page-action-dialog .product-page-move
 .product-login-submit { width: 100%; margin-top: 5px; }
 @media (max-width: 767px) {
   .product-page-action-dialog .product-page-move-option { min-height: 44px; }
-  .product-editor-page .eotion-editor-content { padding: 16px 12px 110px; }
+  .workspace-shell.product-shell .document.product-editor-page { width: calc(100% - 32px); }
   .product-shell .product-sidebar { gap: 12px; }
   .product-login-page { min-height: 100%; padding: 18px; }
   .product-login-card { padding: 26px 22px; }
