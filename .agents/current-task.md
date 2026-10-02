@@ -1,29 +1,30 @@
-# Current Task — P5.8.6.1 触摸输入环境的选区菜单边界
+# Current Task — P5.8.7 Inline Link Foundation & Desktop Link UX
 
 ## Scope
 
-在正式 EotionEditor 中，按现有 `touchToolbar` 条件控制 `EotionBubbleMenu` 是否启用。Desktop / Tablet mouse 的非空文本选区显示浮动菜单；Tablet coarse/hybrid 与 Mobile coarse/touch 不显示菜单，并保留七项 Touch Toolbar。
+在正式 EotionEditor 增加安全、可保存的 Link mark，并在 mouse/fine-pointer 的选区 Bubble Menu 中创建、修改、移除。共享 DocumentEditor、Touch Toolbar、Block 类型与同步架构保持既有边界。
 
 ## Work Units
 
-- S0 investigate：核对 PageView 的 runtime 规则、BubbleMenu 生命周期、测试和文档入口。
-- S1 execute：EotionEditor 传入启用状态；BubbleMenu 禁用时拒绝显示并立即隐藏；更新 Playwright 与跨端交互文档。
-- S0 verify / Review：编辑器、附件、同步和共享编辑器回归，typecheck、build、diff 与独立复核。
+- S0 investigate：观察当前 Tiptap 3 Link 的 JSON attrs、命令与默认 URL 行为；核对现有菜单及 codec 边界。
+- S2 decide：确定最小持久化 attrs、URL scheme、Bubble Menu 的选区与焦点处理。
+- S1 execute：实现 product Link extension、严格 codec、局部菜单交互、图标及克制样式。
+- S1 execute：补充创建、修改、移除、组合 Mark、安全、save/reload、Touch 与视觉回归；更新现有架构文档。
+- S0 verify / Review：运行相关 Playwright、typecheck、build、生产隔离；复核 diff、截图与提交。
 
 ## Boundaries
 
-- 仅修改 `EotionEditor.vue`、`EotionBubbleMenu.vue`、`product-editor.spec.ts`、本任务记录和对应设计文档。Tiptap BubbleMenu 会移动自身 DOM；运行时不能通过 `v-if` 卸载它，因此组件常驻，禁用时不呈现菜单。
-- PageView 已按 `layoutMode === 'mobile' || inputMode !== 'mouse'` 传入 `touchToolbar`；不改 PageView、runtime 或设备识别逻辑。
-- 不改 Touch Toolbar 七项、Desktop Fixed Toolbar、Bubble Menu 四项/尺寸/定位或其他模块。
-- 保持各文件现有 UTF-8 无 BOM 与换行风格。
-
-## Validation
-
-- 首轮大回归发现响应式 `v-if` 卸载导致 Vue 插入点异常；常驻 + enabled 修复后，针对失败用例及 Bubble Menu 定向用例通过。
-- 编辑器、附件、同步和共享编辑器 Playwright：100 passed、1 skipped（生产构建用例按独立配置运行，1 passed）。
-- web typecheck、build 通过；独立 reviewer 未发现运行时 blocker。
-- 最终 diff 未见无关改动，`git diff --check` 与 UTF-8 无 BOM / CRLF 检查通过。
+- persisted Link 只保存经过验证的语义 attrs；其他 Mark 的 attrs 仍严格禁止。
+- 不引入新的 Block、Editor adapter、全局弹窗、定位系统或 Mobile Link 入口。
+- 不改 PagePersistence、LocalStore、Sync、API、附件、Slash、inputMode 与七项 Touch Toolbar。
 
 ## Baseline
 
-- 用户提供的 `dc2031d` 当前本地无法解析；本轮从干净的 `baa9cbd` 开始。
+- master `2af6ef6`，开始时工作树干净。
+
+## Result / Verification
+
+- 已观察 Tiptap 3.31.3 默认 Link JSON 带 `href/target/rel/class/title`；产品扩展收窄到仅 `href`。安全 HTML 链接携带 `title/target` 的粘贴回归曾复现保存失败，修复后通过。
+- `blockCodec` 读写仅接受安全的 `{ href }` Link attrs，`http://` 与 `https://` 之外 scheme 拒绝；其他 Mark 不接受 attrs。
+- Editor / Attachment / Sync / Shared editor 回归 102 passed；收窄 schema 后 Link/菜单/Touch 定向 5 passed；生产隔离 1 passed；web typecheck 与 build 通过。
+- Desktop Light / Dark 截图输出到本任务 visualizations 目录；独立 reviewer 未发现可证实 blocker；`git diff --check` 通过。

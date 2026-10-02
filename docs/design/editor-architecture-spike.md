@@ -34,8 +34,8 @@ PageView → EotionEditor update → EditorDocument → PagePersistence
 
 ## 验证入口
 
-- P5.8.1 开发验证入口：`/#/__dev/editor-foundation`；浏览器回归：`apps/web/tests/editor-foundation.spec.ts`，覆盖初始内容、JSON 更新、输入/输出隔离、动态只读、focus、卸载/重挂，以及 link/underline 粘贴边界。
-- 正式编辑器、附件和持久化回归入口：`apps/web/tests/product-editor.spec.ts`、`product-attachments.spec.ts`、`product-sync.spec.ts`。其中正式编辑器测试覆盖相同的 link/underline 粘贴边界以及保存和重载。
+- P5.8.1 开发验证入口：`/#/__dev/editor-foundation`；浏览器回归：`apps/web/tests/editor-foundation.spec.ts`，覆盖初始内容、JSON 更新、输入/输出隔离、动态只读、focus、卸载/重挂，以及 shared editor 的 link/underline 粘贴边界。
+- 正式编辑器、附件和持久化回归入口：`apps/web/tests/product-editor.spec.ts`、`product-attachments.spec.ts`、`product-sync.spec.ts`。正式编辑器的 Link 产品行为与 shared editor 的纯文档边界分别验证。
 - 生产路由隔离回归：`pnpm --filter @eotion/web exec playwright test --config playwright.editor-production.config.ts`。
 
 ## P5.8.3 正式文档画布视觉收敛
@@ -68,6 +68,13 @@ PageView → EotionEditor update → EditorDocument → PagePersistence
 
 ## P5.8.6.1 输入方式决定选区菜单
 
-- Eotion Bubble Menu 仅用于 mouse / fine-pointer 文本选区：`EotionEditor` 用 `!touchToolbar` 控制它是否启用。Desktop 和 Tablet 的 mouse 输入继续显示四项菜单；Mobile 布局及 Tablet 的 touch / coarse-pointer 输入保留原七项 Touch Toolbar。
+- Eotion Bubble Menu 仅用于 mouse / fine-pointer 文本选区：`EotionEditor` 用 `!touchToolbar` 控制它是否启用。P5.8.6.1 时 Desktop 和 Tablet 的 mouse 输入显示四项菜单；Mobile 布局及 Tablet 的 touch / coarse-pointer 输入保留原七项 Touch Toolbar。
 - Touch / coarse-pointer 环境保留系统原生 Selection Menu，Eotion 不在选区附近叠加第二套 Bubble Menu。iOS Safari 与 HarmonyOS 6 浏览器真机均验证：系统菜单占据文本选区附近的浮层区域，网页 Bubble Menu 无法可靠避免遮挡。这是跨端交互决策。
 - `product-editor.spec.ts` 覆盖 Desktop / Tablet mouse、Tablet coarse/hybrid 与 Mobile coarse/touch，并检查 390px 页面无横向溢出。
+
+## P5.8.7 Inline Link
+
+- Link 是正式产品 Mark：`EotionEditor` 显式启用 Tiptap 3 Link，配置 `openOnClick: false`、`autolink: false`、`linkOnPaste: false`，并用产品 URL 校验限制为完整的 `http://` 或 `https://` 地址。普通点击正文链接不会跳出编辑页面。共享 `useDocumentEditor` 的 StarterKit baseline 仍关闭 Link 和 Underline；`DocumentEditor` 不承载产品 Link UI。
+- `blockCodec.ts` 继续作为唯一持久化边界。Tiptap 3 默认生成 `href/target/rel/class/title` 五个 Link attrs；产品扩展把编辑器 Link schema 收窄为 `href`，避免粘贴来源的展示属性阻止正常保存。codec 校验安全 URL，并把 Link 规范化为 `{ "type": "link", "attrs": { "href": "https://example.com" } }`。读取 Block 时仅接受这个单字段语义结构；未知 Link attrs、危险 URL 和其他 Mark 的 attrs 均拒绝。
+- Desktop / Tablet 的 mouse/fine-pointer 选区 Bubble Menu 提供第五项 Link，菜单内部切换为紧凑 URL 输入，可创建、预填修改及移除 Mark。输入框自动聚焦；Enter 应用、Escape 返回格式菜单；操作保留文字和选区。正文链接使用克制下划线。Touch / coarse-pointer 环境保留系统 Selection Menu 与七项 Touch Toolbar；已保存 Link 可加载、显示并继续编辑文字，显式创建入口留待后续阶段。
+- 回归位于 `apps/web/tests/product-editor.spec.ts`：创建、修改、移除、组合 Mark 的保存与重载，危险 URL/attrs 的拒绝、菜单交互、Touch 边界、390px 溢出与 Light / Dark 截图。共享编辑器和生产路由隔离分别由既有测试保持。

@@ -2,6 +2,7 @@ import type { BlockResponse, BlockCreateRequest } from '@eotion/contracts'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
 import type { JSONContent } from '@tiptap/core'
 import type { EditorDocument } from './editorDocument'
+import { isSafeLinkHref } from './link'
 
 export type EditorBlock = Pick<BlockCreateRequest, 'id' | 'type' | 'orderKey' | 'props'>
 
@@ -20,7 +21,7 @@ const nodeTypes = {
 
 const blockNodes = Object.fromEntries(Object.entries(nodeTypes).map(([node, type]) => [type, node])) as Record<string, string>
 const nestedTypes = new Set(['text', 'paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'codeBlock', 'hardBreak', 'horizontalRule', 'eotionImage', 'eotionFile', 'eotionTodo'])
-const markTypes = new Set(['bold', 'italic', 'strike', 'code'])
+const markTypes = new Set(['bold', 'italic', 'strike', 'code', 'link'])
 const allowedAttrs: Record<string, string[]> = {
   text: [], paragraph: [], heading: ['level'], bulletList: [], orderedList: ['start', 'type'],
   listItem: [], blockquote: [], codeBlock: ['language'], hardBreak: [], horizontalRule: [],
@@ -51,7 +52,12 @@ function validNode(node: JSONContent): boolean {
   if (type === 'heading' && node.attrs?.level !== undefined && ![1, 2, 3, 4, 5, 6].includes(node.attrs.level)) return false
   // Tiptap 3 includes a null marker style on ordinary numbered lists.
   if (type === 'orderedList' && node.attrs?.type !== undefined && node.attrs.type !== null) return false
-  if (node.marks?.some((mark) => !markTypes.has(mark.type) || Object.keys(mark.attrs ?? {}).length > 0)) return false
+  if (node.marks?.some((mark) => {
+    if (!markTypes.has(mark.type)) return true
+    const attrs = mark.attrs ?? {}
+    if (mark.type !== 'link') return Object.keys(attrs).length > 0
+    return Object.keys(attrs).length !== 1 || typeof attrs.href !== 'string' || !isSafeLinkHref(attrs.href)
+  })) return false
   const children = allowedChildren[type]
   if (children === null && node.content?.length) return false
   if (node.content?.some((child) => !child.type || !children?.includes(child.type))) return false

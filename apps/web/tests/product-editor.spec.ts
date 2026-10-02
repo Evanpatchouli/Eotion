@@ -237,25 +237,29 @@ test('product page keeps title and editor in one open reading column across them
   expect(browserErrors).toEqual([])
 })
 
-test('pasting unsupported link and underline marks saves and reloads plain text', async ({ page }) => {
+test('pasting safe links keeps links and strips underline across save and reload', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [] })
   await page.goto('/#/app/ws-a/page/page-a')
   const body = editor(page)
   await expect(body).toBeVisible()
 
   const pastedText = '粘贴内容保持纯文本'
-  await pasteHtml(body, `<p><a href="https://example.com"><u>${pastedText}</u></a></p>`, pastedText)
+  await pasteHtml(body, `<p><a href="https://example.com" title="来源" target="_self"><u>${pastedText}</u></a></p>`, pastedText)
   await expect(body).toContainText(pastedText)
-  await expect(body.locator('a, u')).toHaveCount(0)
+  await expect(body.locator('a')).toHaveAttribute('href', 'https://example.com')
+  await expect(body.locator('u')).toHaveCount(0)
   await expect.poll(() => api.blocks.some((item) => JSON.stringify(item.props.node).includes(pastedText)), { timeout: 5000 }).toBe(true)
 
   const savedNodes = api.blocks.map((item) => item.props.node)
   expect(JSON.stringify(savedNodes)).toContain(pastedText)
-  expect(JSON.stringify(savedNodes)).not.toMatch(/"type"\s*:\s*"(link|underline)"/)
+  expect(JSON.stringify(savedNodes)).toContain('"type":"link"')
+  expect(JSON.stringify(savedNodes)).not.toMatch(/"type"\s*:\s*"underline"/)
+  expect(JSON.stringify(savedNodes)).toContain('"href":"https://example.com"')
 
   await page.reload()
   await expect(editor(page)).toContainText(pastedText)
-  await expect(editor(page).locator('a, u')).toHaveCount(0)
+  await expect(editor(page).locator('a')).toHaveAttribute('href', 'https://example.com')
+  await expect(editor(page).locator('u')).toHaveCount(0)
 })
 
 test('empty page loads without mutations, then debounces edits with a stable block identity', async ({ page }) => {
@@ -681,7 +685,7 @@ for (const { shortcut, mark, selector } of [
   })
 }
 
-test('selection bubble toggles four existing marks, combines marks and reloads saved content', async ({ page }) => {
+test('selection bubble toggles existing marks, combines marks and reloads saved content', async ({ page }) => {
   const api = await installApi(page, {
     pages: [pageRecord('page-a', 'Alpha', 1)],
     blocks: [
@@ -699,7 +703,7 @@ test('selection bubble toggles four existing marks, combines marks and reloads s
   await selectParagraphText(body.locator('p').first())
   await expect(menu).toBeVisible()
   await canvasScreenshot(page, 'p586-desktop-light-selection')
-  await expect(menu.getByRole('button')).toHaveCount(4)
+  await expect(menu.getByRole('button')).toHaveCount(5)
   const buttonSize = await menu.getByRole('button', { name: '粗体' }).evaluate(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height }))
   expect(buttonSize).toEqual({ width: 32, height: 32 })
   await menu.getByRole('button', { name: '粗体' }).click()
@@ -729,6 +733,125 @@ test('selection bubble toggles four existing marks, combines marks and reloads s
   await page.reload()
   await expect(editor(page).locator('p').first().locator('strong em s')).toHaveText('Combined marks')
   await expect(editor(page).locator('p').nth(1).locator('code')).toHaveText('Inline code')
+})
+
+test('selection bubble creates, edits, removes and combines links across save and reload', async ({ page }) => {
+  const api = await installApi(page, {
+    pages: [pageRecord('page-a', 'Alpha', 1)],
+    blocks: [
+      block('page-a', 'link-a', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Link text' }] }),
+      block('page-a', 'link-b', 2, { type: 'paragraph', content: [{ type: 'text', text: 'Bold link' }] }),
+    ],
+  })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  const menu = bubble(page)
+  const paragraph = body.locator('p').first()
+
+  await selectParagraphText(paragraph)
+  await expect(menu).toBeVisible()
+  await menu.getByRole('button', { name: '链接' }).click()
+  const input = page.getByRole('textbox', { name: '链接地址' })
+  await expect(input).toBeVisible()
+  await expect(input).toBeFocused()
+  await canvasScreenshot(page, 'p587-desktop-light-link-editing')
+  await input.fill('https://first.example/path')
+  await input.press('Enter')
+  await expect(paragraph.locator('a')).toHaveAttribute('href', 'https://first.example/path')
+  await expect.poll(() => JSON.stringify(api.blocks.find(item => item.id === 'link-a')?.props.node)).toContain('"href":"https://first.example/path"')
+
+  const pageUrl = page.url()
+  await paragraph.locator('a').click()
+  await expect(page).toHaveURL(pageUrl)
+  await page.reload()
+  const reloadedParagraph = editor(page).locator('p').first()
+  await expect(reloadedParagraph.locator('a')).toHaveAttribute('href', 'https://first.example/path')
+
+  await selectParagraphText(reloadedParagraph)
+  await expect(bubble(page).getByRole('button', { name: '链接' })).toHaveAttribute('aria-pressed', 'true')
+  await bubble(page).getByRole('button', { name: '链接' }).click()
+  const editInput = page.getByRole('textbox', { name: '链接地址' })
+  await expect(editInput).toHaveValue('https://first.example/path')
+  await editInput.fill('https://cancelled.example')
+  await editInput.press('Escape')
+  await expect(bubble(page).getByRole('button', { name: '链接' })).toBeVisible()
+  await expect(reloadedParagraph.locator('a')).toHaveAttribute('href', 'https://first.example/path')
+
+  await bubble(page).getByRole('button', { name: '链接' }).click()
+  await page.getByRole('textbox', { name: '链接地址' }).fill('https://cancelled.example')
+  await page.getByRole('button', { name: '取消链接编辑' }).click()
+  await expect(reloadedParagraph.locator('a')).toHaveAttribute('href', 'https://first.example/path')
+
+  await bubble(page).getByRole('button', { name: '链接' }).click()
+  await page.getByRole('textbox', { name: '链接地址' }).fill('https://updated.example')
+  await page.getByRole('button', { name: '应用链接' }).click()
+  await expect(reloadedParagraph.locator('a')).toHaveAttribute('href', 'https://updated.example')
+  await expect.poll(() => JSON.stringify(api.blocks.find(item => item.id === 'link-a')?.props.node)).toContain('"href":"https://updated.example"')
+
+  await page.evaluate(() => localStorage.setItem('eotion:theme', 'dark'))
+  await page.reload()
+  const darkParagraph = editor(page).locator('p').first()
+  await selectParagraphText(darkParagraph)
+  await bubble(page).getByRole('button', { name: '链接' }).click()
+  await expect(page.getByRole('textbox', { name: '链接地址' })).toHaveValue('https://updated.example')
+  await canvasScreenshot(page, 'p587-desktop-dark-link-editing')
+  await page.getByRole('button', { name: '移除链接' }).click()
+  await expect(darkParagraph).toHaveText('Link text')
+  await expect(darkParagraph.locator('a')).toHaveCount(0)
+  await expect.poll(() => JSON.stringify(api.blocks.find(item => item.id === 'link-a')?.props.node)).not.toContain('"type":"link"')
+  await page.reload()
+  await expect(editor(page).locator('p').first()).toHaveText('Link text')
+  await expect(editor(page).locator('p').first().locator('a')).toHaveCount(0)
+
+  const combinedParagraph = editor(page).locator('p').nth(1)
+  await selectParagraphText(combinedParagraph)
+  await bubble(page).getByRole('button', { name: '粗体' }).click()
+  await selectParagraphText(combinedParagraph)
+  await bubble(page).getByRole('button', { name: '链接' }).click()
+  await page.getByRole('textbox', { name: '链接地址' }).fill('http://combined.example')
+  await page.getByRole('textbox', { name: '链接地址' }).press('Enter')
+  await expect(combinedParagraph.locator('a strong')).toHaveText('Bold link')
+  await expect.poll(() => JSON.stringify(api.blocks.find(item => item.id === 'link-b')?.props.node)).toContain('"type":"bold"')
+  await expect.poll(() => JSON.stringify(api.blocks.find(item => item.id === 'link-b')?.props.node)).toContain('"type":"link"')
+  const persistedLinkMark = (api.blocks.find(item => item.id === 'link-b')?.props.node as any).content[0].marks.find((mark: any) => mark.type === 'link')
+  expect(persistedLinkMark.attrs).toEqual({ href: 'http://combined.example' })
+  await page.reload()
+  await expect(editor(page).locator('p').nth(1).locator('a strong')).toHaveText('Bold link')
+})
+
+test('link editor rejects unsafe schemes and persisted links or mark attributes fail closed', async ({ page }) => {
+  const api = await installApi(page, {
+    pages: [pageRecord('page-a', 'Alpha', 1)],
+    blocks: [block('page-a', 'unsafe-link', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Reject this' }] })],
+  })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const paragraph = editor(page).locator('p')
+  await selectParagraphText(paragraph)
+  await bubble(page).getByRole('button', { name: '链接' }).click()
+  const input = page.getByRole('textbox', { name: '链接地址' })
+  for (const href of ['javascript:alert(1)', 'data:text/html,unsafe', 'file:///etc/passwd']) {
+    await input.fill(href)
+    await page.getByRole('button', { name: '应用链接' }).click()
+    await expect(input).toBeVisible()
+    await expect(paragraph.locator('a')).toHaveCount(0)
+  }
+  expect(blockRequests(api.requests).some(request => JSON.stringify(request.body).match(/javascript:|data:text\/html|file:\/\//))).toBe(false)
+
+  const invalidNodes = [
+    { type: 'paragraph', content: [{ type: 'text', text: 'bad scheme', marks: [{ type: 'link', attrs: { href: 'javascript:alert(1)' } }] }] },
+    { type: 'paragraph', content: [{ type: 'text', text: 'bad data scheme', marks: [{ type: 'link', attrs: { href: 'data:text/html,unsafe' } }] }] },
+    { type: 'paragraph', content: [{ type: 'text', text: 'bad file scheme', marks: [{ type: 'link', attrs: { href: 'file:///etc/passwd' } }] }] },
+    { type: 'paragraph', content: [{ type: 'text', text: 'unknown link attr', marks: [{ type: 'link', attrs: { href: 'https://example.com', title: 'unknown' } }] }] },
+    { type: 'paragraph', content: [{ type: 'text', text: 'unknown bold attr', marks: [{ type: 'bold', attrs: { level: 1 } }] }] },
+  ]
+  for (const [index, node] of invalidNodes.entries()) {
+    api.blocks.splice(0, api.blocks.length, block('page-a', `invalid-${index}`, 1, node))
+    await page.reload()
+    await expect(page.getByRole('alert')).toContainText('尚不支持编辑')
+    await expect(editor(page)).toHaveCount(0)
+    expect(blockRequests(api.requests)).toHaveLength(0)
+  }
 })
 
 test('selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark', async ({ page }) => {
@@ -840,8 +963,11 @@ test('mobile selection bubble stays hidden without horizontal overflow and leave
   await selectParagraphText(editor(page).locator('p'))
   await expect(bubble(page)).toHaveCount(0)
   await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
+  await pasteHtml(editor(page), '<p><a href="https://touch.example">Touch link</a></p>', 'Touch link')
+  await expect(editor(page).locator('a')).toHaveAttribute('href', 'https://touch.example')
+  await expect(bubble(page)).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
-  await canvasScreenshot(page, 'p586-mobile-selection')
+  await canvasScreenshot(page, 'p587-mobile-link')
 })
 
 test('non-formatable code block and attachment selection never open the text formatting bubble', async ({ page }) => {

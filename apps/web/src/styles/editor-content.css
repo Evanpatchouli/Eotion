@@ -13,3 +13,4 @@
 :is(.document-editor, .eotion-editor-content) .tiptap blockquote { margin-inline: 0; padding-left: var(--e-space-4); border-left: 2px solid var(--e-color-border); color: var(--e-color-text-secondary); }
 :is(.document-editor, .eotion-editor-content) .tiptap pre { max-width: 100%; overflow-x: auto; padding: var(--e-space-3); background: var(--e-color-surface-subtle); font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
 :is(.document-editor, .eotion-editor-content) .tiptap code { overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+.eotion-editor-content .tiptap a[href] { color: inherit; text-decoration-line: underline; text-decoration-color: var(--e-color-text-secondary); text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: text; }

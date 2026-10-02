@@ -19,6 +19,7 @@
     "@eotion/sdk": "workspace:*",
     "@eotion/storage": "workspace:*",
     "@tiptap/core": "^3.31.3",
+    "@tiptap/extension-link": "3.31.3",
     "@tiptap/pm": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
     "@tiptap/suggestion": "^3.31.3",

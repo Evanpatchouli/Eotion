@@ -14,6 +14,7 @@ import {
   Heading,
   Image,
   Italic,
+  Link,
   List,
   ListOrdered,
   ListTodo,
@@ -88,6 +89,7 @@ export enum IconName {
   Text = 'text',
   Bold = 'bold',
   Italic = 'italic',
+  Link = 'link',
   Strike = 'strike',
 }
 
@@ -134,5 +136,6 @@ export const iconNodes: Record<IconName, IconNode> = {
   [IconName.Text]: Type,
   [IconName.Bold]: Bold,
   [IconName.Italic]: Italic,
+  [IconName.Link]: Link,
   [IconName.Strike]: Strikethrough,
 }

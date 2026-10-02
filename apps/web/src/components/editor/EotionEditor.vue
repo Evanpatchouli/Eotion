@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { Attributes } from '@tiptap/core'
 import { EditorContent } from '@tiptap/vue-3'
+import Link from '@tiptap/extension-link'
 import { exitSuggestion } from '@tiptap/suggestion'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
 import { createLocalId } from '@eotion/storage'
@@ -8,6 +10,7 @@ import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
 import { BlockIdentity } from '../../editor/blockIdentity'
+import { isSafeLinkHref } from '../../editor/link'
 import { runBlockCommand, type BlockCommand } from '../../editor/blockCommands'
 import { enqueueAttachmentCleanup, pendingAttachmentCleanups } from '../../editor/attachmentCleanup'
 import { createSlashCommand } from '../../editor/slashCommand'
@@ -35,6 +38,13 @@ const emit = defineEmits<{
 }>()
 
 const composing = ref(false)
+// Presentation attributes come from Link options; only href belongs in editor JSON.
+const ProductLink = Link.extend({
+  addAttributes() {
+    const attributes = this.parent?.() as Attributes | undefined
+    return { href: attributes?.href ?? { default: null } }
+  },
+}).configure({ openOnClick: false, autolink: false, linkOnPaste: false, isAllowedUri: isSafeLinkHref })
 const compositionWaiters = new Set<() => void>()
 const keyboardInset = ref(0)
 const uploads = ref<UploadTask[]>([])
@@ -92,7 +102,7 @@ function updateSelection() {
 }
 
 const { editor, getDocument } = useDocumentEditor({
-  extensions: [EotionImage, EotionFile, EotionTodo, AttachmentLifetime, BlockIdentity, createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
+  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, AttachmentLifetime, BlockIdentity, createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
   content: props.content,
   ariaLabel: props.ariaLabel ?? 'Tiptap 编辑区域',
   attributes: { spellcheck: 'false' },
