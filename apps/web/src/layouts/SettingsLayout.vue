@@ -3,6 +3,7 @@ import { computed, onMounted, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import EotionIcon from '../components/ui/EotionIcon.vue'
 import { IconName } from '../components/ui/icons'
+import { useRuntimeContext } from '../composables/useRuntimeContext'
 import { safeProductReturnTo } from '../settingsNavigation'
 import { useAuthStore } from '../stores/auth'
 import { useProductWorkspacesStore } from '../stores/productWorkspaces'
@@ -14,11 +15,15 @@ const router = useRouter()
 const auth = useAuthStore()
 const workspaces = useProductWorkspacesStore()
 const { themePreference } = useTheme()
+const { layoutMode } = useRuntimeContext()
 const isIndex = computed(() => route.name === 'settings-index')
 const returnTo = computed(() => safeProductReturnTo(route.query.returnTo))
 const requestedWorkspace = computed(() => typeof route.query.workspaceId === 'string' ? route.query.workspaceId : '')
 const currentWorkspace = computed(() => workspaces.items.find((item) => item.id === requestedWorkspace.value && item.ownerId === auth.user?.id) ?? null)
 const navQuery = computed(() => ({ returnTo: returnTo.value, ...(currentWorkspace.value ? { workspaceId: currentWorkspace.value.id } : requestedWorkspace.value ? { workspaceId: requestedWorkspace.value } : {}) }))
+const isCompactDetail = computed(() => layoutMode.value === 'mobile' && !isIndex.value)
+const backTo = computed(() => isCompactDetail.value ? { name: 'settings-index', query: navQuery.value } : returnTo.value)
+const backLabel = computed(() => isCompactDetail.value ? '返回设置列表' : '返回工作区')
 const entries = [
   { group: '个人', items: [{ label: '账号资料', name: 'settings-profile', icon: IconName.User }] },
   { group: '外观', items: [{ label: '外观', name: 'settings-appearance', icon: IconName.Appearance }] },
@@ -34,7 +39,7 @@ onMounted(() => { void workspaces.load() })
 <template>
   <div class="settings-shell">
     <header class="settings-topbar">
-      <RouterLink class="settings-exit" :to="returnTo" aria-label="返回工作区"><EotionIcon :name="IconName.ArrowLeft" :size="18" /><span>返回工作区</span></RouterLink>
+      <RouterLink class="settings-exit" :to="backTo" :aria-label="backLabel"><EotionIcon :name="IconName.ArrowLeft" :size="18" /><span>{{ backLabel }}</span></RouterLink>
       <div class="settings-topbar-title"><EotionIcon :name="IconName.Settings" :size="18" /><strong>设置</strong></div>
       <span class="settings-topbar-spacer" aria-hidden="true" />
     </header>
@@ -57,7 +62,6 @@ onMounted(() => { void workspaces.load() })
         </div>
       </nav>
       <main class="settings-detail" id="settings-detail">
-        <div v-if="!isIndex" class="settings-compact-back"><RouterLink :to="{ name: 'settings-index', query: navQuery }" aria-label="返回设置列表"><EotionIcon :name="IconName.ArrowLeft" :size="20" /><span>设置</span></RouterLink></div>
         <RouterView :workspace="currentWorkspace" :workspace-loading="workspaces.loading" />
       </main>
     </div>

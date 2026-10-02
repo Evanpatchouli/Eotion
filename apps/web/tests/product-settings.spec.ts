@@ -86,22 +86,73 @@ test('Settings uses a selected list-detail layout at 1440 and 1024 pixels', asyn
   await installApi(page)
   for (const width of [1440, 1024]) {
     await page.setViewportSize({ width, height: 900 })
-    await page.goto(settingsUrl())
+    await page.goto(settingsUrl('/app/ws-a/page/page-a'))
     await expect(page.getByRole('navigation', { name: '设置导航' })).toBeVisible()
     await expect(page.getByRole('heading', { name: '账号资料' })).toBeVisible()
     await expect(page.getByRole('link', { name: /账号资料/ })).toHaveAttribute('aria-current', 'page')
+    await page.goto(`/#/settings/appearance?returnTo=${encodeURIComponent('/app/ws-a/page/page-a')}&workspaceId=ws-a`)
+    await expect(page.getByRole('navigation', { name: '设置导航' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '外观', level: 1 })).toBeVisible()
+    await expect(page.getByRole('link', { name: /外观/ })).toHaveAttribute('aria-current', 'page')
+    await expect(page.locator('.settings-compact-back')).toHaveCount(0)
+    const exit = page.locator('.settings-topbar').getByRole('link', { name: '返回工作区' })
+    await expect(exit).toHaveAttribute('href', '#/app/ws-a/page/page-a')
     const layout = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
     expect(layout.content).toBeLessThanOrEqual(layout.viewport)
+    await exit.click()
+    await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/)
   }
 })
 
-test('390px Settings navigates index to detail and back without a drawer or undersized controls', async ({ page }) => {
+test('390px Settings index returns to the original page', async ({ page }) => {
   await installApi(page)
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto(settingsUrl())
+  await page.goto(settingsUrl('/app/ws-a/page/page-a'))
   const nav = page.getByRole('navigation', { name: '设置导航' })
   await expect(nav).toBeVisible()
   await expect(page.locator('.settings-detail')).toBeHidden()
+  const exit = page.locator('.settings-topbar').getByRole('link', { name: '返回工作区' })
+  await expect(exit).toHaveAttribute('aria-label', '返回工作区')
+  const exitBox = await exit.boundingBox()
+  expect(exitBox?.width).toBeGreaterThanOrEqual(44)
+  expect(exitBox?.height).toBeGreaterThanOrEqual(44)
+  await exit.click()
+  await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/)
+})
+
+for (const detail of ['profile', 'appearance', 'workspace/general']) {
+  test(`390px Settings ${detail} has one back control and preserves navigation state`, async ({ page }) => {
+    await installApi(page)
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(`/#/settings/${detail}?returnTo=${encodeURIComponent('/app/ws-a/page/page-a')}&workspaceId=ws-a`)
+    await expect(page.getByRole('navigation', { name: '设置导航' })).toBeHidden()
+    await expect(page.locator('.settings-compact-back')).toHaveCount(0)
+    await expect(page.locator('.settings-topbar')).toHaveCount(1)
+    const back = page.locator('.settings-topbar').getByRole('link', { name: '返回设置列表' })
+    await expect(back).toHaveCount(1)
+    await expect(back).toHaveAttribute('aria-label', '返回设置列表')
+    const backBox = await back.boundingBox()
+    expect(backBox?.width).toBeGreaterThanOrEqual(44)
+    expect(backBox?.height).toBeGreaterThanOrEqual(44)
+    await back.click()
+    await expect(page).toHaveURL(/#\/settings\?returnTo=.*workspaceId=ws-a/)
+    const query = new URLSearchParams(new URL(page.url()).hash.split('?')[1])
+    expect(query.get('returnTo')).toBe('/app/ws-a/page/page-a')
+    expect(query.get('workspaceId')).toBe('ws-a')
+    await expect(page.getByRole('navigation', { name: '设置导航' })).toBeVisible()
+    await page.locator('.settings-topbar').getByRole('link', { name: '返回工作区' }).click()
+    await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/)
+  })
+}
+
+test('390px Settings index navigates to detail with a single topbar and no overflow', async ({ page }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  await installApi(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ colorScheme: 'light' })
+  await page.goto(settingsUrl())
+  const nav = page.getByRole('navigation', { name: '设置导航' })
   const appearance = page.getByRole('link', { name: /外观/ })
   const box = await appearance.boundingBox()
   expect(box?.height).toBeGreaterThanOrEqual(44)
@@ -109,16 +160,38 @@ test('390px Settings navigates index to detail and back without a drawer or unde
   await expect(page).toHaveURL(/#\/settings\/appearance/)
   await expect(page.getByRole('heading', { name: '外观' })).toBeVisible()
   await expect(nav).toBeHidden()
-  const back = page.getByRole('link', { name: '返回设置列表' })
-  const backBox = await back.boundingBox()
-  expect(backBox?.height).toBeGreaterThanOrEqual(44)
-  await back.click()
+  await page.locator('.settings-topbar').getByRole('link', { name: '返回设置列表' }).click()
   await expect(page).toHaveURL(/#\/settings(?:\?|$)/)
   await expect(nav).toBeVisible()
   await expect(page.locator('.settings-detail')).toBeHidden()
   await expect(page.locator('.sidebar--open')).toHaveCount(0)
+  await page.getByRole('link', { name: /账号资料/ }).click()
+  await expect(page.getByRole('heading', { name: '账号资料' })).toBeVisible()
+  const geometry = await page.evaluate(() => {
+    const content = document.querySelector<HTMLElement>('.settings-page')!
+    const heading = content.querySelector<HTMLElement>('h1')!
+    return {
+      topbars: document.querySelectorAll('.settings-topbar').length,
+      gutter: getComputedStyle(content).paddingLeft,
+      headingX: heading.getBoundingClientRect().left,
+      viewport: document.documentElement.clientWidth,
+      contentWidth: document.documentElement.scrollWidth,
+    }
+  })
+  expect(geometry.topbars).toBe(1)
+  expect(geometry.gutter).toBe('30px')
+  expect(geometry.headingX).toBe(30)
+  expect(geometry.contentWidth).toBeLessThanOrEqual(geometry.viewport)
+  await page.getByRole('link', { name: '返回设置列表' }).click()
+  await page.getByRole('link', { name: /外观/ }).click()
+  await page.getByRole('radio', { name: /深色/ }).check()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await page.getByRole('link', { name: '返回设置列表' }).click()
+  await page.getByRole('link', { name: /账号资料/ }).click()
+  await expect(page.getByRole('heading', { name: '账号资料' })).toBeVisible()
   const widths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }))
   expect(widths.content).toBeLessThanOrEqual(widths.viewport)
+  expect(pageErrors).toEqual([])
 })
 
 test('profile trims and caches the saved name; invalid and successful password changes follow the session contract', async ({ page }) => {
