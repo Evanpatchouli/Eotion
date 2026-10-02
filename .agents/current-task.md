@@ -1,23 +1,22 @@
-# Current Task — Page / Workspace Context Menu
+# Current Task — Context Menu Visual Refinement
 
 ## Work Units
-- S0 investigate：Scout 调查现有 fixture / 回归入口；主 Agent 检查 Popover 与两处菜单。
-- S2 decide（主 Agent）：复用 EotionPopover，添加可选 context 定位与单实例互斥；Page 保留既有业务动作，Workspace 改为独立 trailing More 按钮。
-- S1 execute：Fast Worker 修改 UI；主 Agent 复核并补充交互回归、定位器迁移与契约文档。
-- S0 verify：Scout 执行 typecheck / build、PageTree / ProductShell 及相关业务回归；主 Agent 核对 Desktop 截图、编码和 diff。
+- S0 investigate（主 Agent）：确认当前两处仅共享 EotionPopover 行为，菜单项 DOM 重复。
+- S2 decide（主 Agent）：保留 Popover，新增轻量共享菜单列表；Workspace 保留 dialog、列表与表单。
+- S1 execute（Fast Worker）：统一菜单元数据、16px 图标、紧凑排版和状态样式，同步契约文档。
+- S0 verify（主 Agent）：Context Menu 与相关业务回归、Web build/typecheck、截图与编码检查。
 - Review：独立 reviewer 复核，主 Agent 检查结论并提交。
 
 ## Scope
-只改浮层展示与触发，不改数据、路由、Editor、存储、同步、API 或菜单业务。
-提交：fix(ui): use context menus for page and workspace actions
+仅菜单展示与轻量共享结构；不改变触发、关闭、定位、互斥或业务动作。
+提交：fix(ui): refine context menu presentation
 
-状态：完成（2026-10-02）；独立 reviewer 未发现 blocker，主 Agent 已复核最终 diff。
+状态：完成（2026-10-02）；独立 reviewer 无 blocker，主 Agent 已复核代码、验证证据与最终 diff。
 
 ## Verification
-- Web typecheck 与最终 build（含 vue-tsc）通过。
-- ProductShell / ProductPages / ProductFlow / UiFoundation / InteractionFoundation / ProductEditor / ProductSync / ProductAttachments 共 122 项回归最终通过。首轮 117/122，5 项旧 Workspace 整行按钮文本 locator 更新为可见名称后，ProductFlow 重跑 10/10 通过。
-- 最终 context-menu 定向 2/2 通过，包含 click、行右键、菜单互斥、outside/Esc、导航隔离、布局不位移、角落边界与 viewport 高度 844→600。
-- 1440×900 Desktop Light 两态截图人工核对；390×844 Mobile 行为通过；页面身份、非空渲染、Vite overlay 与 console/page errors 检查通过。
-- 截图：C:/Users/evanpatchouli/.codex/visualizations/2026/10/02/eotion-context-menu。
-- Browser plugin not available，使用仓库 Playwright + Chrome；Electron 宿主、真实 API/数据库与 real-sync 配置未单独运行。
-- git diff --check 与 UTF-8 无 BOM 验证通过。
+- ProductShell / ProductPages / ProductFlow / UiFoundation / InteractionFoundation：50/50 通过。
+- 最终样式内聚后 context menu 定向：3/3 通过。
+- Web typecheck 与最终生产 build（含 vue-tsc）通过。
+- 1440×900 Page / Workspace 截图已人工核对；390×844→600 边界及移动 Esc 回归通过。
+- git diff --check、UTF-8 无 BOM 检查通过。
+- 截图：C:/Users/evanpatchouli/.codex/visualizations/2026/10/02/eotion-menu-refinement。

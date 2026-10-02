@@ -6,6 +6,7 @@ import eotionIconUrl from '../assets/eotion-icon.png'
 import EotionIcon from '../components/ui/EotionIcon.vue'
 import EotionNavItem from '../components/ui/EotionNavItem.vue'
 import EotionPopover from '../components/ui/EotionPopover.vue'
+import EotionContextMenu from '../components/ui/EotionContextMenu.vue'
 import { IconName } from '../components/ui/icons'
 import PageTree from '../components/product/PageTree.vue'
 import SyncStatus from '../components/product/SyncStatus.vue'
@@ -42,6 +43,10 @@ const logoutError = ref('')
 const routeRevision = ref(0)
 const workspaceId = computed(() => typeof route.params.workspaceId === 'string' ? route.params.workspaceId : '')
 const currentWorkspace = computed(() => workspaces.items.find((item) => item.id === workspaceId.value) ?? null)
+const workspaceActionItems = computed(() => [
+  { label: '新建工作区', icon: IconName.Plus, disabled: !workspaces.loaded, action: () => { formMode.value = formMode.value === 'create' ? null : 'create'; operationError.value = '' } },
+  ...(currentWorkspace.value ? [{ label: '重命名当前工作区', icon: IconName.Rename, disabled: !workspaces.loaded, action: () => { formMode.value = formMode.value === 'rename' ? null : 'rename'; operationError.value = '' } }] : []),
+])
 const isUnavailable = computed(() => Boolean(workspaceId.value) && !currentWorkspace.value && workspaces.loaded)
 const pageId = computed(() => typeof route.params.pageId === 'string' ? route.params.pageId : '')
 const breadcrumb = computed(() => {
@@ -238,8 +243,7 @@ onUnmounted(() => {
             </li>
           </ul>
           <div class="product-switcher-actions">
-            <button class="product-text-button" type="button" data-popover-item :disabled="!workspaces.loaded" @click="formMode = formMode === 'create' ? null : 'create'; operationError = ''">新建工作区</button>
-            <button v-if="currentWorkspace" class="product-text-button" type="button" data-popover-item :disabled="!workspaces.loaded" @click="formMode = formMode === 'rename' ? null : 'rename'; operationError = ''">重命名当前工作区</button>
+            <EotionContextMenu :items="workspaceActionItems" item-role="button" />
           </div>
           <WorkspaceCreateForm v-if="formMode === 'create' && workspaces.loaded" :pending="workspaces.createPending" :error="operationError || workspaces.mutationError" @submit="createWorkspace" />
           <WorkspaceRenameForm v-if="formMode === 'rename' && currentWorkspace && workspaces.loaded" :initial-name="currentWorkspace.name" :pending="workspaces.renamePending" :error="operationError || workspaces.mutationError" @submit="renameWorkspace" />

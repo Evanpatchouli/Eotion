@@ -34,6 +34,8 @@ pnpm --filter @eotion/web exec playwright test tests/product-shell.spec.ts tests
 
 页面菜单保留新建子页面、重命名、移动、删除四项原有业务行为，使用 menu / menuitem 语义；重命名、移动与删除确认表单保持原有位置。点击外部与 ESC 关闭，菜单打开不触发页面导航；移动端 ESC 优先关闭菜单，保留导航抽屉。工作区名称为静态行内容，右侧独立 `...` 按钮打开同类浮层，列表与表单仍保持非模态 dialog 语义。
 
+页面操作与工作区操作共用 `EotionContextMenu` 列表展示组件；Popover 的打开、关闭、定位与互斥仍由 `EotionPopover` 管理。
+
 2026-10-02 验证：Web typecheck、生产 build 通过；上述四个 Playwright 文件初次集成验证共 34/34 通过。独立复核后补充加载中→有工作区／空列表的键盘回归：没有可用按钮时 dialog 面板接收焦点，加载完成后 Tab 可进入按钮。最终 build（包含 vue-tsc）与壳层／基础组件测试 9/9 通过，并重新生成三态截图。截图已核对 1440×900、侧栏几何与 Popover 开合；内容区保留既有编辑器与本地保存状态，本阶段不宣称完成整个 Page 的 Quiet Studio 迁移。
 
 

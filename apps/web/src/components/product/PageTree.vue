@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProductPagesStore } from '../../stores/productPages'
 import EotionIcon from '../ui/EotionIcon.vue'
 import EotionNavItem from '../ui/EotionNavItem.vue'
+import EotionContextMenu from '../ui/EotionContextMenu.vue'
 import EotionPopover from '../ui/EotionPopover.vue'
 import { IconName } from '../ui/icons'
 import { flushActivePageEditor } from '../../editor/activePageEditor'
@@ -27,6 +28,15 @@ const workspaceId = computed(() => typeof route.params.workspaceId === 'string' 
 const currentPageId = computed(() => typeof route.params.pageId === 'string' ? route.params.pageId : '')
 const rows = computed(() => flattenPageTree(buildPageTree(pages.items), expanded.value))
 const canCreate = computed(() => !!workspaceId.value && pages.forWorkspaceId === workspaceId.value && pages.loaded && !pages.loading && !pages.error && !pages.createPending)
+
+function pageMenuItems(pageId: string) {
+  return [
+    { label: '新建子页面', icon: IconName.Plus, disabled: pages.createPending, action: () => createChild(pageId) },
+    { label: '重命名', icon: IconName.Rename, action: () => startRename(pageId) },
+    { label: '移动', icon: IconName.Move, action: () => startMove(pageId) },
+    { label: '删除', icon: IconName.Trash, danger: true, action: () => startDelete(pageId) },
+  ]
+}
 
 function closePanels() {
   menuFor.value = null
@@ -196,12 +206,7 @@ watch(workspaceId, () => { closePanels(); expanded.value = new Set() })
               </EotionNavItem>
             </div>
           </template>
-          <div class="product-page-menu">
-            <button class="product-text-button" type="button" role="menuitem" :disabled="pages.createPending" @click="createChild(row.page.id)">新建子页面</button>
-            <button class="product-text-button" type="button" role="menuitem" @click="startRename(row.page.id)">重命名</button>
-            <button class="product-text-button" type="button" role="menuitem" @click="startMove(row.page.id)">移动</button>
-            <button class="product-text-button product-text-button--danger" type="button" role="menuitem" data-danger="true" @click="startDelete(row.page.id)">删除</button>
-          </div>
+          <EotionContextMenu class="product-page-menu" :items="pageMenuItems(row.page.id)" />
         </EotionPopover>
 
         <PageRenameForm v-if="renameFor === row.page.id" :initial-title="row.page.title" :pending="pages.renamePending" :error="pages.renameError" @submit="submitRename(row.page.id, $event)" @cancel="renameFor = null" />

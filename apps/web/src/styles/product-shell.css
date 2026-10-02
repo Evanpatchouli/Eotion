@@ -239,8 +239,7 @@
   color: var(--e-color-text-primary);
 }
 
-.product-workspace-popover .product-workspace-name,
-.product-workspace-popover .product-switcher-actions .product-text-button {
+.product-workspace-popover .product-workspace-name {
   font-size: var(--e-type-ui-size);
   line-height: var(--e-type-ui-line);
 }
@@ -277,19 +276,6 @@
   gap: 2px;
   padding-top: var(--e-space-2);
   border-color: var(--e-color-border);
-}
-
-.product-workspace-popover .product-switcher-actions .product-text-button {
-  min-height: 32px;
-  padding: 5px 6px;
-  border-radius: var(--e-radius-control);
-  color: var(--e-color-text-secondary);
-  text-decoration: none;
-}
-
-.product-workspace-popover .product-switcher-actions .product-text-button:hover:not(:disabled) {
-  background: var(--e-color-hover);
-  color: var(--e-color-text-primary);
 }
 
 .product-shell:not([data-layout="mobile"]) {

@@ -362,6 +362,49 @@ test('page and workspace context menus float at the pointer, close and stay excl
   await expect(page.locator('vite-error-overlay')).toHaveCount(0)
 })
 
+test('page and workspace menu actions share compact icon alignment and interaction states', async ({ page }) => {
+  await openShell(page)
+  const pageTrigger = page.getByRole('button', { name: '页面操作：阅读清单', exact: true })
+  await pageTrigger.press('ArrowDown')
+  const menu = page.getByRole('menu', { name: '阅读清单 的操作', exact: true })
+  const create = menu.getByRole('menuitem', { name: '新建子页面', exact: true })
+  await expect(create).toBeFocused()
+  const inspect = async (container: ReturnType<Page['locator']>) => container.locator('.eotion-context-menu__item').evaluateAll(items => items.map(item => {
+    const style = getComputedStyle(item)
+    const icon = item.querySelector('svg')!.getBoundingClientRect()
+    const label = item.querySelector('.eotion-context-menu__label')!.getBoundingClientRect()
+    return { height: item.getBoundingClientRect().height, font: style.fontSize, line: style.lineHeight,
+      iconWidth: icon.width, iconHeight: icon.height, gap: label.x - icon.right,
+      centerOffset: Math.abs((icon.y + icon.height / 2) - (label.y + label.height / 2)) }
+  }))
+  const pageMetrics = await inspect(menu)
+  expect(pageMetrics).toHaveLength(4)
+  for (const metric of pageMetrics) {
+    expect(metric.height).toBe(28)
+    expect(metric.font).toBe('14px')
+    expect(metric.line).toBe('20px')
+    expect(metric.iconWidth).toBe(16)
+    expect(metric.iconHeight).toBe(16)
+    expect(metric.gap).toBe(8)
+    expect(metric.centerOffset).toBeLessThanOrEqual(1)
+  }
+  const danger = menu.getByRole('menuitem', { name: '删除', exact: true })
+  await expect(danger).toHaveAttribute('data-danger', 'true')
+  expect(await danger.evaluate(item => getComputedStyle(item).color)).not.toBe(await create.evaluate(item => getComputedStyle(item).color))
+  await page.keyboard.press('ArrowDown')
+  const rename = menu.getByRole('menuitem', { name: '重命名', exact: true })
+  await expect(rename).toBeFocused()
+  expect(await rename.evaluate(item => getComputedStyle(item).outlineStyle)).toBe('solid')
+  await danger.hover()
+  expect(await danger.evaluate(item => getComputedStyle(item).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)')
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: '切换工作区', exact: true }).click()
+  const workspace = page.getByRole('dialog', { name: '工作区切换', exact: true })
+  expect(await inspect(workspace)).toEqual(pageMetrics.slice(0, 2))
+  await workspace.getByRole('button', { name: '新建工作区', exact: true }).hover()
+  await expect(workspace.getByRole('button', { name: '新建工作区', exact: true })).toBeEnabled()
+})
+
 test('context menu bounds clamp at viewport edges and Escape preserves mobile drawer', async ({ page }) => {
   await openShell(page)
   await page.setViewportSize({ width: 390, height: 844 })
