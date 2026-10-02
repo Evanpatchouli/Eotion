@@ -161,17 +161,24 @@ watch(workspaceId, () => { closePanels(); expanded.value = new Set() })
           type="button"
           @click="openPage(row.page.id)"
         >
-          <template #leading>
-            <button v-if="row.hasChildren" class="product-page-toggle" type="button" :aria-label="`${row.expanded ? '收起' : '展开'}${row.page.title}的子页面`" @click="toggle(row.page.id)"><EotionIcon :name="row.expanded ? IconName.ChevronDown : IconName.ChevronRight" :size="16" /></button>
-            <span v-else class="product-page-toggle product-page-toggle--empty" aria-hidden="true"></span>
+          <template v-if="row.hasChildren" #leading>
+            <button class="product-page-toggle" type="button" :aria-label="`${row.expanded ? '收起' : '展开'}${row.page.title}的子页面`" :aria-expanded="row.expanded" @click.stop="toggle(row.page.id)">
+              <span class="product-page-disclosure-icon" aria-hidden="true">
+                <span v-if="row.page.icon" class="product-page-icon">{{ row.page.icon }}</span>
+                <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
+              </span>
+              <EotionIcon class="product-page-disclosure-chevron" :name="row.expanded ? IconName.ChevronDown : IconName.ChevronRight" :size="16" />
+            </button>
           </template>
-          <template #icon>
-            <span v-if="row.page.icon" class="product-page-icon" aria-hidden="true">{{ row.page.icon }}</span>
-            <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
+          <template v-if="!row.hasChildren" #icon>
+            <span class="product-page-leading-icon" aria-hidden="true">
+              <span v-if="row.page.icon" class="product-page-icon">{{ row.page.icon }}</span>
+              <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
+            </span>
           </template>
           <span class="product-page-title">{{ row.page.title }}</span>
           <template #trailing>
-            <button class="product-page-menu-trigger" type="button" :aria-label="`页面操作：${row.page.title}`" :aria-expanded="menuFor === row.page.id" @click="toggleMenu(row.page.id)"><EotionIcon :name="IconName.More" /></button>
+            <button class="product-page-menu-trigger" type="button" :aria-label="`页面操作：${row.page.title}`" :aria-expanded="menuFor === row.page.id" @click.stop="toggleMenu(row.page.id)"><EotionIcon :name="IconName.More" /></button>
           </template>
         </EotionNavItem>
 

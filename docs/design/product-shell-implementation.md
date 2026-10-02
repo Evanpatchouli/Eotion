@@ -9,6 +9,8 @@
 - 桌面／平板可收起侧栏；侧栏退出布局并设为 inert，Topbar 的“展开侧边栏”恢复入口接收焦点。展开后焦点回到收起按钮。
 - 折叠状态仅保留在当前壳层生命周期内，不新增设备偏好或存储行为。移动端保留既有抽屉交互。
 - 动画使用 motion token，并尊重 reduced motion。
+- Sidebar 的折叠／移动关闭、Workspace 箭头、页面新建与页面操作共用 trailing 宽度及行右侧 padding，以页面 `...` 中心为基准对齐。
+- 页面树只保留一个 24px leading slot。有子页面时默认显示页面图标，行 hover 或键盘 focus-visible 时切换为对应展开状态的 chevron；鼠标移开恢复图标，展开状态保留。触摸／无 hover 环境常显 chevron。真实 disclosure button 提供 `aria-expanded`，只展开／收起；主导航按钮只打开页面，trailing `...` 只打开操作。无子页面时图标保持不变。
 
 ## 工作区浮层
 
@@ -27,6 +29,8 @@ pnpm --filter @eotion/web exec playwright test tests/product-shell.spec.ts tests
 ```
 
 设置 `EOTION_VISUAL_QA_DIR` 为输出目录并运行 `product-shell.spec.ts`，生成正式产品路由的 1440×900 截图：`sidebar-expanded.png`、`sidebar-collapsed.png`、`workspace-popover.png`。截图使用固定 API fixture；编辑器的既有呈现尚未在此阶段迁移。
+
+同一 suite 覆盖 Desktop / Tablet / Mobile 右侧图标中心误差 ≤1px、hover 标题位置不变、展开与导航点击隔离、无子项保持图标、键盘 Space/Enter 和触摸展开；额外截图为 `sidebar-disclosure-default.png`、`sidebar-disclosure-hover.png`。
 
 页面动作浮层属于后续实施单元，本阶段只统一页面树行的壳层样式。
 

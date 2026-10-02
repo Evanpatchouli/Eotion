@@ -12,6 +12,11 @@ const pages: PageResponse[] = ['工作笔记', '阅读清单', '想法收集'].m
   id: `shell-page-${index}`, workspaceId: workspaces[0]!.id, title, parentPageId: null,
   orderKey: String(index + 1).padStart(16, '0'), createdAt: now, updatedAt: now,
 }))
+pages[0]!.icon = '📓'
+pages.push({
+  id: 'shell-child', workspaceId: workspaces[0]!.id, title: '今日记录', parentPageId: pages[0]!.id,
+  orderKey: '0000000000000001', createdAt: now, updatedAt: now,
+})
 const blocks: BlockResponse[] = [{
   id: 'shell-block', workspaceId: workspaces[0]!.id, pageId: pages[0]!.id, parentBlockId: null,
   type: 'paragraph', orderKey: '0000000000000001', createdAt: now, updatedAt: now,
@@ -40,6 +45,108 @@ async function screenshot(page: Page, name: string) {
   await expect(page.locator('.product-topbar')).toContainText('已同步')
   await page.screenshot({ path: path.join(process.env.EOTION_VISUAL_QA_DIR, `${name}.png`) })
 }
+
+test('sidebar action rail aligns across desktop, tablet and mobile', async ({ page }) => {
+  await openShell(page)
+  for (const width of [1440, 900, 390]) {
+    await page.setViewportSize({ width, height: 900 })
+    if (width === 390) await page.getByRole('button', { name: '打开导航菜单', exact: true }).click()
+    const icons = page.locator(width === 390
+      ? '.sidebar-close svg, .product-workspace-trigger svg, .product-add-page svg, .product-page-menu-trigger svg'
+      : '.product-sidebar-collapse svg, .product-workspace-trigger svg, .product-add-page svg, .product-page-menu-trigger svg')
+    const centers = await icons.evaluateAll(elements => elements.map(element => {
+      const rect = element.getBoundingClientRect()
+      return rect.x + rect.width / 2
+    }))
+    expect(centers.length).toBeGreaterThanOrEqual(4)
+    expect(Math.max(...centers) - Math.min(...centers)).toBeLessThanOrEqual(1)
+  }
+})
+
+test('page icon disclosure preserves title position and separates expansion from navigation', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
+  await openShell(page)
+  await expect(page).toHaveTitle(/Eotion/)
+  const parent = page.locator('.product-page-node').filter({ has: page.getByRole('button', { name: '工作笔记', exact: true }) })
+  const row = parent.locator('.product-page-row')
+  const title = parent.locator('.product-page-title')
+  const icon = parent.locator('.product-page-disclosure-icon')
+  const chevron = parent.locator('.product-page-disclosure-chevron')
+  const toggle = parent.locator('.product-page-toggle')
+  const titleBounds = await title.boundingBox()
+  const originalUrl = page.url()
+  await expect(icon).toBeVisible()
+  await expect(icon).toHaveText('📓')
+  await expect(chevron).toBeHidden()
+  await row.hover()
+  await expect(icon).toBeHidden()
+  await expect(chevron).toBeVisible()
+  expect(await title.boundingBox()).toEqual(titleBounds)
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByRole('button', { name: '今日记录', exact: true })).toBeVisible()
+  expect(page.url()).toBe(originalUrl)
+  await page.mouse.move(800, 22)
+  await expect(icon).toBeVisible()
+  await expect(chevron).toBeHidden()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  expect(await title.boundingBox()).toEqual(titleBounds)
+  await screenshot(page, 'sidebar-disclosure-default')
+  await row.hover()
+  await screenshot(page, 'sidebar-disclosure-hover')
+  await toggle.focus()
+  await expect(toggle).toBeFocused()
+  await toggle.press('Space')
+  await expect(chevron).toBeVisible()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await toggle.press('Enter')
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  expect(page.url()).toBe(originalUrl)
+
+  const leaf = page.getByRole('button', { name: '阅读清单', exact: true })
+  const leafIcon = leaf.locator('.product-page-leading-icon')
+  const leafBounds = await leafIcon.boundingBox()
+  await leaf.hover()
+  await expect(leafIcon).toBeVisible()
+  expect(await leafIcon.boundingBox()).toEqual(leafBounds)
+  await expect(leaf.locator('..').locator('.product-page-toggle')).toHaveCount(0)
+  await leaf.click()
+  await expect(page).toHaveURL(/\/page\/shell-page-1$/)
+  await parent.getByRole('button', { name: '页面操作：工作笔记', exact: true }).click()
+  await expect(parent.getByRole('group', { name: '工作笔记 的操作', exact: true })).toBeVisible()
+  await expect(page).toHaveURL(/\/page\/shell-page-1$/)
+  await parent.getByRole('button', { name: '工作笔记', exact: true }).click()
+  await expect(page).toHaveURL(/\/page\/shell-page-0$/)
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await toggle.click()
+  await parent.getByRole('button', { name: '工作笔记', exact: true }).click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  expect(errors).toEqual([])
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+})
+
+test.describe('touch disclosure', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
+  test('expands without hover or closing the navigation drawer', async ({ page }) => {
+    await openShell(page)
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.getByRole('button', { name: '打开导航菜单', exact: true }).tap()
+    const toggle = page.locator('.product-page-toggle').first()
+    await expect(toggle.locator('.product-page-disclosure-chevron')).toBeVisible()
+    await expect(toggle.locator('.product-page-disclosure-icon')).toBeHidden()
+    await toggle.tap()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByRole('button', { name: '今日记录', exact: true })).toBeVisible()
+    await expect(page.getByLabel('工作区导航', { exact: true })).toHaveClass(/sidebar--open/)
+    await expect(page).toHaveURL(/\/page\/shell-page-0$/)
+    await page.getByRole('button', { name: '今日记录', exact: true }).tap()
+    await expect(page).toHaveURL(/\/page\/shell-child$/)
+    await expect(page.getByLabel('工作区导航', { exact: true })).not.toHaveClass(/sidebar--open/)
+  })
+})
 
 test('shared navigation rows retain pressed states through shell styles and mobile row geometry', async ({ page }) => {
   await openShell(page)
