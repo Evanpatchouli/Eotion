@@ -58,9 +58,16 @@ PageView → EotionEditor update → EditorDocument → PagePersistence
 - Bold / Italic 仍可通过 Touch Toolbar 使用；Strike 使用 `Ctrl/⌘+Shift+S`，Inline Code 使用 `Ctrl/⌘+E`。这两个低频 mark 留待后续上下文格式入口，不加入主 Touch Toolbar。
 - `blockCodec` 的 Block 类型映射不变。编号列表仅兼容 Tiptap 3 生成的 `type: null` 默认 marker，并在保存时去掉该无语义属性；其他 marker 值仍拒绝。回归覆盖新建块与 Strike / Inline Code 的保存、重载，以及菜单交互和响应式视觉。
 
+
 ## P5.8.6 选区格式菜单
 
 - 正式 `EotionEditor` 在可格式化的非空文本选区附近使用 Tiptap Vue `BubbleMenu` 展示粗体、斜体、删除线和行内代码；不扩展 Mark / Block schema，也不改变固定或触摸工具栏命令。
 - 菜单由编辑器焦点、文本选区、可格式化文本、IME 和 Slash 状态控制。Escape、选区折叠和失焦会关闭菜单；菜单按钮保留选区并调用既有 Tiptap mark 命令。
 - 位置由 Tiptap 的 Floating UI 在选区上方计算，并允许翻转、平移以避开视口边缘。菜单浮于正文，不影响阅读列布局；触摸端保留原七项底部工具栏。
 - 回归入口为 `apps/web/tests/product-editor.spec.ts` 的选区菜单交互、持久化/重载、边缘定位、Light / Dark 和 390px 触摸视口用例；附件和共享编辑器的原有回归仍适用。
+
+## P5.8.6.1 输入方式决定选区菜单
+
+- Eotion Bubble Menu 仅用于 mouse / fine-pointer 文本选区：`EotionEditor` 用 `!touchToolbar` 控制它是否启用。Desktop 和 Tablet 的 mouse 输入继续显示四项菜单；Mobile 布局及 Tablet 的 touch / coarse-pointer 输入保留原七项 Touch Toolbar。
+- Touch / coarse-pointer 环境保留系统原生 Selection Menu，Eotion 不在选区附近叠加第二套 Bubble Menu。iOS Safari 与 HarmonyOS 6 浏览器真机均验证：系统菜单占据文本选区附近的浮层区域，网页 Bubble Menu 无法可靠避免遮挡。这是跨端交互决策。
+- `product-editor.spec.ts` 覆盖 Desktop / Tablet mouse、Tablet coarse/hybrid 与 Mobile coarse/touch，并检查 390px 页面无横向溢出。

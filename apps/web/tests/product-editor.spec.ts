@@ -689,7 +689,10 @@ test('selection bubble toggles four existing marks, combines marks and reloads s
       block('page-a', 'bubble-b', 2, { type: 'paragraph', content: [{ type: 'text', text: 'Inline code' }] }),
     ],
   })
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'desktop')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-input', 'mouse')
   const body = editor(page)
   const menu = bubble(page)
   await expect(menu).toHaveCount(0)
@@ -697,6 +700,8 @@ test('selection bubble toggles four existing marks, combines marks and reloads s
   await expect(menu).toBeVisible()
   await canvasScreenshot(page, 'p586-desktop-light-selection')
   await expect(menu.getByRole('button')).toHaveCount(4)
+  const buttonSize = await menu.getByRole('button', { name: '粗体' }).evaluate(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height }))
+  expect(buttonSize).toEqual({ width: 32, height: 32 })
   await menu.getByRole('button', { name: '粗体' }).click()
   await expect(menu.getByRole('button', { name: '粗体' })).toHaveAttribute('aria-pressed', 'true')
   await expect(body.locator('p').first().locator('strong')).toHaveText('Combined marks')
@@ -730,10 +735,22 @@ test('selection bubble hides on collapse, blur, Escape and IME; stays in viewpor
   const browserErrors: string[] = []
   page.on('pageerror', error => browserErrors.push(error.message))
   await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [block('page-a', 'bubble-a', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Selection near viewport edge' }] })] })
-  await page.setViewportSize({ width: 740, height: 420 })
+  await page.setViewportSize({ width: 800, height: 420 })
   await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'tablet')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-input', 'mouse')
   const body = editor(page)
   const menu = bubble(page)
+  await body.locator('p').click()
+  await expect(menu).toHaveCount(0)
+  await selectParagraphText(body.locator('p'))
+  await expect(menu).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'mobile')
+  await expect(menu).toHaveCount(0)
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
+  await page.setViewportSize({ width: 800, height: 420 })
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'tablet')
   await body.locator('p').click()
   await expect(menu).toHaveCount(0)
   await selectParagraphText(body.locator('p'))
@@ -751,7 +768,7 @@ test('selection bubble hides on collapse, blur, Escape and IME; stays in viewpor
   await expect(menu).toBeVisible()
   const rightEdge = await menu.boundingBox()
   expect(rightEdge).not.toBeNull()
-  expect(rightEdge!.x + rightEdge!.width).toBeLessThanOrEqual(740)
+  expect(rightEdge!.x + rightEdge!.width).toBeLessThanOrEqual(800)
   await body.locator('p').evaluate(node => { (node as HTMLElement).style.textAlign = '' })
   await page.setViewportSize({ width: 1440, height: 900 })
   await selectParagraphText(body.locator('p'))
@@ -787,7 +804,26 @@ test('selection bubble hides on collapse, blur, Escape and IME; stays in viewpor
   expect(browserErrors).toEqual([])
 })
 
-test('mobile selection bubble avoids horizontal overflow and leaves touch toolbar available', async ({ page }) => {
+test('tablet coarse pointer hides selection bubble and keeps touch toolbar available', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeMatchMedia = window.matchMedia.bind(window)
+    window.matchMedia = (query: string) => {
+      const result = nativeMatchMedia(query)
+      if (query === '(pointer: coarse)') Object.defineProperty(result, 'matches', { configurable: true, value: true })
+      return result
+    }
+  })
+  await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [block('page-a', 'bubble-a', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Tablet selection' }] })] })
+  await page.setViewportSize({ width: 800, height: 1024 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'tablet')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-input', 'hybrid')
+  await selectParagraphText(editor(page).locator('p'))
+  await expect(bubble(page)).toHaveCount(0)
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
+})
+
+test('mobile selection bubble stays hidden without horizontal overflow and leaves touch toolbar available', async ({ page }) => {
   await page.addInitScript(() => {
     const nativeMatchMedia = window.matchMedia.bind(window)
     window.matchMedia = (query: string) => {
@@ -799,14 +835,12 @@ test('mobile selection bubble avoids horizontal overflow and leaves touch toolba
   await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [block('page-a', 'bubble-a', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Mobile selection' }] })] })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'mobile')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-input', 'touch')
   await selectParagraphText(editor(page).locator('p'))
-  await expect(bubble(page)).toBeVisible()
+  await expect(bubble(page)).toHaveCount(0)
   await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
-  const rect = await bubble(page).boundingBox()
-  expect(rect).not.toBeNull()
-  expect(rect!.x).toBeGreaterThanOrEqual(0)
-  expect(rect!.x + rect!.width).toBeLessThanOrEqual(390)
   await canvasScreenshot(page, 'p586-mobile-selection')
 })
 

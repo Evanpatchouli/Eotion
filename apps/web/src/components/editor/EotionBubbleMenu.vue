@@ -6,7 +6,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import EotionIcon from '../ui/EotionIcon.vue'
 
-const props = defineProps<{ editor: Editor; composing: boolean }>()
+const props = defineProps<{ editor: Editor; composing: boolean; enabled: boolean }>()
 
 const hiddenSelection = ref<string | null>(null)
 const activeMarks = ['bold', 'italic', 'strike', 'code'] as const
@@ -34,6 +34,7 @@ function hasSelectedText(state: Editor['state']): boolean {
 }
 
 function shouldShow({ editor, state }: { editor: Editor; state: Editor['state'] }): boolean {
+  if (!props.enabled) return false
   const selection = state.selection
   const key = selectionKey(state)
   if (hiddenSelection.value && hiddenSelection.value !== key) {
@@ -92,6 +93,10 @@ function updatePressedMarks(): void {
 
 watch(() => props.composing, composing => {
   if (composing) props.editor.commands.setMeta(pluginKey, 'hide')
+})
+
+watch(() => props.enabled, (enabled, wasEnabled) => {
+  if (!enabled && wasEnabled) props.editor.commands.setMeta(pluginKey, 'hide')
 })
 
 const pressed = computed(() => {
