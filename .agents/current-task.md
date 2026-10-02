@@ -32,3 +32,13 @@
 - 移动 Dialog commit：37e9fea；按钮 commit：fix(ui): standardize compact button heights。
 
 整体状态：完成（2026-10-02）。
+
+
+## 移动弹窗内容自适应（2026-10-02）
+- 范围：只调整移动 Dialog 的尺寸与滚动布局，不改表单或业务语义。
+- S0 investigate / S1 execute（主 Agent）：固定 height 是少量选项留白根因；改为 fit-content + max-height，内层 Grid 分配剩余高度，确保长列表滚动不带走 footer。
+- S0 verify（主 Agent）：新增三个目标的紧凑尺寸和按钮间距回归；保留 30 个目标、390×380 短屏与末项选择验证。
+- 验证：PageTree 25/25 通过，Web build（含 vue-tsc）通过；紧凑和短屏截图已人工核对。
+- 文档：docs/p5-page-tree.md 记录内容自适应、34rem / 视口减 32px 上限与列表滚动。
+- 截图：C:/Users/evanpatchouli/.codex/visualizations/2026/10/02/eotion-mobile-page-actions/mobile-move-compact.png。
+- 状态：完成；提交 fix(ui): size mobile move dialog to its content。

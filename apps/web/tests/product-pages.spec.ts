@@ -705,6 +705,41 @@ test('reports page tree load failures and retries', async ({ page }) => {
 
 test.describe('touch page action dialogs', () => {
 test.use({ hasTouch: true })
+test('mobile move dialog stays compact with only three destinations', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await installApi(page, {
+    workspaces: [workspace('ws-a', '工作空间')],
+    pages: [
+      pageRecord('page-a', 'ws-a', '备忘录', null, key(1)),
+      pageRecord('page-b', 'ws-a', 'Page 1', null, key(2)),
+      pageRecord('page-b1', 'ws-a', 'Sub page 1', 'page-b', key(1)),
+    ],
+  })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.locator('.eotion-editor-content')).toBeVisible()
+  await page.getByRole('button', { name: '打开导航菜单' }).click()
+  await openAction(page, '备忘录', '移动')
+  const move = page.getByRole('dialog', { name: '移动页面' })
+  const options = move.getByRole('radiogroup', { name: '移动到' })
+  await expect(options.getByRole('radio')).toHaveCount(3)
+  expect(await move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThan(320)
+  expect(await options.evaluate(element => element.scrollHeight <= element.clientHeight + 1)).toBe(true)
+  const lastOption = await move.locator('.product-page-move-option').last().boundingBox()
+  const actions = await move.locator('.product-popover-form__actions').boundingBox()
+  expect(lastOption).not.toBeNull()
+  expect(actions).not.toBeNull()
+  expect(actions!.y - (lastOption!.y + lastOption!.height)).toBeLessThan(24)
+  await expect(move.getByRole('button', { name: '取消' })).toBeInViewport()
+  const visualDir = process.env.EOTION_VISUAL_QA_DIR
+  if (visualDir) {
+    await mkdir(visualDir, { recursive: true })
+    await page.screenshot({ path: `${visualDir}/mobile-move-compact.png`, animations: 'disabled' })
+  }
+  await page.keyboard.press('Escape')
+  await expect(move).toBeHidden()
+})
+
 test('mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })
@@ -768,8 +803,10 @@ test('mobile page actions use modal dialogs with focus, stable tree and a scroll
   await expect(moveTarget(page, '工作笔记')).toBeFocused()
   const options = move.getByRole('radiogroup', { name: '移动到' })
   expect(await options.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
+  expect(await move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(544)
   await screenshot('mobile-move')
   await page.setViewportSize({ width: 390, height: 380 })
+  expect(await move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(348)
   await moveTarget(page, '阅读清单 30').check()
   const submit = move.getByRole('button', { name: '移动', exact: true })
   await expect(submit).toBeInViewport()

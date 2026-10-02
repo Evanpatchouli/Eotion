@@ -77,11 +77,11 @@ dialog.eotion-command-overlay:has(> .product-page-action-dialog) { width: min(ca
 .product-page-action-dialog { display: flex; min-height: 0; max-height: calc(100dvh - 64px); flex-direction: column; gap: var(--e-space-3); }
 .product-page-action-dialog h2 { flex: none; margin: 0; color: var(--e-color-text-primary); font-size: 18px; line-height: 1.35; }
 .product-page-action-dialog .product-popover-form { min-height: 0; padding: 0; }
-.product-page-action-dialog:has(.product-page-move-form) { flex: 1; }
-.product-page-action-dialog:has(.product-page-move-form) .product-page-move-form { flex: 1; overflow: hidden; }
+.product-page-action-dialog:has(.product-page-move-form) { flex: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.product-page-action-dialog:has(.product-page-move-form) .product-page-move-form { overflow: hidden; }
 .product-page-action-dialog .product-page-move-options { min-height: 0; max-height: none; flex: 1; }
 .product-page-action-dialog:has(.product-page-move-form) .product-popover-form__actions { flex: none; }
-dialog.eotion-command-overlay:has(.product-page-action-dialog .product-page-move-form) { display: flex; height: min(34rem, calc(100dvh - 32px)); flex-direction: column; overflow: hidden; }
+dialog.eotion-command-overlay:has(.product-page-action-dialog .product-page-move-form) { display: flex; height: fit-content; max-height: min(34rem, calc(100dvh - 32px)); flex-direction: column; overflow: hidden; }
 .product-page-meta { display: flex; flex-wrap: wrap; gap: 8px 34px; margin: 26px 0 0; padding: 14px 0 0; border-top: 1px solid var(--border); }
 .product-page-meta dt { color: var(--text-faint); font-size: 11px; }
 .product-page-meta dd { margin: 3px 0 0; color: var(--text-secondary); font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

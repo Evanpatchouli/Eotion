@@ -35,7 +35,7 @@ P5.2 用真实页面树替换 P5.1 侧栏中的 Pages 占位提示，接通“�
 
 ### 移动
 
-- 移动使用独立入口 `PATCH /api/workspaces/:workspaceId/pages/:pageId/move`，请求体为 `{ parentPageId: string | null, orderKey: string }`。选择器以原生 radio group 提供“根级”和当前工作区内除自身及其后代以外的页面，显示页面图标和层级缩进，并选中当前父级；移动后 `orderKey` 取目标同级列表末尾。移动端 dialog 标题为“移动页面”，目标列表独立滚动，操作按钮保持可见。
+- 移动使用独立入口 `PATCH /api/workspaces/:workspaceId/pages/:pageId/move`，请求体为 `{ parentPageId: string | null, orderKey: string }`。选择器以原生 radio group 提供“根级”和当前工作区内除自身及其后代以外的页面，显示页面图标和层级缩进，并选中当前父级；移动后 `orderKey` 取目标同级列表末尾。移动端 dialog 标题为“移动页面”，少量目标时弹窗随内容收紧；最高为 34rem 且不超过视口高度减 32px，超出时目标列表独立滚动，操作按钮保持可见。
 - 服务端是唯一权威校验：拒绝把页面移动到自己（`A page cannot be its own parent`）、移动到自己的后代（`A page cannot be moved under its own descendant`）、移动到其他工作区或不存在的父级。通用更新入口继续拒绝 `parentPageId`，不会绕过这些校验。
 - 本阶段不实现拖拽排序，只提供菜单 + 选择器。
 
