@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { EditorContent, useEditor } from '@tiptap/vue-3'
-import StarterKit from '@tiptap/starter-kit'
-import { watch } from 'vue'
+import { EditorContent } from '@tiptap/vue-3'
 
-import { cloneEditorDocument, type EditorDocument } from '../../editor/editorDocument'
+import type { EditorDocument } from '../../editor/editorDocument'
+import { useDocumentEditor } from '../../editor/useDocumentEditor'
 
 const props = withDefaults(defineProps<{
   content: EditorDocument
@@ -18,23 +17,12 @@ const emit = defineEmits<{
   update: [document: EditorDocument]
 }>()
 
-const editor = useEditor({
-  extensions: [StarterKit.configure({ link: false, underline: false })],
-  content: cloneEditorDocument(props.content),
-  editable: props.editable,
-  editorProps: {
-    attributes: { role: 'textbox', 'aria-multiline': 'true', 'aria-label': props.ariaLabel },
-  },
-  onUpdate: ({ editor }) => emit('update', cloneEditorDocument(editor.getJSON() as EditorDocument)),
+const { editor, focus } = useDocumentEditor({
+  content: props.content,
+  editable: () => props.editable,
+  ariaLabel: props.ariaLabel,
+  onUpdate: document => emit('update', document),
 })
-
-watch(() => props.editable, editable => {
-  editor.value?.setEditable(editable, false)
-})
-
-function focus(): void {
-  editor.value?.commands.focus()
-}
 
 defineExpose({ focus })
 </script>

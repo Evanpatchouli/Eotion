@@ -42,6 +42,10 @@ function mountEditor(): void {
   currentDocument.value = cloneEditorDocument(initialFixture)
   mounted.value = true
 }
+
+function mutateSnapshot(): void {
+  currentDocument.value.content?.push({ type: 'paragraph', content: [{ type: 'text', text: '仅输出快照' }] })
+}
 </script>
 
 <template>
@@ -72,6 +76,7 @@ function mountEditor(): void {
           <EotionButton data-testid="readonly-toggle" :aria-pressed="!editable" @click="editable = !editable">{{ editable ? '设为只读' : '恢复编辑' }}</EotionButton>
           <EotionButton data-testid="reset-button" @click="resetDocument">重置文档</EotionButton>
           <EotionButton data-testid="focus-button" @click="editorRef?.focus()">聚焦正文</EotionButton>
+          <EotionButton data-testid="mutate-snapshot-button" @click="mutateSnapshot">修改输出快照</EotionButton>
           <EotionButton v-if="mounted" data-testid="mount-toggle" @click="mounted = false">卸载编辑器</EotionButton>
           <EotionButton v-else data-testid="mount-toggle" @click="mountEditor">挂载编辑器</EotionButton>
         </div>

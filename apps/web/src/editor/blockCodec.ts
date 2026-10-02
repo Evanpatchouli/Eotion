@@ -1,6 +1,7 @@
 import type { BlockResponse, BlockCreateRequest } from '@eotion/contracts'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
 import type { JSONContent } from '@tiptap/core'
+import type { EditorDocument } from './editorDocument'
 
 export type EditorBlock = Pick<BlockCreateRequest, 'id' | 'type' | 'orderKey' | 'props'>
 
@@ -71,7 +72,7 @@ function isEmptyPlaceholder(node: JSONContent): boolean {
 }
 
 /** Server blocks are only editable when their complete JSON can be understood. */
-export function blocksToDocument(blocks: BlockResponse[]): JSONContent {
+export function blocksToDocument(blocks: BlockResponse[]): EditorDocument {
   const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0
   const sorted = [...blocks].sort((a, b) => compare(a.orderKey, b.orderKey) || compare(a.id, b.id))
   const fileIds = new Set<string>()

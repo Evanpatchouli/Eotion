@@ -1,6 +1,6 @@
-import type { JSONContent } from '@tiptap/core'
+import type { EditorDocument } from './editorDocument'
 
-const drafts = new Map<string, JSONContent>()
+const drafts = new Map<string, EditorDocument>()
 const key = (userId: string, workspaceId: string, pageId: string) => `${userId}:${workspaceId}:${pageId}`
 
 function beforeUnload(event: BeforeUnloadEvent): void {
@@ -9,12 +9,12 @@ function beforeUnload(event: BeforeUnloadEvent): void {
   event.returnValue = ''
 }
 
-export function rememberPageDraft(userId: string, workspaceId: string, pageId: string, document: JSONContent): void {
+export function rememberPageDraft(userId: string, workspaceId: string, pageId: string, document: EditorDocument): void {
   drafts.set(key(userId, workspaceId, pageId), structuredClone(document))
   window.addEventListener('beforeunload', beforeUnload)
 }
 
-export function pendingPageDraft(userId: string, workspaceId: string, pageId: string): JSONContent | null {
+export function pendingPageDraft(userId: string, workspaceId: string, pageId: string): EditorDocument | null {
   return drafts.get(key(userId, workspaceId, pageId)) ?? null
 }
 

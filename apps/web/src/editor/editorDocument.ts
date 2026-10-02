@@ -1,6 +1,6 @@
 import type { JSONContent } from '@tiptap/core'
 
-/** A Tiptap JSON document node accepted as an editor's initial value. */
+/** The Tiptap JSON document passed across an editor boundary. */
 export type EditorDocument = JSONContent & { type: 'doc' }
 
 /** Clone at the editor boundary so neither side shares nested attrs or content arrays. */

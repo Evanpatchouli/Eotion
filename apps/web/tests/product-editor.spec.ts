@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from '@playwright/test'
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 
 const now = '2026-09-30T00:00:00.000Z'
@@ -99,6 +99,38 @@ async function installApi(page: Page, options: { pages?: PageResponse[]; blocks?
 
 const editor = (page: Page) => page.locator('.eotion-editor-content .tiptap')
 const blockRequests = (requests: Awaited<ReturnType<typeof installApi>>['requests']) => requests.filter((request) => request.path === '/api/sync/operations' && ['block.upsert', 'block.delete'].includes((request.body as any)?.kind))
+
+async function pasteHtml(target: Locator, html: string, text: string) {
+  await target.click()
+  await target.press('Control+End')
+  await target.evaluate((element, clipboard) => {
+    const clipboardData = new DataTransfer()
+    clipboardData.setData('text/html', clipboard.html)
+    clipboardData.setData('text/plain', clipboard.text)
+    element.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData }))
+  }, { html, text })
+}
+
+test('pasting unsupported link and underline marks saves and reloads plain text', async ({ page }) => {
+  const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [] })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  await expect(body).toBeVisible()
+
+  const pastedText = '粘贴内容保持纯文本'
+  await pasteHtml(body, `<p><a href="https://example.com"><u>${pastedText}</u></a></p>`, pastedText)
+  await expect(body).toContainText(pastedText)
+  await expect(body.locator('a, u')).toHaveCount(0)
+  await expect.poll(() => api.blocks.some((item) => JSON.stringify(item.props.node).includes(pastedText)), { timeout: 5000 }).toBe(true)
+
+  const savedNodes = api.blocks.map((item) => item.props.node)
+  expect(JSON.stringify(savedNodes)).toContain(pastedText)
+  expect(JSON.stringify(savedNodes)).not.toMatch(/"type"\s*:\s*"(link|underline)"/)
+
+  await page.reload()
+  await expect(editor(page)).toContainText(pastedText)
+  await expect(editor(page).locator('a, u')).toHaveCount(0)
+})
 
 test('empty page loads without mutations, then debounces edits with a stable block identity', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [] })

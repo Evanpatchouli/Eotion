@@ -1,10 +1,10 @@
 import type { BlockResponse, BlockUpdateRequest } from '@eotion/contracts'
-import type { JSONContent } from '@tiptap/core'
 
 import { errorMessage } from '../services/productApi'
 import { useProductSyncStore } from '../stores/productSync'
 import { assignBlockOrder } from './blockOrder'
 import { blocksToDocument, documentToBlocks, type EditorBlock } from './blockCodec'
+import type { EditorDocument } from './editorDocument'
 import { rememberPageDraft } from './pendingPageDraft'
 
 export type SaveStatus = 'loading' | 'saved' | 'saving' | 'error'
@@ -14,7 +14,7 @@ export class PagePersistence {
   error = ''
   private baseline = new Map<string, BlockResponse>()
   private hasStoredBlocks = false
-  private document: JSONContent | null = null
+  private document: EditorDocument | null = null
   private timer: ReturnType<typeof setTimeout> | null = null
   private saving: Promise<boolean> | null = null
   private composing = false
@@ -37,7 +37,7 @@ export class PagePersistence {
     if (this.document && this.hasPendingWork) rememberPageDraft(this.userId, this.workspaceId, this.pageId, this.document)
   }
 
-  async load(_signal?: AbortSignal): Promise<JSONContent> {
+  async load(_signal?: AbortSignal): Promise<EditorDocument> {
     this.state('loading')
     try {
       const blocks = await (await useProductSyncStore().store()).listBlocksByPage(this.pageId)
@@ -53,7 +53,7 @@ export class PagePersistence {
     }
   }
 
-  update(document: JSONContent): void {
+  update(document: EditorDocument): void {
     this.document = document
     try {
       this.currentBlocks()

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type { JSONContent } from '@tiptap/core'
-import { EditorContent, useEditor } from '@tiptap/vue-3'
-import StarterKit from '@tiptap/starter-kit'
+import { EditorContent } from '@tiptap/vue-3'
 import { exitSuggestion } from '@tiptap/suggestion'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
 import { createLocalId } from '@eotion/storage'
@@ -11,6 +9,8 @@ import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../e
 import { BlockIdentity } from '../../editor/blockIdentity'
 import { enqueueAttachmentCleanup, pendingAttachmentCleanups } from '../../editor/attachmentCleanup'
 import { createSlashCommand } from '../../editor/slashCommand'
+import type { EditorDocument } from '../../editor/editorDocument'
+import { useDocumentEditor } from '../../editor/useDocumentEditor'
 import { ApiError, api, errorMessage, expireSessionFromApi } from '../../services/productApi'
 import EotionIcon from '../ui/EotionIcon.vue'
 
@@ -19,9 +19,9 @@ type UploadPhase = 'uploading' | 'saving' | 'success' | 'failed' | 'cancelled'
 type UploadTask = { id: string; fileId: string; file: File; phase: UploadPhase; error: string; objectUrl?: string; controller?: AbortController; started: boolean; durable: boolean; epoch: number; running?: Promise<void> }
 const pendingCleanup = pendingAttachmentCleanups
 
-const props = defineProps<{ content: JSONContent; touchToolbar: boolean; fixedToolbar?: boolean; ariaLabel?: string; workspaceId?: string; commitAttachment?: (blockId: string) => Promise<boolean> }>()
+const props = defineProps<{ content: EditorDocument; touchToolbar: boolean; fixedToolbar?: boolean; ariaLabel?: string; workspaceId?: string; commitAttachment?: (blockId: string) => Promise<boolean> }>()
 const emit = defineEmits<{
-  update: [document: JSONContent]
+  update: [document: EditorDocument]
   composition: [active: boolean, event: CompositionEvent]
   transaction: [changed: boolean]
   selection: [from: number, to: number, empty: boolean]
@@ -72,18 +72,14 @@ function updateSelection() {
   emit('selection', from, to, empty)
 }
 
-const editor = useEditor({
-  extensions: [StarterKit, EotionImage, EotionFile, EotionTodo, AttachmentLifetime, BlockIdentity, createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
+const { editor, getDocument } = useDocumentEditor({
+  extensions: [EotionImage, EotionFile, EotionTodo, AttachmentLifetime, BlockIdentity, createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
   content: props.content,
-  editorProps: {
-    attributes: {
-      'aria-label': props.ariaLabel ?? 'Tiptap 编辑区域',
-      spellcheck: 'false',
-    },
-  },
+  ariaLabel: props.ariaLabel ?? 'Tiptap 编辑区域',
+  attributes: { spellcheck: 'false' },
   onCreate: updateSelection,
   onSelectionUpdate: updateSelection,
-  onUpdate: ({ editor }) => emit('update', editor.getJSON()),
+  onUpdate: document => emit('update', document),
   onTransaction: ({ transaction }) => emit('transaction', transaction.docChanged),
 })
 
@@ -312,7 +308,8 @@ function onCompositionStart(event: CompositionEvent) {
 function onCompositionEnd(event: CompositionEvent) {
   composing.value = false
   emit('composition', false, event)
-  if (editor.value) emit('update', editor.value.getJSON())
+  const document = getDocument()
+  if (document) emit('update', document)
   for (const finish of [...compositionWaiters]) finish()
 }
 

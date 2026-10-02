@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { Editor } from '@tiptap/core'
 
 import EotionEditor from './EotionEditor.vue'
+import type { EditorDocument } from '../../editor/editorDocument'
 
 defineProps<{ touchToolbar: boolean }>()
 
@@ -17,7 +18,7 @@ const keyboardInset = ref(0)
 let pendingInputStart: number | null = null
 let touchStartedAt: number | null = null
 
-const initialContent = {
+const initialContent: EditorDocument = {
   type: 'doc',
   content: [{ type: 'paragraph', content: [{ type: 'text', text: '在这里输入文字，尝试段落、标题和项目列表。' }] }],
 }

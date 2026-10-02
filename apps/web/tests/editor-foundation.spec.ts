@@ -1,11 +1,22 @@
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 async function openDemo(page: Page) {
   await page.goto('/#/__dev/editor-foundation')
   await expect(page.getByRole('heading', { name: '文档画布' })).toBeVisible()
   await expect(page.getByRole('textbox', { name: '演示文档正文' })).toBeVisible()
+}
+
+async function pasteHtml(target: Locator, html: string, text: string) {
+  await target.click()
+  await target.press('Control+End')
+  await target.evaluate((element, clipboard) => {
+    const clipboardData = new DataTransfer()
+    clipboardData.setData('text/html', clipboard.html)
+    clipboardData.setData('text/plain', clipboard.text)
+    element.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData }))
+  }, { html, text })
 }
 
 async function screenshot(page: Page, name: string) {
@@ -31,6 +42,38 @@ test('DocumentEditor renders initial JSON, emits keyboard and bold changes, and 
   const json = await page.getByTestId('document-json').textContent()
   expect(JSON.parse(json ?? '{}').content.at(-1).content.at(-1).marks).toContainEqual({ type: 'bold' })
   await expect(page.getByTestId('fixture-evidence')).toHaveAttribute('data-unchanged', 'true')
+})
+
+test('DocumentEditor pastes link and underline HTML as plain text', async ({ page }) => {
+  await openDemo(page)
+  const editor = page.getByRole('textbox', { name: '演示文档正文' })
+  const pastedText = '粘贴内容保持纯文本'
+  await pasteHtml(editor, `<p><a href="https://example.com"><u>${pastedText}</u></a></p>`, pastedText)
+
+  await expect(editor).toContainText(pastedText)
+  await expect(editor.locator('a, u')).toHaveCount(0)
+  await expect(page.getByTestId('document-json')).toContainText(pastedText)
+  const json = JSON.parse((await page.getByTestId('document-json').textContent()) ?? '{}')
+  expect(JSON.stringify(json)).not.toMatch(/"type"\s*:\s*"(link|underline)"/)
+})
+
+test('mutating an emitted JSON snapshot does not change the editor document', async ({ page }) => {
+  await openDemo(page)
+  const editor = page.getByRole('textbox', { name: '演示文档正文' })
+  await editor.click()
+  await editor.press('Control+End')
+  await editor.pressSequentially(' 输出隔离')
+  await expect(page.getByTestId('document-json')).toContainText('输出隔离')
+
+  await page.getByTestId('mutate-snapshot-button').click()
+  await expect(page.getByTestId('document-json')).toContainText('仅输出快照')
+  await expect(editor).not.toContainText('仅输出快照')
+
+  await editor.click()
+  await editor.press('Control+End')
+  await editor.pressSequentially(' 再次更新')
+  await expect(page.getByTestId('document-json')).toContainText('再次更新')
+  await expect(page.getByTestId('document-json')).not.toContainText('仅输出快照')
 })
 
 test('editable changes dynamically without a content update and focus is exposed', async ({ page }) => {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { JSONContent } from '@tiptap/core'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { RouterLink, onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router'
 
@@ -8,6 +7,7 @@ import EotionIcon from '../components/ui/EotionIcon.vue'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
 import { registerActivePageEditor } from '../editor/activePageEditor'
 import { flushAttachmentCleanups, pendingAttachmentCleanups } from '../editor/attachmentCleanup'
+import type { EditorDocument } from '../editor/editorDocument'
 import { PagePersistence, type SaveStatus } from '../editor/pagePersistence'
 import { clearPageDraft, hasPendingPageDraft, pendingPageDraft } from '../editor/pendingPageDraft'
 import { useAuthStore } from '../stores/auth'
@@ -31,7 +31,7 @@ const currentWorkspace = computed(() => workspaces.items.find((item) => item.id 
 const settled = computed(() => pages.loaded && pages.forWorkspaceId === workspaceId.value)
 const loadError = computed(() => pages.forWorkspaceId === workspaceId.value ? pages.error : '')
 
-const document = ref<JSONContent | null>(null)
+const document = ref<EditorDocument | null>(null)
 const blockLoading = ref(false)
 const blockError = ref('')
 const saveStatus = ref<SaveStatus>('loading')
@@ -87,7 +87,7 @@ async function loadBlocks(): Promise<void> {
   }
 }
 
-function onEditorUpdate(updated: JSONContent): void {
+function onEditorUpdate(updated: EditorDocument): void {
   persistence.value?.update(updated)
 }
 

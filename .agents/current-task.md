@@ -1,44 +1,36 @@
-# Current Task — Mobile Page Action Dialogs
+# Current Task — P5.8.2 Editor Architecture Convergence
 
 ## Scope
-移动布局（<768px）重命名和移动使用 Dialog；Desktop/Tablet 保持 Popover，Delete 与业务行为保留。
+
+统一 `DocumentEditor` 与 `EotionEditor` 的 Tiptap 创建、生命周期、StarterKit 基线及 `EditorDocument` JSON 边界；保留产品编辑器的扩展、事件、附件与现有持久化行为。单一聚焦提交。
 
 ## Work Units
-- S0 investigate / S2 decide（主 Agent）：复用 useRuntimeContext 和表单，打开时选择容器、跨断点保留草稿，完成。
-- S1 execute（fast_worker）：PageTree modal、radio Tabstop、列表独立滚动与文档，完成并由主 Agent 复核。
-- S2 diagnose（主 Agent）：disabled 导致焦点落在 body 时消费 modal Esc；修复无效嵌套 :has 与样式优先级导致短屏 footer 不可见，完成。
-- S1 execute / S0 verify（主 Agent）：touch、短屏、跨断点和 pending 回归；47/47 通过，Web typecheck/build 通过。
-- Review（reviewer）：移动 Dialog 独立复核无剩余 blocker，主 Agent 已复核。
+
+- S0 investigate：核对两组件、`blockCodec`、实际实例 consumer 和回归入口。
+- S2 decide：共享 core 仅拥有 `useEditor` 生命周期、基础扩展、初始/输出 JSON 副本、editable、aria 和 focus；产品扩展与 Tiptap 回调从 `EotionEditor` 提供。StarterKit 关闭 link、underline，以匹配现有 `blockCodec` mark 范围。P2 基准页仍需实例，保留当前仅开发链使用的 expose。
+- S1 execute：新增轻量 composable，迁移两组件；正式页面链路使用既有 `EditorDocument` 类型；补充边界回归并修正文档。
+- S0 verify / Review：执行 typecheck、build、编辑器/附件/持久化回归、Desktop/Mobile viewport 烟测；独立复核最终 diff，完成单一提交。
+
+## Invariants
+
+- `DocumentEditor` 仍只公开 `focus()`，不引入产品依赖。
+- `EotionEditor` 保留 BlockIdentity、附件、Slash、IME、事件、工具栏和 visualViewport 行为。
+- `blockCodec` 保持唯一 Block ↔ Editor JSON 映射，业务映射语义不变。
+- Core 不依赖 API、LocalStore、Sync、PagePersistence、workspace、附件或 Block。
 
 ## Validation
-- PageTree / ProductShell / UiFoundation / InteractionFoundation：47/47，通过；Desktop Popover 和 Delete 回归保留。
-- 390×844 hasTouch、390×380 短屏长列表、767→768 容器/草稿保留与 pending/error/focus/背景 Esc 覆盖。
-- 移动端截图已人工核对：C:/Users/evanpatchouli/.codex/visualizations/2026/10/02/eotion-mobile-page-actions。
-- 未运行真实移动 WebView 宿主或系统软键盘；以缩小 viewport 验证可用高度变化。
 
-提交：fix(ui): use dialogs for mobile page actions
-状态：移动 Dialog 已完成（2026-10-02）。
+- Web `typecheck` 通过；最终 Web `build`（含 vue-tsc）通过。
+- `editor-foundation.spec.ts` 5/5、`product-editor.spec.ts` 18/18、`product-attachments.spec.ts` 15/15、`product-sync.spec.ts` 41/41 通过。
+- 编辑器开发页生产隔离 1/1 通过；Desktop 宽度与 390px Mobile 宽度的浏览器回归无明显 UI 问题。
+- 一次并行套件中的 P2 Slash 用例未出现菜单；该用例单独及串行完整 suite 重跑通过。初次基础页 JSON 输出失败已定位为 core 注册未提供的 Tiptap callback，修复后 5/5 通过。
+- 独立 review 未发现 blocker；最终 diff check 与 UTF-8 无 BOM 检查通过。
 
-## 用户追加工作
-共享 EotionButton 默认高度统一为 desktop 28px / touch 36px，移除页面操作区的高度覆盖；已完成，独立提交。
+## Limits
 
-## Compact Button Verification
-- 两项 UI 变更的独立复核无剩余 blocker。
-- Button 四种 variant、disabled、实际桌面重命名与触屏表单高度覆盖；文档 DESIGN.md / design-system-v1.md 已同步。
-- 最终相关套件共 48 项，47 项首轮通过；一项既有离线恢复按钮点击与自动恢复竞态已定位，改用既有 online 事件并断言同步和服务端父级。该项与新增实际高度断言、截图场景复测 4/4 通过。
-- 最终 Web 生产 build（含 vue-tsc）通过；独立 typecheck 在移动 Dialog 实现后通过。
-- 390×844 touch / 390×380 短屏最终截图人工核对，无裁切；正常交互无 console/page errors 或 Vite overlay。
-- git diff --check 与 UTF-8 无 BOM 验证通过。
-- 移动 Dialog commit：37e9fea；按钮 commit：fix(ui): standardize compact button heights。
+- 本轮未运行 Electron 原生窗口或移动真机输入法；Desktop/Mobile UI 以浏览器宽度和移动 runtime 回归覆盖。
+- P2 5,000 块 fixture、Slash 与撤销回归通过；长文连续输入时的额外 JSON 克隆成本尚未单独测量。
 
-整体状态：完成（2026-10-02）。
+## Status
 
-
-## 移动弹窗内容自适应（2026-10-02）
-- 范围：只调整移动 Dialog 的尺寸与滚动布局，不改表单或业务语义。
-- S0 investigate / S1 execute（主 Agent）：固定 height 是少量选项留白根因；改为 fit-content + max-height，内层 Grid 分配剩余高度，确保长列表滚动不带走 footer。
-- S0 verify（主 Agent）：新增三个目标的紧凑尺寸和按钮间距回归；保留 30 个目标、390×380 短屏与末项选择验证。
-- 验证：PageTree 25/25 通过，Web build（含 vue-tsc）通过；紧凑和短屏截图已人工核对。
-- 文档：docs/p5-page-tree.md 记录内容自适应、34rem / 视口减 32px 上限与列表滚动。
-- 截图：C:/Users/evanpatchouli/.codex/visualizations/2026/10/02/eotion-mobile-page-actions/mobile-move-compact.png。
-- 状态：完成；提交 fix(ui): size mobile move dialog to its content。
+完成（2026-10-02），提交主题：`refactor(editor): converge document editor architecture`。
