@@ -44,3 +44,9 @@ PageView → EotionEditor update → EditorDocument → PagePersistence
 - `DocumentEditor` 与 `EotionEditor` 通过 `styles/editor-content.css` 共用正文排版规则，包括正文颜色与字体、标题、列表缩进、引用和代码块。组件继续分别保留所需的最小编辑高度。
 - 固定工具栏仍由 `fixedToolbar` 和现有用户偏好决定，只呈现紧凑的无边框文档控件；Mobile 的 `touchToolbar` 和键盘避让逻辑保持原样。附件上传、重试、清理及节点行为保持原样，仅上传状态外观对齐文档列。
 - 视觉契约回归位于 `product-editor.spec.ts`，覆盖 Desktop / Tablet 展开与收栏时最大 740px 的阅读列、无编辑器卡片、工具栏开关、Light / Dark、390px Mobile 无横向溢出和 `DocumentEditor` 正文字体一致性。设置 `EOTION_VISUAL_QA_DIR` 可输出 Desktop Light / Dark 与 Mobile 截图。
+
+## P5.8.4 Touch 编辑密度
+
+- Mobile / coarse pointer 的底部工具栏保留粗体、斜体、文本、二级标题、项目列表、图片、文件原有命令和顺序。控件使用 Morphicons；前两项及附件为纯图标，块类型使用图标和短标签。格式状态以 `aria-pressed` 和 Quiet Studio selected surface 表达。
+- 工具栏保留横向滚动、44px 触摸目标、`visualViewport` 键盘避让和 safe-area 内边距；编辑器末尾按工具栏高度与键盘 inset 预留滚动空间。键盘出现且编辑器有焦点时，当前光标及后续输入位置滚动到工具栏上方。Mobile Page 标题和本地保存状态纵向排列，Desktop / Tablet 排列不变。
+- `product-editor.spec.ts` 覆盖 390px 长标题、短视口、safe-area、模拟键盘 inset、格式状态及 Mobile Light / Dark 截图。

@@ -162,6 +162,11 @@ test('product page keeps title and editor in one open reading column across them
   expect(desktop.columnWidth).toBeLessThanOrEqual(740)
   expect(desktop.editorLeft).toBe(desktop.titleLeft)
   expect(desktop).toMatchObject({ border: '0px', radius: '0px', background: 'rgba(0, 0, 0, 0)', shadow: 'none', padding: '0px' })
+  expect(await page.evaluate(() => {
+    const title = document.querySelector('.product-editor-heading h1')!.getBoundingClientRect()
+    const status = document.querySelector('.product-editor-heading .product-save-status')!.getBoundingClientRect()
+    return status.top < title.bottom
+  })).toBe(true)
   await canvasScreenshot(page, 'p583-desktop-light')
 
   await page.setViewportSize({ width: 1024, height: 768 })
@@ -407,6 +412,88 @@ test('keeps mobile editor within 390px and defers persistence during composition
   await body.dispatchEvent('compositionend', { data: 'Composing text' })
   await expect.poll(() => api.blocks.length, { timeout: 5000 }).toBe(1)
   expect(api.blocks[0]?.props.node).toMatchObject({ content: [{ text: 'Composing text' }] })
+})
+
+test('touch toolbar and mobile heading stay compact across themes, short viewport and keyboard inset', async ({ page }) => {
+  const title = 'Quiet Studio 文档 — 一个需要正常换行的很长很长的页面标题'
+  await installApi(page, { pages: [pageRecord('page-a', title, 1)] })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const toolbar = page.getByRole('toolbar', { name: '触摸编辑工具栏' })
+  await expect(toolbar).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  expect(await toolbar.getByRole('button').allTextContents()).toEqual(['', '', '文本', '标题', '列表', '', ''])
+  for (const name of ['粗体', '斜体', '文本', '标题', '列表', '插入图片', '插入文件']) {
+    const button = toolbar.getByRole('button', { name })
+    await expect(button).toBeVisible()
+    const size = await button.evaluate(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height }))
+    expect(size.width).toBeGreaterThanOrEqual(44)
+    expect(size.height).toBeGreaterThanOrEqual(44)
+    expect(await button.evaluate(node => getComputedStyle(node).borderTopWidth)).toBe('0px')
+  }
+  const headingLayout = await page.evaluate(() => {
+    const title = document.querySelector('.product-editor-heading h1')!.getBoundingClientRect()
+    const status = document.querySelector('.product-editor-heading .product-save-status')!.getBoundingClientRect()
+    return { titleBottom: title.bottom, statusTop: status.top, titleHeight: title.height, documentWidth: document.documentElement.scrollWidth, viewportWidth: window.innerWidth }
+  })
+  expect(headingLayout.statusTop).toBeGreaterThanOrEqual(headingLayout.titleBottom)
+  expect(headingLayout.titleHeight).toBeGreaterThan(40)
+  expect(headingLayout.documentWidth).toBeLessThanOrEqual(headingLayout.viewportWidth)
+  expect(await toolbar.evaluate(node => node.scrollWidth)).toBeGreaterThan(await toolbar.evaluate(node => node.clientWidth))
+  await canvasScreenshot(page, 'p584-mobile-light-long-title')
+
+  await editor(page).click()
+  await editor(page).pressSequentially('Touch formatting')
+  await toolbar.getByRole('button', { name: '粗体' }).click()
+  await expect(toolbar.getByRole('button', { name: '粗体' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(toolbar.getByRole('button', { name: '文本' })).toHaveAttribute('aria-pressed', 'true')
+  await toolbar.getByRole('button', { name: '标题' }).click()
+  await expect(toolbar.getByRole('button', { name: '标题' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(toolbar.getByRole('button', { name: '文本' })).toHaveAttribute('aria-pressed', 'false')
+  await toolbar.getByRole('button', { name: '列表' }).click()
+  await expect(toolbar.getByRole('button', { name: '列表' })).toHaveAttribute('aria-pressed', 'true')
+  await toolbar.getByRole('button', { name: '文本' }).click()
+
+  await page.setViewportSize({ width: 390, height: 520 })
+  await page.evaluate(() => document.documentElement.style.setProperty('--safe-bottom', '20px'))
+  const shortViewport = await toolbar.evaluate(node => {
+    const rect = node.getBoundingClientRect()
+    return { bottom: rect.bottom, height: rect.height, paddingBottom: getComputedStyle(node).paddingBottom, pageWidth: document.documentElement.scrollWidth, viewportWidth: window.innerWidth }
+  })
+  expect(shortViewport.bottom).toBe(520)
+  expect(shortViewport.height).toBeGreaterThanOrEqual(70)
+  expect(shortViewport.paddingBottom).toBe('26px')
+  expect(shortViewport.pageWidth).toBeLessThanOrEqual(shortViewport.viewportWidth)
+  await canvasScreenshot(page, 'p584-mobile-short-safe-area')
+
+  await page.evaluate(() => {
+    Object.defineProperty(window.visualViewport!, 'height', { configurable: true, value: 300 })
+    window.visualViewport!.dispatchEvent(new Event('resize'))
+  })
+  await expect.poll(() => toolbar.evaluate(node => getComputedStyle(node).bottom)).toBe('220px')
+  await expect.poll(() => page.evaluate(() => {
+    const selection = window.getSelection()!
+    const range = selection.getRangeAt(0).cloneRange()
+    range.collapse(false)
+    return range.getBoundingClientRect().bottom + 12 <= document.querySelector('.eotion-touch-toolbar')!.getBoundingClientRect().top
+  })).toBe(true)
+  for (let index = 0; index < 20; index += 1) await editor(page).press('Enter')
+  await editor(page).pressSequentially('Last visible line')
+  await expect(editor(page)).toContainText('Last visible line')
+  await expect.poll(() => page.evaluate(() => {
+    const range = window.getSelection()!.getRangeAt(0).cloneRange()
+    range.collapse(false)
+    return range.getBoundingClientRect().bottom + 12 <= document.querySelector('.eotion-touch-toolbar')!.getBoundingClientRect().top
+  })).toBe(true)
+  expect(await page.locator('.document-wrap').evaluate(node => node.scrollTop)).toBeGreaterThan(0)
+  await canvasScreenshot(page, 'p584-mobile-keyboard-inset')
+
+  await page.evaluate(() => localStorage.setItem('eotion:theme', 'dark'))
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await expect(toolbar).toBeVisible()
+  await canvasScreenshot(page, 'p584-mobile-dark')
 })
 
 test('keeps the P2 fixture, slash command and undo path available', async ({ page }) => {

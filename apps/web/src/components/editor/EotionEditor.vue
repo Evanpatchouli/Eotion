@@ -40,6 +40,7 @@ const uploadAlert = ref('')
 const draggingFiles = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+const touchToolbarElement = ref<HTMLElement | null>(null)
 let pageEpoch = 0
 let disposed = false
 
@@ -49,6 +50,20 @@ function updateKeyboardInset() {
     ? Math.max(0, Math.round(window.innerHeight - viewport.offsetTop - viewport.height))
     : 0
   emit('keyboardInset', keyboardInset.value)
+  keepCaretAboveTouchToolbar()
+}
+
+function keepCaretAboveTouchToolbar() {
+  if (keyboardInset.value === 0 || !editor.value?.isFocused) return
+  requestAnimationFrame(() => {
+    const current = editor.value
+    const toolbar = touchToolbarElement.value
+    const scroll = current?.view.dom.closest('.document-wrap')
+    if (!current?.isFocused || !toolbar || !(scroll instanceof HTMLElement)) return
+    const caret = current.view.coordsAtPos(current.state.selection.head)
+    const overlap = caret.bottom + 12 - toolbar.getBoundingClientRect().top
+    if (overlap > 0) scroll.scrollTop += overlap
+  })
 }
 
 onMounted(() => {
@@ -71,6 +86,7 @@ function updateSelection() {
   if (!editor.value) return
   const { from, to, empty } = editor.value.state.selection
   emit('selection', from, to, empty)
+  keepCaretAboveTouchToolbar()
 }
 
 const { editor, getDocument } = useDocumentEditor({
@@ -318,7 +334,7 @@ defineExpose({ editor })
 </script>
 
 <template>
-  <section class="eotion-editor" :class="{ 'eotion-editor--drop-active': draggingFiles }" aria-label="Tiptap 编辑器">
+  <section class="eotion-editor" :class="{ 'eotion-editor--drop-active': draggingFiles, 'eotion-editor--touch-toolbar': touchToolbar }" :style="touchToolbar ? { '--touch-keyboard-inset': `${keyboardInset}px` } : undefined" aria-label="Tiptap 编辑器">
     <div v-if="fixedToolbar ?? !workspaceId" class="eotion-editor-toolbar" role="toolbar" aria-label="块类型">
       <button type="button" :aria-pressed="editor?.isActive('paragraph') ?? false" :disabled="!editor" @click="editor?.chain().focus().setParagraph().run()">段落</button>
       <button type="button" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">二级标题</button>
@@ -363,12 +379,12 @@ defineExpose({ editor })
       @dragleave="onDragLeave"
       @paste="onPaste"
     />
-    <div v-if="touchToolbar" class="eotion-touch-toolbar" role="toolbar" aria-label="触摸编辑工具栏" :style="{ bottom: `${keyboardInset}px` }">
-      <button type="button" :disabled="!editor" @click="editor?.chain().focus().toggleBold().run()">粗体</button>
-      <button type="button" :disabled="!editor" @click="editor?.chain().focus().toggleItalic().run()">斜体</button>
-      <button type="button" :disabled="!editor" @click="editor?.chain().focus().setParagraph().run()">文本</button>
-      <button type="button" :disabled="!editor" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">标题</button>
-      <button type="button" :disabled="!editor" @click="editor?.chain().focus().toggleBulletList().run()">列表</button>
+    <div v-if="touchToolbar" ref="touchToolbarElement" class="eotion-touch-toolbar" role="toolbar" aria-label="触摸编辑工具栏" :style="{ bottom: `${keyboardInset}px` }">
+      <button type="button" aria-label="粗体" :aria-pressed="editor?.isActive('bold') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBold().run()"><EotionIcon name="bold" :size="18" /></button>
+      <button type="button" aria-label="斜体" :aria-pressed="editor?.isActive('italic') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleItalic().run()"><EotionIcon name="italic" :size="18" /></button>
+      <button type="button" aria-label="文本" :aria-pressed="editor?.isActive('paragraph') ?? false" :disabled="!editor" @click="editor?.chain().focus().setParagraph().run()"><EotionIcon name="text" :size="18" /><span>文本</span></button>
+      <button type="button" aria-label="标题" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"><EotionIcon name="heading" :size="18" /><span>标题</span></button>
+      <button type="button" aria-label="列表" :aria-pressed="editor?.isActive('bulletList') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBulletList().run()"><EotionIcon name="list" :size="18" /><span>列表</span></button>
       <button v-if="workspaceId" type="button" :disabled="!editor" aria-label="插入图片" @click="openPicker('image')"><EotionIcon name="image" :size="18" /></button>
       <button v-if="workspaceId" type="button" :disabled="!editor" aria-label="插入文件" @click="openPicker('file')"><EotionIcon name="paperclip" :size="18" /></button>
     </div>
@@ -385,9 +401,14 @@ defineExpose({ editor })
 .eotion-editor-toolbar button:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset: 2px; }
 .eotion-editor-toolbar button:disabled { cursor: default; opacity: .5; }
 .eotion-editor-content :deep(.tiptap) { min-height: 220px; }
-.eotion-touch-toolbar { position: fixed; z-index: 15; right: 0; left: 0; display: flex; gap: 6px; overflow-x: auto; padding: 9px max(12px, var(--safe-right)) calc(9px + var(--safe-bottom)) max(12px, var(--safe-left)); border-top: 1px solid var(--border-strong); background: var(--surface-raised); box-shadow: var(--shadow-toolbar); }
-.eotion-touch-toolbar button { flex: 1 0 auto; min-width: 54px; min-height: 44px; font: inherit; font-size: 13px; color: var(--editor-text); padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface-editor); }
-.eotion-touch-toolbar button:disabled { opacity: .5; }
+.eotion-editor--touch-toolbar { padding-bottom: calc(60px + var(--safe-bottom) + var(--touch-keyboard-inset, 0px)); }
+.eotion-touch-toolbar { position: fixed; z-index: 15; right: 0; left: 0; display: flex; gap: 4px; overflow-x: auto; overscroll-behavior-x: contain; padding: 6px max(12px, var(--safe-right)) calc(6px + var(--safe-bottom)) max(12px, var(--safe-left)); border-top: 1px solid var(--e-color-border-subtle); background: var(--e-color-surface); }
+.eotion-touch-toolbar button { display: inline-flex; flex: 1 0 auto; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; gap: 4px; padding: 0 8px; border: 0; border-radius: var(--e-radius-control); background: transparent; color: var(--e-color-text-secondary); font: var(--e-type-metadata-weight) var(--e-type-metadata-size) / var(--e-type-metadata-line) var(--e-type-family); cursor: pointer; white-space: nowrap; }
+.eotion-touch-toolbar button[aria-pressed="true"] { background: var(--e-color-selected); color: var(--e-color-text-primary); }
+.eotion-touch-toolbar button:hover:not(:disabled):not([aria-pressed="true"]) { background: var(--e-color-hover); color: var(--e-color-text-primary); }
+.eotion-touch-toolbar button:active:not(:disabled) { background: var(--e-color-selected); }
+.eotion-touch-toolbar button:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset: -2px; }
+.eotion-touch-toolbar button:disabled { cursor: default; opacity: .5; }
 .eotion-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 .eotion-upload-list { display: grid; gap: 7px; margin-bottom: var(--e-space-4); }
 .eotion-upload-item { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-block); background: var(--e-color-surface-subtle); }
