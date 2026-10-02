@@ -23,12 +23,12 @@ const blocks: BlockResponse[] = [{
   props: { node: { type: 'paragraph', content: [{ type: 'text', text: '留一处安静的空间，记录今天值得记住的事情。' }] } },
 }]
 
-async function openShell(page: Page) {
+async function openShell(page: Page, withEmoji = true) {
   await page.route('**/api/**', route => {
     const request = route.request()
     const url = new URL(request.url()).pathname
     const body = url === '/api/auth/me' ? user : url === '/api/workspaces' ? workspaces
-      : url.endsWith('/snapshot') ? { pages: url.includes(workspaces[0]!.id) ? pages : [], blocks: url.includes(workspaces[0]!.id) ? blocks : [] }
+      : url.endsWith('/snapshot') ? { pages: url.includes(workspaces[0]!.id) ? pages.map(item => withEmoji ? item : { ...item, icon: undefined }) : [], blocks: url.includes(workspaces[0]!.id) ? blocks : [] }
         : { statusCode: 404, message: 'Not found' }
     return route.fulfill({ status: 'statusCode' in body ? 404 : 200, contentType: 'application/json', body: JSON.stringify(body) })
   })
@@ -72,17 +72,14 @@ test('page icon disclosure preserves title position and separates expansion from
   const parent = page.locator('.product-page-node').filter({ has: page.getByRole('button', { name: '工作笔记', exact: true }) })
   const row = parent.locator('.product-page-row')
   const title = parent.locator('.product-page-title')
-  const icon = parent.locator('.product-page-disclosure-icon')
-  const chevron = parent.locator('.product-page-disclosure-chevron')
+  const icon = parent.locator('.product-page-toggle .product-page-icon')
   const toggle = parent.locator('.product-page-toggle')
   const titleBounds = await title.boundingBox()
   const originalUrl = page.url()
   await expect(icon).toBeVisible()
   await expect(icon).toHaveText('📓')
-  await expect(chevron).toBeHidden()
   await row.hover()
-  await expect(icon).toBeHidden()
-  await expect(chevron).toBeVisible()
+  await expect(toggle.locator('svg.product-page-icon')).toBeVisible()
   expect(await title.boundingBox()).toEqual(titleBounds)
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
   await toggle.click()
@@ -91,7 +88,7 @@ test('page icon disclosure preserves title position and separates expansion from
   expect(page.url()).toBe(originalUrl)
   await page.mouse.move(800, 22)
   await expect(icon).toBeVisible()
-  await expect(chevron).toBeHidden()
+  await expect(icon).toHaveText('📓')
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
   expect(await title.boundingBox()).toEqual(titleBounds)
   await screenshot(page, 'sidebar-disclosure-default')
@@ -100,7 +97,7 @@ test('page icon disclosure preserves title position and separates expansion from
   await toggle.focus()
   await expect(toggle).toBeFocused()
   await toggle.press('Space')
-  await expect(chevron).toBeVisible()
+  await expect(toggle.locator('svg.product-page-icon')).toBeVisible()
   await expect(toggle).toHaveAttribute('aria-expanded', 'false')
   await toggle.press('Enter')
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
@@ -128,6 +125,59 @@ test('page icon disclosure preserves title position and separates expansion from
   await expect(page.locator('vite-error-overlay')).toHaveCount(0)
 })
 
+test('page disclosure morphs through hover, expansion and mouse leave on one icon instance', async ({ page }) => {
+  await openShell(page, false)
+  const parent = page.locator('[data-page-id="shell-page-0"]')
+  const row = parent.locator('.product-page-row')
+  const toggle = parent.locator('.product-page-toggle')
+  const title = parent.locator('.product-page-title')
+  const svg = toggle.locator('svg.product-page-icon')
+  const path = svg.locator('path')
+  const titleBounds = await title.boundingBox()
+  await expect(svg).toHaveCount(1)
+  await svg.evaluate(element => element.setAttribute('data-morph-instance', 'original'))
+
+  const recordMorph = async (action: () => Promise<void>) => {
+    await path.evaluate(element => {
+      const target = element as SVGPathElement & { morphSamples?: string[]; morphObserver?: MutationObserver }
+      target.morphSamples = []
+      target.morphObserver = new MutationObserver(() => target.morphSamples!.push(target.getAttribute('d') ?? ''))
+      target.morphObserver.observe(target, { attributes: true, attributeFilter: ['d'] })
+    })
+    await action()
+    await page.waitForTimeout(500)
+    const samples = await path.evaluate(element => {
+      const target = element as SVGPathElement & { morphSamples?: string[]; morphObserver?: MutationObserver }
+      target.morphObserver?.disconnect()
+      return target.morphSamples ?? []
+    })
+    expect(new Set(samples).size).toBeGreaterThan(2)
+    await expect(svg).toHaveAttribute('data-morph-instance', 'original')
+    expect(await title.boundingBox()).toEqual(titleBounds)
+    return path.getAttribute('d')
+  }
+
+  const fileText = await path.getAttribute('d')
+  const chevronRight = await recordMorph(() => row.hover())
+  expect(chevronRight).not.toBe(fileText)
+  const chevronDown = await recordMorph(() => toggle.click())
+  expect(chevronDown).not.toBe(chevronRight)
+  const restoredFileText = await recordMorph(() => page.mouse.move(800, 22))
+  expect(restoredFileText).toBe(fileText)
+
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Shift+Tab')
+  await expect(toggle).toBeFocused()
+  await expect.poll(() => path.getAttribute('d')).toBe(chevronDown)
+  await page.mouse.click(800, 22)
+  await expect.poll(() => path.getAttribute('d')).toBe(fileText)
+
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await row.hover()
+  await expect(svg).toHaveAttribute('data-morph-instance', 'original')
+  await expect.poll(() => path.getAttribute('d')).toBe(chevronDown)
+})
+
 test.describe('touch disclosure', () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
   test('expands without hover or closing the navigation drawer', async ({ page }) => {
@@ -135,8 +185,7 @@ test.describe('touch disclosure', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.getByRole('button', { name: '打开导航菜单', exact: true }).tap()
     const toggle = page.locator('.product-page-toggle').first()
-    await expect(toggle.locator('.product-page-disclosure-chevron')).toBeVisible()
-    await expect(toggle.locator('.product-page-disclosure-icon')).toBeHidden()
+    await expect(toggle.locator('svg.product-page-icon')).toBeVisible()
     await toggle.tap()
     await expect(toggle).toHaveAttribute('aria-expanded', 'true')
     await expect(page.getByRole('button', { name: '今日记录', exact: true })).toBeVisible()

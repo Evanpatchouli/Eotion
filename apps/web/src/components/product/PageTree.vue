@@ -19,7 +19,7 @@ import PageRenameForm from './PageRenameForm.vue'
 const route = useRoute()
 const router = useRouter()
 const pages = useProductPagesStore()
-const { layoutMode } = useRuntimeContext()
+const { layoutMode, inputMode } = useRuntimeContext()
 const emit = defineEmits<{ navigate: [] }>()
 
 const expanded = ref(new Set<string>())
@@ -27,11 +27,32 @@ const activePopover = ref<{ pageId: string; mode: 'menu' | 'rename' | 'move' } |
 const formDialog = ref<{ pageId: string; mode: 'rename' | 'move' } | null>(null)
 const confirmDeleteFor = ref<string | null>(null)
 const deleteSubmitting = ref(false)
+const hoveredPageId = ref<string | null>(null)
+const focusVisiblePageId = ref<string | null>(null)
 
 const workspaceId = computed(() => typeof route.params.workspaceId === 'string' ? route.params.workspaceId : '')
 const currentPageId = computed(() => typeof route.params.pageId === 'string' ? route.params.pageId : '')
 const rows = computed(() => flattenPageTree(buildPageTree(pages.items), expanded.value))
 const canCreate = computed(() => !!workspaceId.value && pages.forWorkspaceId === workspaceId.value && pages.loaded && !pages.loading && !pages.error && !pages.createPending)
+
+function showDisclosureChevron(pageId: string) {
+  return inputMode.value !== 'mouse' || window.matchMedia('(hover: none)').matches
+    || hoveredPageId.value === pageId || focusVisiblePageId.value === pageId
+}
+
+function disclosureIconName(pageId: string, isExpanded: boolean) {
+  if (!showDisclosureChevron(pageId)) return IconName.FileText
+  return isExpanded ? IconName.ChevronDown : IconName.ChevronRight
+}
+
+function onPageFocusIn(pageId: string, event: FocusEvent) {
+  focusVisiblePageId.value = event.target instanceof Element && event.target.matches(':focus-visible') ? pageId : null
+}
+
+function onPageFocusOut(pageId: string, event: FocusEvent) {
+  if (!(event.relatedTarget instanceof Node && event.currentTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))
+    && focusVisiblePageId.value === pageId) focusVisiblePageId.value = null
+}
 
 function pageMenuItems(pageId: string) {
   return [
@@ -259,7 +280,7 @@ watch(workspaceId, () => {
           @update:open="setPopoverOpen(row.page.id, $event)"
         >
           <template #trigger="{ triggerProps, openAt }">
-            <div class="product-page-context" @contextmenu="openAt">
+            <div class="product-page-context" @contextmenu="openAt" @mouseenter="hoveredPageId = row.page.id" @mouseleave="hoveredPageId = null" @focusin="onPageFocusIn(row.page.id, $event)" @focusout="onPageFocusOut(row.page.id, $event)">
               <EotionNavItem
                 :active="row.page.id === currentPageId"
                 row-class="product-page-row"
@@ -270,11 +291,8 @@ watch(workspaceId, () => {
               >
                 <template v-if="row.hasChildren" #leading>
                   <button class="product-page-toggle" type="button" :aria-label="`${row.expanded ? '收起' : '展开'}${row.page.title}的子页面`" :aria-expanded="row.expanded" @click.stop="toggle(row.page.id)">
-                    <span class="product-page-disclosure-icon" aria-hidden="true">
-                      <span v-if="row.page.icon" class="product-page-icon">{{ row.page.icon }}</span>
-                      <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
-                    </span>
-                    <EotionIcon class="product-page-disclosure-chevron" :name="row.expanded ? IconName.ChevronDown : IconName.ChevronRight" :size="16" />
+                    <span v-if="row.page.icon && !showDisclosureChevron(row.page.id)" class="product-page-icon" aria-hidden="true">{{ row.page.icon }}</span>
+                    <EotionIcon v-else class="product-page-icon" :name="disclosureIconName(row.page.id, row.expanded)" :size="16" />
                   </button>
                 </template>
                 <template v-if="!row.hasChildren" #icon>

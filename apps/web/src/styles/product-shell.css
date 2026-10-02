@@ -209,20 +209,7 @@
 
 .product-shell .product-page-tree .product-page-row { gap: 6px; }
 .product-shell .product-page-row .product-page-link { padding: 0; }
-.product-shell .product-page-disclosure-icon { display: inline-grid; place-items: center; }
-.product-shell .product-page-disclosure-chevron { display: none; }
-
-.product-shell .product-page-row:hover .product-page-disclosure-icon,
-.product-shell .product-page-row:has(:focus-visible) .product-page-disclosure-icon,
-.product-shell[data-input="touch"] .product-page-disclosure-icon { display: none; }
-
-.product-shell .product-page-row:hover .product-page-disclosure-chevron,
-.product-shell .product-page-row:has(:focus-visible) .product-page-disclosure-chevron,
-.product-shell[data-input="touch"] .product-page-disclosure-chevron { display: block; }
-
 @media (hover: none), (pointer: coarse) {
-  .product-shell .product-page-disclosure-icon { display: none; }
-  .product-shell .product-page-disclosure-chevron { display: block; }
   .product-shell .product-page-toggle,
   .product-shell .product-page-leading-icon { height: 44px; }
 }

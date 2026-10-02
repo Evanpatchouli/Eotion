@@ -10,7 +10,7 @@
 - 折叠状态仅保留在当前壳层生命周期内，不新增设备偏好或存储行为。移动端保留既有抽屉交互。
 - 动画使用 motion token，并尊重 reduced motion。
 - Sidebar 的折叠／移动关闭、Workspace `...`、页面新建与页面操作共用 trailing 宽度及行右侧 padding，以页面 `...` 中心为基准对齐。
-- 页面树只保留一个 24px leading slot。有子页面时默认显示页面图标，行 hover 或键盘 focus-visible 时切换为对应展开状态的 chevron；鼠标移开恢复图标，展开状态保留。触摸／无 hover 环境常显 chevron。真实 disclosure button 提供 `aria-expanded`，只展开／收起；主导航按钮只打开页面，trailing `...` 只打开操作。无子页面时图标保持不变。
+- 页面树只保留一个 24px leading slot。有子页面时默认显示页面图标，行 hover 或键盘 focus-visible 时切换为对应展开状态的 chevron；鼠标移开恢复图标，展开状态保留。普通图标通过同一个 `EotionIcon` 实例的动态 `name` 在 FileText / ChevronRight / ChevronDown 间 morph；自定义 emoji 在默认态保留，切换 chevron 时直接换成 SVG。触摸／无 hover 环境常显 chevron。真实 disclosure button 提供 `aria-expanded`，只展开／收起；主导航按钮只打开页面，trailing `...` 只打开操作。无子页面时图标保持不变。
 
 ## 工作区浮层
 
