@@ -260,7 +260,7 @@ test('redirects an authenticated visitor from login and registration to the prod
   await expect(page).toHaveURL(/#\/app\/ws-a$/)
   await page.goto('/#/register')
   await expect(page).toHaveURL(/#\/app\/ws-a$/)
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Ava space')
 })
 
 test('delays login until recovery completes and uses cached product state on transient failures', async ({ page }) => {
@@ -268,7 +268,7 @@ test('delays login until recovery completes and uses cached product state on tra
   api.controls.meDelayMs = 250
   await page.goto('/#/app')
   await expect(page.getByRole('heading', { name: '登录 Eotion' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Ava space')
   // The workspace label precedes snapshot hydration. Establish the cached
   // product state before interrupting recovery with a reload and /me failure.
   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
@@ -277,14 +277,14 @@ test('delays login until recovery completes and uses cached product state on tra
   api.controls.meFailures = 1
   await page.reload()
   await expect(page.locator('.connectivity-state')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Ava space')
 
   // Finish the previous document's background authorization request before
   // assigning the one-shot failure to the next document's initial recovery.
   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
   api.controls.workspaceListFailures = 1
   await page.reload()
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Ava space')
   await expect(page.getByRole('heading', { name: '暂时无法加载工作区' })).toHaveCount(0)
 })
 
@@ -296,12 +296,12 @@ test('creates the first workspace and keeps it available after reload', async ({
   await page.getByRole('button', { name: '创建工作区' }).click()
   await expect(page.locator('.product-operation-status')).toContainText('工作区已创建')
   await expect(page).toHaveURL(/#\/app\/[^/]+$/)
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Ava space')
   expect(api.records).toHaveLength(1)
   expect(api.records[0]).toMatchObject({ name: 'Ava space', ownerId: 'user-ava' })
 
   await page.reload()
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava space')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Ava space')
 })
 
 test('switches workspaces, selects the most recent one, and validates rename with retry and persistence', async ({ page }) => {
@@ -329,9 +329,9 @@ test('switches workspaces, selects the most recent one, and validates rename wit
   await expect(page.getByRole('alert')).toBeVisible()
   await page.getByRole('button', { name: '保存名称' }).click()
   await expect(page.locator('.product-operation-status')).toContainText('工作区名称已更新')
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Renamed room')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Renamed room')
   await page.reload()
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Renamed room')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Renamed room')
   expect(api.records.find((record) => record.id === 'ws-b')?.name).toBe('Renamed room')
 })
 
@@ -372,12 +372,12 @@ test('isolates workspace lists between users and closes the mobile drawer after 
   await page.setViewportSize({ width: 390, height: 844 })
   await login(page)
   await page.getByRole('button', { name: '打开导航菜单' }).click()
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ava private')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Ava private')
   await expect(page.getByText('Ben private')).toHaveCount(0)
   await page.getByRole('button', { name: '退出登录' }).click()
   await login(page, 'ben@example.com', 'ben-password')
   await page.getByRole('button', { name: '打开导航菜单' }).click()
-  await expect(page.getByRole('button', { name: '切换工作区' })).toContainText('Ben private')
+  await expect(page.locator('.product-workspace-trigger .product-workspace-name')).toContainText('Ben private')
   await expect(page.getByText('Ava private')).toHaveCount(0)
 
   await expect(page.getByLabel('工作区导航')).toBeVisible()

@@ -9,12 +9,12 @@
 - 桌面／平板可收起侧栏；侧栏退出布局并设为 inert，Topbar 的“展开侧边栏”恢复入口接收焦点。展开后焦点回到收起按钮。
 - 折叠状态仅保留在当前壳层生命周期内，不新增设备偏好或存储行为。移动端保留既有抽屉交互。
 - 动画使用 motion token，并尊重 reduced motion。
-- Sidebar 的折叠／移动关闭、Workspace 箭头、页面新建与页面操作共用 trailing 宽度及行右侧 padding，以页面 `...` 中心为基准对齐。
+- Sidebar 的折叠／移动关闭、Workspace `...`、页面新建与页面操作共用 trailing 宽度及行右侧 padding，以页面 `...` 中心为基准对齐。
 - 页面树只保留一个 24px leading slot。有子页面时默认显示页面图标，行 hover 或键盘 focus-visible 时切换为对应展开状态的 chevron；鼠标移开恢复图标，展开状态保留。触摸／无 hover 环境常显 chevron。真实 disclosure button 提供 `aria-expanded`，只展开／收起；主导航按钮只打开页面，trailing `...` 只打开操作。无子页面时图标保持不变。
 
 ## 工作区浮层
 
-工作区入口复用 EotionPopover；Teleport 到 body，以 absolute 坐标锚定触发器，宽度 240px、间距 6px，开合不推动页面树。窗口 resize、滚动与浮层尺寸变化会更新位置。
+工作区与页面操作复用 EotionPopover context 模式，Teleport 到 body，以 absolute 坐标定位，不参与 Sidebar 文档流。鼠标点击 trailing `...` 或在整行右键时，浮层左上角贴近鼠标位置；键盘打开沿用触发器锚定。浮层按 viewport 边界修正横向位置并在底部空间不足时向上翻转，窗口 resize、滚动与浮层尺寸变化会更新位置。工作区面板保持 240px 宽。多个 Popover 互斥，打开新菜单会关闭旧菜单且不抢回焦点。
 
 包含新建／重命名表单时使用非模态 dialog 语义，工作区选择与操作仍是原生按钮。方向键/Home/End 在列表按钮间导航；表单内方向键保持输入行为，Tab/Shift+Tab 可到达输入框和提交按钮。ESC、外部点击关闭浮层并返回触发器焦点。既有 workspace 创建、重命名、切换、认证及同步流程保持原有实现。
 
@@ -32,6 +32,13 @@ pnpm --filter @eotion/web exec playwright test tests/product-shell.spec.ts tests
 
 同一 suite 覆盖 Desktop / Tablet / Mobile 右侧图标中心误差 ≤1px、hover 标题位置不变、展开与导航点击隔离、无子项保持图标、键盘 Space/Enter 和触摸展开；额外截图为 `sidebar-disclosure-default.png`、`sidebar-disclosure-hover.png`。
 
-页面动作浮层属于后续实施单元，本阶段只统一页面树行的壳层样式。
+页面菜单保留新建子页面、重命名、移动、删除四项原有业务行为，使用 menu / menuitem 语义；重命名、移动与删除确认表单保持原有位置。点击外部与 ESC 关闭，菜单打开不触发页面导航；移动端 ESC 优先关闭菜单，保留导航抽屉。工作区名称为静态行内容，右侧独立 `...` 按钮打开同类浮层，列表与表单仍保持非模态 dialog 语义。
 
 2026-10-02 验证：Web typecheck、生产 build 通过；上述四个 Playwright 文件初次集成验证共 34/34 通过。独立复核后补充加载中→有工作区／空列表的键盘回归：没有可用按钮时 dialog 面板接收焦点，加载完成后 Tab 可进入按钮。最终 build（包含 vue-tsc）与壳层／基础组件测试 9/9 通过，并重新生成三态截图。截图已核对 1440×900、侧栏几何与 Popover 开合；内容区保留既有编辑器与本地保存状态，本阶段不宣称完成整个 Page 的 Quiet Studio 迁移。
+
+
+## Page / Workspace Context Menu 验收（2026-10-02）
+
+Web typecheck 与最终生产 build 通过。ProductShell、ProductPages、ProductFlow、UiFoundation、InteractionFoundation、ProductEditor、ProductSync、ProductAttachments 共 122 项回归最终通过；Workspace 按钮拆分后，旧名称文本断言迁移到行内可见名称，ProductFlow 重跑 10/10 通过。新增两项 context-menu 回归覆盖点击 `...`、整行右键、外部点击、ESC、互斥、导航隔离、Sidebar 几何不变、视口角落与窗口高度缩小后的边界修正；最终定向 2/2 通过。独立工程 review 无 blocker。
+
+设置 `EOTION_VISUAL_QA_DIR` 并运行 `product-shell.spec.ts` 可输出 1440×900 `page-context-menu.png` 与 `workspace-context-menu.png`；已人工检查 Desktop Light 截图，Mobile 390×844 行为验证通过。Browser 插件不可用，使用仓库 Playwright + Chrome；未运行 Electron 宿主或真实 API / 数据库 / real-sync 独立配置。

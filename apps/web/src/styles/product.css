@@ -55,7 +55,8 @@
 .product-add-page:disabled { color: var(--text-disabled); cursor: not-allowed; }
 .product-page-toggle--empty { width: 36px; height: 36px; }
 .product-page-toggle--empty:hover { background: transparent; }
-.product-page-menu { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; margin: 3px 0 5px 26px; padding: 7px 9px; border: 1px solid var(--surface-active); border-radius: 8px; background: var(--surface-raised); }
+.product-page-menu { display: flex; width: 100%; flex-direction: column; align-items: stretch; gap: 1px; }
+.product-page-menu .product-text-button { width: 100%; text-align: left; }
 .product-text-button--danger { color: var(--danger); }
 .product-text-button--danger:hover { color: var(--danger-hover); }
 .product-page-inline-form { margin: 4px 0 6px 26px; padding: 9px; border: 1px solid var(--surface-active); border-radius: 8px; background: var(--surface-raised); gap: 8px; }

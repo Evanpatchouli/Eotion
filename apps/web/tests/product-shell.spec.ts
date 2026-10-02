@@ -116,7 +116,7 @@ test('page icon disclosure preserves title position and separates expansion from
   await leaf.click()
   await expect(page).toHaveURL(/\/page\/shell-page-1$/)
   await parent.getByRole('button', { name: '页面操作：工作笔记', exact: true }).click()
-  await expect(parent.getByRole('group', { name: '工作笔记 的操作', exact: true })).toBeVisible()
+  await expect(page.getByRole('menu', { name: '工作笔记 的操作', exact: true })).toBeVisible()
   await expect(page).toHaveURL(/\/page\/shell-page-1$/)
   await parent.getByRole('button', { name: '工作笔记', exact: true }).click()
   await expect(page).toHaveURL(/\/page\/shell-page-0$/)
@@ -298,3 +298,92 @@ test(`loading workspace popover keeps keyboard access when resolving to ${result
   }
 })
 }
+
+test('page and workspace context menus float at the pointer, close and stay exclusive', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
+  await openShell(page)
+  await expect(page).toHaveTitle(/Eotion/)
+  const originalUrl = page.url()
+  const tree = page.getByRole('tree')
+  const before = await tree.boundingBox()
+  const trigger = page.getByRole('button', { name: '页面操作：阅读清单', exact: true })
+  const menu = page.getByRole('menu', { name: '阅读清单 的操作', exact: true })
+  const workspace = page.getByRole('dialog', { name: '工作区切换', exact: true })
+  const workspaceTrigger = page.getByRole('button', { name: '切换工作区', exact: true })
+  const row = page.locator('.product-page-node').filter({ has: trigger }).locator('.product-page-row')
+  await trigger.click()
+  await expect(menu).toBeVisible()
+  expect(await tree.boundingBox()).toEqual(before)
+  expect(page.url()).toBe(originalUrl)
+  const triggerBounds = (await trigger.boundingBox())!
+  const menuBounds = (await menu.boundingBox())!
+  expect(Math.abs(menuBounds.x - (triggerBounds.x + triggerBounds.width / 2))).toBeLessThanOrEqual(2)
+  expect(Math.abs(menuBounds.y - (triggerBounds.y + triggerBounds.height / 2))).toBeLessThanOrEqual(2)
+  await screenshot(page, 'page-context-menu')
+  await page.keyboard.press('Escape')
+  await expect(menu).toBeHidden()
+  await expect(trigger).toBeFocused()
+  await row.click({ button: 'right', position: { x: 55, y: 12 } })
+  await expect(menu).toBeVisible()
+  expect(page.url()).toBe(originalUrl)
+  const rowBounds = (await row.boundingBox())!
+  expect(Math.abs((await menu.boundingBox())!.x - (rowBounds.x + 55))).toBeLessThanOrEqual(2)
+  await row.click({ button: 'right', position: { x: 25, y: 20 } })
+  await expect.poll(async () => Math.abs((await menu.boundingBox())!.x - (rowBounds.x + 25))).toBeLessThanOrEqual(2)
+  await workspaceTrigger.click()
+  await expect(workspace).toBeVisible()
+  await expect(menu).toBeHidden()
+  expect(await tree.boundingBox()).toEqual(before)
+  expect(page.url()).toBe(originalUrl)
+  await screenshot(page, 'workspace-context-menu')
+  // A right-click produces no document click: exclusivity must not rely on outside click.
+  await row.click({ button: 'right' })
+  await expect(menu).toBeVisible()
+  await expect(workspace).toBeHidden()
+  await page.locator('.product-workspace-trigger').click({ button: 'right', position: { x: 80, y: 12 } })
+  await expect(workspace).toBeVisible()
+  await expect(menu).toBeHidden()
+  await page.keyboard.press('Escape')
+  await expect(workspace).toBeHidden()
+  await workspaceTrigger.click()
+  await page.locator('.breadcrumb').click()
+  await expect(workspace).toBeHidden()
+  await trigger.click()
+  await page.locator('.breadcrumb').click()
+  await expect(menu).toBeHidden()
+  // Keyboard opening keeps the existing ArrowDown path.
+  await trigger.press('ArrowDown')
+  await expect(menu.getByRole('menuitem', { name: '新建子页面' })).toBeFocused()
+  await page.keyboard.press('Escape')
+  expect(page.url()).toBe(originalUrl)
+  expect(errors).toEqual([])
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+})
+
+test('context menu bounds clamp at viewport edges and Escape preserves mobile drawer', async ({ page }) => {
+  await openShell(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  const drawer = page.getByLabel('工作区导航', { exact: true })
+  await page.getByRole('button', { name: '打开导航菜单', exact: true }).click()
+  for (const target of [page.getByRole('button', { name: '页面操作：阅读清单', exact: true }), page.getByRole('button', { name: '切换工作区', exact: true })]) {
+    // Exercise the real DOM event handler with coordinates near either viewport corner.
+    for (const point of [{ clientX: 389, clientY: 843 }, { clientX: 1, clientY: 1 }]) {
+      await target.dispatchEvent('contextmenu', { ...point, button: 2, bubbles: true })
+      const panel = page.locator('.eotion-popover-panel')
+      await expect(panel).toBeVisible()
+      const bounds = (await panel.boundingBox())!
+      expect(bounds.x).toBeGreaterThanOrEqual(0)
+      expect(bounds.y).toBeGreaterThanOrEqual(0)
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(390)
+      expect(bounds.y + bounds.height).toBeLessThanOrEqual(844)
+      await page.setViewportSize({ width: 390, height: 600 })
+      await expect.poll(async () => { const resized = (await panel.boundingBox())!; return resized.y + resized.height }).toBeLessThanOrEqual(600)
+      await page.keyboard.press('Escape')
+      await expect(panel).toBeHidden()
+      await page.setViewportSize({ width: 390, height: 844 })
+      await expect(drawer).toHaveClass(/sidebar--open/)
+    }
+  }
+})

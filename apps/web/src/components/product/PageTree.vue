@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useProductPagesStore } from '../../stores/productPages'
 import EotionIcon from '../ui/EotionIcon.vue'
 import EotionNavItem from '../ui/EotionNavItem.vue'
+import EotionPopover from '../ui/EotionPopover.vue'
 import { IconName } from '../ui/icons'
 import { flushActivePageEditor } from '../../editor/activePageEditor'
 import { buildPageTree, flattenPageTree } from '../../utils/pageTree'
@@ -57,10 +58,13 @@ function toggle(pageId: string) {
   closePanels()
 }
 
-function toggleMenu(pageId: string) {
-  const opening = menuFor.value !== pageId
+function setMenuOpen(pageId: string, isOpen: boolean) {
+  if (!isOpen) {
+    if (menuFor.value === pageId) closePanels()
+    return
+  }
   closePanels()
-  if (opening) menuFor.value = pageId
+  menuFor.value = pageId
 }
 
 function startRename(pageId: string) {
@@ -93,6 +97,7 @@ async function createRoot() {
 }
 
 async function createChild(parentPageId: string) {
+  closePanels()
   const created = await pages.create(workspaceId.value, parentPageId)
   if (!created) return
   expanded.value.add(parentPageId)
@@ -153,41 +158,51 @@ watch(workspaceId, () => { closePanels(); expanded.value = new Set() })
     <p v-else-if="pages.loaded && pages.items.length === 0" class="product-page-placeholder"><EotionIcon :name="IconName.FileText" :size="16" /><span>还没有页面</span></p>
     <ul v-else class="product-page-tree" role="tree" aria-label="页面树">
       <li v-for="row in rows" :key="row.page.id" class="product-page-node" role="treeitem" :aria-level="row.depth + 1" :aria-selected="row.page.id === currentPageId" :aria-expanded="row.hasChildren ? row.expanded : undefined">
-        <EotionNavItem
-          :active="row.page.id === currentPageId"
-          row-class="product-page-row"
-          :row-style="{ paddingLeft: `${8 + row.depth * 14}px` }"
-          class="product-page-link"
-          type="button"
-          @click="openPage(row.page.id)"
+        <EotionPopover
+          :open="menuFor === row.page.id"
+          context
+          :label="`${row.page.title} 的操作`"
+          @update:open="setMenuOpen(row.page.id, $event)"
         >
-          <template v-if="row.hasChildren" #leading>
-            <button class="product-page-toggle" type="button" :aria-label="`${row.expanded ? '收起' : '展开'}${row.page.title}的子页面`" :aria-expanded="row.expanded" @click.stop="toggle(row.page.id)">
-              <span class="product-page-disclosure-icon" aria-hidden="true">
-                <span v-if="row.page.icon" class="product-page-icon">{{ row.page.icon }}</span>
-                <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
-              </span>
-              <EotionIcon class="product-page-disclosure-chevron" :name="row.expanded ? IconName.ChevronDown : IconName.ChevronRight" :size="16" />
-            </button>
+          <template #trigger="{ triggerProps, openAt }">
+            <div class="product-page-context" @contextmenu="openAt">
+              <EotionNavItem
+                :active="row.page.id === currentPageId"
+                row-class="product-page-row"
+                :row-style="{ paddingLeft: `${8 + row.depth * 14}px` }"
+                class="product-page-link"
+                type="button"
+                @click="openPage(row.page.id)"
+              >
+                <template v-if="row.hasChildren" #leading>
+                  <button class="product-page-toggle" type="button" :aria-label="`${row.expanded ? '收起' : '展开'}${row.page.title}的子页面`" :aria-expanded="row.expanded" @click.stop="toggle(row.page.id)">
+                    <span class="product-page-disclosure-icon" aria-hidden="true">
+                      <span v-if="row.page.icon" class="product-page-icon">{{ row.page.icon }}</span>
+                      <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
+                    </span>
+                    <EotionIcon class="product-page-disclosure-chevron" :name="row.expanded ? IconName.ChevronDown : IconName.ChevronRight" :size="16" />
+                  </button>
+                </template>
+                <template v-if="!row.hasChildren" #icon>
+                  <span class="product-page-leading-icon" aria-hidden="true">
+                    <span v-if="row.page.icon" class="product-page-icon">{{ row.page.icon }}</span>
+                    <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
+                  </span>
+                </template>
+                <span class="product-page-title">{{ row.page.title }}</span>
+                <template #trailing>
+                  <button v-bind="triggerProps" class="product-page-menu-trigger" type="button" :aria-label="`页面操作：${row.page.title}`" @click.stop><EotionIcon :name="IconName.More" /></button>
+                </template>
+              </EotionNavItem>
+            </div>
           </template>
-          <template v-if="!row.hasChildren" #icon>
-            <span class="product-page-leading-icon" aria-hidden="true">
-              <span v-if="row.page.icon" class="product-page-icon">{{ row.page.icon }}</span>
-              <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
-            </span>
-          </template>
-          <span class="product-page-title">{{ row.page.title }}</span>
-          <template #trailing>
-            <button class="product-page-menu-trigger" type="button" :aria-label="`页面操作：${row.page.title}`" :aria-expanded="menuFor === row.page.id" @click.stop="toggleMenu(row.page.id)"><EotionIcon :name="IconName.More" /></button>
-          </template>
-        </EotionNavItem>
-
-        <div v-if="menuFor === row.page.id" class="product-page-menu" role="group" :aria-label="`${row.page.title} 的操作`">
-          <button class="product-text-button" type="button" :disabled="pages.createPending" @click="createChild(row.page.id)">新建子页面</button>
-          <button class="product-text-button" type="button" @click="startRename(row.page.id)">重命名</button>
-          <button class="product-text-button" type="button" @click="startMove(row.page.id)">移动</button>
-          <button class="product-text-button product-text-button--danger" type="button" @click="startDelete(row.page.id)">删除</button>
-        </div>
+          <div class="product-page-menu">
+            <button class="product-text-button" type="button" role="menuitem" :disabled="pages.createPending" @click="createChild(row.page.id)">新建子页面</button>
+            <button class="product-text-button" type="button" role="menuitem" @click="startRename(row.page.id)">重命名</button>
+            <button class="product-text-button" type="button" role="menuitem" @click="startMove(row.page.id)">移动</button>
+            <button class="product-text-button product-text-button--danger" type="button" role="menuitem" data-danger="true" @click="startDelete(row.page.id)">删除</button>
+          </div>
+        </EotionPopover>
 
         <PageRenameForm v-if="renameFor === row.page.id" :initial-title="row.page.title" :pending="pages.renamePending" :error="pages.renameError" @submit="submitRename(row.page.id, $event)" @cancel="renameFor = null" />
         <PageMoveForm v-if="moveFor === row.page.id" :pages="pages.items" :page-id="row.page.id" :current-parent-id="row.page.parentPageId" :pending="pages.movePending" :error="pages.moveError" @submit="submitMove(row.page.id, $event)" @cancel="moveFor = null" />

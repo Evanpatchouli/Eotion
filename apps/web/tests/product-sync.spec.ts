@@ -466,19 +466,19 @@ test('offline page rename, move and delete stay durable after reload', async ({ 
   api.controls.disconnected = true
 
   await page.getByRole('button', { name: '页面操作：Alpha' }).click()
-  await page.getByRole('group', { name: 'Alpha 的操作' }).getByRole('button', { name: '重命名' }).click()
+  await page.getByRole('menu', { name: 'Alpha 的操作' }).getByRole('menuitem', { name: '重命名' }).click()
   await page.getByLabel('页面标题').fill('Offline Alpha')
   await page.getByRole('button', { name: '保存标题' }).click()
   await expect(page.locator('.product-page-title')).toHaveText(['Offline Alpha', 'Bravo'])
 
   await page.getByRole('button', { name: '页面操作：Bravo' }).click()
-  await page.getByRole('group', { name: 'Bravo 的操作' }).getByRole('button', { name: '移动' }).click()
+  await page.getByRole('menu', { name: 'Bravo 的操作' }).getByRole('menuitem', { name: '移动' }).click()
   await page.getByLabel('移动到').selectOption('page-alpha')
   await page.getByRole('button', { name: '移动', exact: true }).click()
   await expect(page.getByRole('treeitem', { name: /Bravo/ })).toHaveAttribute('aria-level', '2')
 
   await page.getByRole('button', { name: '页面操作：Bravo' }).click()
-  await page.getByRole('group', { name: 'Bravo 的操作' }).getByRole('button', { name: '删除' }).click()
+  await page.getByRole('menu', { name: 'Bravo 的操作' }).getByRole('menuitem', { name: '删除' }).click()
   await page.getByRole('button', { name: '确认删除' }).click()
   await expect(page.locator('.product-page-title')).toHaveText(['Offline Alpha'])
   await page.reload()

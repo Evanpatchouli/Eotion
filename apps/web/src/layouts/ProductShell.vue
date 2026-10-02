@@ -67,7 +67,7 @@ function closeMobileNav() {
 }
 
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && mobileNavOpen.value) closeMobileNav()
+  if (event.key === 'Escape' && !event.defaultPrevented && mobileNavOpen.value) closeMobileNav()
 }
 function onConnection(): void { sync.requestSync(0) }
 function onAttention(): void { if (document.visibilityState === 'visible') sync.requestSync() }
@@ -217,13 +217,13 @@ onUnmounted(() => {
 
       <div class="product-sidebar-section">
         <span class="product-section-label">工作区</span>
-        <EotionPopover v-model:open="switcherOpen" mode="dialog" label="工作区切换" panel-width="240px">
-          <template #trigger="{ triggerProps }">
-            <button v-bind="triggerProps" class="product-workspace-trigger" type="button" aria-label="切换工作区" @click="formMode = null; operationError = ''">
+        <EotionPopover v-model:open="switcherOpen" mode="dialog" context label="工作区切换" panel-width="240px">
+          <template #trigger="{ triggerProps, openAt }">
+            <div class="product-workspace-trigger" @contextmenu="formMode = null; operationError = ''; openAt($event)">
               <span class="product-workspace-avatar" aria-hidden="true">{{ currentWorkspace?.name.slice(0, 1) || 'E' }}</span>
               <span class="product-workspace-name">{{ currentWorkspace?.name ?? (workspaces.loading ? '正在加载…' : '选择工作区') }}</span>
-              <span class="product-chevron" aria-hidden="true"><EotionIcon :name="IconName.ChevronDown" :size="16" /></span>
-            </button>
+              <button v-bind="triggerProps" class="product-chevron product-page-menu-trigger" type="button" aria-label="切换工作区" @click="formMode = null; operationError = ''"><EotionIcon :name="IconName.More" /></button>
+            </div>
           </template>
           <div class="product-workspace-popover">
           <p v-if="workspaces.loading" class="product-message" role="status">正在加载工作区…</p>

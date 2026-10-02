@@ -484,7 +484,7 @@ test('preserves a locally saved IME draft when page metadata sync expires the se
   await editor(page).dispatchEvent('compositionend', { data: 'Draft from another API' })
   await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
   await page.getByRole('button', { name: '页面操作：Alpha' }).click()
-  await page.locator('.product-page-menu').getByRole('button', { name: '重命名' }).click()
+  await page.locator('.product-page-menu').getByRole('menuitem', { name: '重命名' }).click()
   await page.getByLabel('页面标题').fill('Changed title')
   await page.getByRole('button', { name: '保存标题' }).click()
   await expect(page).toHaveURL(/#\/login(?:\?redirect=.*)?$/)

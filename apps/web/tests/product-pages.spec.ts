@@ -112,7 +112,7 @@ async function openPageMenu(page: Page, title: string): Promise<void> {
 
 async function openAction(page: Page, title: string, action: string): Promise<void> {
   await openPageMenu(page, title)
-  await page.locator('.product-page-menu').getByRole('button', { name: action }).click()
+  await page.locator('.product-page-menu').getByRole('menuitem', { name: action }).click()
 }
 
 test('shows an empty page tree, then creates a root page and opens it', async ({ page }) => {
@@ -187,7 +187,7 @@ test('creates a child page under a page and keeps the hierarchy and sibling orde
   await expect(titles).toHaveText(['Alpha', 'Bravo'])
 
   await openPageMenu(page, 'Alpha')
-  await page.locator('.product-page-menu').getByRole('button', { name: '新建子页面' }).click()
+  await page.locator('.product-page-menu').getByRole('menuitem', { name: '新建子页面' }).click()
   await expect(page).toHaveURL(/#\/app\/ws-a\/page\/[A-Za-z0-9_-]{21}$/)
   await expect(titles).toHaveText(['Alpha', '无标题', 'Bravo'])
   await expect(treeItem(page, '无标题')).toHaveAttribute('aria-level', '2')
