@@ -5,6 +5,7 @@ RUN corepack enable && corepack prepare pnpm@10.34.2 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY scripts/build-info.mjs scripts/build-info.mjs
+COPY scripts/build-info.d.mts scripts/build-info.d.mts
 COPY apps/web/package.json apps/web/package.json
 COPY packages/domain/package.json packages/domain/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
