@@ -91,4 +91,6 @@ Harmony：`hdc list targets` 确认目标，用 `hdc install apps/mobile-hosts/r
 
 同日后续验收：用户在 nova 14 登录成功后遇到“离线 · 本地已保存”，MuMu 正常。仓库 manifest 和设备已安装包均仅声明 INTERNET。补上 GET_NETWORK_INFO 后，HAP 构建/调试签名/包内 bundle 检查通过；覆盖安装保留用户登录数据，同一 nova 14 页面从“离线 · 本地已保存”恢复为“已同步”。只改宿主权限，未改 Web 同步语义或 runtime 版本；前后 UI layout 与截图证据保存在上述忽略目录。此前未验收成功登录的记录是 blocker 修复时的范围，不应理解为此后仍无法登录。
 
-仍需后续真机核对：launcher 名称/图标显示、两端成功登录与 Session 持久化、Workspace/Page/编辑器交互、Harmony 输入、键盘与旋转、安全区、附件文件选择、后台切换与重启、断网恢复，以及 Lynx `<webview>` 的文件/剪贴板/分享与原生生命周期能力。构建成功与进程存活都不能代替这些检查。生产 bundle 中不暴露 P1 开发路由，LAN 开发 Web 可继续使用 P1/P3 验证页。
+同日完整验收轮次的范围后由用户调整为仅 Android，详见 [2026-10-04 Mobile 验收](../verification/device/mobile-real-device-2026-10-04.md)。最新 master APK 在 MuMu Android 12 覆盖安装；Session 强制停止后恢复且持久 Cookie 的 `/api/auth/me` 验证 200，Workspace/Page 与两次完全离线进程重启保留 A/B 通过。网络恢复后未自动同步，点重试后“已同步”，服务端与独立 Web 客户端均读取到 A/B。图片/文件不打开系统选择器；XElement 默认 WebView 没有设置 WebChromeClient/onShowFileChooser。Touch Toolbar 标题实际 H2，与本轮 H1 要求不同。MuMu IME 窗口高度为零，真实 composition 和键盘安全区未验证。仅形成验收文档/证据，未改产品功能，**完整 Android / 双平台 Mobile Acceptance 均不得声明 PASS**。
+
+仍需后续核对：真实中文软键盘和导航/手势区、附件文件选择、自动重连、todo 正文 touch 行为、Touch Toolbar H1 需求差异；HarmonyOS 本轮各项仍待测试，不能把先前成功登录或网络权限修复外推为全部通过。launcher、剪贴板/分享等本轮范围外能力另行验收。构建成功与进程存活都不能代替这些检查。生产 bundle 中不暴露 P1 开发路由，LAN 开发 Web 可继续使用 P1/P3 验证页。

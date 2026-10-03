@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-10-04 最新交接：Mobile 验收（仅 Android）
+
+用户将本轮调整为只测 Android，nova 14 / HarmonyOS 不测。本轮最新 master 基线 3625f74，重新构建 APK 并覆盖安装现有 MuMu Android12，保持既有登录。报告及脱敏证据见 docs/verification/device/mobile-real-device-2026-10-04.md；原始日志/截图/探针在忽略目录 apps/mobile-hosts/release/runtime-verification/acceptance-20261004/。
+
+Android Session 与 Workspace/Page、完全断网下两次 force-stop/restart（A/B 保留）通过；重连后需点击同步状态重试，随后已同步且服务端/独立 Web context 均读到 A/B。原生图片/文件 picker 均失败；javap 证据显示 XElement4.1.0 默认 WebView 没有 WebChromeClient/onShowFileChooser。Touch Toolbar 标题为 H2，不满足本轮 H1 要求；MuMu IME 高度0，真实 composition/键盘安全区未完成。Todo 正文短tap触发checkbox是另一个定位线索（正文位于label内）。仅提交文档与证据，未改产品。完整 Mobile Acceptance / P5.4 / P5 不能据此声明 PASS；下一步独立修复/补测上述边界，HarmonyOS以后补测。已有测试清单正文已恢复，新增无标题测试Page保留复核；网络/旋转设置已恢复。
+
+以下为较早阶段背景，当前移动验收状态以上述报告为准。
+
 > 仅在任务需要跨会话、跨 Agent、跨模型或暂停后继续时填写；任务完成后清理。
 
 - Goal: P5.4 Real Sync 的完整退出验收。

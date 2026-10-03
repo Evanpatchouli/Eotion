@@ -14,6 +14,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `runbooks/versioning.md` | 产品版本、build number、Git SHA 与多端版本映射 |
 | `runbooks/desktop-packaging.md` | Windows Desktop installer、portable、zip 与 release 打包 |
 | `runbooks/mobile-native-hosts.md` | Android/HarmonyOS 原生 Lynx 宿主、构建、签名与真机验收 |
+| `verification/device/mobile-real-device-2026-10-04.md` | Android Mobile 验收结果与脱敏证据；离线两次重启通过，完整 Mobile Gate 未通过，HarmonyOS 本轮未执行 |
 | `knowledge/` | 长期稳定、未来会重复使用的工程经验 |
 | `exec-plans/` | 复杂、跨会话执行计划 |
 | `p1-mobile-demo.md` | P1 移动 WebView PoC 的验证入口与判读方式 |

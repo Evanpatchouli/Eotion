@@ -1,0 +1,6 @@
+10-04 05:24:22.240  6206  6206 I EotionHost: Lynx initialized=true nativeLoaded=true
+10-04 05:24:22.305  6206  6245 I EotionHost: Bundled template read: 88177 bytes
+10-04 05:24:22.396  6206  6242 E EotionHost: Lynx error 321: An exception occurred when try to get image prefetch helper.
+10-04 05:24:22.397  6206  6206 I EotionHost: Lynx template loaded
+10-04 05:24:22.399  6206  6206 I EotionHost: Lynx first screen
+10-04 05:24:22.424  6206  6206 E EotionHost: Lynx error 2298: Not allow to set enable-debug if devtool is not enabled, please enable Lynx Devtool.

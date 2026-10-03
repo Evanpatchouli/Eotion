@@ -1,21 +1,20 @@
-# Current Task — Harmony WebView false offline
+# Current Task — Mobile Real-device Acceptance
 
-状态：已修复并在nova14验证，按独立逻辑单元提交。
+2026-10-04，基线 master 3625f74（fetch 后与 origin/master 一致）。用户后续明确仅执行 Android，nova 14 / HarmonyOS 本轮不测；不重复登录。
 
 ## Work Units
-1. S0 investigate / scout + main：Web离线gate、Harmony权限与官方FAQ；manifest/已装HAP只含INTERNET，UI离线。
-2. S1 execute / main：仅声明ohos.permission.GET_NETWORK_INFO，不改同步语义、Native runtime/bridge。
-3. S0 verify / main：HAP构建/签名与包内bundle验证通过，覆盖安装保留登录数据，真实UI恢复已同步；version:check与diff检查通过。
+1. S0 investigate / scout：只读定位 Session、offline cold start、oplog、附件的验收证据入口。
+2. S0 verify / main：MuMu Android 12，最新 master APK 覆盖安装保留已登录数据；执行 Session、Workspace/Page、编辑器/IME、两次完全离线 force-stop/restart、恢复同步与第二客户端、附件、安全区；记录日志/截图。
+3. S1 execute / main：形成验收文档和证据索引，不为验收修改产品功能。
+4. Review：完成后独立检查证据与结论，无证据的项目不得 PASS。
 
-## Evidence
-- 官方OpenHarmony Web FAQ：缺GET_NETWORK_INFO时navigator.onLine始终false。
-- productSync prepare/runSync在!navigator.onLine时直接offline，login不使用该gate。
-- 修改前nova14 UI layout：离线 · 本地已保存；修改后：已同步，截图已确认。
-- 设备bm dump确认新包具有INTERNET/GET_NETWORK_INFO；登录数据保留。
-- 权限修复后ArkWeb网络质量报告4G（原先Offline），不据此宣称所有网络请求零错误。
-- 证据：apps/mobile-hosts/release/runtime-verification/harmony-network-before.json、harmony-network-after.json、harmony-network-fixed.png、build-harmony-network.log。
+## Result
+设备验收完成，正式记录已写入 docs/verification/device/mobile-real-device-2026-10-04.md；独立 review 的唯一提交阻断（*.log 被忽略）已通过改为脱敏 .txt 并更新manifest解决，证据/链接/编码检查通过。
+Android Session/Workspace/Page/离线两次进程重启通过；手动重试后server/second client A/B一致。自动恢复未通过，picker失败，H1要求差异与真实IME/SafeArea待补，完整Mobile不能PASS。用户原测试清单已恢复；网络/旋转设置已恢复。仅文档和脱敏证据，没有产品修改。
 
 ## Invariants
-- 只改网络状态权限，不清除应用数据/不卸载，不覆盖navigator.onLine，不删除Web离线gate。
-- Harmony runtime4.0.3/PrimJS4.0.1-alpha.5、native host/bundle/production URL保持。
-- 后续完整Mobile/P5验收仍见runbook。
+- 不清除数据/不卸载；不重做登录；不把 reload 当 kill/restart。
+- 测试文本使用唯一标记，不破坏已有正文。
+- 完全断网仅限模拟器，结束后恢复网络与旋转设置。
+- 原始证据：apps/mobile-hosts/release/runtime-verification/acceptance-20261004/；不提交 Cookie/Session/账号秘密。
+- HarmonyOS 未执行，不能声明双平台 Mobile Acceptance PASS。

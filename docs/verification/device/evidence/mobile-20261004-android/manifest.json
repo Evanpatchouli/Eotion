@@ -1,0 +1,82 @@
+[
+  {
+    "file": ".gitattributes",
+    "bytes": 88,
+    "sha256": "0ba26180c4ccd8e2e4a7b6ef278b6f05d13ea65163d00758304a046cb6125350"
+  },
+  {
+    "file": "build-android.json",
+    "bytes": 408,
+    "sha256": "725c6d2dc8ed846509d52b3bb55f3c05b44c4024ed1b7ee78c1b5332b2341928"
+  },
+  {
+    "file": "image-picker-retest.png",
+    "bytes": 65152,
+    "sha256": "e8b4b8a5dbc8f9d0cc7c536cd0f42e6689ced613045e8b07ec9b6ad7b5f79819"
+  },
+  {
+    "file": "ime-excerpt.txt",
+    "bytes": 238,
+    "sha256": "8d60271064c34fef05d9aff52523a3866ddf2d2b6c4aceff66aa9571b5099c69"
+  },
+  {
+    "file": "offline-a-process.json",
+    "bytes": 112,
+    "sha256": "7984ee7178008b0835028df8f5b1fb70c3f8e3cd8a9f82cbfece4fd9fc791e99"
+  },
+  {
+    "file": "offline-a-restored.png",
+    "bytes": 46092,
+    "sha256": "2cfc5e2a8c9731757d44ada1c2487f8fa31c37732a679ccec39ba36ec34d2a72"
+  },
+  {
+    "file": "offline-b-process.json",
+    "bytes": 112,
+    "sha256": "957e51f98e15efbf6b75c78727cfced598427fc173b5c12bfc9bba5cd8452f13"
+  },
+  {
+    "file": "offline-b-restored.png",
+    "bytes": 53437,
+    "sha256": "37de2d0f51a35d1298c77bd9ebc63765c53320d1308f0f3146791207b22f84b0"
+  },
+  {
+    "file": "offline-network.txt",
+    "bytes": 29,
+    "sha256": "96e413bb45b1e4f9dbb3f9f43615474d8c8cc105a020a765f7b4bf10d018446d"
+  },
+  {
+    "file": "runtime-host.txt",
+    "bytes": 563,
+    "sha256": "a1949c64be6c2acf10e3176f1fe5ade5173cc28490b1f26182ce8d35d7ffb929"
+  },
+  {
+    "file": "server-after.json",
+    "bytes": 322,
+    "sha256": "f8024764d6c07abfcb59a56ef506ed1b881f28cdafaffe765a4d12da8cb40e02"
+  },
+  {
+    "file": "server-before.json",
+    "bytes": 196,
+    "sha256": "07685a75e9fdfcf5b424ecc30f46eff895ea73067e60f0a6a3e403c3d83cf60f"
+  },
+  {
+    "file": "session-final-process.json",
+    "bytes": 112,
+    "sha256": "a2fa7dc42a8ca4b89f3a46a8109e68d1b29f472dd04cd212f3badb603d2a993c"
+  },
+  {
+    "file": "session-server-validation.json",
+    "bytes": 101,
+    "sha256": "dafc186d6c55c31284f3a9b1dbefb2fecd7e5da345d99321bb2d827b0a20432f"
+  },
+  {
+    "file": "system-selection.png",
+    "bytes": 65468,
+    "sha256": "304d9e8c9ed33a700a143efc63e7202ccbd3b90b807b770a4ee7c7a44619f714"
+  },
+  {
+    "file": "xelement-picker-investigation.txt",
+    "bytes": 5063,
+    "sha256": "e68fdf99f0d07042cdd72f62d2dbd2f6fbe3e29ad69ae878fd57d40f956d769d"
+  }
+]

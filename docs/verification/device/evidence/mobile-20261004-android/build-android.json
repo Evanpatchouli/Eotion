@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "buildNumber": 1,
+  "gitSha": "3625f74b9a1f",
+  "applicationId": "space.evanpatchouli.eotion",
+  "webUrl": "https://eotion.evanpatchouli.space",
+  "bundleSha256": "0f98a277417b57bcb5fe5e4fed6b1ea22cba154ea8c87142bc4f9b2a22923664",
+  "platform": "android",
+  "format": "apk",
+  "signed": true,
+  "artifactSha256": "11029efd9960752344b8103747b3f4819e19226d97ba3d782b604a58deaef108"
+}

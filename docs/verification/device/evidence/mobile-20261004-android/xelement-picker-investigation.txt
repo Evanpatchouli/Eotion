@@ -1,0 +1,49 @@
+Eotion Mobile WebView picker investigation
+Date: 2026-10-04
+Scope: read-only inspection of the Android XElement WebView implementation used by the repository and current Web UI call path. No product or formal documentation files changed.
+
+Artifact identity
+- Gradle coordinate: org.lynxsdk.lynx:xelement-webview:4.1.0 (apps/mobile-hosts/android/app/build.gradle.kts:59).
+- Cached AAR: C:\Users\evanpatchouli\.gradle\caches\modules-2\files-2.1\org.lynxsdk.lynx\xelement-webview\4.1.0\821344bb4b86a8776d2b18feac0a554c92c49455\xelement-webview-4.1.0.aar
+- SHA-256: 30C8EA2B3109C0BA8EE38D1E43C24730555AF09F4A0BA7FEA04DEE0627A9207E
+- The AAR contains classes.jar but no sources JAR in this local cache. I extracted only that nested classes.jar to a unique %TEMP% directory for inspection, then removed the temporary directory.
+
+JDK / javap invocation
+- JDK tool: E:\dvp\java\jdk-25.0.4.1\bin\javap.exe
+- Actual class invocation (the classes.jar classpath was the temporary extracted AAR entry):
+  E:\dvp\java\jdk-25.0.4.1\bin\javap.exe -classpath "C:\Users\evanpatchouli\AppData\Local\Temp\eotion-xelement-javap-acceptance-5a3fbfc78d6149f184ae454b5e12ac19\classes.jar" -c -p com.lynx.xelement.webview.DefaultWebViewServiceImpl
+  E:\dvp\java\jdk-25.0.4.1\bin\javap.exe -classpath "C:\Users\evanpatchouli\AppData\Local\Temp\eotion-xelement-javap-acceptance-5a3fbfc78d6149f184ae454b5e12ac19\classes.jar" -c -p 'com.lynx.xelement.webview.DefaultWebViewServiceImpl$1'
+
+Relevant disassembly from DefaultWebViewServiceImpl.initWebView()
+  public void initWebView();
+    Code:
+       0: aload_0
+       1: new           #4   // class android/webkit/WebView
+       4: dup
+       5: aload_0
+       6: getfield      #3   // Field context:Landroid/content/Context;
+       9: invokespecial #5   // Method android/webkit/WebView."<init>":(Landroid/content/Context;)V
+      12: putfield      #6   // Field webView:Landroid/webkit/WebView;
+      ... WebSettings configuration and LynxWebViewBridge registration ...
+      81: aload_0
+      82: getfield      #6   // Field webView:Landroid/webkit/WebView;
+      85: new           #21  // class com/lynx/xelement/webview/DefaultWebViewServiceImpl$1
+      88: dup
+      89: aload_0
+      90: invokespecial #22  // Method DefaultWebViewServiceImpl$1."<init>":(...)
+      93: invokevirtual #23  // Method android/webkit/WebView.setWebViewClient:(Landroid/webkit/WebViewClient;)V
+      96: return
+
+Result
+- The complete javap output for initWebView contains setWebViewClient and no setWebChromeClient call. The inner class is `DefaultWebViewServiceImpl$1 extends android.webkit.WebViewClient`; declared overrides are onPageFinished and onReceivedError. It declares no onShowFileChooser override. The inspected default implementation therefore supplies no WebChromeClient/file-picker callback.
+- The app host uses `BehaviorGenerator.getBehaviors()` in `apps/mobile-hosts/android/app/src/main/kotlin/space/evanpatchouli/eotion/MainActivity.kt:18-20`; no app-specific WebView service/provider or WebChromeClient is installed there.
+- Product UI buttons at `apps/web/src/components/editor/EotionEditor.vue:408-409` call openPicker('image'|'file'), which programmatically clicks hidden `input[type=file]` elements at lines 363-364. This is the expected web-side request path.
+- Main Agent reports direct MuMu Android 12 testing: tapping image/file toolbar controls highlights the control but does not open a system picker. This device observation is attributed to the Main Agent, not independently reproduced in this read-only task.
+
+Associated editor observations
+- Touch Toolbar “标题” currently toggles heading level 2 (`EotionEditor.vue:406`). Its Playwright test asserts the button is pressed but not the resulting heading level (`apps/web/tests/product-editor.spec.ts:516-518`). `docs/design/editor-architecture-spike.md:61` specifies the seven-item Touch Toolbar/order, not H1 vs H2. H1 is not established as the explicit current Touch Toolbar contract.
+- Todo node view renders the whole task row as a `<label>` wrapping both checkbox and editable `NodeViewContent` (`apps/web/src/components/editor/AttachmentNodeView.vue:72-75`). A tap on task text may invoke the label-associated checkbox behavior; this applies to todo rows, not an empty paragraph. Current product-editor coverage checks the checkbox and skips todo text entry (`apps/web/tests/product-editor.spec.ts:703-704`), so this tap behavior is not established by a test.
+
+Boundary / interpretation
+- The bytecode proves absence of a WebChromeClient setup and file chooser override in this cached XElement default service. It does not prove that Android System WebView or other uninspected Lynx layers have no behavior, nor establish why the device UI shows no picker. Root cause remains unproven.
+- The same investigation did not identify a reason for the keyboard's zero requested window height. Main Agent separately reports dumpsys evidence of mInputShown=true with requested height 0; this is not a user-reported measurement and was not independently reproduced here.

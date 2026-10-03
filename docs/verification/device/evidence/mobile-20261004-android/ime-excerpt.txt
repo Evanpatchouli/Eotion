@@ -1,0 +1,2 @@
+  mShowRequested=true mShowExplicitlyRequested=true mShowForced=false mInputShown=true   mInputStarted=true mInputViewStarted=true mCandidatesViewStarted=false   mIsInputViewShown=true mStatusIcon=0
+    Requested w=720 h=0 mLayoutSeq=543

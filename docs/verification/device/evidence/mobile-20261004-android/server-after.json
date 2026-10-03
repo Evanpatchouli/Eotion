@@ -1,0 +1,16 @@
+{
+  "phase": "after",
+  "workspaceId": "6ntfVxYc02Ga3yTFZihmp",
+  "pageId": "EEe0IoQkir2pX4URz3Jeu",
+  "serverMarkers": {
+    "ONLINE": true,
+    "OFFLINE_A": true,
+    "OFFLINE_B": true
+  },
+  "secondClientMarkers": {
+    "ONLINE": true,
+    "OFFLINE_A": true,
+    "OFFLINE_B": true
+  },
+  "secondClientPageErrors": []
+}

@@ -1,0 +1,10 @@
+{
+  "phase": "before",
+  "workspaceId": "6ntfVxYc02Ga3yTFZihmp",
+  "pageId": "EEe0IoQkir2pX4URz3Jeu",
+  "serverMarkers": {
+    "ONLINE": true,
+    "OFFLINE_A": false,
+    "OFFLINE_B": false
+  }
+}

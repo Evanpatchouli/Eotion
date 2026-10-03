@@ -1,0 +1,2 @@
+# Keep evidence bytes stable across platforms for manifest SHA256 verification.
+* -text
