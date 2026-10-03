@@ -20,6 +20,11 @@ module.exports = {
   },
   nsis: {
     artifactName: 'Eotion-Setup-${version}.${ext}',
+    oneClick: false,
+    allowToChangeInstallationDirectory: true,
+    createDesktopShortcut: true,
+    createStartMenuShortcut: true,
+    shortcutName: 'Eotion',
   },
   portable: {
     artifactName: 'Eotion-${version}-portable.${ext}',
