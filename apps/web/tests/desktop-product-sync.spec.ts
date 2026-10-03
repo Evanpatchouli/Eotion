@@ -82,7 +82,6 @@ for (const status of [500, 502]) test(`Electron SQLite keeps offline product edi
 
     controls.disconnected = true
     await page.locator('.eotion-editor-content .tiptap').fill('Electron 离线正文')
-    await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
     await page.getByRole('button', { name: '新建根页面' }).click()
     await expect(page.getByRole('heading', { name: '无标题' })).toBeVisible()
     const offlinePageId = new URL(page.url()).hash.split('/').at(-1)!
@@ -91,8 +90,8 @@ for (const status of [500, 502]) test(`Electron SQLite keeps offline product edi
     expect(server.blocks).toHaveLength(0)
     await expect.poll(() => page.evaluate(async () => {
       const desktop = (window as Window & { eotionDesktop?: { storage: { getPendingOperations(): Promise<unknown[]> } } }).eotionDesktop
-      return (await desktop?.storage.getPendingOperations())?.length ?? 0
-    })).toBeGreaterThanOrEqual(2)
+      return JSON.stringify(await desktop?.storage.getPendingOperations())
+    })).toContain('Electron 离线正文')
 
     await app.close()
     // Restart with a reachable network and unavailable API proxy instead of a fetch failure.

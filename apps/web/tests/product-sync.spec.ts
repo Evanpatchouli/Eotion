@@ -237,7 +237,11 @@ for (const failure of ['network', 500, 502, 503, 504] as const) test(`backend ${
   await expect(page.locator('.product-page-title')).toContainText('无标题')
   await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
   await editor.fill('恢复前本地编辑')
-  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  await expect.poll(() => page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    return JSON.stringify(await local.listBlocksByPage(location.hash.split('/').at(-1)!))
+  })).toContain('恢复前本地编辑')
   const pending = () => page.evaluate(async () => {
     const { useProductSyncStore } = await import('/src/stores/productSync.ts')
     return (await (await useProductSyncStore().store()).getPendingOperations()).length
@@ -408,7 +412,11 @@ for (const status of [500, 502, 503]) test(`open editor survives backend ${statu
   api.controls.unavailable = status
   const editor = page.locator('.eotion-editor-content .tiptap')
   await editor.fill('服务失联仍可编辑')
-  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  await expect.poll(() => page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    return JSON.stringify(await local.listBlocksByPage(location.hash.split('/').at(-1)!))
+  })).toContain('服务失联仍可编辑')
   await expect(page.getByRole('button', { name: /离线 · 本地已保存/ })).toBeVisible()
   await expect(editor).toContainText('服务失联仍可编辑')
   await editor.evaluate((node) => node.setAttribute('data-retained-editor', 'yes'))
@@ -435,7 +443,6 @@ test('offline editor saves blocks locally and restores text after reload', async
   const editor = page.locator('.eotion-editor-content .tiptap')
   await editor.click()
   await editor.pressSequentially('离线正文')
-  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
   await expect.poll(() => page.evaluate(async () => {
     const { useProductSyncStore } = await import('/src/stores/productSync.ts')
     const local = await useProductSyncStore().store()
@@ -455,10 +462,15 @@ test('mobile WebView runtime keeps the same IndexedDB product content offline', 
   await expect(page.getByText('还没有页面')).toBeVisible()
   await page.getByRole('button', { name: '新建根页面' }).click()
   api.controls.disconnected = true
-  await page.locator('.eotion-editor-content .tiptap').fill('移动 WebView 本地正文')
-  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  const editor = page.locator('.eotion-editor-content .tiptap')
+  await editor.fill('移动 WebView 本地正文')
+  await expect.poll(() => page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    return JSON.stringify(await local.listBlocksByPage(location.hash.split('/').at(-1)!))
+  })).toContain('移动 WebView 本地正文')
   await page.reload()
-  await expect(page.locator('.eotion-editor-content .tiptap')).toContainText('移动 WebView 本地正文')
+  await expect(editor).toContainText('移动 WebView 本地正文')
 })
 
 test('offline page rename, move and delete stay durable after reload', async ({ page }) => {

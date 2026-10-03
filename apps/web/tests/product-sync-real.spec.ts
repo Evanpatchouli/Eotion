@@ -80,6 +80,15 @@ async function login(page: Page): Promise<void> {
   await expect(page).toHaveURL(/#\/app/)
 }
 
+async function expectRemoteBlockText(page: Page, workspaceId: string, text: string): Promise<void> {
+  await expect.poll(() => page.evaluate(async ({ workspaceId, text }) => {
+    const response = await fetch(`/api/sync/workspaces/${workspaceId}/snapshot`)
+    if (!response.ok) return false
+    const snapshot = await response.json() as { blocks: unknown[] }
+    return JSON.stringify(snapshot.blocks).includes(text)
+  }, { workspaceId, text }), { timeout: 20_000 }).toBe(true)
+}
+
 test('Mongo + API + built Web: two clients converge and an offline reload keeps local edits', async ({ browser, page }) => {
   await page.goto('/#/register')
   await page.getByRole('textbox', { name: '邮箱' }).fill(email)
@@ -104,7 +113,7 @@ test('Mongo + API + built Web: two clients converge and an offline reload keeps 
   await page.getByRole('link', { name: '返回工作区', exact: true }).click()
   const editorA = page.locator('.eotion-editor-content .tiptap')
   await editorA.fill('A 初始正文')
-  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  await expectRemoteBlockText(page, workspaceId, 'A 初始正文')
   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible({ timeout: 20_000 })
 
   const secondContext = await browser.newContext({ viewport: { width: 390, height: 844 } })
@@ -122,7 +131,6 @@ test('Mongo + API + built Web: two clients converge and an offline reload keeps 
     await page.reload()
     await expect(page.locator('.eotion-editor-content .tiptap')).toContainText('A 初始正文')
     await page.locator('.eotion-editor-content .tiptap').fill('A 离线修改')
-    await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
     await page.getByRole('button', { name: '新建根页面' }).click()
     await expect(page.getByRole('heading', { name: '无标题' })).toBeVisible()
     await page.reload()
@@ -137,7 +145,7 @@ test('Mongo + API + built Web: two clients converge and an offline reload keeps 
     await expect(second.locator('.eotion-editor-content .tiptap')).toContainText('A 离线修改')
 
     await second.locator('.eotion-editor-content .tiptap').fill('B 最终正文')
-    await expect(second.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+    await expectRemoteBlockText(second, workspaceId, 'B 最终正文')
     await expect(second.getByRole('status').filter({ hasText: '已同步' })).toBeVisible({ timeout: 20_000 })
     await page.evaluate(() => window.dispatchEvent(new Event('focus')))
     await expect(page.locator('.eotion-editor-content .tiptap')).toContainText('B 最终正文', { timeout: 20_000 })

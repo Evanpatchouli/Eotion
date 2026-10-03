@@ -158,7 +158,7 @@ onBeforeUnmount(() => {
   </section>
   <div v-else class="document product-editor-page">
     <p class="product-section-label">{{ currentWorkspace?.name ?? '工作区' }}</p>
-    <div class="product-editor-heading"><h1>{{ page.title }}</h1><span v-if="!blockError" class="product-save-status" role="status">{{ saveStatus === 'loading' ? '正在加载…' : saveStatus === 'saved' ? '已保存到本地' : saveStatus === 'saving' ? '正在保存…' : '本地保存失败' }}</span></div>
+    <div class="product-editor-heading"><h1>{{ page.title }}</h1></div>
     <p v-if="blockError" class="product-message product-message--error" role="alert">{{ blockError }}</p>
     <button v-if="blockError" class="product-button" type="button" :disabled="blockLoading" @click="loadBlocks">{{ blockLoading ? '正在重试…' : '重试加载' }}</button>
     <p v-else-if="blockLoading || !document" class="product-loading" role="status">正在加载正文…</p>

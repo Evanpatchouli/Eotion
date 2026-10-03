@@ -679,7 +679,7 @@ Desktop pointer 下 recovery actions 目标区域不得小于约 32px。
 
 低视觉权重。
 
-当前 Page production 还会在标题旁显示本地持久化状态“已保存到本地”；该文案和 Topbar 的远端同步状态属于不同状态来源，当前已同步时也可能同时出现。该组合与 Quiet Studio 的低噪目标有张力，必须作为 Gate A 最终截图检查项由用户签字；本次文档 reconciliation 不宣称已消除或批准这一视觉结果。
+稳定保存/同步反馈只使用 ProductShell 顶部 `SyncStatus` 一处常驻入口。稳定在线状态不得同时常驻“已同步”与“已保存到本地”；Page 标题旁不显示本地保存状态。本地持久化失败仍在编辑器附近显示错误及重试。
 
 ### Offline / Local-only
 
@@ -697,7 +697,7 @@ raw HTTP / SDK / endpoint / cleanup 只进入：
 - expandable diagnostics；
 - test output。
 
-Connectivity screen 只描述当前生产状态组合：backend unavailable 时可用 cached identity 和本机已有 workspace snapshot 恢复；没有本地 snapshot 时明确提示该工作区尚未保存在本机、当前离线无法打开；已有本地内容仍可保存并显示“离线 · 本地已保存”；同步失败提供“重试”；恢复后显示“已同步”。Page 标题旁的“已保存到本地”是独立的本地保存状态，可能与 Topbar“已同步”同时显示，列为 Gate A 最终视觉检查项。不得据此增造新页面、按钮或状态。
+Connectivity screen 只描述当前生产状态组合：backend unavailable 时可用 cached identity 和本机已有 workspace snapshot 恢复；没有本地 snapshot 时明确提示该工作区尚未保存在本机、当前离线无法打开；已有本地内容仍可保存并在顶部显示“离线 · 本地已保存”；同步失败提供“重试”；恢复后顶部显示“已同步”。本地保存失败仍由编辑器就近显示错误与重试。不得据此增造新页面、按钮或状态。
 
 ---
 

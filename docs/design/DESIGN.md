@@ -44,7 +44,7 @@ Never turn Eotion into:
 - Existing Mobile Page rename/move and Page delete confirmation use `EotionCommandOverlay` native dialogs; preserve their current responsive and focus behavior.
 - Upload states stay at the insertion location.
 - Local-first states must distinguish synced and local-only states.
-- Page currently shows local persistence (“已保存到本地”) beside the title and remote sync (“已同步”) in the topbar; they can appear together. This is a known production screenshot item for final Gate A review, not an already-resolved visual state.
+- Stable save/sync feedback uses one persistent surface only: ProductShell `SyncStatus`. Stable online Page must not show both “已同步” and “已保存到本地”. Local persistence failure remains a contextual editor error with retry; offline status remains “离线 · 本地已保存”.
 - Do not expose infrastructure terminology in product UI.
 - Do not invent product actions, metadata, or settings.
 - Typography baseline: Page Title 36/45/600; Body 15/26/400.

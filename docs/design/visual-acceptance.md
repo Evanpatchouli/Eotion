@@ -23,6 +23,8 @@
 | `settings-profile-mobile-light.png` | 390×844 / Light | Profile Detail、单一 Topbar、无 compact back、30px gutter |
 | `connectivity-backend-unavailable-desktop.png` | 1440×900 / Light | 无可信身份且 `/auth/me` 返回 503 时的连接恢复状态 |
 
+Closeout B 仅更新四张 Page 基线：Desktop Light/Dark、Tablet Light、Mobile Light。首次正常阈值比图只检出 Mobile 差异；临时以零像素差异核对后，Desktop Light/Dark 与 Tablet 也确有标题旁文案变化，因此一并重建。Settings 两张及 Connectivity 像素未变，未更新；配置阈值保持 `0.001`。更新后的正式 visual regression 为 **7/7 PASS**，最终用户视觉签字仍待完成。
+
 Snapshot 不覆盖所有交互状态。Drawer、Slash、Bubble、附件、Settings 其它 Detail、Mobile Dark、Tablet Dark、原生系统 Selection Menu 与真实键盘行为由既有功能/响应式测试和人工验收覆盖；不能把未建 snapshot 的组合称为自动视觉比图 PASS。
 
 ## Screenshot Regression Policy
@@ -61,6 +63,8 @@ Snapshot 不覆盖所有交互状态。Drawer、Slash、Bubble、附件、Settin
 
 ## Functional Regression Reference
 
+Closeout B 验证：`test:product` **148/148 PASS**，`interaction-foundation.spec.ts` **7/7 PASS**，`test:storage` **11/11 PASS**，`test:real-sync` **1/1 PASS**，Web typecheck/build PASS；四张 Page 基线更新后 `test:visual` **7/7 PASS**。下列为 Closeout A 建立原始基线时的历史记录。
+
 - Web：`pnpm --filter @eotion/web typecheck`、`pnpm --filter @eotion/web build` 均 PASS；`pnpm --filter @eotion/web test:product` **147/147 PASS**（Shell/Page/Editor/Sync/Attachments/Settings）。初次运行暴露测试夹具时序竞态，补稳定前置条件后完整复跑通过；未削弱产品断言。
 - Visual：`pnpm --filter @eotion/web test:visual:update` 7/7 PASS，随后 `test:visual` 连续两次各 **7/7 PASS**。
 - Desktop/storage：`pnpm --filter @eotion/web test:storage` **11/11 PASS**（含 Electron SQLite/product path）。
@@ -71,7 +75,7 @@ Snapshot 不覆盖所有交互状态。Drawer、Slash、Bubble、附件、Settin
 
 | 与原设计目标的差异 | 当前事实与处理 | 状态 |
 | --- | --- | --- |
-| 稳定态不同时常驻“已同步”与“已保存到本地” | 当前 `PageView.vue` 标题旁保留本地保存状态，Topbar 单独显示同步状态；基线截图如实保留这两个不同语义。是否继续保持该视觉密度由用户最终截图签字确认。 | 待最终用户确认 |
+| 稳定保存/同步状态只在顶部常驻 | ProductShell `SyncStatus` 是唯一常驻入口；Page 标题旁不再显示“已保存到本地”。离线仍显示“离线 · 本地已保存”，本地持久化失败仍在编辑器附近显示错误与重试。更新后的 Page 基线待用户最终视觉签字。 | 已实现；待最终用户签字 |
 | 早期高保真 Gate A 顺序 | Quiet Studio 方向先冻结，具体交互和 Mobile 画面经生产实现、用户截图与设备 review 逐步冻结；本轮将结果正式写回设计文档。 | 已如实 reconciliation；不追认早期 PASS |
 | Mobile WebView 真机完全离线重启 | 默认 LAN HTTP 无法保证断网后重新加载应用壳；浏览器/IndexedDB 自动测试不能替代宿主验证。 | P5.4 独立 blocker，见设备清单 |
 

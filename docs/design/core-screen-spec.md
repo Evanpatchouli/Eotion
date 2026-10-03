@@ -52,7 +52,7 @@ Document-first、Open Canvas、Low Chrome。Page Title 与正文直接位于 can
 
 - 正常：`已同步`。
 - offline/local-only：`离线 · 本地已保存`。
-- Page 标题旁另显示本地持久化状态“已保存到本地”；它与 Topbar 远端同步状态来源不同，当前 production 在已同步状态下也可能同时出现。此组合与低噪目标有张力，列入 Gate A 最终截图人工检查；当前记录不声称该组合已被消除或用户已签字接受。
+- 稳定保存/同步反馈只在 ProductShell 顶部 `SyncStatus` 常驻；稳定在线时不得同时显示“已同步”与“已保存到本地”。本地持久化失败在编辑器附近显示错误与重试，离线状态为“离线 · 本地已保存”。
 
 ### Interaction annotations
 
@@ -233,7 +233,7 @@ Dark 是 Quiet Studio 的同源主题，不是第二套产品；保持相同 geo
 - [x] Mobile Page / Settings / Connectivity document current production behavior at 390×844.
 - [x] Settings back routes preserve `returnTo` and `workspaceId`; exactly one topbar Back is present.
 - [x] Touch toolbar, `visualViewport`, fine/mouse Bubble, and touch link behavior match the implemented boundary.
-- [ ] Final visual and accessibility pass across real devices, including the simultaneous “已保存到本地” / “已同步” production state — **MANUAL CHECK REQUIRED**.
+- [ ] Final visual and accessibility pass across real devices, including the single persistent sync status and contextual local-save error — **MANUAL CHECK REQUIRED**.
 
 ## P5.7 Gate A Reconciliation
 

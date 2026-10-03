@@ -1,33 +1,25 @@
-# Current Task — P5 Pre-Final Closeout A: P5.7 Formal Reconciliation & Visual Baseline
+# Current Task — P5 Pre-Final Closeout B: Single Sync Status
 
 ## Baseline / Scope
 
-- `master` at `4678286` (includes `ad9873c`, `bc5c432`, `4678286`); working tree clean at start.
-- P5 Feature Freeze: reconcile existing production behavior, establish a small deterministic Chromium visual regression suite, verify accessibility and functional paths, and update closeout documentation. No new product or editor capability.
-- P5.7 final user visual sign-off and P5.4 Mobile WebView real-device offline restart remain separate gates; this task does not declare P5 Final Acceptance.
+- Start from `1142a66` on `master`; working tree clean at start.
+- Page has one persistent save/sync surface: ProductShell `SyncStatus`. Remove only the Page title's local-save status; preserve `PagePersistence`, contextual local-save error/retry, and the existing offline wording.
+- This is an intentional visual change to the existing P5.7 screenshot baseline. P5.7 final user sign-off remains pending.
 
 ## Work Units
 
-1. S0 investigate: compare current docs with production UI, Playwright fixtures, scripts and prior approval evidence; capture concrete boundaries.
-2. S2 decide: choose representative stable visual surfaces, fixture strategy, snapshot policy, and truthful reconciliation status.
-3. S1 execute: implement focused Chromium `toHaveScreenshot` suite and committed baselines without product UI changes.
-4. S1 execute: freeze P5-scoped Design System v1, reconcile six core screens, Visual Acceptance, P5.8 and P5.4 statuses, roadmap and document indexes.
-5. S0 verify: run targeted visual, product, storage/Electron, offline, typecheck and build checks; report any unavailable validation precisely.
-6. Review: independently inspect nontrivial diff and blockers, then commit the logical closeout unit.
+1. S0 investigate: locate Page title status, persistence error recovery, affected tests, docs, and visual snapshots.
+2. S1 execute: remove title status, revise tests to check durable behavior, and add synced/offline/local-save-error assertions.
+3. S1 execute: reconcile the four P5.7 design documents and update only changed Page snapshots.
+4. S0 verify: run related product tests, Web product suite, typecheck, build, and visual comparison; review diff.
+5. Review: independent review of the nontrivial change, then commit `fix(ui): unify page sync status`.
 
-## Current Evidence
+## Evidence / Progress
 
-- `docs/p5-ui-ux-foundation.md` and `docs/roadmap.md` still call P5.7 planned, while core implementation and test coverage exist.
-- `docs/design/design-system-v1.md` remains DRAFT and `core-screen-spec.md` / `visual-acceptance.md` retain TODO sections.
-- Existing `page.screenshot(...)` output is manual QA, not automatic screenshot comparison.
-
-## Result / Remaining Gates
-
-- Design System v1 frozen for existing P5 capabilities; six Required Screen states reconciled without claiming a historical pre-implementation Gate A PASS.
-- Seven Chromium/Chrome screenshots created under `apps/web/tests/visual-regression.spec.ts-snapshots/` with a dedicated `toHaveScreenshot` suite and config. Update 7/7 passed; two subsequent comparisons each 7/7 passed. Mobile Page uses a real touch/coarse browser context.
-- Web typecheck and build PASS; `test:product` 147/147 PASS after repairing two test timing races without weakening product assertions; `test:storage` 11/11 PASS; `test:offline-shell` 1/1 PASS. `test:real-sync` NOT RUN because this closeout did not start a real Mongo replica set/API/production Web environment.
-- Static token checks: Light muted/sidebar 4.64:1, muted/canvas 4.85:1; Dark muted/subtle 4.84:1, danger/subtle 4.55:1. Existing keyboard, focus-visible, reduced-motion, overflow and touch geometry tests passed; 200% zoom, screen reader and real host IME/safe-area review remain MANUAL CHECK REQUIRED.
-- Independent engineering review found three documentation/visual evidence issues: optional screenshots mislabeled as comparison, simulated coarse pointer in the Mobile snapshot, and existing Page dialogs misclassified as future. All three were fixed and the affected visual baseline was regenerated.
-- P5.7 is READY FOR FINAL USER SIGN-OFF, not PASS. The current Page simultaneously shows local-save and remote-sync statuses; final screenshot review must explicitly accept or revise that density.
-- P5.8 is FEATURE COMPLETE / FROZEN FOR P5. P5 Final Acceptance is NOT STARTED.
-- P5.4 Mobile WebView host offline restart remains pending until tested on the real target host and stable origin; see the final device checklist in `docs/p5-real-sync.md`.
+- `PageView.vue` title status was the duplicate UI. `saveStatus` still controls the editor's contextual `product-editor-error` and `重试保存`.
+- `SyncStatus.vue` already owns `已同步`, `离线 · 本地已保存`, pending, syncing, and failure/retry text; no change needed there.
+- Initial normal-threshold visual run: Mobile Page failed, other 6 passed. Exact zero-pixel comparison then detected changes in Desktop Page Light/Dark and Tablet; Settings/Connectivity were unchanged.
+- Four Page snapshots updated and visually inspected. Normal-threshold visual comparison: 7/7 PASS. Configuration restored to the original `maxDiffPixelRatio: 0.001`.
+- Tests now assert one `已同步` in the full Page, no title-local status, the single offline wording, and contextual local-save failure/retry. Existing save waits use LocalStore, reload or server convergence evidence.
+- Validation: `test:product` 148/148, `interaction-foundation.spec.ts` 7/7, `test:storage` 11/11, `test:real-sync` 1/1, Web typecheck/build, and final `test:visual` 7/7 PASS.
+- Independent review found a real-sync test race caused by a stale `已同步` state; fixed by polling the authenticated server snapshot for the edited block before cross-client steps. Re-review found no remaining blocker.

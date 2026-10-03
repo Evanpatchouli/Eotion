@@ -177,8 +177,8 @@ test('product page keeps title and editor in one open reading column across them
   expect(desktop).toMatchObject({ border: '0px', radius: '0px', background: 'rgba(0, 0, 0, 0)', shadow: 'none', padding: '0px' })
   expect(await page.evaluate(() => {
     const title = document.querySelector('.product-editor-heading h1')!.getBoundingClientRect()
-    const status = document.querySelector('.product-editor-heading .product-save-status')!.getBoundingClientRect()
-    return status.top < title.bottom
+    const heading = document.querySelector('.product-editor-heading')!.getBoundingClientRect()
+    return title.left >= heading.left && title.right <= heading.right
   })).toBe(true)
   await canvasScreenshot(page, 'p583-desktop-light')
 
@@ -237,6 +237,55 @@ test('product page keeps title and editor in one open reading column across them
   expect(browserErrors).toEqual([])
 })
 
+test('product page shows one sync status and keeps local save errors retryable', async ({ page }) => {
+  await installApi(page, {
+    pages: [pageRecord('page-a', 'Alpha', 1)],
+    blocks: [block('page-a', 'block-a', 1, { type: 'paragraph', content: [{ type: 'text', text: '已有正文' }] })],
+  })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await expect(editor(page)).toContainText('已有正文')
+  const syncStatus = page.locator('.product-sync-status')
+  await expect(syncStatus).toHaveCount(1)
+  await expect(syncStatus).toHaveAttribute('data-state', 'synced')
+  await expect(syncStatus).toHaveText('已同步')
+  await expect(page.getByText('已同步', { exact: true })).toHaveCount(1)
+  await expect(page.getByText('已保存到本地', { exact: true })).toHaveCount(0)
+
+  await page.context().setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(syncStatus).toHaveAttribute('data-state', 'offline')
+  await expect(syncStatus).toContainText('离线 · 本地已保存')
+  await expect(page.locator('.product-editor-heading .product-save-status')).toHaveCount(0)
+  await expect(page.getByText('离线 · 本地已保存', { exact: true })).toHaveCount(1)
+
+  await page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    const upsertBlock = local.upsertBlock.bind(local)
+    let failOnce = true
+    local.upsertBlock = async (record) => {
+      if (failOnce) {
+        failOnce = false
+        throw new Error('Injected local save failure')
+      }
+      return upsertBlock(record)
+    }
+  })
+
+  await editor(page).fill('Retry local save')
+  const saveError = page.getByRole('alert')
+  await expect(saveError).toContainText('Injected local save failure')
+  const retrySave = page.getByRole('button', { name: '重试保存' })
+  await expect(retrySave).toBeEnabled()
+  await retrySave.click()
+  await expect.poll(() => page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    return JSON.stringify(await local.listBlocksByPage('page-a'))
+  })).toContain('Retry local save')
+  await expect(saveError).toHaveCount(0)
+})
+
 test('pasting safe links keeps links and strips underline across save and reload', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [] })
   await page.goto('/#/app/ws-a/page/page-a')
@@ -265,8 +314,8 @@ test('pasting safe links keeps links and strips underline across save and reload
 test('empty page loads without mutations, then debounces edits with a stable block identity', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [] })
   await page.goto('/#/app/ws-a/page/page-a')
-  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
   await expect(editor(page)).toBeVisible()
+  expect(api.requests.some((request) => request.path.endsWith('/snapshot'))).toBe(true)
   expect(blockRequests(api.requests)).toHaveLength(0)
 
   await editor(page).click()
@@ -438,7 +487,7 @@ test('touch toolbar and mobile heading stay compact across themes, short viewpor
   await page.goto('/#/app/ws-a/page/page-a')
   const toolbar = page.getByRole('toolbar', { name: '触摸编辑工具栏' })
   await expect(toolbar).toBeVisible()
-  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: title })).toBeVisible()
   expect(await toolbar.getByRole('button').allTextContents()).toEqual(['', '', '文本', '标题', '列表', '', ''])
   for (const name of ['粗体', '斜体', '文本', '标题', '列表', '插入图片', '插入文件']) {
     const button = toolbar.getByRole('button', { name })
@@ -450,10 +499,10 @@ test('touch toolbar and mobile heading stay compact across themes, short viewpor
   }
   const headingLayout = await page.evaluate(() => {
     const title = document.querySelector('.product-editor-heading h1')!.getBoundingClientRect()
-    const status = document.querySelector('.product-editor-heading .product-save-status')!.getBoundingClientRect()
-    return { titleBottom: title.bottom, statusTop: status.top, titleHeight: title.height, documentWidth: document.documentElement.scrollWidth, viewportWidth: window.innerWidth }
+    const heading = document.querySelector('.product-editor-heading')!.getBoundingClientRect()
+    return { titleRight: title.right, headingRight: heading.right, titleHeight: title.height, documentWidth: document.documentElement.scrollWidth, viewportWidth: window.innerWidth }
   })
-  expect(headingLayout.statusTop).toBeGreaterThanOrEqual(headingLayout.titleBottom)
+  expect(headingLayout.titleRight).toBeLessThanOrEqual(headingLayout.headingRight)
   expect(headingLayout.titleHeight).toBeGreaterThan(40)
   expect(headingLayout.documentWidth).toBeLessThanOrEqual(headingLayout.viewportWidth)
   expect(await toolbar.evaluate(node => node.scrollWidth)).toBeGreaterThan(await toolbar.evaluate(node => node.clientWidth))
@@ -1191,7 +1240,11 @@ test('preserves a locally saved IME draft when page metadata sync expires the se
   await editor(page).pressSequentially('Draft from another API')
   api.controls.unauthorized = true
   await editor(page).dispatchEvent('compositionend', { data: 'Draft from another API' })
-  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  await expect.poll(() => page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    return JSON.stringify(await local.listBlocksByPage('page-a'))
+  })).toContain('Draft from another API')
   await page.getByRole('button', { name: '页面操作：Alpha' }).click()
   await page.locator('.product-page-menu').getByRole('menuitem', { name: '重命名' }).click()
   await page.getByLabel('页面标题').fill('Changed title')

@@ -342,7 +342,11 @@ test('offline file selection stays local, does not call upload, keeps text edita
   await editor(page).click()
   await editor(page).pressSequentially('正文仍然可编辑')
   await expect(editor(page)).toContainText('正文仍然可编辑')
-  await expect(page.getByRole('status').filter({ hasText: '已保存到本地' })).toBeVisible()
+  await expect.poll(() => page.evaluate(async (id) => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    return JSON.stringify(await local.listBlocksByPage(id))
+  }, pageRecord.id)).toContain('正文仍然可编辑')
   expect(uploadRequests(api)).toHaveLength(requestCount)
   await page.reload()
   await expect(page.locator('.attachment-file-name')).toHaveText('existing.txt')
