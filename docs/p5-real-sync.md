@@ -66,3 +66,16 @@ Visual QA 使用 Playwright（Browser plugin not available），在 `http://loca
 `pnpm --filter @eotion/web test:real-sync` 使用本机 Mongo replica set、Nest API 和生产 Web 构建，以两个独立 Chrome context 验证注册登录、Page/Block 创建与同步、第二客户端读取、完全断网 reload 后继续编辑、重连、同页正文回拉、远端 Page 删除收敛，以及 390×844 无横向溢出，1/1 通过。`pnpm --filter @eotion/web test:offline-shell` 以独立持久浏览器 profile 验证完全断网 reload 和浏览器进程重启后从 Service Worker 加载应用，1/1 通过。模拟的 `product-sync.spec.ts` 另覆盖 401、503、跨账号队列与失败 Push 停止 Pull。
 
 **未完成的真实环境验收：** 默认 LAN HTTP 的 Mobile WebView 真机完全断网重启。浏览器中 `eotionRuntime=mobile-webview` 的正式产品 IndexedDB 路径已有自动测试，但不替代目标 Lynx 宿主真机结果。在上述真机边界确认前不声明完整 P5.4 PASS。
+
+### Final Mobile Device Checklist — MANUAL CHECK REQUIRED
+
+必须在正式 Mobile WebView/Lynx 宿主及持久稳定的 origin/storage partition 上执行，记录设备、宿主版本、origin、时间、Page ID 和最终结果。默认 LAN HTTP 若在完全断网重启时无法加载应用壳，这属于当前部署边界，不能据浏览器离线测试判为通过；本轮不调整 mobile packaging。
+
+1. 在正式 Mobile WebView 打开已有 Page，确认本地 snapshot 已存在。
+2. 完全断网，关闭或 kill Mobile host，再重启宿主。
+3. 保持断网，打开原 Page，确认原内容仍存在。
+4. 离线修改正文，再次 kill / restart，确认修改仍存在。
+5. 恢复网络，确认 pending operation 成功 push，状态转为“已同步”。
+6. 在第二客户端读取并确认最终内容。
+
+只有上述链路的真机证据完成后，才能将 P5.4 Mobile WebView real offline restart 标为 PASS。

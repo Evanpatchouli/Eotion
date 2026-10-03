@@ -673,10 +673,13 @@ for (const { shortcut, mark, selector } of [
   test(`${mark} keyboard command saves and reloads its mark`, async ({ page }) => {
     const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
     await page.goto('/#/app/ws-a/page/page-a')
+    await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
     const body = editor(page)
     await body.click()
     await body.pressSequentially(mark)
-    await body.press('Shift+Home')
+    await expect(body.locator('p').first()).toHaveText(mark)
+    await selectParagraphText(body.locator('p').first())
+    expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(mark)
     await page.keyboard.press(shortcut)
     await expect(body.locator(selector)).toHaveText(mark)
     await expect.poll(() => api.blocks.some(block => JSON.stringify(block.props.node).includes(`"type":"${mark}"`)), { timeout: 5000 }).toBe(true)
@@ -1091,6 +1094,7 @@ test('keeps a local block deletion after failed sync and restores shared state a
     ],
   })
   await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
   api.controls.mutationFailures = 50
   await editor(page).click()
   await editor(page).locator('p').last().click()

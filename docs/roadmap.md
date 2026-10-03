@@ -82,8 +82,9 @@ P4 ✅ Final Acceptance PASS。P5 按以下独立阶段验收：
 - P5.4 Real Sync：Web / Electron 实现与自动验收已完成；Mobile WebView 默认 LAN HTTP 真机离线重启待验收，完整 PASS 暂未声明。结果与边界见 [P5.4 Real Sync](p5-real-sync.md)。
 - P5.5 Attachments：✅ 已完成，正式附件、持久清理、三种布局、自动测试与线上 OSS 最小验收通过，见 [P5.5 Attachments](p5-attachments.md)。
 - P5.6 Settings & Preferences：✅ 已完成；账号昵称/安全改密、三态主题、隔离的固定编辑工具栏偏好、响应式 Settings 与 Light/Dark Visual QA、独立 review 均通过，见 [P5.6 Settings & Preferences](p5-settings.md)。
-- P5.7 UI/UX Foundation & Product Redesign：待实施；先完成 Audit → Design Direction → Design System → 核心高保真设计并经过 Gate A，再进入正式 UI 实现与 Visual Acceptance，见 [P5.7 UI/UX Foundation](p5-ui-ux-foundation.md)。
-- P5 Final Acceptance：P5.7 完成后再执行；P5.6 PASS 不关闭 P5.4 Mobile WebView 真机离线重启的既有待验收边界。
+- P5.7 UI/UX Foundation & Product Redesign：**READY FOR FINAL USER SIGN-OFF**。Quiet Studio 方向及正式 Product UI 已通过多轮实现、截图 review 和设备交互 review 收敛；本轮将 P5 已存在能力反向固化为 Design System v1、六个核心 Screen Spec 与 7 张自动视觉回归基线，Web 产品、存储/Electron 与离线外壳回归已通过。原先设想的预实施 Gate A 顺序并未完整执行，不追认历史通过；最终用户视觉签字仍待完成，见 [P5.7 UI/UX Foundation](p5-ui-ux-foundation.md)。
+- P5.8 Editor MVP：**FEATURE COMPLETE / FROZEN FOR P5**。已有 Paragraph、Heading、Bullet/Ordered List、Todo、Quote、Code Block、Divider；Bold、Italic、Strike、Inline Code、Inline Link；Image、File；Slash、鼠标选区 Bubble、Touch Toolbar、本地优先保存与同步。P5 不再增加 Table、Callout、Mention、Bookmark、Underline 等编辑器能力；后续阶段再评估。触摸端 Link 可显示/保留，显式创建入口不属于当前 P5。
+- P5 Final Acceptance：**NOT STARTED**。先取得 P5.7 最终用户视觉签字，并完成 P5.4 Mobile WebView 真机离线重启边界；本轮浏览器测试或视觉基线不替代真机证据。
 
 从本阶段开始，以真实用户流程和正式产品路由为主，不再以 `/__dev/*` PoC 页面作为主要开发载体。P1/P2/P3 开发页可以继续保留作为回归和诊断入口。
 
@@ -100,7 +101,7 @@ P4 ✅ Final Acceptance PASS。P5 按以下独立阶段验收：
 - Settings 在宽屏采用双栏 list-detail，在紧凑宽度采用 Index → Detail 单栏导航；不把桌面 Sidebar 强行塞进手机。
 - 在 P5 Final Acceptance 前完成 P5.7：正式冻结 Eotion 的 UI/UX Design Direction、Design System v1、核心高保真页面和 visual regression 基线，避免 P6+ 在未定型的视觉语言上继续叠加。
 - 桌面 / 平板 / 手机共用 `apps/web`，完成正式 Workspace / Page / Settings 页面所需的响应式交互。
-- 在核心编辑链路稳定后，再补最近页面、收藏和基础搜索等 MVP 辅助能力。
+- 最近页面、收藏和基础搜索不进入当前 P5 Feature Freeze；后续产品阶段再评估。
 
 P5 退出条件：
 

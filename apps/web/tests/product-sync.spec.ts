@@ -247,8 +247,17 @@ for (const failure of ['network', 500, 502, 503, 504] as const) test(`backend ${
   const reconnectAt = api.requests.length
   api.controls.disconnected = false
   api.controls.unavailable = 0
-  await page.getByRole('button', { name: /离线 · 本地已保存/ }).click()
-  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  const synced = page.getByRole('status').filter({ hasText: '已同步' })
+  const retry = page.getByRole('button', { name: /离线 · 本地已保存/ })
+  if (await retry.isVisible()) {
+    try {
+      await retry.click({ timeout: 3000 })
+    } catch {
+      // A pending attention sync can remove the retry button as the click starts.
+      await expect(synced).toBeVisible()
+    }
+  }
+  await expect(synced).toBeVisible()
   await expect(editor).toContainText('恢复前本地编辑')
   expect(JSON.stringify(api.server.blocks)).toContain('恢复前本地编辑')
   expect(await pending()).toBe(0)

@@ -2,7 +2,7 @@
 
 ## 状态
 
-**Planned / 设计准备阶段。**
+**P5.7 READY FOR FINAL USER SIGN-OFF（2026-10-03）。** Quiet Studio 方向已经冻结，正式 Product UI 已通过多轮生产实现、用户截图 review 和真机交互 review 收敛。本轮补齐正式 Design System v1、核心 Screen Spec 与 7 张自动视觉回归基线；Web 产品、存储/Electron 和离线外壳回归已通过。最终用户视觉签字尚未取得，不声明 P5.7 PASS。
 
 P5.7 位于 P5.6 Settings & Preferences 之后、P5 Final Acceptance 之前。
 
@@ -12,7 +12,7 @@ P5.4 Mobile WebView/Lynx 真机完全离线重启验收仍作为独立待验收�
 
 ## 核心原则
 
-P5.7 采用 **Design First**：
+以下是最初的 **Design First 计划**，用于保留当时的决策背景：
 
 ```text
 现状审计
@@ -25,18 +25,20 @@ P5.7 采用 **Design First**：
 → P5 Final Acceptance
 ```
 
-在 P5.7.1～P5.7.4 完成并得到明确批准前：
+原计划要求在 P5.7.1～P5.7.4 完成并得到明确批准前：
 
 - 不重构正式产品 UI。
 - 不把新视觉方向直接写进 ProductShell / Editor / Settings 等正式组件。
 - 不以“边写代码边定设计”为默认方式。
 - 可以创建独立设计原型、静态稿或不进入正式产品链路的设计实验，但必须与生产 UI 隔离。
 
-## 当前问题判断
+实际后续采用了迭代路径：先批准并冻结 Quiet Studio 方向，再通过多轮正式实现、用户截图 review 和真机 review 逐步冻结交互与响应式行为。P5 closeout 把这些已形成的产品结果固化为 Design System v1 和 Visual Baseline。**不存在可追认的早期完整 Gate A PASS**；最终 Gate A reconciliation 状态见 [Core Screen Spec](design/core-screen-spec.md)，等待用户最终视觉签字。
 
-当前 P5.1～P5.6 已验证核心产品功能，但 UI/UX 主要由工程实现过程逐步生成，缺少统一的专业设计输入和完整设计系统。
+## 原计划问题判断（历史记录）
 
-P5.7 要解决的不是单个按钮或某个页面，而是：
+制定 P5.7 计划时，P5.1～P5.6 已验证核心产品功能，但 UI/UX 主要由工程实现过程逐步生成，尚缺统一的专业设计输入和完整设计系统。
+
+当时识别的待解决问题是：
 
 - 产品视觉基调尚未明确冻结。
 - 多个 Surface 各自合理，但整体一致性不足。
@@ -46,9 +48,9 @@ P5.7 要解决的不是单个按钮或某个页面，而是：
 - 缺少经过批准的核心高保真页面作为后续实现的视觉 source of truth。
 - 缺少稳定的 visual regression baseline。
 
-## 暂定设计方向
+## 原始候选设计方向
 
-以下是当前讨论形成的 **候选基线**，需要在 P5.7.2 中正式确认或修订：
+以下是原始候选基线，后续已冻结为 [Quiet Studio Design Direction](design/design-direction.md)：
 
 - **Content-first / Document-first**：文档内容是视觉主角。
 - **Low Chrome**：长期常驻 UI 尽量少；不常用能力按需出现。
@@ -104,7 +106,7 @@ P5.7 要解决的不是单个按钮或某个页面，而是：
 
 ### P5.7.3 — Design System v1
 
-**当前阶段。**
+**P5 已存在能力正式冻结；未来能力不在 v1 冻结范围内。**
 
 Quiet Studio Design Direction 已冻结；本阶段把它转换为 Eotion 自己维护、内部一致、实现无关的 Design System。
 
@@ -121,7 +123,7 @@ Stitch 导出规范不直接作为 source of truth。
 - ✅ Dark semantic palette frozen（2026-10-02）。
 - ✅ Desktop Settings width / control anatomy frozen（2026-10-02）。
 - ✅ Desktop companion states frozen（2026-10-02）。
-- ⏳ Mobile / responsive / remaining interaction primitives。
+- ✅ 已上线的 Mobile / responsive / touch / selection interaction 已在 closeout 中根据生产实现固化；未来 Dialog、wide blocks 等单列为 Future / Out of P5 scope。
 
 至少定义：
 
@@ -146,7 +148,7 @@ Stitch 导出规范不直接作为 source of truth。
 
 ### P5.7.4 — Core Screen Design
 
-目标：在正式实现前产出并批准至少 6 张核心高保真页面。
+原目标是在正式实现前产出并批准至少 6 张核心高保真页面。实际 Mobile 和 connectivity 页面随后随生产实现与 review 收敛；本轮按现有行为对齐六个必需 Screen，不倒填预实施批准历史。
 
 最低要求：
 
@@ -165,7 +167,7 @@ Stitch 导出规范不直接作为 source of truth。
 
 ### Gate A — Design Approval
 
-**这是 P5.7 的强制门禁。**
+**这是原计划中的 P5.7 门禁。** 实际执行顺序见本页“状态”与 [Gate A Reconciliation](design/core-screen-spec.md)；当前只进入最终用户签字准备，不宣称历史 Gate A 已通过。
 
 只有用户明确批准：
 
@@ -189,7 +191,7 @@ Stitch 导出规范不直接作为 source of truth。
 - Codex / implementation agent 主要负责实现、响应式、accessibility、状态、测试，不承担关键审美决策。
 - 如果实现中发现设计缺口，先回到设计文档补决策，再继续编码。
 
-具体 implementation plan 在 Gate A 通过后单独生成；当前文档不提前填充实现任务。
+正式生产实现已按迭代 review 形成 P5 baseline；不为符合原计划顺序而重做 UI。
 
 ### P5.7.6 — Visual Acceptance & Regression
 
@@ -293,7 +295,7 @@ P5.7 PASS 后才进入 P5 Final Acceptance。
 - [UI/UX Audit](design/ui-ux-audit.md) — ✅ P5.7.1 PASS
 - [Stitch Design Brief](design/stitch-design-brief.md) — ✅ P5.7.2 exploration input
 - [Design Direction](design/design-direction.md) — ✅ Quiet Studio FROZEN
-- [Design System v1](design/design-system-v1.md) — P5.7.3 current DRAFT
-- [DESIGN.md](design/DESIGN.md) — P5.7.3 AI-facing DRAFT
+- [Design System v1](design/design-system-v1.md) — P5 已存在能力 FROZEN
+- [DESIGN.md](design/DESIGN.md) — AI-facing P5 contract
 - [Core Screen Spec](design/core-screen-spec.md)
 - [Visual Acceptance](design/visual-acceptance.md)

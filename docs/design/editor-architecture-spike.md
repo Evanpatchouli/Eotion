@@ -1,5 +1,9 @@
 # P5.8.2 共享编辑器基础
 
+## P5 closeout 状态
+
+**P5.8 FEATURE COMPLETE / FROZEN FOR P5（2026-10-03）。** 当前正式编辑器包含 Paragraph、Heading、Bullet/Ordered List、Todo、Quote、Code Block、Divider，Bold、Italic、Strike、Inline Code、Inline Link，Image/File，以及 Slash、mouse/fine-pointer Bubble、Touch Toolbar、本地优先持久化与 Sync。触摸端 Link 可加载、显示和保留，显式创建入口留待后续阶段。P5 不再增加 Table、Callout、Mention、Bookmark、Underline；后续产品阶段再评估。本页以下历史分阶段记录仍用于解释实现和回归边界。
+
 P5.8.1 建立了独立的 `DocumentEditor` 文档画布原语。P5.8.2 将它与正式 `EotionEditor` 的 Tiptap 创建和生命周期收敛到同一个 `useDocumentEditor` composable，两个 Vue 组件继续并存。
 
 ## 决策

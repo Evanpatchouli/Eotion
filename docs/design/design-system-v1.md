@@ -2,13 +2,15 @@
 
 ## 状态
 
-**DRAFT / 当前进入 P5.7.3。**
+**FROZEN（2026-10-03）— P5.7 已存在能力的 Design System v1。**
+
+本次冻结记录现有生产 UI 经多轮截图与真机交互迭代形成的基线，不追认原计划中实施前的 Gate A 已通过。**P5.7 Gate A Reconciliation：READY FOR FINAL USER SIGN-OFF**；最终视觉签字仍待用户完成。
 
 P5.7.2 Design Direction 已冻结为 **Quiet Studio**。
 
 本文件是 Eotion 自己维护的设计系统 source of truth，不直接采用 Stitch 导出的 DESIGN.md。Stitch 输出只作为视觉探索证据；其中的 Newsreader、Material 风格 token、Tailwind / Material Symbols、虚构业务内容等均不进入本规范。
 
-当前已冻结 Desktop Light / Dark 视觉基线、Desktop Settings 规格和核心语义。Mobile、完整 responsive 断点和部分 component anatomy 仍需在 P5.7.3～P5.7.4 继续确认。
+本版本冻结下列已存在能力与边界：Quiet Studio、桌面与移动已实现页面、Settings、编辑器触控交互、链接交互及当前 Connectivity 状态。列入 Future / Out of P5 的能力不属于本版本；未能由生产源码、自动化测试或已有人工迭代记录证实的视觉及无障碍细节标为 **MANUAL CHECK REQUIRED**。
 
 ---
 
@@ -57,7 +59,7 @@ sans-serif
 
 Inter 不可用时必须自然 fallback；不得依赖用户额外安装字体。
 
-### Type scale — current draft
+### Type scale — P5 production baseline
 
 | Token | Size | Line height | Weight | Tracking | Usage |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -80,7 +82,7 @@ Inter 不可用时必须自然 fallback；不得依赖用户额外安装字体�
 
 ## Spacing Scale
 
-当前建议使用有限 scale：
+P5 生产 token 使用有限 scale：
 
 | Token | Value | Typical usage |
 | --- | ---: | --- |
@@ -129,7 +131,7 @@ Inter 不可用时必须自然 fallback；不得依赖用户额外安装字体�
 - 左侧 flush to window edge；
 - 仅右上 / 右下圆角；
 - row height：**32px**；
-- expanded width：**暂不冻结，P5.7.4 再验证**；
+- expanded width：Desktop **252px**、Tablet **210px**；
 - Desktop / Tablet 必须支持 collapse；
 - Mobile 使用 drawer。
 
@@ -170,7 +172,8 @@ Settings 继续保持 P5.6 已验收的 Desktop list-detail IA。不得扩展成
 
 ### Mobile gutters
 
-**TBD after P5.7.4 Mobile Page.**
+- Settings Detail 当前 production gutter：**30px**（390×844 回归覆盖）。
+- Page 当前 production 在 `<768px` 使用 `width: calc(100% - 32px)`，390px 下标题与正文左右各 **16px**；该值只适用于现有 Page，不扩展为所有未来屏幕通用 token。
 
 ---
 
@@ -234,7 +237,7 @@ Settings 继续保持 P5.6 已验收的 Desktop list-detail IA。不得扩展成
 | warning | `#9E6B34` | offline / pending |
 | danger | `#A8423F` | destructive / failed |
 
-这些色值是当前 Quiet Studio Light baseline。P5.7.4 Visual QA 可做小幅 optical tune，但不得改回冷蓝 SaaS / purple AI 方向。
+这些色值是当前 Quiet Studio Light baseline，与生产 `tokens.css` 一致。后续有意变更需同步更新设计规范与视觉快照；不得改回冷蓝 SaaS / purple AI 方向。
 
 Light `text-muted` 已从 Stitch 初始 `#8F8D86` 修正为 `#706E67`：在 `sidebar #F5F4F0` 上约 4.64:1，在 `canvas #FAF9F6` 上约 4.85:1，适用于 12–13px muted text 的 AA 基线。
 
@@ -355,7 +358,7 @@ Overlay
 
 - 输入控件；
 - Popover / menu；
-- Attachment block（最终强度待稿件确认）；
+- Attachment block（按当前生产组件的轻边界表达）；
 - 真正结构分隔；
 - focus / selected state。
 
@@ -385,7 +388,7 @@ popover:
 - Document 无 shadow；
 - 禁止彩色 shadow / glow。
 
-Dialog shadow 在 Core Screen / Dialog 设计后补充。
+未来 Dialog shadow 进入对应产品阶段再定义，不属于 P5 v1 冻结范围。
 
 ---
 
@@ -423,7 +426,7 @@ Production source of truth：
 
 ## Motion
 
-当前 draft：
+P5 motion token：
 
 | Token | Duration | Usage |
 | --- | ---: | --- |
@@ -457,7 +460,7 @@ Keyboard focus 必须清楚，但不长期像 selected state。
 - 与 border 有足够对比；
 - 不通过只改变 background 表达 keyboard focus。
 
-最终 WCAG contrast 在实现 QA 验证。
+当前正式 token 的已核查对比度见本页 Light/Dark color notes；完整组件状态的 WCAG 对比仍需最终人工 QA。
 
 ---
 
@@ -573,9 +576,9 @@ Page Action Popover：
 - actions 固定为：`新建子页面`、`重命名`、`移动`、`删除`；
 - `删除` 使用 danger 语义，但不作为默认初始焦点。
 
-### Dialog / Confirm
+### Existing Page Action Dialog / Confirm
 
-**TBD visual details**，但禁止 browser `alert/confirm/prompt`。
+当前 P5 产品在 Mobile Page 重命名/移动、以及 Page 删除确认中使用 `EotionCommandOverlay` 的原生 `<dialog>`；不是浏览器 `alert/confirm/prompt`。移动端 dialog 保留 `calc(100% - 32px)` 的宽度上限、16px 内容内边距，移动目标列表在短 viewport 内滚动；删除确认展示标题、说明与“取消”/danger“删除”。焦点、取消、错误保留与树布局稳定由 `product-pages.spec.ts` 覆盖。该现有形态属于 P5 v1；未来通用 Dialog 变体和 shadow 扩展另行设计。
 
 ---
 
@@ -593,7 +596,7 @@ Page Action Popover：
 
 ### Selection
 
-保持编辑器原生可感知性，具体 selection color 待 Light/Dark QA。
+保持浏览器原生文本选区高亮；P5 未定义独立 selection color token。真实宿主 Selection Menu 与高亮视觉仍需设备 QA。
 
 ### Slash Menu
 
@@ -612,13 +615,7 @@ hover / selection / slash 按需暴露。
 
 ### Touch Toolbar
 
-**TBD after Mobile Page design。**
-
-必须：
-
-- 约 44px touch target；
-- 不依赖 Desktop fixed toolbar preference；
-- 不永久抢占过多 viewport。
+当前 production contract：layout 为 Mobile，或输入模式为 touch / hybrid 时显示触摸工具栏；Desktop fixed toolbar preference 不控制它。工具项 hit area 至少 44px，并通过 `visualViewport` resize / scroll 更新键盘 inset，尽量使光标保持在工具栏上方。触摸选区使用浏览器原生 Selection Menu；不显示 Desktop Bubble。具体真机视觉与键盘行为仍需在 Gate A 最终手工签字中检查。
 
 ### Attachment Block
 
@@ -682,6 +679,8 @@ Desktop pointer 下 recovery actions 目标区域不得小于约 32px。
 
 低视觉权重。
 
+当前 Page production 还会在标题旁显示本地持久化状态“已保存到本地”；该文案和 Topbar 的远端同步状态属于不同状态来源，当前已同步时也可能同时出现。该组合与 Quiet Studio 的低噪目标有张力，必须作为 Gate A 最终截图检查项由用户签字；本次文档 reconciliation 不宣称已消除或批准这一视觉结果。
+
 ### Offline / Local-only
 
 ```text
@@ -697,6 +696,8 @@ raw HTTP / SDK / endpoint / cleanup 只进入：
 - developer logging；
 - expandable diagnostics；
 - test output。
+
+Connectivity screen 只描述当前生产状态组合：backend unavailable 时可用 cached identity 和本机已有 workspace snapshot 恢复；没有本地 snapshot 时明确提示该工作区尚未保存在本机、当前离线无法打开；已有本地内容仍可保存并显示“离线 · 本地已保存”；同步失败提供“重试”；恢复后显示“已同步”。Page 标题旁的“已保存到本地”是独立的本地保存状态，可能与 Topbar“已同步”同时显示，列为 Gate A 最终视觉检查项。不得据此增造新页面、按钮或状态。
 
 ---
 
@@ -745,18 +746,19 @@ raw HTTP / SDK / endpoint / cleanup 只进入：
 - collapsed topbar 在 breadcrumb 前提供唯一 reopen control。
 - reopen control 视觉按钮约 32×32px、control radius 6px；实现可将 pointer hit area 扩大到约 36–40px，而不放大视觉尺寸。
 - tooltip：`展开侧边栏`。
-- 具体 wide threshold 待 P5.7.4。
+- 当前断点：`<768px` Mobile drawer；`768–1199px` Tablet 210px sidebar；`≥1200px` Desktop 252px sidebar。
 
 ### Medium / Tablet
 
 - Sidebar 必须可以收起。
-- 默认策略、自动策略和 user preference 优先级未冻结。
+- 当前生产默认展开，用户可在本次会话中手动 collapse/reopen；`desktopSidebarCollapsed` 为组件状态，未提供跨会话 preference。设计系统不虚构持久偏好。
 
 ### Mobile / Compact
 
 - Sidebar = drawer。
 - Settings = Index → Detail。
-- Document / touch toolbar 在 P5.7.4 设计。
+- Settings Index 的唯一 topbar Back 返回 `returnTo`；Detail 的唯一 topbar Back 返回 Index 并保留 `returnTo` / `workspaceId`。不恢复 `.settings-compact-back`。
+- Document 继续使用同一 Web UI；Mobile / coarse / hybrid 使用 Touch Toolbar 与原生 Selection Menu。
 
 ---
 
@@ -770,6 +772,7 @@ raw HTTP / SDK / endpoint / cleanup 只进入：
 - Popover 有正确 focus return。
 - Error / status 使用合适 live region，不把整页变成 alert。
 - 最终 contrast 以 WCAG 2.2 AA 为最低目标，具体在实现阶段验证。
+- 页面整体、真实设备辅助技术操作、颜色对比及 Page 两处保存状态并存时的最终视觉核验：**MANUAL CHECK REQUIRED**；不以自动测试覆盖宣称完成。
 
 ---
 
@@ -797,23 +800,23 @@ Eotion P5.7.5 继续基于现有 Vue / semantic CSS / CSS variables / Morphicons
 
 ## Token Migration Mapping
 
-Gate A 后、Implementation 前，由 Codex 调查现有 token/hard-code 后填写。
-
-当前禁止把旧 token 直接视为新规范。
+原计划在 Gate A 后、Implementation 前填写；production implementation 已先行。本轮通过 `apps/web/src/styles/tokens.css` 核对正式语义 token：
 
 | Current | Quiet Studio | Status |
 | --- | --- | --- |
-| current app background | canvas | TODO |
-| current sidebar background | sidebar | TODO |
-| current surface tokens | semantic surface hierarchy | TODO |
-| current text tokens | text-primary/secondary/muted | TODO |
-| current borders | border / border-subtle | TODO |
+| `--e-color-canvas` | canvas | 已核对 Light/Dark 数值 |
+| `--e-color-sidebar` | sidebar | 已核对 Light/Dark 数值 |
+| `--e-color-surface`、`--e-color-surface-subtle`、`--e-color-elevated` | surface hierarchy | 已核对 Light/Dark 数值 |
+| `--e-color-text-primary/secondary/muted` | text hierarchy | 已核对 Light/Dark 数值 |
+| `--e-color-border`、`--e-color-border-subtle` | structural borders | 已核对 Light/Dark 数值 |
+
+`apps/web/src/styles/base.css` 仍保留旧 `--surface` / `--text-*` 等变量供其它现存界面使用；不把这组 legacy 名称误称为已迁移的 Quiet Studio token，也不为本轮作全局 CSS 重构。
 
 ---
 
-## Frozen in this draft
+## Frozen for P5 existing capabilities
 
-已可作为 P5.7.4 source of truth：
+已作为 P5 当前生产能力的 source of truth：
 
 - Quiet Studio Light / Dark visual direction。
 - Desktop Settings visual language / width behavior。
@@ -834,22 +837,20 @@ Gate A 后、Implementation 前，由 Codex 调查现有 token/hard-code 后填�
 
 ---
 
-## Still open before Design System PASS
+## Future / Out of P5
 
-- Sidebar expanded width。
-- Exact responsive breakpoints。
-- Sidebar collapse preference behavior。
-- Mobile typography/density optical adjustments。
-- Touch toolbar final anatomy。
-- Dialog/confirm visual spec。
-- Image/File attachment exact border/background treatment。
+- Table / Callout / Mention blocks and their visual anatomy。
+- 未来通用 Dialog 变体与更广的 confirm visual spec；当前 Page action dialog/confirm 已纳入 P5 基线（仍禁止 browser `alert/confirm/prompt`）。
+- Wide blocks and their responsive behavior。
+- Collaboration UI and its interaction states。
 
-- Core screen visual approval。
+以上不属于本次已存在能力冻结范围，不作为本轮实现内容。已存在能力的最终视觉签字仍是 Gate A 的待办。
 
 ---
 
-## Approval
+## Approval / Reconciliation
 
-- Reviewer: User + ChatGPT
-- Date: 2026-10-01
-- Status: **DRAFT — approved direction encoded; not yet Design System PASS**
+- Design System v1 state: **FROZEN（2026-10-03）**，范围为 P5 已存在能力。
+- Gate A state: **READY FOR FINAL USER SIGN-OFF**。
+- Final visual reviewer / sign-off date: **待用户签字**。
+- 历史说明：不声明原计划的实施前 Gate A 曾通过。

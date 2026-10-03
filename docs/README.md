@@ -32,13 +32,13 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `design/ui-ux-audit.md` | P5.7.1 已完成：现有 UI/UX 审计与重设计问题清单 |
 | `design/stitch-design-brief.md` | P5.7.2 已完成：Stitch 多方向探索的统一 Design Brief |
 | `design/design-direction.md` | P5.7.2 已冻结：Quiet Studio 正式产品设计方向 |
-| `design/design-system-v1.md` | P5.7.3 当前：Quiet Studio Design System v1 人类可读规范（DRAFT） |
-| `design/DESIGN.md` | P5.7.3 当前：给 AI / 实现 Agent 使用的精简设计契约（DRAFT） |
+| `design/design-system-v1.md` | Quiet Studio Design System v1：P5 已存在能力的正式冻结规范 |
+| `design/DESIGN.md` | 给 AI / 实现 Agent 使用的 P5 精简设计契约 |
 | `design/product-shell-implementation.md` | P5.7.5.2 桌面 ProductShell、Sidebar 折叠、Workspace Popover 与验证入口 |
 | `design/interaction-foundation-implementation.md` | P5.7.5.3 NavItem、SyncStatus、Command Overlay 契约与回归入口 |
 | `design/editor-architecture-spike.md` | P5.8.1 文档画布原语及 P5.8.2 共享编辑器基础、边界与浏览器回归入口 |
 | `design/core-screen-spec.md` | P5.7.4 核心高保真页面与 Gate A |
-| `design/visual-acceptance.md` | P5.7.6 Visual QA / screenshot regression / 最终视觉验收 |
+| `design/visual-acceptance.md` | P5.7.6 Visual QA / Playwright screenshot comparison / 最终用户视觉签字状态 |
 | `p4-final-acceptance.md` | P4 六条退出条件的最终验收证据、测试结果与进入 P5 的结论 |
 
 ## 使用原则

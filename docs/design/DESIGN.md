@@ -1,6 +1,8 @@
 # Eotion DESIGN.md — Quiet Studio
 
-Status: P5.7 Design Freeze
+Status: P5.7 Existing Production Baseline Frozen — 2026-10-03
+
+Gate A: **READY FOR FINAL USER SIGN-OFF**. The user has not completed final visual sign-off. This closeout records the production UI formed through iterative screenshot and device review; it does not claim that the planned pre-implementation Gate A passed historically.
 
 This document is the implementation-facing design contract.
 
@@ -39,16 +41,22 @@ Never turn Eotion into:
 - Sidebar is flush to the left edge.
 - Sidebar collapse/reopen must preserve document reading stability.
 - Workspace and page actions use anchored floating popovers.
+- Existing Mobile Page rename/move and Page delete confirmation use `EotionCommandOverlay` native dialogs; preserve their current responsive and focus behavior.
 - Upload states stay at the insertion location.
 - Local-first states must distinguish synced and local-only states.
+- Page currently shows local persistence (“已保存到本地”) beside the title and remote sync (“已同步”) in the topbar; they can appear together. This is a known production screenshot item for final Gate A review, not an already-resolved visual state.
 - Do not expose infrastructure terminology in product UI.
 - Do not invent product actions, metadata, or settings.
+- Typography baseline: Page Title 36/45/600; Body 15/26/400.
+- Topbar 44px; desktop sidebar row 32px and right radius 16px; reading column 720–740px.
+- Desktop `EotionButton` pointer height 28px and coarse pointer 36px are approved compact-button exceptions. Touch icon, navigation and disclosure controls target about 44px. Desktop Bubble actions are 32px.
 
 ## Layout Baseline
 
 - Document reading width: 720–740px
 - Desktop tree row height: 32px
 - Sidebar right radius: 16px
+- Sidebar width: 252px Desktop, 210px Tablet; below 768px use a drawer.
 - Settings navigation width: 240px
 - Settings detail width: max 740px
 
@@ -68,12 +76,19 @@ Attachments:
 - recovery action: 重试
 - secondary action: 移除
 
+Editor input:
+
+- Mobile layout or touch/hybrid input uses the 44px Touch Toolbar, independent of the desktop fixed-toolbar preference. Track `visualViewport` changes for keyboard inset and caret visibility.
+- Desktop Bubble is for fine/mouse input. Touch keeps the native Selection Menu; preserve existing links but do not expose explicit link creation there.
+- Desktop Bubble supports link create, edit and remove.
+
 ## Settings
 
 - Prefer typography and spacing over containers.
 - Do not build admin-style full-width forms.
 - Preserve Quiet Studio information hierarchy.
 - MCP / Agent remain 即将推出 until implemented.
+- Below 768px, Settings uses Index → Detail. The single topbar Back returns Index from Detail and `returnTo` from Index; Detail gutter is 30px. Preserve `returnTo` and `workspaceId`; do not restore `.settings-compact-back`.
 
 ## Accessibility
 
@@ -88,8 +103,10 @@ Attachments:
 
 Do not invent:
 
-- sidebar exact width
-- unsupported breakpoints
-- mobile toolbar details
-- dialog details
+- breakpoints beyond the production `<768px` Mobile / `768–1199px` Tablet / `≥1200px` Desktop modes
+- mobile toolbar behavior beyond the current production contract
+- future generic dialog variants beyond existing Page actions
 - future product capabilities
+- Table / Callout / Mention blocks, future generic Dialog variants, wide blocks and collaboration UI are Future / Out of P5.
+
+Visual or accessibility details not confirmed by production evidence remain **MANUAL CHECK REQUIRED** pending final user review.
