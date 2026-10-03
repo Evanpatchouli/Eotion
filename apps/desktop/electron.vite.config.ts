@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { defineConfig } from 'electron-vite'
+import { defineConfig, loadEnv } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
 
 type RootManifest = {
@@ -45,23 +45,35 @@ const buildInfo = {
   gitSha: getGitSha(),
 }
 
-export default defineConfig({
-  main: {},
-  preload: {},
-  renderer: {
-    root: resolve(__dirname, '../web'),
-    plugins: [vue()],
-    define: {
-      __EOTION_VERSION__: JSON.stringify(buildInfo.version),
-      __EOTION_BUILD_NUMBER__: JSON.stringify(buildInfo.buildNumber),
-      __EOTION_GIT_SHA__: JSON.stringify(buildInfo.gitSha),
-    },
-    build: {
-      rollupOptions: {
-        input: resolve(__dirname, '../web/index.html'),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, resolve(__dirname, '../web'), '')
+
+  return {
+    main: {},
+    preload: {},
+    renderer: {
+      root: resolve(__dirname, '../web'),
+      plugins: [vue()],
+      define: {
+        __EOTION_VERSION__: JSON.stringify(buildInfo.version),
+        __EOTION_BUILD_NUMBER__: JSON.stringify(buildInfo.buildNumber),
+        __EOTION_GIT_SHA__: JSON.stringify(buildInfo.gitSha),
       },
-      outDir: resolve(__dirname, 'out/renderer'),
-      emptyOutDir: true,
+      server: {
+        proxy: {
+          '/api': {
+            target: env.EOTION_API_PROXY_TARGET || 'http://127.0.0.1:7137',
+            changeOrigin: false,
+          },
+        },
+      },
+      build: {
+        rollupOptions: {
+          input: resolve(__dirname, '../web/index.html'),
+        },
+        outDir: resolve(__dirname, 'out/renderer'),
+        emptyOutDir: true,
+      },
     },
-  },
+  }
 })

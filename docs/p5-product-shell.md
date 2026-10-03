@@ -19,9 +19,11 @@ Web 继续使用 Hash Router，适用于浏览器、Electron renderer 和 Mobile
 2. 启动 `pnpm dev:web`，打开 `http://localhost:7173/#/register` 创建账号，或打开 `http://localhost:7173/#/app` 使用已有账号登录。
 3. 注册使用现有 `POST /api/auth/register` 接口，不会自动建立 Session；成功后在登录页手动输入密码登录。不要将真实密码写入源码、日志或提交记录。
 
-Web SDK 默认请求同源 `/api`；Vite 开发服务器将其代理到 `http://127.0.0.1:7137`。API 使用其他端口时，在启动 Web 前设置 `EOTION_API_PROXY_TARGET`。代理不放宽现有 Origin 校验；跨 origin 调用时需在 API 的 `WEB_ORIGIN` 配置实际 Web origin，或设置公开 `API_ORIGIN`。需要直连远端 API 时使用 Web 的 `VITE_API_BASE_URL`（不包含 `/api` 后缀），并遵守 [P4 Cookie/CORS 约束](p4-http-api.md)。生产 Web 应在 HTTPS 同站点部署并反向代理 `/api`，Vite dev proxy 不包含在静态产物中。
+Web SDK 默认请求同源 `/api`；Web 与 Electron Desktop dev renderer 的 Vite 开发服务器都会将其代理到 `http://127.0.0.1:7137`。启动 `pnpm dev:desktop` 时会使用这条 Desktop dev proxy，无需另行启动 `pnpm dev:web`。API 使用其他端口时，在 `apps/web` 环境文件中设置 `EOTION_API_PROXY_TARGET`，或在启动 Web / Desktop 前设置该变量；两种开发服务器使用相同的默认值和代理行为。代理不放宽现有 Origin 校验；跨 origin 调用时需在 API 的 `WEB_ORIGIN` 配置实际 Web origin，或设置公开 `API_ORIGIN`。需要直连远端 API 时使用 Web 的 `VITE_API_BASE_URL`（不包含 `/api` 后缀），并遵守 [P4 Cookie/CORS 约束](p4-http-api.md)。生产 Web 应在 HTTPS 同站点部署并反向代理 `/api`，Vite dev proxy 不包含在静态产物中。
 
-Electron 继续复用同一套产品源码。打包后的 `file://` renderer 直连远端 Cookie Session 的 origin/部署方案不属于此次 Web 验收，不能将 Web 的同源验证等同于该路径已通过。Mobile WebView 使用稳定的同站点 Web URL。
+Electron 继续复用同一套产品源码。Desktop dev renderer 使用与 Web 相同的 `/api` proxy；打包后的 `file://` renderer 直连远端 Cookie Session 的 origin/部署方案仍未验证，不能将开发 proxy 或 Web 的同源验证等同于该生产路径已通过。Mobile WebView 使用稳定的同站点 Web URL。
+
+当前默认构建未设置 `VITE_API_BASE_URL` 时，SDK 的 base URL 为空；`loadFile` 模式下相对 `/api/auth/me` 会解析为本地 `file://` 地址，无法连接 HTTP API。构建时配置绝对 `VITE_API_BASE_URL` 会让 SDK 直连该 HTTP(S) 服务，但该路径仍需独立验证 Origin/CORS 与 Cookie Session；开发代理不会包含在静态产物中。
 
 ## 状态与行为
 
