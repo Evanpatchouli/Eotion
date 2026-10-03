@@ -15,6 +15,7 @@ coverage/
 test-results/
 .lynx/
 *.tsbuildinfo
+/apps/desktop/release/
 
 # IDE
 .idea/

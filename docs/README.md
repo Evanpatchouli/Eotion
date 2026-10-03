@@ -12,6 +12,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `decisions/` | ADR：为什么做出重要技术/架构决策 |
 | `runbooks/` | 开发、测试、部署、排障等可重复操作 |
 | `runbooks/versioning.md` | 产品版本、build number、Git SHA 与多端版本映射 |
+| `runbooks/desktop-packaging.md` | Windows Desktop installer、portable、zip 与 release 打包 |
 | `knowledge/` | 长期稳定、未来会重复使用的工程经验 |
 | `exec-plans/` | 复杂、跨会话执行计划 |
 | `p1-mobile-demo.md` | P1 移动 WebView PoC 的验证入口与判读方式 |

@@ -52,6 +52,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     main: {
+      build: {
+        externalizeDeps: {
+          exclude: ['@eotion/storage', '@eotion/contracts', '@eotion/domain', 'nanoid'],
+        },
+      },
       define: {
         __EOTION_DESKTOP_API_ORIGIN__: JSON.stringify(desktopApiOrigin),
       },

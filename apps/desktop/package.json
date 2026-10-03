@@ -7,6 +7,10 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "installer": "node ../../scripts/package-desktop.cjs installer",
+    "portable": "node ../../scripts/package-desktop.cjs portable",
+    "zip": "node ../../scripts/package-desktop.cjs zip",
+    "release": "node ../../scripts/package-desktop.cjs release",
     "preview": "electron-vite preview",
     "postinstall": "node node_modules/electron/install.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -22,6 +26,7 @@
     "@vitejs/plugin-vue": "^6.0.9",
     "electron": "^44.4.3",
     "electron-vite": "^5.0.0",
+    "electron-builder": "26.15.3",
     "typescript": "~6.0.3"
   }
 }

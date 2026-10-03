@@ -1,23 +1,26 @@
-# Current Task — P5 Production Electron API Connectivity
+# Current Task — Windows Desktop Packaging
 
-Baseline: abce6046. Scope complete: bundled renderer API connectivity; Auth/Sync/schema/editor/UI unchanged.
+Baseline: f43b762. Implementation complete; installer installation/uninstallation remains MANUAL CHECK.
 
 ## Work Units
-1. S0 investigate (scout): Cookie/Origin/SDK/build/tests Evidence Pack complete.
-2. S2 decide (main): direct file HTTPS login works at fetch level (201) but me=401; choose same-origin HTTPS bundled protocol over IPC/local server.
-3. S1 execute (fast_worker): production protocol, main build/runtime config and security unit tests complete.
-4. S1 execute / S0 verify: standalone real API built Electron acceptance + docs + regressions complete.
-5. Review: independent reviewer found initiator boundary; fixed global HTTPS initiator check + canonical trusted-write Origin; final targeted review has no remaining P1/P2.
+1. S0 investigate / scout: existing build, runtime dependencies and acceptance entry points located.
+2. S2 decide / main: electron-builder target-specific filenames; root/workspace version guard; distribution-only HTTPS origin default.
+3. S1 execute / fast_worker: four commands, config/runner, ICO derived from repository PNG and packaging runbook.
+4. S0 verify / scout + main: four actual command exits and current-version artifact assertions; packaged and regression tests.
+5. Review / reviewer: empty-origin fallback and Portable CDP window readiness issues fixed; no other identified blockers.
 
 ## Final Evidence
-- `test:desktop-production-real` builds API and `electron-vite build`, launches `out/main/index.js`, ELECTRON_RENDERER_URL absent; final code 1/1 passed (18.6s).
-- Isolated disposable Mongo replica set, production Nest API and HTTPS localhost fixture. No API mocks, no Vite server. Network renderer asset requests=0.
-- UI login, secure HttpOnly/Lax cookie, me200, Workspace/Page creation, editor SQLite and Sync, online close/restart me200 and page restore passed.
-- HTTPS listener ECONNREFUSED; offline edit persisted before kill, restart while unavailable restores SQLite and permits continued edit; reconnect pushes pending before pull, queue0/已同步; second independent Electron profile sees final text.
-- 6 pushes / 7 pulls; writes have canonical API Origin. Untrusted opaque-origin logout rejected before upstream. Cookie values never exposed by production preload/renderer.
-- File fallback absolute login201 then credentialed me401: URL-only solution rejected on measured Session failure.
-- Desktop typecheck/build + 16 protocol/SQLite tests, desktop storage/product-sync3/3, dev5173 proxy me401 JSON, Web typecheck/build, Web offline-shell1/1 passed. Targeted acceptance TS compilation and git diff check passed.
-- Documentation: runbooks/desktop-production.md, P5 product/sync and retrieval/testing entries.
-- Production Electron blocker can close. Actual all-interface manual network removal not claimed; test uses real connection refused. TLS fixture uses exact test-only SPKI allowance; production retains default verification and requires trusted deployment certificate.
-- Temporary test API/profiles/random databases auto-cleaned; disposable Mongo container and test TLS fixtures removed by main after final run. No shared service/env modified.
-- Commit subject: fix(desktop): connect production renderer to api.
+- electron-builder 26.15.3, Electron 44.4.5, Windows x64, Eotion 0.0.1.
+- All four root distribution commands executed successfully (exit 0); release builds all three targets in one builder invocation.
+- Exact distribution files in apps/desktop/release/: Eotion-Setup-0.0.1.exe (112331180 bytes), Eotion-0.0.1-portable.exe (112183040 bytes), Eotion-0.0.1-win-x64.zip (154416539 bytes).
+- Explicit automatic assertion: all three contain root version, exist/nonempty, and no extra top-level exe/zip. Unsigned status verified.
+- Production default uses existing EOTION_DESKTOP_API_ORIGIN; nonempty process/.env overrides preserved; blank build values fall back; invalid HTTP origin rejected before build. Dev proxy unchanged.
+- Shared workspace TypeScript/nanoid bundled into main; runtime imports only Electron/Node built-ins including node:sqlite. Main/preload/renderer/icon are inside app.asar; Electron runtime included.
+- Real Portable self-extraction + ZIP extraction + Installer extracted payload: bundled login UI, official HTTPS origin, health200/me401, preload IPC, SQLite write/oplog and restart restore passed. No Vite/renderer URL/API override for these smoke runs.
+- Installer installation/uninstallation and SmartScreen UI: MANUAL CHECK; installer payload launch passed but is not an installation claim.
+- Desktop typecheck/build and protocol/SQLite unit16/16 passed; original production E2E1/1 and real ZIP packaged E2E1/1 passed (secure Cookie Session, offline kill/restart/reconnect, second client); storage/product-sync3/3 passed.
+- Production E2E file-origin negative control needs plain build with empty EOTION_DESKTOP_API_ORIGIN when a local .env defines the production origin; documented. Initial configured-origin negative-control mismatch resolved by explicit fixture build config.
+- One build overlapped a regression rebuild and produced a corrupt temporary archive. Rebuilt installer serially and verified latest payload; docs forbid concurrent dev/plain builds while packaging reads out/.
+- Actual pnpm dev:desktop launched Electron with Vite5174 (existing5173 retained); /api/auth/me proxy401 JSON; test-owned Electron stopped afterward. Existing-profile cache warnings observed with concurrent dev instance; isolated storage tests passed.
+- Independent review findings fixed; git diff check passed. Runbook: docs/runbooks/desktop-packaging.md.
+- Temporary Mongo container stopped/removed. Auto-approval blocked recursive Temp fixture cleanup; installer/ZIP extracted smoke directories and test TLS directory remain for manual cleanup. No shared Mongo/service modified.

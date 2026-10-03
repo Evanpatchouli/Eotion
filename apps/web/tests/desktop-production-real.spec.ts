@@ -153,7 +153,10 @@ async function waitForApi(child: ChildProcess): Promise<void> {
 function launchElectron(profile: string, useConfiguredOrigin = true): Promise<ElectronApplication> {
   const executable = process.platform === 'win32' ? 'electron.exe'
     : process.platform === 'darwin' ? 'Electron.app/Contents/MacOS/Electron' : 'electron'
-  const args = [resolve(desktopRoot, 'out/main/index.js'), `--user-data-dir=${profile}`]
+  // Optional packaged executable exercises the actual distribution closure. The
+  // file-origin negative control still uses the unconfigured development build.
+  const packagedExecutable = useConfiguredOrigin ? process.env.EOTION_TEST_DESKTOP_EXECUTABLE : undefined
+  const args = [...(packagedExecutable ? [] : [resolve(desktopRoot, 'out/main/index.js')]), `--user-data-dir=${profile}`]
   if (spkiHash) args.push(`--ignore-certificate-errors-spki-list=${spkiHash}`)
   const env: Record<string, string> = Object.fromEntries(
     Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
@@ -161,7 +164,7 @@ function launchElectron(profile: string, useConfiguredOrigin = true): Promise<El
   if (useConfiguredOrigin) env.EOTION_DESKTOP_API_ORIGIN = frontOrigin
   else delete env.EOTION_DESKTOP_API_ORIGIN
   delete env.ELECTRON_RENDERER_URL
-  return electron.launch({ executablePath: resolve(desktopRoot, 'node_modules/electron/dist', executable), args, env })
+  return electron.launch({ executablePath: packagedExecutable ? resolve(packagedExecutable) : resolve(desktopRoot, 'node_modules/electron/dist', executable), args, env })
 }
 
 async function killTree(app: ElectronApplication): Promise<void> {
@@ -286,6 +289,9 @@ test('built Electron uses secure real API sessions and restores SQLite edits acr
     await listenFront()
 
     app = await launchElectron(firstProfile)
+    if (process.env.EOTION_TEST_DESKTOP_EXECUTABLE) {
+      expect(await app.evaluate(({ app }) => app.isPackaged)).toBe(true)
+    }
     let page = await app.firstWindow()
     captureRendererErrors(page)
     await expect.poll(() => page.evaluate(() => location.origin)).toBe(frontOrigin)

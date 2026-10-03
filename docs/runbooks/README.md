@@ -22,3 +22,4 @@ runbooks/
 Runbook 应尽量描述“怎么做”和“出现什么结果算正常”，不要变成大篇幅背景知识。
 
 - [Desktop production API](desktop-production.md)：bundled Electron 的 HTTPS origin、Cookie Session、配置和离线启动验收。
+- [Windows Desktop packaging](desktop-packaging.md)：NSIS、Portable、ZIP 分发命令、版本文件名与产物验证。
