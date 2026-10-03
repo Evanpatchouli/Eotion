@@ -66,8 +66,6 @@
 .settings-switch[aria-checked="true"]::before { background: var(--accent); }
 .settings-switch span { position: relative; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px rgb(0 0 0 / .18); transition: transform .18s ease; }
 .settings-switch[aria-checked="true"] span { transform: translateX(16px); }
-/* 软件说明沿用 Settings 分节节奏，仅收紧无副标题的页面标题留白。 */
-.settings-about .settings-page-heading { margin-bottom: 32px; }
 .settings-about-facts { display: grid; gap: 16px; max-width: 420px; margin: 0; }
 .settings-about-fact { display: grid; grid-template-columns: 90px minmax(0, 1fr); align-items: center; column-gap: 24px; }
 .settings-about-fact dt { color: var(--text-muted); font-size: 13px; line-height: 20px; }

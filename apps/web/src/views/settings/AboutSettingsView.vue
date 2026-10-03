@@ -33,7 +33,7 @@ async function checkForUpdates() {
 
 <template>
   <div class="settings-page settings-about">
-    <div class="settings-page-heading"><h1>软件说明</h1></div>
+    <div class="settings-page-heading"><h1>软件说明</h1><p>查看当前版本、发行日志与更新状态。</p></div>
     <section class="settings-section" aria-labelledby="settings-about-version">
       <div class="settings-section-heading"><h2 id="settings-about-version">版本信息</h2></div>
       <dl class="settings-about-facts">
