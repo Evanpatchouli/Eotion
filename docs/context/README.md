@@ -16,6 +16,7 @@
 | 领域 / 模块 | 代码入口 | 关键文档 | 常用检索线索 |
 | --- | --- | --- | --- |
 | Web 主 UI | `apps/web/src/` | `architecture/architecture.md`、`p5-product-shell.md`、`p5-page-tree.md`、`p5-real-sync.md`、`p5-settings.md`、`p5-ui-ux-foundation.md`、`design/*` | Vue、router、ProductShell、auth、productWorkspaces、productPages、productSync、PageTree、PageView、Settings、Theme、preferences、UI/UX audit、design system、visual baseline、runtime、layout、input |
+| Public site | `apps/site/` | `runbooks/public-site.md`、`runbooks/versioning.md` | VitePress、release metadata、changelog、download URL、site origin、Docker |
 | Editor（P2 / P5.3～P5.5） | `apps/web/src/components/editor/`、`apps/web/src/editor/`、`apps/web/src/views/PageView.vue` | `roadmap.md`、`p2-editor-demo.md`、`p5-real-page-editor.md`、`p5-real-sync.md`、`p5-attachments.md`、architecture §6 | Tiptap、BlockIdentity、blockCodec、PagePersistence、LocalStore、sync、IME、slash command、eotionImage、eotionFile、attachmentCleanup、Morphicons |
 | Editor foundation (P5.8.2) | `apps/web/src/components/editor/DocumentEditor.vue`、`apps/web/src/components/editor/EotionEditor.vue`、`apps/web/src/editor/useDocumentEditor.ts`、`apps/web/src/editor/editorDocument.ts`、`apps/web/src/editor/blockCodec.ts` | `design/editor-architecture-spike.md` | useDocumentEditor、EditorDocument、JSONContent、Block 映射、editable、aria、focus、lifecycle |
 | Desktop Shell | `apps/desktop/src/` | architecture §2、`runbooks/desktop-production.md`、`runbooks/desktop-packaging.md` | Electron、preload、renderer、IPC、production-protocol、Windows packaging、EOTION_DESKTOP_API_ORIGIN、Cookie Session |

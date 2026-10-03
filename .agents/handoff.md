@@ -1,5 +1,11 @@
 # Handoff
 
+## 2026-10-04 公共官网与用户指南交接
+
+`apps/site` 已实现独立 VitePress 官网：六节首页、download、8 篇 guide、changelog；版本/build 复用根 package.json，发布记录复用 apps/web/src/releaseInfo.ts。维护入口 docs/runbooks/public-site.md。版本/typecheck/build、339 链接/锚点/资源、2 SSR 回归、7 Playwright 与三尺寸 Light/Dark 视觉检查通过；独立 review 无剩余 blocker。
+
+上线前配置真实 EOTION_SITE_ORIGIN、公开安装包 URL 与新官网 DNS/TLS。未配置 origin 时 noindex/robots 禁止抓取，不生成伪 canonical。APP origin 保持 https://eotion.evanpatchouli.space。eotion-site 只占本机 8002，现有 Web 8001 不变。Docker 完整镜像构建被 Corepack 访问 npm registry 网络错误阻断；同 Nginx 配置挂载静态产物的临时容器 HTTP 验证通过（公开路径 200，开发路径 404）。部署网络中应重跑完整 image build；本轮未发布公网服务。
+
 ## 2026-10-04 最新交接：Mobile 验收（仅 Android）
 
 用户将本轮调整为只测 Android，nova 14 / HarmonyOS 不测。本轮最新 master 基线 3625f74，重新构建 APK 并覆盖安装现有 MuMu Android12，保持既有登录。报告及脱敏证据见 docs/verification/device/mobile-real-device-2026-10-04.md；原始日志/截图/探针在忽略目录 apps/mobile-hosts/release/runtime-verification/acceptance-20261004/。

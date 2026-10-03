@@ -45,6 +45,26 @@ services:
     networks:
       - app
 
+  eotion-site:
+    build:
+      context: .
+      dockerfile: apps/site/Dockerfile
+      args:
+        EOTION_SITE_ORIGIN: ${EOTION_SITE_ORIGIN:-}
+        EOTION_APP_ORIGIN: ${EOTION_APP_ORIGIN:-https://eotion.evanpatchouli.space}
+        EOTION_DOWNLOAD_WINDOWS_INSTALLER_URL: ${EOTION_DOWNLOAD_WINDOWS_INSTALLER_URL:-}
+        EOTION_DOWNLOAD_WINDOWS_PORTABLE_URL: ${EOTION_DOWNLOAD_WINDOWS_PORTABLE_URL:-}
+        EOTION_DOWNLOAD_WINDOWS_ZIP_URL: ${EOTION_DOWNLOAD_WINDOWS_ZIP_URL:-}
+        EOTION_DOWNLOAD_ANDROID_APK_URL: ${EOTION_DOWNLOAD_ANDROID_APK_URL:-}
+        EOTION_DOWNLOAD_HARMONY_HAP_URL: ${EOTION_DOWNLOAD_HARMONY_HAP_URL:-}
+    image: eotion-site:latest
+    container_name: eotion-site
+    restart: always
+    ports:
+      - '127.0.0.1:8002:80'
+    networks:
+      - app
+
 networks:
   app:
     name: eotion-app

@@ -33,7 +33,10 @@
     "version:minor": "node scripts/version.mjs minor",
     "version:major": "node scripts/version.mjs major",
     "version:set": "node scripts/version.mjs set",
-    "build:bump": "node scripts/version.mjs build"
+    "build:bump": "node scripts/version.mjs build",
+    "dev:site": "pnpm --filter @eotion/site dev",
+    "build:site": "pnpm --filter @eotion/site build",
+    "preview:site": "pnpm --filter @eotion/site preview"
   },
   "eotion": {
     "buildNumber": 1

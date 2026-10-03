@@ -12,6 +12,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `decisions/` | ADR：为什么做出重要技术/架构决策 |
 | `runbooks/` | 开发、测试、部署、排障等可重复操作 |
 | `runbooks/versioning.md` | 产品版本、build number、Git SHA 与多端版本映射 |
+| `runbooks/public-site.md` | 独立 VitePress 官网的发布元数据、构建期 URL 与部署验证 |
 | `runbooks/desktop-packaging.md` | Windows Desktop installer、portable、zip 与 release 打包 |
 | `runbooks/mobile-native-hosts.md` | Android/HarmonyOS 原生 Lynx 宿主、构建、签名与真机验收 |
 | `verification/device/mobile-real-device-2026-10-04.md` | Android Mobile 验收结果与脱敏证据；离线两次重启通过，完整 Mobile Gate 未通过，HarmonyOS 本轮未执行 |

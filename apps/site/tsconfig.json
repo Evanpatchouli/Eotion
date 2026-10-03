@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "resolveJsonModule": true, "noEmit": true
+  },
+  "include": [".vitepress/**/*.ts", ".vitepress/**/*.vue", "data/**/*.ts", "tests/**/*.ts", "playwright.config.ts"]
+}
