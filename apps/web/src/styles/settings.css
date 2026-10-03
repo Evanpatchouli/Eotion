@@ -66,12 +66,17 @@
 .settings-switch[aria-checked="true"]::before { background: var(--accent); }
 .settings-switch span { position: relative; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px rgb(0 0 0 / .18); transition: transform .18s ease; }
 .settings-switch[aria-checked="true"] span { transform: translateX(16px); }
+/* 软件说明：只在此页收敛间距与层级，避免影响 Profile / Appearance / Workspace Settings。 */
+.settings-about .settings-section-heading { margin-bottom: 14px; }
+.settings-about .settings-section + .settings-section { margin-top: 30px; padding-top: 30px; }
 .settings-about-facts { margin: 0; }
-.settings-about-fact { display: flex; align-items: baseline; gap: 24px; min-height: 38px; }
+.settings-about-fact { display: flex; align-items: baseline; gap: 24px; padding: 8px 0; }
 .settings-about-fact + .settings-about-fact { border-top: 1px solid var(--border); }
 .settings-about-fact dt { flex: 0 0 92px; color: var(--text-muted); font-size: 13px; }
 .settings-about-fact dd { margin: 0; color: var(--text-primary); font-size: 13px; font-weight: 600; }
 .settings-about-build { margin-left: 8px; color: var(--text-muted); font-size: 12px; font-weight: 450; }
+.settings-about-update { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 16px; }
+.settings-about .settings-about-feedback { min-height: 0; margin: 0; }
 .settings-about-notes { margin: 0; padding-left: 18px; }
 .settings-about-notes li { padding: 4px 0; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
 .settings-about-notes li::marker { color: var(--text-muted); }
