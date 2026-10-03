@@ -16,6 +16,19 @@ test-results/
 .lynx/
 *.tsbuildinfo
 /apps/desktop/release/
+/apps/mobile-hosts/release/
+**/.gradle/
+**/.hvigor/
+**/.cxx/
+**/oh_modules/
+**/local.properties
+**/oh-package-lock.json5
+**/signing.local.json
+*.p12
+*.p7b
+*.cer
+*.jks
+*.keystore
 
 # IDE
 .idea/

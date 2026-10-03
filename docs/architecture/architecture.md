@@ -14,7 +14,7 @@
                          |             |
                     same renderer    <webview>
                                        |
-                                Harmony/iOS/Android
+                                Android / HarmonyOS hosts
 ```
 
 Web UI 有三种布局模式，但只有一套代码库：
@@ -37,7 +37,7 @@ Web 的 viewport 使用 `viewport-fit=cover`。`App.vue` 的 `.app-viewport` 铺
 
 ## 3. 移动端
 
-`apps/mobile` 使用 Vue Lynx 作为应用外壳。v0.1 在 Lynx 内置的 `<webview>` 中加载 Eotion Web。品牌源图同步保存在 `apps/mobile/resources/icon.png`，供后续独立 Android / iOS / HarmonyOS Shell packaging 生成 launcher icon；当前 Lynx Explorer 预览的启动图标由宿主应用控制，无法由 Eotion bundle 覆盖。
+`apps/mobile` 使用 Vue Lynx 作为共享应用外壳，在 Lynx `<webview>` 中加载同一 Eotion Web。`apps/mobile-hosts/android` 是 Kotlin / AndroidX / Gradle 宿主；`apps/mobile-hosts/harmony` 是 ArkTS / Stage Model / Hvigor 宿主，最低兼容 HarmonyOS 6。两个宿主加载本地打包的 `main.lynx.bundle`，不依赖 Lynx Explorer，不复制产品页面。根原生打包命令自动重建/复制 bundle，并从 `apps/mobile/resources/icon.png` 配置 launcher icon。版本和构建号来自根 `package.json`；默认 Web origin 为 `https://eotion.evanpatchouli.space`，显式进程 `EOTION_WEB_URL` 可用于 LAN 测试。构建流程与调试签名边界见 [Mobile Native Hosts](../runbooks/mobile-native-hosts.md)。当前未建立 iOS 宿主。
 
 之后的原生专属能力应置于类型化桥接之后：通知、深度链接、文件、分享面板、本地数据库和应用生命周期。
 

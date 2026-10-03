@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "entry_desc",
+      "value": "Eotion Lynx host"
+    },
+    {
+      "name": "entryability_desc",
+      "value": "Open the Eotion mobile web application"
+    },
+    {
+      "name": "network",
+      "value": "Load the Eotion web application"
+    }
+  ]
+}

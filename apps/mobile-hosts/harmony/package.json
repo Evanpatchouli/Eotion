@@ -1,0 +1,15 @@
+{
+  "name": "eotion-harmony-host",
+  "private": true,
+  "ohos": {
+    "org": "eotion",
+    "buildTool": "hvigor",
+    "directoryLevel": "project"
+  },
+  "description": "HarmonyOS Lynx host for the shared Eotion mobile web application.",
+  "dependencies": {
+    "@ohos/hypium": "1.0.19",
+    "@ohos/hvigor": "6.26.8",
+    "@ohos/hvigor-ohos-plugin": "6.26.8"
+  }
+}

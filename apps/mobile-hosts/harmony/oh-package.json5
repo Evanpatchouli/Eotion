@@ -1,0 +1,8 @@
+{
+  "name": "eotion-harmony-host",
+  "modelVersion": "6.0.0",
+  "description": "HarmonyOS Lynx host for the shared Eotion mobile web application.",
+  "main": "Index.ets",
+  "license": "UNLICENSED",
+  "dependencies": {}
+}

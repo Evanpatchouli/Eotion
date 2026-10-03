@@ -1,0 +1,6 @@
+/build-profile.json5
+/AppScope/app.json5
+/AppScope/resources/base/media/app_icon.png
+/entry/src/main/resources/rawfile/main.lynx.bundle
+/entry/src/main/resources/rawfile/eotion-build.json
+/entry/oh-package.json5

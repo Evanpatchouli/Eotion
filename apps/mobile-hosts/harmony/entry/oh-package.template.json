@@ -1,0 +1,11 @@
+{
+  "name": "entry",
+  "description": "Eotion Lynx entry module.",
+  "main": "",
+  "dependencies": {
+    "@lynx/lynx": "4.0.3",
+    "@lynx/primjs": "4.0.1-alpha.5",
+    "@lynx/xelement_webview": "4.0.3",
+    "@ohos/imageknife": "3.2.6"
+  }
+}

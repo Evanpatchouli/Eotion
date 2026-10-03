@@ -1,6 +1,6 @@
 # Versioning Runbook
 
-Eotion 采用单一产品版本。Web、Desktop、Mobile、API 以及未来的 HarmonyOS / Android / iOS 宿主共享同一 SemVer，不为不同端分别维护产品版本。
+Eotion 采用单一产品版本。Web、Desktop、Mobile、API、HarmonyOS / Android 以及未来的 iOS 宿主共享同一 SemVer，不为不同端分别维护产品版本。
 
 当前基线：
 
@@ -134,7 +134,7 @@ GIT_SHA="$(git rev-parse --short=12 HEAD)" docker compose up -d --build eotion-w
 
 ## Native host mapping
 
-后续增加原生宿主时直接读取同一版本源：
+Android Gradle 直接读取根版本源；HarmonyOS 构建命令从根版本源生成 `AppScope/app.json5`。原生宿主映射如下：
 
 | Platform | Product version | Build number |
 | --- | --- | --- |

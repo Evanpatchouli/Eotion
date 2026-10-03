@@ -27,7 +27,7 @@ Ping 使用网页的 `window.postMessage` 发出请求；Lynx `<webview>` 监听
 
 若手机上 Ping 超时，可查看 Lynx DevTool 日志：没有 `P1 ping received` 说明网页消息没有到达 Lynx；收到 Ping 但出现 `P1 pong delivery failed` 说明回调网页失败。
 
-剪贴板、文件、分享按钮直接验证 WebView 中的 Web API，页面会显示调用结果。当前仓库没有自有的 HarmonyOS、Android 或 iOS 原生宿主模块，因此这些按钮的成功不代表原生桥接已完成；后续接入宿主模块时可沿用此路由做对照验证。
+剪贴板、文件、分享按钮直接验证 WebView 中的 Web API，页面会显示调用结果。Android/HarmonyOS 已有独立原生 Lynx 宿主（见 [构建 runbook](runbooks/mobile-native-hosts.md)），尚未建立 iOS 宿主；这些按钮的成功不代表自定义原生桥接已完成，可沿用此路由做对照验证。
 
 ## Safe Area / 全屏调试
 

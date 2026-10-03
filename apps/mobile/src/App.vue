@@ -5,7 +5,7 @@ import {
   type MobileP1Pong,
 } from '@eotion/contracts'
 
-import { EOTION_WEB_URL } from './config.js'
+import { EOTION_WEB_URL, EOTION_WEBVIEW_DEBUG } from './config.js'
 
 function mobileWebUrl(url: string): string {
   const hashIndex = url.indexOf('#')
@@ -69,7 +69,7 @@ function onWebMessage(event: WebviewMessageEvent) {
       id="eotion-webview"
       class="eotion-webview"
       :src="webviewUrl"
-      :enable-debug="true"
+      :enable-debug="EOTION_WEBVIEW_DEBUG"
       @message="onWebMessage"
     />
   </view>

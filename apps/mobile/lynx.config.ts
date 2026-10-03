@@ -45,11 +45,19 @@ function getLanIPv4(): string | undefined {
 
 const buildInfo = getEotionBuildInfo();
 const configuredWebUrl = process.env.EOTION_WEB_URL?.trim();
-const lanIPv4 = getLanIPv4();
+const isProduction = process.env.NODE_ENV === "production";
+const lanIPv4 = isProduction ? undefined : getLanIPv4();
 const eotionWebUrl =
-  configuredWebUrl || `http://${lanIPv4 ?? "127.0.0.1"}:7173`;
+  configuredWebUrl || (isProduction
+    ? "https://eotion.evanpatchouli.space"
+    : `http://${lanIPv4 ?? "127.0.0.1"}:7173`);
 
-if (!configuredWebUrl && !lanIPv4) {
+const parsedWebUrl = new URL(eotionWebUrl);
+if (!["http:", "https:"].includes(parsedWebUrl.protocol) || parsedWebUrl.username || parsedWebUrl.password) {
+  throw new Error("EOTION_WEB_URL must be an HTTP(S) URL without credentials.");
+}
+
+if (!isProduction && !configuredWebUrl && !lanIPv4) {
   console.warn(
     "[mobile] No LAN IPv4 found; EOTION_WEB_URL defaults to http://127.0.0.1:7173.",
   );
@@ -63,6 +71,7 @@ export default defineConfig({
   source: {
     define: {
       __EOTION_WEB_URL__: JSON.stringify(eotionWebUrl),
+      __EOTION_WEBVIEW_DEBUG__: JSON.stringify(!isProduction),
       __EOTION_VERSION__: JSON.stringify(buildInfo.version),
       __EOTION_BUILD_NUMBER__: JSON.stringify(buildInfo.buildNumber),
       __EOTION_GIT_SHA__: JSON.stringify(buildInfo.gitSha),
