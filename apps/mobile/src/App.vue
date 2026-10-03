@@ -3,7 +3,7 @@ import {
   MOBILE_P1_CHANNEL,
   type MobileP1Ping,
   type MobileP1Pong,
-} from '@eotion/contracts'
+} from '@eotion/contracts/mobile'
 
 import { EOTION_WEB_URL, EOTION_WEBVIEW_DEBUG } from './config.js'
 

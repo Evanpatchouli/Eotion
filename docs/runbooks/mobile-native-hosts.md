@@ -47,17 +47,13 @@ Remove-Item Env:EOTION_WEB_URL
 
 Windows Android 构建对子进程设置 JDK 官方 `jdk.net.unixdomain.tmpdir`，使用用户 `.gradle/eotion-sockets`，避免本机系统 Temp 的 AF_UNIX socket 连接错误。不改变全局环境或系统网络设置。
 
-## 已知阻塞：共享 Lynx bundle 运行时缺陷
+## Mobile runtime contract 依赖边界
 
-`pnpm build:mobile` 产出的 `main.lynx.bundle` 在宿主中执行到模块初始化时抛出：
+Mobile 的运行时协议必须直接从 `@eotion/contracts/mobile` 导入。该 leaf entry 只定义 `MOBILE_P1_CHANNEL` 与 Ping/Pong 类型，没有 Zod 或其他运行时依赖，也不回引 contracts 根入口。根 `@eotion/contracts` 继续重导出这些 value/type，保持 Web、API、SDK、Desktop 兼容；subpath 与根入口保持同样的 TS source / Node CommonJS 条件导出方式。
 
-```text
-loadCard failed ReferenceError: discriminator is not defined
-```
+此前 Mobile 从 contracts 根入口读取频道常量，连带执行根模块的 Zod API/Sync schema 初始化。源码的 `z.discriminatedUnion('kind', [...])` 经当前 Lynx 构建链变成 `{type:"union",options:...,discriminator}`，其中 `discriminator` 是未声明自由变量，导致 Android/HarmonyOS 同时报 error 201 和白屏。缺陷已通过隔离实际不需要的 schema 依赖关闭；未修改 Zod、优化选项、bundle 或原生 runtime。具体是哪一个上游转换 pass 产生该自由变量未单独定位，不能据此声称整个 Zod/Lynx 组合已经修复。
 
-Android（logcat `EotionHost: Lynx error 201`）与 HarmonyOS（hilog `Lynx onReceivedError: 201`）报错与错误栈完全一致，bundle SHA256 也相同。解码 bundle 后可见 `background-thread-script` 顶层存在自由变量 `discriminator`（`new uf(rM({type:"union",options:rH,discriminator},...))`，来自 zod discriminated-union 代码路径），而该标识符在 bundle 中没有任何声明。`packages/contracts` 源码用的是字符串字面量 `z.discriminatedUnion('kind', [...])`，因此这是移动端 Lynx（Rsbuild/Rsbuild 层）打包产物的问题，不是宿主问题。
-
-后果：两个宿主都能构建、安装、启动并加载本地 bundle（Android `Bundled template read: 187528 bytes`；Harmony `fetchTemplate bytes: 187528` 且 `Lynx onFirstScreen`/`onLoadSuccess` 触发），但 Lynx 首屏后无法继续渲染，WebView 呈现白屏。修复需要单独处理移动 bundle 的 zod/打包链路（例如让 `@eotion/contracts` 的运行时常量不再把 zod 带入 bundle），不属于本轮宿主任务。
+回归检查：`pnpm --filter @eotion/contracts test` 构建 CJS 后验证 subpath 不加载根入口/Zod、根入口兼容性、leaf 无依赖，以及 Mobile TS/Vue script 不从根入口导入运行时值；不匹配 minified 符号。
 
 ## 产物与签名
 
@@ -82,6 +78,14 @@ Android：`adb devices -l` 确认 online，然后 `adb install -r apps/mobile-ho
 
 Harmony：`hdc list targets` 确认目标，用 `hdc install apps/mobile-hosts/release/Eotion-<version>-harmony.hap` 安装已签名包，`hdc shell aa start -a EntryAbility -b space.evanpatchouli.eotion` 启动。
 
-本轮已在 Android 模拟器与 HarmonyOS 6.1 真机（nova 14，hdc 3.2.0f）实际安装并启动：包可安装、进程常驻、本地 bundle 被读取、Lynx `onFirstScreen`/`onLoadSuccess` 触发。**首屏之后的 WebView 内容被上面的共享 bundle 缺陷阻塞**，因此当前截图是白屏，不能标记为移动端验收通过。
+2026-10-04 已关闭共享 bundle blocker：`build:mobile`、Android APK、已调试签名的 Harmony HAP 均构建成功，并在 Android SDK API 36 模拟器、MuMu 与 HarmonyOS 6.1 nova 14 实际安装启动。三个设备均真实显示生产 Eotion 登录页，有截图证据；不以回调或进程存活单独作为通过依据。
 
-仍未由自动化或本轮人工确认、需要后续真机核对的项目：launcher 名称/图标显示、登录与网络请求、登录持久化、页面/编辑器交互、键盘和旋转、安全区、附件文件选择、后台切换与重启、断网恢复，以及 Lynx `<webview>` 的文件/剪贴板/分享与原生生命周期能力。构建成功与进程存活都不能代替这些检查。生产 bundle 中不暴露 P1 开发路由，LAN 开发 Web 可继续使用 P1/P3 验证页。
+- APK/HAP 打入同一个 88,177 字节 bundle（旧包为 187,528 字节），SHA256 `0f98a277417b57bcb5fe5e4fed6b1ea22cba154ea8c87142bc4f9b2a22923664`；归档检查验证包内 bundle 与构建产物一致。
+- 解码 background script：`discriminator` 计数为 0，旧包的 Zod discriminated-union 错误文本均消失；production URL、`webview`、`eotionRuntime=mobile-webview` 保留。完整 Rspack Lynx module graph 检查包含 `contracts/src/mobile.ts`，无 contracts 根入口或 Zod 模块。
+- Android：`Bundled template read: 88177 bytes`、`Lynx template loaded`、`Lynx first screen`；nova 14：`fetchTemplate bytes: 88177`、`onLoadSuccess`、`onFirstScreen`、`onRuntimeReady`。本次启动均无 `discriminator` / error 201，WebView 白屏消除。
+- Android SDK 模拟器输入框可输入，测试用无效凭据收到生产认证接口的 `Invalid credentials` 响应；生产 `/api/health` 返回 `status: ok`。没有现成测试账号/Session，本轮未验收成功登录后 Workspace/Page。nova 14 登录页截图确认后用户继续使用手机，未追加输入/登录操作。
+- Android 有非阻塞 error 321（image prefetch helper）与 2298（Devtool 未启用时设置 enable-debug），登录页仍实际显示；这些日志不能描述成“零错误”。本轮不扩展到这些独立宿主能力。
+
+本次截图、启动日志、bundle 解码、完整模块图和构建/回归日志保存在忽略目录 `apps/mobile-hosts/release/runtime-verification/`。该结论仅关闭共享 bundle 运行阻塞，不代表全部 Mobile / P5 真机验收通过。
+
+仍需后续真机核对：launcher 名称/图标显示、两端成功登录与 Session 持久化、Workspace/Page/编辑器交互、Harmony 输入、键盘与旋转、安全区、附件文件选择、后台切换与重启、断网恢复，以及 Lynx `<webview>` 的文件/剪贴板/分享与原生生命周期能力。构建成功与进程存活都不能代替这些检查。生产 bundle 中不暴露 P1 开发路由，LAN 开发 Web 可继续使用 P1/P3 验证页。

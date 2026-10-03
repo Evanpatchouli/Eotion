@@ -10,12 +10,20 @@
       "import": "./src/index.ts",
       "require": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./mobile": {
+      "types": "./src/mobile.ts",
+      "node": "./dist/mobile.js",
+      "import": "./src/mobile.ts",
+      "require": "./dist/mobile.js",
+      "default": "./dist/mobile.js"
     }
   },
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json && node -e \"require('node:fs').writeFileSync('dist/package.json', JSON.stringify({type:'commonjs'}))\"",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "pnpm build && node --test src/mobile.test.cjs"
   },
   "devDependencies": {
     "typescript": "~6.0.3"

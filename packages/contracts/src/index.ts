@@ -17,22 +17,8 @@ export interface HealthResponse {
 
 export type ClientRuntime = 'web' | 'electron' | 'mobile-webview'
 
-export const MOBILE_P1_CHANNEL = 'eotion.mobile.p1' as const
-
-export interface MobileP1Ping {
-  channel: typeof MOBILE_P1_CHANNEL
-  kind: 'ping'
-  id: string
-  sentAt: number
-}
-
-export interface MobileP1Pong {
-  channel: typeof MOBILE_P1_CHANNEL
-  kind: 'pong'
-  id: string
-  sentAt: number
-  receivedAt: number
-}
+export { MOBILE_P1_CHANNEL } from './mobile.js'
+export type { MobileP1Ping, MobileP1Pong } from './mobile.js'
 
 const idSchema = z.string().trim().min(1)
 const nameSchema = z.string().trim().min(1).max(200)

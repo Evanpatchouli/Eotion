@@ -1,23 +1,28 @@
-# Current Task — Mobile Native Hosts
+# Current Task — Android / Harmony Lynx Runtime Blocker
 
-目标：共享 apps/mobile Vue Lynx shell；Android Kotlin/Gradle 与 HarmonyOS ArkTS/Stage/Hvigor 宿主加载本地 bundle，不复制 Web UI。
+状态：本轮 blocker PASS；基于最新 master 3ef33cf，验证完成，按 fix(mobile): isolate Lynx runtime contracts 提交。
 
 ## Work Units
-1. S0 investigate / scout：本机工具链/设备与官方 Harmony API。
-2. S2 decide / main：最小宿主、共享版本/URL/图标流程与签名边界。
-3. S1 execute：独立平台宿主、根构建编排与文档。
-4. S0 verify：实际 bundle/APK/AAB/HAP/App Pack 构建、签名与真机安装启动。
-5. Review：复核 diff 与文档一致性。
+1. S0 investigate / scout：已确认 Mobile root contracts → Zod Sync schema → 未声明 discriminator；main 在 nova 14 重启旧包复现 error 201。
+2. S2 decide / main：冻结 zod-free mobile leaf；root 保持兼容，原生 runtime 不变。
+3. S1 execute / fast_worker：mobile.ts、条件 exports、root重导出、App.vue leaf import；稳定边界测试4/4通过。
+4. S0 verify / main + scout：所有要求的build/typecheck及SDK/API回归通过；APK/HAP串行构建、包内bundle哈希验证通过。
+5. Review / reviewer：代码diff独立复核无blocker；main更新runbook、最终diff和commit。
 
-## Final Evidence
-- Android：`pnpm mobile:android:apk`、`pnpm mobile:android:aab` 实际成功；`Eotion-0.0.1-android.apk` 为 debug 签名，`Eotion-0.0.1-android.aab` 为未配置正式 signing 的 release bundle。
-- HarmonyOS：`pnpm mobile:harmony:hap`、`pnpm mobile:harmony:app` 实际成功，DevEco 自动调试签名生效；`Eotion-0.0.1-harmony.hap` / `.app` 经官方 hap-sign-tool `verify-app` 通过，并在 nova 14（HarmonyOS 6.1）真机安装、启动、进程常驻。
-- 两个宿主都从打包进产物的本地 bundle 加载：Android `Bundled template read: 187528 bytes`；Harmony `fetchTemplate bytes: 187528` 加 `Lynx onFirstScreen` / `onLoadSuccess`。
-- 本轮修复的 Harmony 集成点：4.1.0 的 `@lynx/gfx` HAR 缺 `liblynxgfx.so`（改用 4.0.3）；`module.json5` 缺 `pages` profile；`fetchSSRData` 抽象成员未实现。
-- 已知阻塞：共享 `main.lynx.bundle` 运行时报 `ReferenceError: discriminator is not defined`，Android 与 HarmonyOS 报错一致，首屏 WebView 白屏；属移动 bundle 打包缺陷，详见 runbook。
+## Device Evidence
+- Android SDK API36、MuMu、nova 14 HarmonyOS6.1 均实际安装启动并截图确认production登录页；无discriminator/error201，白屏消除。
+- Android SDK 输入成功，无效测试凭据返回Invalid credentials；production /api/health status ok。
+- nova14完成登录页截图后用户继续使用手机，未追加输入/登录操作。
+- 两个产物同bundle88177B，SHA256 0f98a277417b57bcb5fe5e4fed6b1ea22cba154ea8c87142bc4f9b2a22923664。
+- 新bundle解码discriminator=0，Zod union标志=0；完整module graph 无root/Zod，含mobile leaf。
+- Android仍有不影响可见登录页的321/2298日志，不宣称零runtime错误。
+- 证据：apps/mobile-hosts/release/runtime-verification/（忽略）。
 
-## Invariants
-- 根 package.json version/eotion.buildNumber 是唯一版本来源。
-- 命令自动重建/复制 apps/mobile/dist/main.lynx.bundle。
-- 原生发行默认 production HTTPS；开发保留 EOTION_WEB_URL。
-- 不提交签名私钥/证书/profile；编译成功不代表真机通过。
+## Regression
+- version:check、contracts typecheck/build/test4/4、Web typecheck/build、API typecheck/build、Desktop typecheck、SDK typecheck/test18/18。
+- API domain2/2；typed HTTP1/1、sync1/1、file24/24（随机本地测试库）。
+- build:mobile 使用显式production EOTION_WEB_URL，与原生package脚本相同；本机.env仍可覆盖独立开发构建，不修改用户.env。
+
+## Scope / Remaining
+- Android Lynx4.1.0/PrimJS4.1.1/WebView4.1.0，Harmony4.0.3/PrimJS4.0.1-alpha.5 保持。
+- 无测试账号/已有session，未做Workspace/Page成功登录；完整Mobile/P5验收仍见runbook。
