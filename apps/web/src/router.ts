@@ -64,6 +64,7 @@ export const router = createRouter({
         { path: 'profile', name: 'settings-profile', component: () => import('./views/settings/ProfileSettingsView.vue') },
         { path: 'appearance', name: 'settings-appearance', component: () => import('./views/settings/AppearanceSettingsView.vue') },
         { path: 'workspace/general', name: 'settings-workspace-general', component: () => import('./views/settings/WorkspaceGeneralSettingsView.vue') },
+        { path: 'about', name: 'settings-about', component: () => import('./views/settings/AboutSettingsView.vue') },
       ],
     },
     ...devRoutes,
@@ -81,7 +82,7 @@ router.beforeEach(async (to) => {
   if ((to.name === 'login' || to.name === 'register') && auth.user) {
     if (to.name === 'register') return '/app'
     const redirect = to.query.redirect
-    if (typeof redirect === 'string' && /^\/settings(?:\/(?:profile|appearance|workspace\/general))?$/.test(redirect.split('?', 1)[0] ?? '')) return redirect
+    if (typeof redirect === 'string' && /^\/settings(?:\/(?:profile|appearance|about|workspace\/general))?$/.test(redirect.split('?', 1)[0] ?? '')) return redirect
     return safeProductReturnTo(redirect)
   }
   if (to.meta.requiresAuth && !auth.user) {

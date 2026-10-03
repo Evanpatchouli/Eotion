@@ -59,6 +59,13 @@ onMounted(() => { void workspaces.load() })
             <div class="settings-nav-item settings-nav-item--reserved"><EotionIcon :name="IconName.Mcp" :size="18" /><span>MCP</span><span class="settings-nav-value">即将推出</span></div>
             <div class="settings-nav-item settings-nav-item--reserved"><EotionIcon :name="IconName.Agent" :size="18" /><span>Agent</span><span class="settings-nav-value">即将推出</span></div>
           </section>
+          <section class="settings-nav-group">
+            <h2>关于</h2>
+            <RouterLink class="settings-nav-item" :to="{ name: 'settings-about', query: navQuery }" :aria-current="route.name === 'settings-about' ? 'page' : undefined">
+              <EotionIcon :name="IconName.Info" :size="18" /><span>软件说明</span>
+              <EotionIcon class="settings-nav-chevron" :name="IconName.ChevronRight" :size="16" />
+            </RouterLink>
+          </section>
         </div>
       </nav>
       <main class="settings-detail" id="settings-detail">

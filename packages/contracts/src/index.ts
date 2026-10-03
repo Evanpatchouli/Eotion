@@ -5,6 +5,9 @@ export { BLOCK_TYPES }
 export interface HealthResponse {
   name: string
   status: 'ok'
+  version: string
+  buildNumber: number
+  gitSha: string
   timestamp: string
   runtime: string
   mongo: 'configured' | 'disabled'
