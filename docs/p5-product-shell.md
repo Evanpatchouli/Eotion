@@ -21,9 +21,7 @@ Web 继续使用 Hash Router，适用于浏览器、Electron renderer 和 Mobile
 
 Web SDK 默认请求同源 `/api`；Web 与 Electron Desktop dev renderer 的 Vite 开发服务器都会将其代理到 `http://127.0.0.1:7137`。启动 `pnpm dev:desktop` 时会使用这条 Desktop dev proxy，无需另行启动 `pnpm dev:web`。API 使用其他端口时，在 `apps/web` 环境文件中设置 `EOTION_API_PROXY_TARGET`，或在启动 Web / Desktop 前设置该变量；两种开发服务器使用相同的默认值和代理行为。代理不放宽现有 Origin 校验；跨 origin 调用时需在 API 的 `WEB_ORIGIN` 配置实际 Web origin，或设置公开 `API_ORIGIN`。需要直连远端 API 时使用 Web 的 `VITE_API_BASE_URL`（不包含 `/api` 后缀），并遵守 [P4 Cookie/CORS 约束](p4-http-api.md)。生产 Web 应在 HTTPS 同站点部署并反向代理 `/api`，Vite dev proxy 不包含在静态产物中。
 
-Electron 继续复用同一套产品源码。Desktop dev renderer 使用与 Web 相同的 `/api` proxy；打包后的 `file://` renderer 直连远端 Cookie Session 的 origin/部署方案仍未验证，不能将开发 proxy 或 Web 的同源验证等同于该生产路径已通过。Mobile WebView 使用稳定的同站点 Web URL。
-
-当前默认构建未设置 `VITE_API_BASE_URL` 时，SDK 的 base URL 为空；`loadFile` 模式下相对 `/api/auth/me` 会解析为本地 `file://` 地址，无法连接 HTTP API。构建时配置绝对 `VITE_API_BASE_URL` 会让 SDK 直连该 HTTP(S) 服务，但该路径仍需独立验证 Origin/CORS 与 Cookie Session；开发代理不会包含在静态产物中。
+Electron 继续复用同一套产品源码。Desktop dev 使用 `/api` proxy；production 通过配置 `EOTION_DESKTOP_API_ORIGIN` 的同源 HTTPS protocol 从磁盘提供 bundled renderer，并将 `/api` 转交真实 API。HttpOnly/Secure/Lax Cookie 留在 Chromium 持久 Session 中，UI 离线启动不依赖 API 或 Vite。配置、方案比较和真实 build 验收见 [Desktop production runbook](runbooks/desktop-production.md)。Mobile WebView 使用稳定的同站点 Web URL。
 
 ## 状态与行为
 
@@ -43,3 +41,5 @@ Electron 继续复用同一套产品源码。Desktop dev renderer 使用与 Web 
 - API、SDK、Sync transaction/receipt、File 回归按 [Testing Runbook](runbooks/testing.md)。
 
 产品行为测试用受控 HTTP 响应覆盖 pending/error/empty/session 边界；真实 API + Mongo 浏览器链路的实际验收结果记录在 `.agents/current-task.md`。
+
+生产 Electron 验收（2026-10-03）：独立 `test:desktop-production-real` 1/1 通过，使用真实生产模式 API Cookie Session 和 build 产物；登录、在线 restart `/auth/me`、Workspace/Page、SQLite、离线 kill/restart→reconnect→第二客户端均通过。真实 `file://` 绝对请求对照为 login 201 / me 401。完整模型与边界见 [Desktop production](runbooks/desktop-production.md) 和 [P5 sync closeout](p5-real-sync.md#production-electron-closeout-c--2026-10-03)。

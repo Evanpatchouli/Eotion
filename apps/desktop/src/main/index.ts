@@ -1,6 +1,9 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, session, shell } from 'electron'
 import { join } from 'node:path'
+import { registerProductionProtocol } from './production-protocol'
 import { SqliteLocalStore } from './sqlite-store'
+
+declare const __EOTION_DESKTOP_API_ORIGIN__: string
 
 function registerStorageBridge(store: SqliteLocalStore): void {
   const trusted = (senderId: number, frame: Electron.WebFrameMain | null): void => {
@@ -63,18 +66,38 @@ function createWindow() {
   })
 
   window.webContents.on('will-navigate', (event) => event.preventDefault())
+  window.webContents.on('will-frame-navigate', (event) => event.preventDefault())
 
   if (process.env.ELECTRON_RENDERER_URL) {
     void window.loadURL(process.env.ELECTRON_RENDERER_URL)
+  } else if (productionOrigin) {
+    void window.loadURL(`${productionOrigin}/`)
   } else {
     void window.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 
-app.whenReady().then(() => {
+let productionOrigin: string | undefined
+
+app.whenReady().then(async () => {
   const store = new SqliteLocalStore(join(app.getPath('userData'), 'eotion-local.sqlite'))
   registerStorageBridge(store)
   app.on('before-quit', () => store.close())
+
+  if (!process.env.ELECTRON_RENDERER_URL) {
+    const configuredOrigin = process.env.EOTION_DESKTOP_API_ORIGIN?.trim() || __EOTION_DESKTOP_API_ORIGIN__.trim()
+    if (!configuredOrigin) {
+      console.error('EOTION_DESKTOP_API_ORIGIN is not configured; opening the bundled file renderer')
+    } else {
+      try {
+        const origin = await registerProductionProtocol(session.defaultSession, join(__dirname, '../renderer'), configuredOrigin)
+        productionOrigin = origin.origin
+      } catch (error) {
+        console.error('Unable to enable the production HTTPS renderer protocol; opening the bundled file renderer', error)
+      }
+    }
+  }
+
   createWindow()
 
   app.on('activate', () => {

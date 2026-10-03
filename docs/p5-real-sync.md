@@ -47,7 +47,7 @@ Page Tree 的移动通过 `LocalStore.movePage()` 原子更新 Page 并记录单
 
 平台选择仍只由 `apps/web/src/storage/createLocalStore.ts` 的 `createLocalStore()` 完成：Web 和 Mobile WebView 使用 IndexedDB；Electron renderer 经 typed preload IPC 调用主进程 SQLite。snapshot marker、事务替换和拒绝 pending replace 由两个 adapter 实现，不由业务层区分平台。
 
-生产 Web 构建会生成版本化 Service Worker 并缓存应用外壳与静态资源，完全断网时仍可 reload / 重启浏览器；`/api` 请求不进入该缓存。仅安全 HTTP(S) origin 注册 Service Worker，Electron `file://` 使用本地打包资源。Mobile WebView 默认开发地址是 LAN HTTP，真机上通常不具备 Service Worker 所需安全上下文；正式离线重启验收须使用稳定 HTTPS origin 或另行设计打包资源方案，并验证 origin / storage partition 持续一致。
+生产 Web 构建会生成版本化 Service Worker 并缓存应用外壳与静态资源，完全断网时仍可 reload / 重启浏览器；`/api` 请求不进入该缓存。仅安全 HTTP(S) origin 注册 Service Worker，Electron production 在配置的 HTTPS API origin 下经 protocol handler 直接读取本地打包资源，不注册 Service Worker；配置与验收见 [Desktop production](runbooks/desktop-production.md)。Mobile WebView 默认开发地址是 LAN HTTP，真机上通常不具备 Service Worker 所需安全上下文；正式离线重启验收须使用稳定 HTTPS origin 或另行设计打包资源方案，并验证 origin / storage partition 持续一致。
 
 Sync Coordinator 在 session 配置、workspace prepare、本地 mutation、`online`、页面重新可见 / 获得关注时请求同步，并提供手动重试入口。短 debounce 合并重复请求，不使用高频 polling。`navigator.onLine=true` 不代表 API 可达：列表、Push、snapshot 的暂时不可用均显示“离线 · 本地已保存”，不替换正文，未确认的 oplog 保持可重试。服务恢复后先刷新权限、Push 再 Pull，成功时清除 offline identity 并回到“已同步”；初次缺失 snapshot 的页面树也会在 hydrate 后自动加载。全局顶部状态与编辑器本地保存状态分开。
 
@@ -79,3 +79,11 @@ Visual QA 使用 Playwright（Browser plugin not available），在 `http://loca
 6. 在第二客户端读取并确认最终内容。
 
 只有上述链路的真机证据完成后，才能将 P5.4 Mobile WebView real offline restart 标为 PASS。
+
+## Production Electron closeout C — 2026-10-03
+
+真实 `electron-vite build` 后直接启动 `out/main/index.js`，无 `ELECTRON_RENDERER_URL`；隔离 Mongo replica set + `NODE_ENV=production` Nest API + HTTPS 测试入口，生产验收 1/1 通过。UI/静态资源全部来自 bundled renderer，网络 renderer asset 请求数为 0。登录与 `/auth/me`、Workspace/Page、正文 SQLite 写入和同步、正常关闭/重启后的 Session 与正文恢复通过。
+
+关闭 HTTPS listener 产生明确 `ECONNREFUSED`，离线编辑写入 SQLite/oplog 后 kill；API 保持不可达重新启动，正文恢复且继续离线编辑通过。恢复 listener 后 pending Push→Pull、队列清零、“已同步”及第二个独立 Electron profile 登录读取最终正文通过。最终运行观测到 6 次 sync Push、7 次 snapshot Pull；所有 sync 写请求的 Origin 为配置的 API origin。真实 opaque-origin 子窗口的 logout 请求被主进程拒绝，未到达 API。协议/SQLite 单测 16/16、Desktop typecheck/build、既有 Desktop storage/product-sync 3/3、Web typecheck/build、Web offline-shell 1/1 均通过；独立 review 无剩余 P1/P2。
+
+对照的 built `file://` UI 绝对 HTTPS 登录返回 201，但后续 credentialed `/auth/me` 返回 401，不能只靠绝对 `VITE_API_BASE_URL` 建立可靠 Session。生产采用同源 HTTPS protocol，配置与安全模型见 [Desktop production](runbooks/desktop-production.md)。本轮关闭 Production Electron connectivity blocker；API unavailable 测试不替代人工断开全部网络接口。HTTPS 使用三天有效 localhost fixture，仅测试 Electron 对该证书的精确 SPKI 例外，未更改生产 TLS 校验或系统 trust store。部署需提供正常受信任的 HTTPS API 和明确 origin。Mobile 真机边界不在本轮范围。

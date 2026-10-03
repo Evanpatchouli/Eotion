@@ -47,9 +47,15 @@ const buildInfo = {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, resolve(__dirname, '../web'), '')
+  const desktopEnv = loadEnv(mode, __dirname, '')
+  const desktopApiOrigin = process.env.EOTION_DESKTOP_API_ORIGIN ?? desktopEnv.EOTION_DESKTOP_API_ORIGIN ?? ''
 
   return {
-    main: {},
+    main: {
+      define: {
+        __EOTION_DESKTOP_API_ORIGIN__: JSON.stringify(desktopApiOrigin),
+      },
+    },
     preload: {},
     renderer: {
       root: resolve(__dirname, '../web'),
@@ -58,6 +64,7 @@ export default defineConfig(({ mode }) => {
         __EOTION_VERSION__: JSON.stringify(buildInfo.version),
         __EOTION_BUILD_NUMBER__: JSON.stringify(buildInfo.buildNumber),
         __EOTION_GIT_SHA__: JSON.stringify(buildInfo.gitSha),
+        'import.meta.env.VITE_API_BASE_URL': JSON.stringify(''),
       },
       server: {
         proxy: {

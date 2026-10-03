@@ -13,8 +13,8 @@ initializeTheme()
 const pinia = createPinia()
 createApp(App).use(pinia).use(router).mount('#app')
 
-// The desktop renderer uses file:// and must keep using its bundled assets directly.
-if (import.meta.env.PROD && window.isSecureContext && /^https?:$/.test(window.location.protocol) && 'serviceWorker' in navigator) {
+// Desktop serves bundled assets directly, including under its production HTTPS origin.
+if (import.meta.env.PROD && !window.eotionDesktop && window.isSecureContext && /^https?:$/.test(window.location.protocol) && 'serviceWorker' in navigator) {
   const serviceWorkerUrl = `${import.meta.env.BASE_URL}sw.js`
   window.addEventListener('load', () => {
     void navigator.serviceWorker.register(serviceWorkerUrl).catch((error: unknown) => {

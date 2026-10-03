@@ -58,3 +58,7 @@ P5.4 增加 `pnpm --filter @eotion/web test:offline-shell`：构建生产 Web �
 原示例首页测试入口为 `/#/__dev/workspace`，不再使用 `/`。仓库根目录没有统一 `lint` 或 `test` 脚本，使用各包已有测试命令与 typecheck/build；不要将未配置的 lint 记为通过。
 
 P5.6 Settings 产品测试包含在 `test:product`；主题补测使用 `pnpm --filter @eotion/web exec playwright test tests/theme.spec.ts`，生产入口早期主题检查使用 `pnpm --filter @eotion/web exec playwright test --config playwright.theme-production.config.ts`。`test:real-sync` 同时验证跨客户端昵称与修改密码后的会话撤销。端口被现有服务占用时，可设置 `EOTION_REAL_API_PORT` 和 `EOTION_REAL_WEB_PORT`（默认 7137/4173）使用隔离端口；它同步配置 API Origin 与 preview proxy，不需要停用已有服务。Docker replica set 对外暴露本机端口而广告容器内部地址时，测试 URI 增加 `directConnection=true`；使用隔离测试库，不改动现有数据库。
+
+## Desktop production real integration
+
+`pnpm --filter @eotion/web test:desktop-production-real` 构建 API/Desktop 并直接启动 `out/main/index.js`，不启用 Vite。真实 Cookie Session、API connection refused、SQLite kill/restart 和第二客户端验收的环境与步骤见 [Desktop production](desktop-production.md)。
