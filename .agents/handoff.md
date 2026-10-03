@@ -91,3 +91,7 @@ Attachment Upload Failed 固定在最终插入位置，文案“上传中断”�
 基于master3ef33cf，Mobile从@eotion/contracts根入口取频道常量，意外加载Zod Sync/API schema；Lynx产物的discriminatedUnion初始化有未声明discriminator，旧nova14包本轮复现error201。已用@eotion/contracts/mobile隔离runtime-only协议，root重导出保持兼容，native runtime/host均未修改。contracts边界测试4/4、全要求构建/类型检查及SDK/API回归通过，独立review无blocker。
 
 Android SDK API36、MuMu、HarmonyOS6.1 nova14都实际显示production登录页，无discriminator/error201，白屏消除。APK/HAP同88177B bundle，SHA256 0f98a277417b57bcb5fe5e4fed6b1ea22cba154ea8c87142bc4f9b2a22923664；解码和完整module graph确认无Zod/root，保留production URL/WebView/runtime marker。Android有非阻塞321/2298日志。Android输入和production认证错误响应已验证，nova14用户恢复用手机后未再操作；无测试账号/Session，Workspace/Page未验证。证据在忽略目录apps/mobile-hosts/release/runtime-verification/，正式边界与后续验收见docs/runbooks/mobile-native-hosts.md。本轮只关闭共享bundle blocker，不声明完整Mobile/P5 PASS。
+
+## 2026-10-04 Harmony false-offline 已修复
+
+nova14用户成功登录后显示离线，而MuMu正常。Harmony manifest缺ohos.permission.GET_NETWORK_INFO，设备已装HAP也只有INTERNET；官方ArkWeb FAQ确认缺网络状态权限可使navigator.onLine一直false。Web productSync在该值为false时于请求前退出，但auth.login仍可联网成功。只补GET_NETWORK_INFO后，HAP构建/签名/归档验证通过，覆盖安装保留Session，nova14同一页面由“离线 · 本地已保存”变为“已同步”，有前后UI layout/截图证据。runtime及Web同步逻辑均未变；version检查通过。正式说明见mobile-native-hosts runbook，证据位于忽略runtime-verification目录。完整Mobile/P5验收仍未整体关闭。

@@ -42,6 +42,7 @@ Remove-Item Env:EOTION_WEB_URL
   2. `entry/oh-package.json5` 依赖中必须有 `@lynx/primjs`，否则缺少 JS 引擎库。
   3. `EotionTemplateResourceFetcher` 必须实现抽象成员 `fetchSSRData`，否则 ArkTS 编译报 `does not implement inherited abstract member 'fetchSSRData'`。
 - 宿主使用 `hilog` 域 `0xE071`、tag `EotionHost` 记录生命周期与 Lynx 回调；Android 对应 tag 也是 `EotionHost`。排查首屏时先用这些日志确认 `fetchTemplate`/模板加载。
+- Harmony 宿主必须同时声明 `ohos.permission.INTERNET` 和 `ohos.permission.GET_NETWORK_INFO`：前者允许 HTTP，后者让 ArkWeb 正确报告 `navigator.onLine`。仅有 INTERNET 时可能能登录却一直显示“离线 · 本地已保存”，因为 Web 同步流程在 `navigator.onLine === false` 时直接退出。参见 [OpenHarmony Web FAQ 的网络状态问题](https://github.com/openharmony/docs/blob/master/en/application-dev/faqs/faqs-arkui-web.md#what-should-i-do-if-the-network-status-fails-to-be-detected-on-the-loaded-html-page-api-version-9)。不要靠覆盖 `navigator.onLine` 或删除 Web 离线判断来修复宿主权限缺失。
 
 `scripts/mobile-toolchain.ps1` 优先环境变量、已有 PATH/IDE 注册信息和常见安装目录。可设置 `ANDROID_HOME`、`EOTION_ANDROID_JAVA_HOME`、`DEVECO_STUDIO_HOME`、`HARMONY_SDK_HOME`；不将用户绝对路径提交到工程。找不到要求的 SDK/JDK 时命令会报出准确缺失项。
 
@@ -87,5 +88,7 @@ Harmony：`hdc list targets` 确认目标，用 `hdc install apps/mobile-hosts/r
 - Android 有非阻塞 error 321（image prefetch helper）与 2298（Devtool 未启用时设置 enable-debug），登录页仍实际显示；这些日志不能描述成“零错误”。本轮不扩展到这些独立宿主能力。
 
 本次截图、启动日志、bundle 解码、完整模块图和构建/回归日志保存在忽略目录 `apps/mobile-hosts/release/runtime-verification/`。该结论仅关闭共享 bundle 运行阻塞，不代表全部 Mobile / P5 真机验收通过。
+
+同日后续验收：用户在 nova 14 登录成功后遇到“离线 · 本地已保存”，MuMu 正常。仓库 manifest 和设备已安装包均仅声明 INTERNET。补上 GET_NETWORK_INFO 后，HAP 构建/调试签名/包内 bundle 检查通过；覆盖安装保留用户登录数据，同一 nova 14 页面从“离线 · 本地已保存”恢复为“已同步”。只改宿主权限，未改 Web 同步语义或 runtime 版本；前后 UI layout 与截图证据保存在上述忽略目录。此前未验收成功登录的记录是 blocker 修复时的范围，不应理解为此后仍无法登录。
 
 仍需后续真机核对：launcher 名称/图标显示、两端成功登录与 Session 持久化、Workspace/Page/编辑器交互、Harmony 输入、键盘与旋转、安全区、附件文件选择、后台切换与重启、断网恢复，以及 Lynx `<webview>` 的文件/剪贴板/分享与原生生命周期能力。构建成功与进程存活都不能代替这些检查。生产 bundle 中不暴露 P1 开发路由，LAN 开发 Web 可继续使用 P1/P3 验证页。
