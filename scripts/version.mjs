@@ -42,12 +42,12 @@ async function getWorkspaceManifestPaths() {
   return manifests.sort();
 }
 
-function parseStableVersion(version) {
-  const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(version);
+function parseVersion(version) {
+  const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/.exec(version);
   if (!match) {
-    throw new Error(`Expected a stable SemVer version (x.y.z), received "${version}".`);
+    throw new Error(`Expected a SemVer version (x.y.z or x.y.z-prerelease), received "${version}".`);
   }
-  return match.slice(1).map(Number);
+  return match.slice(1, 4).map(Number);
 }
 
 function assertBuildNumber(value) {
@@ -57,7 +57,7 @@ function assertBuildNumber(value) {
 }
 
 function bumpVersion(version, release) {
-  const [major, minor, patch] = parseStableVersion(version);
+  const [major, minor, patch] = parseVersion(version);
   if (release === "major") return `${major + 1}.0.0`;
   if (release === "minor") return `${major}.${minor + 1}.0`;
   return `${major}.${minor}.${patch + 1}`;
@@ -77,7 +77,7 @@ async function syncWorkspaceVersions(version, manifestPaths) {
 }
 
 async function check(rootManifest, manifestPaths) {
-  parseStableVersion(rootManifest.version);
+  parseVersion(rootManifest.version);
   assertBuildNumber(rootManifest.eotion?.buildNumber);
 
   const mismatches = [];
@@ -103,7 +103,7 @@ async function main() {
   const rootManifest = await readJson(rootManifestPath);
   const manifestPaths = await getWorkspaceManifestPaths();
 
-  parseStableVersion(rootManifest.version);
+  parseVersion(rootManifest.version);
   assertBuildNumber(rootManifest.eotion?.buildNumber);
 
   if (command === "check") {
@@ -134,9 +134,9 @@ async function main() {
   if (command === "set") {
     nextVersion = process.argv[3];
     if (!nextVersion) {
-      throw new Error("Usage: pnpm version:set -- <x.y.z>");
+      throw new Error("Usage: pnpm version:set -- <x.y.z[-prerelease]>");
     }
-    parseStableVersion(nextVersion);
+    parseVersion(nextVersion);
   } else if (["patch", "minor", "major"].includes(command)) {
     nextVersion = bumpVersion(rootManifest.version, command);
   } else {

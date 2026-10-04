@@ -17,8 +17,8 @@ if (process.platform !== 'win32') throw new Error('This native build runner curr
 const host = join(root, 'apps/mobile-hosts', platform);
 const release = join(root, 'apps/mobile-hosts/release');
 const info = getEotionBuildInfo();
-if (!/^\d+\.\d+\.\d+$/.test(info.version) || info.buildNumber > 2100000000) {
-  throw new Error('Native packages require a stable x.y.z version and buildNumber <= 2100000000.');
+if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(info.version) || info.buildNumber > 2100000000) {
+  throw new Error('Native packages require an x.y.z or x.y.z-prerelease version and buildNumber <= 2100000000.');
 }
 const webUrl = process.env.EOTION_WEB_URL?.trim() || 'https://eotion.evanpatchouli.space';
 const url = new URL(webUrl);

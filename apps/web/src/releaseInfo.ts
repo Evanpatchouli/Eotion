@@ -10,7 +10,7 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: readonly ReleaseNote[] = Object.freeze([
   Object.freeze({
-    version: '0.0.1',
+    version: '0.0.1-beta',
     releasedAt: '2026-10-04',
     highlights: Object.freeze([
       'Quiet Studio 产品界面',
