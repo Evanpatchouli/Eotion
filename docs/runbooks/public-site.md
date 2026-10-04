@@ -72,4 +72,7 @@ curl -I http://127.0.0.1:8002/changelog
 下载：https://download.evanpatchouli.space
 ```
 
-`download.evanpatchouli.space` 计划直接绑定阿里云 OSS 自定义域名，后续可在前面接 CDN；安装包下载流量不经过 Eotion 应用服务器或边缘 Nginx。站点下载环境变量应在对应正式产物完成签名并上传 OSS 后指向 `https://download.evanpatchouli.space/...` 的不可变版本路径。
+`download.evanpatchouli.space` 作为统一品牌下载入口，由边缘 Nginx 提供 HTTPS，并按原始路径 302 到阿里云 OSS 官方 HTTPS 域名。真实安装包流量由 OSS 直接提供，不经过 Eotion 应用服务器；Nginx 只承担极小的重定向请求。站点下载环境变量应在对应正式产物完成签名并上传 OSS 后指向 `https://download.evanpatchouli.space/<product>/<version>/...` 的不可变版本路径。
+
+
+下载域名的 DNS、Let's Encrypt 证书和 302 规则由 `Evanpatchouli/nginx-config` 的 `conf.d/download.conf` 与 `deploy-download.sh` 维护。底层对象存储当前为 `https://evan-oss-download.oss-cn-hangzhou.aliyuncs.com`；未来替换存储/CDN 时，不应改动公开下载 URL，只调整下载网关的 302 目标。
