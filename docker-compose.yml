@@ -63,12 +63,15 @@ services:
     ports:
       - '127.0.0.1:8002:80'
     networks:
-      - app
+      - public_web
 
 networks:
   app:
     name: eotion-app
     driver: bridge
+  public_web:
+    external: true
+    name: public-web
   mongo:
     external: true
   ali-oss:
