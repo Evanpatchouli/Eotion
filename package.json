@@ -1,6 +1,6 @@
 {
   "name": "eotion",
-  "version": "0.0.1",
+  "version": "0.0.1-beta",
   "private": true,
   "description": "Eotion - a Notion-inspired web-first knowledge workspace",
   "packageManager": "pnpm@10.34.2",

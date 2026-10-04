@@ -1,6 +1,6 @@
 {
   "name": "@eotion/site",
-  "version": "0.0.1",
+  "version": "0.0.1-beta",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,9 +12,14 @@
     "test": "node --test scripts/release-notes.test.mjs && playwright test",
     "screenshots": "node scripts/capture-product.mjs"
   },
-  "dependencies": { "vitepress": "^1.6.4", "vue": "^3.5.43" },
+  "dependencies": {
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.43"
+  },
   "devDependencies": {
-    "@playwright/test": "^1.63.0", "@types/node": "^24.13.3",
-    "typescript": "~6.0.3", "vue-tsc": "^3.3.11"
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.13.3",
+    "typescript": "~6.0.3",
+    "vue-tsc": "^3.3.11"
   }
 }
