@@ -31,7 +31,7 @@ pnpm --filter @eotion/site test
 | `EOTION_DOWNLOAD_ANDROID_APK_URL` | Android APK | `null` |
 | `EOTION_DOWNLOAD_HARMONY_HAP_URL` | HarmonyOS HAP | `null` |
 
-URL 必须是绝对 HTTP(S) 地址，不能包含凭据；两个 origin 变量不能带路径、query 或 fragment。正式发布前在部署环境设置真实 `EOTION_SITE_ORIGIN`。下载 URL 只在对应可分发产物已上传、可公开访问且完成必要验收后设置；未配置时页面应隐藏或禁用该下载入口，不能根据文件名猜测地址。原生 debug 签名包不应作为正式发布包宣传。
+URL 必须是绝对 HTTP(S) 地址，不能包含凭据；两个 origin 变量不能带路径、query 或 fragment。正式发布前在部署环境设置 `EOTION_SITE_ORIGIN=https://eotion.site.evanpatchouli.space`。下载 URL 只在对应可分发产物已上传、可公开访问且完成必要验收后设置；未配置时页面应隐藏或禁用该下载入口，不能根据文件名猜测地址。原生 debug 签名包不应作为正式发布包宣传。
 
 未设置官网 origin 的预览构建使用 `noindex, nofollow` 与 robots `Disallow: /`，不输出 canonical / sitemap。设置真实 HTTPS `EOTION_SITE_ORIGIN` 后，构建自动输出逐页 canonical、OpenGraph、Twitter Card、robots 与 sitemap；正式上线应先验证这些产物。
 
@@ -55,10 +55,21 @@ curl -I http://127.0.0.1:8002/
 curl -I http://127.0.0.1:8002/changelog
 ```
 
-公网 DNS、TLS 证书和 host 路由由独立 `nginx-config` 仓库维护。部署官网时将新的官网域名 upstream 指向 `eotion-site:80`，并保持现有 `eotion.evanpatchouli.space` → `eotion-web:80` 路由不变。先确认边缘 Nginx 容器已加入 `eotion-app` network，再验证官网正式 HTTPS 地址、canonical、robots、sitemap 和下载链接。此仓库的 Compose 与内层 Nginx 不会自行创建公网路由或证书。
+公网 DNS、TLS 证书和 host 路由由独立 `Evanpatchouli/nginx-config` 仓库维护。正式官网域名为 `https://eotion.site.evanpatchouli.space`，通过边缘 Nginx 的 `conf.d/eotion-site.conf` 代理到 `eotion-site:80`；现有 `https://eotion.evanpatchouli.space` → `eotion-web:80` 产品路由保持不变。边缘 Nginx 与 `eotion-site` 共用 `eotion-app` network，首次/重复部署使用 nginx-config 仓库的 `deploy-eotion-site.sh` 申请/复用独立证书并验证 HTTPS。此仓库的 Compose 与内层 Nginx 不会自行创建公网路由或证书。
 
 ## 更新与回滚
 
 更新发布文案时先修改 `apps/web/src/releaseInfo.ts`；更新下载链接时设置相应构建期变量并重建 `eotion-site`。上线前运行 `pnpm version:check`、官网 build，并核对实际产物版本、构建号、平台、签名状态、URL 可用性。Windows 产物命名与构建步骤见 [Desktop packaging](desktop-packaging.md)，移动端产物与签名边界见 [Mobile native hosts](mobile-native-hosts.md)。
 
 回滚时切换到上一已知稳定的代码与公开 URL 配置，重新执行 `docker compose up -d --build eotion-site`，再验证官网正式 HTTPS 地址。官网是静态服务，回滚不涉及数据库。
+
+
+## 当前正式域名与下载域名
+
+```text
+官网：https://eotion.site.evanpatchouli.space
+产品：https://eotion.evanpatchouli.space
+下载：https://download.evanpatchouli.space
+```
+
+`download.evanpatchouli.space` 计划直接绑定阿里云 OSS 自定义域名，后续可在前面接 CDN；安装包下载流量不经过 Eotion 应用服务器或边缘 Nginx。站点下载环境变量应在对应正式产物完成签名并上传 OSS 后指向 `https://download.evanpatchouli.space/...` 的不可变版本路径。
