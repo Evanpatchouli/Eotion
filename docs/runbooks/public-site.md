@@ -43,7 +43,7 @@ Build 会先执行 VitePress 的 Markdown 链接检查，再检查静态 HTML �
 
 ## 容器与入口
 
-`docker-compose.yml` 的 `eotion-site` 服务使用 `apps/site/Dockerfile` 多阶段构建静态文件，由独立 Nginx 容器提供。它加入现有 `eotion-app` Docker network，并仅映射宿主机 `127.0.0.1:8002:80` 供诊断；产品 `eotion-web` 继续使用 `127.0.0.1:8001:80`。官网容器没有 API 或数据库依赖。
+`docker-compose.yml` 的 `eotion-site` 服务使用 `apps/site/Dockerfile` 多阶段构建静态文件，由独立 Nginx 容器提供。它不加入产品 `eotion-app` 网络，而只加入独立的边缘网络 `public-web`，并仅映射宿主机 `127.0.0.1:8002:80` 供诊断；产品 `eotion-web` 继续使用 `eotion-app` 与 `127.0.0.1:8001:80`。官网容器没有 API 或数据库依赖。
 
 先检查展开后的构建参数，再单独部署官网：
 
@@ -55,7 +55,7 @@ curl -I http://127.0.0.1:8002/
 curl -I http://127.0.0.1:8002/changelog
 ```
 
-公网 DNS、TLS 证书和 host 路由由独立 `Evanpatchouli/nginx-config` 仓库维护。正式官网域名为 `https://eotion.site.evanpatchouli.space`，通过边缘 Nginx 的 `conf.d/eotion-site.conf` 代理到 `eotion-site:80`；现有 `https://eotion.evanpatchouli.space` → `eotion-web:80` 产品路由保持不变。边缘 Nginx 与 `eotion-site` 共用 `eotion-app` network，首次/重复部署使用 nginx-config 仓库的 `deploy-eotion-site.sh` 申请/复用独立证书并验证 HTTPS。此仓库的 Compose 与内层 Nginx 不会自行创建公网路由或证书。
+公网 DNS、TLS 证书和 host 路由由独立 `Evanpatchouli/nginx-config` 仓库维护。正式官网域名为 `https://eotion.site.evanpatchouli.space`，通过边缘 Nginx 的 `conf.d/eotion-site.conf` 代理到 `eotion-site:80`；现有 `https://eotion.evanpatchouli.space` → `eotion-web:80` 产品路由保持不变。边缘 Nginx 与 `eotion-site` 共用独立的 `public-web` network，首次/重复部署使用 nginx-config 仓库的 `deploy-eotion-site.sh` 申请/复用独立证书并验证 HTTPS。此仓库的 Compose 与内层 Nginx 不会自行创建公网路由或证书。
 
 ## 更新与回滚
 
