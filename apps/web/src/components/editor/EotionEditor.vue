@@ -403,7 +403,7 @@ defineExpose({ editor })
       <button type="button" aria-label="粗体" :aria-pressed="editor?.isActive('bold') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBold().run()"><EotionIcon name="bold" :size="18" /></button>
       <button type="button" aria-label="斜体" :aria-pressed="editor?.isActive('italic') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleItalic().run()"><EotionIcon name="italic" :size="18" /></button>
       <button type="button" aria-label="文本" :aria-pressed="editor?.isActive('paragraph') ?? false" :disabled="!editor" @click="editor?.chain().focus().setParagraph().run()"><EotionIcon name="text" :size="18" /><span>文本</span></button>
-      <button type="button" aria-label="标题" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"><EotionIcon name="heading" :size="18" /><span>标题</span></button>
+      <button type="button" aria-label="二级标题（H2）" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"><span class="eotion-touch-heading-icon" aria-hidden="true"><EotionIcon name="heading" :size="18" /><sub>2</sub></span><span>标题</span></button>
       <button type="button" aria-label="列表" :aria-pressed="editor?.isActive('bulletList') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBulletList().run()"><EotionIcon name="list" :size="18" /><span>列表</span></button>
       <button v-if="workspaceId" type="button" :disabled="!editor" aria-label="插入图片" @click="openPicker('image')"><EotionIcon name="image" :size="18" /></button>
       <button v-if="workspaceId" type="button" :disabled="!editor" aria-label="插入文件" @click="openPicker('file')"><EotionIcon name="paperclip" :size="18" /></button>
@@ -424,6 +424,8 @@ defineExpose({ editor })
 .eotion-editor--touch-toolbar { padding-bottom: calc(60px + var(--safe-bottom) + var(--touch-keyboard-inset, 0px)); }
 .eotion-touch-toolbar { position: fixed; z-index: 15; right: 0; left: 0; display: flex; gap: 4px; overflow-x: auto; overscroll-behavior-x: contain; padding: 6px max(12px, var(--safe-right)) calc(6px + var(--safe-bottom)) max(12px, var(--safe-left)); border-top: 1px solid var(--e-color-border-subtle); background: var(--e-color-surface); }
 .eotion-touch-toolbar button { display: inline-flex; flex: 1 0 auto; min-width: 44px; min-height: 44px; align-items: center; justify-content: center; gap: 4px; padding: 0 8px; border: 0; border-radius: var(--e-radius-control); background: transparent; color: var(--e-color-text-secondary); font: var(--e-type-metadata-weight) var(--e-type-metadata-size) / var(--e-type-metadata-line) var(--e-type-family); cursor: pointer; white-space: nowrap; }
+.eotion-touch-heading-icon { position: relative; display: inline-flex; }
+.eotion-touch-heading-icon sub { position: absolute; right: -2px; bottom: -1px; color: currentColor; font-size: 10px; font-weight: 600; line-height: 1; }
 .eotion-touch-toolbar button[aria-pressed="true"] { background: var(--e-color-selected); color: var(--e-color-text-primary); }
 .eotion-touch-toolbar button:hover:not(:disabled):not([aria-pressed="true"]) { background: var(--e-color-hover); color: var(--e-color-text-primary); }
 .eotion-touch-toolbar button:active:not(:disabled) { background: var(--e-color-selected); }

@@ -488,8 +488,8 @@ test('touch toolbar and mobile heading stay compact across themes, short viewpor
   const toolbar = page.getByRole('toolbar', { name: '触摸编辑工具栏' })
   await expect(toolbar).toBeVisible()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
-  expect(await toolbar.getByRole('button').allTextContents()).toEqual(['', '', '文本', '标题', '列表', '', ''])
-  for (const name of ['粗体', '斜体', '文本', '标题', '列表', '插入图片', '插入文件']) {
+  expect(await toolbar.getByRole('button').allTextContents()).toEqual(['', '', '文本', '2标题', '列表', '', ''])
+  for (const name of ['粗体', '斜体', '文本', '二级标题（H2）', '列表', '插入图片', '插入文件']) {
     const button = toolbar.getByRole('button', { name })
     await expect(button).toBeVisible()
     const size = await button.evaluate(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height }))
@@ -497,6 +497,9 @@ test('touch toolbar and mobile heading stay compact across themes, short viewpor
     expect(size.height).toBeGreaterThanOrEqual(44)
     expect(await button.evaluate(node => getComputedStyle(node).borderTopWidth)).toBe('0px')
   }
+  const headingButton = toolbar.getByRole('button', { name: '二级标题（H2）' })
+  await expect(headingButton).toHaveAccessibleName('二级标题（H2）')
+  await expect(headingButton.locator('[aria-hidden="true"] sub')).toHaveText('2')
   const headingLayout = await page.evaluate(() => {
     const title = document.querySelector('.product-editor-heading h1')!.getBoundingClientRect()
     const heading = document.querySelector('.product-editor-heading')!.getBoundingClientRect()
@@ -513,8 +516,10 @@ test('touch toolbar and mobile heading stay compact across themes, short viewpor
   await toolbar.getByRole('button', { name: '粗体' }).click()
   await expect(toolbar.getByRole('button', { name: '粗体' })).toHaveAttribute('aria-pressed', 'true')
   await expect(toolbar.getByRole('button', { name: '文本' })).toHaveAttribute('aria-pressed', 'true')
-  await toolbar.getByRole('button', { name: '标题' }).click()
-  await expect(toolbar.getByRole('button', { name: '标题' })).toHaveAttribute('aria-pressed', 'true')
+  await headingButton.click()
+  await expect(headingButton).toHaveAttribute('aria-pressed', 'true')
+  await expect(editor(page).locator('h2')).toContainText('Touch formatting')
+  await expect(editor(page).locator('h1')).toHaveCount(0)
   await expect(toolbar.getByRole('button', { name: '文本' })).toHaveAttribute('aria-pressed', 'false')
   await toolbar.getByRole('button', { name: '列表' }).click()
   await expect(toolbar.getByRole('button', { name: '列表' })).toHaveAttribute('aria-pressed', 'true')
