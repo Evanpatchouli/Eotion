@@ -15,8 +15,8 @@ if (!['android:apk', 'android:aab', 'harmony:hap', 'harmony:app'].includes(`${pl
 }
 if (process.platform !== 'win32') throw new Error('This native build runner currently supports Windows with Android Studio / DevEco Studio.');
 const host = join(root, 'apps/mobile-hosts', platform);
-const release = join(root, 'apps/mobile-hosts/release');
 const info = getEotionBuildInfo();
+const release = join(root, 'release', info.version);
 if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(info.version) || info.buildNumber > 2100000000) {
   throw new Error('Native packages require an x.y.z or x.y.z-prerelease version and buildNumber <= 2100000000.');
 }
@@ -137,4 +137,5 @@ mkdirSync(release, { recursive: true });
 const target = join(release, `Eotion-${info.version}-${platform}${platform === 'harmony' && !signed ? '-unsigned' : ''}.${format}`);
 copyFileSync(artifact, target);
 writeJson(target + '.json', { ...metadata, platform, format, signed, artifactSha256: createHash('sha256').update(readFileSync(target)).digest('hex') });
+console.info(`[mobile] Release directory: ${release}`);
 console.info(`[mobile] ${target} (${signed ? 'test signed' : 'unsigned'}; device installation not verified)`);
