@@ -79,12 +79,12 @@ P4 ✅ Final Acceptance PASS。P5 按以下独立阶段验收：
 - P5.1 Product Shell + Auth / Workspace：✅ 已完成，见 [产品入口与运行说明](p5-product-shell.md)。
 - P5.2 Page Tree：✅ 已完成，见 [P5.2 Page Tree](p5-page-tree.md)。
 - P5.3 Real Page Editor：✅ 已完成，见 [正式页面编辑器](p5-real-page-editor.md)。
-- P5.4 Real Sync：Web / Electron 实现与自动验收已完成；Mobile WebView 默认 LAN HTTP 真机离线重启待验收，完整 PASS 暂未声明。结果与边界见 [P5.4 Real Sync](p5-real-sync.md)。
+- P5.4 Real Sync：✅ P5 范围通过。Web / Electron 正式链路与自动验收完成；HarmonyOS “杀 App + 完全离线冷启动”存在已接受限制，不再阻塞 P5，见 [P5.4 Real Sync](p5-real-sync.md) 与 [P5 Final Acceptance](p5-final-acceptance.md)。
 - P5.5 Attachments：✅ 已完成，正式附件、持久清理、三种布局、自动测试与线上 OSS 最小验收通过，见 [P5.5 Attachments](p5-attachments.md)。
 - P5.6 Settings & Preferences：✅ 已完成；账号昵称/安全改密、三态主题、隔离的固定编辑工具栏偏好、响应式 Settings 与 Light/Dark Visual QA、独立 review 均通过，见 [P5.6 Settings & Preferences](p5-settings.md)。
-- P5.7 UI/UX Foundation & Product Redesign：**READY FOR FINAL USER SIGN-OFF**。Quiet Studio 方向及正式 Product UI 已通过多轮实现、截图 review 和设备交互 review 收敛；本轮将 P5 已存在能力反向固化为 Design System v1、六个核心 Screen Spec 与 7 张自动视觉回归基线，Web 产品、存储/Electron 与离线外壳回归已通过。原先设想的预实施 Gate A 顺序并未完整执行，不追认历史通过；最终用户视觉签字仍待完成，见 [P5.7 UI/UX Foundation](p5-ui-ux-foundation.md)。
-- P5.8 Editor MVP：**FEATURE COMPLETE / FROZEN FOR P5**。已有 Paragraph、Heading、Bullet/Ordered List、Todo、Quote、Code Block、Divider；Bold、Italic、Strike、Inline Code、Inline Link；Image、File；Slash、鼠标选区 Bubble、Touch Toolbar、本地优先保存与同步。P5 不再增加 Table、Callout、Mention、Bookmark、Underline 等编辑器能力；后续阶段再评估。触摸端 Link 可显示/保留，显式创建入口不属于当前 P5。
-- P5 Final Acceptance：**NOT STARTED**。先取得 P5.7 最终用户视觉签字，并完成 P5.4 Mobile WebView 真机离线重启边界；本轮浏览器测试或视觉基线不替代真机证据。
+- P5.7 UI/UX Foundation & Product Redesign：✅ **PASS**。Quiet Studio 方向、Design System v1、核心 Screen Spec、自动视觉回归与正式 Product UI 已收敛；2026-10-06 用户完成最终视觉签字，见 [P5.7 UI/UX Foundation](p5-ui-ux-foundation.md)。
+- P5.8 Editor MVP：✅ **PASS / FROZEN FOR P5**。已有 Paragraph、Heading、Bullet/Ordered List、Todo、Quote、Code Block、Divider；Bold、Italic、Strike、Inline Code、Inline Link；Image、File；Slash、鼠标选区 Bubble、Touch Toolbar、本地优先保存与同步。P5 不再增加 Table、Callout、Mention、Bookmark、Underline 等编辑器能力；后续阶段再评估。触摸端 Link 可显示/保留，显式创建入口不属于当前 P5。
+- P5 Final Acceptance：✅ **PASS（2026-10-06）**。用户明确同意在不追加额外测试的情况下按既有证据封板；HarmonyOS 杀 App 后完全离线冷启动作为 Accepted Limitation，附件 cleanup 偶发状态作为 Future Debt 继续观察。见 [P5 Final Acceptance](p5-final-acceptance.md)。
 
 从本阶段开始，以真实用户流程和正式产品路由为主，不再以 `/__dev/*` PoC 页面作为主要开发载体。P1/P2/P3 开发页可以继续保留作为回归和诊断入口。
 
@@ -107,7 +107,7 @@ P5 退出条件：
 
 - 新用户可以从登录开始，创建 Workspace 和 Page，并在真实页面中持续编辑内容。
 - Web、Electron、Mobile WebView 均能打开同一正式产品页面，并完成核心读写流程。
-- 离线编辑和进程 / 页面重启不丢数据；恢复网络后能同步到服务端。
+- 离线编辑和常规页面 / 客户端重启路径不丢数据；恢复网络后能同步到服务端。HarmonyOS “杀 App + 完全离线冷启动”不在 P5 最终保证内，作为已接受限制记录。
 - 第二个客户端可以读取已同步内容，核心单用户多设备路径可闭环。
 - 文件 / 图片附件链路可用。
 - Settings 可完成昵称/密码管理，Theme 支持 system/light/dark，固定编辑 Toolbar 默认关闭且偏好隔离正确；宽屏/紧凑 Settings 交互通过响应式验收。
