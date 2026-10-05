@@ -26,6 +26,44 @@ async function screenshot(page: Page, name: string) {
   await page.screenshot({ path: path.join(dir, `${name}.png`), animations: 'disabled', fullPage: true })
 }
 
+async function resolvedPrimaryTextColor(page: Page) {
+  return page.locator('html').evaluate((element) => {
+    const token = getComputedStyle(element).getPropertyValue('--e-color-text-primary').trim()
+    const probe = document.createElement('span')
+    probe.style.color = token
+    element.append(probe)
+    const color = getComputedStyle(probe).color
+    probe.remove()
+    return color
+  })
+}
+
+async function editorCaretColor(page: Page) {
+  return page.locator('.document-editor .tiptap').evaluate((element) => getComputedStyle(element).caretColor)
+}
+
+// Chrome resolves the computed caret-color of `auto` to the element color, so the explicit
+// declaration on the editor rule is the only signal that separates it from the platform default.
+async function editorCaretDeclarations(page: Page) {
+  return page.evaluate(() => {
+    const found: string[] = []
+    const visit = (rules: CSSRuleList) => {
+      for (const rule of Array.from(rules)) {
+        if (rule instanceof CSSStyleRule && rule.selectorText.includes('.tiptap')) {
+          const value = rule.style.getPropertyValue('caret-color').trim()
+          if (value) found.push(`${rule.selectorText} { caret-color: ${value} }`)
+        }
+        const nested = (rule as CSSGroupingRule).cssRules
+        if (nested) visit(nested)
+      }
+    }
+    for (const sheet of Array.from(document.styleSheets)) {
+      try { visit(sheet.cssRules) } catch { /* ignore cross-origin sheets */ }
+    }
+    return found
+  })
+}
+
 test('DocumentEditor renders initial JSON, emits keyboard and bold changes, and preserves input objects', async ({ page }) => {
   await openDemo(page)
   const editor = page.getByRole('textbox', { name: '演示文档正文' })
@@ -128,4 +166,21 @@ test('reset remounts from the fixture and mount/unmount cleans up without browse
   await expect(page.getByTestId('document-json')).toContainText('移动端输入')
   await expect(mobileEditor).toContainText('移动端输入')
   expect(errors).toEqual([])
+})
+
+test('editor caret color is declared from the primary text token in light and dark themes', async ({ page }) => {
+  await openDemo(page)
+
+  const declarations = await editorCaretDeclarations(page)
+  expect(declarations.some(rule => rule.includes('caret-color: var(--e-color-text-primary)'))).toBe(true)
+
+  const light = await resolvedPrimaryTextColor(page)
+  expect(await editorCaretColor(page)).toBe(light)
+
+  await page.evaluate(async () => (await import('/src/theme.ts')).setThemePreference('dark'))
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+  const dark = await resolvedPrimaryTextColor(page)
+  expect(dark).not.toBe(light)
+  expect(await editorCaretColor(page)).toBe(dark)
 })

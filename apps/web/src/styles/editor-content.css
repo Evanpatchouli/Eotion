@@ -4,6 +4,7 @@
   outline: none;
   overflow-wrap: anywhere;
   color: var(--e-color-text-primary);
+  caret-color: var(--e-color-text-primary);
   font: var(--e-type-body-weight) var(--e-type-body-size) / var(--e-type-body-line) var(--e-type-family);
 }
 :is(.document-editor, .eotion-editor-content) .tiptap > :first-child { margin-top: 0; }
