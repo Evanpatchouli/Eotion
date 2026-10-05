@@ -8,7 +8,7 @@ node_modules/
 Thumbs.db
 
 # builds
-/release/
+release/
 dist/
 out/
 build/
