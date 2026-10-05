@@ -6,6 +6,7 @@ import { MongooseModule } from '@nestjs/mongoose'
 
 import { HealthModule } from './modules/health/health.module'
 import { HttpApiModule } from './modules/http-api/http-api.module'
+import { McpModule } from './modules/mcp/mcp.module'
 
 const mongoUri = process.env.MONGODB_URI?.trim()
 const mongoImports = mongoUri
@@ -20,7 +21,7 @@ const mongoImports = mongoUri
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ...mongoImports,
-    ...(mongoUri ? [HttpApiModule] : []),
+    ...(mongoUri ? [HttpApiModule, McpModule] : []),
     HealthModule,
   ],
 })

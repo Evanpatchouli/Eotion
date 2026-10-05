@@ -7,6 +7,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `roadmap.md` | 当前阶段、阶段目标与退出条件 |
 | `architecture/architecture.md` | 当前系统架构、平台边界和技术方向 |
 | `architecture/agent-integration.md` | MCP / Agent 集成规划边界 |
+| `p6-mcp.md` | P6 MCP 主计划、P6.1 Token / transport 与 Codex 开发接入 |
 | `context/README.md` | RAG 检索入口、模块索引和 Context Pack 规则 |
 | `specs/` | 产品行为、协议和验收契约 |
 | `decisions/` | ADR：为什么做出重要技术/架构决策 |

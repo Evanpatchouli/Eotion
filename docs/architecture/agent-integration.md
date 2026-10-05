@@ -1,38 +1,24 @@
-# Agent 集成基线
+# MCP 集成基线
 
-## 目标
+Eotion API 已实现 User / Cookie Session 认证，以及 Workspace、Page、Block 的 application/domain 与权限入口。MCP 是同一个 NestJS/Fastify API 中的新 interface adapter，复用这些能力，不另建业务服务或直接从 Tool 查询 MongoDB。
 
-通过模型上下文协议（MCP）让兼容的 Agent 能够使用 Eotion，首先从 Codex 开始，同时保持接口在各类 MCP 客户端之间的可移植性。MCP 尚在规划中；当前 API 脚手架尚未实现认证、工作区/页面操作或 MCP 服务器。
+## 当前范围
 
-## 放置位置
+P6 暂时只实施 MCP，主计划与验收见 [P6 MCP](../p6-mcp.md)。P6.1 只提供 `eotion_list_workspaces`；页面读取/搜索、写入留给后续阶段。Resources、Prompts、Agent UI、Chat UI、automation 和完整 Token Settings UI 均不属于当前范围。
 
-- 在 `apps/api` 中，以 NestJS/Fastify 模块化单体内的适配器形式实现 MCP。
-- 复用与常规 API 相同的应用服务、领域规则、契约、认证和授权。MCP 调用不得直接访问 MongoDB 或阿里云 OSS。
-- 将 MCP 传输和 schema 细节保留在 API 边界。不要向 `packages/domain` 添加 Agent 提供商特定的行为，也不要让 Web UI 负责 MCP 访问。
-- 在实现过程中，根据支持的 MCP 客户端和 API 认证设计来选择传输方式和凭证流程。初始部署保持在 API 进程内；在没有明确的扩展或隔离需求之前，不要添加独立的微服务。
+## 接入与身份
 
-## 初始能力范围
+- Web 继续使用现有 Cookie Session。
+- 外部 MCP Client 使用独立 Eotion MCP Access Token：`Authorization: Bearer <token>`，不接受浏览器 Cookie 作为 MCP 身份。
+- `/mcp` 使用官方 MCP TypeScript SDK 的 Streamable HTTP，挂载在现有 Fastify 实例上，由 Nest module 生命周期管理。请求无状态，每次重新验证凭证，撤销后后续请求拒绝。
+- 随机 Token 仅在创建响应中返回一次；Mongo 保存 SHA-256 hash、用户关联、名称、创建/最近使用/撤销时间。用户可以拥有多个独立凭证。
+- 验证生成 `{ userId }`，Tool 从可信 context 获取身份，不接受客户端的 `userId`。当前工作区是 owner-only；列表调用 HTTP 同样使用的 `WorkspaceService.listByOwner`。
+- Token provisioning 是受 Session 和现有 Origin guard 保护的 `POST /api/mcp/tokens`，只能为当前用户创建自己的凭证。撤销保留 application service 入口，本阶段无管理 UI。
 
-从一些小而可组合的工具开始，让 Agent 能够：
+## 边界与错误
 
-- 发现已登录用户访问权限内可用的工作区；
-- 以分页和有限结果大小列出和搜索页面；
-- 读取页面及其区块；
-- 通过显式、类型化的操作创建或更新页面或区块。
+保持 `MCP transport → adapter → application service → domain → persistence`。传输/schema 留在 `apps/api`；共享领域模型不依赖 Agent 提供商。
 
-工具 schema 应当保持狭窄，描述应当解释每个操作的效果。返回带有稳定资源 ID 和可操作错误的结构化结果。初始工具集中不要暴露任意数据库查询、无界导出、权限更改或破坏性/批量操作。只有在具体工作流需要时，再添加 MCP 资源或提示模板。
+缺失/格式错误/无效/撤销/用户不存在的凭证统一返回 HTTP 401，不区分真实存在状态；内部故障只返回通用错误。已认证的工具业务故障用标准 MCP `isError` 表达，结果不含 stack、用户资料、session 或凭证。成功结果仅包含 Workspace 的 `id` 和 `name`。
 
-## 安全与可靠性
-
-- 从已认证的 MCP 连接中推导身份。对每个操作检查工作区成员资格和资源级权限；绝不要将 MCP 连接本身视为一揽子访问权限。
-- 应用与等效 API 操作相同的验证、审计追踪和速率限制。将凭证排除在工具结果和 Agent 可见的工作区内容之外。
-- 将页面内容和其他工作区数据视为不可信输入。内容不得授予 Agent 额外权限，也不得覆盖工具声明的范围。
-- 限制页面大小、搜索结果和响应负载。为写入定义重试/幂等行为，以便重试调用不会静默地重复内容。
-- 在授权、确认和审计行为明确之前，将删除和其他难以逆转的操作排除在初始工具集之外。
-
-## 交付检查
-
-- 确认读操作仅返回已认证用户可见的数据，包括跨工作区边界的情况。
-- 确认写操作强制执行与 API 相同的权限，并产生可审计、明确无歧义的结果。
-- 演练分页、格式错误的输入、超大结果、速率限制、连接过期和重试写入。
-- 在 Codex 中完成端到端设置和工作流，然后检查与另一个兼容 MCP 客户端的互操作性。
+Host / Origin 检查保护本地入口，凭证与工具结果禁用 HTTP 缓存。未来读写工具仍须调用相同 application 权限入口，内容视为不可信数据；分页、限量、写入幂等和审计在相应阶段确定，不能按已完成能力描述。

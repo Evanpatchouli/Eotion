@@ -11,6 +11,7 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({ logger: true }),
   );
+  app.enableShutdownHooks();
 
   app.setGlobalPrefix("api");
   const allowedOrigins = (process.env.WEB_ORIGIN ?? "")

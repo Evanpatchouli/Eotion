@@ -22,6 +22,7 @@
 | Desktop Shell | `apps/desktop/src/` | architecture §2、`runbooks/desktop-production.md`、`runbooks/desktop-packaging.md` | Electron、preload、renderer、IPC、production-protocol、Windows packaging、EOTION_DESKTOP_API_ORIGIN、Cookie Session |
 | Mobile Shell / Native Hosts | `apps/mobile/src/`、`apps/mobile-hosts/`、`scripts/package-mobile.mjs` | `p1-mobile-demo.md`、architecture §3、`runbooks/mobile-native-hosts.md` | Lynx、webview、Android、HarmonyOS、Gradle、Hvigor、signing、lifecycle |
 | API | `apps/api/src/` | architecture §4、`p4-server-domain.md`、`p4-auth-session.md`、`p4-http-api.md`、`p4-sync.md`、`p4-file-storage.md`、`architecture/agent-integration.md` | NestJS、Fastify、health、Mongo、User、Auth、Session、WorkspacePermission、HTTP、repository、sync receipt、FileObjectStorage、MCP |
+| MCP（P6.1） | `apps/api/src/modules/mcp/`、`apps/api/src/modules/server-domain/services/mcp-token.service.ts` | `p6-mcp.md`、`architecture/agent-integration.md` | /mcp、Streamable HTTP、McpToken、mcp_credentials、Bearer、eotion_list_workspaces |
 | Contracts | `packages/contracts/src/` | `p4-http-api.md`、`p4-sync.md` | DTO、runtime schema、contract、protocol、sync operation |
 | Domain | `packages/domain/src/` | `p4-server-domain.md`、architecture / specs | domain model、workspace、page、block、file metadata |
 | SDK | `packages/sdk/src/` | `p4-http-api.md`、`p4-sync.md` | typed client、Cookie credentials、API error、OperationTransport |
