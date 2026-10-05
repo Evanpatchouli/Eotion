@@ -8,6 +8,7 @@ node_modules/
 Thumbs.db
 
 # builds
+/release/
 dist/
 out/
 build/
@@ -16,8 +17,6 @@ test-results/
 .lynx/
 *.tsbuildinfo
 /apps/site/.vitepress/cache/
-/apps/desktop/release/
-/apps/mobile-hosts/release/
 **/.gradle/
 **/.hvigor/
 **/.cxx/
