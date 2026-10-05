@@ -2,11 +2,11 @@
 
 ## 状态
 
-**P5.6 Settings & Preferences：✅ 已完成 / PASS（2026-10-01）。** 产品版本保持 `0.0.1 / build 1`。本阶段通过实现、自动验证、实际截图与独立 review；不代表 P5 Final Acceptance PASS。
+**P5.6 Settings & Preferences：✅ 已完成 / PASS（2026-10-01）。** 本阶段通过实现、自动验证、实际截图与独立 review。P5 Final Acceptance 后续已于 2026-10-06 独立完成并 PASS。
 
 P5.6 位于 P5.5 Attachments 之后、P5 Final Acceptance 之前。本阶段补齐 MVP 必需的账号资料、外观和编辑器偏好，并建立可继续扩展到 MCP / Agent 等未来能力的 Settings 信息架构。
 
-P5.4 Mobile WebView 真机完全离线重启验收仍单独保留；本阶段不创建 HarmonyOS / Android / iOS 原生宿主，也不以原生宿主作为 P5.6 前置条件。
+P5.4 HarmonyOS “杀 App + 完全离线冷启动”边界最终作为 Accepted Limitation 单独保留；本阶段不以原生宿主完整离线冷启动能力作为 P5.6 前置条件。
 
 ## 产品目标
 
