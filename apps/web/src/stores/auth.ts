@@ -26,6 +26,25 @@ function cachedUser(): AuthUserDto | null {
   return null
 }
 
+
+function restoreDiagnostic(cause: unknown, remembered: AuthUserDto | null): string {
+  const errorName = cause instanceof Error ? cause.name : typeof cause
+  const errorDetail = cause instanceof Error
+    ? (cause.stack || `${cause.name}: ${cause.message}`)
+    : String(cause)
+  return [
+    `errorName: ${errorName}`,
+    `isTypeError: ${cause instanceof TypeError}`,
+    `isApiError: ${cause instanceof ApiError}`,
+    `statusCode: ${cause instanceof ApiError ? cause.statusCode : 'n/a'}`,
+    `isTransient: ${isTransientServiceUnavailable(cause)}`,
+    `cachedIdentityPresent: ${remembered !== null}`,
+    `navigatorOnline: ${typeof navigator === 'undefined' ? 'unknown' : navigator.onLine}`,
+    '',
+    errorDetail,
+  ].join('\n')
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthUserDto | null>(null)
   const status = ref<'idle' | 'restoring' | 'ready'>('idle')
@@ -63,17 +82,15 @@ export const useAuthStore = defineStore('auth', () => {
         expire()
         return
       }
-      if (isTransientServiceUnavailable(cause)) {
-        const remembered = cachedUser()
-        if (remembered) {
-          user.value = remembered
-          offline.value = true
-          status.value = 'ready'
-          return
-        }
+      const remembered = cachedUser()
+      if (isTransientServiceUnavailable(cause) && remembered) {
+        user.value = remembered
+        offline.value = true
+        status.value = 'ready'
+        return
       }
       restoreError.value = errorMessage(cause, '暂时无法连接服务，请重试。')
-      restoreDiagnosticDetail.value = cause instanceof Error ? (cause.stack || `${cause.name}: ${cause.message}`) : String(cause)
+      restoreDiagnosticDetail.value = restoreDiagnostic(cause, remembered)
       status.value = 'ready'
     }).finally(() => {
       if (restorePromise === request) restorePromise = null
