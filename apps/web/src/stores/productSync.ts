@@ -9,6 +9,38 @@ import { createLocalStore } from '../storage/createLocalStore'
 import { useAuthStore } from './auth'
 import { useProductWorkspacesStore } from './productWorkspaces'
 
+type CleanupDiagnostic = {
+  ready: number
+  attempted: number
+  deleteSucceeded: number
+  deleteFailed: number
+  skippedOffline: number
+  skippedUnauthorized: number
+  skippedBackoff: number
+  skippedEditorFlush: number
+  skippedPendingOperations: number
+  skippedBecameNotReady: number
+  skippedIdentityChanged: number
+  lastError: string
+}
+
+function emptyCleanupDiagnostic(): CleanupDiagnostic {
+  return {
+    ready: 0,
+    attempted: 0,
+    deleteSucceeded: 0,
+    deleteFailed: 0,
+    skippedOffline: 0,
+    skippedUnauthorized: 0,
+    skippedBackoff: 0,
+    skippedEditorFlush: 0,
+    skippedPendingOperations: 0,
+    skippedBecameNotReady: 0,
+    skippedIdentityChanged: 0,
+    lastError: '',
+  }
+}
+
 let localStorePromise: Promise<LocalStore> | null = null
 function localStore(): Promise<LocalStore> {
   localStorePromise ??= createLocalStore().then(({ store }) => store).catch((error: unknown) => {
@@ -26,6 +58,7 @@ export const useProductSyncStore = defineStore('product-sync', () => {
   const snapshotRevision = ref(0)
   const cleanupPending = ref(0)
   const cleanupError = ref('')
+  const cleanupDiagnostic = ref<CleanupDiagnostic>(emptyCleanupDiagnostic())
   let userId = ''
   let activeWorkspaceId = ''
   let identityEpoch = 0
@@ -48,6 +81,7 @@ export const useProductSyncStore = defineStore('product-sync', () => {
       pending.value = 0
       cleanupPending.value = 0
       cleanupError.value = ''
+      cleanupDiagnostic.value = emptyCleanupDiagnostic()
       cleanupRetryAfter.clear()
     }
     offlineIdentity = offline
@@ -73,40 +107,81 @@ export const useProductSyncStore = defineStore('product-sync', () => {
 
   async function cleanupFiles(local: LocalStore, ids: ReadonlySet<string>, currentIdentity: () => boolean): Promise<void> {
     cleanupError.value = ''
-    for (const task of await local.listReadyFileCleanups()) {
-      if (!currentIdentity() || !navigator.onLine) return
-      if (!ids.has(task.workspaceId)) continue
+    const readyTasks = await local.listReadyFileCleanups()
+    const diagnostic = emptyCleanupDiagnostic()
+    diagnostic.ready = readyTasks.filter((task) => ids.has(task.workspaceId)).length
+    cleanupDiagnostic.value = diagnostic
+
+    for (const task of readyTasks) {
+      if (!currentIdentity()) {
+        diagnostic.skippedIdentityChanged += 1
+        return
+      }
+      if (!navigator.onLine) {
+        diagnostic.skippedOffline += 1
+        return
+      }
+      if (!ids.has(task.workspaceId)) {
+        diagnostic.skippedUnauthorized += 1
+        continue
+      }
       const key = JSON.stringify([task.workspaceId, task.fileId])
       if ((cleanupRetryAfter.get(key) ?? 0) > Date.now()) {
+        diagnostic.skippedBackoff += 1
         cleanupError.value = '附件清理暂未完成，联网后会重试。'
         continue
       }
-      if (!(await flushActivePageEditor(task.workspaceId))) continue
-      if (!currentIdentity()) return
+      if (!(await flushActivePageEditor(task.workspaceId))) {
+        diagnostic.skippedEditorFlush += 1
+        continue
+      }
+      if (!currentIdentity()) {
+        diagnostic.skippedIdentityChanged += 1
+        return
+      }
       // An undo or another editor may have produced a newer mutation. Push it
       // before considering cleanup, even when the original delete is acked.
       if ((await local.getPendingOperations()).some((op) => op.workspaceId === task.workspaceId)) {
+        diagnostic.skippedPendingOperations += 1
         requested = true
         continue
       }
-      if (!(await local.listReadyFileCleanups()).some((ready) => ready.workspaceId === task.workspaceId && ready.fileId === task.fileId)) continue
+      if (!(await local.listReadyFileCleanups()).some((ready) => ready.workspaceId === task.workspaceId && ready.fileId === task.fileId)) {
+        diagnostic.skippedBecameNotReady += 1
+        continue
+      }
+      diagnostic.attempted += 1
       try {
         try { await api.files.delete(task.workspaceId, task.fileId) }
         catch (cause) {
           if (!(cause instanceof ApiError && cause.statusCode === 404)) throw cause
         }
-        if (!currentIdentity()) return
+        if (!currentIdentity()) {
+          diagnostic.skippedIdentityChanged += 1
+          return
+        }
         await local.completeFileCleanup(task.workspaceId, task.fileId)
         cleanupRetryAfter.delete(key)
+        diagnostic.deleteSucceeded += 1
       } catch (cause) {
-        if (!currentIdentity()) return
+        if (!currentIdentity()) {
+          diagnostic.skippedIdentityChanged += 1
+          return
+        }
         if (cause instanceof ApiError && cause.statusCode === 401) {
+          diagnostic.deleteFailed += 1
+          diagnostic.lastError = '401 Unauthorized'
           expireSessionFromApi()
           return
         }
         const message = '附件清理暂未完成，联网后会重试。'
+        diagnostic.deleteFailed += 1
+        diagnostic.lastError = cause instanceof Error ? cause.message : String(cause)
         await local.failFileCleanup(task.workspaceId, task.fileId, message)
-        if (!currentIdentity()) return
+        if (!currentIdentity()) {
+          diagnostic.skippedIdentityChanged += 1
+          return
+        }
         cleanupRetryAfter.set(key, Date.now() + 30_000)
         cleanupError.value = message
       }
@@ -281,5 +356,5 @@ export const useProductSyncStore = defineStore('product-sync', () => {
   }
 
   function retry(): void { cleanupRetryAfter.clear(); requestSync(0) }
-  return { state, pending, error, revision, snapshotRevision, cleanupPending, cleanupError, configure, store, updatePending, localMutation, prepare, leaveWorkspace, requestSync, runSync, retry }
+  return { state, pending, error, revision, snapshotRevision, cleanupPending, cleanupError, cleanupDiagnostic, configure, store, updatePending, localMutation, prepare, leaveWorkspace, requestSync, runSync, retry }
 })
