@@ -1,0 +1,49 @@
+{
+  "device": {
+    "model": "nova 14",
+    "deviceModel": "TLR-AL00",
+    "os": "OpenHarmony-6.1.1.120",
+    "screen": "1084x2412",
+    "hdcTarget": "192.168.1.3:45795"
+  },
+  "build": {
+    "version": "0.0.1-beta",
+    "buildNumber": 1,
+    "gitSha": "dab787ac5999",
+    "hap": "release/0.0.1-beta/Eotion-0.0.1-beta-harmony.hap",
+    "hapBytes": 17383358,
+    "hapSha256": "090f78d056044d1441b770fe5add928d779ca4674b2a34aeb159158d484b34c4",
+    "signed": true,
+    "productionAssets": [
+      "assets/index-Df1Ra5F4.js",
+      "assets/PageView-Bn8y8r3W.js"
+    ]
+  },
+  "results": {
+    "h2Recognition": "PASS",
+    "longCaretAvoidance": "PASS"
+  },
+  "files": [
+    {
+      "path": "h2-applied.png",
+      "sha256": "29a208ea76bde6392d6551c61f8b57ac79a75cc88d2ede623397edb4c6d03318"
+    },
+    {
+      "path": "line06.png",
+      "sha256": "443cb67ba02a0d13f58507adf2ec7addfd4f60a65cbcbc7cbe878818b66e6b78"
+    },
+    {
+      "path": "line12.png",
+      "sha256": "c1c48764a596c8456f5b794c87660a08ed06ec95add9601ba28f6811fa30f671"
+    },
+    {
+      "path": "native-final.png",
+      "sha256": "61662c8b3a9fc4caf5de10064fcf885a25e99e0ab2db623ed57c2ba35364a330"
+    },
+    {
+      "path": "observations.json",
+      "sha256": "76144d36a2755951654b1df91c2fca0d4e9e98a70652b7275cee4f2e1ddf3458"
+    }
+  ],
+  "observedWindow": "2026-10-06 01:47–01:51 UTC+08:00"
+}

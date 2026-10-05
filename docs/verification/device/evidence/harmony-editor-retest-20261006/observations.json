@@ -1,0 +1,79 @@
+{
+  "method": "Caret bounds from blue screenshot pixels; toolbar top from native accessibility layout. Not DOM or scrollTop telemetry.",
+  "observations": [
+    {
+      "screenshot": "line06.png",
+      "toolbarTopScreenPixels": 1257,
+      "blueCaretPixelBounds": [
+        399,
+        1167,
+        405,
+        1220
+      ],
+      "gapScreenPixels": 37,
+      "nodes": [
+        {
+          "text": "触摸编辑工具栏",
+          "type": "toolbar",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "checked": "false"
+        }
+      ]
+    },
+    {
+      "screenshot": "line12.png",
+      "toolbarTopScreenPixels": 1257,
+      "blueCaretPixelBounds": [
+        399,
+        1167,
+        405,
+        1220
+      ],
+      "gapScreenPixels": 37,
+      "nodes": [
+        {
+          "text": " H2_RETEST_20261006\nIME_BOTTOM_01\nIME_BOTTOM_02\nIME_BOTTOM_03\nIME_BOTTOM_04\nIME_BOTTOM_05\nIME_BOTTOM_06\nIME_BOTTOM_07\nIME_BOTTOM_08\nIME_BOTTOM_09\nIME_BOTTOM_10\nIME_BOTTOM_11\nIME_BOTTOM_12\n",
+          "type": "textField",
+          "bounds": "[48,105][1038,1356]",
+          "focused": "true",
+          "checked": "false"
+        },
+        {
+          "text": "触摸编辑工具栏",
+          "type": "toolbar",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "checked": "false"
+        }
+      ]
+    },
+    {
+      "screenshot": "native-final.png",
+      "toolbarTopScreenPixels": 1257,
+      "blueCaretPixelBounds": [
+        71,
+        1167,
+        77,
+        1220
+      ],
+      "gapScreenPixels": 37,
+      "nodes": [
+        {
+          "text": " H2_RETEST_20261006\nIME_BOTTOM_01\nIME_BOTTOM_02\nIME_BOTTOM_03\nIME_BOTTOM_04\nIME_BOTTOM_05\nIME_BOTTOM_06\nIME_BOTTOM_07\nIME_BOTTOM_08\nIME_BOTTOM_09\nIME_BOTTOM_10\nIME_BOTTOM_11\nIME_BOTTOM_12啊a \na\n",
+          "type": "textField",
+          "bounds": "[48,105][1038,1356]",
+          "focused": "true",
+          "checked": "false"
+        },
+        {
+          "text": "触摸编辑工具栏",
+          "type": "toolbar",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "checked": "false"
+        }
+      ]
+    }
+  ]
+}

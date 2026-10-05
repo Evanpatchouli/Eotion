@@ -15,4 +15,4 @@ H2 命令不变；复用 Morphicons + 下标 2；44px target；无 UA 分支；�
 Web typecheck 通过；生产编辑器 build/回归 1/1；视觉 7/7。15-spec 共 204 项首轮 202 通过：新增 caret 用例的旧 blur/遮挡场景已修正，H2/caret 两用例各重复三次 6/6；5,000 区块 fixture 在四 worker 下超时，单独复跑 1/1（6.4s，未改 timeout）。最终所有用例已覆盖并通过。git diff --check 通过。
 
 ## Remaining verification
-nova 14 真机 H2 识别与连续长正文 caret 仍待复测；自动化不替代原生 IME 验收。HAP 默认加载远端 Web，复测须确保远端 Web 部署本轮提交，仅重新打包 HAP 不更新远端页面。
+本轮已完成 nova 14 真机 H2 识别与连续长正文 caret 避让两项专项复测，均 PASS；构建、设备、步骤与证据见 `docs/verification/device/mobile-harmony-editor-retest-2026-10-06.md`。此前自动化结果保持不变。此结果不代表完整 Mobile Real-device Acceptance 或 Android 复测通过；附件/sync gate、横屏与其他硬 Gate 仍未覆盖。

@@ -1,5 +1,7 @@
 # HarmonyOS 应用内补充验收 — 2026-10-06
 
+> 后续专项复测见 [HarmonyOS H2 识别与长正文 caret 避让复测](mobile-harmony-editor-retest-2026-10-06.md)：同一 nova 14 上 H2 识别与连续长正文 caret 避让均通过。本文保留首次验收时的 FAIL 作为历史记录；专项通过不代表完整 Mobile Real-device Acceptance 通过。
+
 结论：**不能判定 Mobile Real-device Acceptance PASS**。Workspace/Page 和基本输入操作通过；长正文输入时 caret 被 Touch Toolbar 遮挡，原清单要求的 H1 未满足。附件上传由用户接手手测；Session、离线两次 kill/restart、恢复同步与第二客户端闭环不在本轮 Agent 实测范围。
 
 ## 范围与版本
