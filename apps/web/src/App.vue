@@ -9,6 +9,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const diagnosticsOpen = ref(false)
+const showDiagnosticDetails = import.meta.env.VITE_SHOW_DIAGNOSTIC_DETAILS === 'true'
 
 function toggleDiagnostics(event: Event) {
   diagnosticsOpen.value = (event.currentTarget as HTMLDetailsElement).open
@@ -57,12 +58,12 @@ async function retryRestore() {
         <button class="product-button product-button--primary connectivity-retry" type="button" :disabled="auth.status === 'restoring'" @click="retryRestore">
           {{ auth.status === 'restoring' ? '正在重试…' : '重试' }}
         </button>
-        <details class="connectivity-diagnostics" @toggle="toggleDiagnostics">
+        <details v-if="showDiagnosticDetails" class="connectivity-diagnostics" @toggle="toggleDiagnostics">
           <summary>
             <span class="connectivity-diagnostics-icon"><EotionIcon :name="diagnosticsOpen ? 'chevron-down' : 'chevron-right'" :size="16" /></span>
             <span>查看诊断信息</span>
           </summary>
-          <pre>{{ auth.restoreError }}</pre>
+          <pre>{{ auth.restoreDiagnosticDetail || auth.restoreError }}</pre>
         </details>
       </section>
     </main>
