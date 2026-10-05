@@ -32,7 +32,7 @@ P5.4 HarmonyOS “杀 App + 完全离线冷启动”边界在 P5 Final Acceptanc
 - 不以“边写代码边定设计”为默认方式。
 - 可以创建独立设计原型、静态稿或不进入正式产品链路的设计实验，但必须与生产 UI 隔离。
 
-实际后续采用了迭代路径：先批准并冻结 Quiet Studio 方向，再通过多轮正式实现、用户截图 review 和真机 review 逐步冻结交互与响应式行为。P5 closeout 把这些已形成的产品结果固化为 Design System v1 和 Visual Baseline。**不存在可追认的早期完整 Gate A PASS**；最终 Gate A reconciliation 状态见 [Core Screen Spec](design/core-screen-spec.md)，等待用户最终视觉签字。
+实际后续采用了迭代路径：先批准并冻结 Quiet Studio 方向，再通过多轮正式实现、用户截图 review 和真机 review 逐步冻结交互与响应式行为。P5 closeout 把这些已形成的产品结果固化为 Design System v1 和 Visual Baseline。**不存在可追认的早期完整 Gate A PASS**；最终 Gate A reconciliation 状态见 [Core Screen Spec](design/core-screen-spec.md)，用户最终视觉签字已于 2026-10-06 完成。
 
 ## 原计划问题判断（历史记录）
 
