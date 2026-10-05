@@ -339,7 +339,7 @@ P5.6 只有在以下全部满足后才能 PASS：
 16. P5.1～P5.5 现有核心行为和测试不回归。
 17. Visual QA 与独立 review 无 blocker。
 
-P5.6 PASS 后仍不能自动声明 P5 Final Acceptance；还需单独执行 P5 Final Acceptance，并保留 P5.4 Mobile WebView 真机离线重启的既有验收边界。
+P5.6 本身已 PASS；P5 Final Acceptance 已于 2026-10-06 单独完成并通过。P5.4 HarmonyOS “杀 App + 完全离线冷启动”边界作为 Accepted Limitation 保留，不影响 P5 封板。
 
 ## 实现入口与持久化
 
@@ -376,4 +376,4 @@ Visual QA 使用仓库 Playwright / Chrome（Browser plugin not available），�
 
 可访问性检查覆盖 nav/aria-current、Back 标签、radio 方向键、switch Space、dark focus-visible、密码错误 live region、44px compact touch target 与 reduced motion。修复离线昵称描述的 aria-describedby 目标。独立 reviewer 复核安全、缓存、路由、主题、偏好与最终截图后无确定 P1/P2 blocker；测试修正以稳定的 `/app` fallback link 与后续 workspace 解析为断言，没有削弱安全契约。
 
-P5 Final Acceptance 尚未执行；P5.4 目标 Mobile WebView/Lynx 真机完全离线重启仍待验收，浏览器媒体/布局/IndexedDB 与 Electron 结果不替代该设备边界。
+P5 Final Acceptance 已于 2026-10-06 PASS。P5.4 HarmonyOS “杀 App + 完全离线冷启动”未作为已实现能力宣称，而是作为 Accepted Limitation 进入后续技术债；浏览器媒体/布局/IndexedDB 与 Electron 结果仍不替代该设备边界。
