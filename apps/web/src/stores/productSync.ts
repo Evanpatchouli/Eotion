@@ -62,7 +62,10 @@ export const useProductSyncStore = defineStore('product-sync', () => {
     const accessible = new Set(useProductWorkspacesStore().items.map((item) => item.id))
     const local = await store()
     const operations = await local.getPendingOperations()
-    const cleanups = await local.listFileCleanups()
+    // Only surface cleanups that are safe to execute now. A durable cleanup intent
+    // may intentionally remain stored while an attachment is still referenced or
+    // its source operation has not synced yet; that is not actionable user debt.
+    const cleanups = await local.listReadyFileCleanups()
     if (activeEpoch !== identityEpoch || activeUser !== userId || useAuthStore().user?.id !== activeUser) return
     pending.value = operations.filter((op) => accessible.has(op.workspaceId)).length
     cleanupPending.value = cleanups.filter((task) => accessible.has(task.workspaceId)).length
