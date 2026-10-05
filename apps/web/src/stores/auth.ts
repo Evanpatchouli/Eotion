@@ -30,6 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthUserDto | null>(null)
   const status = ref<'idle' | 'restoring' | 'ready'>('idle')
   const restoreError = ref('')
+  const restoreDiagnosticDetail = ref('')
   const loginPending = ref(false)
   const logoutPending = ref(false)
   const error = ref('')
@@ -49,6 +50,7 @@ export const useAuthStore = defineStore('auth', () => {
     const requestEpoch = epoch
     status.value = 'restoring'
     restoreError.value = ''
+    restoreDiagnosticDetail.value = ''
     const request = api.auth.me().then((currentUser) => {
       if (requestEpoch !== epoch) return
       user.value = currentUser
@@ -71,6 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
       restoreError.value = errorMessage(cause, '暂时无法连接服务，请重试。')
+      restoreDiagnosticDetail.value = cause instanceof Error ? (cause.stack || `${cause.name}: ${cause.message}`) : String(cause)
       status.value = 'ready'
     }).finally(() => {
       if (restorePromise === request) restorePromise = null
@@ -84,6 +87,7 @@ export const useAuthStore = defineStore('auth', () => {
     restorePromise = null
     status.value = 'idle'
     restoreError.value = ''
+    restoreDiagnosticDetail.value = ''
     await ensureSession()
   }
 
@@ -102,6 +106,7 @@ export const useAuthStore = defineStore('auth', () => {
       cacheUser(response.user)
       status.value = 'ready'
       restoreError.value = ''
+      restoreDiagnosticDetail.value = ''
       useProductWorkspacesStore().reset()
       return true
     } catch (cause: unknown) {
@@ -180,6 +185,7 @@ export const useAuthStore = defineStore('auth', () => {
     cacheUser(null)
     status.value = 'ready'
     restoreError.value = ''
+    restoreDiagnosticDetail.value = ''
     error.value = ''
     useProductWorkspacesStore().reset()
     useProductSyncStore().configure('', false)
@@ -187,5 +193,5 @@ export const useAuthStore = defineStore('auth', () => {
 
   setSessionExpiredHandler(expire)
 
-  return { user, status, restoreError, loginPending, logoutPending, profilePending, passwordPending, passwordUpdated, settingsError, error, offline, ensureSession, retryRestore, login, logout, updateProfile, changePassword, expire }
+  return { user, status, restoreError, restoreDiagnosticDetail, loginPending, logoutPending, profilePending, passwordPending, passwordUpdated, settingsError, error, offline, ensureSession, retryRestore, login, logout, updateProfile, changePassword, expire }
 })
