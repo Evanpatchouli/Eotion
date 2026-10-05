@@ -567,6 +567,91 @@ test('touch toolbar and mobile heading stay compact across themes, short viewpor
   await canvasScreenshot(page, 'p584-mobile-dark')
 })
 
+test('touch caret visibility does not depend on keyboard inset and requires editor focus', async ({ page }) => {
+  await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
+  await page.setViewportSize({ width: 390, height: 640 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  const toolbar = page.getByRole('toolbar', { name: '触摸编辑工具栏' })
+  await body.click()
+  await body.pressSequentially('Visible caret')
+  const initial = await page.evaluate(() => ({
+    scrollTop: document.querySelector('.document-wrap')!.scrollTop,
+    keyboardPadding: getComputedStyle(document.querySelector('.eotion-editor')!).getPropertyValue('--touch-keyboard-inset').trim(),
+  }))
+  expect(initial.keyboardPadding).toBe('0px')
+  await page.evaluate(async () => {
+    window.dispatchEvent(new Event('resize'))
+    window.dispatchEvent(new Event('scroll'))
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+  })
+  expect(await page.locator('.document-wrap').evaluate(node => node.scrollTop)).toBe(initial.scrollTop)
+
+  await toolbar.evaluate(node => node.style.setProperty('bottom', '400px', 'important'))
+  await body.evaluate(node => (node as HTMLElement).blur())
+  await page.evaluate(async () => {
+    window.dispatchEvent(new Event('scroll'))
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  })
+  expect(await page.locator('.document-wrap').evaluate(node => node.scrollTop)).toBe(initial.scrollTop)
+  await toolbar.evaluate(node => node.style.setProperty('bottom', '0px', 'important'))
+
+  await body.click()
+  await body.press('Control+End')
+  for (let line = 0; line < 20; line += 1) {
+    await body.pressSequentially(`Line ${line}`)
+    await body.press('Enter')
+  }
+  await body.locator('p').nth(10).click()
+  await body.press('End')
+  await page.evaluate(async () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))))
+  const beforeObstruction = await page.evaluate(() => {
+    const selection = window.getSelection()!
+    const range = selection.getRangeAt(0).cloneRange()
+    range.collapse(false)
+    const caret = range.getBoundingClientRect()
+    const toolbar = document.querySelector<HTMLElement>('.eotion-touch-toolbar')!
+    const top = caret.bottom - 8
+    toolbar.style.setProperty('bottom', `${window.innerHeight - toolbar.getBoundingClientRect().height - top}px`, 'important')
+    const overlap = Math.ceil(caret.bottom + 12 - toolbar.getBoundingClientRect().top)
+    return { scrollTop: document.querySelector('.document-wrap')!.scrollTop, overlap }
+  })
+  expect(beforeObstruction.overlap).toBeGreaterThan(0)
+  await body.dispatchEvent('compositionend', { data: 'Caret behind toolbar' })
+  await expect.poll(() => page.locator('.document-wrap').evaluate(node => node.scrollTop)).toBe(beforeObstruction.scrollTop + beforeObstruction.overlap)
+  await expect.poll(() => page.evaluate(() => {
+    const selection = window.getSelection()
+    const range = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null
+    if (!range) return false
+    range.collapse(false)
+    const caret = range.getBoundingClientRect()
+    const toolbarTop = document.querySelector('.eotion-touch-toolbar')!.getBoundingClientRect().top
+    return caret.bottom + 12 <= toolbarTop
+  })).toBe(true)
+  expect(await page.locator('.eotion-editor').evaluate(node => getComputedStyle(node).getPropertyValue('--touch-keyboard-inset').trim())).toBe('0px')
+
+  const settledScrollTop = await page.locator('.document-wrap').evaluate(node => node.scrollTop)
+  await page.evaluate(async () => {
+    window.dispatchEvent(new Event('resize'))
+    window.dispatchEvent(new Event('scroll'))
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+  })
+  expect(await page.locator('.document-wrap').evaluate(node => node.scrollTop)).toBe(settledScrollTop)
+
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.reload()
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' })).toHaveCount(0)
+  await body.click()
+  await body.pressSequentially('Desktop caret')
+  const desktopScrollTop = await page.locator('.document-wrap').evaluate(node => node.scrollTop)
+  await page.evaluate(async () => {
+    window.dispatchEvent(new Event('resize'))
+    window.dispatchEvent(new Event('scroll'))
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+  })
+  expect(await page.locator('.document-wrap').evaluate(node => node.scrollTop)).toBe(desktopScrollTop)
+})
+
 test('keeps the P2 fixture, slash command and undo path available', async ({ page }) => {
   await page.goto('/#/__dev/editor-p2')
   await page.getByRole('button', { name: '加载 5,000 区块' }).click()

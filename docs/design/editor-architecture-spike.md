@@ -51,8 +51,8 @@ PageView → EotionEditor update → EditorDocument → PagePersistence
 
 ## P5.8.4 Touch 编辑密度
 
-- Mobile / coarse pointer 的底部工具栏保留粗体、斜体、文本、二级标题、项目列表、图片、文件原有命令和顺序。控件使用 Morphicons；前两项及附件为纯图标，块类型使用图标和短标签。格式状态以 `aria-pressed` 和 Quiet Studio selected surface 表达。
-- 工具栏保留横向滚动、44px 触摸目标、`visualViewport` 键盘避让和 safe-area 内边距；编辑器末尾按工具栏高度与键盘 inset 预留滚动空间。键盘出现且编辑器有焦点时，当前光标及后续输入位置滚动到工具栏上方。Mobile Page 标题和本地保存状态纵向排列，Desktop / Tablet 排列不变。
+- Mobile / coarse pointer 的底部工具栏保留粗体、斜体、文本、二级标题、项目列表、图片、文件原有命令和顺序。控件使用 Morphicons；前两项及附件为纯图标，块类型使用图标和短标签。格式状态以 `aria-pressed` 和 Quiet Studio selected surface 表达。Touch 标题图标复用 heading 图标并加右下角下标 2，可访问名称为“二级标题（H2）”，命令仍为 H2。
+- 工具栏保留横向滚动、44px 触摸目标、`visualViewport` 键盘避让和 safe-area 内边距；编辑器末尾按工具栏高度与键盘 inset 预留滚动空间。Touch Toolbar 存在且编辑器有焦点时，以工具栏实际顶部作为光标可见下边界，不依赖键盘 inset 大于零；仅在 selection head 进入顶部 12px 留白范围时补足必要滚动。正文变化、选区变化、输入、composition end、聚焦及 viewport resize/scroll 合并到双 requestAnimationFrame 后检查，光标已可见时不改变 scrollTop。Mobile Page 标题和本地保存状态纵向排列，Desktop / Tablet 排列不变。
 - `product-editor.spec.ts` 覆盖 390px 长标题、短视口、safe-area、模拟键盘 inset、格式状态及 Mobile Light / Dark 截图。
 
 ## P5.8.5 已支持块与格式入口

@@ -1,15 +1,18 @@
-# Current Task — HarmonyOS 应用内补充验收
+# Current Task — HarmonyOS Touch Toolbar / caret 修复
 
-2026-10-06；指定 0.0.1-beta HAP，构建 master a0d3a4da93eb。
+2026-10-06；master；仅 H2 图标识别与长正文 caret 避让。已完成。
 
 ## Work Units
-1. S0 verify / main：nova 14 连接、覆盖安装、包与设备元数据（完成）。
-2. S0 investigate / scout：XElement Harmony picker / IME 实现定位（完成）。
-3. S0 verify / main：Page 导航、新 Page 输入/格式/选择/附件入口/Safe Area（完成）。
-4. S1 execute / scout + main：证据与报告（完成）；Review / reviewer：报告、截图隐私与证据语义复核通过；15链接/15 SHA256/12 PNG边界/UTF8检查通过。提交范围仅文档与证据。
+1. S0 investigate / scout：确认 document-wrap 为实际 overflow:auto 正文容器、验证入口（完成）。
+2. S2 decide / main：保留 fixed Toolbar；实际 toolbar top + 12px；去掉 inset 前置；双 RAF 合并事件检查（完成）。
+3. S1 execute / fast_worker：组件局部修复和真实 DOM Playwright 回归（完成）。
+4. S0 verify / scout + main：web typecheck、15-spec web 回归、视觉与生产编辑器回归（完成）；Review / reviewer：独立复核无 blocker。
 
 ## Invariants
-用户已手测鸿蒙断网重连等，本轮只应用内操作，不重复登录或主动断网/kill，不改产品功能。附件上传由用户另测。用户手测与 Agent 实测分开标识；原始含账户信息截图只存 ignored release/runtime-verification。硬 Gate 未完成不推断 PASS。
+H2 命令不变；复用 Morphicons + 下标 2；44px target；无 UA 分支；不改附件、同步、Bubble/Slash、版本号和 release 规则。两个独立逻辑修复分别提交并 push master。
 
 ## Results
-Workspace/Page 与本次基本输入样例通过；连续长正文 caret 被 Touch Toolbar 遮挡，Safe Area/IME FAIL；标题按钮实际 H2，不满足原 H1。图片与文件入口均弹系统选择界面；上传/渲染/重启保留由用户接手。普通在线重新进入内容保留、已同步；不替代离线落盘、kill、pending oplog或第二客户端证据。
+Web typecheck 通过；生产编辑器 build/回归 1/1；视觉 7/7。15-spec 共 204 项首轮 202 通过：新增 caret 用例的旧 blur/遮挡场景已修正，H2/caret 两用例各重复三次 6/6；5,000 区块 fixture 在四 worker 下超时，单独复跑 1/1（6.4s，未改 timeout）。最终所有用例已覆盖并通过。git diff --check 通过。
+
+## Remaining verification
+nova 14 真机 H2 识别与连续长正文 caret 仍待复测；自动化不替代原生 IME 验收。HAP 默认加载远端 Web，复测须确保远端 Web 部署本轮提交，仅重新打包 HAP 不更新远端页面。

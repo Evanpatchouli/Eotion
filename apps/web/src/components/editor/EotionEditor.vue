@@ -55,6 +55,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const touchToolbarElement = ref<HTMLElement | null>(null)
 let pageEpoch = 0
 let disposed = false
+let caretScrollFrame: number | undefined
 
 function updateKeyboardInset() {
   const viewport = window.visualViewport
@@ -62,19 +63,22 @@ function updateKeyboardInset() {
     ? Math.max(0, Math.round(window.innerHeight - viewport.offsetTop - viewport.height))
     : 0
   emit('keyboardInset', keyboardInset.value)
-  keepCaretAboveTouchToolbar()
+  scheduleCaretVisibility()
 }
 
-function keepCaretAboveTouchToolbar() {
-  if (keyboardInset.value === 0 || !editor.value?.isFocused) return
-  requestAnimationFrame(() => {
-    const current = editor.value
-    const toolbar = touchToolbarElement.value
-    const scroll = current?.view.dom.closest('.document-wrap')
-    if (!current?.isFocused || !toolbar || !(scroll instanceof HTMLElement)) return
-    const caret = current.view.coordsAtPos(current.state.selection.head)
-    const overlap = caret.bottom + 12 - toolbar.getBoundingClientRect().top
-    if (overlap > 0) scroll.scrollTop += overlap
+function scheduleCaretVisibility() {
+  if (disposed || !props.touchToolbar || !touchToolbarElement.value || !editor.value?.isFocused || caretScrollFrame !== undefined) return
+  caretScrollFrame = requestAnimationFrame(() => {
+    caretScrollFrame = requestAnimationFrame(() => {
+      caretScrollFrame = undefined
+      const current = editor.value
+      const toolbar = touchToolbarElement.value
+      const scroll = current?.view.dom.closest('.document-wrap')
+      if (disposed || !props.touchToolbar || !current?.isFocused || !toolbar || !(scroll instanceof HTMLElement)) return
+      const caret = current.view.coordsAtPos(current.state.selection.head)
+      const overlap = caret.bottom + 12 - toolbar.getBoundingClientRect().top
+      if (overlap > 0) scroll.scrollTop += Math.ceil(overlap)
+    })
   })
 }
 
@@ -82,6 +86,8 @@ onMounted(() => {
   updateKeyboardInset()
   window.visualViewport?.addEventListener('resize', updateKeyboardInset)
   window.visualViewport?.addEventListener('scroll', updateKeyboardInset)
+  window.addEventListener('resize', scheduleCaretVisibility)
+  window.addEventListener('scroll', scheduleCaretVisibility)
 })
 onBeforeUnmount(() => {
   disposed = true
@@ -92,13 +98,16 @@ onBeforeUnmount(() => {
   }
   window.visualViewport?.removeEventListener('resize', updateKeyboardInset)
   window.visualViewport?.removeEventListener('scroll', updateKeyboardInset)
+  window.removeEventListener('resize', scheduleCaretVisibility)
+  window.removeEventListener('scroll', scheduleCaretVisibility)
+  if (caretScrollFrame !== undefined) cancelAnimationFrame(caretScrollFrame)
 })
 
 function updateSelection() {
   if (!editor.value) return
   const { from, to, empty } = editor.value.state.selection
   emit('selection', from, to, empty)
-  keepCaretAboveTouchToolbar()
+  scheduleCaretVisibility()
 }
 
 const { editor, getDocument } = useDocumentEditor({
@@ -109,7 +118,10 @@ const { editor, getDocument } = useDocumentEditor({
   onCreate: updateSelection,
   onSelectionUpdate: updateSelection,
   onUpdate: document => emit('update', document),
-  onTransaction: ({ transaction }) => emit('transaction', transaction.docChanged),
+  onTransaction: ({ transaction }) => {
+    emit('transaction', transaction.docChanged)
+    if (transaction.docChanged || transaction.selectionSet) scheduleCaretVisibility()
+  },
 })
 
 function previewable(file: File): boolean {
@@ -340,6 +352,7 @@ function onCompositionEnd(event: CompositionEvent) {
   const document = getDocument()
   if (document) emit('update', document)
   for (const finish of [...compositionWaiters]) finish()
+  scheduleCaretVisibility()
 }
 
 function selectBlock(command: BlockCommand) {
@@ -383,6 +396,8 @@ defineExpose({ editor })
     <EditorContent
       :editor="editor"
       class="eotion-editor-content"
+      @input="scheduleCaretVisibility"
+      @focusin="scheduleCaretVisibility"
       @compositionstart="onCompositionStart"
       @compositionupdate="emit('composition', true, $event)"
       @compositionend="onCompositionEnd"
