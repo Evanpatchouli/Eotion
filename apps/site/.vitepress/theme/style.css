@@ -138,6 +138,8 @@ body { -webkit-font-smoothing: antialiased; }
 .download-row h2 { font-size: 23px; font-weight: 500; line-height: 1.5; letter-spacing: -.5px; }
 .download-row p { font-size: 13px; color: var(--studio-secondary); margin-top: 6px; }
 .download-options { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.download-button-version { color: var(--studio-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.site-button.primary .download-button-version { color: inherit; opacity: .72; }
 .unavailable { display: inline-flex; min-height: 44px; align-items: center; padding-block: 10px; color: var(--studio-muted); font-size: 12px; }
 .recommendation { display: inline-block; margin-left: 10px; color: var(--studio-success); }
 .download-note { margin-top: 38px; font-size: 13px; line-height: 1.95; color: var(--studio-secondary); }
