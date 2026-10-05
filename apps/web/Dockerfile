@@ -34,8 +34,10 @@ COPY packages/storage/tsconfig.json packages/storage/tsconfig.json
 
 ARG GIT_SHA=unknown
 ARG VITE_ALLOW_PAGE_ZOOM=false
+ARG VITE_SHOW_DIAGNOSTIC_DETAILS=false
 ENV GIT_SHA=${GIT_SHA}
 ENV VITE_ALLOW_PAGE_ZOOM=${VITE_ALLOW_PAGE_ZOOM}
+ENV VITE_SHOW_DIAGNOSTIC_DETAILS=${VITE_SHOW_DIAGNOSTIC_DETAILS}
 
 RUN pnpm --filter @eotion/web build
 
