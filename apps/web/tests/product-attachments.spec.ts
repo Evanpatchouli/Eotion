@@ -1,8 +1,11 @@
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
 import { expect, test, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
+const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pWQAAAAASUVORK5CYII=', 'base64')
 const user: AuthUserDto = { id: 'attachment-user', email: 'attachment@example.com', createdAt: now, updatedAt: now }
 const workspace: WorkspaceResponse = { id: 'attachment-workspace', name: '附件工作区', ownerId: user.id, createdAt: now, updatedAt: now }
 const pageRecord: PageResponse = { id: 'attachment-page', workspaceId: workspace.id, parentPageId: null, title: '附件页面', orderKey: '0000000000000001', createdAt: now, updatedAt: now }
@@ -15,6 +18,7 @@ function block(id: string, order: number, node: Record<string, unknown>): BlockR
 type Attachment = { id: string; workspaceId: string; name: string; mimeType: string; size: number; url: string; objectKey?: string }
 type RecordedRequest = { method: string; path: string; body?: any; contentType?: string; fileId?: string; fileName?: string }
 type Controls = { uploadStatus: number; uploadDelayMs: number; holdUploads: boolean; holdUploadResponse: boolean; holdCleanupDeletes: boolean; abortedUploads: number; uploadStatuses: number[]; operationStatus: number; cleanupStatus: number; online: boolean }
+type HeldUploadResponse = { fileName: string; release: () => void }
 
 async function installApi(page: Page, initialBlocks: BlockResponse[] = []) {
   const pages = [pageRecord]
@@ -23,7 +27,7 @@ async function installApi(page: Page, initialBlocks: BlockResponse[] = []) {
   const requests: RecordedRequest[] = []
   const controls: Controls = { uploadStatus: 201, uploadDelayMs: 0, holdUploads: false, holdUploadResponse: false, holdCleanupDeletes: false, abortedUploads: 0, uploadStatuses: [], operationStatus: 200, cleanupStatus: 204, online: true }
   const cleanupDeleteReleases: Array<() => void> = []
-  const uploadResponseReleases: Array<() => void> = []
+  const uploadResponseReleases: HeldUploadResponse[] = []
   const json = (route: Route, status: number, body: unknown) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
   const apiError = (status: number, message: string) => ({ statusCode: status, message, error: status === 401 ? 'Unauthorized' : 'Internal Server Error' })
   const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -52,7 +56,7 @@ async function installApi(page: Page, initialBlocks: BlockResponse[] = []) {
       if (contentType !== 'application/octet-stream') throw new Error(`Expected raw file upload, received ${contentType}`)
       if (controls.holdUploads) await wait(800)
       if (controls.uploadDelayMs) await wait(controls.uploadDelayMs)
-      if (controls.holdUploadResponse) await new Promise<void>((resolve) => uploadResponseReleases.push(resolve))
+      if (controls.holdUploadResponse) await new Promise<void>((resolve) => uploadResponseReleases.push({ fileName: decodeURIComponent(request.headers()['x-eotion-file-name'] ?? 'upload.bin'), release: resolve }))
       const status = controls.uploadStatuses.shift() ?? controls.uploadStatus
       if (status !== 201 && status !== 200) return json(route, status, apiError(status, status === 413 ? '上传文件超过服务器限制。' : status === 401 ? 'Session expired' : 'Unavailable'))
       const id = decodeURIComponent(request.headers()['x-eotion-file-id'] ?? `file-${files.size + 1}`)
@@ -96,15 +100,43 @@ async function installApi(page: Page, initialBlocks: BlockResponse[] = []) {
   return {
     pages, blocks, files, requests, controls,
     releaseCleanupDeletes: () => cleanupDeleteReleases.splice(0).forEach((release) => release()),
-    releaseUploadResponses: () => uploadResponseReleases.splice(0).forEach((release) => release()),
+    releaseUploadResponses: () => uploadResponseReleases.splice(0).forEach((item) => item.release()),
+    releaseUploadResponse: (fileName: string) => {
+      const index = uploadResponseReleases.findIndex((item) => item.fileName === fileName)
+      if (index >= 0) uploadResponseReleases.splice(index, 1)[0]!.release()
+    },
   }
 }
 
 const editor = (page: Page) => page.locator('.eotion-editor-content .tiptap')
+const inlineUploads = (page: Page) => page.locator('.eotion-upload-placeholder')
 const uploadRequests = (api: Awaited<ReturnType<typeof installApi>>) => api.requests.filter((item) => item.method === 'POST' && item.path === `/api/workspaces/${workspace.id}/files`)
 const blockOperations = (api: Awaited<ReturnType<typeof installApi>>) => api.requests.filter((item) => item.path === '/api/sync/operations' && ['block.upsert', 'block.delete'].includes(item.body?.kind))
 const insertFile = (page: Page, kind: 'image' | 'file', name: string, mimeType: string, buffer = Buffer.from('attachment test bytes')) =>
   page.getByLabel(kind === 'image' ? '选择图片附件' : '选择文件附件').setInputFiles({ name, mimeType, buffer })
+async function visualQaScreenshot(page: Page, name: string) {
+  const directory = process.env.EOTION_VISUAL_QA_DIR
+  if (!directory) return
+  await mkdir(directory, { recursive: true })
+  await page.screenshot({ path: path.join(directory, `${name}.png`), animations: 'disabled' })
+}
+async function setEditorSelection(page: Page, position: number) {
+  await editor(page).evaluate((element, selection) => {
+    const component = (element.closest('.eotion-editor') as any)?.__vueParentComponent
+    const exposedEditor = component?.exposed?.editor
+    const tiptap = exposedEditor?.commands ? exposedEditor : exposedEditor?.value
+    if (!tiptap?.commands) throw new Error('EotionEditor did not expose its Tiptap editor')
+    tiptap.commands.setTextSelection(selection)
+  }, position)
+}
+async function insertEditorText(page: Page, text: string) {
+  await editor(page).evaluate((element, value) => {
+    const exposedEditor = (element.closest('.eotion-editor') as any)?.__vueParentComponent?.exposed?.editor
+    const tiptap = exposedEditor?.commands ? exposedEditor : exposedEditor?.value
+    if (!tiptap?.commands) throw new Error('EotionEditor did not expose its Tiptap editor')
+    tiptap.commands.insertContent(value)
+  }, text)
+}
 async function deleteAttachment(page: Page, selector: string) {
   const attachment = page.locator(selector)
   await attachment.getByRole('button', { name: '附件操作' }).click()
@@ -113,8 +145,11 @@ async function deleteAttachment(page: Page, selector: string) {
 }
 
 test('slash image command and picker upload become one local block, sync operation and reloadable snapshot', async ({ page }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.stack ?? error.message))
   const api = await installApi(page)
   api.controls.holdUploadResponse = true
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
   await expect(editor(page)).toBeVisible()
   await editor(page).click()
@@ -123,43 +158,89 @@ test('slash image command and picker upload become one local block, sync operati
   await page.locator('.p2-slash-menu').getByRole('option', { name: '图片' }).click()
   const imageInput = page.getByLabel('选择图片附件')
   await expect(imageInput).toHaveAttribute('accept', 'image/png,image/jpeg,image/webp,image/gif,image/avif')
-  await insertFile(page, 'image', 'tiny.png', 'image/png', Buffer.from('png'))
+  await insertFile(page, 'image', 'tiny.png', 'image/png', tinyPng)
   await expect.poll(() => uploadRequests(api).length).toBe(1)
-  await expect(page.locator('.eotion-upload-item')).toContainText('正在上传')
-  await expect(page.locator('.eotion-upload-preview')).toBeVisible()
+  const placeholder = inlineUploads(page)
+  await expect(placeholder).toHaveCount(1)
+  await expect(editor(page).locator(':scope > p.eotion-upload-occupied')).toHaveCount(1)
+  await expect(placeholder).toContainText('tiny.png')
+  await expect(placeholder).toContainText('正在上传')
+  await expect(placeholder.locator('.eotion-upload-spinner')).toBeVisible()
+  await expect(placeholder.locator('.eotion-upload-preview')).toBeVisible()
+  await expect(placeholder.locator('.eotion-upload-preview')).toHaveJSProperty('naturalWidth', 1)
+  const editorJsonDuringUpload = await editor(page).evaluate((element) => {
+    const exposedEditor = (element.closest('.eotion-editor') as any)?.__vueParentComponent?.exposed?.editor
+    const tiptap = exposedEditor?.commands ? exposedEditor : exposedEditor?.value
+    return JSON.stringify(tiptap.getJSON())
+  })
+  expect(editorJsonDuringUpload).not.toContain('blob:')
+  expect(editorJsonDuringUpload).not.toContain('upload')
+  const localJsonDuringUpload = await page.evaluate(async (id) => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    return JSON.stringify(await (await useProductSyncStore().store()).listBlocksByPage(id))
+  }, pageRecord.id)
+  expect(localJsonDuringUpload).not.toContain('blob:')
+  expect(localJsonDuringUpload).not.toContain('eotionUpload')
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+  await visualQaScreenshot(page, 'attachment-desktop-image-uploading')
   api.releaseUploadResponses()
   await expect.poll(() => api.files.size).toBe(1)
   await expect(page.locator('.attachment-image img')).toHaveAttribute('src', [...api.files.values()][0]!.url)
   await expect(page.locator('.attachment-image')).toHaveCount(1)
+  await expect.poll(() => editor(page).evaluate((root) => Array.from(root.children).map((node) => node.tagName))).toEqual(['FIGURE', 'P'])
+  await expect(editor(page).locator(':scope > p')).toHaveCount(1)
   await expect.poll(() => api.blocks.filter((item) => item.type === 'image').length).toBe(1)
+  await expect.poll(() => api.blocks.filter((item) => item.type === 'paragraph').length).toBe(1)
+  expect([...api.blocks].sort((a, b) => a.orderKey.localeCompare(b.orderKey)).map((item) => item.type)).toEqual(['image', 'paragraph'])
   expect(uploadRequests(api)).toHaveLength(1)
   expect(blockOperations(api).filter((item) => item.body.kind === 'block.upsert' && item.body.payload.type === 'image')).toHaveLength(1)
+  // The fallback empty paragraph must be consumed by the image without an extra
+  // delete/re-upsert cycle for the auto-appended trailing paragraph.
+  expect(blockOperations(api).filter((item) => item.body.kind === 'block.delete')).toHaveLength(0)
+  expect(blockOperations(api).filter((item) => item.body.kind === 'block.upsert' && item.body.payload.type === 'paragraph')).toHaveLength(1)
   const uploaded = [...api.files.values()][0]!
   expect(api.blocks.find((item) => item.type === 'image')?.props.node).toMatchObject({ type: 'eotionImage', attrs: { fileId: uploaded.id, name: 'tiny.png', mimeType: 'image/png', url: uploaded.url } })
   await page.reload()
   await expect(page.locator('.attachment-image')).toHaveCount(1)
   await expect(page.locator('.attachment-image img')).toHaveAttribute('src', uploaded.url)
+  expect(pageErrors).toEqual([])
 })
 
 test('file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block', async ({ page }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.stack ?? error.message))
   await page.addInitScript(() => localStorage.setItem('eotion:editor-toolbar:attachment-user:attachment-workspace', 'true'))
   const api = await installApi(page)
   api.controls.uploadStatuses = [503, 201]
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
-  await page.locator('.eotion-editor-toolbar').getByRole('button', { name: '文件', exact: true }).click()
+  await page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button', { name: '插入文件' }).click()
   await expect(page.getByLabel('选择文件附件')).toHaveAttribute('type', 'file')
   await insertFile(page, 'file', 'notes.txt', 'text/plain')
-  const task = page.locator('.eotion-upload-item')
+  const task = inlineUploads(page)
   await expect(task).toContainText('附件服务暂时不可用')
   await expect(task.getByRole('button', { name: '重试上传 notes.txt' })).toBeVisible()
+  const retryButton = task.getByRole('button', { name: '重试上传 notes.txt' })
+  const retryBounds = await retryButton.boundingBox()
+  expect(retryBounds?.height).toBeGreaterThanOrEqual(44)
+  expect(retryBounds?.width).toBeGreaterThanOrEqual(44)
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+  await visualQaScreenshot(page, 'attachment-mobile-file-failed-retry')
+  const uploadId = await task.getAttribute('data-upload-id')
   await expect(page.locator('.attachment-file')).toHaveCount(0)
-  await task.getByRole('button', { name: '重试上传 notes.txt' }).click()
+  api.controls.holdUploadResponse = true
+  await retryButton.click()
+  await expect.poll(() => uploadRequests(api).length).toBe(2)
+  await expect(task).toHaveAttribute('data-upload-id', uploadId!)
+  await expect(task).toContainText('正在上传')
+  api.releaseUploadResponses()
   await expect(page.locator('.attachment-file-name')).toHaveText('notes.txt')
   await expect.poll(() => api.blocks.filter((item) => item.type === 'file').length).toBe(1)
   expect(uploadRequests(api)).toHaveLength(2)
   expect(new Set(uploadRequests(api).map((item) => item.fileName)).size).toBe(1)
   expect(api.blocks.filter((item) => item.type === 'file')).toHaveLength(1)
   expect(blockOperations(api).filter((item) => item.body.kind === 'block.upsert' && item.body.payload.type === 'file')).toHaveLength(1)
+  expect(pageErrors).toEqual([])
 })
 
 test('cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block', async ({ page }) => {
@@ -170,13 +251,281 @@ test('cancel aborts an in-flight upload, removes its preview URL, and creates no
   const preview = page.locator('.eotion-upload-preview')
   await expect(preview).toBeVisible()
   const objectUrl = await preview.getAttribute('src')
+  await expect(inlineUploads(page)).toHaveCount(1)
   await page.getByRole('button', { name: '取消上传 cancel.png' }).click()
-  await expect(page.locator('.eotion-upload-item')).toContainText('已取消')
+  await expect(page.locator('.eotion-upload-terminal')).toContainText('cancel.png · 已取消')
+  await expect(inlineUploads(page)).toHaveCount(0)
+  await expect(editor(page).locator(':scope > p')).toHaveCount(1)
   await expect.poll(() => api.controls.abortedUploads).toBe(1)
   await expect.poll(() => api.requests.filter((item) => item.method === 'DELETE').length).toBe(1)
   await expect.poll(async () => page.evaluate((url) => (window as any).__revokedObjectUrls.includes(url), objectUrl)).toBe(true)
   expect(api.blocks).toHaveLength(0)
   expect(blockOperations(api)).toHaveLength(0)
+})
+
+test('a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('eotion:editor-toolbar:attachment-user:attachment-workspace', 'true'))
+  const api = await installApi(page, [
+    block('first-paragraph', 1, { type: 'paragraph', content: [{ type: 'text', text: 'First paragraph' }] }),
+    block('empty-middle-paragraph', 2, { type: 'paragraph' }),
+    block('second-paragraph', 3, { type: 'paragraph', content: [{ type: 'text', text: 'Second paragraph' }] }),
+  ])
+  api.controls.holdUploadResponse = true
+  await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+  await expect(editor(page).locator(':scope > p')).toHaveCount(3)
+  await setEditorSelection(page, 18)
+  const chooserPromise = page.waitForEvent('filechooser')
+  await page.locator('.eotion-editor-toolbar').getByRole('button', { name: '文件', exact: true }).click()
+  const chooser = await chooserPromise
+  await setEditorSelection(page, 25)
+  await chooser.setFiles({ name: 'frozen-position.txt', mimeType: 'text/plain', buffer: Buffer.from('frozen') })
+  await expect.poll(() => uploadRequests(api).length).toBe(1)
+  await expect(inlineUploads(page)).toContainText('frozen-position.txt')
+  await expect(editor(page).locator(':scope > p.eotion-upload-occupied')).toHaveCount(1)
+  api.releaseUploadResponses()
+  await expect(page.locator('.attachment-file-name')).toHaveText('frozen-position.txt')
+  await expect.poll(async () => editor(page).locator(':scope > p').allTextContents()).toEqual(['First paragraph', 'Second paragraph'])
+  await expect.poll(async () => {
+    return editor(page).evaluate((root) => Array.from(root.children).map((node) => {
+      if (node.matches('.attachment-file')) return (node.querySelector('.attachment-file-name')?.textContent ?? '').trim()
+      return (node.textContent ?? '').trim()
+    }))
+  }).toEqual(['First paragraph', 'frozen-position.txt', 'Second paragraph'])
+  const durableLocalBlocks = await page.evaluate(async (id) => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    return JSON.stringify(await (await useProductSyncStore().store()).listBlocksByPage(id))
+  }, pageRecord.id)
+  expect(durableLocalBlocks).not.toContain('blob:')
+  expect(durableLocalBlocks).not.toContain('upload-placeholder')
+  await expect.poll(() => api.blocks.some((item) => item.type === 'file')).toBe(true)
+  expect(api.blocks.find((item) => item.type === 'image' || item.type === 'file')?.id).toBe('empty-middle-paragraph')
+})
+
+test('typing in the original empty paragraph while saving keeps the text after attachment commit', async ({ page }) => {
+  const api = await installApi(page)
+  api.controls.holdUploadResponse = true
+  await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+  await page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    const upsert = local.upsertBlock.bind(local)
+    ;(window as any).__attachmentCommitEntered = false
+    ;(window as any).__releaseAttachmentCommit = undefined
+    local.upsertBlock = async (record: any) => {
+      if (record.type === 'image' || record.type === 'file') {
+        ;(window as any).__attachmentCommitEntered = true
+        await new Promise<void>((resolve) => { (window as any).__releaseAttachmentCommit = resolve })
+      }
+      return upsert(record)
+    }
+  })
+  await insertFile(page, 'image', 'saving.png', 'image/png', tinyPng)
+  await expect.poll(() => uploadRequests(api).length).toBe(1)
+  await setEditorSelection(page, 1)
+  await insertEditorText(page, 'Keep this paragraph')
+  await expect(editor(page)).toContainText('Keep this paragraph')
+  const editorJsonDuringUpload = await editor(page).evaluate((element) => {
+    const exposedEditor = (element.closest('.eotion-editor') as any)?.__vueParentComponent?.exposed?.editor
+    const tiptap = exposedEditor?.commands ? exposedEditor : exposedEditor?.value
+    return JSON.stringify(tiptap.getJSON())
+  })
+  expect(editorJsonDuringUpload).toContain('Keep this paragraph')
+  expect(editorJsonDuringUpload).not.toContain('blob:')
+  expect(editorJsonDuringUpload).not.toContain('upload')
+  await expect.poll(async () => page.evaluate(async (id) => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    return JSON.stringify(await (await useProductSyncStore().store()).listBlocksByPage(id))
+  }, pageRecord.id)).toContain('Keep this paragraph')
+  const persistedLocalJsonDuringUpload = await page.evaluate(async (id) => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    return JSON.stringify(await (await useProductSyncStore().store()).listBlocksByPage(id))
+  }, pageRecord.id)
+  expect(persistedLocalJsonDuringUpload).toContain('Keep this paragraph')
+  expect(persistedLocalJsonDuringUpload).not.toContain('blob:')
+  expect(persistedLocalJsonDuringUpload).not.toContain('eotionUpload')
+  api.releaseUploadResponses()
+  await expect.poll(() => page.evaluate(() => (window as any).__attachmentCommitEntered)).toBe(true)
+  await expect(inlineUploads(page)).toContainText('正在保存附件')
+  await page.evaluate(() => (window as any).__releaseAttachmentCommit?.())
+  await expect(page.locator('.attachment-image')).toHaveCount(1)
+  await expect(editor(page)).toContainText('Keep this paragraph')
+  await expect.poll(() => (api.blocks.find((item) => item.type === 'paragraph')?.props.node as any)?.content?.[0]?.text).toBe('Keep this paragraph')
+})
+
+test('a later selected file completing first leaves no leftover empty paragraph when the first upload fails', async ({ page }) => {
+  const api = await installApi(page)
+  api.controls.holdUploadResponse = true
+  api.controls.uploadStatuses = [201, 503]
+  await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+  await page.getByLabel('选择文件附件').setInputFiles([
+    { name: 'first-empty-slot.txt', mimeType: 'text/plain', buffer: Buffer.from('first') },
+    { name: 'second-empty-slot.txt', mimeType: 'text/plain', buffer: Buffer.from('second') },
+  ])
+  await expect.poll(() => uploadRequests(api).length).toBe(2)
+  await expect(inlineUploads(page)).toHaveCount(2)
+  api.releaseUploadResponse('second-empty-slot.txt')
+  await expect(page.locator('.attachment-file-name')).toHaveText('second-empty-slot.txt')
+  await expect.poll(() => api.blocks.filter((item) => item.type === 'file').length).toBe(1)
+  api.releaseUploadResponse('first-empty-slot.txt')
+  const failed = inlineUploads(page).filter({ hasText: 'first-empty-slot.txt' })
+  await expect(failed).toContainText('附件服务暂时不可用')
+  await expect(failed.getByRole('button', { name: '重试上传 first-empty-slot.txt' })).toBeVisible()
+  await failed.getByRole('button', { name: '移除 first-empty-slot.txt' }).click()
+  await expect(failed).toHaveCount(0)
+  await expect(page.locator('.attachment-file-name')).toHaveText('second-empty-slot.txt')
+  await expect(editor(page).locator(':scope > p.eotion-upload-occupied')).toHaveCount(0)
+  await expect(editor(page).locator(':scope > p')).toHaveCount(1)
+  const fileBlocks = api.blocks.filter((item) => item.type === 'file')
+  expect(fileBlocks).toHaveLength(1)
+  // The shared empty paragraph must be consumed by the attachments, never left
+  // behind as an extra blank line before the surviving file block.
+  const trailingParagraphs = api.blocks.filter((item) => item.type === 'paragraph')
+  expect(trailingParagraphs).toHaveLength(1)
+  expect((trailingParagraphs[0]!.props.node as any).content ?? []).toEqual([])
+})
+
+test('failed save restores user text changed in the provisional attachment block and queues cleanup', async ({ page }) => {
+  const api = await installApi(page)
+  api.controls.holdUploadResponse = true
+  await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+  await page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    const upsert = local.upsertBlock.bind(local)
+    ;(window as any).__attachmentCommitEntered = false
+    ;(window as any).__releaseAttachmentCommit = undefined
+    local.upsertBlock = async (record: any) => {
+      if (record.type === 'image' || record.type === 'file') {
+        ;(window as any).__attachmentCommitEntered = true
+        await new Promise<void>((resolve) => { (window as any).__releaseAttachmentCommit = resolve })
+        throw new Error('injected attachment persistence failure')
+      }
+      return upsert(record)
+    }
+  })
+  await insertFile(page, 'file', 'failed-save.txt', 'text/plain')
+  await expect.poll(() => uploadRequests(api).length).toBe(1)
+  api.releaseUploadResponses()
+  await expect.poll(() => page.evaluate(() => (window as any).__attachmentCommitEntered)).toBe(true)
+  await expect(inlineUploads(page)).toContainText('正在保存附件')
+  await editor(page).evaluate((element) => {
+    const exposedEditor = (element.closest('.eotion-editor') as any)?.__vueParentComponent?.exposed?.editor
+    const tiptap = exposedEditor?.commands ? exposedEditor : exposedEditor?.value
+    let position = -1
+    let blockId: string | undefined
+    tiptap.state.doc.forEach((node: any, offset: number) => {
+      if (node.type.name === 'eotionFile' || node.type.name === 'eotionImage') { position = offset; blockId = node.attrs.blockId }
+    })
+    if (position < 0) throw new Error('Provisional attachment node was not inserted')
+    const transaction = tiptap.state.tr.setNodeMarkup(position, tiptap.schema.nodes.paragraph, blockId ? { blockId } : {})
+    transaction.insertText('Text edited while saving', position + 1)
+    tiptap.view.dispatch(transaction)
+  })
+  await expect(editor(page)).toContainText('Text edited while saving')
+  await page.evaluate(() => (window as any).__releaseAttachmentCommit?.())
+  const failed = inlineUploads(page)
+  await expect(failed).toContainText('本地正文没有保存此附件')
+  await expect(editor(page)).toContainText('Text edited while saving')
+  await expect(page.locator('.attachment-file')).toHaveCount(0)
+  await expect.poll(() => api.requests.filter((item) => item.method === 'DELETE').length).toBe(1)
+  expect(api.files.size).toBe(0)
+  await expect.poll(async () => page.evaluate(async (id) => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    return JSON.stringify(await (await useProductSyncStore().store()).listBlocksByPage(id))
+  }, pageRecord.id)).toContain('Text edited while saving')
+})
+
+test('cancelling the first empty-slot upload while the second saves leaves no empty gap', async ({ page }) => {
+  const api = await installApi(page, [
+    block('race-first-paragraph', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Before attachments' }] }),
+    block('race-empty-paragraph', 2, { type: 'paragraph' }),
+    block('race-last-paragraph', 3, { type: 'paragraph', content: [{ type: 'text', text: 'After attachments' }] }),
+  ])
+  api.controls.holdUploadResponse = true
+  await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+  await page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    const upsert = local.upsertBlock.bind(local)
+    ;(window as any).__secondCommitEntered = false
+    ;(window as any).__releaseSecondCommit = undefined
+    local.upsertBlock = async (record: any) => {
+      if ((record.props?.node as any)?.attrs?.name === 'second-empty-race.txt') {
+        ;(window as any).__secondCommitEntered = true
+        await new Promise<void>((resolve) => { (window as any).__releaseSecondCommit = resolve })
+      }
+      return upsert(record)
+    }
+  })
+  await setEditorSelection(page, 20)
+  await page.getByLabel('选择文件附件').setInputFiles([
+    { name: 'first-empty-race.txt', mimeType: 'text/plain', buffer: Buffer.from('first') },
+    { name: 'second-empty-race.txt', mimeType: 'text/plain', buffer: Buffer.from('second') },
+  ])
+  await expect.poll(() => uploadRequests(api).length).toBe(2)
+  api.releaseUploadResponse('second-empty-race.txt')
+  await expect.poll(() => page.evaluate(() => (window as any).__secondCommitEntered)).toBe(true)
+  await expect(inlineUploads(page).filter({ hasText: 'second-empty-race.txt' })).toContainText('正在保存附件')
+  await inlineUploads(page).filter({ hasText: 'first-empty-race.txt' }).getByRole('button', { name: '取消上传 first-empty-race.txt' }).click()
+  await expect(inlineUploads(page).filter({ hasText: 'first-empty-race.txt' })).toHaveCount(0)
+  await page.evaluate(() => (window as any).__releaseSecondCommit?.())
+  await expect(page.locator('.attachment-file-name')).toHaveText('second-empty-race.txt')
+  await expect.poll(async () => editor(page).evaluate((root) => Array.from(root.children).map((node) => {
+    if (node.matches('.attachment-file')) return (node.querySelector('.attachment-file-name')?.textContent ?? '').trim()
+    return (node.textContent ?? '').trim()
+  }))).toEqual(['Before attachments', 'second-empty-race.txt', 'After attachments'])
+  await expect.poll(() => api.blocks.some((item) => item.id === 'race-empty-paragraph')).toBe(false)
+  expect(api.blocks.filter((item) => item.type === 'paragraph').map((item) => (item.props.node as any).content?.[0]?.text)).toEqual(['Before attachments', 'After attachments'])
+})
+
+test('file picker remains usable when crypto.randomUUID is unavailable', async ({ page }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.stack ?? error.message))
+  await page.addInitScript(() => Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: undefined }))
+  const api = await installApi(page)
+  await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+  await insertFile(page, 'file', 'without-random-uuid.txt', 'text/plain')
+  await expect(page.locator('.attachment-file-name')).toHaveText('without-random-uuid.txt')
+  expect(uploadRequests(api)).toHaveLength(1)
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+  expect(pageErrors).toEqual([])
+})
+
+test('multiple files that finish out of order stay in their selected document order', async ({ page }) => {
+  const api = await installApi(page)
+  api.controls.holdUploadResponse = true
+  await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+  await page.getByLabel('选择文件附件').setInputFiles([
+    { name: 'first-selected.txt', mimeType: 'text/plain', buffer: Buffer.from('first') },
+    { name: 'second-selected.txt', mimeType: 'text/plain', buffer: Buffer.from('second') },
+  ])
+  await expect.poll(() => uploadRequests(api).length).toBe(2)
+  await expect(inlineUploads(page)).toHaveCount(2)
+  await expect(inlineUploads(page).nth(0)).toContainText('first-selected.txt')
+  await expect(inlineUploads(page).nth(1)).toContainText('second-selected.txt')
+  api.releaseUploadResponse('second-selected.txt')
+  await expect.poll(() => api.blocks.filter((item) => item.type === 'file').length).toBe(1)
+  api.releaseUploadResponse('first-selected.txt')
+  await expect.poll(async () => page.locator('.attachment-file-name').allTextContents()).toEqual(['first-selected.txt', 'second-selected.txt'])
+  await expect.poll(() => api.blocks.filter((item) => item.type === 'file').sort((a, b) => a.orderKey.localeCompare(b.orderKey)).map((item) => (item.props.node as any).attrs.name)).toEqual(['first-selected.txt', 'second-selected.txt'])
+})
+
+test('a late upload result from the previous page never enters the newly opened page', async ({ page }) => {
+  const api = await installApi(page)
+  const nextPage: PageResponse = { ...pageRecord, id: 'attachment-next-page', title: '新页面', orderKey: '0000000000000002' }
+  api.pages.push(nextPage)
+  api.controls.holdUploadResponse = true
+  await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+  await insertFile(page, 'file', 'previous-page.txt', 'text/plain')
+  await expect.poll(() => uploadRequests(api).length).toBe(1)
+  await expect(inlineUploads(page)).toContainText('previous-page.txt')
+  await page.getByRole('button', { name: nextPage.title, exact: true }).click()
+  await expect(page).toHaveURL(new RegExp(`page/${nextPage.id}$`))
+  await expect(editor(page)).toBeVisible()
+  api.releaseUploadResponses()
+  await expect.poll(() => api.requests.filter((item) => item.method === 'DELETE').length).toBe(1)
+  await expect(page.locator('.attachment-file')).toHaveCount(0)
+  expect(api.blocks.some((item) => item.pageId === nextPage.id && item.type === 'file')).toBe(false)
 })
 
 test('413 shows a readable upload error and retry control', async ({ page }) => {
@@ -232,7 +581,7 @@ test('a local attachment block upsert failure compensates the successful upload 
   })
   await insertFile(page, 'file', 'compensate.txt', 'text/plain')
   await expect.poll(() => page.evaluate(() => (window as any).__attachmentUpsertFailures)).toBe(1)
-  await expect(page.locator('.eotion-upload-item')).toContainText('本地正文没有保存此附件', { timeout: 15_000 })
+  await expect(inlineUploads(page)).toContainText('本地正文没有保存此附件', { timeout: 15_000 })
   await expect(page.locator('.attachment-file')).toHaveCount(0)
   await expect.poll(() => api.requests.filter((item) => item.method === 'DELETE').length).toBe(1)
   expect(api.blocks.filter((item) => item.type === 'file')).toHaveLength(0)
@@ -304,8 +653,8 @@ test('quick cancel and fresh selection stay safe while compensation DELETE is in
   await insertFile(page, 'file', 'quick-retry.txt', 'text/plain')
   await expect(page.locator('.eotion-upload-item')).toContainText('正在上传')
   await page.getByRole('button', { name: '取消上传 quick-retry.txt' }).click()
-  await expect(page.locator('.eotion-upload-item')).toContainText('已取消')
-  await page.getByRole('button', { name: '移除 quick-retry.txt' }).click()
+  await expect(inlineUploads(page)).toHaveCount(0)
+  await expect(page.locator('.eotion-upload-terminal')).toContainText('quick-retry.txt · 已取消')
   await expect.poll(() => api.requests.filter((item) => item.method === 'DELETE').length).toBe(1)
 
   api.controls.holdUploads = false

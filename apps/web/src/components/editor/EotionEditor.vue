@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Attributes } from '@tiptap/core'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { EditorContent } from '@tiptap/vue-3'
 import Link from '@tiptap/extension-link'
 import { exitSuggestion } from '@tiptap/suggestion'
@@ -10,6 +11,7 @@ import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
 import { BlockIdentity } from '../../editor/blockIdentity'
+import { createUploadPlaceholderExtension, UploadPlaceholderRegistry, type UploadPlaceholderTask, type UploadTarget } from '../../editor/uploadPlaceholders'
 import { isSafeLinkHref } from '../../editor/link'
 import { runBlockCommand, type BlockCommand } from '../../editor/blockCommands'
 import { enqueueAttachmentCleanup, pendingAttachmentCleanups } from '../../editor/attachmentCleanup'
@@ -21,8 +23,7 @@ import EotionIcon from '../ui/EotionIcon.vue'
 import EotionBubbleMenu from './EotionBubbleMenu.vue'
 
 type AttachmentKind = 'image' | 'file'
-type UploadPhase = 'uploading' | 'saving' | 'success' | 'failed' | 'cancelled'
-type UploadTask = { id: string; fileId: string; file: File; phase: UploadPhase; error: string; objectUrl?: string; controller?: AbortController; started: boolean; durable: boolean; epoch: number; running?: Promise<void> }
+type UploadTask = UploadPlaceholderTask
 const pendingCleanup = pendingAttachmentCleanups
 
 const props = defineProps<{ content: EditorDocument; touchToolbar: boolean; fixedToolbar?: boolean; ariaLabel?: string; workspaceId?: string; commitAttachment?: (blockId: string) => Promise<boolean> }>()
@@ -48,12 +49,15 @@ const ProductLink = Link.extend({
 const compositionWaiters = new Set<() => void>()
 const keyboardInset = ref(0)
 const uploads = ref<UploadTask[]>([])
+const uploadRegistry = new UploadPlaceholderRegistry()
 const uploadAlert = ref('')
 const draggingFiles = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const touchToolbarElement = ref<HTMLElement | null>(null)
 let pageEpoch = 0
+let uploadOrder = 0
+let pickerTarget: UploadTarget | undefined
 let disposed = false
 let caretScrollFrame: number | undefined
 
@@ -111,7 +115,9 @@ function updateSelection() {
 }
 
 const { editor, getDocument } = useDocumentEditor({
-  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, AttachmentLifetime, BlockIdentity, createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
+  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, AttachmentLifetime, BlockIdentity,
+    createUploadPlaceholderExtension(uploadRegistry, { cancel: cancelUpload, retry: task => { void upload(task) }, remove: removeTask }),
+    createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
   content: props.content,
   ariaLabel: props.ariaLabel ?? 'Tiptap 编辑区域',
   attributes: { spellcheck: 'false' },
@@ -130,6 +136,8 @@ function previewable(file: File): boolean {
 
 function openPicker(kind: AttachmentKind): void {
   if (!props.workspaceId) return
+  uploadRegistry.discardTarget(pickerTarget)
+  if (editor.value) pickerTarget = uploadRegistry.capture(editor.value.state)
   ;(kind === 'image' ? imageInput.value : fileInput.value)?.click()
 }
 
@@ -142,7 +150,9 @@ function onDrop(event: DragEvent): void {
   draggingFiles.value = false
   if (!props.workspaceId || !event.dataTransfer || !isOnlyFiles(event.dataTransfer)) return
   event.preventDefault()
-  queueFiles(Array.from(event.dataTransfer.files))
+  const current = editor.value
+  const dropPosition = current?.view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos
+  queueFiles(Array.from(event.dataTransfer.files), current ? uploadRegistry.capture(current.state, dropPosition ?? current.state.selection.from) : undefined)
 }
 
 function onDragOver(event: DragEvent): void {
@@ -180,19 +190,33 @@ function uploadError(error: unknown): string {
   return errorMessage(error, '附件上传失败，请检查网络后重试。')
 }
 
-function queueFiles(files: File[]): void {
+function queueFiles(files: File[], frozenTarget?: UploadTarget): void {
   if (!props.workspaceId) return
   uploadAlert.value = ''
+  const target = frozenTarget ?? (editor.value ? uploadRegistry.capture(editor.value.state) : undefined)
+  if (!target) return
+  if (files.length === 0) {
+    uploadRegistry.discardTarget(target)
+    return
+  }
   for (const file of files) {
     const online = navigator.onLine
     const task = reactive<UploadTask>({
       id: createLocalId(), fileId: createLocalId(), file, phase: online ? 'uploading' : 'failed',
       error: online ? '' : '附件上传需要联网；正文仍可继续编辑。',
       ...(previewable(file) ? { objectUrl: URL.createObjectURL(file) } : {}), started: false, durable: false, epoch: pageEpoch,
+      groupId: target.id, order: uploadOrder++, visible: true,
     })
     uploads.value.push(task)
+    uploadRegistry.add(task)
     if (online) void upload(task)
   }
+  refreshUploadPlaceholders()
+}
+
+function refreshUploadPlaceholders(): void {
+  const current = editor.value
+  if (current && !current.isDestroyed) current.view.dispatch(current.state.tr.setMeta('uploadPlaceholders', true))
 }
 
 async function waitForComposition(signal: AbortSignal): Promise<void> {
@@ -209,21 +233,25 @@ async function waitForComposition(signal: AbortSignal): Promise<void> {
 
 async function upload(task: UploadTask): Promise<void> {
   if (task.running) await task.running
-  if (disposed || task.durable) return
+  if (disposed || !task.visible || task.durable) return
   const run = performUpload(task)
   task.running = run
-  try { await run } finally { if (task.running === run) task.running = undefined }
+  try { await run } finally {
+    if (task.running === run) task.running = undefined
+    if (!task.visible) releaseTaskFile(task)
+    uploadRegistry.pruneGroup(task.groupId)
+  }
 }
 
 async function performUpload(task: UploadTask): Promise<void> {
   const entryEpoch = pageEpoch
   const workspaceId = props.workspaceId
-  if (!workspaceId || disposed) return
+  if (!workspaceId || disposed || !task.visible) return
   if (task.started) {
     // Retrying reuses the UI placeholder, never a file identity that may already
     // be queued for compensation from a lost response or cancelled attempt.
     if (!(await enqueueCleanup(workspaceId, task.fileId))) return
-    if (disposed || entryEpoch !== pageEpoch) return
+    if (disposed || entryEpoch !== pageEpoch || !task.visible) return
     task.fileId = createLocalId()
     task.started = false
   }
@@ -236,6 +264,7 @@ async function performUpload(task: UploadTask): Promise<void> {
   const epoch = task.epoch
   let uploadedFileId: string | undefined
   let insertedBlockId: string | undefined
+  let replacementNode: ProseMirrorNode | undefined
   try {
     task.started = true
     const uploaded = await api.files.upload(workspaceId, task.fileId, task.file, controller.signal)
@@ -257,53 +286,98 @@ async function performUpload(task: UploadTask): Promise<void> {
     insertedBlockId = blockId
     const nodeType = target.schema.nodes[kind === 'image' ? 'eotionImage' : 'eotionFile']
     if (!nodeType) throw new Error('编辑器附件类型尚未就绪。')
-    const node = nodeType.create({ ...attrs, blockId })
-    const selectionPosition = target.state.selection.from
-    let insertAt = target.state.doc.content.size
-    target.state.doc.forEach((current, offset) => {
-      if (selectionPosition >= offset && selectionPosition <= offset + current.nodeSize) insertAt = offset + current.nodeSize
-    })
+    const slot = uploadRegistry.resolveSlot(task, target.state)
+    const resolvedBlockId = slot.replaceBlockId ?? blockId
+    replacementNode = slot.restoreNode
+    const node = nodeType.create({ ...attrs, blockId: resolvedBlockId })
     task.phase = 'saving'
-    target.view.dispatch(target.state.tr.insert(insertAt, node).scrollIntoView())
+    task.error = ''
+    task.provisionalBlockId = resolvedBlockId
+    insertedBlockId = resolvedBlockId
+    let transaction = target.state.tr
+    if (slot.replaceFrom !== undefined && slot.replaceTo !== undefined) transaction = transaction.replaceWith(slot.replaceFrom, slot.replaceTo, node)
+    else transaction = transaction.insert(slot.position, node)
+    target.view.dispatch(transaction.scrollIntoView())
+    refreshUploadPlaceholders()
     await nextTick()
-    const durable = await props.commitAttachment(blockId)
+    if (disposed || epoch !== pageEpoch || controller.signal.aborted) return
+    const durable = await props.commitAttachment(resolvedBlockId)
+    if (disposed || epoch !== pageEpoch) return
     if (!durable) {
-      removeBlock(blockId)
+      restoreEmptySlot(task, resolvedBlockId, replacementNode)
       await enqueueCleanup(workspaceId, uploaded.id)
+      if (disposed || epoch !== pageEpoch) return
       task.phase = 'failed'
       task.error = '附件上传完成，但本地正文没有保存此附件；可以重试。'
+      cleanupEmptyTarget(task)
+      refreshUploadPlaceholders()
       return
     }
     task.durable = true
     task.phase = 'success'
+    task.error = ''
+    task.provisionalBlockId = undefined
+    uploadRegistry.setFinalBlockId(task, resolvedBlockId)
+    task.visible = false
+    refreshUploadPlaceholders()
+    cleanupEmptyTarget(task)
     if (task.objectUrl) URL.revokeObjectURL(task.objectUrl)
     task.objectUrl = undefined
     if (epoch !== pageEpoch || controller.signal.aborted) return
     window.setTimeout(() => removeTask(task), 1200)
   } catch (error) {
-    if (insertedBlockId) removeBlock(insertedBlockId)
+    if (insertedBlockId) restoreEmptySlot(task, insertedBlockId, replacementNode)
+    task.provisionalBlockId = undefined
+    task.finalBlockId = undefined
     if (uploadedFileId) await enqueueCleanup(workspaceId, uploadedFileId)
     else if (task.started) await enqueueCleanup(workspaceId, task.fileId)
+    if (disposed || epoch !== pageEpoch) return
     if (controller.signal.aborted) {
       task.phase = 'cancelled'
       task.error = '已取消'
+      refreshUploadPlaceholders()
       return
     }
     task.phase = 'failed'
     task.error = uploadError(error)
     uploadAlert.value = task.error
+    cleanupEmptyTarget(task)
+    refreshUploadPlaceholders()
   }
 }
 
-function removeBlock(blockId: string): void {
+function restoreEmptySlot(task: UploadTask, blockId: string, restoreNode?: ProseMirrorNode): void {
   const target = editor.value
   if (!target) return
   let removeFrom = -1
   let removeTo = -1
   target.state.doc.forEach((node, offset) => {
-    if (node.attrs.blockId === blockId) { removeFrom = offset; removeTo = offset + node.nodeSize }
+    if ((node.type.name === 'eotionImage' || node.type.name === 'eotionFile') &&
+      node.attrs.blockId === blockId && node.attrs.fileId === task.fileId) {
+      removeFrom = offset
+      removeTo = offset + node.nodeSize
+    }
   })
-  if (removeFrom >= 0) target.view.dispatch(target.state.tr.delete(removeFrom, removeTo))
+  task.provisionalBlockId = undefined
+  task.finalBlockId = undefined
+  if (removeFrom < 0) return
+  let transaction = target.state.tr
+  if (restoreNode) transaction = transaction.replaceWith(removeFrom, removeTo, restoreNode)
+  else transaction = transaction.delete(removeFrom, removeTo)
+  // Rollback is a correction to an uncommitted provisional insert.
+  transaction.setMeta('addToHistory', false)
+  target.view.dispatch(transaction)
+  refreshUploadPlaceholders()
+}
+
+function cleanupEmptyTarget(task: UploadTask): void {
+  const target = editor.value
+  if (!target || target.isDestroyed || !uploadRegistry.canCleanupEmptyTarget(target.state, task.groupId)) return
+  const range = uploadRegistry.emptyTargetRange(target.state, task.groupId)
+  if (!range) return
+  const transaction = target.state.tr.delete(range.from, range.to).setMeta('addToHistory', false)
+  target.view.dispatch(transaction)
+  refreshUploadPlaceholders()
 }
 
 async function enqueueCleanup(workspaceId: string, fileId: string): Promise<boolean> {
@@ -319,25 +393,50 @@ async function retryCleanups(): Promise<void> {
 }
 
 function removeTask(task: UploadTask): void {
+  if (task.running) {
+    task.controller?.abort()
+    task.phase = 'cancelled'
+  }
+  task.visible = false
+  cleanupEmptyTarget(task)
   if (task.objectUrl) URL.revokeObjectURL(task.objectUrl)
   task.objectUrl = undefined
   uploads.value = uploads.value.filter((item) => item !== task)
+  uploadRegistry.remove(task)
+  uploadRegistry.pruneGroup(task.groupId)
+  if (!task.running) releaseTaskFile(task)
+  refreshUploadPlaceholders()
+}
+
+function releaseTaskFile(task: UploadTask): void {
+  if (task.file.size > 0) task.file = new File([], task.file.name, { type: task.file.type })
 }
 
 function cancelUpload(task: UploadTask): void {
   task.controller?.abort()
   task.phase = 'cancelled'
   task.error = '已取消'
+  task.visible = false
   if (task.objectUrl) URL.revokeObjectURL(task.objectUrl)
   task.objectUrl = undefined
+  refreshUploadPlaceholders()
+  cleanupEmptyTarget(task)
+  window.setTimeout(() => removeTask(task), 1200)
 }
 
 function onFilesSelected(kind: AttachmentKind, event: Event): void {
   const input = event.target as HTMLInputElement
   const files = Array.from(input.files ?? [])
-  if (kind === 'image') queueFiles(files.filter(previewable))
-  else queueFiles(files)
+  const target = pickerTarget
+  pickerTarget = undefined
+  if (kind === 'image') queueFiles(files.filter(previewable), target)
+  else queueFiles(files, target)
   input.value = ''
+}
+
+function onPickerCancelled(): void {
+  uploadRegistry.discardTarget(pickerTarget)
+  pickerTarget = undefined
 }
 
 function onCompositionStart(event: CompositionEvent) {
@@ -373,20 +472,12 @@ defineExpose({ editor })
       <button v-if="workspaceId" type="button" :disabled="!editor" @click="openPicker('image')"><EotionIcon name="image" :size="16" /> 图片</button>
       <button v-if="workspaceId" type="button" :disabled="!editor" @click="openPicker('file')"><EotionIcon name="paperclip" :size="16" /> 文件</button>
     </div>
-    <input ref="imageInput" class="eotion-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" multiple aria-label="选择图片附件" @change="onFilesSelected('image', $event)">
-    <input ref="fileInput" class="eotion-file-input" type="file" multiple aria-label="选择文件附件" @change="onFilesSelected('file', $event)">
-    <div v-if="uploads.length" class="eotion-upload-list" aria-label="附件上传">
-      <article v-for="task in uploads" :key="task.id" class="eotion-upload-item">
-        <img v-if="task.objectUrl" :src="task.objectUrl" :alt="task.file.name" class="eotion-upload-preview">
-        <EotionIcon v-else :name="task.file.type.startsWith('image/') ? 'image' : 'file-text'" :size="20" />
-        <div class="eotion-upload-copy">
-          <strong>{{ task.file.name }}</strong>
-          <span role="status">{{ task.phase === 'uploading' ? '正在上传…' : task.phase === 'saving' ? '正在保存附件…' : task.phase === 'success' ? '已保存' : task.phase === 'cancelled' ? '已取消' : task.error }}</span>
-        </div>
-        <button v-if="task.phase === 'uploading'" type="button" :aria-label="`取消上传 ${task.file.name}`" @click="cancelUpload(task)"><EotionIcon name="x" :size="16" /></button>
-        <button v-else-if="task.phase === 'failed'" type="button" :aria-label="`重试上传 ${task.file.name}`" @click="upload(task)"><EotionIcon name="refresh" :size="16" /> 重试</button>
-        <button v-else-if="task.phase === 'cancelled'" type="button" :aria-label="`移除 ${task.file.name}`" @click="removeTask(task)"><EotionIcon name="x" :size="16" /></button>
-      </article>
+    <input ref="imageInput" class="eotion-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" multiple aria-label="选择图片附件" @change="onFilesSelected('image', $event)" @cancel="onPickerCancelled">
+    <input ref="fileInput" class="eotion-file-input" type="file" multiple aria-label="选择文件附件" @change="onFilesSelected('file', $event)" @cancel="onPickerCancelled">
+    <div v-if="uploads.some(task => task.phase === 'success' || task.phase === 'cancelled')" class="eotion-upload-terminal" aria-label="附件上传结果">
+      <p v-for="task in uploads.filter(item => item.phase === 'success' || item.phase === 'cancelled')" :key="task.id" role="status">
+        {{ task.file.name }} · {{ task.phase === 'success' ? '已保存' : '已取消' }}
+      </p>
     </div>
     <p v-if="uploadAlert" class="eotion-upload-alert" role="alert">{{ uploadAlert }}</p>
     <div v-if="pendingCleanup.length" class="eotion-cleanup-retry" role="alert">
@@ -447,18 +538,11 @@ defineExpose({ editor })
 .eotion-touch-toolbar button:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset: -2px; }
 .eotion-touch-toolbar button:disabled { cursor: default; opacity: .5; }
 .eotion-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
-.eotion-upload-list { display: grid; gap: 7px; margin-bottom: var(--e-space-4); }
-.eotion-upload-item { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-block); background: var(--e-color-surface-subtle); }
-.eotion-upload-preview { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 5px; object-fit: cover; }
-.eotion-upload-copy { display: grid; min-width: 0; flex: 1; gap: 3px; font-size: 13px; }
-.eotion-upload-copy strong, .eotion-upload-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.eotion-upload-copy span { color: var(--editor-muted); font-size: 12px; }
-.eotion-upload-item button { display: inline-flex; min-height: 40px; min-width: 40px; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--border-strong); border-radius: 5px; padding: 4px 7px; background: var(--surface-raised); cursor: pointer; }
 .eotion-upload-alert { margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--border-editor); color: var(--danger); font-size: 13px; }
 .eotion-cleanup-retry { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--border-editor); color: var(--danger); font-size: 13px; }
 .eotion-cleanup-retry button { min-height: 40px; border: 1px solid var(--border-strong); border-radius: 5px; padding: 5px 9px; background: var(--surface-raised); cursor: pointer; }
 @media (max-width: 767px), (pointer: coarse) {
-  .eotion-editor-toolbar button, .eotion-upload-item button, .eotion-cleanup-retry button { min-width: 44px; min-height: 44px; }
+  .eotion-editor-toolbar button, .eotion-cleanup-retry button { min-width: 44px; min-height: 44px; }
 }
 </style>
 
@@ -469,4 +553,20 @@ defineExpose({ editor })
 .p2-slash-item[aria-selected="true"], .p2-slash-item:hover { background: var(--surface-editor-hover); }
 .p2-slash-icon { display: inline-flex; flex: 0 0 auto; align-items: center; margin-right: 10px; }
 .p2-slash-item:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset: -2px; }
+.eotion-upload-placeholder { display: block; box-sizing: border-box; max-width: 100%; margin: 7px 0; }
+.eotion-upload-terminal { display: grid; gap: 2px; padding: 6px 12px; border-bottom: 1px solid var(--border-editor); color: var(--editor-muted); font-size: 12px; }
+.eotion-upload-terminal p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eotion-upload-item { display: flex; min-width: 0; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-block); background: var(--e-color-surface-subtle); color: var(--e-color-text-primary); font: 500 13px / 1.4 var(--e-type-family); }
+.eotion-upload-preview { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 5px; object-fit: cover; }
+.eotion-upload-copy { display: grid; min-width: 0; flex: 1; gap: 3px; }
+.eotion-upload-copy strong, .eotion-upload-copy > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eotion-upload-copy > span { color: var(--e-color-text-muted); font-size: 12px; }
+.eotion-upload-copy > span[data-phase="failed"] { overflow: visible; overflow-wrap: anywhere; text-overflow: clip; white-space: normal; }
+.eotion-upload-item button { display: inline-flex; min-height: 40px; min-width: 40px; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--e-color-border); border-radius: 5px; padding: 4px 7px; background: var(--e-color-surface); color: inherit; cursor: pointer; }
+.eotion-upload-spinner { width: 16px; height: 16px; flex: 0 0 auto; border: 2px solid var(--e-color-border); border-top-color: var(--e-color-text-muted); border-radius: 50%; animation: eotion-upload-spin .8s linear infinite; }
+.eotion-upload-occupied { visibility: hidden; height: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; line-height: 0 !important; }
+.eotion-upload-saving-hidden { display: none !important; }
+@keyframes eotion-upload-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .eotion-upload-spinner { animation: none; } }
+@media (max-width: 767px), (pointer: coarse) { .eotion-upload-item button { min-width: 44px; min-height: 44px; } }
 </style>

@@ -1,18 +1,18 @@
-# Current Task — HarmonyOS Touch Toolbar / caret 修复
+# Current Task — Attachment Insert UX Fix
 
-2026-10-06；master；仅 H2 图标识别与长正文 caret 避让。已完成。
+2026-10-06；master；聚焦通用 Web 编辑器附件插入反馈与 frozen target。
 
 ## Work Units
-1. S0 investigate / scout：确认 document-wrap 为实际 overflow:auto 正文容器、验证入口（完成）。
-2. S2 decide / main：保留 fixed Toolbar；实际 toolbar top + 12px；去掉 inset 前置；双 RAF 合并事件检查（完成）。
-3. S1 execute / fast_worker：组件局部修复和真实 DOM Playwright 回归（完成）。
-4. S0 verify / scout + main：web typecheck、15-spec web 回归、视觉与生产编辑器回归（完成）；Review / reviewer：独立复核无 blocker。
+1. S2 decide / worker：最小 runtime placeholder 与冻结位置方案。
+2. S1 execute / fast_worker：按 Brief 实现占位、位置与生命周期。
+3. S1 execute / fast_worker：focused Playwright 回归，位置/生命周期/动态 UI。
+4. S0 verify / scout：typecheck、编辑器/附件/product/web 回归、diff check。
+5. Review / reviewer：一次独立 blocker 复核；主 Agent 整合、提交并 push master。
 
 ## Invariants
-H2 命令不变；复用 Morphicons + 下标 2；44px target；无 UA 分支；不改附件、同步、Bubble/Slash、版本号和 release 规则。两个独立逻辑修复分别提交并 push master。
+不修改 attachment contract、backend、同步协议、LocalStore/oplog、版本、native host 或其他编辑器功能。占位仅 runtime，不进入 JSON。保留 cleanup/lost response/epoch/IME/durable save 与 object URL 生命周期；多文件顺序以选择顺序为准。
 
-## Results
-Web typecheck 通过；生产编辑器 build/回归 1/1；视觉 7/7。15-spec 共 204 项首轮 202 通过：新增 caret 用例的旧 blur/遮挡场景已修正，H2/caret 两用例各重复三次 6/6；5,000 区块 fixture 在四 worker 下超时，单独复跑 1/1（6.4s，未改 timeout）。最终所有用例已覆盖并通过。git diff --check 通过。
-
-## Remaining verification
-本轮已完成 nova 14 真机 H2 识别与连续长正文 caret 避让两项专项复测，均 PASS；构建、设备、步骤与证据见 `docs/verification/device/mobile-harmony-editor-retest-2026-10-06.md`。此前自动化结果保持不变。此结果不代表完整 Mobile Real-device Acceptance 或 Android 复测通过；附件/sync gate、横屏与其他硬 Gate 仍未覆盖。
+## Status
+实现完成：运行时 decoration/widget 占位、打开 picker 前冻结插入目标、空段占用/非空段后插、失败/取消/重试/保存失败回滚与多文件选择顺序。
+验证：web typecheck 通过；附件专项 23/23；完整回归（editor/component/product/web）204 用例通过；git diff --check 干净；独立 reviewer 无 blocker（位置回退风险已加防御）。
+待办：主 Agent 提交并 push master；用户在 nova 14 按 A–E 专项复测。

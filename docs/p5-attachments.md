@@ -10,7 +10,7 @@ BlockIdentity 延续稳定 blockId，持久化时移除该身份属性。附件�
 
 ## 上传与 UX
 
-工具栏、Slash 的 Image/File、纯文件 drop 和纯图片 paste 共用一个上传入口；混合正文/HTML paste 沿用文本编辑流程。临时占位在正文之外显示文件名、可用的本地图片预览、上传中、保存中、失败、取消与重试状态。对象 URL 在取消、成功或卸载时释放。图片支持 PNG/JPEG/WebP/GIF/AVIF；服务端认定的其它格式显示文件卡片。
+工具栏、Slash 的 Image/File、纯文件 drop 和纯图片 paste 共用一个上传入口；混合正文/HTML paste 沿用文本编辑流程。上传任务在冻结的插入位置显示 ProseMirror widget，占位包含文件名、可用的本地图片预览、上传中、保存中、失败、取消与重试状态。Widget/node decoration 仅用于运行时显示，不修改文档 JSON 或 oplog；Blob 和 object URL 不进入正文。空段等待时保留原段而只隐藏视觉空行，只有附件成功插入才替换；若等待期间用户在空段输入正文，附件改在该段之后插入并保留正文。文件选择前已有正文时，附件插入该块之后。批量任务按选择顺序定位，即使上传完成顺序不同也保持正文顺序。保存期间暂时隐藏附件节点，确认本地持久化后显示正式节点；失败回滚只还原最初被替换的空段。对象 URL 在取消、成功或卸载时释放。图片支持 PNG/JPEG/WebP/GIF/AVIF；服务端认定的其它格式显示文件卡片。
 
 流程为 `File → Eotion SDK raw upload → authenticated API → ali-oss-server SDK → object storage → Mongo File metadata → Tiptap node → LocalStore Block/oplog → P5.4 sync`。服务端成功后等待中文组合输入结束，再插入节点；确认附件 Block 已本地持久化后才显示成功。上传成功但本地保存失败时移除该节点并记录补偿。重试沿用 UI 占位，但使用新 fileId，避免旧补偿 DELETE 删除新附件。进入本地保存阶段后不再显示取消按钮；组件卸载仍以 epoch/AbortSignal 隔离旧异步结果。
 
