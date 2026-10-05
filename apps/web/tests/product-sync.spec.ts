@@ -118,6 +118,27 @@ test('attachment cleanup waits for delete acknowledgement, survives failure and 
   expect(firstDelete).toBeGreaterThan(appliedDelete)
 })
 
+test('referenced attachment cleanup intent stays hidden while document sync is already complete', async ({ page }) => {
+  const server: Server = {
+    pages: [{ id: 'protected-page', workspaceId: workspace.id, parentPageId: null, title: '附件页面', orderKey: '1', createdAt: now, updatedAt: now }],
+    blocks: [{ id: 'protected-block', workspaceId: workspace.id, pageId: 'protected-page', parentBlockId: null, type: 'file', orderKey: '1',
+      props: { node: { type: 'eotionFile', attrs: { fileId: 'protected-file', name: 'keep.txt', mimeType: 'application/octet-stream', size: 12, url: 'https://objects.example.test/keep.txt' } } }, createdAt: now, updatedAt: now }],
+  }
+  await mockApi(page, server)
+  await page.goto(`/#/app/${workspace.id}/page/protected-page`)
+  await expect(page.locator('.attachment-file')).toContainText('keep.txt')
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+
+  await page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const sync = useProductSyncStore()
+    await (await sync.store()).enqueueFileCleanup('sync-workspace', 'protected-file')
+    await sync.updatePending()
+  })
+
+  await expect(page.locator('.product-cleanup-status')).toHaveCount(0)
+})
+
 test('cleanup only sends freshly authorized workspaces and invalidates the session on 401', async ({ page }) => {
   const api = await mockApi(page)
   await page.goto(`/#/app/${workspace.id}`)
