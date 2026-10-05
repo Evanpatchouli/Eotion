@@ -2,7 +2,7 @@
 
 ## 状态与证据边界
 
-**P5.7 READY FOR FINAL USER SIGN-OFF（2026-10-03）。** 自动视觉比图、Web/Storage/Offline 功能回归及独立工程 review 已完成；最终用户视觉签字待完成。Quiet Studio 正式产品画面经过迭代实现、用户截图 review 与部分真机交互 review。本页以当前生产实现作为 P5 closeout 的 canonical visual baseline。原计划中的预实施 Gate A 没有按完整顺序发生，不倒填为历史 PASS。
+**P5.7 PASS（2026-10-06）。** 自动视觉比图、Web/Storage/Offline 功能回归及独立工程 review 已完成；Quiet Studio 正式产品画面经过迭代实现、用户截图 review 与部分真机交互 review，并于 2026-10-06 获得用户最终视觉签字。本页继续作为 P5 closeout 的 canonical visual baseline。原计划中的预实施 Gate A 没有按完整顺序发生，不倒填为历史 PASS。
 
 ## Canonical Design Version
 
@@ -23,7 +23,7 @@
 | `settings-profile-mobile-light.png` | 390×844 / Light | Profile Detail、单一 Topbar、无 compact back、30px gutter |
 | `connectivity-backend-unavailable-desktop.png` | 1440×900 / Light | 无可信身份且 `/auth/me` 返回 503 时的连接恢复状态 |
 
-Closeout B 仅更新四张 Page 基线：Desktop Light/Dark、Tablet Light、Mobile Light。首次正常阈值比图只检出 Mobile 差异；临时以零像素差异核对后，Desktop Light/Dark 与 Tablet 也确有标题旁文案变化，因此一并重建。Settings 两张及 Connectivity 像素未变，未更新；配置阈值保持 `0.001`。更新后的正式 visual regression 为 **7/7 PASS**，最终用户视觉签字仍待完成。
+Closeout B 仅更新四张 Page 基线：Desktop Light/Dark、Tablet Light、Mobile Light。首次正常阈值比图只检出 Mobile 差异；临时以零像素差异核对后，Desktop Light/Dark 与 Tablet 也确有标题旁文案变化，因此一并重建。Settings 两张及 Connectivity 像素未变，未更新；配置阈值保持 `0.001`。更新后的正式 visual regression 为 **7/7 PASS**，最终用户视觉签字已于 2026-10-06 完成。
 
 Snapshot 不覆盖所有交互状态。Drawer、Slash、Bubble、附件、Settings 其它 Detail、Mobile Dark、Tablet Dark、原生系统 Selection Menu 与真实键盘行为由既有功能/响应式测试和人工验收覆盖；不能把未建 snapshot 的组合称为自动视觉比图 PASS。
 
@@ -75,11 +75,11 @@ Closeout B 验证：`test:product` **148/148 PASS**，`interaction-foundation.sp
 
 | 与原设计目标的差异 | 当前事实与处理 | 状态 |
 | --- | --- | --- |
-| 稳定保存/同步状态只在顶部常驻 | ProductShell `SyncStatus` 是唯一常驻入口；Page 标题旁不再显示“已保存到本地”。离线仍显示“离线 · 本地已保存”，本地持久化失败仍在编辑器附近显示错误与重试。更新后的 Page 基线待用户最终视觉签字。 | 已实现；待最终用户签字 |
+| 稳定保存/同步状态只在顶部常驻 | ProductShell `SyncStatus` 是唯一常驻入口；Page 标题旁不再显示“已保存到本地”。离线仍显示“离线 · 本地已保存”，本地持久化失败仍在编辑器附近显示错误与重试。更新后的 Page 基线已获得用户最终视觉签字。 | 已实现；待最终用户签字 |
 | 早期高保真 Gate A 顺序 | Quiet Studio 方向先冻结，具体交互和 Mobile 画面经生产实现、用户截图与设备 review 逐步冻结；本轮将结果正式写回设计文档。 | 已如实 reconciliation；不追认早期 PASS |
-| Mobile WebView 真机完全离线重启 | 默认 LAN HTTP 无法保证断网后重新加载应用壳；浏览器/IndexedDB 自动测试不能替代宿主验证。 | P5.4 独立 blocker，见设备清单 |
+| Mobile WebView 真机完全离线重启 | HarmonyOS 杀 App 后完全离线冷启动存在已确认限制；浏览器/IndexedDB 自动测试不能替代宿主边界。 | Accepted Limitation，不阻塞 P5 |
 
-- UI/UX final reviewer：**用户最终视觉签字待完成**。
+- UI/UX final reviewer：**用户最终视觉签字 PASS（2026-10-06）**。
 - Engineering review：本轮独立复核发现的 3 项文档/测试边界问题已修正；复核与验证结果见 `.agents/current-task.md`。
-- P5.7 最终 PASS：**未声明**。只有关键基线、功能与 accessibility 证据充分且用户最终签字后才能更新。
-- P5 Final Acceptance：**NOT STARTED**。
+- P5.7 最终 PASS：**已声明（2026-10-06）**。
+- P5 Final Acceptance：**PASS（2026-10-06）**，见 [P5 Final Acceptance](../p5-final-acceptance.md)。
