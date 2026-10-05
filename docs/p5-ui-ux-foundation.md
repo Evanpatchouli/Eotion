@@ -2,13 +2,13 @@
 
 ## 状态
 
-**P5.7 READY FOR FINAL USER SIGN-OFF（2026-10-03）。** Quiet Studio 方向已经冻结，正式 Product UI 已通过多轮生产实现、用户截图 review 和真机交互 review 收敛。本轮补齐正式 Design System v1、核心 Screen Spec 与 7 张自动视觉回归基线；Web 产品、存储/Electron 和离线外壳回归已通过。最终用户视觉签字尚未取得，不声明 P5.7 PASS。
+**P5.7 PASS（2026-10-06）。** Quiet Studio 方向已经冻结，正式 Product UI 已通过多轮生产实现、用户截图 review 和真机交互 review 收敛；Design System v1、核心 Screen Spec 与自动视觉回归基线均已建立。2026-10-06 用户完成最终视觉签字，P5.7 正式封板。
 
 P5.7 位于 P5.6 Settings & Preferences 之后、P5 Final Acceptance 之前。
 
 本阶段的目标不是继续堆功能，也不是对现有 CSS 做零散“美化”，而是在 Product MVP 封板前建立 Eotion 第一套正式、可复用、可扩展的 UI/UX 基线，使后续 P6+ 能沿同一产品语言继续增长。
 
-P5.4 Mobile WebView/Lynx 真机完全离线重启验收仍作为独立待验收边界保留；P5.7 不自动关闭该项。
+P5.4 HarmonyOS “杀 App + 完全离线冷启动”边界在 P5 Final Acceptance 中作为 Accepted Limitation，不影响 P5.7 视觉结论。
 
 ## 核心原则
 
