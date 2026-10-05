@@ -4,7 +4,6 @@ set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
 git pull --ff-only origin master
-pnpm version:check
 
 if ! docker network inspect public-web >/dev/null 2>&1; then
   echo "Missing external Docker network: public-web" >&2
