@@ -21,9 +21,15 @@ test('static pages, navigation, release and safe download state', async ({ page,
   await expect(page).toHaveURL(/\/download/)
   await expect(page.getByRole('heading', { name: 'Eotion for Windows' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Eotion for Android' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Eotion for iOS' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Eotion for HarmonyOS' })).toBeVisible()
   await expect(page.locator('.release-label')).toContainText(`Version ${rootManifest.version} · Build ${rootManifest.eotion.buildNumber}`)
   await expect(page.getByRole('link', { name: '打开 Eotion Web' })).toHaveAttribute('href', 'https://eotion.evanpatchouli.space')
+  const installerUrl = process.env.EOTION_DOWNLOAD_WINDOWS_INSTALLER_URL
+  if (installerUrl) {
+    const version = new URL(installerUrl).pathname.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?/)?.[0]
+    if (version) await expect(page.locator('#windows').getByRole('link', { name: /下载安装版/ })).toContainText(`v${version}`)
+  }
   // Unconfigured artifacts must never become guessed download links.
   if (!process.env.EOTION_DOWNLOAD_WINDOWS_INSTALLER_URL) {
     await expect(page.locator('#windows').getByRole('link', { name: '下载安装版' })).toHaveCount(0)
@@ -80,7 +86,7 @@ test('platform detection only recommends and leaves all platforms visible', asyn
     const context = await browser.newContext({ userAgent: agent })
     const page = await context.newPage()
     await page.goto('http://127.0.0.1:4174/download')
-    await expect(page.locator('.download-row')).toHaveCount(4)
+    await expect(page.locator('.download-row')).toHaveCount(5)
     if (expected) await expect(page.locator(`#${expected} .recommendation`)).toBeVisible()
     else await expect(page.locator('.recommendation')).toHaveCount(0)
     await context.close()
