@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-10-06 HarmonyOS 应用内补测交接
+
+用户指定根 release/0.0.1-beta/Eotion-0.0.1-beta-harmony.hap，构建 a0d3a4da93eb，已通过 hdc install -r 覆盖安装 nova 14 (TLR-AL00/OpenHarmony-6.1.1.120)。用户帮登录后只执行应用内剩余项目；用户说已手测断网重连等，本轮不重复网络切换/kill。附件上传也由用户接手，当前未收到结果。
+
+报告 docs/verification/device/mobile-harmony-in-app-2026-10-06.md。Workspace/Page/本次中文composition与基本输入/系统选择菜单通过；长正文末行caret被Touch Toolbar遮挡，Safe Area/IME FAIL；标题按钮实际H2，不满足原H1。图片/文件入口均可弹出ArkWeb系统选择界面，不可沿用旧Android picker失败推断Harmony。普通在线重开内容保留并已同步，不替代pending oplog或第二客户端闭环。网络/Session真正kill Gate未独立重测，完整Mobile Acceptance不得PASS。产品无修改。
+
+原始证据在ignored根release/0.0.1-beta/runtime-verification/harmony-20261005，包含账号信息勿提交；提交证据在docs/verification/device/evidence/harmony-20261006。保留新Page“无标题HARMONY_ACCEPT_20261006”供复核与用户附件手测，当前App停在该Page，未改变设备网络/旋转设置。后续独立修复需先定位caret避让中的visualViewport/inset/滚动容器真实数据；当前只有源码线索，没有证明根因。
+
 ## 2026-10-04 公共官网与用户指南交接
 
 `apps/site` 已实现独立 VitePress 官网：六节首页、download、8 篇 guide、changelog；版本/build 复用根 package.json，发布记录复用 apps/web/src/releaseInfo.ts。维护入口 docs/runbooks/public-site.md。版本/typecheck/build、339 链接/锚点/资源、2 SSR 回归、7 Playwright 与三尺寸 Light/Dark 视觉检查通过；独立 review 无剩余 blocker。

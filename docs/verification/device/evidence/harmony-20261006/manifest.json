@@ -1,0 +1,64 @@
+{
+  "files": [
+    {
+      "path": "keyboard.png",
+      "sha256": "f1f31945a5d68954ddafa49796abc256af0913ae65252405c5388c436b63b62b"
+    },
+    {
+      "path": "chinese-composition.png",
+      "sha256": "130fdf58cc15215e2c685ab1c0321a7ccdfbde02ea8a2bf9d04c3ef4711c86d2"
+    },
+    {
+      "path": "formatted.png",
+      "sha256": "3854a8ef3856f6d352a1877a3987269663ebeb452a654f87c7476fec7d5e7f27"
+    },
+    {
+      "path": "selection.png",
+      "sha256": "aabce20440a96223d4a667b094fe042dfdd7a94576c88c20472b5c80630f8912"
+    },
+    {
+      "path": "image-click.png",
+      "sha256": "6910fcbb5269ee094f243d7008abe374ffde6036a299d17d0aec21e1975f235d"
+    },
+    {
+      "path": "file-click.png",
+      "sha256": "12488ea8d4db563ff097f4d9254e0defae556d347348003afa80203669cff9a2"
+    },
+    {
+      "path": "caret-bottom.png",
+      "sha256": "92ff5daf1fa2c17b4848b32697afcf5c9d6f82b81083da857c036d15667e7001"
+    },
+    {
+      "path": "caret-obscured.png",
+      "sha256": "3c8534a22b568decf98d039b5b75f8d3c365d61c058a3380054434286ef4df1c"
+    },
+    {
+      "path": "reopened.png",
+      "sha256": "9a7216252f9b13adcb14cb4836750724549f6b3bbccc5b4e16aabe421c114631"
+    },
+    {
+      "path": "workspace-return.png",
+      "sha256": "3fbddb8bedb63900be509abd6cb7d80c104de8ebd935bb4255d36a991a69b52f"
+    },
+    {
+      "path": "final-page.png",
+      "sha256": "e790f4d40dfbd2b1107ad056d3b6ea6bd4aae746515c183cc62d0c78f774d2d4"
+    },
+    {
+      "path": "long-ime.png",
+      "sha256": "ff846731c716565c921005d305f58b947fc5cf2e48762c06ae8235d3accbbb32"
+    },
+    {
+      "path": "observations.json",
+      "sha256": "52791219c1948c7d2f48389e6ce743eec09fed7b992394de8088870f535612f3"
+    },
+    {
+      "path": "runtime-excerpt.txt",
+      "sha256": "b7239c11cc24916c9c28b5a8f3ce95a760d1f011556393e56078d023c8d057e3"
+    },
+    {
+      "path": ".gitattributes",
+      "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+10-06 00:10:11.154 57605 57605 W A04510/space.evanpatchouli.eotion/chromium: [keyboard_code_conversion_x.cc:1488] Unknown keycode:229
+10-06 00:10:11.155 57605 57605 W A04510/space.evanpatchouli.eotion/chromium: [keyboard_code_conversion_x.cc:1488] Unknown keycode:229
+10-06 00:10:11.165 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp354]not find, callbackId: 1
+10-06 00:10:11.165 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp141]null extensionCallback
+10-06 00:10:12.191 57605 57605 W A04510/space.evanpatchouli.eotion/chromium: [keyboard_code_conversion_x.cc:1488] Unknown keycode:229
+10-06 00:10:12.192 57605 57605 W A04510/space.evanpatchouli.eotion/chromium: [keyboard_code_conversion_x.cc:1488] Unknown keycode:229
+10-06 00:10:12.193 57605 57605 W A04510/space.evanpatchouli.eotion/chromium: [keyboard_code_conversion_x.cc:1488] Unknown keycode:229
+10-06 00:10:12.194 57605 57605 W A04510/space.evanpatchouli.eotion/chromium: [keyboard_code_conversion_x.cc:1488] Unknown keycode:229
+10-06 00:10:12.198 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp354]not find, callbackId: 1
+10-06 00:10:12.198 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp141]null extensionCallback
+10-06 00:10:12.198 57605 57605 W C0391B/space.evanpatchouli.eotion/AceWeb: [(100000:100000:scope)] KeyEvent is not find keycode
+10-06 00:10:12.201 57605 57605 W C0391B/space.evanpatchouli.eotion/AceWeb: [(100000:100000:scope)] KeyEvent is not find keycode
+10-06 00:10:12.204 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp354]not find, callbackId: 1
+10-06 00:10:12.204 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp141]null extensionCallback
+10-06 00:10:12.210 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp354]not find, callbackId: 1
+10-06 00:10:12.210 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp141]null extensionCallback
+10-06 00:10:32.541 57605 57605 E C0393D/space.evanpatchouli.eotion/AceNativeNode: [<private>(<private>)] event receiver is not register
+10-06 00:10:32.654 57605 57605 E C0393D/space.evanpatchouli.eotion/AceNativeNode: [<private>(<private>)] event receiver is not register
+10-06 00:10:32.670 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp354]not find, callbackId: 1
+10-06 00:10:32.670 57605 57605 E C01351/space.evanpatchouli.eotion/AutoFillMgr: [auto_fill_manager.cpp152]null extensionCallback
+10-06 00:10:32.692 57605 59542 W C01C10/space.evanpatchouli.eotion/ImsaKit: line: 1875, function: FinishTextPreview,not bound or listener is nullptr!
+10-06 00:10:32.696 57605 61340 E C01C10/space.evanpatchouli.eotion/ImsaKit: line: 1608, function: NotifyPanelStatusInfo,listener is nullptr!
+10-06 00:10:32.696 57605 61340 W C01C10/space.evanpatchouli.eotion/ImsaKit: line: 1875, function: FinishTextPreview,not bound or listener is nullptr!
+10-06 00:10:32.720 57605 57836 W C01400/space.evanpatchouli.eotion/Vsync: PrintRequestTs: recv vsync timestamp, from:NWeb_57605, now:1089895007246195, fromRsTs:1089895007039066, timeInterval:207129ns
+10-06 00:10:32.723 57605 57605 I C0420B/space.evanpatchouli.eotion/WMSKeyboard: transaction: 1, safeHeight: 0, occupied rect: x 0, y 0, w 0, h 0, callingWindowRect: [0 0 1084 2412]
+10-06 00:10:32.727 57605 57605 W C0390D/space.evanpatchouli.eotion/AceOverlay: [(100000:100000:scope)] failed to get foldCreaseRegion
+10-06 00:10:32.730 57605 57605 W A04510/space.evanpatchouli.eotion/cef: [arkweb_icon_helper_ext.cc:146] No icon sizes available for URL: ***
+10-06 00:10:32.742 57605 57785 E C01480/space.evanpatchouli.eotion/MALI_GPU: [nodict]get_window_target_buffer success <private>
+10-06 00:10:32.752 57605 57785 E C01480/space.evanpatchouli.eotion/MALI_GPU: [nodict]get_window_target_buffer success <private>
+10-06 00:10:32.860 57605 57785 E C01480/space.evanpatchouli.eotion/MALI_GPU: [nodict]get_window_target_buffer success <private>
+10-06 00:09:24.516 57605 57605 I A04510/space.evanpatchouli.eotion/chromium: [arkweb_input_router_impl_utils.cc:97] InputRouterImpl::FilterAndSendWebInputEvent type=RawKeyDown
+10-06 00:09:24.522 57605 57605 I A04510/space.evanpatchouli.eotion/chromium: [nweb_handler_delegate.cc:2741] NWebHandlerDelegate::KeyboardReDispatch type:0, win:16, isUsed:0
+10-06 00:09:24.526 57605 57605 I A04510/space.evanpatchouli.eotion/chromium: [arkweb_input_router_impl_utils.cc:97] InputRouterImpl::FilterAndSendWebInputEvent type=RawKeyDown
+10-06 00:09:24.527 57605 57605 I A04510/space.evanpatchouli.eotion/chromium: [arkweb_input_router_impl_utils.cc:97] InputRouterImpl::FilterAndSendWebInputEvent type=Char
+10-06 00:09:24.530 57605 57605 I A04510/space.evanpatchouli.eotion/chromium: [nweb_handler_delegate.cc:2741] NWebHandlerDelegate::KeyboardReDispatch type:0, win:73, isUsed:0

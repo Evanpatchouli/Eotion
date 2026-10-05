@@ -1,19 +1,15 @@
-# Current Task — Public Website + User Guide
+# Current Task — HarmonyOS 应用内补充验收
 
-2026-10-04；基于 master 05a110a，已 fetch 确认与 origin/master 一致。
+2026-10-06；指定 0.0.1-beta HAP，构建 master a0d3a4da93eb。
 
 ## Work Units
-1. S0 investigate / scout：真实能力 Evidence Pack（完成）。
-2. S1 execute / fast_worker：8 篇公开指南（完成）。
-3. S2 decide → S1 execute / main：VitePress DefaultTheme 扩展、六节首页、下载 UI / SEO（完成）。
-4. S2 decide → S1 execute / worker：单一 release 元数据、静态容器、runbook（完成）。
-5. S1 execute / fast_worker：公开演示数据驱动真实产品截图（完成）。
-6. S0 verify / main：版本、typecheck、build links、Playwright 三尺寸/搜索/主题（完成）。
-7. Review / reviewer：最终独立复核（完成）。
+1. S0 verify / main：nova 14 连接、覆盖安装、包与设备元数据（完成）。
+2. S0 investigate / scout：XElement Harmony picker / IME 实现定位（完成）。
+3. S0 verify / main：Page 导航、新 Page 输入/格式/选择/附件入口/Safe Area（完成）。
+4. S1 execute / scout + main：证据与报告（完成）；Review / reviewer：报告、截图隐私与证据语义复核通过；15链接/15 SHA256/12 PNG边界/UTF8检查通过。提交范围仅文档与证据。
 
 ## Invariants
-不改产品 UI/现有 origin，不公开内部 docs；无配置下载为 null；官网 origin 未设置时 noindex，无伪 canonical；根版本/build 与 web releaseInfo 是 source of truth。
+用户已手测鸿蒙断网重连等，本轮只应用内操作，不重复登录或主动断网/kill，不改产品功能。附件上传由用户另测。用户手测与 Agent 实测分开标识；原始含账户信息截图只存 ignored release/runtime-verification。硬 Gate 未完成不推断 PASS。
 
-## Result
-实现完成：VitePress 六节首页、下载、8篇指南、更新日志，Quiet Studio三态主题、本地搜索、SSR/SEO、配置式发布数据、静态Nginx/Compose8002。版本/typecheck/build通过；339内部链接/锚点/资源通过；2个SSR回归+7个Playwright通过；1440/1024/390 light/dark截图已review。独立review唯一P2已修并复核通过。
-Docker完整镜像构建被Corepack访问npm registry网络错误阻断；临时Nginx挂载最终静态产物与同一配置的HTTP替代验证通过。未上线；正式官网origin、DNS/TLS与公开安装包URL由部署者后续配置。现有产品origin不变。
+## Results
+Workspace/Page 与本次基本输入样例通过；连续长正文 caret 被 Touch Toolbar 遮挡，Safe Area/IME FAIL；标题按钮实际 H2，不满足原 H1。图片与文件入口均弹系统选择界面；上传/渲染/重启保留由用户接手。普通在线重新进入内容保留、已同步；不替代离线落盘、kill、pending oplog或第二客户端证据。

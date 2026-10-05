@@ -19,5 +19,6 @@
 | --- | --- | --- |
 | P3 本地优先基础 | [P3 真机测试清单](p3-local-first.md) | ✅ 已通过（15/15，当前真机环境） |
 | Mobile Real-device Acceptance | [2026-10-04 Android 验收](mobile-real-device-2026-10-04.md) | 未通过完整 Gate：离线两次进程重启通过；附件选择失败，真实 IME 待补，自动重连需重试；HarmonyOS 按用户要求本轮未执行 |
+| HarmonyOS 应用内补测 | [2026-10-06 nova 14 补测](mobile-harmony-in-app-2026-10-06.md) | 未通过完整 Gate：基本输入/页面通过，长正文 caret 被 Toolbar 遮挡，H1 缺口；附件上传由用户手测，网络/kill Gate 本轮未重跑 |
 
 P1 / P2 如后续需要形成独立真机验收记录，再在本目录补充对应历史文档。

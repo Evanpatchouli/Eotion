@@ -1,0 +1,1072 @@
+{
+  "screenshots": {
+    "keyboard": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "\n",
+          "bounds": "[48,672][1038,1332]",
+          "focused": "true",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[36,1278][168,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[180,1278][312,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[324,1278][517,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[528,1278][721,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[732,1278][925,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "chinese-composition": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen ",
+          "bounds": "[48,672][1038,1332]",
+          "focused": "true",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[36,1278][168,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[180,1278][312,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[324,1278][517,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[528,1278][721,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[732,1278][925,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "formatted": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen 中文\nHARMONY_ACCEPT_20261006\nBoldItalic",
+          "bounds": "[48,672][1038,1332]",
+          "focused": "true",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[36,1278][168,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[180,1278][312,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[324,1278][517,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[528,1278][721,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[732,1278][925,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "selection": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen 中文\nHARMONY_ACCEPT_20261006\nBoldItalic\nHeading\nText\n• ListItem\n",
+          "bounds": "[48,672][1038,1428]",
+          "focused": "true",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[36,1278][168,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[180,1278][312,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[324,1278][517,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[528,1278][721,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[732,1278][925,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": [
+        {
+          "type": "SelectMenuButtonText",
+          "text": "剪切",
+          "bounds": "[102,519][187,568]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        },
+        {
+          "type": "SelectMenuButtonText",
+          "text": "复制",
+          "bounds": "[259,519][344,568]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        },
+        {
+          "type": "SelectMenuButtonText",
+          "text": "全选",
+          "bounds": "[416,519][501,568]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        },
+        {
+          "type": "SelectMenuButtonText",
+          "text": "自动填充",
+          "bounds": "[573,519][742,568]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ]
+    },
+    "image-click": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen 中文\nHARMOCURSOR_NY_ACCEPT_20261006\nBoldItalic\nHeading\nText\n• ListItem\n",
+          "bounds": "[48,672][1038,1536]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,2157][1084,2322]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[36,2178][168,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[180,2178][312,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[324,2178][517,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[528,2178][721,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[732,2178][925,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "file-click": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen 中文\nHARMOCURSOR_NY_ACCEPT_20261006\nBoldItalic\nHeading\nText\n• ListItem\n",
+          "bounds": "[48,672][1038,1536]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,2157][1084,2322]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[0,2178][6,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[18,2178][150,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[162,2178][355,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[366,2178][559,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[570,2178][763,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "caret-bottom": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen 中文\nHARMOCURSOR_NY_ACCEPT_20261006\nBoldItalic\nHeading\nText\n• ListItem\n",
+          "bounds": "[48,105][1038,939]",
+          "focused": "true",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[0,1278][6,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[18,1278][150,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[162,1278][355,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[366,1278][559,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[570,1278][763,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "caret-obscured": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen 中文\nHARMOCURSOR_NY_ACCEPT_20261006\nBoldItalic\nHeading\nText\n• ListItem\nIME_BOTTOM_01\nIME_BOTTOM_02\nIME_BOTTOM_03\nIME_BOTTOM_04\nIME_BOTTOM_05\nIME_BOTTOM_06a ",
+          "bounds": "[48,105][1038,1427]",
+          "focused": "true",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[0,1278][6,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[18,1278][150,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[162,1278][355,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[366,1278][559,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[570,1278][763,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "reopened": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen 中文\nHARMOCURSOR_NY_ACCEPT_20261006\nBoldItalic\nHeading\nText\n• ListItem\nIME_BOTTOM_01\nIME_BOTTOM_02\nIME_BOTTOM_03\nIME_BOTTOM_04\nIME_BOTTOM_05\nIME_BOTTOM_06a ",
+          "bounds": "[48,942][1038,2322]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,2157][1084,2322]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[36,2178][168,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[180,2178][312,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[324,2178][517,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[528,2178][721,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[732,2178][925,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "workspace-return": {
+      "textField": [],
+      "toolbar": [],
+      "toggleButton": [],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "final-page": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen 中文\nHARMOCURSOR_NY_ACCEPT_20261006\nBoldItalic\nHeading\nText\n• ListItem\nIME_BOTTOM_01\nIME_BOTTOM_02\nIME_BOTTOM_03\nIME_BOTTOM_04\nIME_BOTTOM_05\nIME_BOTTOM_06a ",
+          "bounds": "[48,942][1038,2322]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,2157][1084,2322]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[36,2178][168,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[180,2178][312,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[324,2178][517,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[528,2178][721,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[732,2178][925,2310]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    },
+    "long-ime": {
+      "textField": [
+        {
+          "type": "textField",
+          "text": "zhongwen 中文\nHARMOCURSOR_NY_ACCEPT_20261006\nBoldItalic\nHeading\nText\n• ListItem\nIME_BOTTOM_01\nIME_BOTTOM_02\nIME_BOTTOM_03\nIME_BOTTOM_04\nIME_BOTTOM_05\nIME_BOTTOM_06",
+          "bounds": "[48,105][1038,1427]",
+          "focused": "true",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "toolbar": [
+        {
+          "type": "toolbar",
+          "text": "触摸编辑工具栏",
+          "bounds": "[0,1257][1084,1428]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "toggleButton": [
+        {
+          "type": "toggleButton",
+          "text": "粗体",
+          "bounds": "[0,1278][6,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "斜体",
+          "bounds": "[18,1278][150,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "文本",
+          "bounds": "[162,1278][355,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "标题",
+          "bounds": "[366,1278][559,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        },
+        {
+          "type": "toggleButton",
+          "text": "列表",
+          "bounds": "[570,1278][763,1410]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "true"
+        }
+      ],
+      "status": [
+        {
+          "type": "status",
+          "text": "已同步",
+          "bounds": "[953,144][1062,198]",
+          "focused": "false",
+          "selected": "false",
+          "enabled": "true",
+          "visible": "true",
+          "clickable": "false"
+        }
+      ],
+      "SelectMenuButtonText": []
+    }
+  },
+  "pickerDialogText": [
+    "选择上传",
+    "图库",
+    "拍照",
+    "文件",
+    "取消",
+    "拍照或录像"
+  ]
+}
