@@ -132,6 +132,9 @@ body { -webkit-font-smoothing: antialiased; }
 .release-label { font-size: 13px; color: var(--studio-muted); margin-top: 20px; }
 .download-rows { margin-top: 56px; border-top: 1px solid var(--studio-border); }
 .download-row { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding-block: 36px; border-bottom: 1px solid var(--studio-border); }
+.download-platform-copy { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.platform-icon { display: inline-flex; flex: 0 0 28px; width: 28px; height: 28px; align-items: center; justify-content: center; color: var(--studio-text); }
+.platform-icon svg { display: block; width: 24px; height: 24px; fill: currentColor; }
 .download-row h2 { font-size: 23px; font-weight: 500; line-height: 1.5; letter-spacing: -.5px; }
 .download-row p { font-size: 13px; color: var(--studio-secondary); margin-top: 6px; }
 .download-options { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
@@ -188,6 +191,8 @@ body { -webkit-font-smoothing: antialiased; }
   .download-header h1 { font-size: 38px; }
   .download-rows { margin-top: 36px; }
   .download-row { flex-direction: column; gap: 18px; padding-block: 28px; }
+  .download-platform-copy { align-items: flex-start; gap: 14px; }
+  .platform-icon { margin-top: 2px; }
   .download-row h2 { font-size: 22px; }
   .download-options { max-width: none; justify-content: flex-start; gap: 4px 16px; }
   .download-note { margin-top: 28px; }
