@@ -348,54 +348,13 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) test(`HTTP 500
   await expect(page.getByRole('heading', { name: '暂时无法连接 Eotion' })).toBeVisible()
   await expect(page.getByText('无法验证登录状态，请检查服务或网络后重试')).toBeVisible()
   await expect(page.locator('.product-shell')).toHaveCount(0)
+  await expect(page.locator('.connectivity-diagnostics')).toHaveCount(0)
+  await expect(page.getByText('查看诊断信息')).toHaveCount(0)
   expect(await page.evaluate(() => localStorage.getItem('eotion:last-authenticated-user'))).toBeNull()
   await expect(page.locator('vite-error-overlay')).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-
-  const diagnostics = page.locator('.connectivity-diagnostics')
-  const summary = diagnostics.locator('summary')
-  const iconPath = () => summary.locator('svg path').getAttribute('d')
-  const textX = () => summary.evaluate((node) => {
-    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT)
-    let textNode: Text | null = null
-    while (walker.nextNode()) {
-      if (walker.currentNode.textContent?.includes('查看诊断信息')) {
-        textNode = walker.currentNode as Text
-        break
-      }
-    }
-    if (!textNode) return null
-    const range = document.createRange()
-    range.selectNodeContents(textNode)
-    return range.getBoundingClientRect().x
-  })
-  const collapsedX = await textX()
-  await expect.poll(iconPath).toBe('M9 18C11 16 13 14 15 12C13 10 11 8 9 6')
-  expect(await summary.evaluate((node) => getComputedStyle(node).listStyleType)).toBe('none')
-  const idleBackground = await summary.evaluate((node) => getComputedStyle(node).backgroundColor)
-  if (process.env.EOTION_VISUAL_QA_DIR) await page.screenshot({ path: `${process.env.EOTION_VISUAL_QA_DIR}/connectivity-500-${reducedMotion}-collapsed.png` })
-
-  await summary.hover()
-  expect(await summary.evaluate((node) => node.matches(':hover'))).toBe(true)
-  expect(await summary.evaluate((node) => getComputedStyle(node).backgroundColor)).not.toBe(idleBackground)
-  await summary.focus()
-  expect(await summary.evaluate((node) => node.matches(':focus'))).toBe(true)
-  await summary.press('Enter')
-  expect(await summary.evaluate((node) => node.matches(':focus-visible'))).toBe(true)
-  expect(await summary.evaluate((node) => getComputedStyle(node).outlineStyle)).toBe('solid')
-  await expect(diagnostics).toHaveAttribute('open', '')
-  await expect.poll(iconPath).toBe('M6 9C8 11 10 13 12 15C14 13 16 11 18 9')
-  expect(await textX()).toBe(collapsedX)
-  if (process.env.EOTION_VISUAL_QA_DIR) await page.screenshot({ path: `${process.env.EOTION_VISUAL_QA_DIR}/connectivity-500-${reducedMotion}-expanded.png` })
-  await summary.press('Space')
-  await expect(diagnostics).not.toHaveAttribute('open', '')
-  await summary.press('Space')
-  await expect(diagnostics).toHaveAttribute('open', '')
-  expect(await textX()).toBe(collapsedX)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.setViewportSize({ width: 1366, height: 900 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-  if (process.env.EOTION_VISUAL_QA_DIR) await page.screenshot({ path: `${process.env.EOTION_VISUAL_QA_DIR}/connectivity-500-${reducedMotion}-desktop.png` })
   expect(pageErrors).toEqual([])
 
   api.controls.unavailable = 0
