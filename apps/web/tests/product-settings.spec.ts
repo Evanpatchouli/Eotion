@@ -739,9 +739,8 @@ test("settings navigation ends with 软件说明 and /settings/about shows build
     "page",
   );
   await expect(page.getByTestId("about-version")).toContainText(buildVersion);
-  await expect(page.getByTestId("about-version")).toContainText(
-    `Build ${buildNumber}`,
-  );
+  await expect(page.getByTestId("about-version")).toContainText(/[0-9a-f]{6}|unknown/);
+  await expect(page.getByTestId("about-version")).not.toContainText("Build ");
   await expect(page.getByTestId("about-released")).toHaveText("2026-10-04");
   await expect(
     page.getByRole("heading", { name: "当前版本日志" }),
