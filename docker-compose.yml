@@ -35,6 +35,7 @@ services:
       args:
         GIT_SHA: ${GIT_SHA:-unknown}
         VITE_ALLOW_PAGE_ZOOM: ${VITE_ALLOW_PAGE_ZOOM:-false}
+        VITE_SHOW_DIAGNOSTIC_DETAILS: ${VITE_SHOW_DIAGNOSTIC_DETAILS:-false}
     image: eotion-web:latest
     container_name: eotion-web
     restart: always
