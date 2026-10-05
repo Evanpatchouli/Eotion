@@ -3,6 +3,17 @@ import { release, appOrigin } from '../../../data/releases'
 import { usePlatform } from './usePlatform'
 
 const recommended = usePlatform()
+
+function versionFromUrl(url: string | null): string | null {
+  if (!url) return null
+  try {
+    const pathname = decodeURIComponent(new URL(url).pathname)
+    return pathname.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?/)?.[0] ?? null
+  } catch {
+    return null
+  }
+}
+
 const platforms = [
   { id: 'windows', title: 'Windows', subtitle: 'Windows 10 / 11 · x64', formats: [
     { text: '下载安装版', url: release.windows.installer }, { text: '便携版', url: release.windows.portable }, { text: 'ZIP', url: release.windows.zip },
@@ -45,7 +56,11 @@ const platforms = [
         </div>
         <div class="download-options">
           <template v-for="format in platform.formats" :key="format.text">
-            <a v-if="format.url" class="site-button secondary" :href="format.url">{{ format.text }} <span aria-hidden="true">↓</span></a>
+            <a v-if="format.url" class="site-button secondary" :href="format.url">
+              <span>{{ format.text }}</span>
+              <span v-if="versionFromUrl(format.url)" class="download-button-version">v{{ versionFromUrl(format.url) }}</span>
+              <span aria-hidden="true">↓</span>
+            </a>
             <span v-else class="unavailable">{{ format.text }} · 暂未提供下载</span>
           </template>
         </div>
