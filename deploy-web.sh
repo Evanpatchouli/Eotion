@@ -4,7 +4,6 @@ set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
 git pull --ff-only origin master
-pnpm version:check
 
 export GIT_SHA="$(git rev-parse --short=12 HEAD)"
 
