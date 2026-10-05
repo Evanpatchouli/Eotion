@@ -5,7 +5,6 @@ const path = require('node:path')
 
 const rootDir = path.resolve(__dirname, '..')
 const desktopRoot = path.join(rootDir, 'apps', 'desktop')
-const releaseDir = path.join(desktopRoot, 'release')
 const desktopRequire = createRequire(path.join(desktopRoot, 'package.json'))
 const targets = {
   installer: ['nsis'],
@@ -44,6 +43,7 @@ async function main() {
   const { version } = JSON.parse(
     readFileSync(path.join(rootDir, 'package.json'), 'utf8'),
   )
+  const releaseDir = path.join(rootDir, 'release', version)
   const startedAt = Date.now()
   const electronVite = desktopRequire('electron-vite')
   const env = electronVite.loadEnv('production', desktopRoot, '')
@@ -64,10 +64,17 @@ async function main() {
 
   const { Arch, Platform, build } = desktopRequire('electron-builder')
   const requestedTargets = targets[selection]
+  const builderConfig = require(path.join(desktopRoot, 'electron-builder.config.cjs'))
   await build({
     projectDir: desktopRoot,
     targets: Platform.WINDOWS.createTarget(requestedTargets, Arch.x64),
-    config: require(path.join(desktopRoot, 'electron-builder.config.cjs')),
+    config: {
+      ...builderConfig,
+      directories: {
+        ...builderConfig.directories,
+        output: releaseDir,
+      },
+    },
     publish: 'never',
   })
 
@@ -101,9 +108,10 @@ async function main() {
   }
   const currentNames = expectedArtifacts(version, targets.release)
   const stale = packages.filter((name) => !currentNames.includes(name))
+  console.log(`[desktop] Release directory: ${releaseDir}`)
   console.log(`[desktop] Created: ${expected.join(', ')}`)
   if (stale.length > 0) {
-    console.warn(`[desktop] Older-version artifacts remain in apps/desktop/release/: ${stale.join(', ')}`)
+    console.warn(`[desktop] Unexpected artifacts remain in ${releaseDir}: ${stale.join(', ')}`)
   }
 }
 
