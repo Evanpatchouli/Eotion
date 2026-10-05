@@ -7,6 +7,7 @@ import { api } from '../../services/productApi'
 
 const build = EOTION_BUILD_INFO
 const release = computed(() => releaseNotesFor(build.version))
+const shortGitSha = computed(() => build.gitSha === 'unknown' ? 'unknown' : build.gitSha.slice(0, 6))
 const checking = ref(false)
 const feedback = ref('')
 const feedbackFailed = ref(false)
@@ -37,7 +38,7 @@ async function checkForUpdates() {
     <section class="settings-section" aria-labelledby="settings-about-version">
       <div class="settings-section-heading"><h2 id="settings-about-version">版本信息</h2></div>
       <dl class="settings-about-facts">
-        <div class="settings-about-fact"><dt>当前版本</dt><dd class="settings-about-version" data-testid="about-version">{{ build.version }}<span class="settings-about-build">Build {{ build.buildNumber }}</span></dd></div>
+        <div class="settings-about-fact"><dt>当前版本</dt><dd class="settings-about-version" data-testid="about-version">{{ build.version }}<span class="settings-about-build">{{ shortGitSha }}</span></dd></div>
         <div class="settings-about-fact"><dt>发行时间</dt><dd class="settings-about-released" data-testid="about-released">{{ release?.releasedAt ?? '暂无记录' }}</dd></div>
         <div class="settings-about-fact">
           <dt>更新</dt>
