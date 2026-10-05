@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-P5.4 的正式产品链路已把 Page、Block mutation 接入 `LocalStore` 和产品 Sync Coordinator。Web 与 Electron 自动验收已通过；Mobile WebView 以默认 LAN HTTP 地址运行时的真机离线重启尚未验证，因此 Roadmap 暂不标记完整 PASS。
+P5.4 的正式产品链路已把 Page、Block mutation 接入 `LocalStore` 和产品 Sync Coordinator。Web 与 Electron 自动验收已通过。2026-10-06 P5 Final Acceptance 将 P5.4 标记为 **PASS for P5 scope**；HarmonyOS “杀 App + 完全离线冷启动”在 nova 14 真机上存在已确认限制，作为 Accepted Limitation 进入后续技术债，不再阻塞 P5。
 
 ## 数据与保存语义
 
@@ -65,9 +65,9 @@ Visual QA 使用 Playwright（Browser plugin not available），在 `http://loca
 
 `pnpm --filter @eotion/web test:real-sync` 使用本机 Mongo replica set、Nest API 和生产 Web 构建，以两个独立 Chrome context 验证注册登录、Page/Block 创建与同步、第二客户端读取、完全断网 reload 后继续编辑、重连、同页正文回拉、远端 Page 删除收敛，以及 390×844 无横向溢出，1/1 通过。`pnpm --filter @eotion/web test:offline-shell` 以独立持久浏览器 profile 验证完全断网 reload 和浏览器进程重启后从 Service Worker 加载应用，1/1 通过。模拟的 `product-sync.spec.ts` 另覆盖 401、503、跨账号队列与失败 Push 停止 Pull。
 
-**未完成的真实环境验收：** 默认 LAN HTTP 的 Mobile WebView 真机完全断网重启。浏览器中 `eotionRuntime=mobile-webview` 的正式产品 IndexedDB 路径已有自动测试，但不替代目标 Lynx 宿主真机结果。在上述真机边界确认前不声明完整 P5.4 PASS。
+**已接受的真机限制：** HarmonyOS Mobile WebView/Lynx 在 nova 14 上执行“杀 App → 保持完全离线 → 冷启动”时，诊断显示网络失败能正确识别为 transient，但 cached identity 在该宿主冷启动路径中不可用，因此会进入“暂时无法连接 Eotion”。浏览器中 `eotionRuntime=mobile-webview` 的 IndexedDB/离线测试仍不能替代该宿主边界。用户于 2026-10-06 明确接受此限制，不要求追加测试，因此 P5.4 在 P5 scope 内 PASS，但不宣称该冷启动能力已实现。
 
-### Final Mobile Device Checklist — MANUAL CHECK REQUIRED
+### Final Mobile Device Checklist — DEFERRED / ACCEPTED LIMITATION
 
 必须在正式 Mobile WebView/Lynx 宿主及持久稳定的 origin/storage partition 上执行，记录设备、宿主版本、origin、时间、Page ID 和最终结果。默认 LAN HTTP 若在完全断网重启时无法加载应用壳，这属于当前部署边界，不能据浏览器离线测试判为通过；本轮不调整 mobile packaging。
 
@@ -78,7 +78,7 @@ Visual QA 使用 Playwright（Browser plugin not available），在 `http://loca
 5. 恢复网络，确认 pending operation 成功 push，状态转为“已同步”。
 6. 在第二客户端读取并确认最终内容。
 
-只有上述链路的真机证据完成后，才能将 P5.4 Mobile WebView real offline restart 标为 PASS。
+上述完整链路仍可作为后续增强验收清单；P5 Final Acceptance 已明确不以它作为封板 blocker。
 
 ## Production Electron closeout C — 2026-10-03
 
