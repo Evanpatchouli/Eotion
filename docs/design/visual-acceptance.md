@@ -41,7 +41,7 @@ Snapshot 不覆盖所有交互状态。Drawer、Slash、Bubble、附件、Settin
 
 | 项目 | 当前证据与结论 |
 | --- | --- |
-| Typography | `tokens.css` 中 Page Title 36/45/600、Body 15/26/400；Page Light/Dark/Mobile 基线可见层级。中文/Latin 的跨平台字体形态仍需最终人工签字。 |
+| Typography | `tokens.css` 中 Page Title 36/45/600、Body 15/26/400；Page Light/Dark/Mobile 基线可见层级。中文/Latin 的跨平台字体形态已纳入 2026-10-06 用户最终视觉签字。 |
 | Spacing / rhythm | 720–740px 阅读列、44px Topbar、32px Sidebar row 和 Settings Desktop list-detail 已有实现与响应式测试；截图锁定整体节奏。 |
 | Surface hierarchy | Open Canvas 无外层 Editor Card；Sidebar 与浮层使用有限层级。附件的具体状态由 `product-attachments.spec.ts` 验证，未纳入本次 7 张基线。 |
 | Responsive | 1440/1024/390 截图；Mobile Page 与 Settings 测试检查无横向溢出，Settings Detail 检查 30px gutter。真实宿主安全区/键盘仍需设备检查。 |
@@ -69,13 +69,13 @@ Closeout B 验证：`test:product` **148/148 PASS**，`interaction-foundation.sp
 - Visual：`pnpm --filter @eotion/web test:visual:update` 7/7 PASS，随后 `test:visual` 连续两次各 **7/7 PASS**。
 - Desktop/storage：`pnpm --filter @eotion/web test:storage` **11/11 PASS**（含 Electron SQLite/product path）。
 - Offline shell：`pnpm --filter @eotion/web test:offline-shell` **1/1 PASS**。
-- 真实 Mongo/API 双客户端 `test:real-sync`：**NOT RUN**；本轮未启动相应 Mongo replica set、API 和生产 Web 测试环境。不能把既有历史结果称作本轮通过。P5.4 Mobile WebView 真机断网重启仍独立待验收，见 [`p5-real-sync.md`](../p5-real-sync.md)。
+- 真实 Mongo/API 双客户端 `test:real-sync`：**NOT RUN in this visual closeout**；本轮未启动相应 Mongo replica set、API 和生产 Web 测试环境，既有历史结果仍按各自验收记录引用。P5.4 HarmonyOS 完全离线冷启动已在 Final Acceptance 中转为 Accepted Limitation，见 [`p5-real-sync.md`](../p5-real-sync.md)。
 
 ## Deviations / Final Review
 
 | 与原设计目标的差异 | 当前事实与处理 | 状态 |
 | --- | --- | --- |
-| 稳定保存/同步状态只在顶部常驻 | ProductShell `SyncStatus` 是唯一常驻入口；Page 标题旁不再显示“已保存到本地”。离线仍显示“离线 · 本地已保存”，本地持久化失败仍在编辑器附近显示错误与重试。更新后的 Page 基线已获得用户最终视觉签字。 | 已实现；待最终用户签字 |
+| 稳定保存/同步状态只在顶部常驻 | ProductShell `SyncStatus` 是唯一常驻入口；Page 标题旁不再显示“已保存到本地”。离线仍显示“离线 · 本地已保存”，本地持久化失败仍在编辑器附近显示错误与重试。更新后的 Page 基线已获得用户最终视觉签字。 | PASS |
 | 早期高保真 Gate A 顺序 | Quiet Studio 方向先冻结，具体交互和 Mobile 画面经生产实现、用户截图与设备 review 逐步冻结；本轮将结果正式写回设计文档。 | 已如实 reconciliation；不追认早期 PASS |
 | Mobile WebView 真机完全离线重启 | HarmonyOS 杀 App 后完全离线冷启动存在已确认限制；浏览器/IndexedDB 自动测试不能替代宿主边界。 | Accepted Limitation，不阻塞 P5 |
 
