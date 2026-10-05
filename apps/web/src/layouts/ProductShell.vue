@@ -30,6 +30,29 @@ const workspaces = useProductWorkspacesStore()
 const pages = useProductPagesStore()
 const sync = useProductSyncStore()
 const { layoutMode, inputMode, runtime } = useRuntimeContext()
+const showDiagnosticDetails = import.meta.env.VITE_SHOW_DIAGNOSTIC_DETAILS === 'true'
+const cleanupDiagnosticText = computed(() => {
+  const diagnostic = sync.cleanupDiagnostic
+  return [
+    `syncState: ${sync.state}`,
+    `pendingOperations: ${sync.pending}`,
+    `cleanupPending: ${sync.cleanupPending}`,
+    `cleanupError: ${sync.cleanupError || 'none'}`,
+    `cleanupReady: ${diagnostic.ready}`,
+    `cleanupAttempted: ${diagnostic.attempted}`,
+    `cleanupDeleteSucceeded: ${diagnostic.deleteSucceeded}`,
+    `cleanupDeleteFailed: ${diagnostic.deleteFailed}`,
+    `cleanupSkippedOffline: ${diagnostic.skippedOffline}`,
+    `cleanupSkippedUnauthorized: ${diagnostic.skippedUnauthorized}`,
+    `cleanupSkippedBackoff: ${diagnostic.skippedBackoff}`,
+    `cleanupSkippedEditorFlush: ${diagnostic.skippedEditorFlush}`,
+    `cleanupSkippedPendingOperations: ${diagnostic.skippedPendingOperations}`,
+    `cleanupSkippedBecameNotReady: ${diagnostic.skippedBecameNotReady}`,
+    `cleanupSkippedIdentityChanged: ${diagnostic.skippedIdentityChanged}`,
+    `cleanupLastError: ${diagnostic.lastError || 'none'}`,
+    `navigatorOnline: ${navigator.onLine}`,
+  ].join('\n')
+})
 
 const mobileNavOpen = ref(false)
 const desktopSidebarCollapsed = ref(false)
@@ -283,6 +306,10 @@ onUnmounted(() => {
         {{ sync.cleanupError || `${sync.cleanupPending} 个附件待清理，联网同步后自动重试。` }}
         <button class="product-text-button product-sync-action" type="button" @click="sync.retry()"><EotionIcon name="refresh" :size="16" />重试清理</button>
       </p>
+      <details v-if="showDiagnosticDetails" class="product-cleanup-diagnostics">
+        <summary>附件清理诊断</summary>
+        <pre>{{ cleanupDiagnosticText }}</pre>
+      </details>
       <p v-if="operationStatus" class="product-message product-message--success product-operation-status" role="status">{{ operationStatus }}</p>
         <section v-if="workspaces.error" class="document product-state" aria-labelledby="workspace-load-error-title">
           <h1 id="workspace-load-error-title">暂时无法加载工作区</h1>
@@ -315,5 +342,8 @@ onUnmounted(() => {
 .product-user-identity > span { display: block; width: 100%; white-space: nowrap; }
 .product-user-name { max-width: 100%; overflow: hidden; color: var(--e-color-text-primary); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .product-user-email { color: var(--e-color-text-muted); }
+.product-cleanup-diagnostics { margin: 8px 0 12px; color: var(--e-color-text-muted); font-size: 12px; }
+.product-cleanup-diagnostics summary { width: fit-content; cursor: pointer; }
+.product-cleanup-diagnostics pre { margin: 8px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
 .product-settings-entry { display: inline-flex; min-height: 32px; align-items: center; gap: 7px; }
 </style>
