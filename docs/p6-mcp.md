@@ -7,7 +7,7 @@ P6 通过 MCP 让外部客户端使用 Eotion 的已有 application/domain 能�
 | P6.1 MCP Foundation + Auth | `/mcp` transport、独立 Token、`eotion_list_workspaces` | PASS |
 | P6.2 Read Tools | 有界页面列表、标题搜索、正文读取 | PASS |
 | P6.3 Write Tools | 原子页面写入、正文 reconcile、并发保护与持久幂等 | PASS |
-| P6.4 MCP Acceptance | 最终跨客户端验收（待定义） | not started |
+| P6.4 MCP Acceptance | 最终端到端、第二客户端、安全与回归验收 | PASS |
 
 P6.1 不实现 Resources、Prompts、页面读写/删除、Agent/Chat UI、automation 或 Token Settings UI。
 
@@ -53,7 +53,7 @@ enabled_tools = ["eotion_list_workspaces", "eotion_list_pages", "eotion_search_p
 startup_timeout_sec = 20
 ```
 
-从设置该环境变量的 PowerShell 启动 `codex`。`codex mcp list` 检查配置，TUI `/mcp` 检查连接与四个只读工具，然后请求“找到包含 P6.2 MCP Acceptance 的页面，读取它，并告诉我正文内容”。列表只包含当前 Token 用户的工作区。桌面 Codex 同样必须继承 Token 环境；更改环境后重新启动客户端。这里使用预置 Bearer Token，不走 OAuth login。
+从设置该环境变量的 PowerShell 启动 `codex`。`codex mcp list` 检查配置，TUI `/mcp` 检查连接与六个工具，再执行 list/search/get/create/get/update/get 验收。列表只包含当前 Token 用户的工作区。桌面 Codex 同样必须继承 Token 环境；更改环境后重新启动客户端。这里使用预置 Bearer Token，不走 OAuth login。
 
 配置格式依据 [官方 Codex MCP 文档](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。Transport 依据 [官方 SDK HTTP](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/serving/http.md) 和 [Fastify 集成](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/serving/fastify.md)，核实于 2026-10-06。
 
@@ -141,4 +141,24 @@ MCP mutation 不生成客户端 oplog，也不冒充 Sync receipt。既有 HTTP 
 
 独立 reviewer 发现并修复列表项多段落的结构化读取缺口，以及超过 write 数量上限时的可读性回归；补充回归后，无剩余 blocker，事务前复杂度预检与 stale/fresh retry 的定向复核也通过。结构化 items/paragraphs 仅在内容完整可写且数量 1–1000 时返回，其他情况保留 text，避免 Agent 依据不完整结构静默丢失段落。
 
-临时 Codex 账号、Workspace、Page/Block、Token、receipt 随隔离数据库清理；最终检查剩余 Eotion 测试数据库为 0，临时 API、standalone 与 replica set Mongo 进程均已停止。`git diff --check` 通过。P6.1 / P6.2 / P6.3 **PASS**；P6.4 **not started**。
+临时 Codex 账号、Workspace、Page/Block、Token、receipt 随隔离数据库清理；最终检查剩余 Eotion 测试数据库为 0，临时 API、standalone 与 replica set Mongo 进程均已停止。`git diff --check` 通过。P6.1 / P6.2 / P6.3 **PASS**；P6.4 最终验收见下节。
+## P6.4 最终验收 / 封板
+
+2026-10-06，基线 `e767d6048436642d8e174ed47991a900ee540cc6`。本轮只验收现有能力，无新增 Tool、功能或架构重构，无产品代码修复。用户已明确确认入口限流留到公开部署前，本轮保持现有能力验收范围。
+
+- **Codex CLI 0.156.1**：构建后 API、随机隔离 MongoDB 8.0.12 replica set、真实 HTTP 注册/登录与独立 Bearer Token。单次 CLI 依次执行 `list_workspaces → list_pages → search_pages → get_page → create_page → get_page → update_page → get_page`，exit 0。创建两块、更新保留两块 ID 并追加第三块；创建/更新结果分别与随后 get 完全一致，顺序、正文、updatedAt 严格推进及 owner 范围断言通过。使用 `--approve-for-me`；验收事件无 shell/file/web 动作，Token 只经子进程环境提供。
+- **第二客户端：官方 MCP Inspector CLI 2.9.0**（独立 npm 安装，无自写 handler）：直接连接 `http://127.0.0.1:7164/mcp`，Streamable HTTP + Authorization Bearer；`initialize`（协商 2025-11-25）、`tools/list`（恰好六个）、list_workspaces/list_pages/get_page 全通过，modern 模式 initialize/tools/list 也通过。额外完成 create/update/get 与 mutation retry；成功 exit 0，预期业务拒绝为 Inspector 的 `tool_is_error` / exit 5。
+- **权限/安全**：现有真实 transport 回归验证 A/B Workspace/Page 隔离、越权 create/update、revoked/invalid/删除用户 Token 的统一 401、缺失与越权的通用错误、私密字段过滤及 Host/Origin。Inspector 额外验证 A get/update B 页面拒绝且 B 标题不变。独立 review 确认 adapter 经现有 application/domain 权限入口。
+- **并发/幂等**：两个 Inspector 进程基于同一 expectedUpdatedAt 同时 update，恰好一个成功、另一个冲突。create 同 key 同 payload 返回首次 DTO、页面计数不增；update 重试返回首次 DTO、后续 get 完全一致；同 key 不同 payload 正确拒绝。现有 MCP 回归还覆盖同 key 并发 create、重启 replay、失败回滚和 HTTP/Sync 外部写入使旧版本失效。
+- **回归**：全仓 `pnpm typecheck`、`pnpm build:api`、`pnpm build:web` 均通过；`test:mcp` 14/14（两项真实 transport + 十二项契约）、`test:domain` 2/2、`test:http` HTTP/Sync/File 24/24（HTTP 1、Sync 1、File 22）通过；`git diff --check` 通过。lint N/A（无命令）。
+- **独立 review**：transport/auth、权限、read/write contract、CAS、receipt/transaction 与 Sync invariant 无 blocker；同步修正文档中旧阶段状态及限流表述。
+- **清理**：所有验收及回归账号、Token、Workspace、Page/Block、receipt 随随机数据库删除；本轮隔离 Mongo 上剩余 Eotion 数据库为 0。临时 API/Mongo 服务已停止，临时客户端目录/日志已清理，Token 未写入仓库或 Codex 配置。提交后工作区干净。
+
+### P6 最终能力与限制
+
+正式能力仅六个工具：工作区列表、工作区页面列表、标题 literal 搜索、页面/稳定有序 Block 读取、原子创建页面、带 expectedUpdatedAt 和持久幂等的页面更新。读写共用现有权限与 service；文本 Block 受支持范围、大小边界与整体正文 reconcile 语义仍按上文契约。
+
+已知限制：owner-only 权限；无 MCP 入口专用限流，公开部署前需补部署入口速率策略；工作区列表无分页、标题搜索扫描候选、页面分页不是快照；写入需要 replica set/mongos；复杂嵌套内容不保证无损回写，富文本 marks 不保留，image/file 只读；receipt 无 TTL。Resources、Prompts、Agent UI、Automation、新 Tool、Advanced Blocks、Database、Notion import、附件上传及搜索基础设施均未实现，留待后续阶段。
+
+**P6.1 — PASS · P6.2 — PASS · P6.3 — PASS · P6.4 — PASS**
+**P6 MCP — COMPLETE**。本轮到此停止。

@@ -122,11 +122,11 @@ P5 不要求实现多人实时协作、完整权限体系、模板市场、复�
 
 - 作为 NestJS/Fastify 模块化单体的一部分，向 `apps/api` 添加 MCP 适配器；将工具路由到与其他客户端相同的应用服务和授权检查。
 - 从有界的、工作区范围的工具开始，用于列出/搜索和读取页面；添加显式的页面/区块创建和更新操作，并定义审计和重试行为。
-- 在每次调用时强制执行用户和工作区权限，验证输入，限制结果大小，并应用 API 速率限制。不要暴露直接数据库访问或无限制的破坏性/批量操作。
+- 在每次调用时强制执行用户和工作区权限，验证输入，限制结果大小，公开部署前补充入口速率策略（2026-10-06 P6.4 范围确认：本阶段未实现 MCP 专用限流）。不要暴露直接数据库访问或无限制的破坏性/批量操作。
 - 使用 Codex 和另一个兼容的 MCP 客户端验证设置和端到端行为。
 - 记录支持的工具、认证设置和操作限制。
 
-分阶段计划与当前验收见 [P6 MCP](p6-mcp.md)：P6.1 Foundation + Auth 与 P6.2 Read Tools 已 PASS；P6.3 Write Tools、P6.4 MCP Acceptance 未开始。Agent UI / automation 不属于此阶段。范围和安全边界见 [Agent 集成基线](architecture/agent-integration.md)。
+分阶段计划与当前验收见 [P6 MCP](p6-mcp.md)：P6.1 Foundation + Auth、P6.2 Read Tools、P6.3 Write Tools 与 P6.4 MCP Acceptance 均 PASS，P6 MCP COMPLETE。Agent UI / automation 不属于此阶段。范围和安全边界见 [Agent 集成基线](architecture/agent-integration.md)。
 
 ## P7 - 协作
 
