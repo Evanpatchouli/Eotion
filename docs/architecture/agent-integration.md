@@ -4,7 +4,7 @@ Eotion API 已实现 User / Cookie Session 认证，以及 Workspace、Page、Bl
 
 ## 当前范围
 
-P6 暂时只实施 MCP，主计划与验收见 [P6 MCP](../p6-mcp.md)。P6.1 只提供 `eotion_list_workspaces`；页面读取/搜索、写入留给后续阶段。Resources、Prompts、Agent UI、Chat UI、automation 和完整 Token Settings UI 均不属于当前范围。
+P6 暂时只实施 MCP，主计划与验收见 [P6 MCP](../p6-mcp.md)。P6.1 提供 `eotion_list_workspaces`，P6.2 新增有界页面列表、标题搜索与正文读取；写入尚未开始。Resources、Prompts、Agent UI、Chat UI、automation 和完整 Token Settings UI 均不属于当前范围。
 
 ## 接入与身份
 

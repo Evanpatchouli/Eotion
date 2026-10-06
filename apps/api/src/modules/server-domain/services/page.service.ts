@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
 import type { ClientSession, Connection } from 'mongoose'
 import type { PageRecord } from '../types'
@@ -44,6 +44,31 @@ export class PageService {
   async list(userId: string, workspaceId: string) {
     await this.permissions.assertCanRead(userId, workspaceId)
     return this.pages.listByWorkspace(workspaceId)
+  }
+
+  async listWindow(userId: string, workspaceId: string, input: { cursor?: string; limit: number; query?: string }): Promise<{ items: PageRecord[]; nextCursor: string | null }> {
+    if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > 100) throw new BadRequestException('Limit must be an integer between 1 and 100')
+    if (input.cursor !== undefined && (input.cursor.length === 0 || input.cursor.length > 128)) throw new BadRequestException('Cursor must contain 1 to 128 characters')
+    const query = input.query?.trim()
+    if (input.query !== undefined && (!query || query.length > 200)) throw new BadRequestException('Query must contain 1 to 200 non-whitespace characters')
+
+    await this.permissions.assertCanRead(userId, workspaceId)
+    const rows = await this.pages.listWindow(workspaceId, { cursor: input.cursor, limit: input.limit, ...(query === undefined ? {} : { query }) })
+    const hasMore = rows.length > input.limit
+    const items = hasMore ? rows.slice(0, input.limit) : rows
+    return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null }
+  }
+
+  async findAccessible(userId: string, pageId: string): Promise<PageRecord> {
+    const page = await this.pages.findById(pageId)
+    if (!page) throw new NotFoundException('Page not found')
+    try {
+      await this.permissions.assertCanRead(userId, page.workspaceId)
+    } catch (error) {
+      if (error instanceof NotFoundException) throw new NotFoundException('Page not found')
+      throw error
+    }
+    return page
   }
 
   async update(userId: string, workspaceId: string, id: string, patch: PagePatch, session?: ClientSession): Promise<PageRecord | null> {

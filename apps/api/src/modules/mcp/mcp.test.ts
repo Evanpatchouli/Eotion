@@ -11,6 +11,8 @@ import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/cli
 import { McpCredentialEntity } from "../server-domain/schemas/mcp-credential.schema";
 import { UserEntity } from "../server-domain/schemas/user.schema";
 import { McpTokenService } from "../server-domain/services/mcp-token.service";
+import { PageService } from "../server-domain/services/page.service";
+import { BlockService } from "../server-domain/services/block.service";
 import { WorkspaceService } from "../server-domain/services/workspace.service";
 
 type JsonResponse = {
@@ -134,6 +136,8 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
   let app: Awaited<ReturnType<typeof NestFactory.create>> | undefined;
   let connection: Connection | undefined;
   let restoreWorkspaceSpy: (() => void) | undefined;
+  let restorePageSpy: (() => void) | undefined;
+  let restoreBlockSpy: (() => void) | undefined;
   let restoreTokenSpy: (() => void) | undefined;
   try {
     const { AppModule } = await import("../../app.module");
@@ -149,6 +153,8 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     const credentialModel = app.get<Model<unknown>>(getModelToken(McpCredentialEntity.name));
     const tokens = app.get(McpTokenService);
     const workspaces = app.get(WorkspaceService);
+    const pages = app.get(PageService);
+    const blocks = app.get(BlockService);
 
     const emailA = `mcp-a-${randomUUID()}@example.test`;
     const passwordA = "correct horse battery staple";
@@ -188,6 +194,43 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
         assert.equal(created.status, 201);
         assert.equal(created.body.ownerId, ownerId);
       }
+    }
+
+    const pageFixtures = [
+      { id: "mcp-page-a", workspaceId: "mcp-a-1", title: "MCP Architecture" },
+      { id: "mcp-page-b", workspaceId: "mcp-a-1", title: "Meeting Notes" },
+      { id: "mcp-page-c", workspaceId: "mcp-a-1", title: "MCP Testing" },
+      { id: "mcp-page-z", workspaceId: "mcp-a-1", title: "MCP [draft]" },
+      { id: "mcp-page-d", workspaceId: "mcp-a-2", title: "Second Workspace Page" },
+      { id: "mcp-page-e", workspaceId: "mcp-b-1", title: "B Private Page" },
+    ] as const;
+    for (const [index, page] of pageFixtures.entries()) {
+      const ownerId = page.workspaceId === "mcp-b-1" ? userB.id : userA.id;
+      await pages.create(ownerId, page.workspaceId, {
+        id: page.id,
+        parentPageId: null,
+        title: page.title,
+        orderKey: String(index).padStart(4, "0"),
+      });
+    }
+    const blockFixtures = [
+      { id: "mcp-block-a", type: "paragraph", node: { type: "paragraph", content: [{ type: "text", text: "A paragraph" }] } },
+      { id: "mcp-block-b", type: "heading", node: { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "A heading" }] } },
+      { id: "mcp-block-c", type: "todo", node: { type: "eotionTodo", attrs: { checked: true }, content: [{ type: "text", text: "A task" }] } },
+      { id: "mcp-block-d", type: "code", node: { type: "codeBlock", attrs: { language: "typescript" }, content: [{ type: "text", text: "const answer = 42" }] } },
+      { id: "mcp-block-e", type: "numbered-list", node: { type: "orderedList", attrs: { start: 3 }, content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Third item" }] }] }] } },
+      { id: "mcp-block-f", type: "image", node: { type: "eotionImage", attrs: { fileId: "file-image", name: "diagram.png", mimeType: "image/png", size: 1234, url: "https://private.example.test/image" } } },
+      { id: "mcp-block-g", type: "file", node: { type: "eotionFile", attrs: { fileId: "file-doc", name: "notes.pdf", mimeType: "application/pdf", size: 5678, url: "https://private.example.test/file" } } },
+    ] as const;
+    for (const [index, block] of blockFixtures.entries()) {
+      await blocks.create(userA.id, "mcp-a-1", "mcp-page-a", {
+        id: block.id,
+        pageId: "mcp-page-a",
+        parentBlockId: null,
+        type: block.type,
+        orderKey: String(index).padStart(4, "0"),
+        props: { node: block.node },
+      });
     }
 
     const noSession = await request(baseUrl, "/api/mcp/tokens", "POST", {
@@ -307,7 +350,12 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     const clientA = await openClient(issuedA.body.token);
     try {
       const initialization = await clientA.listTools();
-      assert.deepEqual(initialization.tools.map(({ name }) => name), ["eotion_list_workspaces"]);
+      assert.deepEqual(initialization.tools.map(({ name }) => name), [
+        "eotion_list_workspaces",
+        "eotion_list_pages",
+        "eotion_search_pages",
+        "eotion_get_page",
+      ]);
       const listedA = await clientA.callTool({ name: "eotion_list_workspaces", arguments: {} });
       assert.equal(listedA.isError, undefined);
       assert.deepEqual(listedA.structuredContent, {
@@ -322,6 +370,193 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
       assert.ok(listedText?.type === "text");
       assert.deepEqual(JSON.parse(listedText.text), listedA.structuredContent);
       assert.doesNotMatch(listedTexts.join("\n"), /B workspace/);
+
+      const listFirstWindow = await clientA.callTool({
+        name: "eotion_list_pages",
+        arguments: { workspaceId: "mcp-a-1", limit: 2 },
+      });
+      assert.equal(listFirstWindow.isError, undefined);
+      const firstPageWindow = listFirstWindow.structuredContent as any;
+      assert.deepEqual(firstPageWindow.items.map(({ id }: { id: string }) => id), ["mcp-page-a", "mcp-page-b"]);
+      assert.equal(firstPageWindow.nextCursor, "mcp-page-b");
+      for (const page of firstPageWindow.items) {
+        assert.deepEqual(Object.keys(page).sort(), ["id", "parentPageId", "title", "updatedAt", "workspaceId"]);
+        assert.match(page.updatedAt, /^\d{4}-\d\d-\d\dT/);
+      }
+      const secondPageWindow = await clientA.callTool({
+        name: "eotion_list_pages",
+        arguments: { workspaceId: "mcp-a-1", cursor: firstPageWindow.nextCursor, limit: 2 },
+      });
+      const secondPageItems = (secondPageWindow.structuredContent as any).items;
+      assert.deepEqual(secondPageItems.map(({ id }: { id: string }) => id), ["mcp-page-c", "mcp-page-z"]);
+      assert.equal((secondPageWindow.structuredContent as any).nextCursor, null);
+      assert.deepEqual(
+        [...firstPageWindow.items, ...secondPageItems].map(({ id }: { id: string }) => id),
+        ["mcp-page-a", "mcp-page-b", "mcp-page-c", "mcp-page-z"],
+      );
+      const defaultWindow = await clientA.callTool({
+        name: "eotion_list_pages",
+        arguments: { workspaceId: "mcp-a-1" },
+      });
+      assert.deepEqual((defaultWindow.structuredContent as any).items.map(({ id }: { id: string }) => id), [
+        "mcp-page-a", "mcp-page-b", "mcp-page-c", "mcp-page-z",
+      ]);
+      assert.equal((defaultWindow.structuredContent as any).nextCursor, null);
+      const otherWorkspaceWindow = await clientA.callTool({
+        name: "eotion_list_pages",
+        arguments: { workspaceId: "mcp-a-2" },
+      });
+      assert.deepEqual((otherWorkspaceWindow.structuredContent as any).items.map(({ id }: { id: string }) => id), ["mcp-page-d"]);
+      const searchFirstWindow = await clientA.callTool({
+        name: "eotion_search_pages",
+        arguments: { workspaceId: "mcp-a-1", query: " mCp ", limit: 1 },
+      });
+      assert.deepEqual((searchFirstWindow.structuredContent as any).items.map(({ id }: { id: string }) => id), ["mcp-page-a"]);
+      assert.equal((searchFirstWindow.structuredContent as any).nextCursor, "mcp-page-a");
+      const searchNextWindow = await clientA.callTool({
+        name: "eotion_search_pages",
+        arguments: { workspaceId: "mcp-a-1", query: "MCP", cursor: "mcp-page-a", limit: 1 },
+      });
+      assert.deepEqual((searchNextWindow.structuredContent as any).items.map(({ id }: { id: string }) => id), ["mcp-page-c"]);
+      assert.equal((searchNextWindow.structuredContent as any).nextCursor, "mcp-page-c");
+      const searchLastWindow = await clientA.callTool({
+        name: "eotion_search_pages",
+        arguments: { workspaceId: "mcp-a-1", query: "MCP", cursor: "mcp-page-c", limit: 1 },
+      });
+      assert.deepEqual((searchLastWindow.structuredContent as any).items.map(({ id }: { id: string }) => id), ["mcp-page-z"]);
+      assert.equal((searchLastWindow.structuredContent as any).nextCursor, null);
+      const searchOtherWorkspace = await clientA.callTool({
+        name: "eotion_search_pages",
+        arguments: { workspaceId: "mcp-a-1", query: "meeting" },
+      });
+      assert.deepEqual((searchOtherWorkspace.structuredContent as any).items.map(({ id }: { id: string }) => id), ["mcp-page-b"]);
+      assert.equal((searchOtherWorkspace.structuredContent as any).nextCursor, null);
+      const literalSearch = await clientA.callTool({
+        name: "eotion_search_pages",
+        arguments: { workspaceId: "mcp-a-1", query: "[draft]" },
+      });
+      assert.deepEqual((literalSearch.structuredContent as any).items.map(({ id }: { id: string }) => id), ["mcp-page-z"]);
+      assert.equal((literalSearch.structuredContent as any).nextCursor, null);
+
+      const pageResult = await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: "mcp-page-a" } });
+      assert.equal(pageResult.isError, undefined);
+      const pagePayload = pageResult.structuredContent as any;
+      assert.deepEqual(Object.keys(pagePayload).sort(), ["blocks", "id", "parentPageId", "title", "updatedAt", "workspaceId"]);
+      assert.deepEqual({ ...pagePayload, updatedAt: undefined, blocks: undefined }, {
+        id: "mcp-page-a",
+        workspaceId: "mcp-a-1",
+        title: "MCP Architecture",
+        parentPageId: null,
+        updatedAt: undefined,
+        blocks: undefined,
+      });
+      assert.match(pagePayload.updatedAt, /^\d{4}-\d\d-\d\dT/);
+      assert.deepEqual(pagePayload.blocks.map(({ id }: { id: string }) => id), blockFixtures.map(({ id }) => id));
+      assert.deepEqual(pagePayload.blocks.slice(0, 5), [
+        { id: "mcp-block-a", type: "paragraph", text: "A paragraph" },
+        { id: "mcp-block-b", type: "heading", text: "A heading", level: 2 },
+        { id: "mcp-block-c", type: "todo", text: "A task", checked: true },
+        { id: "mcp-block-d", type: "code", text: "const answer = 42", language: "typescript" },
+        { id: "mcp-block-e", type: "numbered-list", text: "3. Third item", start: 3 },
+      ]);
+      assert.deepEqual(pagePayload.blocks.slice(5), [
+        { id: "mcp-block-f", type: "image", text: "", fileId: "file-image", name: "diagram.png", mimeType: "image/png", size: 1234 },
+        { id: "mcp-block-g", type: "file", text: "", fileId: "file-doc", name: "notes.pdf", mimeType: "application/pdf", size: 5678 },
+      ]);
+      const pageText = pageResult.content.find((item) => item.type === "text");
+      assert.ok(pageText?.type === "text");
+      assert.deepEqual(JSON.parse(pageText.text), pageResult.structuredContent);
+      assert.doesNotMatch(JSON.stringify(pageResult.structuredContent), /privateExtension|private\.example|orderKey|props|node|url|token|authorization|oplog|editor|session|blockId/i);
+
+      const missingPage = await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: "mcp-page-missing" } });
+      const otherUsersPage = await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: "mcp-page-e" } });
+      assert.equal(missingPage.isError, true);
+      assert.equal(otherUsersPage.isError, true);
+      assert.equal(missingPage.structuredContent, undefined);
+      assert.equal(otherUsersPage.structuredContent, undefined);
+      assert.deepEqual(otherUsersPage.content, missingPage.content);
+      assert.doesNotMatch(JSON.stringify(missingPage.content), /userId|workspace|private/i);
+
+      const invalidPageCalls = [
+        { name: "eotion_list_pages", arguments: {} },
+        { name: "eotion_list_pages", arguments: { workspaceId: 17 } },
+        { name: "eotion_list_pages", arguments: { workspaceId: "" } },
+        { name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1", query: "   " } },
+        { name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1", query: 17 } },
+        { name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1" } },
+        { name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1", query: "x".repeat(201) } },
+        { name: "eotion_list_pages", arguments: { workspaceId: "mcp-a-1", limit: 0 } },
+        { name: "eotion_list_pages", arguments: { workspaceId: "mcp-a-1", limit: -1 } },
+        { name: "eotion_list_pages", arguments: { workspaceId: "mcp-a-1", limit: 1.5 } },
+        { name: "eotion_list_pages", arguments: { workspaceId: "mcp-a-1", limit: 101 } },
+        { name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1", query: "MCP", limit: 0 } },
+        { name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1", query: "MCP", limit: -1 } },
+        { name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1", query: "MCP", limit: 1.5 } },
+        { name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1", query: "MCP", limit: 101 } },
+        { name: "eotion_list_pages", arguments: { workspaceId: "mcp-a-1", cursor: "" } },
+        { name: "eotion_list_pages", arguments: { workspaceId: "mcp-a-1", cursor: "x".repeat(129) } },
+        { name: "eotion_get_page", arguments: {} },
+        { name: "eotion_get_page", arguments: { pageId: 3 } },
+        { name: "eotion_list_pages", arguments: { workspaceId: "mcp-a-1", userId: userB.id } },
+        { name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1", query: "MCP", userId: userB.id } },
+        { name: "eotion_get_page", arguments: { pageId: "mcp-page-a", userId: userB.id } },
+      ];
+      for (const invalid of invalidPageCalls) {
+        const result = await clientA.callTool(invalid as any);
+        assert.equal(result.isError, true, `${invalid.name} must reject invalid arguments`);
+        assert.equal(result.structuredContent, undefined);
+      }
+      const unauthorizedWorkspace = await clientA.callTool({
+        name: "eotion_list_pages",
+        arguments: { workspaceId: "mcp-b-1" },
+      });
+      assert.equal(unauthorizedWorkspace.isError, true);
+      assert.equal(unauthorizedWorkspace.structuredContent, undefined);
+      assert.doesNotMatch(JSON.stringify(unauthorizedWorkspace.content), /mcp-b-1|userId|ownerId/i);
+
+      const originalListWindow = pages.listWindow.bind(pages);
+      pages.listWindow = async () => { throw new Error("private page repository failure"); };
+      restorePageSpy = () => { pages.listWindow = originalListWindow; };
+      try {
+        const failedPageList = await clientA.callTool({
+          name: "eotion_list_pages",
+          arguments: { workspaceId: "mcp-a-1" },
+        });
+        assert.equal(failedPageList.isError, true);
+        assertGenericError(failedPageList.content.flatMap((item) => item.type === "text" ? [item.text] : []).join("\n"));
+      } finally {
+        restorePageSpy();
+        restorePageSpy = undefined;
+      }
+      const originalBoundedBlocks = blocks.listBounded.bind(blocks);
+      blocks.listBounded = async () => { throw new Error("private block repository failure"); };
+      restoreBlockSpy = () => { blocks.listBounded = originalBoundedBlocks; };
+      try {
+        const failedPageRead = await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: "mcp-page-a" } });
+        assert.equal(failedPageRead.isError, true);
+        assertGenericError(failedPageRead.content.flatMap((item) => item.type === "text" ? [item.text] : []).join("\n"));
+      } finally {
+        restoreBlockSpy();
+        restoreBlockSpy = undefined;
+      }
+
+      const clientB = await openClient(issuedB.body.token);
+      try {
+        const bPages = await clientB.callTool({ name: "eotion_list_pages", arguments: { workspaceId: "mcp-b-1" } });
+        assert.deepEqual((bPages.structuredContent as any).items.map(({ id }: { id: string }) => id), ["mcp-page-e"]);
+        const aWorkspaceDenied = await clientB.callTool({ name: "eotion_list_pages", arguments: { workspaceId: "mcp-a-1" } });
+        assert.equal(aWorkspaceDenied.isError, true);
+        const aWorkspaceSearchDenied = await clientB.callTool({
+          name: "eotion_search_pages", arguments: { workspaceId: "mcp-a-1", query: "MCP" },
+        });
+        assert.equal(aWorkspaceSearchDenied.isError, true);
+        const aPageDenied = await clientB.callTool({ name: "eotion_get_page", arguments: { pageId: "mcp-page-a" } });
+        const bPageMissing = await clientB.callTool({ name: "eotion_get_page", arguments: { pageId: "absent-for-b" } });
+        assert.equal(aPageDenied.isError, true);
+        assert.deepEqual(aPageDenied.content, bPageMissing.content);
+      } finally {
+        await clientB.close();
+      }
       // The SDK reports schema failures as MCP tool error results, not rejected promises.
       const listBeforeValidation = workspaces.listByOwner.bind(workspaces);
       let invalidInputReachedService = false;
@@ -414,7 +649,9 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     await tokens.revoke(userB.id, revokedCredential.credential.id);
     assert.ok(await tokens.resolve(revokedCredential.token), "another user cannot revoke A's credential");
     const revocationClient = await openClient(revokedCredential.token);
-    assert.deepEqual((await revocationClient.listTools()).tools.map(({ name }) => name), ["eotion_list_workspaces"]);
+    assert.deepEqual((await revocationClient.listTools()).tools.map(({ name }) => name), [
+      "eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_get_page",
+    ]);
     await tokens.revoke(userA.id, revokedCredential.credential.id);
     assert.equal(await tokens.resolve(revokedCredential.token), null);
     assert.ok(await tokens.resolve(stillValidCredential.token));
@@ -472,6 +709,8 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     })).status, 200);
   } finally {
     restoreWorkspaceSpy?.();
+    restorePageSpy?.();
+    restoreBlockSpy?.();
     restoreTokenSpy?.();
     try {
       if (connection) {

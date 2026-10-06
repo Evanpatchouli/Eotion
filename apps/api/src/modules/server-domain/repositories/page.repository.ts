@@ -23,6 +23,11 @@ export class PageRepository {
     return doc ? this.toRecord(doc) : null
   }
 
+  async findById(id: string): Promise<PageRecord | null> {
+    const doc = await this.model.findOne({ id }).exec()
+    return doc ? this.toRecord(doc) : null
+  }
+
   async touchStructure(workspaceId: string, id: string, session: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndUpdate(
       { workspaceId, id }, { $inc: { structureFence: 1 } }, { session, returnDocument: 'after' },
@@ -31,6 +36,13 @@ export class PageRepository {
 
   async listByWorkspace(workspaceId: string): Promise<PageRecord[]> {
     return (await this.model.find({ workspaceId }).sort({ parentPageId: 1, orderKey: 1, id: 1 }).exec()).map((doc) => this.toRecord(doc))
+  }
+
+  async listWindow(workspaceId: string, input: { cursor?: string; limit: number; query?: string }): Promise<PageRecord[]> {
+    const filter: Record<string, unknown> = { workspaceId }
+    if (input.cursor !== undefined) filter.id = { $gt: input.cursor }
+    if (input.query !== undefined) filter.title = new RegExp(input.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+    return (await this.model.find(filter).sort({ id: 1 }).limit(input.limit + 1).exec()).map((doc) => this.toRecord(doc))
   }
 
   async updateInWorkspace(workspaceId: string, id: string, patch: PagePatch, session?: ClientSession): Promise<PageRecord | null> {

@@ -59,6 +59,15 @@ export class BlockService {
     return this.blocks.listByPage(workspaceId, pageId)
   }
 
+  async listBounded(userId: string, workspaceId: string, pageId: string, maxBlocks: number): Promise<ServerBlockRecord[]> {
+    if (!Number.isInteger(maxBlocks) || maxBlocks < 1 || maxBlocks > 1000) throw new BadRequestException('maxBlocks must be an integer between 1 and 1000')
+    await this.permissions.assertCanRead(userId, workspaceId)
+    if (!(await this.pages.findInWorkspace(workspaceId, pageId))) throw new NotFoundException('Page not found')
+    const blocks = await this.blocks.listByPage(workspaceId, pageId, maxBlocks + 1)
+    if (blocks.length > maxBlocks) throw new BadRequestException('Page exceeds the maximum block count')
+    return blocks
+  }
+
   async listByWorkspace(userId: string, workspaceId: string): Promise<ServerBlockRecord[]> {
     await this.permissions.assertCanRead(userId, workspaceId)
     return this.blocks.listByWorkspace(workspaceId)

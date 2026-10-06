@@ -29,8 +29,10 @@ export class BlockRepository {
     ).exec())
   }
 
-  async listByPage(workspaceId: string, pageId: string): Promise<ServerBlockRecord[]> {
-    return (await this.model.find({ workspaceId, pageId }).sort({ parentBlockId: 1, orderKey: 1, id: 1 }).exec()).map((doc) => this.toRecord(doc))
+  async listByPage(workspaceId: string, pageId: string, limit?: number): Promise<ServerBlockRecord[]> {
+    const query = this.model.find({ workspaceId, pageId }).sort({ parentBlockId: 1, orderKey: 1, id: 1 })
+    if (limit !== undefined) query.limit(limit)
+    return (await query.exec()).map((doc) => this.toRecord(doc))
   }
 
   async listByWorkspace(workspaceId: string): Promise<ServerBlockRecord[]> {

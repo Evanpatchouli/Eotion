@@ -126,7 +126,7 @@ P5 不要求实现多人实时协作、完整权限体系、模板市场、复�
 - 使用 Codex 和另一个兼容的 MCP 客户端验证设置和端到端行为。
 - 记录支持的工具、认证设置和操作限制。
 
-分阶段计划与当前验收见 [P6 MCP](p6-mcp.md)：P6.1 Foundation + Auth、P6.2 Read Tools、P6.3 Write Tools、P6.4 MCP Acceptance。当前只实施 P6.1；Agent UI / automation 不属于此阶段。范围和安全边界见 [Agent 集成基线](architecture/agent-integration.md)。
+分阶段计划与当前验收见 [P6 MCP](p6-mcp.md)：P6.1 Foundation + Auth 与 P6.2 Read Tools 已 PASS；P6.3 Write Tools、P6.4 MCP Acceptance 未开始。Agent UI / automation 不属于此阶段。范围和安全边界见 [Agent 集成基线](architecture/agent-integration.md)。
 
 ## P7 - 协作
 

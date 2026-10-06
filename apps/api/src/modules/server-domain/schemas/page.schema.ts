@@ -31,3 +31,4 @@ export class PageEntity {
 export type PageDocument = HydratedDocument<PageEntity>
 export const PageSchema = SchemaFactory.createForClass(PageEntity)
 PageSchema.index({ workspaceId: 1, parentPageId: 1, orderKey: 1, id: 1 })
+PageSchema.index({ workspaceId: 1, id: 1 })

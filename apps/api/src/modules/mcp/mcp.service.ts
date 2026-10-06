@@ -6,7 +6,19 @@ import { z } from 'zod'
 import type { FastifyInstance } from 'fastify'
 
 import { WorkspaceService } from '../server-domain/services/workspace.service'
+import { PageService } from '../server-domain/services/page.service'
+import { BlockService } from '../server-domain/services/block.service'
 import { McpTokenService } from '../server-domain/services/mcp-token.service'
+import {
+  assertMcpResultSize,
+  GetPageInputSchema,
+  GetPageOutputSchema,
+  ListPagesInputSchema,
+  ListPagesOutputSchema,
+  SearchPagesInputSchema,
+  toMcpBlocks,
+  toMcpPageSummary,
+} from './mcp-read.contract'
 
 const MCP_TOKEN_PATTERN = /^Bearer +(eotion_mcp_[A-Za-z0-9_-]{43})$/i
 const MCP_REALM = 'Bearer realm="eotion-mcp", error="invalid_token"'
@@ -43,6 +55,8 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     private readonly adapterHost: HttpAdapterHost,
     private readonly tokens: McpTokenService,
     private readonly workspaces: WorkspaceService,
+    private readonly pages: PageService,
+    private readonly blocks: BlockService,
   ) {}
 
   onModuleInit(): void {
@@ -162,6 +176,65 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
             isError: true,
             content: [{ type: 'text', text: 'Unable to list workspaces.' }],
           }
+        }
+      },
+    )
+
+    const registerPageListTool = (name: 'eotion_list_pages' | 'eotion_search_pages', search: boolean) => {
+      server.registerTool(
+        name,
+        {
+          title: search ? 'Search pages' : 'List pages',
+          description: search
+            ? 'Search accessible page titles in the specified Eotion workspace using a case-insensitive literal substring.'
+            : 'List pages in an accessible workspace in ascending page ID order.',
+          inputSchema: search ? SearchPagesInputSchema : ListPagesInputSchema,
+          outputSchema: ListPagesOutputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+        },
+        async (input) => {
+          try {
+            if (typeof userId !== 'string') throw new Error('Missing authenticated user')
+            const query = search && 'query' in input && typeof input.query === 'string' ? input.query : undefined
+            const listed = await this.pages.listWindow(userId, input.workspaceId, {
+              ...(input.cursor === undefined ? {} : { cursor: input.cursor }),
+              limit: input.limit,
+              ...(query === undefined ? {} : { query }),
+            })
+            const result = assertMcpResultSize({
+              items: listed.items.map(toMcpPageSummary),
+              nextCursor: listed.nextCursor,
+            })
+            return { structuredContent: result, content: [{ type: 'text', text: JSON.stringify(result) }] }
+          } catch {
+            return { isError: true, content: [{ type: 'text', text: search ? 'Unable to search pages.' : 'Unable to list pages.' }] }
+          }
+        },
+      )
+    }
+
+    registerPageListTool('eotion_list_pages', false)
+    registerPageListTool('eotion_search_pages', true)
+
+    server.registerTool(
+      'eotion_get_page',
+      {
+        title: 'Get page',
+        description: 'Read an accessible page summary and its supported body blocks.',
+        inputSchema: GetPageInputSchema,
+        outputSchema: GetPageOutputSchema,
+        annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      },
+      async (input) => {
+        try {
+          if (typeof userId !== 'string') throw new Error('Missing authenticated user')
+          const page = await this.pages.findAccessible(userId, input.pageId)
+          if (!page) throw new Error('Page not found')
+          const records = await this.blocks.listBounded(userId, page.workspaceId, page.id, 1000)
+          const result = assertMcpResultSize({ ...toMcpPageSummary(page), blocks: toMcpBlocks(records) })
+          return { structuredContent: result, content: [{ type: 'text', text: JSON.stringify(result) }] }
+        } catch {
+          return { isError: true, content: [{ type: 'text', text: 'Unable to get page.' }] }
         }
       },
     )
