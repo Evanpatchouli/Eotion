@@ -1,18 +1,14 @@
-# 当前任务：P7.2 Rich Blocks
+# 当前任务：P7.2 Rich Blocks Final Acceptance
 
-状态：按用户要求停止验收并先提交当前实现；P7.2 保持 current，尚未 PASS。仅提交，不恢复测试或开始 P7.3。
+状态：P7.2 已 PASS（实现提交 139a6ff）。本轮只做验收收尾，不新增功能，不开始 P7.3。
 
-## Work Units
-- S0 investigate：registry/editor/codec 检索与第二 Rich Block 评估（scout）。
-- S2 decide -> S1 execute：Callout leaf inline rich-text；icon + neutral/info/warning tone；registry、contracts/storage/server round-trip（foundation）。
-- S1 execute：编辑器节点、slash、键盘与 Quiet Studio rendering（fast_worker）。
-- S2 execute：MCP orphan fail-closed、Callout 稳定 read/write DTO（worker）。
-- S0 verify：domain/storage/API/MCP/typecheck/build/product 回归；独立 reviewer 最终复核。
+## 验收结果
 
-禁止：Table/Database、P7.3 嵌套 UX、child attachment、新 MCP Tools、sync operation、完整 plugin framework、大规模 editor 重构。
+- product：完整 `test:product` 执行 3 次（默认多 worker 1 次、`--workers=1` 2 次），每次 173/175；失败项每次不同且都是与 Callout 无关的既有 flaky，逐个单独复现通过；`product-attachments.spec.ts:147` 在干净基线 c687f1d 上同样失败。
+- visual：6/7，唯一失败 `Connectivity backend unavailable desktop` 与基线像素差一致（21748 px，ratio 0.02）。
+- 回归：domain 11/11、contracts 6/6、storage 7/7、API domain 2/2、HTTP 26/26、MCP 21/21、Electron storage 11/11、typecheck、Web/API build、`git diff --check` 全部通过；无 lint 脚本。
+- 独立只读 review：无 blocker；两个 minor（blockquote 内 block 级块保存被拒、hardBreak marks 校验不对称）已记入 docs/p7-advanced-blocks.md 已知限制。
 
-## 已完成与剩余
+## 下一步
 
-- Callout、MCP orphan fail-closed、registry、codec/local/sync 与相关回归已实现；独立 review 无剩余 blocker。
-- 已通过 domain 11/11、contracts 6/6、storage 7/7、API domain 2/2、HTTP 26/26、MCP 21/21、Callout 定向 12/12、Electron storage 11/11、typecheck、Web/API build。
-- 完整 product 验收未收齐；旧 slash 精确列表断言已补提示块，待定向重跑。visual 结果未收齐。
+P7.3 Nested Blocks UX 未开始；启动前先处理上述两个 minor（可选）。

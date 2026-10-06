@@ -1,11 +1,11 @@
 # P7 Advanced Blocks
 
-P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1 已 PASS；本轮只做 P7.2 Rich Blocks：在统一 registry 与既有 local-first/sync 链路增加 Callout，并收敛安全读取与富文本属性保真。本页记录已完成的实现与验证命令，最终验收由主 Agent 判定。
+P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1 与 P7.2 已 PASS；P7.2 Rich Blocks 在统一 registry 与既有 local-first/sync 链路增加 Callout，并收敛安全读取与富文本属性保真。本页记录已完成的实现、最终验收结果与已知限制。
 
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
 | P7.1 Block Model Foundation | block registry、block tree invariant、move/reparent、snapshot 校验、Toggle 验证 | PASS |
-| P7.2 Rich Blocks | Callout 与现有 Rich Block 保真收敛 | current（验证中） |
+| P7.2 Rich Blocks | Callout 与现有 Rich Block 保真收敛 | PASS |
 | P7.3 Nested Blocks UX | 拖拽嵌套、Tab/Shift+Tab 缩进、更完整键盘语义 | not started |
 | P7.4 Table | Table 区块 | not started |
 | P7.5 Advanced Blocks Acceptance | 最终验收 | not started |
@@ -90,6 +90,18 @@ P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1 已 PAS
 - MCP 现有 read/write 工具兼容 Callout，DTO 仅暴露 text/icon/tone，不暴露 Tiptap AST；显式正文重写沿用 P6 纯文本语义，未提供 blocks 的标题更新保留富文本；nested document replacement 仍保持 P6 限制。缺失 parent 的 MCP read conversion / get_page fail-closed，不将 child 提升为 root。
 - 本轮不新增第二类型：details 与 Toggle 重复；bookmark 的 URL/标题/元数据需要独立需求定义。补现有 code language 属性保真回归，不为数量新增区块。
 - 限制：Callout 不含子块或附件，不提供复杂主题、URL 预览、语法高亮；P7.3–P7.5 未开始。共享 Web renderer 覆盖 Desktop 与 Mobile layout，真实设备输入法/原生宿主验收不由本轮浏览器回归替代。
+
+## P7.2 Final Acceptance
+
+P7.2 于 2026-10-07 完成验收并 PASS（实现提交 `139a6ff`）。本轮只做验收收尾，不新增功能。
+
+- 完整 product：`test:product` 共执行 3 次（默认多 worker 1 次、`--workers=1` 2 次），每次 173/175。失败项每次不同，且都落在与 Callout 无关的既有 UI 用例（toggle 清空、页面重命名、图片附件 reload、IME 草稿）；逐个单独复现全部通过。`product-attachments.spec.ts:147` 在干净基线 `c687f1d` 上同样失败（`https://objects.example.test/...` 未被 mock，图片 fallback 与 `<img>` 断言存在竞态），确认为既有环境 flaky，不是 P7.2 回归。
+- P7.2 主文件 `tests/product-blocks.spec.ts` 加压 `--repeat-each=2`：24/24；`tests/product-attachments.spec.ts` 单独运行 23/23。
+- visual：`test:visual` 为 6/7。唯一失败 `Connectivity backend unavailable desktop` 与干净基线 `c687f1d` 的像素差完全一致（21748 px，ratio 0.02）；该页面不含 Callout，属既有基线差异，不阻塞 P7.2。
+- Callout 四组合渲染核查（临时只读脚本，用后删除）：1440×900 与 390×844 × Light/Dark 均正常，无横向溢出；neutral / info / warning 三种 tone、icon、粗体与链接、硬换行、Toggle 内嵌 Callout 均正确。
+- 回归：domain 11/11、contracts 6/6、storage 7/7、API domain 2/2、HTTP 26/26、MCP 21/21、Electron storage 11/11、`pnpm typecheck`、`build:web`、`build:api`、`git diff --check` 全部通过。仓库无 lint 脚本，N/A。
+- 独立只读 review：无 blocker。记录两个 minor，均为既有同类问题且非本轮引入：blockquote 内可经 slash 创建 Callout 等 block 级块，但 `EDITOR_NODE_RULES.blockquote.children` 与 codec schema 不接受保存（静态审查发现，未在浏览器复现）；`hardBreak` 携带 marks 时 blockCodec 与 domain 校验不对称（可达性未证明）。
+
 ## 测试与验证
 
 - packages/domain：新增 `test/block-model.test.cjs`，覆盖注册表一致性、树重建顺序、self / missing / cross-page / cycle / 重复 id 拒绝、删除顺序、按组分配 orderKey、child 类型白名单。
@@ -113,7 +125,7 @@ pnpm --filter @eotion/web run test:product
 pnpm --filter @eotion/web run test:storage
 ```
 
-本环境默认多 worker 运行 `test:product` 时偶发与改动无关的 UI 超时；需要确定性结果时改用 `--workers=1`。运行 `test:storage` 前需清除本沙箱默认设置的 `ELECTRON_RUN_AS_NODE`，否则 Electron 用例会报 `Process failed to launch`。
+本环境运行 `test:product` 时偶发与改动无关的 UI 失败：默认多 worker 与 `--workers=1` 均观察到，且每次失败项不同；需要区分真实回归与既有 flaky 时，应单独复现失败项并对照干净基线。运行 `test:storage` 前需清除本沙箱默认设置的 `ELECTRON_RUN_AS_NODE`，否则 Electron 用例会报 `Process failed to launch`。
 
 ## 明确不在 P7.x 范围
 
