@@ -7,6 +7,7 @@ import { PageRepository } from './repositories/page.repository'
 import { WorkspaceRepository } from './repositories/workspace.repository'
 import { SessionRepository } from './repositories/session.repository'
 import { McpCredentialRepository } from './repositories/mcp-credential.repository'
+import { McpMutationRepository } from './repositories/mcp-mutation.repository'
 import { UserRepository } from './repositories/user.repository'
 import { BlockEntity, BlockSchema } from './schemas/block.schema'
 import { FileMetadataEntity, FileMetadataSchema } from './schemas/file-metadata.schema'
@@ -14,6 +15,7 @@ import { PageEntity, PageSchema } from './schemas/page.schema'
 import { WorkspaceEntity, WorkspaceSchema } from './schemas/workspace.schema'
 import { SessionEntity, SessionSchema } from './schemas/session.schema'
 import { McpCredentialEntity, McpCredentialSchema } from './schemas/mcp-credential.schema'
+import { McpMutationReceiptEntity, McpMutationReceiptSchema } from './schemas/mcp-mutation.schema'
 import { UserEntity, UserSchema } from './schemas/user.schema'
 import { OperationReceiptEntity, OperationReceiptSchema } from './schemas/operation-receipt.schema'
 import { BlockService } from './services/block.service'
@@ -26,6 +28,7 @@ import { SessionService } from './services/session.service'
 import { McpTokenService } from './services/mcp-token.service'
 import { WorkspacePermissionService } from './services/workspace-permission.service'
 import { SyncService } from './services/sync.service'
+import { DocumentMutationService } from './services/document-mutation.service'
 
 @Module({
   imports: [
@@ -37,6 +40,7 @@ import { SyncService } from './services/sync.service'
       { name: UserEntity.name, schema: UserSchema },
       { name: SessionEntity.name, schema: SessionSchema },
       { name: McpCredentialEntity.name, schema: McpCredentialSchema },
+      { name: McpMutationReceiptEntity.name, schema: McpMutationReceiptSchema },
       { name: OperationReceiptEntity.name, schema: OperationReceiptSchema },
     ]),
   ],
@@ -48,6 +52,7 @@ import { SyncService } from './services/sync.service'
     UserRepository,
     SessionRepository,
     McpCredentialRepository,
+    McpMutationRepository,
     WorkspaceService,
     PageService,
     BlockService,
@@ -59,7 +64,8 @@ import { SyncService } from './services/sync.service'
     McpTokenService,
     WorkspacePermissionService,
     SyncService,
+    DocumentMutationService,
   ],
-  exports: [WorkspaceService, PageService, BlockService, FileMetadataService, AuthService, SessionService, McpTokenService, WorkspacePermissionService, SyncService],
+  exports: [WorkspaceService, PageService, BlockService, FileMetadataService, AuthService, SessionService, McpTokenService, WorkspacePermissionService, SyncService, DocumentMutationService],
 })
 export class ServerDomainModule {}

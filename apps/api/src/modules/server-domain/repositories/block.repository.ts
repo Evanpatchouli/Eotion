@@ -29,9 +29,10 @@ export class BlockRepository {
     ).exec())
   }
 
-  async listByPage(workspaceId: string, pageId: string, limit?: number): Promise<ServerBlockRecord[]> {
+  async listByPage(workspaceId: string, pageId: string, limit?: number, session?: ClientSession): Promise<ServerBlockRecord[]> {
     const query = this.model.find({ workspaceId, pageId }).sort({ parentBlockId: 1, orderKey: 1, id: 1 })
     if (limit !== undefined) query.limit(limit)
+    query.session(session ?? null)
     return (await query.exec()).map((doc) => this.toRecord(doc))
   }
 

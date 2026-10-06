@@ -14,6 +14,12 @@
       "import": "./src/block-types.ts",
       "require": "./dist/block-types.js",
       "default": "./dist/block-types.js"
+    },
+    "./order": {
+      "types": "./src/order.ts",
+      "import": "./src/order.ts",
+      "require": "./dist/order.js",
+      "default": "./dist/order.js"
     }
   },
   "types": "./src/index.ts",

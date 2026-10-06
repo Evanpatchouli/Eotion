@@ -4,7 +4,7 @@ Eotion API 已实现 User / Cookie Session 认证，以及 Workspace、Page、Bl
 
 ## 当前范围
 
-P6 暂时只实施 MCP，主计划与验收见 [P6 MCP](../p6-mcp.md)。P6.1 提供 `eotion_list_workspaces`，P6.2 新增有界页面列表、标题搜索与正文读取；写入尚未开始。Resources、Prompts、Agent UI、Chat UI、automation 和完整 Token Settings UI 均不属于当前范围。
+P6 暂时只实施 MCP，主计划与验收见 [P6 MCP](../p6-mcp.md)。P6.1 提供 `eotion_list_workspaces`，P6.2 新增有界页面列表、标题搜索与正文读取；P6.3 增加页面创建与整体正文 reconcile。Resources、Prompts、Agent UI、Chat UI、automation 和完整 Token Settings UI 均不属于当前范围。
 
 ## 接入与身份
 
@@ -19,6 +19,8 @@ P6 暂时只实施 MCP，主计划与验收见 [P6 MCP](../p6-mcp.md)。P6.1 提
 
 保持 `MCP transport → adapter → application service → domain → persistence`。传输/schema 留在 `apps/api`；共享领域模型不依赖 Agent 提供商。
 
-缺失/格式错误/无效/撤销/用户不存在的凭证统一返回 HTTP 401，不区分真实存在状态；内部故障只返回通用错误。已认证的工具业务故障用标准 MCP `isError` 表达，结果不含 stack、用户资料、session 或凭证。成功结果仅包含 Workspace 的 `id` 和 `name`。
+缺失/格式错误/无效/撤销/用户不存在的凭证统一返回 HTTP 401，不区分真实存在状态；内部故障只返回通用错误。已认证的工具业务故障用标准 MCP `isError` 表达，结果不含 stack、用户资料、session 或凭证。成功结果只包含稳定 Workspace/Page/Block DTO。
 
-Host / Origin 检查保护本地入口，凭证与工具结果禁用 HTTP 缓存。未来读写工具仍须调用相同 application 权限入口，内容视为不可信数据；分页、限量、写入幂等和审计在相应阶段确定，不能按已完成能力描述。
+Host / Origin 检查保护本地入口，凭证与工具结果禁用 HTTP 缓存。读写工具调用相同 application 权限入口，内容视为不可信数据。
+
+P6.3 的 `DocumentMutationService` 组合 PageService/BlockService，在同一 Mongo transaction 内执行 Page CAS、正文 reconcile、结果大小验证和持久化成功 receipt。普通 HTTP/Sync 的 Page/Block mutation 同样推进严格单调的页面版本时间；排序算法在 framework-light domain 中共享。MCP 不建立第二套 oplog，也不改变 Sync operation 协议；既有 workspace snapshot 读取服务器最终状态。MCP compound write 要求 replica set 或 mongos，standalone 明确拒绝，不继承旧 CRUD 的非事务 fallback。

@@ -355,7 +355,16 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
         "eotion_list_pages",
         "eotion_search_pages",
         "eotion_get_page",
+        "eotion_create_page",
+        "eotion_update_page",
       ]);
+      const toolAnnotations = new Map(initialization.tools.map(({ name, annotations }) => [name, annotations]));
+      assert.equal(toolAnnotations.get("eotion_create_page")?.readOnlyHint, false);
+      assert.equal(toolAnnotations.get("eotion_create_page")?.destructiveHint, false);
+      assert.equal(toolAnnotations.get("eotion_create_page")?.idempotentHint, true);
+      assert.equal(toolAnnotations.get("eotion_update_page")?.readOnlyHint, false);
+      assert.equal(toolAnnotations.get("eotion_update_page")?.destructiveHint, true);
+      assert.equal(toolAnnotations.get("eotion_update_page")?.idempotentHint, true);
       const listedA = await clientA.callTool({ name: "eotion_list_workspaces", arguments: {} });
       assert.equal(listedA.isError, undefined);
       assert.deepEqual(listedA.structuredContent, {
@@ -457,7 +466,7 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
         { id: "mcp-block-b", type: "heading", text: "A heading", level: 2 },
         { id: "mcp-block-c", type: "todo", text: "A task", checked: true },
         { id: "mcp-block-d", type: "code", text: "const answer = 42", language: "typescript" },
-        { id: "mcp-block-e", type: "numbered-list", text: "3. Third item", start: 3 },
+        { id: "mcp-block-e", type: "numbered-list", text: "3. Third item", start: 3, items: ["Third item"] },
       ]);
       assert.deepEqual(pagePayload.blocks.slice(5), [
         { id: "mcp-block-f", type: "image", text: "", fileId: "file-image", name: "diagram.png", mimeType: "image/png", size: 1234 },
@@ -650,7 +659,7 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     assert.ok(await tokens.resolve(revokedCredential.token), "another user cannot revoke A's credential");
     const revocationClient = await openClient(revokedCredential.token);
     assert.deepEqual((await revocationClient.listTools()).tools.map(({ name }) => name), [
-      "eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_get_page",
+      "eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_get_page", "eotion_create_page", "eotion_update_page",
     ]);
     await tokens.revoke(userA.id, revokedCredential.credential.id);
     assert.equal(await tokens.resolve(revokedCredential.token), null);

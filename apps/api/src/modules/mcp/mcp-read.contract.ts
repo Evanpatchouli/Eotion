@@ -28,7 +28,11 @@ export const McpPageSummarySchema = z.strictObject({
 })
 
 const McpBlockTypeSchema = z.enum(['paragraph', 'heading', 'bulleted-list', 'numbered-list', 'quote', 'code', 'divider', 'image', 'file', 'todo'])
-const McpBlockBaseSchema = z.strictObject({ id: z.string(), type: McpBlockTypeSchema, text: z.string() })
+const McpBlockBaseSchema = z.strictObject({
+  id: z.string(), type: McpBlockTypeSchema, text: z.string(),
+  items: z.array(z.string()).max(1000).optional(),
+  paragraphs: z.array(z.string()).max(1000).optional(),
+})
 export const McpBlockSchema = McpBlockBaseSchema.extend({
   level: z.number().int().min(1).max(6).optional(),
   checked: z.boolean().optional(),
@@ -187,6 +191,18 @@ function textFor(type: string, node: JsonNode): string {
   return inlineText(node.content)
 }
 
+function listItems(node: JsonNode): string[] | undefined {
+  const items = node.content ?? []
+  if (items.length < 1 || items.length > 1000 || items.some((item) => item.content?.length !== 1 || item.content[0]?.type !== 'paragraph')) return undefined
+  return items.map((item) => inlineText(item.content![0]!.content))
+}
+
+function quoteParagraphs(node: JsonNode): string[] | undefined {
+  const content = node.content ?? []
+  if (content.length < 1 || content.length > 1000 || content.some((child) => child.type !== 'paragraph')) return undefined
+  return content.map((child) => inlineText(child.content))
+}
+
 export function toMcpPageSummary(page: PageRecord): McpPageSummary {
   return { id: page.id, workspaceId: page.workspaceId, title: page.title, parentPageId: page.parentPageId, updatedAt: page.updatedAt }
 }
@@ -200,6 +216,14 @@ export function toMcpBlock(block: ServerBlockRecord, counter = { nodes: 0 }): Mc
   counter.nodes = textCounter.nodes
   if (node.type !== expectedNode) throw new Error('Unsupported block')
   const dto: McpBlock = { id: block.id, type: block.type, text: textFor(block.type, node) }
+  if (block.type === 'bulleted-list' || block.type === 'numbered-list') {
+    const items = listItems(node)
+    if (items) dto.items = items
+  }
+  if (block.type === 'quote') {
+    const paragraphs = quoteParagraphs(node)
+    if (paragraphs) dto.paragraphs = paragraphs
+  }
   const attrs = node.attrs ?? {}
   if (block.type === 'heading' && attrs.level !== undefined) dto.level = Number(attrs.level)
   if (block.type === 'todo') dto.checked = Boolean(attrs.checked)

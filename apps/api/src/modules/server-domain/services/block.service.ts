@@ -29,6 +29,7 @@ export class BlockService {
         const parent = await this.blocks.findInWorkspace(workspaceId, parentBlockId)
         if (!parent || parent.pageId !== pageId) throw new BadRequestException('Parent block must belong to the same page and workspace')
       }
+      if (!(await this.pages.touchStructure(workspaceId, pageId))) throw new NotFoundException('Page not found in workspace')
       return this.blocks.create(workspaceId, input)
     }
     if (!session) {
@@ -52,18 +53,18 @@ export class BlockService {
     return block?.pageId === pageId ? block : null
   }
 
-  async list(userId: string, workspaceId: string, pageId: string): Promise<ServerBlockRecord[]> {
+  async list(userId: string, workspaceId: string, pageId: string, session?: ClientSession): Promise<ServerBlockRecord[]> {
     await this.permissions.assertCanRead(userId, workspaceId)
-    const page = await this.pages.findInWorkspace(workspaceId, pageId)
+    const page = await this.pages.findInWorkspace(workspaceId, pageId, session)
     if (!page) return []
-    return this.blocks.listByPage(workspaceId, pageId)
+    return this.blocks.listByPage(workspaceId, pageId, undefined, session)
   }
 
-  async listBounded(userId: string, workspaceId: string, pageId: string, maxBlocks: number): Promise<ServerBlockRecord[]> {
+  async listBounded(userId: string, workspaceId: string, pageId: string, maxBlocks: number, session?: ClientSession): Promise<ServerBlockRecord[]> {
     if (!Number.isInteger(maxBlocks) || maxBlocks < 1 || maxBlocks > 1000) throw new BadRequestException('maxBlocks must be an integer between 1 and 1000')
     await this.permissions.assertCanRead(userId, workspaceId)
-    if (!(await this.pages.findInWorkspace(workspaceId, pageId))) throw new NotFoundException('Page not found')
-    const blocks = await this.blocks.listByPage(workspaceId, pageId, maxBlocks + 1)
+    if (!(await this.pages.findInWorkspace(workspaceId, pageId, session))) throw new NotFoundException('Page not found')
+    const blocks = await this.blocks.listByPage(workspaceId, pageId, maxBlocks + 1, session)
     if (blocks.length > maxBlocks) throw new BadRequestException('Page exceeds the maximum block count')
     return blocks
   }
@@ -76,9 +77,21 @@ export class BlockService {
   async update(userId: string, workspaceId: string, pageId: string, id: string, patch: BlockPatch, session?: ClientSession): Promise<ServerBlockRecord | null> {
     await this.permissions.assertCanWrite(userId, workspaceId)
     if ('parentBlockId' in patch) throw new BadRequestException('Moving a block is not supported yet')
+    if (!session && await supportsTransactions(this.connection)) {
+      const ownSession = await this.connection.startSession()
+      try {
+        let updated: ServerBlockRecord | null = null
+        await ownSession.withTransaction(async () => { updated = await this.update(userId, workspaceId, pageId, id, patch, ownSession) })
+        return updated
+      } finally {
+        await ownSession.endSession()
+      }
+    }
     const page = await this.pages.findInWorkspace(workspaceId, pageId, session)
     if (!page) return null
-    return this.blocks.updateInWorkspace(workspaceId, pageId, id, patch, session)
+    const updated = await this.blocks.updateInWorkspace(workspaceId, pageId, id, patch, session)
+    if (updated && !(await this.pages.touchStructure(workspaceId, pageId, session))) throw new NotFoundException('Page not found in workspace')
+    return updated
   }
 
   async upsertSnapshot(userId: string, workspaceId: string, input: BlockCreate, session: ClientSession): Promise<void> {
@@ -87,7 +100,7 @@ export class BlockService {
     if (existing) {
       if (existing.pageId !== input.pageId || (existing.parentBlockId ?? null) !== (input.parentBlockId ?? null)) throw new BadRequestException('Moving a block is not supported yet')
       if (!(await this.pages.findInWorkspace(workspaceId, input.pageId, session))) throw new NotFoundException('Page not found in workspace')
-      await this.blocks.updateInWorkspace(workspaceId, input.pageId, input.id, { type: input.type, orderKey: input.orderKey, props: input.props }, session)
+      await this.update(userId, workspaceId, input.pageId, input.id, { type: input.type, orderKey: input.orderKey, props: input.props }, session)
       return
     }
     await this.create(userId, workspaceId, input.pageId, input, session)
@@ -98,6 +111,8 @@ export class BlockService {
     const existing = await this.blocks.findInWorkspace(workspaceId, id, session)
     if (!existing) return
     if (await this.blocks.hasChildren(workspaceId, existing.pageId, id, session)) throw new BadRequestException('Delete child blocks first')
+    if (!(await this.pages.touchStructure(workspaceId, existing.pageId, session))) throw new NotFoundException('Page not found in workspace')
+    if (existing.parentBlockId && !(await this.blocks.touchStructure(workspaceId, existing.pageId, existing.parentBlockId, session))) throw new BadRequestException('Parent block must belong to the same page and workspace')
     await this.blocks.deleteInWorkspace(workspaceId, existing.pageId, id, session)
   }
 
@@ -118,8 +133,10 @@ export class BlockService {
   private async deleteFromPageInSession(workspaceId: string, pageId: string, id: string, session?: ClientSession): Promise<boolean> {
     const existing = await this.blocks.findInWorkspace(workspaceId, id, session)
     if (!existing || existing.pageId !== pageId) return false
-    if (session && !(await this.blocks.touchStructure(workspaceId, pageId, id, session))) return false
     if (await this.blocks.hasChildren(workspaceId, pageId, id, session)) throw new BadRequestException('Delete child blocks first')
+    if (!(await this.pages.touchStructure(workspaceId, pageId, session))) return false
+    if (session && !(await this.blocks.touchStructure(workspaceId, pageId, id, session))) return false
+    if (existing.parentBlockId && session && !(await this.blocks.touchStructure(workspaceId, pageId, existing.parentBlockId, session))) throw new BadRequestException('Parent block must belong to the same page and workspace')
     return this.blocks.deleteInWorkspace(workspaceId, pageId, id, session)
   }
 

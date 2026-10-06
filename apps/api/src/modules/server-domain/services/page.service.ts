@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
 import type { ClientSession, Connection } from 'mongoose'
 import type { PageRecord } from '../types'
@@ -41,26 +41,26 @@ export class PageService {
     return this.pages.findInWorkspace(workspaceId, id, session)
   }
 
-  async list(userId: string, workspaceId: string) {
+  async list(userId: string, workspaceId: string, session?: ClientSession) {
     await this.permissions.assertCanRead(userId, workspaceId)
-    return this.pages.listByWorkspace(workspaceId)
+    return this.pages.listByWorkspace(workspaceId, session)
   }
 
-  async listWindow(userId: string, workspaceId: string, input: { cursor?: string; limit: number; query?: string }): Promise<{ items: PageRecord[]; nextCursor: string | null }> {
+  async listWindow(userId: string, workspaceId: string, input: { cursor?: string; limit: number; query?: string }, session?: ClientSession): Promise<{ items: PageRecord[]; nextCursor: string | null }> {
     if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > 100) throw new BadRequestException('Limit must be an integer between 1 and 100')
     if (input.cursor !== undefined && (input.cursor.length === 0 || input.cursor.length > 128)) throw new BadRequestException('Cursor must contain 1 to 128 characters')
     const query = input.query?.trim()
     if (input.query !== undefined && (!query || query.length > 200)) throw new BadRequestException('Query must contain 1 to 200 non-whitespace characters')
 
     await this.permissions.assertCanRead(userId, workspaceId)
-    const rows = await this.pages.listWindow(workspaceId, { cursor: input.cursor, limit: input.limit, ...(query === undefined ? {} : { query }) })
+    const rows = await this.pages.listWindow(workspaceId, { cursor: input.cursor, limit: input.limit, ...(query === undefined ? {} : { query }) }, session)
     const hasMore = rows.length > input.limit
     const items = hasMore ? rows.slice(0, input.limit) : rows
     return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null }
   }
 
-  async findAccessible(userId: string, pageId: string): Promise<PageRecord> {
-    const page = await this.pages.findById(pageId)
+  async findAccessible(userId: string, pageId: string, session?: ClientSession): Promise<PageRecord> {
+    const page = await this.pages.findById(pageId, session)
     if (!page) throw new NotFoundException('Page not found')
     try {
       await this.permissions.assertCanRead(userId, page.workspaceId)
@@ -75,6 +75,13 @@ export class PageService {
     await this.permissions.assertCanWrite(userId, workspaceId)
     if ('parentPageId' in patch) throw new BadRequestException('Moving a page is not supported here; use the move endpoint')
     return this.pages.updateInWorkspace(workspaceId, id, patch, session)
+  }
+
+  async updateDocumentVersion(userId: string, workspaceId: string, pageId: string, expectedUpdatedAt: string, title?: string, session?: ClientSession): Promise<PageRecord> {
+    await this.permissions.assertCanWrite(userId, workspaceId)
+    const updated = await this.pages.compareAndUpdate(workspaceId, pageId, expectedUpdatedAt, title === undefined ? {} : { title }, session)
+    if (!updated) throw new ConflictException('Page has changed since it was read. Read the page again before updating.')
+    return updated
   }
 
   /**

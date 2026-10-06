@@ -6,7 +6,7 @@ P6 通过 MCP 让外部客户端使用 Eotion 的已有 application/domain 能�
 | --- | --- | --- |
 | P6.1 MCP Foundation + Auth | `/mcp` transport、独立 Token、`eotion_list_workspaces` | PASS |
 | P6.2 Read Tools | 有界页面列表、标题搜索、正文读取 | PASS |
-| P6.3 Write Tools | 显式写入、权限与重试语义（待定义） | not started |
+| P6.3 Write Tools | 原子页面写入、正文 reconcile、并发保护与持久幂等 | PASS |
 | P6.4 MCP Acceptance | 最终跨客户端验收（待定义） | not started |
 
 P6.1 不实现 Resources、Prompts、页面读写/删除、Agent/Chat UI、automation 或 Token Settings UI。
@@ -49,7 +49,7 @@ Remove-Variable credential, body, login
 [mcp_servers.eotion]
 url = "http://127.0.0.1:7137/mcp"
 bearer_token_env_var = "EOTION_MCP_TOKEN"
-enabled_tools = ["eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_get_page"]
+enabled_tools = ["eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_get_page", "eotion_create_page", "eotion_update_page"]
 startup_timeout_sec = 20
 ```
 
@@ -103,4 +103,42 @@ get 最多读取 1000 个 Block（仓库最多取 1001 个用于探测超限）�
 
 真实启动构建后的 API（端口 7149、随机隔离数据库），通过现有 HTTP API 创建临时用户、`p62-codex-workspace` 和 `P6.2 MCP Acceptance` 页面。Codex CLI 0.156.1 使用独立 Bearer 环境变量，实际依次调用 `eotion_list_workspaces` → `eotion_list_pages` → `eotion_search_pages` → `eotion_get_page`，读出 `p62-block-one` / `p62-block-two` 及正文 `Eotion MCP read tools are working.` / `Second block for stable block verification.`。四次工具调用成功，CLI exit 0；未通过 shell/file 读取验收正文。Token 未写入仓库或 Codex 配置。临时用户、Workspace、Page/Block、Token 随隔离数据库删除；清理检查剩余 Eotion 测试数据库为 0，临时 API 与 MongoDB 8.0.12 replica set 已停止。
 
-当前约束：标题搜索仍扫描候选记录，分页不是快照；超大页面与非 P5 支持的 Block 安全拒绝；行内富文本格式不保留。P6.3 Write Tools 与 P6.4 MCP Acceptance 均 **not started**。
+P6.2 的约束继续有效：标题搜索仍扫描候选记录，分页不是快照；超大页面与非 P5 支持的 Block 安全拒绝；行内富文本格式不保留。
+
+## P6.3 Write Tools
+
+仅增加 `eotion_create_page` 和 `eotion_update_page`，成功结果复用完整 `GetPageOutputSchema`。没有独立 Block CRUD、页面删除/移动、上传、Resources 或 Prompts。两个工具均为 `readOnlyHint: false`、`idempotentHint: true`、`openWorldHint: false`；create 的 `destructiveHint: false`，update 为 true，因为完整正文 reconcile 可删除旧 Block。这依据 [MCP 官方 ToolAnnotations 定义](https://modelcontextprotocol.io/specification/2025-11-25/schema#toolannotations)，核实于 2026-10-06。
+
+### 输入与正文语义
+
+create 必填 `workspaceId/title/idempotencyKey`，`parentPageId` 可省略或 null，`blocks` 默认空数组。复用 workspace write 权限与 PageService 的 parent 校验；客户端不能指定 Page/Block ID、orderKey、时间、用户或 persistence 字段。标题 trim 后 1–200 字符，key trim 后 1–128 字符。
+
+update 必填 `pageId/expectedUpdatedAt/idempotencyKey`，`title` 与 `blocks` 至少提供一个。省略 title 保留标题；省略 blocks 保留正文；`blocks: []` 清空正文；提供 blocks 时数组代表完整目标正文。带合法 existing `id` 的 Block 保留 ID 并更新/重新排序，不带 id 的 Block 分配新 UUID，未出现的旧 Block 在同一事务删除。重复 ID、其他页面/工作区 ID、业务嵌套 parentBlockId 安全拒绝。服务端复用 domain `assignBlockOrder` 与 `nextOrderKey`；Web 也使用同一 helper，adapter 不分配顺序。
+
+支持 paragraph、heading（level 1–6）、todo（checked）、code（可选 language）、divider、bulleted-list、numbered-list（可选 start）、quote。普通正文是纯文本，无行内富文本 marks。列表用 `items: string[]`，每项是 literal 文本，列表序号由 start/位置确定，不能把 read 展示文本里的 bullet/编号当成可逆编码。简单 quote 用 `paragraphs: string[]`；也接受 plain text 按换行分段。read DTO 为平面列表补充 items、仅含段落的 quote 补充 paragraphs，仍保留原可读 text。复杂嵌套列表/quote 继续可读，但不承诺结构无损回写；改写时必须明确提供受支持的目标结构。
+
+image/file 在 P6.3 **read-only**；schema 不接受 attachment 新写、任意 URL 或上传。title-only update 可保留已有合法附件；整体正文 snapshot 中省略的附件也属于内部 reconcile 删除。附件 metadata/object 的现有生命周期没有被这个工具直接删除或重写。
+
+最大 1000 Blocks、单 Block 累计文本 100000 字符；MCP 参数 JSON UTF-8 最大 1 MiB。codec 在事务前拒绝生成超过 10000 nodes 的正文（包括换行展开的 hardBreak）。最终投影继续检查 read 的 10000 nodes、深度 32 与 DTO 1 MiB，检查在事务提交前完成，失败回滚而不生成永远无法读回的页面。
+
+### 原子性、版本与幂等
+
+`DocumentMutationService` 组合现有 PageService/BlockService，与成功 `mcp_mutation_receipts` receipt 使用同一个 Mongo transaction。必须 replica set 或 mongos；standalone 在任何 mutation 前明确拒绝，没有非事务补偿或部分写入 fallback。正文/receipt/最终 DTO 生成任意一步失败均回滚。
+
+update 使用 `{ workspaceId, id, updatedAt: expectedUpdatedAt }` 的条件写入，与 reconcile 在同一 transaction，拒绝旧版本并提示重新读取，不自动 merge。页面所有 mutation 时间按数据库时间与旧时间 + 1ms 的最大值严格推进；普通 HTTP/Sync 的 Block create/update/delete 在其事务中同样触碰页面版本，避免正文变动漏检或同毫秒版本重复。
+
+receipt 的 `(userId, tool, idempotencyKey)` 唯一索引与 canonical payload SHA-256 hash 持久化；同 key 同 payload 返回首次成功 DTO，不同 payload 返回冲突。replay 在 CAS 前，仍校验当前权限。记录只暴露已提交状态；没有单独写入的 pending 锁。事务中止/进程在提交前退出不留下占用 key；提交成功后即便响应丢失，重启后仍可 replay。receipt 无自动过期，避免旧重试变成重复创建；其内部字段不对外返回。
+
+MCP mutation 不生成客户端 oplog，也不冒充 Sync receipt。既有 HTTP 与 workspace snapshot 可读到提交后的最终 Page/Block，stable ID/props/orderKey 兼容 Web editor；现有 push-before-pull 和 operation receipt 行为继续使用原有协议。P6.3 的 CAS 防止 MCP 覆盖读后发生的写入，并不新增跨客户端 CRDT 或 merge 能力。
+
+### P6.3 验收
+
+2026-10-06：P6.3 **PASS**。全仓 `pnpm typecheck`、API typecheck/build、Web build 通过；领域 2/2、HTTP/Sync/File 26/26、MCP 14/14 通过（真实 transport 两项、read/write contract 十二项）。最终微调后的 API build 与十二项契约回归也通过。lint N/A（仓库无命令）。真实 Mongo + Nest/Fastify + 官方 SDK Client 覆盖两个用户权限、strict 参数、八种文本 Block、正文 B/new D/A reconcile、跨页/重复 ID、同 key 并发、不同 payload 冲突和重启后 replay。测试实际关闭并重新创建 Nest/server/application service、保留原数据库，再验证 create 请求仍返回首次结果。
+
+事务失败注入覆盖第二个 Block create、reconcile 删除阶段、create/update receipt 保存以及最终 DTO 超限：Page、正文、updatedAt 和 receipt 均回滚，相同 key 随后可以成功重试。PageService、BlockService 与 Sync 的外部变更后，旧 expectedUpdatedAt 被拒绝；两个同版本并发 update 仅一个成功。独立真实 standalone Mongo 验证返回明确 transaction-required 错误，Page/Block/receipt 数均为 0，隔离库与进程已删除/停止。
+
+构建后的 API 在端口 7149 使用随机隔离数据库，通过正式 HTTP 注册临时账号、创建 `P6.3 Acceptance` workspace 与独立 Token。Codex CLI 0.156.1 实际执行 `list_workspaces → create_page → get_page`（第一次 CLI）和 `list_workspaces → search_pages → get_page → update_page → get_page`（第二次 CLI），两次 exit 0。最终只有一个 `MCP Write Acceptance` Page、三个有序 Blocks、两个成功 receipt，正文为标题 `MCP Write Acceptance`、`Created by Codex through Eotion MCP.`、`Updated safely through optimistic concurrency.`，更新保留标题与前两个 Block ID。验收日志确认没有 shell/file 动作，Token 仅通过子进程环境传递，没有写入仓库或 Codex 配置。最初 CLI 的 never 审批策略正确阻止 destructive update；随后使用 CLI 官方 `--approve-for-me` 自动审批模式，在同类临时隔离数据上重新完成整条链，没有改变服务端 annotations 或放宽写权限。
+
+独立 reviewer 发现并修复列表项多段落的结构化读取缺口，以及超过 write 数量上限时的可读性回归；补充回归后，无剩余 blocker，事务前复杂度预检与 stale/fresh retry 的定向复核也通过。结构化 items/paragraphs 仅在内容完整可写且数量 1–1000 时返回，其他情况保留 text，避免 Agent 依据不完整结构静默丢失段落。
+
+临时 Codex 账号、Workspace、Page/Block、Token、receipt 随隔离数据库清理；最终检查剩余 Eotion 测试数据库为 0，临时 API、standalone 与 replica set Mongo 进程均已停止。`git diff --check` 通过。P6.1 / P6.2 / P6.3 **PASS**；P6.4 **not started**。

@@ -11,6 +11,7 @@ import type { BlockType } from './block-types'
 
 export { BLOCK_TYPES } from './block-types'
 export type { BlockType } from './block-types'
+export { assignBlockOrder, nextOrderKey } from './order'
 
 export interface BlockRecord {
   id: Id

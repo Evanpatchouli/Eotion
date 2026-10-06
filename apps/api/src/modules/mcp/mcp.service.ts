@@ -1,4 +1,4 @@
-import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
+import { ConflictException, Injectable, Logger, ServiceUnavailableException, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
 import { HttpAdapterHost } from '@nestjs/core'
 import { createMcpHandler, McpServer, type AuthInfo } from '@modelcontextprotocol/server'
 import { hostHeaderValidation, originValidation, toNodeHandler } from '@modelcontextprotocol/node'
@@ -9,6 +9,9 @@ import { WorkspaceService } from '../server-domain/services/workspace.service'
 import { PageService } from '../server-domain/services/page.service'
 import { BlockService } from '../server-domain/services/block.service'
 import { McpTokenService } from '../server-domain/services/mcp-token.service'
+import { DocumentMutationService } from '../server-domain/services/document-mutation.service'
+import { toDocumentBlocks } from '../server-domain/services/document-block-codec'
+import { assertMcpWritePayloadSize, CreatePageInputSchema, UpdatePageInputSchema } from './mcp-write.contract'
 import {
   assertMcpResultSize,
   GetPageInputSchema,
@@ -57,6 +60,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     private readonly workspaces: WorkspaceService,
     private readonly pages: PageService,
     private readonly blocks: BlockService,
+    private readonly documents: DocumentMutationService,
   ) {}
 
   onModuleInit(): void {
@@ -238,6 +242,56 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
         }
       },
     )
+
+    const projectPage = (page: Parameters<typeof toMcpPageSummary>[0], records: Parameters<typeof toMcpBlocks>[0]) =>
+      assertMcpResultSize(GetPageOutputSchema.parse({ ...toMcpPageSummary(page), blocks: toMcpBlocks(records) }))
+
+    const writeError = (error: unknown) => ({
+      isError: true,
+      content: [{ type: 'text' as const, text: error instanceof ConflictException
+        ? error.message
+        : error instanceof ServiceUnavailableException
+          ? 'Page writes require MongoDB replica set transactions.'
+          : 'Unable to write page.' }],
+    })
+
+    server.registerTool('eotion_create_page', {
+      title: 'Create page',
+      description: 'Create a new page in a writable Eotion workspace with an initial document body. Use a unique idempotencyKey; repeat identical requests safely.',
+      inputSchema: CreatePageInputSchema,
+      outputSchema: GetPageOutputSchema,
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    }, async (input) => {
+      try {
+        if (typeof userId !== 'string') throw new Error('Missing authenticated user')
+        assertMcpWritePayloadSize(input)
+        const result = await this.documents.create(userId, { ...input, blocks: toDocumentBlocks(input.blocks) }, projectPage, input)
+        return { structuredContent: result, content: [{ type: 'text', text: JSON.stringify(result) }] }
+      } catch (error) {
+        return writeError(error)
+      }
+    })
+
+    server.registerTool('eotion_update_page', {
+      title: 'Update page',
+      description: 'Read the page with eotion_get_page first, then update using its latest updatedAt as expectedUpdatedAt. Supplied blocks are the complete target body snapshot; omitted blocks preserve the body. Repeat identical requests with the same idempotencyKey safely.',
+      inputSchema: UpdatePageInputSchema,
+      outputSchema: GetPageOutputSchema,
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+    }, async (input) => {
+      try {
+        if (typeof userId !== 'string') throw new Error('Missing authenticated user')
+        assertMcpWritePayloadSize(input)
+        const { blocks, ...patch } = input
+        const result = await this.documents.update(userId, {
+          ...patch,
+          ...(blocks === undefined ? {} : { blocks: toDocumentBlocks(blocks) }),
+        }, projectPage, input)
+        return { structuredContent: result, content: [{ type: 'text', text: JSON.stringify(result) }] }
+      } catch (error) {
+        return writeError(error)
+      }
+    })
 
     return server
   }
