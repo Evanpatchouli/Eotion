@@ -71,6 +71,32 @@ const href = computed(() => `/download${platform.value ? `#${platform.value}` : 
       </div>
     </section>
 
+    <section class="mcp-section site-wrap site-section" aria-labelledby="mcp-title">
+      <div class="section-heading">
+        <h2 id="mcp-title">为 AI 而生的 MCP</h2>
+        <p>让 AI 真正使用你的文档，<br>而不只是读一份导出的副本。</p>
+      </div>
+      <div class="mcp-grid">
+        <div class="mcp-copy">
+          <p>连接 Codex 等 MCP 客户端，让 AI 在你的授权范围内搜索、阅读、创建和更新 Eotion 文档。</p>
+          <ul class="mcp-points" aria-label="MCP 能力">
+            <li>原生 MCP，无需额外插件</li>
+            <li>不只读取，也能安全写回</li>
+            <li>独立 MCP Access Token</li>
+            <li>权限由 Eotion 账号控制</li>
+          </ul>
+          <a class="text-link" href="/guide/mcp">连接你的 AI 客户端 <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="mcp-flow" role="img" aria-label="Codex 或 MCP 客户端连接 Eotion MCP，然后进行搜索、阅读、创建和更新">
+          <span class="mcp-flow-node">Codex / MCP Client</span>
+          <span class="mcp-flow-arrow" aria-hidden="true">↓</span>
+          <span class="mcp-flow-node is-service">Eotion MCP</span>
+          <span class="mcp-flow-arrow" aria-hidden="true">↓</span>
+          <span class="mcp-flow-node is-actions">搜索 · 阅读 · 创建 · 更新</span>
+        </div>
+      </div>
+    </section>
+
     <section class="download-section site-section" aria-labelledby="download-title">
       <div class="site-wrap">
         <h2 id="download-title">开始使用 Eotion</h2>

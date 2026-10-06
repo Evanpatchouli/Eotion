@@ -23,6 +23,7 @@ Eotion 是一个 Local-first 的文档与知识工作空间，为写作、整理
 - [同步与离线](/guide/sync-offline)：理解本地保存、同步状态和离线使用条件。
 - [附件](/guide/attachments)：插入图片和文件，并处理上传失败。
 - [设置](/guide/settings)：管理账号、外观、编辑器工具栏和软件信息。
+- [MCP](/guide/mcp)：让 Codex 等 AI 客户端在你的账号权限内使用 Eotion 文档。
 
 ## 平台说明
 

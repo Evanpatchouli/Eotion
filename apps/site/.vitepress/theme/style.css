@@ -121,6 +121,16 @@ body { -webkit-font-smoothing: antialiased; }
 .rich-layout { display: grid; grid-template-columns: 2fr .8fr; gap: 54px; align-items: center; }
 .rich-copy p + p { margin-top: 22px; }
 .rich-copy .text-link { margin-top: 22px; }
+.mcp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 68px; align-items: center; }
+.mcp-copy p { max-width: 440px; }
+.mcp-points { display: grid; gap: 11px; margin-block: 28px; padding: 0; list-style: none; color: var(--studio-text); font-size: 14px; }
+.mcp-points li { display: flex; align-items: baseline; gap: 11px; }
+.mcp-points li::before { content: ""; flex: 0 0 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--studio-muted); transform: translateY(-2px); }
+.mcp-flow { display: grid; justify-items: center; gap: 14px; padding: 54px 30px; border: 1px solid var(--studio-border); border-radius: 7px; background: var(--studio-surface); text-align: center; }
+.mcp-flow-node { color: var(--studio-secondary); font-size: 14px; letter-spacing: .01em; }
+.mcp-flow-node.is-service { padding: 10px 22px; border: 1px solid var(--studio-border); border-radius: 5px; background: var(--studio-subtle); color: var(--studio-text); font-weight: 500; }
+.mcp-flow-node.is-actions { color: var(--studio-text); }
+.mcp-flow-arrow { color: var(--studio-muted); font-size: 13px; line-height: 1; }
 .download-section { padding: 90px 0; background: var(--studio-sidebar); border-block: 1px solid var(--studio-border); text-align: center; }
 .download-section p { margin-top: 18px; }
 .download-section .download-platforms { font-size: 13px; margin-top: 30px; }
@@ -186,6 +196,10 @@ body { -webkit-font-smoothing: antialiased; }
   .rich-copy p br { display: none; }
   .rich-copy p + p { margin-left: 5px; }
   .rich-copy .text-link { display: flex; margin-top: 14px; }
+  .mcp-grid { grid-template-columns: 1fr; gap: 34px; }
+  .mcp-copy p { max-width: none; }
+  .mcp-points { margin-block: 22px; }
+  .mcp-flow { padding: 40px 20px; }
   .download-section { padding-block: 58px; }
   .download-platforms span { margin-inline: 5px; }
   .site-footer-links { gap: 22px; font-size: 12px; }

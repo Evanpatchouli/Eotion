@@ -29,4 +29,6 @@ description: 管理昵称、密码、主题、编辑器工具栏偏好和 Eotion
 
 ## MCP 与 Agent
 
-设置中的 MCP / Agent 目前标记为“即将推出”，尚不可用。
+设置中的 MCP / Agent 入口目前标记为“即将推出”，还不能在这里管理。
+
+MCP 连接本身已经可用，但 Token 无法在设置页创建或撤销，需要按 [MCP 指南](/guide/mcp) 中的方式通过 API 创建。

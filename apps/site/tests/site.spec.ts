@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import rootManifest from '../../../package.json' with { type: 'json' }
 
-const pages = ['/', '/download', '/guide/', '/guide/editor', '/changelog']
+const pages = ['/', '/download', '/guide/', '/guide/editor', '/guide/mcp', '/changelog']
 test('static pages, navigation, release and safe download state', async ({ page, request }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
@@ -16,7 +16,9 @@ test('static pages, navigation, release and safe download state', async ({ page,
     await expect(page.locator('vite-error-overlay')).toHaveCount(0)
   }
   await page.goto('/')
-  await expect(page.locator('.site-home section')).toHaveCount(6)
+  await expect(page.locator('.site-home section')).toHaveCount(7)
+  await expect(page.locator('.mcp-section').getByRole('heading', { name: '为 AI 而生的 MCP' })).toBeVisible()
+  await expect(page.locator('.mcp-section').getByRole('link', { name: /连接你的 AI 客户端/ })).toHaveAttribute('href', '/guide/mcp')
   await page.locator('.site-hero').getByRole('link', { name: /下载|免费下载/ }).click()
   await expect(page).toHaveURL(/\/download/)
   await expect(page.getByRole('heading', { name: 'Eotion for Windows' })).toBeVisible()

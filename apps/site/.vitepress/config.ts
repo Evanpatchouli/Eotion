@@ -81,6 +81,7 @@ export default defineConfig({
         { text: '编辑', items: [{ text: '编辑器', link: '/guide/editor' }, { text: '图片与文件', link: '/guide/attachments' }] },
         { text: '数据', items: [{ text: '离线与同步', link: '/guide/sync-offline' }] },
         { text: '设置', items: [{ text: '设置与偏好', link: '/guide/settings' }] },
+        { text: 'AI 与 MCP', items: [{ text: 'MCP', link: '/guide/mcp' }] },
       ],
     },
     outline: { level: [2, 3], label: '本页目录' },
