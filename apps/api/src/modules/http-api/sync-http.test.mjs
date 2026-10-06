@@ -284,6 +284,94 @@ test("authenticated real sync transport applies durable SQLite operations idempo
     await store.upsertBlock({ ...callout, props: calloutProps("updated\nline", "info") });
     assert.deepEqual(await reconnectPending(store, transport), { synced: 1, failed: 0 });
     assert.deepEqual((await client.sync.snapshot(workspaceId)).blocks.find(({ id }) => id === calloutId)?.props, calloutProps("updated\nline", "info"));
+
+    // block.move uses the same authenticated operation transport as other local
+    // mutations, and snapshots preserve the complete nested tree and sibling order.
+    const toggleProps = (text) => ({
+      node: { type: "eotionToggle", content: [{ type: "paragraph", content: [{ type: "text", text }] }] },
+    });
+    const moveRootId = `move-root-${database}`;
+    const moveNestedId = `move-nested-${database}`;
+    const moveTargetId = `move-target-${database}`;
+    const moveCalloutId = `move-callout-${database}`;
+    const moveChildId = `move-child-${database}`;
+    const foreignPageId = `foreign-page-${database}`;
+    const foreignToggleId = `foreign-toggle-${database}`;
+    await store.upsertPage(localPage(foreignPageId, workspaceId, "Foreign page", "z"));
+    const moveBlocks = [
+      { ...localBlock(moveRootId, workspaceId, pageId, "root"), type: "toggle", props: toggleProps("Root") },
+      { ...localBlock(moveNestedId, workspaceId, pageId, "nested"), type: "toggle", parentBlockId: moveRootId, props: toggleProps("Nested") },
+      { ...localBlock(moveCalloutId, workspaceId, pageId, "callout"), type: "callout", parentBlockId: moveNestedId, props: calloutProps("Nested callout", "warning") },
+      { ...localBlock(moveChildId, workspaceId, pageId, "child"), parentBlockId: moveRootId, orderKey: "b" },
+      { ...localBlock(moveTargetId, workspaceId, pageId, "target"), type: "toggle", orderKey: "z", props: toggleProps("Target") },
+      { ...localBlock(foreignToggleId, workspaceId, foreignPageId, "foreign"), type: "toggle", props: toggleProps("Foreign") },
+    ];
+    for (const block of moveBlocks) await store.upsertBlock(block);
+    assert.deepEqual(await reconnectPending(store, transport), { synced: moveBlocks.length + 1, failed: 0 });
+
+    const moveBlock = async (id, parentBlockId, orderKey) => {
+      await store.moveBlock(workspaceId, id, parentBlockId, orderKey);
+      const [operation] = await store.getPendingOperations();
+      assert.equal(operation.kind, "block.move");
+      assert.deepEqual(operation.payload, { id, pageId, parentBlockId, orderKey });
+      assert.deepEqual(await reconnectPending(store, transport), { synced: 1, failed: 0 });
+    };
+    await moveBlock(moveChildId, moveTargetId, "a");
+    await moveBlock(moveChildId, moveTargetId, "b");
+    await moveBlock(moveChildId, null, "c");
+    await moveBlock(moveNestedId, moveTargetId, "c");
+
+    const nestedSnapshot = await client.sync.snapshot(workspaceId);
+    const nestedBlocks = nestedSnapshot.blocks.filter(({ pageId: ownerPageId }) => ownerPageId === pageId);
+    const movedRoot = nestedBlocks.find(({ id }) => id === moveRootId);
+    const movedNested = nestedBlocks.find(({ id }) => id === moveNestedId);
+    const movedCallout = nestedBlocks.find(({ id }) => id === moveCalloutId);
+    const movedChild = nestedBlocks.find(({ id }) => id === moveChildId);
+    assert.equal(movedRoot.parentBlockId, null);
+    assert.equal(movedNested.parentBlockId, moveTargetId);
+    assert.equal(movedCallout.parentBlockId, moveNestedId);
+    assert.equal(movedChild.parentBlockId, null);
+    assert.deepEqual(nestedBlocks.filter(({ id }) => [moveRootId, moveTargetId, moveChildId].includes(id)).map(({ id, orderKey }) => [id, orderKey]), [
+      [moveRootId, "a"], [moveChildId, "c"], [moveTargetId, "z"],
+    ]);
+    const beforeRejectedMoves = structuredClone(nestedBlocks);
+    const beforeRejectedSnapshot = structuredClone(nestedSnapshot.blocks);
+    for (const [suffix, id, parentBlockId] of [
+      ["self", moveRootId, moveRootId],
+      ["descendant", moveTargetId, moveNestedId],
+      ["cross-page", moveRootId, foreignToggleId],
+      ["leaf", moveChildId, moveCalloutId],
+    ]) {
+      const operationId = `rejected-block-move-${suffix}-${database}`;
+      const response = await rawFetch(`${baseUrl}/api/sync/operations`, {
+        method: "POST",
+        headers: { cookie: sessionCookie, "content-type": "application/json" },
+        body: JSON.stringify({
+          id: operationId,
+          clientId: beforeFailure.clientId,
+          sequence: 100 + ["self", "descendant", "cross-page", "leaf"].indexOf(suffix),
+          workspaceId,
+          createdAt: new Date().toISOString(),
+          kind: "block.move",
+          payload: { id, pageId, parentBlockId, orderKey: "z" },
+        }),
+      });
+      assert.equal(response.status, 400, suffix);
+      assert.equal(await receipts.countDocuments({ id: operationId }), 0);
+    }
+    assert.deepEqual((await client.sync.snapshot(workspaceId)).blocks, beforeRejectedSnapshot);
+    assert.deepEqual(nestedBlocks, beforeRejectedMoves);
+
+    // Pull the server snapshot through the local store and verify its nested rows.
+    await store.replaceWorkspaceSnapshot(workspaceId, nestedSnapshot.pages, nestedSnapshot.blocks);
+    const byId = (blocks) => [...blocks].sort((left, right) => left.id.localeCompare(right.id));
+    assert.deepEqual(byId(await store.listBlocksByPage(pageId)), byId(nestedBlocks));
+    for (const id of [moveCalloutId, moveNestedId, moveChildId, moveRootId, moveTargetId, foreignToggleId]) {
+      await store.deleteBlock(workspaceId, id);
+    }
+    assert.deepEqual(await reconnectPending(store, transport), { synced: 6, failed: 0 });
+    await client.pages.delete(workspaceId, foreignPageId);
+
     const invalidCalloutOperation = {
       id: `invalid-callout-${database}`, clientId: beforeFailure.clientId,
       sequence: 39, workspaceId, createdAt: new Date().toISOString(), kind: "block.upsert",

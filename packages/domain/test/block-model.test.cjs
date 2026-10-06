@@ -89,6 +89,18 @@ test('callout is a writable inline leaf with strict icon and tone attributes', (
   assert.equal(validateCalloutBlockProps({ node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'paragraph' }] } }), false)
 })
 
+test('callout hardBreak preserves the same safe marks as text and rejects malformed marks', () => {
+  const props = (inline) => ({ node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'info' }, content: [inline] } })
+  for (const mark of [{ type: 'bold' }, { type: 'italic' }, { type: 'strike' }, { type: 'code' }, { type: 'link', attrs: { href: 'https://example.com/' } }]) {
+    assert.equal(validateCalloutBlockProps(props({ type: 'hardBreak', marks: [mark] })), true)
+  }
+  for (const inline of [{ type: 'hardBreak', marks: [{ type: 'unknown' }] },
+    { type: 'hardBreak', marks: [{ type: 'link', attrs: { href: 'javascript:alert(1)' } }] },
+    { type: 'hardBreak', marks: 'bold' }, { type: 'hardBreak', text: 'bad' }]) {
+    assert.equal(validateCalloutBlockProps(props(inline)), false)
+  }
+})
+
 test('only child-owning parents accept the declared child types', () => {
   for (const type of BLOCK_TYPES) assert.equal(isAllowedChildBlockType('toggle', type), true, type)
   assert.equal(isAllowedChildBlockType('paragraph', 'paragraph'), false)
@@ -177,4 +189,15 @@ test('tree order is assigned per sibling group and preserves previous keys', () 
   ])
   const kept = assignBlockTreeOrder(decoded, previous)
   for (const block of kept) assert.equal(block.orderKey, previous.get(block.id))
+})
+
+test('moving the last of 1000 siblings to the front allocates only one new gap key', () => {
+  const blocks = Array.from({ length: 1000 }, (_, index) => ({ id: `b-${index}`, parentBlockId: null, orderKey: '' }))
+  const initial = assignBlockTreeOrder(blocks, new Map())
+  const previous = new Map(initial.map((block) => [block.id, block.orderKey]))
+  const moved = [blocks.at(-1), ...blocks.slice(0, -1)]
+  const result = assignBlockTreeOrder(moved, previous)
+  assert.equal(result.filter((block) => block.orderKey !== previous.get(block.id)).length, 1)
+  assert.ok(result.every((block, index) => index === 0 || result[index - 1].orderKey < block.orderKey))
+  assert.deepEqual(assignBlockTreeOrder(result, new Map(result.map((block) => [block.id, block.orderKey]))), result)
 })

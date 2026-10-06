@@ -77,6 +77,9 @@ async function installApi(page: Page, options: { pages?: PageResponse[]; blocks?
         const record: BlockResponse = { ...payload, workspaceId: operation.workspaceId, parentBlockId: payload.parentBlockId ?? null, createdAt: existing?.createdAt ?? now, updatedAt: later }
         const index = blocks.findIndex((item) => item.id === record.id)
         if (index < 0) blocks.push(record); else blocks[index] = record
+      } else if (operation.kind === 'block.move') {
+        const record = blocks.find((item) => item.id === payload.id)
+        if (record) Object.assign(record, { parentBlockId: payload.parentBlockId, orderKey: payload.orderKey, updatedAt: later })
       } else if (operation.kind === 'block.delete') {
         const index = blocks.findIndex((item) => item.id === payload.id)
         if (index >= 0) blocks.splice(index, 1)
@@ -488,9 +491,9 @@ test('touch toolbar and mobile heading stay compact across themes, short viewpor
   const toolbar = page.getByRole('toolbar', { name: '触摸编辑工具栏' })
   await expect(toolbar).toBeVisible()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
-  expect(await toolbar.getByRole('button').allTextContents()).toEqual(['', '', '文本', '2标题', '列表', '', ''])
-  for (const name of ['粗体', '斜体', '文本', '二级标题（H2）', '列表', '插入图片', '插入文件']) {
-    const button = toolbar.getByRole('button', { name })
+  expect(await toolbar.getByRole('button').allTextContents()).toEqual(['', '', '文本', '2标题', '列表', '⇥', '⇤', '', ''])
+  for (const name of ['粗体', '斜体', '文本', '二级标题（H2）', '列表', '缩进区块', '取消缩进区块', '插入图片', '插入文件']) {
+    const button = toolbar.getByRole('button', { name, exact: true })
     await expect(button).toBeVisible()
     const size = await button.evaluate(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height }))
     expect(size.width).toBeGreaterThanOrEqual(44)
@@ -739,7 +742,7 @@ test('desktop toolbar and slash stay compact in light, dark and mobile layouts',
   })
   await page.reload()
   await expect(toolbar).toHaveCount(0)
-  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(9)
   await editor(page).click()
   await editor(page).press('Control+A')
   await editor(page).pressSequentially('/')
@@ -1014,7 +1017,7 @@ test('selection bubble hides on collapse, blur, Escape and IME; stays in viewpor
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'mobile')
   await expect(menu).toHaveCount(0)
-  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(9)
   await page.setViewportSize({ width: 800, height: 420 })
   await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'tablet')
   await body.locator('p').click()
@@ -1086,7 +1089,7 @@ test('tablet coarse pointer hides selection bubble and keeps touch toolbar avail
   await expect(page.locator('.product-shell')).toHaveAttribute('data-input', 'hybrid')
   await selectParagraphText(editor(page).locator('p'))
   await expect(bubble(page)).toHaveCount(0)
-  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(9)
 })
 
 test('mobile selection bubble stays hidden without horizontal overflow and leaves touch toolbar available', async ({ page }) => {
@@ -1105,7 +1108,7 @@ test('mobile selection bubble stays hidden without horizontal overflow and leave
   await expect(page.locator('.product-shell')).toHaveAttribute('data-input', 'touch')
   await selectParagraphText(editor(page).locator('p'))
   await expect(bubble(page)).toHaveCount(0)
-  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(7)
+  await expect(page.getByRole('toolbar', { name: '触摸编辑工具栏' }).getByRole('button')).toHaveCount(9)
   await pasteHtml(editor(page), '<p><a href="https://touch.example">Touch link</a></p>', 'Touch link')
   await expect(editor(page).locator('a')).toHaveAttribute('href', 'https://touch.example')
   await expect(bubble(page)).toHaveCount(0)

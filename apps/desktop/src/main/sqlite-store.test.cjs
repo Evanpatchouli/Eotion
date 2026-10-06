@@ -151,6 +151,87 @@ test('SQLite move creates one page.move and rejects invalid ancestry without cha
   }
 })
 
+test('SQLite block.move preserves nested trees and rejects invalid moves atomically', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'eotion-sqlite-block-move-'))
+  const path = join(directory, 'local.sqlite')
+  const now = '2026-01-01T00:00:00.000Z'
+  const page = { id: 'page', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Page', updatedAt: now }
+  const block = (id, type, parentBlockId, orderKey) => ({
+    id, workspaceId: 'ws', pageId: page.id, parentBlockId, type, orderKey,
+    props: type === 'callout' ? { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [] } } : {},
+    createdAt: now, updatedAt: now,
+  })
+  let store
+
+  try {
+    store = new SqliteLocalStore(path)
+    await store.upsertPage(page)
+    const initialBlocks = [
+      block('root-toggle', 'toggle', null, 'a'),
+      block('root-paragraph', 'paragraph', null, 'b'),
+      block('nested-toggle', 'toggle', 'root-toggle', 'a'),
+      block('sibling-paragraph', 'paragraph', 'root-toggle', 'b'),
+      block('nested-child', 'callout', 'nested-toggle', 'a'),
+    ]
+    await store.upsertPage({ ...page, id: 'other-page' })
+    for (const item of initialBlocks) await store.upsertBlock(item)
+    await store.upsertBlock({ ...block('foreign-leaf', 'paragraph', null, 'a'), pageId: 'other-page' })
+    for (const operation of await store.getPendingOperations()) await store.markOperationSynced(operation.id)
+
+    const move = async (id, parentBlockId, orderKey) => {
+      const before = await store.getPendingOperations()
+      await store.moveBlock('ws', id, parentBlockId, orderKey)
+      const after = await store.getPendingOperations()
+      assert.equal(after.length, before.length + 1)
+      const operation = after.at(-1)
+      assert.equal(operation.kind, 'block.move')
+      assert.deepEqual(operation.payload, { id, pageId: page.id, parentBlockId, orderKey })
+      await store.markOperationSynced(operation.id)
+      return operation
+    }
+
+    // Move a root under a toggle, reorder it among siblings, then outdent it.
+    await move('root-paragraph', 'root-toggle', 'c')
+    await move('sibling-paragraph', 'root-toggle', 'a')
+    await move('root-paragraph', null, 'b')
+    // Moving a nested toggle carries its existing subtree with it.
+    await move('nested-toggle', null, 'c')
+    await move('nested-toggle', 'root-toggle', 'd')
+
+    for (const [id, parentId, expectedError] of [
+      ['root-toggle', 'root-toggle', /self|parent|Invalid/i],
+      ['root-toggle', 'nested-toggle', /descendant|cycle|Invalid/i],
+      ['root-toggle', 'foreign-leaf', /unavailable|page|workspace|Invalid/i],
+      ['root-paragraph', 'nested-child', /cannot own|leaf|Invalid/i],
+    ]) {
+      const before = await store.getPendingOperations()
+      const blocksBefore = await store.listBlocksByPage(page.id)
+      await assert.rejects(store.moveBlock('ws', id, parentId, 'z'), expectedError)
+      assert.deepEqual(await store.getPendingOperations(), before)
+      assert.deepEqual(await store.listBlocksByPage(page.id), blocksBefore)
+    }
+
+    const expected = [
+      ['nested-child', 'nested-toggle', 'a'],
+      ['nested-toggle', 'root-toggle', 'd'],
+      ['root-paragraph', null, 'b'],
+      ['root-toggle', null, 'a'],
+      ['sibling-paragraph', 'root-toggle', 'a'],
+    ]
+    const summarize = async () => (await store.listBlocksByPage(page.id))
+      .map(({ id, parentBlockId, orderKey }) => [id, parentBlockId, orderKey])
+      .sort(([left], [right]) => left.localeCompare(right))
+    assert.deepEqual(await summarize(), expected)
+    store.close()
+    store = new SqliteLocalStore(path)
+    assert.deepEqual(await summarize(), expected)
+    assert.deepEqual(await store.getPendingOperations(), [])
+  } finally {
+    store?.close()
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 test('SQLite snapshot replacement is workspace scoped, atomic, and preserves operation identity', async () => {
   const store = new SqliteLocalStore(':memory:')
   const now = '2026-01-01T00:00:00.000Z'

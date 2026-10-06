@@ -168,10 +168,9 @@ export class PagePersistence {
       }
       const patch: BlockUpdateRequest = {}
       if (old.type !== block.type) patch.type = block.type
-      if (old.orderKey !== block.orderKey) patch.orderKey = block.orderKey
       if (JSON.stringify(old.props) !== JSON.stringify(block.props)) patch.props = block.props
       if (Object.keys(patch).length) changes.push({ kind: 'update', block, patch })
-      if ((old.parentBlockId ?? null) !== (block.parentBlockId ?? null)) changes.push({ kind: 'move', block })
+      if (old.orderKey !== block.orderKey || (old.parentBlockId ?? null) !== (block.parentBlockId ?? null)) changes.push({ kind: 'move', block })
     }
     // Nested blocks must be removed children first, so the parent delete never
     // races a surviving child on either the local store or the server.

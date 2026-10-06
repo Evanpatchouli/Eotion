@@ -5,6 +5,7 @@ import { h, render } from 'vue'
 
 import EotionIcon from '../components/ui/EotionIcon.vue'
 import { runBlockCommand, type BlockCommand } from './blockCommands'
+import { isBlockCommandAllowed } from './blockCommandContext'
 import type { IconName } from '../components/ui/icons'
 
 type SlashItem = { id: BlockCommandId; label: string; group: '基础' | '块' | '媒体'; icon: `${IconName}`; search: string }
@@ -30,13 +31,15 @@ export function createSlashCommand(isComposing: () => boolean, onAttachmentComma
           char: '/',
           startOfLine: true,
           allow: () => !isComposing(),
-          items: ({ query }) => items.filter(item => (attachmentsEnabled || !attachmentCommands.has(item.id)) &&
+          items: ({ query, editor }) => items.filter(item => (attachmentsEnabled || !attachmentCommands.has(item.id)) &&
+            isBlockCommandAllowed(editor, item.id, editor.state.selection.from) &&
             `${item.label} ${item.search}`.toLowerCase().includes(query.toLowerCase()),
           ),
           command: ({ editor, range, props: item }) => {
             if (isComposing()) return
 
             if (attachmentCommands.has(item.id)) {
+              if (!isBlockCommandAllowed(editor, item.id, range.from)) return
               editor.chain().focus().deleteRange(range).setParagraph().run()
               onAttachmentCommand?.(item.id as 'image' | 'file')
             } else runBlockCommand(editor, item.id as BlockCommand, range)

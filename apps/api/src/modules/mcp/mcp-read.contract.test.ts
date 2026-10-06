@@ -97,6 +97,21 @@ test('MCP mapper fails closed when a block refers to a missing parent', () => {
   assert.throws(() => toMcpBlocks([orphan]), /Unsupported block/)
 })
 
+test('MCP nested read preserves moved order and marked hardBreak plain text', () => {
+  const parent = block('toggle', { type: 'eotionToggle', content: [{ type: 'paragraph' }] }, 'parent')
+  const child = { ...block('callout', { type: 'eotionCallout', attrs: { icon: '💡', tone: 'info' }, content: [
+    { type: 'text', text: 'first', marks: [{ type: 'bold' }] },
+    { type: 'hardBreak', marks: [{ type: 'bold' }] }, { type: 'text', text: 'second' },
+  ] }, 'child'), parentBlockId: parent.id, orderKey: 'b' }
+  const peer = { ...block('paragraph', { type: 'paragraph' }, 'peer'), parentBlockId: parent.id, orderKey: 'a' }
+  const mapped = toMcpBlocks([child, parent, peer])
+  assert.deepEqual(mapped.map(({ id, depth, parentBlockId }) => ({ id, depth, parentBlockId })), [
+    { id: 'parent', depth: 0, parentBlockId: null }, { id: 'peer', depth: 1, parentBlockId: 'parent' },
+    { id: 'child', depth: 1, parentBlockId: 'parent' },
+  ])
+  assert.equal(mapped[2]!.text, 'first\nsecond')
+})
+
 test('MCP mapper rejects a child attached to a leaf callout', () => {
   const parent = block('callout', { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'parent' }] }, 'callout-parent')
   const child = { ...block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'child' }] }, 'paragraph-child'), parentBlockId: parent.id }

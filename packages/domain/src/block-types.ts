@@ -241,7 +241,10 @@ export function validateCalloutBlockProps(props: unknown): boolean {
   return record.content.every((child: unknown) => {
     if (typeof child !== 'object' || child === null || Array.isArray(child)) return false
     const inline = child as Record<string, unknown>
-    if (inline.type === 'hardBreak') return Object.keys(inline).length === 1
+    if (inline.type === 'hardBreak') {
+      if (Object.keys(inline).some((key) => !['type', 'marks'].includes(key))) return false
+      return inline.marks === undefined || (Array.isArray(inline.marks) && inline.marks.every(validCalloutMark))
+    }
     if (inline.type !== 'text' || typeof inline.text !== 'string' || Object.keys(inline).some((key) => !['type', 'text', 'marks'].includes(key))) return false
     if (inline.marks === undefined) return true
     return Array.isArray(inline.marks) && inline.marks.every(validCalloutMark)

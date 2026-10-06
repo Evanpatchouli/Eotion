@@ -50,6 +50,7 @@ async function mockApi(page: Page, server: Server = { pages: [], blocks: [] }) {
         server.blocks.push({ ...op.payload, workspaceId: workspace.id, parentBlockId: op.payload.parentBlockId ?? null, createdAt: old?.createdAt ?? now, updatedAt: now })
       }
       if (op.kind === 'block.delete') server.blocks = server.blocks.filter((item) => item.id !== op.payload.id)
+      if (op.kind === 'block.move') server.blocks = server.blocks.map((item) => item.id === op.payload.id ? { ...item, parentBlockId: op.payload.parentBlockId, orderKey: op.payload.orderKey } : item)
       return json(route, 200, { id: body.id, status: 'applied' })
     }
     return json(route, 404, { statusCode: 404, message: 'Not found' })

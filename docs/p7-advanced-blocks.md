@@ -1,12 +1,12 @@
 # P7 Advanced Blocks
 
-P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1 与 P7.2 已 PASS；P7.2 Rich Blocks 在统一 registry 与既有 local-first/sync 链路增加 Callout，并收敛安全读取与富文本属性保真。本页记录已完成的实现、最终验收结果与已知限制。
+P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1 与 P7.2 已 PASS；P7.3 在既有 nested model 与 local-first/sync 链路上增加可操作的嵌套 UX。本页记录实现、验收结果与已知限制。
 
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
 | P7.1 Block Model Foundation | block registry、block tree invariant、move/reparent、snapshot 校验、Toggle 验证 | PASS |
 | P7.2 Rich Blocks | Callout 与现有 Rich Block 保真收敛 | PASS |
-| P7.3 Nested Blocks UX | 拖拽嵌套、Tab/Shift+Tab 缩进、更完整键盘语义 | not started |
+| P7.3 Nested Blocks UX | 拖拽嵌套、Tab/Shift+Tab 缩进、移动端操作与上下文筛选 | PASS |
 | P7.4 Table | Table 区块 | not started |
 | P7.5 Advanced Blocks Acceptance | 最终验收 | not started |
 
@@ -70,11 +70,11 @@ P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1 与 P7.
 - toggle 的 summary 必须是「不拥有子区块」的节点；若编辑器把 child-owning 节点放在 summary 位置，codec 会补一个空 summary 段落，并把该节点提升为真实子区块，保证其子内容留在 block 树里。
 - Slash 菜单由注册表派生，新增「折叠列表」条目。保持 Quiet Studio 与 740px 阅读列，没有重做编辑器 UI；桌面与移动端都可折叠。
 
-已知编辑体验事实（记录为已知限制，未在本轮修复）：
+已知编辑体验事实：
 
 - 把已有段落转成 Toggle 会走一次 block 重建：旧段落 block 被删除、新的 toggle block 被创建。
 - wrapIn 与 Quote 一样会留下一个尾部空段落区块。
-- 只有顶层才支持附件插入：`attachmentNodes` / `uploadPlaceholders` / 编辑器事件仍只遍历顶层节点，toggle 子区块中的附件在 P7.3 前不会出现。
+- 附件上传目标与文件生命周期仍只遍历顶层节点；P7.3 保留顶层插入限制，并在 slash、picker、paste/drop 与移动操作入口阻止嵌套附件创建。
 
 ## MCP 兼容
 
@@ -89,7 +89,7 @@ P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1 与 P7.
 - 五张 registry 表统一注册，类型 enum 自动进入 contracts/server；白名单与值校验共用 domain validator。LocalStore / server 改型拒绝不兼容的已有 children，snapshot / MCP 同样拒绝 leaf parent。Block ID、sibling orderKey 与 parentBlockId 沿用既有 codec/persistence，复用 create/update/move，无新 sync operation。
 - MCP 现有 read/write 工具兼容 Callout，DTO 仅暴露 text/icon/tone，不暴露 Tiptap AST；显式正文重写沿用 P6 纯文本语义，未提供 blocks 的标题更新保留富文本；nested document replacement 仍保持 P6 限制。缺失 parent 的 MCP read conversion / get_page fail-closed，不将 child 提升为 root。
 - 本轮不新增第二类型：details 与 Toggle 重复；bookmark 的 URL/标题/元数据需要独立需求定义。补现有 code language 属性保真回归，不为数量新增区块。
-- 限制：Callout 不含子块或附件，不提供复杂主题、URL 预览、语法高亮；P7.3–P7.5 未开始。共享 Web renderer 覆盖 Desktop 与 Mobile layout，真实设备输入法/原生宿主验收不由本轮浏览器回归替代。
+- 限制：Callout 不含子块或附件，不提供复杂主题、URL 预览、语法高亮；P7.4–P7.5 未开始。共享 Web renderer 覆盖 Desktop 与 Mobile layout，真实设备输入法/原生宿主验收不由本轮浏览器回归替代。
 
 ## P7.2 Final Acceptance
 
@@ -101,6 +101,46 @@ P7.2 于 2026-10-07 完成验收并 PASS（实现提交 `139a6ff`）。本轮只
 - Callout 四组合渲染核查（临时只读脚本，用后删除）：1440×900 与 390×844 × Light/Dark 均正常，无横向溢出；neutral / info / warning 三种 tone、icon、粗体与链接、硬换行、Toggle 内嵌 Callout 均正确。
 - 回归：domain 11/11、contracts 6/6、storage 7/7、API domain 2/2、HTTP 26/26、MCP 21/21、Electron storage 11/11、`pnpm typecheck`、`build:web`、`build:api`、`git diff --check` 全部通过。仓库无 lint 脚本，N/A。
 - 独立只读 review：无 blocker。记录两个 minor，均为既有同类问题且非本轮引入：blockquote 内可经 slash 创建 Callout 等 block 级块，但 `EDITOR_NODE_RULES.blockquote.children` 与 codec schema 不接受保存（静态审查发现，未在浏览器复现）；`hardBreak` 携带 marks 时 blockCodec 与 domain 校验不对称（可达性未证明）。
+
+## P7.3 Nested Blocks UX
+
+- `nestedBlockInteractions.ts` 通过单个 ProseMirror transaction 移动完整区块与子树，保留 blockId、正文、选区与 undo/redo；由既有 `PagePersistence → LocalStore.moveBlock → block.move → sync` 保存。同级 orderKey 变化也走 move，而非 upsert。order allocator 保留旧 key 的最长递增链，在有 gap 时仅为移动块分配 key；1000 块末块移到页首回归仅变更一个 key，避免级联产生大量 move。
+- 块首折叠光标或区块 NodeSelection 使用 Tab 缩进到前一个允许 children 的 sibling，Shift+Tab 外移到 parent 后。Toggle summary 块首操作移动整个 Toggle 子树。文本中段、代码和列表内部不拦截 Tab。拖动把手支持目标前/后重排与 Toggle 内嵌；拒绝 self/descendant、跨编辑器、leaf parent 与超过 8 的嵌套深度（root 为 0，包含被移动子树深度）。
+- 移动端 Touch Toolbar 增加缩进/取消缩进操作，复用同一移动语义，无触屏拖拽依赖。
+- 拖拽高亮由插件 meta 与 `Decoration.node` 管理，不手工改写 ProseMirror 正文 DOM，避免 DOMObserver 重绘正在拖动的源把手。把手装饰不参与正文布局或文本，移动端隐藏把手并使用 Touch Toolbar。
+- `blockCommandContext.ts` 以 registry 的 command type、`allowedChildTypes` 与 `EDITOR_NODE_RULES` 筛选 slash，并在执行时重新检查。quote/list 内部只能创建 codec 接受的节点；Toggle summary 不创建 child-owning 节点。禁止会跨结构或吞掉已有子树的变换。
+- Child attachment 边界：模型/schema/snapshot/MCP 能读取嵌套附件，但上传目标、撤销释放与 cleanup 尚未递归化，因此本轮保持 UI 创建限制。nested slash 不显示图片/文件，picker/paste/drop 与附件移动入口拒绝嵌套；不修改 registry 的既有读取能力，不新增 MCP tool。MCP nested document replacement 仍显式拒绝。附件不参与块级拖拽（顶层附件也不会被本轮的块拖拽接管），保持既有顶层生命周期语义。
+- `hardBreak + marks` 真实可达：在 Callout 内 Shift+Enter 换行后，选中跨换行的正文并加粗，Tiptap 会给 hardBreak 加 bold mark。domain Callout validator 现接受与 inline text 相同的合法 marks、拒绝未知 mark/不安全链接/额外字段，与 codec/MCP 保持一致；产品测试验证保存和 reload。
+- 上下文收口：移动端 Touch Toolbar 的文本/标题/列表按钮改走与桌面工具栏、slash 相同的 `runBlockCommand`；`runBlockCommand` 对工具栏当前选区也执行 range safety。此前触屏在列表项内点「标题」会生成 codec 拒绝的 `ul > li > h2` 导致整页无法保存，本轮关闭该入口。
+
+## P7.3 Final Acceptance
+
+P7.3 于 2026-10-07 完成验收并 PASS。
+
+- Tab / Shift+Tab：块首折叠光标与区块 NodeSelection 可缩进/反缩进，移动整棵子树并保留 blockId；文本中段、代码块与列表内部不拦截。覆盖缩进、反缩进、mid-block Tab 不变、Toggle summary 连带子树移动、undo/redo 与 reload。
+- 拖拽：把手支持同级 before/after 重排、拖入允许 children 的 block、子块拖回上一级；拒绝 self、descendant、跨编辑器、leaf parent 与超过 8 层的嵌套（root 为 0，包含被移动子树深度）。拖拽高亮用 `Decoration.node` 与插件 meta，不改写 ProseMirror 正文 DOM，drop 时源把手仍 connected。
+- Slash context：以 registry command type、`allowedChildTypes` 与 `EDITOR_NODE_RULES` 过滤；root / quote / listItem / Toggle summary / Toggle child 五种上下文回归通过，修复 P7.2 的 blockquote 内可创建不可保存 block 的 minor。
+- 移动端：390px Touch Toolbar 增加缩进/取消缩进（44px 按钮），可从中段缩进/反缩进，无横向溢出；coarse pointer 下隐藏把手。
+- sync/local-first：所有嵌套移动走 `moveBlock → block.move → LocalStore → sync`，同级 orderKey 变化也走 move。offline 移动经 reload、Chromium 进程重启后仍保持，恢复联网后先 push 再 pull snapshot；order allocator 保留旧 key 最长递增链。
+- 性能：拖拽把手原为每块一个 `requestAnimationFrame` 定位，在 5000 块文档上退化为 O(n²)（`readyMs` 38.5s）。改为每帧一次批量定位（先读后写 + `nextElementSibling`）后，5000 块 `readyMs` 约 4.5s，与无把手基线一致。
+
+验证（2026-10-07）：
+
+- domain 13/13、contracts 6/6、storage 7/7、API domain 2/2、API HTTP 24/24、MCP 22/22、Electron SQLite 17/17、`test:storage` 11/11。
+- `pnpm typecheck`、`build:web`、`build:api`、`git diff --check` 通过。
+- `test:product`：189/189（新增 `product-nested.spec.ts` 与 `product-slash-context.spec.ts`，其余为既有回归）。
+- `test:visual`：6/7；唯一失败仍为既有 `Connectivity backend unavailable desktop` 基线差异（21748 px，ratio 0.02），与 P7.2 记录一致，不更新基线。
+- 独立只读 review：BLOCKER 0。记录 8 个 minor；本轮关闭 minor 1（移动端工具栏绕过上下文过滤）、minor 2（桌面固定工具栏多块选区缺 range safety）并补回归测试，minor 5（浏览器 mock orderKey 改为 30 位以真正覆盖 gap 分配）已修。
+- 环境：本沙箱默认设置 `ELECTRON_RUN_AS_NODE=1`，运行 Electron 用例前需清除，否则 electron 以纯 Node 启动并报 `Process failed to launch`。
+
+剩余已知限制（不阻塞 P7.3）：
+
+- 附件仍只支持顶层插入；嵌套附件只保证读取/快照可 round-trip，不支持 UI 创建或块级拖拽。
+- MCP nested document replacement 仍显式拒绝；不新增 MCP tool。
+- 大文档持续输入仍是 O(N)/docChanged（既有 BlockIdentity/AttachmentLifetime 同量级）；5000 块只验证了加载，未建立持续输入延迟基线。
+- 被拒绝的 drop 为静默 no-op，无用户提示；拒绝类拖拽测试只断言结构未变。
+- root codeBlock 内通过 slash 创建 Toggle/Callout 会产生可保存但结构怪异的结果。
+- 真实设备输入法/原生宿主验收不由浏览器回归替代。
 
 ## 测试与验证
 
@@ -125,7 +165,7 @@ pnpm --filter @eotion/web run test:product
 pnpm --filter @eotion/web run test:storage
 ```
 
-本环境运行 `test:product` 时偶发与改动无关的 UI 失败：默认多 worker 与 `--workers=1` 均观察到，且每次失败项不同；需要区分真实回归与既有 flaky 时，应单独复现失败项并对照干净基线。运行 `test:storage` 前需清除本沙箱默认设置的 `ELECTRON_RUN_AS_NODE`，否则 Electron 用例会报 `Process failed to launch`。
+本环境运行 `test:product` 时默认多 worker 偶发与改动无关的 UI 失败，每次失败项不同，单独复现均通过；P7.3 最终验收以 `--workers=1` 串行运行，189/189 通过。本轮同时把两处会采样中间态的断言改为等待收敛（`product-blocks.spec.ts` 清空文档后断言最终为单个 root block）。运行 `test:storage` 前需清除本沙箱默认设置的 `ELECTRON_RUN_AS_NODE`，否则 Electron 用例会报 `Process failed to launch`。
 
 ## 明确不在 P7.x 范围
 

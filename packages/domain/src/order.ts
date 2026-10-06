@@ -33,7 +33,8 @@ function formatBlockKey(value: bigint): string {
 
 /** Preserve existing keys whenever their order remains valid; rebalance only when no gap exists. */
 export function assignBlockOrder<T extends { id: string; orderKey: string }>(blocks: readonly T[], previous: ReadonlyMap<string, string>): T[] {
-  const surviving = [...previous.keys()].filter((id) => blocks.some((block) => block.id === id))
+  const ids = new Set(blocks.map((block) => block.id))
+  const surviving = [...previous.keys()].filter((id) => ids.has(id))
   const existing = blocks.filter((block) => previous.has(block.id)).map((block) => block.id)
   const sameOrder = surviving.length === existing.length && surviving.every((id, index) => id === existing[index])
   if (sameOrder && blocks.every((block) => previous.has(block.id))) {
@@ -42,7 +43,31 @@ export function assignBlockOrder<T extends { id: string; orderKey: string }>(blo
   if ([...previous.values()].some((key) => parseBlockKey(key) === null)) {
     return blocks.map((block, position) => ({ ...block, orderKey: formatBlockKey(BLOCK_ORDER_STEP * BigInt(position + 1)) }))
   }
-  const keys = blocks.map((block) => previous.get(block.id) ?? '')
+  // Keep the longest increasing chain of existing keys as anchors. A moved
+  // high-key block at the front must get a new gap key, not renumber the page.
+  const candidates = blocks.map((block) => parseBlockKey(previous.get(block.id)))
+  const tails: number[] = []
+  const predecessor = new Array<number>(blocks.length).fill(-1)
+  for (let index = 0; index < candidates.length; index += 1) {
+    const key = candidates[index]
+    if (key === null || key === undefined) continue
+    let low = 0
+    let high = tails.length
+    while (low < high) {
+      const middle = (low + high) >>> 1
+      if (candidates[tails[middle]!]! < key) low = middle + 1
+      else high = middle
+    }
+    predecessor[index] = low > 0 ? tails[low - 1]! : -1
+    tails[low] = index
+  }
+  const anchors = new Set<number>()
+  let cursor = tails.at(-1) ?? -1
+  while (cursor >= 0) {
+    anchors.add(cursor)
+    cursor = predecessor[cursor]!
+  }
+  const keys = blocks.map((block, index) => anchors.has(index) ? previous.get(block.id) ?? '' : '')
   let prior = 0n
   const allocated: bigint[] = []
   for (let index = 0; index < blocks.length; index += 1) {

@@ -1,11 +1,17 @@
 import type { Editor } from '@tiptap/core'
 import type { BlockCommandId } from '@eotion/domain/block-types'
+import { isBlockCommandAllowed, isBlockCommandRangeSafe } from './blockCommandContext'
 
 /** Commands that create a block. Attachment commands are handled by the attachment picker. */
 export type BlockCommand = Exclude<BlockCommandId, 'image' | 'file'>
 
 /** The same supported block commands back Slash and the optional fixed toolbar. */
 export function runBlockCommand(editor: Editor, command: BlockCommand, range?: { from: number; to: number }): boolean {
+  if (!isBlockCommandAllowed(editor, command, range?.from)) return false
+  // The transform must stay inside one compatible structural parent. Slash passes
+  // its own range; the toolbars must be checked against the current selection.
+  const safety = range ?? (editor.state.selection.empty ? undefined : { from: editor.state.selection.from, to: editor.state.selection.to })
+  if (safety && !isBlockCommandRangeSafe(editor, command, safety.from, safety.to)) return false
   const chain = editor.chain().focus()
   if (range) chain.deleteRange(range)
   switch (command) {

@@ -1,14 +1,22 @@
-# 当前任务：P7.2 Rich Blocks Final Acceptance
+# 当前任务：P7.3 Nested Blocks UX
 
-状态：P7.2 已 PASS（实现提交 139a6ff）。本轮只做验收收尾，不新增功能，不开始 P7.3。
+状态：PASS；P7.1/P7.2/P7.3 已 PASS，基线 a9459d8。P7.4 未开始。
 
-## 验收结果
+| Work Unit | 模式/评级 | 负责 | 结果 |
+| --- | --- | --- | --- |
+| nested/storage/MCP/hardBreak 边界证据 | investigate/S0 | scout inspect | Evidence Pack |
+| Tab、drag、mobile 方案 | decide/S2 | worker nested_ux | 单事务 move + 深度/树 invariant |
+| 已定 nested UX 实现与浏览器回归 | execute/S1 | nested_ux 降级执行 | product-nested 12/12 |
+| slash context/附件创建保护 | execute/S1 | fast_worker slash | product-slash-context 2/2 |
+| move 持久化及 hardBreak 一致性 | decide/execute S2→S1 | 主 Agent | domain/storage/sync 回归 |
+| 完整验证和最终 review | verify/S0、Review | scout/reviewer | 全部命令通过、BLOCKER 0 |
 
-- product：完整 `test:product` 执行 3 次（默认多 worker 1 次、`--workers=1` 2 次），每次 173/175；失败项每次不同且都是与 Callout 无关的既有 flaky，逐个单独复现通过；`product-attachments.spec.ts:147` 在干净基线 c687f1d 上同样失败。
-- visual：6/7，唯一失败 `Connectivity backend unavailable desktop` 与基线像素差一致（21748 px，ratio 0.02）。
-- 回归：domain 11/11、contracts 6/6、storage 7/7、API domain 2/2、HTTP 26/26、MCP 21/21、Electron storage 11/11、typecheck、Web/API build、`git diff --check` 全部通过；无 lint 脚本。
-- 独立只读 review：无 blocker；两个 minor（blockquote 内 block 级块保存被拒、hardBreak marks 校验不对称）已记入 docs/p7-advanced-blocks.md 已知限制。
+验收结果：
 
-## 下一步
+- Tab/Shift+Tab、drag/drop、slash context、移动端 nested UX、附件边界、hardBreak+marks、sync/local-first 全部实现并验证。
+- `test:product` 189/189；visual 6/7（唯一失败为既有 Connectivity 基线差异 21748 px）。
+- domain 13/13、contracts 6/6、storage 7/7、API domain 2/2、HTTP 24/24、MCP 22/22、Electron SQLite 17/17、test:storage 11/11；typecheck / build:web / build:api / git diff --check 通过。
+- 独立 review：0 blocker，8 minor；关闭 minor 1（移动端工具栏绕过上下文过滤）、minor 2（工具栏选区 range safety）、minor 5（浏览器 mock 30 位 orderKey）。
+- 性能：拖拽把手定位由 O(n²) 改为每帧一次批量定位，5000 块 `readyMs` 38.5s → 约 4.5s。
 
-P7.3 Nested Blocks UX 未开始；启动前先处理上述两个 minor（可选）。
+下一步：P7.4 Table 未开始；启动前先读 `docs/p7-advanced-blocks.md` 的 P7.3 已知限制。

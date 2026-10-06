@@ -86,6 +86,9 @@ async function installApi(page: Page, initialBlocks: BlockResponse[] = []) {
         const value: BlockResponse = { ...operation.payload, workspaceId: workspace.id, parentBlockId: operation.payload.parentBlockId ?? null, createdAt: old?.createdAt ?? now, updatedAt: later }
         const index = blocks.findIndex((item) => item.id === value.id)
         if (index < 0) blocks.push(value); else blocks[index] = value
+      } else if (operation.kind === 'block.move') {
+        const record = blocks.find((item) => item.id === operation.payload.id)
+        if (record) Object.assign(record, { parentBlockId: operation.payload.parentBlockId, orderKey: operation.payload.orderKey, updatedAt: later })
       } else if (operation.kind === 'block.delete') {
         const index = blocks.findIndex((item) => item.id === operation.payload.id)
         if (index >= 0) blocks.splice(index, 1)
@@ -187,7 +190,7 @@ test('slash image command and picker upload become one local block, sync operati
   await expect.poll(() => api.files.size).toBe(1)
   await expect(page.locator('.attachment-image img')).toHaveAttribute('src', [...api.files.values()][0]!.url)
   await expect(page.locator('.attachment-image')).toHaveCount(1)
-  await expect.poll(() => editor(page).evaluate((root) => Array.from(root.children).map((node) => node.tagName))).toEqual(['FIGURE', 'P'])
+  await expect.poll(() => editor(page).evaluate((root) => Array.from(root.children).filter((node) => !node.classList.contains('eotion-block-drag-anchor')).map((node) => node.tagName))).toEqual(['FIGURE', 'P'])
   await expect(editor(page).locator(':scope > p')).toHaveCount(1)
   await expect.poll(() => api.blocks.filter((item) => item.type === 'image').length).toBe(1)
   await expect.poll(() => api.blocks.filter((item) => item.type === 'paragraph').length).toBe(1)
@@ -286,7 +289,7 @@ test('a picker keeps its captured paragraph after selection changes and preserve
   await expect(page.locator('.attachment-file-name')).toHaveText('frozen-position.txt')
   await expect.poll(async () => editor(page).locator(':scope > p').allTextContents()).toEqual(['First paragraph', 'Second paragraph'])
   await expect.poll(async () => {
-    return editor(page).evaluate((root) => Array.from(root.children).map((node) => {
+    return editor(page).evaluate((root) => Array.from(root.children).filter((node) => !node.classList.contains('eotion-block-drag-anchor')).map((node) => {
       if (node.matches('.attachment-file')) return (node.querySelector('.attachment-file-name')?.textContent ?? '').trim()
       return (node.textContent ?? '').trim()
     }))
@@ -470,7 +473,7 @@ test('cancelling the first empty-slot upload while the second saves leaves no em
   await expect(inlineUploads(page).filter({ hasText: 'first-empty-race.txt' })).toHaveCount(0)
   await page.evaluate(() => (window as any).__releaseSecondCommit?.())
   await expect(page.locator('.attachment-file-name')).toHaveText('second-empty-race.txt')
-  await expect.poll(async () => editor(page).evaluate((root) => Array.from(root.children).map((node) => {
+  await expect.poll(async () => editor(page).evaluate((root) => Array.from(root.children).filter((node) => !node.classList.contains('eotion-block-drag-anchor')).map((node) => {
     if (node.matches('.attachment-file')) return (node.querySelector('.attachment-file-name')?.textContent ?? '').trim()
     return (node.textContent ?? '').trim()
   }))).toEqual(['Before attachments', 'second-empty-race.txt', 'After attachments'])

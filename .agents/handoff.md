@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-10-07 P7.3 Nested Blocks UX 完成
+
+P7.3 已 PASS。Tab/Shift+Tab 缩进、拖拽嵌套、slash 上下文过滤、移动端缩进/反缩进、child attachment 顶层边界、hardBreak+marks 一致性全部落地，并走既有 moveBlock → block.move → LocalStore → sync。核心文件：apps/web/src/editor/nestedBlockInteractions.ts（单 PM transaction 移动整棵子树，MAX_BLOCK_DEPTH=8，`Decoration.node` 高亮不改正文 DOM）、apps/web/src/editor/blockCommandContext.ts（以 registry / allowedChildTypes / EDITOR_NODE_RULES 过滤 slash 与附件）、packages/domain/src/order.ts（LIS 保留旧 key、只给移动块补 gap）。
+
+验证：product 189/189（`--workers=1`；默认多 worker 有本环境既有 flaky）、domain 13/13、contracts 6/6、storage 7/7、API domain 2/2、HTTP 24/24、MCP 22/22、Electron SQLite 17/17、test:storage 11/11、typecheck / build:web / build:api / git diff --check 通过；visual 6/7，唯一失败为既有 Connectivity 基线差异 21748 px。独立 review 0 blocker；已关闭移动端 Touch Toolbar 绕过上下文过滤（曾可在 listItem 内建出 codec 拒绝的 heading 导致整页无法保存）与工具栏选区 range safety，并补回归。
+
+性能回归已修：拖拽把手由逐块 rAF 定位（5000 块 O(n²)，readyMs 38.5s）改为每帧一次批量定位（约 4.5s，与无把手基线一致）。
+
+已知限制：附件仍只支持顶层插入且不参与块级拖拽；MCP nested document replacement 拒绝；大文档持续输入仍是 O(N)/docChanged；被拒绝的 drop 静默无提示。运行 Electron 用例前清除本沙箱默认的 `ELECTRON_RUN_AS_NODE=1`。下一步：P7.4 Table 未开始。
+
 ## 2026-10-06 P7.1 Advanced Blocks 交接
 
 P7.1 Block Model Foundation 实现完成。阶段重定义：P7 由「协作」调整为 Advanced Blocks（P7.1 Block Model Foundation / P7.2 Rich Blocks / P7.3 Nested Blocks UX / P7.4 Table / P7.5 Acceptance），原协作内容顺延为 P7.x，docs/roadmap.md 与 docs/README.md 已同步。

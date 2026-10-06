@@ -137,8 +137,8 @@ test('toggle creates, nests, survives reload and folds without becoming block da
   await clearing.click()
   await clearing.press('Control+A')
   await clearing.press('Backspace')
-  await expect.poll(() => api.blocks.every((item) => (item.parentBlockId ?? null) === null), { timeout: 5000 }).toBe(true)
-  expect(api.blocks).toHaveLength(1)
+  // Wait for the converged tree instead of sampling a mid-delete state.
+  await expect.poll(() => api.blocks.map((item) => item.parentBlockId ?? null), { timeout: 5000 }).toEqual([null])
   expect(api.requests.some((request) => request.kind === 'block.delete')).toBe(true)
   expect(browserErrors).toEqual([])
 })
@@ -522,6 +522,36 @@ test('Shift+Enter stays inside callout and select-all Backspace deletes cleanly 
   await expect(editor(page).locator('.eotion-callout')).toHaveCount(0)
   await expect(editor(page).locator('p').first()).toBeVisible()
   expect(api.blocks.every((item) => (item.parentBlockId ?? null) === null)).toBe(true)
+})
+
+test('formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload', async ({ page }) => {
+  const api = await installApi(page)
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  await body.click()
+  await body.pressSequentially('/')
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '提示块', exact: true }).click()
+  await page.keyboard.type('Before')
+  await page.keyboard.press('Shift+Enter')
+  await page.keyboard.type('After')
+  await selectCalloutText(body.locator('.eotion-callout-content'))
+  await page.keyboard.press('Control+b')
+  await expect.poll(() => api.blocks.find((block) => block.type === 'callout')?.props.node).toMatchObject({
+    content: [
+      { type: 'text', text: 'Before', marks: [{ type: 'bold' }] },
+      { type: 'hardBreak', marks: [{ type: 'bold' }] },
+      { type: 'text', text: 'After', marks: [{ type: 'bold' }] },
+    ],
+  })
+  const props = api.blocks.find((block) => block.type === 'callout')!.props
+  const domainAccepted = await page.evaluate(async ({ value, moduleUrl }) => {
+    const { validateCalloutBlockProps } = await import(/* @vite-ignore */ moduleUrl)
+    return validateCalloutBlockProps(value)
+  }, { value: props, moduleUrl: `/@fs/${path.resolve('../../packages/domain/src/block-types.ts').replaceAll('\\', '/')}` })
+  expect(domainAccepted).toBe(true)
+  await page.reload()
+  await expect(editor(page).locator('.eotion-callout-content strong')).toHaveText('BeforeAfter')
+  await expect(editor(page).locator('.eotion-callout-content strong br')).toHaveCount(1)
 })
 
 test('callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow', async ({ page }) => {

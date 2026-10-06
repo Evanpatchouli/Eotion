@@ -6,7 +6,7 @@ import Link from '@tiptap/extension-link'
 import { exitSuggestion } from '@tiptap/suggestion'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
 import { createLocalId } from '@eotion/storage'
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
@@ -16,6 +16,8 @@ import { EotionCallout } from '../../editor/calloutNodes'
 import { createUploadPlaceholderExtension, UploadPlaceholderRegistry, type UploadPlaceholderTask, type UploadTarget } from '../../editor/uploadPlaceholders'
 import { isSafeLinkHref } from '../../editor/link'
 import { runBlockCommand, type BlockCommand } from '../../editor/blockCommands'
+import { isBlockCommandAllowed } from '../../editor/blockCommandContext'
+import { canIndentBlock, canOutdentBlock, indentBlock, NestedBlockInteractions, outdentBlock } from '../../editor/nestedBlockInteractions'
 import { enqueueAttachmentCleanup, pendingAttachmentCleanups } from '../../editor/attachmentCleanup'
 import { createSlashCommand } from '../../editor/slashCommand'
 import type { EditorDocument } from '../../editor/editorDocument'
@@ -41,6 +43,7 @@ const emit = defineEmits<{
 }>()
 
 const composing = ref(false)
+const selectionRevision = ref(0)
 // Presentation attributes come from Link options; only href belongs in editor JSON.
 const ProductLink = Link.extend({
   addAttributes() {
@@ -111,13 +114,14 @@ onBeforeUnmount(() => {
 
 function updateSelection() {
   if (!editor.value) return
+  selectionRevision.value += 1
   const { from, to, empty } = editor.value.state.selection
   emit('selection', from, to, empty)
   scheduleCaretVisibility()
 }
 
 const { editor, getDocument } = useDocumentEditor({
-  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionCallout, AttachmentLifetime, BlockIdentity,
+  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionCallout, AttachmentLifetime, BlockIdentity, NestedBlockInteractions,
     createUploadPlaceholderExtension(uploadRegistry, { cancel: cancelUpload, retry: task => { void upload(task) }, remove: removeTask }),
     createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
   content: props.content,
@@ -137,9 +141,10 @@ function previewable(file: File): boolean {
 }
 
 function openPicker(kind: AttachmentKind): void {
-  if (!props.workspaceId) return
+  const current = editor.value
+  if (!props.workspaceId || !current || !isBlockCommandAllowed(current, kind)) return
   uploadRegistry.discardTarget(pickerTarget)
-  if (editor.value) pickerTarget = uploadRegistry.capture(editor.value.state)
+  pickerTarget = uploadRegistry.capture(current.state)
   ;(kind === 'image' ? imageInput.value : fileInput.value)?.click()
 }
 
@@ -153,8 +158,10 @@ function onDrop(event: DragEvent): void {
   if (!props.workspaceId || !event.dataTransfer || !isOnlyFiles(event.dataTransfer)) return
   event.preventDefault()
   const current = editor.value
-  const dropPosition = current?.view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos
-  queueFiles(Array.from(event.dataTransfer.files), current ? uploadRegistry.capture(current.state, dropPosition ?? current.state.selection.from) : undefined)
+  if (!current) return
+  const dropPosition = current.view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos ?? current.state.selection.from
+  if (!isBlockCommandAllowed(current, 'file', dropPosition)) return
+  queueFiles(Array.from(event.dataTransfer.files), uploadRegistry.capture(current.state, dropPosition))
 }
 
 function onDragOver(event: DragEvent): void {
@@ -178,6 +185,8 @@ function onPaste(event: ClipboardEvent): void {
   const imageFiles = items.filter((item) => item.kind === 'file' && item.type.startsWith('image/')).map((item) => item.getAsFile()).filter((file): file is File => file !== null)
   if (imageFiles.length === 0 || imageFiles.length !== items.length) return
   event.preventDefault()
+  const current = editor.value
+  if (!current || !isBlockCommandAllowed(current, 'image')) return
   queueFiles(imageFiles)
 }
 
@@ -460,6 +469,21 @@ function selectBlock(command: BlockCommand) {
   if (editor.value && !composing.value) runBlockCommand(editor.value, command)
 }
 
+const canIndentSelection = computed(() => {
+  selectionRevision.value
+  return !!editor.value && canIndentBlock(editor.value.state.doc, editor.value.state.selection, false)
+})
+const canOutdentSelection = computed(() => {
+  selectionRevision.value
+  return !!editor.value && canOutdentBlock(editor.value.state.doc, editor.value.state.selection, false)
+})
+function indentSelection(): void {
+  if (editor.value && !composing.value) indentBlock(editor.value, false)
+}
+function outdentSelection(): void {
+  if (editor.value && !composing.value) outdentBlock(editor.value, false)
+}
+
 defineExpose({ editor })
 </script>
 
@@ -471,8 +495,8 @@ defineExpose({ editor })
       <button type="button" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="selectBlock('heading2')"><EotionIcon name="heading" :size="16" /> H2</button>
       <button type="button" :aria-pressed="editor?.isActive('bulletList') ?? false" :disabled="!editor" @click="selectBlock('bulletList')"><EotionIcon name="list" :size="16" /> 列表</button>
       <button type="button" :aria-pressed="editor?.isActive('orderedList') ?? false" :disabled="!editor" @click="selectBlock('orderedList')"><EotionIcon name="list-ordered" :size="16" /> 编号列表</button>
-      <button v-if="workspaceId" type="button" :disabled="!editor" @click="openPicker('image')"><EotionIcon name="image" :size="16" /> 图片</button>
-      <button v-if="workspaceId" type="button" :disabled="!editor" @click="openPicker('file')"><EotionIcon name="paperclip" :size="16" /> 文件</button>
+      <button v-if="workspaceId" type="button" :disabled="!editor || !isBlockCommandAllowed(editor, 'image')" @click="openPicker('image')"><EotionIcon name="image" :size="16" /> 图片</button>
+      <button v-if="workspaceId" type="button" :disabled="!editor || !isBlockCommandAllowed(editor, 'file')" @click="openPicker('file')"><EotionIcon name="paperclip" :size="16" /> 文件</button>
     </div>
     <input ref="imageInput" class="eotion-file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" multiple aria-label="选择图片附件" @change="onFilesSelected('image', $event)" @cancel="onPickerCancelled">
     <input ref="fileInput" class="eotion-file-input" type="file" multiple aria-label="选择文件附件" @change="onFilesSelected('file', $event)" @cancel="onPickerCancelled">
@@ -510,11 +534,13 @@ defineExpose({ editor })
     <div v-if="touchToolbar" ref="touchToolbarElement" class="eotion-touch-toolbar" role="toolbar" aria-label="触摸编辑工具栏" :style="{ bottom: `${keyboardInset}px` }">
       <button type="button" aria-label="粗体" :aria-pressed="editor?.isActive('bold') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBold().run()"><EotionIcon name="bold" :size="18" /></button>
       <button type="button" aria-label="斜体" :aria-pressed="editor?.isActive('italic') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleItalic().run()"><EotionIcon name="italic" :size="18" /></button>
-      <button type="button" aria-label="文本" :aria-pressed="editor?.isActive('paragraph') ?? false" :disabled="!editor" @click="editor?.chain().focus().setParagraph().run()"><EotionIcon name="text" :size="18" /><span>文本</span></button>
-      <button type="button" aria-label="二级标题（H2）" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()"><span class="eotion-touch-heading-icon" aria-hidden="true"><EotionIcon name="heading" :size="18" /><sub>2</sub></span><span>标题</span></button>
-      <button type="button" aria-label="列表" :aria-pressed="editor?.isActive('bulletList') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBulletList().run()"><EotionIcon name="list" :size="18" /><span>列表</span></button>
-      <button v-if="workspaceId" type="button" :disabled="!editor" aria-label="插入图片" @click="openPicker('image')"><EotionIcon name="image" :size="18" /></button>
-      <button v-if="workspaceId" type="button" :disabled="!editor" aria-label="插入文件" @click="openPicker('file')"><EotionIcon name="paperclip" :size="18" /></button>
+      <button type="button" aria-label="文本" :aria-pressed="editor?.isActive('paragraph') ?? false" :disabled="!editor" @click="selectBlock('paragraph')"><EotionIcon name="text" :size="18" /><span>文本</span></button>
+      <button type="button" aria-label="二级标题（H2）" :aria-pressed="editor?.isActive('heading', { level: 2 }) ?? false" :disabled="!editor" @click="selectBlock('heading2')"><span class="eotion-touch-heading-icon" aria-hidden="true"><EotionIcon name="heading" :size="18" /><sub>2</sub></span><span>标题</span></button>
+      <button type="button" aria-label="列表" :aria-pressed="editor?.isActive('bulletList') ?? false" :disabled="!editor" @click="selectBlock('bulletList')"><EotionIcon name="list" :size="18" /><span>列表</span></button>
+      <button type="button" aria-label="缩进区块" :disabled="!canIndentSelection || composing" @mousedown.prevent @click="indentSelection">⇥</button>
+      <button type="button" aria-label="取消缩进区块" :disabled="!canOutdentSelection || composing" @mousedown.prevent @click="outdentSelection">⇤</button>
+      <button v-if="workspaceId" type="button" :disabled="!editor || !isBlockCommandAllowed(editor, 'image')" aria-label="插入图片" @click="openPicker('image')"><EotionIcon name="image" :size="18" /></button>
+      <button v-if="workspaceId" type="button" :disabled="!editor || !isBlockCommandAllowed(editor, 'file')" aria-label="插入文件" @click="openPicker('file')"><EotionIcon name="paperclip" :size="18" /></button>
     </div>
   </section>
 </template>
@@ -539,6 +565,7 @@ defineExpose({ editor })
 .eotion-touch-toolbar button:active:not(:disabled) { background: var(--e-color-selected); }
 .eotion-touch-toolbar button:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset: -2px; }
 .eotion-touch-toolbar button:disabled { cursor: default; opacity: .5; }
+.eotion-touch-toolbar button[aria-label="缩进区块"], .eotion-touch-toolbar button[aria-label="取消缩进区块"] { flex: 0 0 44px; padding: 0; font-size: 19px; }
 .eotion-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 .eotion-upload-alert { margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--border-editor); color: var(--danger); font-size: 13px; }
 .eotion-cleanup-retry { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--border-editor); color: var(--danger); font-size: 13px; }
@@ -568,7 +595,18 @@ defineExpose({ editor })
 .eotion-upload-spinner { width: 16px; height: 16px; flex: 0 0 auto; border: 2px solid var(--e-color-border); border-top-color: var(--e-color-text-muted); border-radius: 50%; animation: eotion-upload-spin .8s linear infinite; }
 .eotion-upload-occupied { visibility: hidden; height: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; line-height: 0 !important; }
 .eotion-upload-saving-hidden { display: none !important; }
+.eotion-editor-content .tiptap { position: relative; }
+.eotion-block-drag-anchor { position: absolute; top: 0; left: 0; display: inline-block; width: 0; height: 0; overflow: visible; line-height: 0; pointer-events: none; }
+.eotion-block-drag-handle { position: absolute; top: 0; left: -28px; z-index: 1; display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 0; border-radius: var(--e-radius-control); padding: 0; background: transparent; color: var(--e-color-text-muted); font: 600 18px / 1 var(--e-type-family); cursor: grab; opacity: .65; pointer-events: auto; }
+.eotion-block-drag-handle:hover, .eotion-block-drag-handle:focus-visible { background: var(--e-color-hover); color: var(--e-color-text-primary); opacity: 1; }
+.eotion-block-drag-handle::before { content: '⠿'; }
+.eotion-block-drag-handle:active { cursor: grabbing; }
+.eotion-editor-content .tiptap [data-eotion-drop-zone="before"] { box-shadow: 0 -2px 0 var(--e-color-focus); }
+.eotion-editor-content .tiptap [data-eotion-drop-zone="after"] { box-shadow: 0 2px 0 var(--e-color-focus); }
+.eotion-editor-content .tiptap [data-eotion-drop-zone="inside"] { outline: 2px solid var(--e-color-focus); outline-offset: 2px; border-radius: var(--e-radius-block); }
+.eotion-editor-content .tiptap > :nth-child(1 of :not(.eotion-block-drag-anchor)) { margin-top: 0; }
 @keyframes eotion-upload-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .eotion-upload-spinner { animation: none; } }
 @media (max-width: 767px), (pointer: coarse) { .eotion-upload-item button { min-width: 44px; min-height: 44px; } }
+@media (max-width: 767px), (pointer: coarse) { .eotion-block-drag-anchor { display: none !important; } }
 </style>
