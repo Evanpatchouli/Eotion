@@ -10,6 +10,7 @@ export const BLOCK_TYPES = [
   'file',
   'divider',
   'toggle',
+  'callout',
 ] as const
 
 export type BlockType = (typeof BLOCK_TYPES)[number]
@@ -31,6 +32,7 @@ export const BLOCK_NODE_TYPES: Record<BlockType, string> = {
   file: 'eotionFile',
   divider: 'horizontalRule',
   toggle: 'eotionToggle',
+  callout: 'eotionCallout',
 }
 
 /** Every editor node name that a block document may contain, block nodes first. */
@@ -48,6 +50,7 @@ export type BlockCommandId =
   | 'codeBlock'
   | 'horizontalRule'
   | 'toggle'
+  | 'callout'
   | 'image'
   | 'file'
 
@@ -110,6 +113,7 @@ export const BLOCK_CAPABILITIES: Record<BlockType, BlockCapability> = {
   // Toggle is the first block type that owns child blocks. Reusing the existing
   // parentBlockId field keeps the tree model identical to the page tree.
   toggle: capability('toggle', { hasText: true, allowsChildren: true, allowedChildTypes: BLOCK_TYPES, mcp: { readable: true, writable: false } }),
+  callout: capability('callout', { hasText: true }),
 }
 
 export interface EditorNodeRule {
@@ -139,6 +143,7 @@ export const EDITOR_NODE_RULES: Record<string, EditorNodeRule> = {
   eotionFile: { attrs: ['fileId', 'name', 'mimeType', 'size', 'url'], children: null },
   eotionTodo: { attrs: ['checked'], children: ['text', 'hardBreak'] },
   eotionToggle: { attrs: [], children: BLOCK_NODE_NAMES },
+  eotionCallout: { attrs: ['icon', 'tone'], children: ['text', 'hardBreak'] },
 }
 
 /** All editor node names accepted in a stored block document. */
@@ -155,6 +160,7 @@ export const BLOCK_COMMANDS: readonly BlockCommandSpec[] = [
   { id: 'quote', type: 'quote', label: '引用', group: '块', icon: 'quote', search: 'quote' },
   { id: 'codeBlock', type: 'code', label: '代码块', group: '块', icon: 'code', search: 'code' },
   { id: 'toggle', type: 'toggle', label: '折叠列表', group: '块', icon: 'chevron-right', search: 'toggle collapse fold' },
+  { id: 'callout', type: 'callout', label: '提示块', group: '块', icon: 'info', search: 'callout tip info' },
   { id: 'horizontalRule', type: 'divider', label: '分割线', group: '块', icon: 'minus', search: 'divider rule' },
   { id: 'image', type: 'image', label: '图片', group: '媒体', icon: 'image', search: 'image photo' },
   { id: 'file', type: 'file', label: '文件', group: '媒体', icon: 'file-text', search: 'file attachment' },
@@ -205,4 +211,62 @@ export function isMcpWritableBlockType(type: BlockType): boolean {
 
 export function slashCommands(): readonly BlockCommandSpec[] {
   return BLOCK_COMMANDS.filter((command) => BLOCK_CAPABILITIES[command.type].slash)
+}
+
+export type CalloutTone = 'neutral' | 'info' | 'warning'
+
+/** Validate persisted callout attributes after the caller removes blockId. */
+export function validateCalloutAttrs(attrs: unknown): attrs is { icon: string; tone: CalloutTone } {
+  if (typeof attrs !== 'object' || attrs === null || Array.isArray(attrs)) return false
+  const value = attrs as Record<string, unknown>
+  if (Object.keys(value).length !== 2 || !Object.hasOwn(value, 'icon') || !Object.hasOwn(value, 'tone')) return false
+  return typeof value.icon === 'string'
+    && value.icon.length >= 1
+    && value.icon.length <= 32
+    && !/[\u0000-\u001f\u007f-\u009f]/u.test(value.icon)
+    && (value.tone === 'neutral' || value.tone === 'info' || value.tone === 'warning')
+}
+
+/** Block props use the shared editor node wrapper; blockId is stored by the editor identity layer. */
+export function validateCalloutBlockProps(props: unknown): boolean {
+  if (typeof props !== 'object' || props === null || Array.isArray(props)) return false
+  if (Object.keys(props).length !== 1 || !Object.hasOwn(props, 'node')) return false
+  const node = (props as Record<string, unknown>).node
+  if (typeof node !== 'object' || node === null || Array.isArray(node)) return false
+  const record = node as Record<string, unknown>
+  if (record.type !== 'eotionCallout' || Object.keys(record).some((key) => !['type', 'attrs', 'content'].includes(key))) return false
+  if (!validateCalloutAttrs(record.attrs)) return false
+  if (record.content === undefined) return true
+  if (!Array.isArray(record.content)) return false
+  return record.content.every((child: unknown) => {
+    if (typeof child !== 'object' || child === null || Array.isArray(child)) return false
+    const inline = child as Record<string, unknown>
+    if (inline.type === 'hardBreak') return Object.keys(inline).length === 1
+    if (inline.type !== 'text' || typeof inline.text !== 'string' || Object.keys(inline).some((key) => !['type', 'text', 'marks'].includes(key))) return false
+    if (inline.marks === undefined) return true
+    return Array.isArray(inline.marks) && inline.marks.every(validCalloutMark)
+  })
+}
+
+function validCalloutMark(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const mark = value as Record<string, unknown>
+  if (Object.keys(mark).some((key) => !['type', 'attrs'].includes(key))) return false
+  if (!['bold', 'italic', 'strike', 'code', 'link'].includes(String(mark.type))) return false
+  const attrs = mark.attrs === undefined ? {} : mark.attrs
+  if (typeof attrs !== 'object' || attrs === null || Array.isArray(attrs)) return false
+  const entries = attrs as Record<string, unknown>
+  if (mark.type !== 'link') return Object.keys(entries).length === 0
+  if (Object.keys(entries).length !== 1 || typeof entries.href !== 'string' || !/^https?:\/\//i.test(entries.href) || /\s|[\u0000-\u001f\u007f]/u.test(entries.href)) return false
+  try {
+    const url = new URL(entries.href)
+    return !!url.hostname && (url.protocol === 'http:' || url.protocol === 'https:') && !url.username && !url.password
+  } catch {
+    return false
+  }
+}
+
+/** Type-specific persisted props checks live with the block registry. */
+export function validateBlockProps(type: BlockType, props: unknown): boolean {
+  return type === 'callout' ? validateCalloutBlockProps(props) : true
 }

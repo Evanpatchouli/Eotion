@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BLOCK_TYPES } from '@eotion/domain/block-types'
+import { BLOCK_TYPES, validateBlockProps } from '@eotion/domain/block-types'
 export { BLOCK_TYPES }
 
 export interface HealthResponse {
@@ -27,6 +27,7 @@ const passwordSchema = z.string().min(1).max(1024)
 const displayNameSchema = z.string().trim().min(1).max(64)
 const dateSchema = z.iso.datetime()
 const propsSchema = z.record(z.string(), z.unknown())
+const calloutPropsIssue = 'Invalid block attributes'
 
 export const RegisterRequestSchema = z.object({
   email: emailSchema,
@@ -151,7 +152,7 @@ const syncOperationSchema = z.discriminatedUnion('kind', [
       type: BlockTypeSchema,
       orderKey: idSchema,
       props: propsSchema,
-    }).strict(),
+    }).strict().refine((payload) => validateBlockProps(payload.type, payload.props), { message: calloutPropsIssue }),
   }).strict(),
   z.object({
     ...syncOperationBase,
@@ -179,7 +180,7 @@ export const BlockCreateRequestSchema = z.object({
   type: BlockTypeSchema,
   orderKey: idSchema,
   props: propsSchema,
-}).strict()
+}).strict().refine((value) => validateBlockProps(value.type, value.props), { message: calloutPropsIssue })
 export type BlockCreateRequest = z.infer<typeof BlockCreateRequestSchema>
 
 export const BlockUpdateRequestSchema = z.object({
@@ -188,7 +189,7 @@ export const BlockUpdateRequestSchema = z.object({
   props: propsSchema.optional(),
 }).strict().refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field must be provided',
-})
+}).refine((value) => value.type === undefined || value.props === undefined || validateBlockProps(value.type, value.props), { message: calloutPropsIssue })
 export type BlockUpdateRequest = z.infer<typeof BlockUpdateRequestSchema>
 
 export const FileUpdateRequestSchema = z.object({
@@ -238,7 +239,7 @@ const serverBlockRecordSchema = z.object({
   props: propsSchema,
   createdAt: dateSchema,
   updatedAt: dateSchema,
-}).strict()
+}).strict().refine((value) => validateBlockProps(value.type, value.props), { message: calloutPropsIssue })
 const fileRecordSchema = z.object({
   id: idSchema,
   workspaceId: idSchema,

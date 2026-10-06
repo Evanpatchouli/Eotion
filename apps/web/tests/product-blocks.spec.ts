@@ -1,4 +1,6 @@
-import { expect, test, type Page, type Route } from '@playwright/test'
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 
 const now = '2026-09-30T00:00:00.000Z'
@@ -15,8 +17,10 @@ async function installApi(page: Page, seed: BlockResponse[] = []) {
   const pages: PageResponse[] = [pageRecord]
   const blocks: BlockResponse[] = [...seed]
   const requests: Array<{ kind: string; payload: any }> = []
+  let apiOffline = false
   const json = (route: Route, status: number, body: unknown) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
   await page.route('**/api/**', async (route) => {
+    if (apiOffline) return route.abort('internetdisconnected')
     const request = route.request()
     const path = new URL(request.url()).pathname
     if (path === '/api/auth/me' && request.method() === 'GET') return json(route, 200, user)
@@ -48,10 +52,42 @@ async function installApi(page: Page, seed: BlockResponse[] = []) {
     }
     return json(route, 404, { statusCode: 404, message: 'Not found' })
   })
-  return { pages, blocks, requests }
+  return { pages, blocks, requests, setOffline: (offline: boolean) => { apiOffline = offline } }
 }
 
 const editor = (page: Page) => page.locator('.eotion-editor-content .tiptap')
+
+async function selectCalloutText(callout: Locator) {
+  await callout.evaluate((node) => {
+    node.closest<HTMLElement>('.tiptap')!.focus()
+    const range = document.createRange()
+    range.selectNodeContents(node)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+  })
+}
+
+async function setCalloutCaret(callout: Locator, offset: number) {
+  await callout.evaluate((node, caretOffset) => {
+    const text = node.firstChild
+    if (!text || text.nodeType !== Node.TEXT_NODE) throw new Error('Expected one text node in callout content')
+    node.closest<HTMLElement>('.tiptap')!.focus()
+    const range = document.createRange()
+    range.setStart(text, caretOffset)
+    range.collapse(true)
+    const selection = window.getSelection()!
+    selection.removeAllRanges()
+    selection.addRange(range)
+  }, offset)
+}
+
+async function captureCalloutScreenshot(page: Page, name: string) {
+  const directory = process.env.EOTION_VISUAL_QA_DIR
+  if (!directory) return
+  await mkdir(directory, { recursive: true })
+  await page.screenshot({ path: path.join(directory, `${name}.png`), animations: 'disabled' })
+}
 
 test('toggle creates, nests, survives reload and folds without becoming block data', async ({ page }) => {
   const browserErrors: string[] = []
@@ -145,7 +181,7 @@ test('local store enforces nested block invariants and records one block.move', 
     const pageMeta = (id: string, orderKey: string) => ({ id, workspaceId: 'ws', parentPageId: null, orderKey, title: id, updatedAt: stamp })
     const blockRecord = (id: string, pageId: string, parentBlockId: string | null, orderKey: string, type = 'paragraph') =>
       ({ id, workspaceId: 'ws', pageId, parentBlockId, type, orderKey, props: { node: { type: 'paragraph' } }, createdAt: stamp, updatedAt: stamp })
-    const outcome = { rejected: [] as string[], immutableParent: false, paragraphParent: false, moveCount: 0, movePayload: null as unknown, movedParent: 'unset', snapshotRejections: [] as string[] }
+    const outcome = { rejected: [] as string[], immutableParent: false, paragraphParent: false, childOwnerReplacement: false, moveCount: 0, movePayload: null as unknown, movedParent: 'unset', snapshotRejections: [] as string[] }
     try {
       await store.upsertPage(pageMeta('page-1', 'a'))
       await store.upsertPage(pageMeta('page-2', 'b'))
@@ -162,6 +198,14 @@ test('local store enforces nested block invariants and records one block.move', 
       // only a missing or off-page parent.
       try { await store.upsertBlock(blockRecord('child-of-flat', 'page-1', 'flat', '000000000000000000000000000900')) }
       catch { outcome.paragraphParent = true }
+
+      // A toggle with children cannot be replaced by a leaf block type.
+      try {
+        await store.upsertBlock({
+          ...blockRecord('toggle', 'page-1', null, '000000000000000000000000000100', 'callout'),
+          props: { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'Replacement' }] } },
+        })
+      } catch { outcome.childOwnerReplacement = true }
 
       const baseline = (await store.getPendingOperations()).length
       const cases: Array<[string, string, string]> = [
@@ -196,6 +240,7 @@ test('local store enforces nested block invariants and records one block.move', 
     rejected: ['self', 'cycle', 'missing', 'off-page', 'flat-parent'],
     immutableParent: true,
     paragraphParent: true,
+    childOwnerReplacement: true,
     moveCount: 1,
     movePayload: { id: 'a', pageId: 'page-1', parentBlockId: null, orderKey: '000000000000000000000000000500' },
     movedParent: null,
@@ -315,4 +360,400 @@ test('block codec round-trips nested toggles and refuses unrepresentable structu
     orphan: true,
     unknownType: true,
   })
+})
+
+test('callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting', async ({ page }) => {
+  const api = await installApi(page)
+  const browserErrors: string[] = []
+  page.on('pageerror', (error) => browserErrors.push(error.message))
+  page.on('console', (message) => { if (message.type() === 'error') browserErrors.push(message.text()) })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  await body.click()
+  await body.pressSequentially('/')
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '提示块', exact: true }).click()
+
+  const callout = body.locator('.eotion-callout')
+  const content = callout.locator('.eotion-callout-content')
+  await expect(callout).toBeVisible()
+  await expect(callout).toHaveAttribute('data-tone', 'neutral')
+  await content.click()
+  await page.keyboard.type('A useful note')
+  await expect(content).toHaveText('A useful note')
+  await expect.poll(() => JSON.stringify(api.blocks.find((item) => item.type === 'callout')?.props.node), { timeout: 5000 }).toContain('A useful note')
+  const original = api.blocks.find((item) => item.type === 'callout')!
+  const originalId = original.id
+  const originalOrderKey = original.orderKey
+
+  await callout.getByRole('button', { name: '提示块设置' }).click()
+  await page.getByRole('textbox', { name: '提示块图标' }).fill('🚀')
+  await page.getByRole('combobox', { name: '提示块语气' }).selectOption('warning')
+  await expect(callout).toHaveAttribute('data-tone', 'warning')
+  await expect.poll(() => {
+    const saved = api.blocks.find((item) => item.id === originalId)
+    return saved?.props.node
+  }, { timeout: 5000 }).toMatchObject({ attrs: { icon: '🚀', tone: 'warning' } })
+
+  await selectCalloutText(content)
+  const selectionBubble = page.getByRole('toolbar', { name: '选区格式' })
+  await expect(selectionBubble).toBeVisible()
+  await selectionBubble.getByRole('button', { name: '粗体' }).click()
+  await expect(content.locator('strong')).toHaveText('A useful note')
+  await expect.poll(() => JSON.stringify(api.blocks.find((item) => item.id === originalId)?.props.node), { timeout: 5000 }).toContain('"type":"bold"')
+  await expect.poll(() => api.blocks.find((item) => item.id === originalId)?.orderKey, { timeout: 5000 }).toBe(originalOrderKey)
+  expect(api.blocks.find((item) => item.id === originalId)?.type).toBe('callout')
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  await captureCalloutScreenshot(page, 'p72-callout-desktop')
+
+  await page.reload()
+  const reloadedCallout = editor(page).locator('.eotion-callout')
+  await expect(reloadedCallout).toHaveAttribute('data-tone', 'warning')
+  await expect(reloadedCallout.locator('.eotion-callout-content strong')).toHaveText('A useful note')
+  const reloadedBlock = api.blocks.find((item) => item.id === originalId)!
+  expect(reloadedBlock.orderKey).toBe(originalOrderKey)
+  expect((reloadedBlock.props.node as any).attrs).toEqual({ icon: '🚀', tone: 'warning' })
+  await reloadedCallout.getByRole('button', { name: '提示块设置' }).click()
+  await expect(page.getByRole('textbox', { name: '提示块图标' })).toHaveValue('🚀')
+  expect(browserErrors).toEqual([])
+})
+
+test('callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity', async ({ page }) => {
+  const api = await installApi(page)
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  await body.click()
+  await body.pressSequentially('/')
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '提示块', exact: true }).click()
+  const emptyCallout = body.locator('.eotion-callout')
+  await expect.poll(() => api.blocks.find((item) => item.type === 'callout')?.id, { timeout: 5000 }).toBeTruthy()
+  const emptyId = api.blocks.find((item) => item.type === 'callout')!.id
+  await emptyCallout.locator('.eotion-callout-content').click()
+  await page.keyboard.press('Enter')
+  await expect(body.locator('.eotion-callout')).toHaveCount(0)
+  await expect.poll(() => api.blocks.find((item) => item.id === emptyId)?.type, { timeout: 5000 }).toBe('paragraph')
+
+  // A populated callout exits to a paragraph at end while keeping the left block.
+  await body.click()
+  await page.keyboard.press('Control+End')
+  await page.keyboard.press('Enter')
+  await body.pressSequentially('/')
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '提示块', exact: true }).click()
+  let callout = body.locator('.eotion-callout').last()
+  let content = callout.locator('.eotion-callout-content')
+  await body.pressSequentially('End split')
+  await expect(content).toHaveText('End split')
+  await callout.getByRole('button', { name: '提示块设置' }).click()
+  await page.getByRole('textbox', { name: '提示块图标' }).fill('🚀')
+  await page.getByRole('combobox', { name: '提示块语气' }).selectOption('warning')
+  await expect.poll(() => api.blocks.filter((item) => item.type === 'callout').length, { timeout: 5000 }).toBe(1)
+  const endCallout = api.blocks.find((item) => item.type === 'callout')!
+  await setCalloutCaret(content, 'End split'.length)
+  await page.keyboard.press('Enter')
+  await expect(body.locator('.eotion-callout')).toHaveCount(1)
+  await expect(body.locator('.eotion-callout').last().locator('.eotion-callout-content')).toHaveText('End split')
+  await expect.poll(() => api.blocks.find((item) => item.id === endCallout.id)?.type, { timeout: 5000 }).toBe('callout')
+  expect(api.blocks.find((item) => item.id === endCallout.id)?.orderKey).toBe(endCallout.orderKey)
+  expect((api.blocks.find((item) => item.id === endCallout.id)?.props.node as any).attrs).toEqual({ icon: '🚀', tone: 'warning' })
+  await page.keyboard.type('Exit')
+  await expect(body.locator('p').filter({ hasText: 'Exit' })).toHaveText('Exit')
+  await expect.poll(() => api.blocks.find((item) => item.type === 'paragraph' && JSON.stringify(item.props.node).includes('Exit')), { timeout: 5000 }).toBeTruthy()
+  const endParagraph = api.blocks.find((item) => item.type === 'paragraph' && JSON.stringify(item.props.node).includes('Exit'))!
+  expect(endParagraph.id).not.toBe(endCallout.id)
+
+  // Enter in the middle creates a paragraph for the suffix and preserves the
+  // original callout identity on the prefix.
+  await body.locator('p').last().click()
+  await page.keyboard.press('Control+End')
+  await page.keyboard.press('Enter')
+  await body.pressSequentially('/')
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '提示块', exact: true }).click()
+  callout = body.locator('.eotion-callout').last()
+  content = callout.locator('.eotion-callout-content')
+  await body.pressSequentially('BeforeAfter')
+  await expect(content).toHaveText('BeforeAfter')
+  await expect.poll(() => api.blocks.filter((item) => item.type === 'callout').length, { timeout: 5000 }).toBe(2)
+  const midCallout = api.blocks.filter((item) => item.type === 'callout').at(-1)!
+  await setCalloutCaret(content, 'Before'.length)
+  await page.keyboard.press('Enter')
+  await expect(body.locator('.eotion-callout').last().locator('.eotion-callout-content')).toHaveText('Before')
+  await expect(body.locator('p').filter({ hasText: 'After' })).toHaveText('After')
+  await expect.poll(() => api.blocks.find((item) => item.id === midCallout.id)?.type, { timeout: 5000 }).toBe('callout')
+  await expect.poll(() => api.blocks.find((item) => item.type === 'paragraph' && JSON.stringify(item.props.node).includes('After')), { timeout: 5000 }).toBeTruthy()
+  const midParagraph = api.blocks.find((item) => item.type === 'paragraph' && JSON.stringify(item.props.node).includes('After'))!
+  expect(midParagraph.id).not.toBe(midCallout.id)
+  await setCalloutCaret(body.locator('.eotion-callout').last().locator('.eotion-callout-content'), 0)
+  await page.keyboard.press('Backspace')
+  await expect(body.locator('.eotion-callout')).toHaveCount(1)
+  await expect(body.locator('p').filter({ hasText: 'Before' })).toBeVisible()
+  await expect.poll(() => api.blocks.find((item) => item.id === midCallout.id)?.type, { timeout: 5000 }).toBe('paragraph')
+})
+
+test('Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload', async ({ page }) => {
+  const api = await installApi(page)
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  await body.click()
+  await body.pressSequentially('/')
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '提示块', exact: true }).click()
+  let content = body.locator('.eotion-callout .eotion-callout-content')
+  await body.pressSequentially('First line')
+  await expect(content).toHaveText('First line')
+  await expect.poll(() => api.blocks.find((item) => item.type === 'callout')?.id, { timeout: 5000 }).toBeTruthy()
+  const calloutId = api.blocks.find((item) => item.type === 'callout')!.id
+  await setCalloutCaret(content, 'First line'.length)
+  await page.keyboard.press('Shift+Enter')
+  await body.pressSequentially('Second line')
+  await expect(content.locator('br')).toHaveCount(1)
+  await expect(content).toContainText('First lineSecond line')
+  await expect.poll(() => api.blocks.find((item) => item.id === calloutId)?.type, { timeout: 5000 }).toBe('callout')
+  await expect.poll(() => JSON.stringify(api.blocks.find((item) => item.id === calloutId)?.props.node), { timeout: 5000 }).toContain('hardBreak')
+  await page.reload()
+  content = editor(page).locator('.eotion-callout .eotion-callout-content')
+  await expect(content.locator('br')).toHaveCount(1)
+  await expect(content).toContainText('First lineSecond line')
+
+  await editor(page).click()
+  await page.keyboard.press('Control+A')
+  await page.keyboard.press('Backspace')
+  await expect(editor(page).locator('.eotion-callout')).toHaveCount(0)
+  await expect.poll(() => api.blocks.filter((item) => item.type === 'callout').length, { timeout: 5000 }).toBe(0)
+  await page.reload()
+  await expect(editor(page).locator('.eotion-callout')).toHaveCount(0)
+  await expect(editor(page).locator('p').first()).toBeVisible()
+  expect(api.blocks.every((item) => (item.parentBlockId ?? null) === null)).toBe(true)
+})
+
+test('callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeMatchMedia = window.matchMedia.bind(window)
+    window.matchMedia = (query: string) => {
+      const result = nativeMatchMedia(query)
+      if (query === '(pointer: coarse)') Object.defineProperty(result, 'matches', { configurable: true, value: true })
+      return result
+    }
+  })
+  const api = await installApi(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'mobile')
+  await expect(page.locator('.product-shell')).toHaveAttribute('data-input', 'touch')
+  const touchToolbar = page.getByRole('toolbar', { name: '触摸编辑工具栏' })
+  await expect(touchToolbar).toBeVisible()
+
+  const body = editor(page)
+  await body.click()
+  await body.pressSequentially('/')
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '提示块', exact: true }).click()
+  const content = body.locator('.eotion-callout .eotion-callout-content')
+  await content.click()
+  await page.keyboard.type('Touch callout')
+  await expect(content).toHaveText('Touch callout')
+  await expect.poll(() => api.blocks.some((item) => item.type === 'callout'), { timeout: 5000 }).toBe(true)
+  await selectCalloutText(content)
+  await expect(page.getByRole('toolbar', { name: '选区格式' })).toHaveCount(0)
+  await expect(touchToolbar.getByRole('button', { name: '粗体' })).toBeVisible()
+  await touchToolbar.getByRole('button', { name: '粗体' }).click()
+  await expect(content.locator('strong')).toHaveText('Touch callout')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  await captureCalloutScreenshot(page, 'p72-callout-mobile')
+})
+
+test('callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot', async ({ page }) => {
+  const api = await installApi(page)
+  await page.goto('/#/app/ws-a/page/page-a')
+  const body = editor(page)
+  await body.click()
+  await body.pressSequentially('/')
+  await page.locator('.p2-slash-menu').getByRole('option', { name: '提示块', exact: true }).click()
+  const callout = body.locator('.eotion-callout')
+  const content = callout.locator('.eotion-callout-content')
+  await content.click()
+  await page.keyboard.type('Saved offline')
+  await expect(content).toHaveText('Saved offline')
+  await callout.getByRole('button', { name: '提示块设置' }).click()
+  await page.getByRole('textbox', { name: '提示块图标' }).fill('📌')
+  await page.getByRole('combobox', { name: '提示块语气' }).selectOption('info')
+  await expect.poll(() => JSON.stringify(api.blocks.find((item) => item.type === 'callout')?.props.node), { timeout: 5000 }).toContain('Saved offline')
+  await expect.poll(() => JSON.stringify(api.blocks.find((item) => item.type === 'callout')?.props.node), { timeout: 5000 }).toContain('"tone":"info"')
+  const serverCallout = api.blocks.find((item) => item.type === 'callout')!
+  const calloutId = serverCallout.id
+  const originalOrderKey = serverCallout.orderKey
+
+  api.setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page.getByRole('status').filter({ hasText: '离线 · 本地已保存' })).toBeVisible()
+  await setCalloutCaret(content, 'Saved offline'.length)
+  await page.keyboard.type(' after reload')
+  await expect.poll(() => page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    return JSON.stringify(await local.listBlocksByPage('page-a'))
+  }), { timeout: 5000 }).toContain('Saved offline after reload')
+
+  await page.reload()
+  const offlineContent = editor(page).locator('.eotion-callout .eotion-callout-content')
+  await expect(offlineContent).toContainText('Saved offline after reload')
+  await expect(editor(page).locator('.eotion-callout')).toHaveAttribute('data-tone', 'info')
+  const offlineIdentity = await page.evaluate(async (id) => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    const block = await local.getBlock(id)
+    return block ? { id: block.id, orderKey: block.orderKey, type: block.type, props: block.props } : null
+  }, calloutId)
+  expect(offlineIdentity).toMatchObject({ id: calloutId, orderKey: originalOrderKey, type: 'callout', props: { node: { type: 'eotionCallout', attrs: { icon: '📌', tone: 'info' } } } })
+
+  api.setOffline(false)
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()
+  await expect.poll(() => JSON.stringify(api.blocks.find((item) => item.id === calloutId)?.props.node), { timeout: 5000 }).toContain('Saved offline after reload')
+  await expect.poll(() => api.blocks.find((item) => item.id === calloutId)?.orderKey, { timeout: 5000 }).toBe(originalOrderKey)
+  await page.reload()
+  await expect(editor(page).locator('.eotion-callout .eotion-callout-content')).toContainText('Saved offline after reload')
+  await expect(editor(page).locator('.eotion-callout')).toHaveAttribute('data-tone', 'info')
+})
+
+test('callout codec validates attributes and round-trips as a leaf and toggle child', async ({ page }) => {
+  await page.goto('/#/__dev/editor-foundation')
+  const result = await page.evaluate(async () => {
+    const { blocksToDocument, documentToBlocks } = await import('/src/editor/blockCodec.ts')
+    const stamp = new Date().toISOString()
+    const record = (id: string, type: string, node: unknown, parentBlockId: string | null, orderKey: string) =>
+      ({ id, workspaceId: 'ws', pageId: 'page-1', parentBlockId, type, orderKey, props: { node }, createdAt: stamp, updatedAt: stamp })
+    const paragraph = { type: 'paragraph', content: [{ type: 'text', text: 'Summary' }] }
+    const blocks = [
+      record('callout-root', 'callout', { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'Root callout' }] }, null, '000000000000000000000000000100'),
+      record('toggle-root', 'toggle', { type: 'eotionToggle', content: [paragraph] }, null, '000000000000000000000000000200'),
+      record('callout-child', 'callout', { type: 'eotionCallout', attrs: { icon: '⚠️', tone: 'warning' }, content: [{ type: 'text', text: 'Nested callout' }] }, 'toggle-root', '000000000000000000000000000100'),
+    ]
+    const document = blocksToDocument(blocks)
+    const decoded = documentToBlocks(document, blocks, false)
+    const encodedShape = decoded.map((block) => ({ id: block.id, type: block.type, parentBlockId: block.parentBlockId, node: (block.props as any).node }))
+    const invalidNodes = [
+      { type: 'eotionCallout', attrs: { icon: '💡', tone: 'bad' }, content: [{ type: 'text', text: 'Invalid tone' }] },
+      { type: 'eotionCallout', attrs: { icon: '', tone: 'neutral' }, content: [{ type: 'text', text: 'Empty icon' }] },
+      { type: 'eotionCallout', attrs: { icon: '💡', tone: 'info', extra: true }, content: [{ type: 'text', text: 'Unknown attr' }] },
+    ]
+    const rejected: boolean[] = []
+    for (const [index, node] of invalidNodes.entries()) {
+      try { blocksToDocument([record(`bad-${index}`, 'callout', node, null, 'a')]) ; rejected.push(false) }
+      catch { rejected.push(true) }
+    }
+    return {
+      shape: document.content?.map((node: any) => ({ type: node.type, blockId: node.attrs?.blockId, childTypes: node.content?.map((child: any) => child.type) })),
+      encodedShape,
+      rejected,
+    }
+  })
+  expect(result).toEqual({
+    shape: [
+      { type: 'eotionCallout', blockId: 'callout-root', childTypes: ['text'] },
+      { type: 'eotionToggle', blockId: 'toggle-root', childTypes: ['paragraph', 'eotionCallout'] },
+    ],
+    encodedShape: [
+      { id: 'callout-root', type: 'callout', parentBlockId: null, node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'Root callout' }] } },
+      { id: 'toggle-root', type: 'toggle', parentBlockId: null, node: { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Summary' }] }] } },
+      { id: 'callout-child', type: 'callout', parentBlockId: 'toggle-root', node: { type: 'eotionCallout', attrs: { icon: '⚠️', tone: 'warning' }, content: [{ type: 'text', text: 'Nested callout' }] } },
+    ],
+    rejected: [true, true, true],
+  })
+})
+
+test('IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks', async ({ page }) => {
+  await page.goto('/#/__dev/storage-p3')
+  const result = await page.evaluate(async () => {
+    const { IndexedDbLocalStore } = await import('/src/storage/indexedDbStore.ts')
+    const dbName = `p72-callout-snapshot-${crypto.randomUUID()}`
+    const store = await IndexedDbLocalStore.open(dbName)
+    const stamp = new Date().toISOString()
+    const pageMeta = { id: 'page', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Page', updatedAt: stamp }
+    const block = (id: string, type: string, parentBlockId: string | null, orderKey: string, node: unknown) => ({
+      id, workspaceId: 'ws', pageId: 'page', parentBlockId, type, orderKey, props: { node }, createdAt: stamp, updatedAt: stamp,
+    })
+    const blocks = [
+      block('toggle', 'toggle', null, '000000000000000000000000000100', { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Summary' }] }] }),
+      block('callout', 'callout', 'toggle', '000000000000000000000000000100', { type: 'eotionCallout', attrs: { icon: '📌', tone: 'info' }, content: [{ type: 'text', text: 'Stored child' }] }),
+    ]
+    try {
+      await store.replaceWorkspaceSnapshot('ws', [pageMeta], blocks as any)
+      store.close()
+      const reopened = await IndexedDbLocalStore.open(dbName)
+      const beforeOps = await reopened.getPendingOperations()
+      let invalidSnapshotRejected = false
+      try {
+        await reopened.replaceWorkspaceSnapshot('ws', [pageMeta], [
+          blocks[0],
+          block('bad-callout', 'callout', 'toggle', '000000000000000000000000000200', { type: 'eotionCallout', attrs: { icon: '💡', tone: 'unsupported' }, content: [{ type: 'text', text: 'Unsafe' }] }),
+        ] as any)
+      } catch { invalidSnapshotRejected = true }
+      let invalidAttrsRejected = false
+      try {
+        await reopened.upsertBlock(block('bad-callout', 'callout', null, '000000000000000000000000000200', { type: 'eotionCallout', attrs: { icon: '💡', tone: 'unsupported' }, content: [{ type: 'text', text: 'Unsafe' }] }) as any)
+      } catch { invalidAttrsRejected = true }
+      let childOwnerReplacementRejected = false
+      try {
+        const toggle = await reopened.getBlock('toggle')
+        await reopened.upsertBlock({
+          ...toggle!,
+          type: 'callout',
+          props: { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'Replacement' }] } },
+        } as any)
+      } catch { childOwnerReplacementRejected = true }
+      const saved = await reopened.listBlocksByPage('page')
+      const present = await reopened.hasWorkspaceSnapshot('ws')
+      const afterOps = await reopened.getPendingOperations()
+      reopened.close()
+      return {
+        present,
+        invalidSnapshotRejected,
+        invalidAttrsRejected,
+        childOwnerReplacementRejected,
+        noOperationsForRejectedWrites: afterOps.length === beforeOps.length,
+        saved: saved.map((item) => ({ id: item.id, type: item.type, parentBlockId: item.parentBlockId, props: item.props })).sort((left, right) => left.id.localeCompare(right.id)),
+      }
+    } finally { store.close() }
+  })
+  expect(result).toEqual({
+    present: true,
+    invalidSnapshotRejected: true,
+    invalidAttrsRejected: true,
+    childOwnerReplacementRejected: true,
+    noOperationsForRejectedWrites: true,
+    saved: [
+      { id: 'callout', type: 'callout', parentBlockId: 'toggle', props: { node: { type: 'eotionCallout', attrs: { icon: '📌', tone: 'info' }, content: [{ type: 'text', text: 'Stored child' }] } } },
+      { id: 'toggle', type: 'toggle', parentBlockId: null, props: { node: { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Summary' }] }] } } },
+    ],
+  })
+})
+
+test('code block language survives codec conversion, editing and reload', async ({ page }) => {
+  const code = {
+    id: 'code-language', pageId: 'page-a', workspaceId: workspace.id, parentBlockId: null, type: 'code', orderKey: '0000000000000001',
+    props: { node: { type: 'codeBlock', attrs: { language: 'typescript' }, content: [{ type: 'text', text: 'const before = 1' }] } },
+    createdAt: now, updatedAt: now,
+  } as BlockResponse
+  const api = await installApi(page, [code])
+  await page.goto('/#/app/ws-a/page/page-a')
+  await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/)
+  await expect(editor(page)).toBeVisible()
+  const codecResult = await page.evaluate(async (seed) => {
+    const { blocksToDocument, documentToBlocks } = await import('/src/editor/blockCodec.ts')
+    const document = blocksToDocument([seed])
+    const encoded = documentToBlocks(document, [seed], false)[0]
+    return { attrs: (encoded?.props as any)?.node?.attrs, text: (encoded?.props as any)?.node?.content?.[0]?.text }
+  }, code)
+  expect(codecResult).toEqual({ attrs: { language: 'typescript' }, text: 'const before = 1' })
+  const body = editor(page)
+  const codeBlock = body.locator('pre')
+  await expect(codeBlock).toContainText('const before = 1')
+  await codeBlock.click()
+  await page.keyboard.press('End')
+  await page.keyboard.type('; // edited')
+  await expect(codeBlock).toContainText('const before = 1; // edited')
+  await expect.poll(() => JSON.stringify(api.blocks.find((item) => item.id === code.id)?.props.node), { timeout: 5000 }).toContain('; // edited')
+  await expect.poll(() => JSON.stringify(api.blocks.find((item) => item.id === code.id)?.props.node), { timeout: 5000 }).toContain('"language":"typescript"')
+  await expect(body.locator('pre')).toContainText('; // edited')
+  await page.reload()
+  await expect(editor(page).locator('pre')).toContainText('const before = 1; // edited')
+  expect((api.blocks.find((item) => item.id === code.id)?.props.node as any).attrs).toEqual({ language: 'typescript' })
 })

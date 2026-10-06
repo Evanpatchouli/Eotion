@@ -1,6 +1,20 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { reconnectPending, type LocalStore, type StorageOperation } from './index.ts'
+import { reconnectPending, validateWorkspaceSnapshot, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from './index.ts'
+
+test('workspace snapshot preserves valid callout attributes and rejects malformed ones', () => {
+  const pages: LocalPageRecord[] = [{ id: 'page-1', workspaceId: 'workspace-1', parentPageId: null, title: 'Page', orderKey: 'a', updatedAt: '2026-01-01T00:00:00.000Z' }]
+  const block: LocalBlockRecord = {
+    id: 'block-1', workspaceId: 'workspace-1', pageId: 'page-1', parentBlockId: null,
+    type: 'callout', orderKey: 'a', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+    props: { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'note' }] } },
+  }
+  assert.doesNotThrow(() => validateWorkspaceSnapshot('workspace-1', pages, [block]))
+  assert.throws(() => validateWorkspaceSnapshot('workspace-1', pages, [{ ...block, props: { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'danger' } } } }]), /Invalid block attributes/)
+  assert.throws(() => validateWorkspaceSnapshot('workspace-1', pages, [{ ...block, props: { node: { type: 'eotionCallout', attrs: { blockId: 'block-1', icon: '💡', tone: 'neutral' } } } }]), /Invalid block attributes/)
+  const child: LocalBlockRecord = { ...block, id: 'child-1', type: 'paragraph', parentBlockId: 'block-1', props: { node: { type: 'paragraph' } } }
+  assert.throws(() => validateWorkspaceSnapshot('workspace-1', pages, [block, child]), /does not support child blocks/)
+})
 
 function operation(sequence: number): StorageOperation {
   return {

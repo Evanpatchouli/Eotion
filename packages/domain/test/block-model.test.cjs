@@ -14,6 +14,8 @@ const {
   blockTypeForNode,
   isAllowedChildBlockType,
   nodeTypeForBlock,
+  validateCalloutAttrs,
+  validateCalloutBlockProps,
 } = require('../dist/block-types.js')
 const {
   blockDepthMap,
@@ -58,12 +60,33 @@ test('only toggle owns child blocks today and every block type stays slash addre
   // The MCP write contract today only accepts these types.
   assert.deepEqual(
     BLOCK_TYPES.filter((type) => BLOCK_CAPABILITIES[type].mcp.writable),
-    ['paragraph', 'heading', 'bulleted-list', 'numbered-list', 'todo', 'quote', 'code', 'divider'],
+    ['paragraph', 'heading', 'bulleted-list', 'numbered-list', 'todo', 'quote', 'code', 'divider', 'callout'],
   )
   assert.ok(BLOCK_COMMANDS.length > 0)
   assert.equal(new Set(BLOCK_COMMANDS.map((command) => command.id)).size, BLOCK_COMMANDS.length)
   for (const command of BLOCK_COMMANDS) assert.ok(BLOCK_TYPES.includes(command.type), command.type)
   assert.ok(BLOCK_COMMANDS.some((command) => command.id === 'toggle' && command.type === 'toggle'))
+})
+
+test('callout is a writable inline leaf with strict icon and tone attributes', () => {
+  assert.equal(BLOCK_NODE_TYPES.callout, 'eotionCallout')
+  assert.deepEqual(EDITOR_NODE_RULES.eotionCallout.children, ['text', 'hardBreak'])
+  assert.equal(BLOCK_CAPABILITIES.callout.hasText, true)
+  assert.equal(BLOCK_CAPABILITIES.callout.allowsChildren, false)
+  assert.equal(BLOCK_CAPABILITIES.callout.mcp.readable, true)
+  assert.equal(BLOCK_CAPABILITIES.callout.mcp.writable, true)
+  assert.deepEqual(BLOCK_COMMANDS.find(({ id }) => id === 'callout'), {
+    id: 'callout', type: 'callout', label: '提示块', group: '块', icon: 'info', search: 'callout tip info',
+  })
+  for (const tone of ['neutral', 'info', 'warning']) assert.equal(validateCalloutAttrs({ icon: '💡', tone }), true)
+  for (const attrs of [null, {}, { icon: '', tone: 'info' }, { icon: 'x'.repeat(33), tone: 'info' },
+    { icon: 'bad\nicon', tone: 'info' }, { icon: '💡', tone: 'danger' }, { icon: '💡', tone: 'info', extra: true }]) {
+    assert.equal(validateCalloutAttrs(attrs), false)
+  }
+  assert.equal(validateCalloutBlockProps({ node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'note', marks: [{ type: 'bold' }] }, { type: 'hardBreak' }] } }), true)
+  assert.equal(validateCalloutBlockProps({ node: { type: 'eotionCallout', attrs: { blockId: 'b1', icon: '💡', tone: 'neutral' } } }), false)
+  assert.equal(validateCalloutBlockProps({ node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'danger' } } }), false)
+  assert.equal(validateCalloutBlockProps({ node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'paragraph' }] } }), false)
 })
 
 test('only child-owning parents accept the declared child types', () => {

@@ -269,6 +269,22 @@ test('server domain persists scoped records and creates the declared Mongo index
   }), /Workspace not found/)
   await assert.rejects(blocks.update(userB.id, workspaceA.id, root.id, blockRoot.id, { props: { text: 'stolen' } }), /Workspace not found/)
   assert.deepEqual((await blocks.list(userA.id, workspaceA.id, root.id)).map(({ id }) => id), ['block-first', 'block-root', 'block-child'])
+  const calloutProps = { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'note' }] } }
+  await assert.rejects(blocks.update(userA.id, workspaceA.id, root.id, blockRoot.id, {
+    type: 'callout', props: calloutProps,
+  }), /does not support its existing child blocks/)
+  assert.equal((await blocks.find(userA.id, workspaceA.id, root.id, blockRoot.id))?.type, 'toggle')
+  await assert.rejects(blocks.create(userA.id, workspaceA.id, root.id, {
+    id: 'invalid-callout', pageId: root.id, parentBlockId: null, type: 'callout', orderKey: 'c',
+    props: { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'danger' } } },
+  }), /Invalid block attributes/)
+  await assert.rejects(blocks.update(userA.id, workspaceA.id, root.id, 'block-first', { type: 'callout' }), /Invalid block attributes/)
+  assert.equal((await blocks.update(userA.id, workspaceA.id, root.id, 'block-first', { type: 'callout', props: calloutProps }))?.type, 'callout')
+  await assert.rejects(blocks.update(userA.id, workspaceA.id, root.id, 'block-first', {
+    props: { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'danger' } } },
+  }), /Invalid block attributes/)
+  assert.deepEqual((await blocks.find(userA.id, workspaceA.id, root.id, 'block-first'))?.props, calloutProps)
+  await blocks.update(userA.id, workspaceA.id, root.id, 'block-first', { type: 'paragraph', props: { text: 'first' } })
   await assert.rejects(
     blocks.create(userB.id, workspaceB.id, foreignPage.id, {
       id: blockRoot.id,

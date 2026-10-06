@@ -20,5 +20,6 @@ export function runBlockCommand(editor: Editor, command: BlockCommand, range?: {
     case 'horizontalRule': return chain.setHorizontalRule().run()
     // A toggle wraps the current block as its summary; Enter then creates children.
     case 'toggle': return chain.wrapIn('eotionToggle').run()
+    case 'callout': return chain.setNode('eotionCallout', { icon: '💡', tone: 'neutral' }).run()
   }
 }

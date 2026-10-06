@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BLOCK_NODE_TYPES, BLOCK_TYPES, EDITOR_NODE_NAMES, EDITOR_NODE_RULES, blockDepthMap, flattenBlockTree } from '@eotion/domain'
+import { BLOCK_NODE_TYPES, BLOCK_TYPES, EDITOR_NODE_NAMES, EDITOR_NODE_RULES, blockDepthMap, flattenBlockTree, isAllowedChildBlockType, validateBlockTree, validateCalloutAttrs } from '@eotion/domain'
 import type { PageRecord, ServerBlockRecord } from '../server-domain/types'
 
 const idSchema = z.string().trim().min(1).max(128)
@@ -45,6 +45,8 @@ export const McpBlockSchema = McpBlockBaseSchema.extend({
   name: z.string().optional(),
   mimeType: z.string().optional(),
   size: z.number().int().nonnegative().optional(),
+  icon: z.string().min(1).max(32).regex(/^[^\u0000-\u001f\u007f-\u009f]*$/u).optional(),
+  tone: z.enum(['neutral', 'info', 'warning']).optional(),
 })
 
 export const ListPagesOutputSchema = z.strictObject({ items: z.array(McpPageSummarySchema), nextCursor: z.string().nullable() })
@@ -104,6 +106,7 @@ function readNode(value: unknown, depth: number, counter: { nodes: number; textC
   if (rule.children === null && content !== undefined && content.length > 0) throw new Error('Unsupported block')
   if (type === 'heading' && cleanAttrs?.level !== undefined && ![1, 2, 3, 4, 5, 6].includes(Number(cleanAttrs.level))) throw new Error('Unsupported block')
   if (type === 'eotionTodo' && typeof cleanAttrs?.checked !== 'boolean') throw new Error('Unsupported block')
+  if (type === 'eotionCallout' && !validateCalloutAttrs(cleanAttrs)) throw new Error('Unsupported block')
   if (type === 'orderedList' && cleanAttrs?.type !== undefined && cleanAttrs.type !== null) throw new Error('Unsupported block')
   if (type === 'eotionImage' || type === 'eotionFile') {
     if (typeof cleanAttrs?.fileId !== 'string' || !cleanAttrs.fileId.trim() || cleanAttrs.fileId.length > 256
@@ -207,6 +210,10 @@ export function toMcpBlock(block: ServerBlockRecord, counter = { nodes: 0 }, dep
   const attrs = node.attrs ?? {}
   if (block.type === 'heading' && attrs.level !== undefined) dto.level = Number(attrs.level)
   if (block.type === 'todo') dto.checked = Boolean(attrs.checked)
+  if (block.type === 'callout') {
+    dto.icon = attrs.icon as string
+    dto.tone = attrs.tone as 'neutral' | 'info' | 'warning'
+  }
   if (block.type === 'code' && typeof attrs.language === 'string') dto.language = attrs.language
   if (block.type === 'numbered-list' && typeof attrs.start === 'number') dto.start = attrs.start
   if (block.type === 'image' || block.type === 'file') {
@@ -226,9 +233,19 @@ export function assertMcpResultSize<T>(result: T): T {
 
 export function toMcpBlocks(blocks: ServerBlockRecord[]): McpBlock[] {
   if (blocks.length > MAX_BLOCKS) throw new Error('Too many blocks')
+  try {
+    validateBlockTree(blocks)
+  } catch {
+    throw new Error('Unsupported block')
+  }
+  const byId = new Map(blocks.map((block) => [block.id, block]))
+  for (const block of blocks) {
+    if (block.parentBlockId === null || block.parentBlockId === undefined) continue
+    const parent = byId.get(block.parentBlockId)
+    if (!parent || !isAllowedChildBlockType(parent.type, block.type)) throw new Error('Unsupported block')
+  }
   const ordered = flattenBlockTree(blocks)
-  // Fail closed on a rootless parent cycle: a partial read must never look like
-  // a complete one.
+  // A partial read must never look like a complete page.
   if (ordered.length !== blocks.length) throw new Error('Unsupported block')
   const depths = blockDepthMap(blocks)
   const counter = { nodes: 0 }

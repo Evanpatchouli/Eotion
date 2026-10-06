@@ -550,6 +550,23 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
         restoreBlockSpy = undefined;
       }
 
+      blocks.listBounded = async () => [{
+        id: "orphan-block", workspaceId: "mcp-a-1", pageId: "mcp-page-a", parentBlockId: "missing-parent",
+        type: "paragraph", orderKey: "0000", createdAt: "now", updatedAt: "now",
+        props: { node: { type: "paragraph", content: [{ type: "text", text: "orphan content" }] } },
+      }];
+      restoreBlockSpy = () => { blocks.listBounded = originalBoundedBlocks; };
+      try {
+        const orphanPageRead = await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: "mcp-page-a" } });
+        assert.equal(orphanPageRead.isError, true);
+        assert.equal(orphanPageRead.structuredContent, undefined);
+        assertGenericError(orphanPageRead.content.flatMap((item) => item.type === "text" ? [item.text] : []).join("\n"));
+        assert.doesNotMatch(JSON.stringify(orphanPageRead.content), /orphan content|missing-parent/);
+      } finally {
+        restoreBlockSpy();
+        restoreBlockSpy = undefined;
+      }
+
       const clientB = await openClient(issuedB.body.token);
       try {
         const bPages = await clientB.callTool({ name: "eotion_list_pages", arguments: { workspaceId: "mcp-b-1" } });

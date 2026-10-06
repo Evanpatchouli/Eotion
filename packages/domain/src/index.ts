@@ -28,8 +28,11 @@ export {
   isMcpWritableBlockType,
   nodeTypeForBlock,
   slashCommands,
+  validateCalloutAttrs,
+  validateCalloutBlockProps,
+  validateBlockProps,
 } from './block-types'
-export type { BlockCapability, BlockCommandId, BlockCommandSpec, BlockType, EditorNodeRule } from './block-types'
+export type { BlockCapability, BlockCommandId, BlockCommandSpec, BlockType, CalloutTone, EditorNodeRule } from './block-types'
 export {
   blockDepthMap,
   buildBlockTree,

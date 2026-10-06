@@ -269,6 +269,37 @@ test("authenticated real sync transport applies durable SQLite operations idempo
       headers: { cookie: sessionCookie },
     })).status, 404);
 
+    // Callout follows the same durable block.upsert and snapshot path as text blocks.
+    const calloutId = `callout-${database}`;
+    const calloutProps = (text, tone = "neutral") => ({
+      node: { type: "eotionCallout", attrs: { icon: "💡", tone }, content: [{ type: "text", text }] },
+    });
+    const callout = {
+      ...localBlock(calloutId, workspaceId, pageId, ""),
+      type: "callout", orderKey: "c", props: calloutProps("first line"),
+    };
+    await store.upsertBlock(callout);
+    assert.deepEqual(await reconnectPending(store, transport), { synced: 1, failed: 0 });
+    assert.deepEqual((await client.sync.snapshot(workspaceId)).blocks.find(({ id }) => id === calloutId)?.props, callout.props);
+    await store.upsertBlock({ ...callout, props: calloutProps("updated\nline", "info") });
+    assert.deepEqual(await reconnectPending(store, transport), { synced: 1, failed: 0 });
+    assert.deepEqual((await client.sync.snapshot(workspaceId)).blocks.find(({ id }) => id === calloutId)?.props, calloutProps("updated\nline", "info"));
+    const invalidCalloutOperation = {
+      id: `invalid-callout-${database}`, clientId: beforeFailure.clientId,
+      sequence: 39, workspaceId, createdAt: new Date().toISOString(), kind: "block.upsert",
+      payload: { id: calloutId, pageId, parentBlockId: null, type: "callout", orderKey: "c", props: calloutProps("bad", "danger") },
+    };
+    const invalidCalloutResponse = await rawFetch(`${baseUrl}/api/sync/operations`, {
+      method: "POST", headers: { cookie: sessionCookie, "content-type": "application/json" },
+      body: JSON.stringify(invalidCalloutOperation),
+    });
+    assert.equal(invalidCalloutResponse.status, 400);
+    assert.equal(await receipts.countDocuments({ id: invalidCalloutOperation.id }), 0);
+    assert.deepEqual((await client.sync.snapshot(workspaceId)).blocks.find(({ id }) => id === calloutId)?.props, calloutProps("updated\nline", "info"));
+    await store.deleteBlock(workspaceId, calloutId);
+    assert.deepEqual(await reconnectPending(store, transport), { synced: 1, failed: 0 });
+    assert.equal((await client.sync.snapshot(workspaceId)).blocks.some(({ id }) => id === calloutId), false);
+
     // Canonical page.move must reuse PageService's tree invariants and commit
     // its receipt with the mutation. A rejected or missing page gets no receipt.
     const movePageId = `move-page-${database}`;

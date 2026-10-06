@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { SyncOperation } from '@eotion/contracts'
-import { isAllowedChildBlockType } from '@eotion/domain/block-types'
+import { isAllowedChildBlockType, validateBlockProps } from '@eotion/domain/block-types'
 import { parentRejection, parentRejectionMessage } from '@eotion/domain/block-tree'
 import { createLocalId, validateWorkspaceSnapshot, type FileCleanupTask, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
@@ -250,6 +250,7 @@ export class SqliteLocalStore implements LocalStore {
   }
 
   async upsertBlock(block: LocalBlockRecord): Promise<void> {
+    if (!validateBlockProps(block.type, block.props)) throw new Error('Invalid block attributes')
     this.transaction(() => {
       const pageRow = this.database.prepare('SELECT document FROM pages WHERE id = ?').get(block.pageId) as { document: string } | undefined
       const page = pageRow ? JSON.parse(pageRow.document) as LocalPageRecord : undefined
@@ -259,6 +260,13 @@ export class SqliteLocalStore implements LocalStore {
       const existing = existingRow ? JSON.parse(existingRow.document) as LocalBlockRecord : undefined
       if (existing && (existing.workspaceId !== block.workspaceId || existing.pageId !== block.pageId || (existing.parentBlockId ?? null) !== (block.parentBlockId ?? null))) {
         throw new Error(`Block ${block.id} workspace, page, and parent are immutable`)
+      }
+      if (existing && existing.type !== block.type) {
+        const rows = this.database.prepare('SELECT document FROM blocks WHERE page_id = ?').all(block.pageId) as { document: string }[]
+        if (rows.some(({ document }) => {
+          const child = JSON.parse(document) as LocalBlockRecord
+          return child.parentBlockId === block.id && !isAllowedChildBlockType(block.type, child.type)
+        })) throw new Error(`Block ${block.id} cannot become ${block.type} while it owns child blocks`)
       }
       if (block.parentBlockId) {
         const parentRow = this.database.prepare('SELECT document FROM blocks WHERE id = ?').get(block.parentBlockId) as { document: string } | undefined

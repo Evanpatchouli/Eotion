@@ -72,7 +72,7 @@ test('MCP mapper reads nested toggle blocks depth first and exposes parent ids',
   const summary = { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Summary' }] }] }
   const toggle = { ...block('toggle', summary, 'block-toggle'), orderKey: 'a' }
   const root = { ...block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Root' }] }, 'block-root'), orderKey: 'a' }
-  const child = { ...block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Child' }] }, 'block-child'), parentBlockId: 'block-toggle', orderKey: 'b' }
+  const child = { ...block('toggle', { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Child' }] }] }, 'block-child'), parentBlockId: 'block-toggle', orderKey: 'b' }
   const grandchild = { ...block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Grandchild' }] }, 'block-grandchild'), parentBlockId: 'block-child', orderKey: 'a' }
 
   // Deliberately shuffled: descendants arrive before their parents.
@@ -90,6 +90,33 @@ test('MCP mapper fails closed on a rootless parent cycle instead of returning a 
   const first = { ...block('paragraph', { type: 'paragraph' }, 'cycle-a'), parentBlockId: 'cycle-b' }
   const second = { ...block('paragraph', { type: 'paragraph' }, 'cycle-b'), parentBlockId: 'cycle-a' }
   assert.throws(() => toMcpBlocks([first, second]), /Unsupported block/)
+})
+
+test('MCP mapper fails closed when a block refers to a missing parent', () => {
+  const orphan = { ...block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'orphan' }] }, 'orphan'), parentBlockId: 'missing-parent' }
+  assert.throws(() => toMcpBlocks([orphan]), /Unsupported block/)
+})
+
+test('MCP mapper rejects a child attached to a leaf callout', () => {
+  const parent = block('callout', { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'parent' }] }, 'callout-parent')
+  const child = { ...block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'child' }] }, 'paragraph-child'), parentBlockId: parent.id }
+  assert.throws(() => toMcpBlocks([parent, child]), /Unsupported block/)
+})
+
+test('MCP callout read exposes only stable icon, tone and plain text', () => {
+  const callout = block('callout', {
+    type: 'eotionCallout', attrs: { icon: '💡', tone: 'info' },
+    content: [{ type: 'text', text: 'first' }, { type: 'hardBreak' }, { type: 'text', text: 'second' }],
+  })
+  const dto = toMcpBlock(callout)
+  assert.deepEqual(dto, { id: callout.id, type: 'callout', text: 'first\nsecond', icon: '💡', tone: 'info', parentBlockId: null, depth: 0 })
+  assert.equal(GetPageOutputSchema.safeParse({ ...toMcpPageSummary(page), blocks: [dto] }).success, true)
+  assert.doesNotMatch(JSON.stringify(dto), /attrs|content|node|props|marks/)
+  for (const attrs of [
+    undefined, {}, { icon: '', tone: 'info' }, { icon: 'x'.repeat(33), tone: 'info' },
+    { icon: 'x\n', tone: 'info' }, { icon: 'x', tone: 'danger' }, { icon: 'x', tone: 'info', private: true },
+  ]) assert.throws(() => toMcpBlock(block('callout', { type: 'eotionCallout', ...(attrs === undefined ? {} : { attrs }) })), /Unsupported block/)
+  assert.throws(() => toMcpBlock(block('callout', { type: 'eotionCallout', attrs: { icon: 'x', tone: 'neutral' }, content: [{ type: 'paragraph' }] })), /Unsupported block/)
 })
 
 test('MCP mapper accepts the depth and cumulative node limits, then rejects the next level or node', () => {

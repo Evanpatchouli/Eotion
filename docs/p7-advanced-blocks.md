@@ -1,20 +1,20 @@
 # P7 Advanced Blocks
 
-P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。本轮只落在 P7.1 Block Model Foundation：把 Block 类型/能力与嵌套树不变量收敛到 domain 的单一来源，并把它接入已有的 sync、local-first、编辑器与 MCP 链路。本页记录已完成的实现与验证命令，最终验收由主 Agent 判定。
+P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1 已 PASS；本轮只做 P7.2 Rich Blocks：在统一 registry 与既有 local-first/sync 链路增加 Callout，并收敛安全读取与富文本属性保真。本页记录已完成的实现与验证命令，最终验收由主 Agent 判定。
 
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
-| P7.1 Block Model Foundation | block registry、block tree invariant、move/reparent、snapshot 校验、Toggle 验证 | 本阶段完成 |
-| P7.2 Rich Blocks | Callout 等更丰富区块 | 待开始 |
-| P7.3 Nested Blocks UX | 拖拽嵌套、Tab/Shift+Tab 缩进、更完整键盘语义 | 待开始 |
-| P7.4 Table | Table 区块 | 待开始 |
-| P7.5 Advanced Blocks Acceptance | 最终验收 | 待开始 |
+| P7.1 Block Model Foundation | block registry、block tree invariant、move/reparent、snapshot 校验、Toggle 验证 | PASS |
+| P7.2 Rich Blocks | Callout 与现有 Rich Block 保真收敛 | current（验证中） |
+| P7.3 Nested Blocks UX | 拖拽嵌套、Tab/Shift+Tab 缩进、更完整键盘语义 | not started |
+| P7.4 Table | Table 区块 | not started |
+| P7.5 Advanced Blocks Acceptance | 最终验收 | not started |
 
 ## P7.1 Block model 收敛
 
 `packages/domain/src/block-types.ts` 现在是 Block 类型与能力的唯一来源，包含：
 
-- `BLOCK_TYPES`：paragraph、heading、bulleted-list、numbered-list、todo、quote、code、image、file、divider、toggle。
+- `BLOCK_TYPES`：paragraph、heading、bulleted-list、numbered-list、todo、quote、code、image、file、divider、toggle、callout。
 - `BLOCK_NODE_TYPES`：block type 与 editor node 名称的映射，例如 toggle ↔ `eotionToggle`。
 - `BLOCK_CAPABILITIES`：`hasText`、`allowsChildren`、`allowedChildTypes`、`slash`、`mcp.readable`、`mcp.writable`、`attachment`。
 - `EDITOR_NODE_RULES`：节点级 attrs 与 allowed children，含 text、hardBreak、listItem。
@@ -82,21 +82,32 @@ P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。本轮只落
 - `mcp-read.contract.ts` 不再因 `parentBlockId` 抛错；读取结果按深度优先排序，并为每个 block 增加可选字段 `parentBlockId` 与 `depth`（加性扩展，旧消费者不受影响）；toggle 的 text 取其 summary 段落。
 - MCP write 契约不含 toggle（`BLOCK_CAPABILITIES.toggle.mcp.writable === false`）；document mutation 遇到嵌套页面仍显式拒绝替换，P6 行为不变。
 
+## P7.2 Rich Blocks
+
+- Callout（`eotionCallout`）是单块 inline rich-text 正文，attrs 为 `icon` 与 `tone`（neutral / info / warning）；默认 💡 / neutral。它不拥有 child blocks，可作为 Toggle 的 child，关系仍由 `parentBlockId` 表达。
+- Slash「提示块」创建；正文保留现有 marks/link/hardBreak，icon/tone 使用紧凑控件编辑。视觉复用 Quiet Studio；非空块 Enter 保留前段 Callout 并进入普通段落，空块 Enter 转段落；Shift+Enter 换行，块首 Backspace 转为普通段落。
+- 五张 registry 表统一注册，类型 enum 自动进入 contracts/server；白名单与值校验共用 domain validator。LocalStore / server 改型拒绝不兼容的已有 children，snapshot / MCP 同样拒绝 leaf parent。Block ID、sibling orderKey 与 parentBlockId 沿用既有 codec/persistence，复用 create/update/move，无新 sync operation。
+- MCP 现有 read/write 工具兼容 Callout，DTO 仅暴露 text/icon/tone，不暴露 Tiptap AST；显式正文重写沿用 P6 纯文本语义，未提供 blocks 的标题更新保留富文本；nested document replacement 仍保持 P6 限制。缺失 parent 的 MCP read conversion / get_page fail-closed，不将 child 提升为 root。
+- 本轮不新增第二类型：details 与 Toggle 重复；bookmark 的 URL/标题/元数据需要独立需求定义。补现有 code language 属性保真回归，不为数量新增区块。
+- 限制：Callout 不含子块或附件，不提供复杂主题、URL 预览、语法高亮；P7.3–P7.5 未开始。共享 Web renderer 覆盖 Desktop 与 Mobile layout，真实设备输入法/原生宿主验收不由本轮浏览器回归替代。
 ## 测试与验证
 
 - packages/domain：新增 `test/block-model.test.cjs`，覆盖注册表一致性、树重建顺序、self / missing / cross-page / cycle / 重复 id 拒绝、删除顺序、按组分配 orderKey、child 类型白名单。
 - apps/web：新增 `tests/product-blocks.spec.ts`（已加入 `test:product`），覆盖 toggle 创建 / 嵌套 / reload / 折叠 / 清理流程、嵌套编辑后的 block 身份稳定、IndexedDB `moveBlock` 与父类型 invariant、blockCodec 嵌套 round-trip、leaf 节点不被注入 content、不可达环拒绝加载、summary 归一化。
 - apps/api：`server-domain.test.ts` 增加 move 与 parent 类型 invariant；`mcp-read.contract.test.ts` 增加 nested 深度优先读取与不可达环 fail-closed。
 
+P7.2 补充回归：Callout codec/marks/attrs、IndexedDB 与真实 Electron SQLite snapshot/重启、真实 HTTP sync create/update/delete、MCP create/update/read、orphan / leaf parent 拒绝、slash、键盘 split/退出/清空、移动 Touch Toolbar、桌面 Bubble Menu，以及 code language 编辑/reload 保真。开发服务器测试只中断 API 以验证离线数据恢复；既有生产 offline shell 验收边界不变。
 验证命令：
 
 ```bash
 pnpm --filter @eotion/domain test
 pnpm --filter @eotion/storage test
+pnpm --filter @eotion/contracts test
 pnpm typecheck
 pnpm build:web
 pnpm build:api
 pnpm --filter @eotion/api test:domain
+pnpm --filter @eotion/api test:http
 pnpm --filter @eotion/api test:mcp
 pnpm --filter @eotion/web run test:product
 pnpm --filter @eotion/web run test:storage

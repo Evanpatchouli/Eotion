@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
-import { isAllowedChildBlockType, parentRejection, parentRejectionMessage } from '@eotion/domain'
+import { BLOCK_TYPES, blockCapability, isAllowedChildBlockType, parentRejection, parentRejectionMessage, validateBlockProps } from '@eotion/domain'
 import type { ServerBlockRecord } from '../types'
 import type { ClientSession, Connection } from 'mongoose'
 
@@ -23,6 +23,7 @@ export class BlockService {
   async create(userId: string, workspaceId: string, pageId: string, input: BlockCreate, session?: ClientSession): Promise<ServerBlockRecord> {
     await this.permissions.assertCanWrite(userId, workspaceId)
     if (input.pageId !== pageId) throw new BadRequestException('Block pageId does not match the target page')
+    if (!validateBlockProps(input.type, input.props)) throw new BadRequestException('Invalid block attributes')
     if (!session && !(await supportsTransactions(this.connection))) {
       if (!(await this.pages.findInWorkspace(workspaceId, pageId))) throw new NotFoundException('Page not found in workspace')
       const parentBlockId = input.parentBlockId ?? null
@@ -91,6 +92,26 @@ export class BlockService {
     }
     const page = await this.pages.findInWorkspace(workspaceId, pageId, session)
     if (!page) return null
+    const existing = await this.blocks.findInWorkspace(workspaceId, id, session)
+    if (!existing || existing.pageId !== pageId) return null
+    if (!validateBlockProps(patch.type ?? existing.type, patch.props ?? existing.props)) {
+      throw new BadRequestException('Invalid block attributes')
+    }
+    const targetType = patch.type
+    if (targetType !== undefined && targetType !== existing.type) {
+      const capability = blockCapability(targetType)
+      if (!capability.allowsChildren) {
+        if (await this.blocks.hasChildren(workspaceId, pageId, id, session)) {
+          throw new BadRequestException('Block type does not support its existing child blocks')
+        }
+      } else if (!BLOCK_TYPES.every((type) => capability.allowedChildTypes.includes(type))) {
+        const children = (await this.blocks.listByPage(workspaceId, pageId, undefined, session))
+          .filter((block) => block.parentBlockId === id)
+        if (children.some((child) => !isAllowedChildBlockType(targetType, child.type))) {
+          throw new BadRequestException('Block type does not support its existing child blocks')
+        }
+      }
+    }
     const updated = await this.blocks.updateInWorkspace(workspaceId, pageId, id, patch, session)
     if (updated && !(await this.pages.touchStructure(workspaceId, pageId, session))) throw new NotFoundException('Page not found in workspace')
     return updated

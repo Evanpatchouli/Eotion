@@ -55,6 +55,50 @@ test('writable block schemas enforce content limits and block-specific attribute
   assert.equal(create({ type: 'paragraph', text: 'x', extra: true }), false)
 })
 
+test('callout write accepts only stable icon, tone and plain text', () => {
+  const base = { workspaceId: 'w', title: 'p', idempotencyKey: 'k' }
+  const parseCreate = (value: unknown) => CreatePageInputSchema.safeParse({ ...base, blocks: [value] })
+  const parsed = parseCreate({ type: 'callout', text: 'line one\nline two' })
+  assert.equal(parsed.success, true)
+  if (parsed.success) assert.deepEqual(parsed.data.blocks[0], { type: 'callout', text: 'line one\nline two', icon: '💡', tone: 'neutral' })
+  assert.equal(parseCreate({ type: 'callout', text: 'x', icon: '⚠️', tone: 'warning' }).success, true)
+  const update = (value: unknown) => UpdatePageInputSchema.safeParse({ pageId: 'p', expectedUpdatedAt: '2026-10-06T12:00:00.000Z', idempotencyKey: 'k', blocks: [value] }).success
+  assert.equal(update({ type: 'callout', id: 'b', text: '', icon: 'i', tone: 'info' }), true)
+  for (const value of [
+    { type: 'callout', text: 'x', icon: '' },
+    { type: 'callout', text: 'x', icon: 'x'.repeat(33) },
+    { type: 'callout', text: 'x', icon: 'x\n' },
+    { type: 'callout', text: 'x', tone: 'danger' },
+    { type: 'callout', text: 'x', attrs: { icon: 'x', tone: 'info' } },
+    { type: 'callout', text: 'x', content: [{ type: 'text', text: 'x' }] },
+    { type: 'callout', text: 'x', parentBlockId: 'parent' },
+  ]) {
+    assert.equal(parseCreate(value).success, false)
+    assert.equal(update(value), false)
+  }
+})
+
+test('callout write converts to the editor node and reads back through the stable DTO', () => {
+  const parsed = CreatePageInputSchema.parse({
+    workspaceId: 'w', title: 'p', idempotencyKey: 'k',
+    blocks: [{ type: 'callout', icon: '⚠️', tone: 'warning', text: 'first\nsecond' }],
+  })
+  const [mapped] = toDocumentBlocks(parsed.blocks)
+  assert.deepEqual(mapped, {
+    type: 'callout', props: { node: {
+      type: 'eotionCallout', attrs: { icon: '⚠️', tone: 'warning' },
+      content: [{ type: 'text', text: 'first' }, { type: 'hardBreak' }, { type: 'text', text: 'second' }],
+    } },
+  })
+  const record: ServerBlockRecord = {
+    id: 'b', workspaceId: 'w', pageId: 'p', parentBlockId: null, type: 'callout',
+    orderKey: 'a', createdAt: 'now', updatedAt: 'now', props: mapped!.props,
+  }
+  assert.deepEqual(toMcpBlock(record), {
+    id: 'b', type: 'callout', text: 'first\nsecond', icon: '⚠️', tone: 'warning', parentBlockId: null, depth: 0,
+  })
+})
+
 test('write mapper makes TipTap JSON at the boundary and preserves structural list and quote data', () => {
   const createInput = CreatePageInputSchema.parse({
     workspaceId: 'workspace-1', title: 'Page', idempotencyKey: 'key',

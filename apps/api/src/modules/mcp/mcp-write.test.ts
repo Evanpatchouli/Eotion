@@ -258,6 +258,29 @@ test("MCP write tools persist bounded page mutations atomically and enforce docu
     const conflictingCreate = { ...createInput, title: "different payload with same key" };
     expectToolFailure(await clientA.callTool({ name: "eotion_create_page", arguments: conflictingCreate }), /idempot|key|different|conflict/i);
 
+    const calloutCreateInput = {
+      workspaceId: "mcp-write-a-one", title: "MCP callout roundtrip", idempotencyKey: `mcp-callout-create-${randomUUID()}`,
+      blocks: [{ type: "callout", text: "first\nsecond" }],
+    };
+    const calloutCreated = expectToolSuccess(await clientA.callTool({ name: "eotion_create_page", arguments: calloutCreateInput }));
+    assert.equal(calloutCreated.blocks.length, 1);
+    const calloutBlockId = calloutCreated.blocks[0].id as string;
+    assert.deepEqual(calloutCreated.blocks[0], {
+      id: calloutBlockId, type: "callout", text: "first\nsecond", icon: "💡", tone: "neutral", parentBlockId: null, depth: 0,
+    });
+    assert.deepEqual(expectToolSuccess(await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: calloutCreated.id } })), calloutCreated);
+    assert.deepEqual(expectToolSuccess(await clientA.callTool({ name: "eotion_create_page", arguments: calloutCreateInput })), calloutCreated);
+    const calloutUpdateInput = {
+      pageId: calloutCreated.id, expectedUpdatedAt: calloutCreated.updatedAt, idempotencyKey: `mcp-callout-update-${randomUUID()}`,
+      blocks: [{ id: calloutBlockId, type: "callout", text: "updated callout", icon: "⚠️", tone: "warning" }],
+    };
+    const calloutUpdated = expectToolSuccess(await clientA.callTool({ name: "eotion_update_page", arguments: calloutUpdateInput }));
+    assert.deepEqual(calloutUpdated.blocks, [{
+      id: calloutBlockId, type: "callout", text: "updated callout", icon: "⚠️", tone: "warning", parentBlockId: null, depth: 0,
+    }]);
+    assert.deepEqual(expectToolSuccess(await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: calloutCreated.id } })), calloutUpdated);
+    assert.deepEqual(expectToolSuccess(await clientA.callTool({ name: "eotion_update_page", arguments: calloutUpdateInput })), calloutUpdated);
+
     const twoPages = await Promise.all([
       clientA.callTool({ name: "eotion_create_page", arguments: { ...createInput, idempotencyKey: `mcp-concurrent-${randomUUID()}` } }),
       clientA.callTool({ name: "eotion_create_page", arguments: { ...createInput, idempotencyKey: `mcp-concurrent-${randomUUID()}` } }),

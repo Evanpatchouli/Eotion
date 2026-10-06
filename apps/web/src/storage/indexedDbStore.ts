@@ -1,5 +1,5 @@
 import type { SyncOperation } from '@eotion/contracts'
-import { isAllowedChildBlockType } from '@eotion/domain/block-types'
+import { isAllowedChildBlockType, validateBlockProps } from '@eotion/domain/block-types'
 import { parentRejection, parentRejectionMessage } from '@eotion/domain/block-tree'
 import { createLocalId, validateWorkspaceSnapshot, type FileCleanupTask, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
@@ -248,6 +248,7 @@ export class IndexedDbLocalStore implements LocalStore {
   }
 
   upsertBlock(block: LocalBlockRecord): Promise<void> {
+    if (!validateBlockProps(block.type, block.props)) return Promise.reject(new Error('Invalid block attributes'))
     const { id, pageId, parentBlockId, type, orderKey, props } = block
     return this.mutate(block.workspaceId, 'block.upsert', {
       id, pageId, parentBlockId: parentBlockId ?? null, type, orderKey, props,
@@ -261,6 +262,12 @@ export class IndexedDbLocalStore implements LocalStore {
       const existing = await request<LocalBlockRecord | undefined>(blocks.get(id))
       if (existing && (existing.workspaceId !== block.workspaceId || existing.pageId !== pageId || (existing.parentBlockId ?? null) !== (parentBlockId ?? null))) {
         throw new Error(`Block ${id} workspace, page, and parent are immutable`)
+      }
+      if (existing && existing.type !== type) {
+        const pageBlocks = await request<LocalBlockRecord[]>(blocks.index('pageId').getAll(pageId))
+        if (pageBlocks.some((child) => child.parentBlockId === id && !isAllowedChildBlockType(type, child.type))) {
+          throw new Error(`Block ${id} cannot become ${type} while it owns child blocks`)
+        }
       }
       const oldFileId = existing ? getAttachmentFileId(existing) : undefined
       const newFileId = getAttachmentFileId(block)

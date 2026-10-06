@@ -1,5 +1,6 @@
 import type { BlockRecord, PageSummary } from '@eotion/domain'
 import { validateBlockTree } from '@eotion/domain/block-tree'
+import { isAllowedChildBlockType, validateBlockProps } from '@eotion/domain/block-types'
 import type { SyncOperation } from '@eotion/contracts'
 
 export { createLocalId } from './id.ts'
@@ -96,11 +97,16 @@ export function validateWorkspaceSnapshot(workspaceId: string, pages: LocalPageR
     if (!block.id || block.workspaceId !== workspaceId || blockById.has(block.id) || !pageById.has(block.pageId)) {
       throw new Error('Invalid workspace block snapshot')
     }
+    if (!validateBlockProps(block.type, block.props)) throw new Error('Invalid block attributes in workspace snapshot')
     blockById.set(block.id, block)
   }
   // Self-parent, missing parent, cross-page parent and cycles share one
   // implementation with the local stores and the server domain.
   validateBlockTree(blocks)
+  for (const block of blocks) {
+    const parent = block.parentBlockId ? blockById.get(block.parentBlockId) : undefined
+    if (parent && !isAllowedChildBlockType(parent.type, block.type)) throw new Error('Parent block type does not support child blocks in workspace snapshot')
+  }
 }
 
 /** Sends one canonical operation; adapters retain the stable id for retries. */

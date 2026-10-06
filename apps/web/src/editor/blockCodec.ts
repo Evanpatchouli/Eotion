@@ -1,6 +1,6 @@
 import type { BlockCreateRequest, BlockResponse } from '@eotion/contracts'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
-import { blockCapability, blockTypeForNode, editorNodeRule, isAttachmentBlockType, nodeTypeForBlock } from '@eotion/domain/block-types'
+import { blockCapability, blockTypeForNode, editorNodeRule, isAttachmentBlockType, nodeTypeForBlock, validateCalloutAttrs } from '@eotion/domain/block-types'
 import type { JSONContent } from '@tiptap/core'
 import type { EditorDocument } from './editorDocument'
 import { isSafeLinkHref } from './link'
@@ -37,6 +37,10 @@ function validNode(node: JSONContent): boolean {
     if (type === 'eotionImage' && !SAFE_IMAGE_MIME_TYPES.includes(String(attrs.mimeType) as typeof SAFE_IMAGE_MIME_TYPES[number])) return false
   }
   if (type === 'eotionTodo' && typeof node.attrs?.checked !== 'boolean') return false
+  if (type === 'eotionCallout') {
+    const { blockId: _blockId, ...attrs } = node.attrs ?? {}
+    if (!validateCalloutAttrs(attrs)) return false
+  }
   if (type === 'heading' && node.attrs?.level !== undefined && ![1, 2, 3, 4, 5, 6].includes(node.attrs.level)) return false
   // Tiptap 3 includes a null marker style on ordinary numbered lists.
   if (type === 'orderedList' && node.attrs?.type !== undefined && node.attrs.type !== null) return false

@@ -774,6 +774,12 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
     assert.equal(otherPage.status, 201);
     assert.equal((await request(baseUrl, "/api/workspaces/ws-owner/pages/page-block-other/blocks/block-owner", "DELETE", { cookie: cookieA })).status, 404);
     assert.equal((await request(baseUrl, blockRoute, "GET", { cookie: cookieA })).status, 200);
+    const makeToggleParent = await request(baseUrl, blockRoute, "PATCH", {
+      cookie: cookieA,
+      body: { type: "toggle", props: { node: { type: "eotionToggle", content: [{ type: "paragraph", content: [{ type: "text", text: "updated" }] }] } } },
+    });
+    assert.equal(makeToggleParent.status, 200);
+    assert.equal(makeToggleParent.body.type, "toggle");
     const childBlock = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/blocks", "POST", {
       cookie: cookieA,
       body: { id: "block-delete-child", parentBlockId: "block-owner", type: "paragraph", orderKey: "b", props: {} },

@@ -4,6 +4,8 @@ const idSchema = z.string().trim().min(1).max(128)
 const titleSchema = z.string().trim().min(1).max(200)
 const textSchema = z.string().max(100_000)
 const languageSchema = z.string().max(128)
+const calloutIconSchema = z.string().min(1).max(32).regex(/^[^\u0000-\u001f\u007f-\u009f]*$/u)
+const calloutToneSchema = z.enum(['neutral', 'info', 'warning'])
 const listItemsSchema = z.array(textSchema).min(1).max(1000)
 
 const CreateBlockSchema = z.discriminatedUnion('type', [
@@ -11,6 +13,7 @@ const CreateBlockSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('heading'), text: textSchema, level: z.number().int().min(1).max(6) }),
   z.strictObject({ type: z.literal('todo'), text: textSchema, checked: z.boolean() }),
   z.strictObject({ type: z.literal('code'), text: textSchema, language: languageSchema.optional() }),
+  z.strictObject({ type: z.literal('callout'), text: textSchema, icon: calloutIconSchema.default('💡'), tone: calloutToneSchema.default('neutral') }),
   z.strictObject({ type: z.literal('divider'), text: z.literal('').optional() }),
   z.strictObject({ type: z.literal('bulleted-list'), items: listItemsSchema, text: textSchema.optional() }),
   z.strictObject({ type: z.literal('numbered-list'), items: listItemsSchema, start: z.number().int().safe().positive().optional(), text: textSchema.optional() }),
@@ -23,6 +26,7 @@ const UpdateBlockSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('heading'), id: idSchema.optional(), text: textSchema, level: z.number().int().min(1).max(6) }),
   z.strictObject({ type: z.literal('todo'), id: idSchema.optional(), text: textSchema, checked: z.boolean() }),
   z.strictObject({ type: z.literal('code'), id: idSchema.optional(), text: textSchema, language: languageSchema.optional() }),
+  z.strictObject({ type: z.literal('callout'), id: idSchema.optional(), text: textSchema, icon: calloutIconSchema.default('💡'), tone: calloutToneSchema.default('neutral') }),
   z.strictObject({ type: z.literal('divider'), id: idSchema.optional(), text: z.literal('').optional() }),
   z.strictObject({ type: z.literal('bulleted-list'), id: idSchema.optional(), items: listItemsSchema, text: textSchema.optional() }),
   z.strictObject({ type: z.literal('numbered-list'), id: idSchema.optional(), items: listItemsSchema, start: z.number().int().safe().positive().optional(), text: textSchema.optional() }),

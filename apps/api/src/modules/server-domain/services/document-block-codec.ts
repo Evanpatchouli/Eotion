@@ -3,7 +3,8 @@ import type { ServerBlockRecord } from '../types'
 type TextBlock = { type: 'paragraph' | 'heading' | 'todo' | 'code'; text: string; id?: string; level?: number; checked?: boolean; language?: string }
 type ListBlock = { type: 'bulleted-list' | 'numbered-list'; items: string[]; text?: string; id?: string; start?: number }
 type QuoteBlock = { type: 'quote'; paragraphs?: string[]; text?: string; id?: string }
-export type DocumentBlockDto = TextBlock | ListBlock | QuoteBlock | { type: 'divider'; id?: string }
+type CalloutBlock = { type: 'callout'; text: string; icon: string; tone: 'neutral' | 'info' | 'warning'; id?: string }
+export type DocumentBlockDto = TextBlock | ListBlock | QuoteBlock | CalloutBlock | { type: 'divider'; id?: string }
 export type DocumentBlockInput = Pick<ServerBlockRecord, 'type' | 'props'> & { id?: string }
 
 function textContent(text: string, preserveNewlines = false): Record<string, unknown>[] {
@@ -20,6 +21,7 @@ function toNode(block: DocumentBlockDto): Record<string, unknown> {
     case 'heading': return { type: 'heading', attrs: { level: block.level }, content: textContent(block.text) }
     case 'todo': return { type: 'eotionTodo', attrs: { checked: block.checked }, content: textContent(block.text) }
     case 'code': return { type: 'codeBlock', ...(block.language === undefined ? {} : { attrs: { language: block.language } }), content: textContent(block.text, true) }
+    case 'callout': return { type: 'eotionCallout', attrs: { icon: block.icon, tone: block.tone }, content: textContent(block.text) }
     case 'divider': return { type: 'horizontalRule' }
     case 'bulleted-list':
     case 'numbered-list': {
