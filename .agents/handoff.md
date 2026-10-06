@@ -1,5 +1,25 @@
 # Handoff
 
+## 2026-10-11 P7.5 Advanced Blocks 验收完成（P7 COMPLETE）
+
+P7.1–P7.5 全部 PASS，**P7 Advanced Blocks COMPLETE**。本轮只做验收（不新增 Block、不开始 Database），基线 `84f5c0d`，验收记录见 `docs/p7-advanced-blocks.md` 的「P7.5 Advanced Blocks Final Acceptance」。
+
+验收：新增 `apps/web/tests/product-p75-acceptance.spec.ts`（混合文档创建→编辑→缩进/重排→reload→浏览器进程重启→offline→reconnect→push/pull，含 ID/parent/orderKey 与 orphan/cycle 检查；旧 P5/P6 页面兼容）。`test:product` 211/211（`--workers=1`）、`test:storage` 11/11（含 Electron SQLite）、domain 17/17、contracts 6/6、storage 7/7、API domain 2/2、HTTP 24/24、MCP 25/25、typecheck/build:web/build:api、`git diff --check` 通过；`test:visual` 6/7，唯一失败仍是既有 `Connectivity backend unavailable desktop` 基线差异（21748 px，ratio 0.02），不更新基线。
+
+独立只读 review 报 2 个 BLOCKER，均已修复并补回归：
+
+1. 编辑器可产出 codec/domain 拒绝的结构（粘贴 `<ul><li><p>a</p><h2>b</h2></li></ul>`、`<blockquote><table>…` 或在 listItem 内用 `# ` input rule）→ 整页永久无法保存。修复：`apps/web/src/editor/contentRules.ts` 用 domain `EDITOR_NODE_RULES` 派生 `listItem`/`blockquote` 的 ProseMirror content，`useDocumentEditor` 关闭 StarterKit 对应节点；放不进容器的粘贴内容被提升到最近合法祖先，内容不丢。
+2. 属性维度同类漏洞：`<ol type="A">`、`<ol start="abc">`、非法 cell span、HTML 注入 `blockId`。修复：`EotionOrderedList`（type 固定 null、start 归一化为正安全整数）、`tableNodes` cell span 归一化与 colwidth 不解析、`blockIdentity` 的 `blockId` `parseHTML: () => null`。回归 `product-content-rules.spec.ts`。
+
+另外修复：P7.3 回归「Toggle 子块内 slash 折叠列表静默无效」（`isBlockCommandRangeSafe` 把包住选区的父 toggle 误判为被吞掉的 child owner）；测试环境「Vite watcher 因 Playwright 临时目录 EBUSY 崩掉 `pnpm dev`」（`vite.config.ts` 的 `server.watch.ignored`）。
+
+已知限制（不阻塞，详见 P7 文档第 9 节）：Toggle summary 位置仍可放 list/quote/table，MCP `get_page` 只读 summary 内联文本因而读不到其中的 table rows / callout attrs；服务端 `validateBlockProps` 只类型化校验 callout/table，其他类型读路径仍 fail-closed；5,000 块连续输入仍是既有 O(N)/docChanged（基线约 112 ms/字符，本轮约 119 ms/字符）；真实设备输入法与原生宿主验收仍不由浏览器回归替代。运行 `test:storage` 前需清除 `ELECTRON_RUN_AS_NODE`。
+
+环境：本轮在 `apps/web/package.json` 新增 `@tiptap/extension-blockquote@3.31.3` 与 `@tiptap/extension-list@3.31.3`（starter-kit 已依赖的同版本），新增依赖后需重启 `pnpm dev`。
+
+下一步：P7 已封板，不开始 Database / Property / View / Relation 等下一阶段，等待用户指令。
+
+
 ## 2026-10-07 P7.3 Nested Blocks UX 完成
 
 P7.3 已 PASS。Tab/Shift+Tab 缩进、拖拽嵌套、slash 上下文过滤、移动端缩进/反缩进、child attachment 顶层边界、hardBreak+marks 一致性全部落地，并走既有 moveBlock → block.move → LocalStore → sync。核心文件：apps/web/src/editor/nestedBlockInteractions.ts（单 PM transaction 移动整棵子树，MAX_BLOCK_DEPTH=8，`Decoration.node` 高亮不改正文 DOM）、apps/web/src/editor/blockCommandContext.ts（以 registry / allowedChildTypes / EDITOR_NODE_RULES 过滤 slash 与附件）、packages/domain/src/order.ts（LIS 保留旧 key、只给移动块补 gap）。

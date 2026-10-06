@@ -93,9 +93,15 @@ export function isBlockCommandRangeSafe(editor: Editor, commandId: BlockCommandI
   const command = slashCommands().find((item) => item.id === commandId)
   if (!command || !blockCapability(command.type).allowsChildren) return true
   let containsChildOwner = false
-  editor.state.doc.nodesBetween(from, to, (node) => {
+  editor.state.doc.nodesBetween(from, to, (node, position) => {
     const type = blockTypeForNode(node.type.name)
-    if (type && blockCapability(type).allowsChildren) containsChildOwner = true
+    if (!type || !blockCapability(type).allowsChildren) return
+    // `nodesBetween` also reports the container that merely encloses the range.
+    // A toggle wrapped around the position is not swallowed content, so only a
+    // child owner strictly contained by the transformed range may block it;
+    // otherwise a slash inside a toggle could never create a nested toggle.
+    if (position < from && position + node.nodeSize > to) return
+    containsChildOwner = true
   })
   if (containsChildOwner) return false
 

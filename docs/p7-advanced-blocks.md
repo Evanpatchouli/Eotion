@@ -1,20 +1,20 @@
 # P7 Advanced Blocks
 
-P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1–P7.3 已 PASS；P7.4 在既有 block registry 与 local-first/sync 链路上加入普通文档表格（非 Database）。本页记录实现、验收结果与已知限制。
+P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1–P7.5 已 PASS，P7 Advanced Blocks 已 COMPLETE：block registry 单一来源、嵌套区块模型与 UX、Callout、普通文档表格（非 Database），以及混合文档端到端验收。本页记录实现、验收结果与已知限制。
 
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
 | P7.1 Block Model Foundation | block registry、block tree invariant、move/reparent、snapshot 校验、Toggle 验证 | PASS |
 | P7.2 Rich Blocks | Callout 与现有 Rich Block 保真收敛 | PASS |
 | P7.3 Nested Blocks UX | 拖拽嵌套、Tab/Shift+Tab 缩进、移动端操作与上下文筛选 | PASS |
-| P7.4 Table | Table 区块 | PASS / current |
-| P7.5 Advanced Blocks Acceptance | 最终验收 | not started |
+| P7.4 Table | Table 区块 | PASS |
+| P7.5 Advanced Blocks Acceptance | 最终验收 | PASS |
 
 ## P7.1 Block model 收敛
 
 `packages/domain/src/block-types.ts` 现在是 Block 类型与能力的唯一来源，包含：
 
-- `BLOCK_TYPES`：paragraph、heading、bulleted-list、numbered-list、todo、quote、code、image、file、divider、toggle、callout。
+- `BLOCK_TYPES`：paragraph、heading、bulleted-list、numbered-list、todo、quote、code、image、file、divider、toggle、callout、table。
 - `BLOCK_NODE_TYPES`：block type 与 editor node 名称的映射，例如 toggle ↔ `eotionToggle`。
 - `BLOCK_CAPABILITIES`：`hasText`、`allowsChildren`、`allowedChildTypes`、`slash`、`mcp.readable`、`mcp.writable`、`attachment`。
 - `EDITOR_NODE_RULES`：节点级 attrs 与 allowed children，含 text、hardBreak、listItem。
@@ -232,6 +232,96 @@ P7.4 于 2026-10-09 完成验收并 PASS。
 - 表格内粘贴 TSV 文本按普通文本插入，不会自动建表。
 - 真实设备输入法/原生宿主验收仍不由浏览器回归替代。
 
+## P7.5 Advanced Blocks Final Acceptance
+
+P7.5 于 2026-10-11 完成验收并 PASS。本轮只做验收，不新增 Block，不开始 Database。
+
+| 阶段 | 状态 |
+| --- | --- |
+| P7.1 Block Model Foundation | PASS |
+| P7.2 Rich Blocks | PASS |
+| P7.3 Nested Blocks UX | PASS |
+| P7.4 Table | PASS |
+| P7.5 Advanced Blocks Acceptance | PASS |
+
+```text
+P7 Advanced Blocks — COMPLETE
+```
+
+### 1. 混合文档端到端
+
+新增 `apps/web/tests/product-p75-acceptance.spec.ts` 并纳入 `test:product`：
+
+- `a mixed advanced-block page is created in the editor and survives reload, reorder, indent and browser restart`：在真实编辑器里用 slash 与输入创建 heading / paragraph / bulleted-list / numbered-list / todo / quote / code / callout / 嵌套 Toggle（toggle 内再建 toggle）/ 3×3 Table，然后编辑段落正文、编辑 Callout icon+tone、编辑 Table 单元格、用 Tab 把段落缩进进 Toggle 再 Shift+Tab 弹出、用 drag handle 把 Table 重排到 Callout 之前，最后 reload 并整进程重启（Chromium persistent profile）。
+- `seeded mixed document keeps local-first identity, nesting, callout attrs and table grid across offline restart and reconnect`：种子文档包含 heading/paragraph/两种 list/todo/quote/code/callout、两层 Toggle（Toggle 内含嵌套 Table）、3×3 Table、divider、tail；offline 修改段落、追加 Toggle 子块、改 Callout tone、改 Table 单元格 → reload → 浏览器进程重启 → reconnect。
+- `a legacy P5/P6 page still opens, edits, saves and syncs without a migration`：旧 P5/P6 页面（heading/paragraph/list/todo/quote/code/divider）直接打开、编辑、保存、同步；旧 block 的 id/type/props.type 不变，唯一新增是编辑器既有的 TrailingNode 空段落。
+
+每轮都用测试内的 `structureProblems()` 单点检查页面块树：orphan / cross-page parent / cycle / duplicate id / 同一 sibling 组重复 orderKey / 无 root。
+
+结论：
+
+- Block ID 稳定：创建、编辑、缩进、重排、reload、进程重启、offline→reconnect 之后，所有 block 的 id 与 type 不变，只允许显式的 parent/order 变化。
+- `parentBlockId` 正确：嵌套 Toggle 与 Toggle 内 Table 的父指向正确，嵌套段落缩进/反缩进后父指向正确。
+- orderKey 稳定：同一 sibling 组内不重复；重排只改移动块的 key。
+- Toggle child、Callout attrs（icon/tone）、Table grid（单元格文本）在 reload / 进程重启 / offline / reconnect 后完全一致。
+- reconnect 先 push 再 pull snapshot；push 成功后本地内容与服务器内容用同一 `canonicalDocument()` 比较，完全相等。
+- 无 orphan / cycle / malformed document。
+
+### 2. 交互回归
+
+P7.3/P7.4 交互套件全部保留并通过：Tab/Shift+Tab 缩进与反缩进（含 Toggle summary 连带子树、undo/redo）、drag handle 同级重排与嵌套及 self/descendant/leaf/depth 拒绝、slash 上下文过滤（root / quote / listItem / codeBlock / Toggle summary / Toggle child / table cell）、390px 移动端 Touch Toolbar 缩进/反缩进且无横向溢出、Toggle 展开折叠（折叠是本地偏好，不进 props）、Callout icon/tone 与正文编辑、Table 单元格编辑与 Tab/Shift+Tab 导航、末格 Tab 追加行、增删行列、空表格替换、Bubble Menu。P7.5 只修复了下面「修复」一节记录的两处缺陷，没有为体验细节新增大功能。
+
+### 3. Local-first / Sync
+
+- IndexedDB（Web）与 Electron SQLite：`test:storage` 11/11，覆盖 IndexedDB move/hydrate/oplog 重开、桌面 SQLite 经 typed preload 的读写与 reload、Electron 离线编辑经 app 重启与 HTTP 500/502 后仍保留。
+- snapshot 校验：`replaceWorkspaceSnapshot` 复用 domain `validateBlockTree`；P7.5 回归继续覆盖 self-parent / cycle / cross-page 拒绝。
+- offline reload、浏览器进程重启、reconnect、push/pull 全部在 `product-p75-acceptance.spec.ts` 与既有 `product-table.spec.ts` / `product-nested.spec.ts` 中闭环；混合文档最终状态一致。
+
+### 4. MCP 回归
+
+不新增 Tool。`mcp-read.contract.test.ts` 新增混合页面读取用例：一次读入 heading/paragraph/两种 list/todo/quote/code/callout、两层 Toggle、Toggle 内 Table、顶层 Table、divider、tail（共 15 个 block），输入顺序故意打乱，断言输出按深度优先、`parentBlockId`/`depth` 正确、Callout icon/tone 与 Table `rows` 稳定，且 DTO 不泄漏 AST / props / orderKey / 内部 cell 结构。`mcp-write.contract.test.ts` 显式断言 Table 与 Toggle 在 create/update 两个 schema 下都被拒绝（read-only），保留既有 nested document replacement 拒绝与 malformed/orphan fail-closed 行为。
+
+### 5. 兼容性
+
+旧 P5/P6 页面（不含 Toggle/Callout/Table）可正常打开、编辑、保存、sync；MCP read 的既有「十种 block 类型」用例继续覆盖旧类型。没有新增迁移脚本——没有发现真实 blocker 需要迁移。
+
+### 6. 性能烟测
+
+- 5,000 块合成文档加载（`/__dev/editor-p2`）：`setContent` 约 0.7s，至下一次绘制机会约 2.9–3.7s。改动前基线与改动后一致（基线与本轮都约 3.1s / 2.9s），与无把手基线同量级。
+- 20×10 Table 编辑与保存：由 `product-table.spec.ts` 覆盖，单 block、行列不漂移。
+- 连续输入：小文档约 2.7 ms/字符；5,000 块文档约 112–119 ms/字符，改动前后一致（基线 112.5、本轮 118.6，属运行噪声）。这是 P7.3 已记录的既有 O(N)/docChanged 行为（BlockIdentity `appendTransaction` 全文档遍历），不是 P7.5 引入的退化，本轮不做性能重构。
+
+### 7. 修复（本轮只修 blocker / 明确回归）
+
+独立只读 review 共报 2 个 BLOCKER，均已修复并补回归：
+
+1. 编辑器可产出 codec/domain 拒绝的结构，导致整页永久无法保存。
+   - 现象：粘贴 `<ul><li><p>a</p><h2>b</h2></li></ul>`、`<blockquote><table>…`，或在 listItem 内用 input rule 生成 heading，会产出 `li > heading` / `blockquote > table`；codec 抛错后 `PagePersistence` 进入 error，后续输入也不再保存，直到用户 undo。
+   - 修复：新增 `apps/web/src/editor/contentRules.ts`，用 domain `EDITOR_NODE_RULES` 派生 `listItem` 与 `blockquote` 的 ProseMirror content，替换 Tiptap 更宽的默认值（`paragraph block*` / `block+`）；`useDocumentEditor` 关闭 StarterKit 的 `listItem`/`blockquote` 并挂载 registry 版本。放不进容器的粘贴内容由 ProseMirror 提升到最近合法祖先，内容不丢。
+2. 属性维度的同类漏洞：`<ol type="A">` 与 `<ol start="abc">` 由 Tiptap 默认 parseHTML 读进 schema，而 codec/MCP 只接受 `type: null` 与安全整数 `start`。
+   - 修复：`EotionOrderedList` 把 `type` 固定为 null（不渲染），`start` 归一化为正安全整数；`tableNodes` 把 `colspan`/`rowspan` 归一化、`colwidth` 不再从 HTML 解析；`blockIdentity` 的全局 `blockId` 加 `parseHTML: () => null`，粘贴 HTML 不能注入服务器 block id。
+   - 回归：`apps/web/tests/product-content-rules.spec.ts`（已纳入 `test:product`）覆盖 list/quote/table/identity 各类入口。
+3. P7.3 回归：在 Toggle 子块内 slash「折叠列表」菜单可见但静默无效（`/` 留在正文），因为 `isBlockCommandRangeSafe` 的 `containsChildOwner` 把包住选区的父 Toggle 也当成被吞掉的子 owner。
+   - 修复：只把完全落在变换区间内的 child owner 计为阻塞；Toggle summary 位置仍禁止创建 child-owning block。`product-slash-context.spec.ts` 增加「子块内 slash 折叠列表必须真正创建嵌套 toggle 并保存 parentBlockId」用例。
+4. 测试环境稳定性：Playwright 变换临时目录会让 Vite watcher `EBUSY` 并杀死 `pnpm dev`，导致同一次 `test:product` 出现与被测行为无关的失败；`vite.config.ts` 增加 `server.watch.ignored`（`test-results` 与 `.*.tmpdir`），不改变产品行为。
+
+### 8. 验证（2026-10-11）
+
+- domain 17/17、contracts 6/6、storage 7/7、API domain 2/2、API HTTP 24/24、MCP 25/25、`test:storage`（含 Electron SQLite）11/11。
+- `pnpm typecheck`、`build:web`、`build:api`、`git diff --check` 通过。仓库无 lint 脚本，N/A。
+- `test:product`：211/211（`--workers=1`）。多 worker / 长串行运行下 `product-pages.spec.ts` 的移动端「move 对话框高度 ≤ 348」偶发失败，单项复现 25/25 通过，确认为本环境既有 flaky，与本轮改动无关。
+- `test:visual`：6/7；唯一失败仍为既有 `Connectivity backend unavailable desktop` 基线差异（21748 px，ratio 0.02），与 P7.2/P7.3/P7.4 记录完全一致，不更新基线。
+- 独立只读 review：BLOCKER 0（两轮修复后定向复核 BLOCKER 0）。
+
+### 9. 本轮剩余已知限制（不阻塞 P7.5）
+
+- Toggle 的 summary 位置仍可创建 list/quote/table 等非 inline 块；这类结构可保存、可编辑，但 MCP `get_page` 的 toggle `text` 只取 summary 的内联文本，会读不到 summary 里的 table `rows` / callout `icon`/`tone`。属于只读保真度问题，不影响保存或加载。
+- 服务端 `validateBlockProps` 只对 callout/table 做类型化校验；其他类型的 `props.node` 不匹配时，读路径仍然 fail-closed（编辑器拒绝加载、MCP read 抛错），但写入侧没有第二次校验。非编辑器客户端写坏数据时不会静默产生错误页面。
+- 嵌套在 Toggle summary 内的 Table 只在 web codec 层共享 `TABLE_LIMITS`，MCP read 对该位置只做非退化 grid 校验。
+- Table cell 内的图片/文件上传入口未被 `isBlockCommandAllowed` 的附件分支排除，附件会落到表格之后的顶层位置（P7.3 的「嵌套附件只读」边界仍成立，附件不会被插进单元格）。
+- 连续输入在 5,000 块文档上仍是 O(N)/docChanged（见性能烟测），本轮不做性能重构。
+- 真实设备输入法/原生宿主验收仍不由浏览器回归替代。
+
 ## 测试与验证
 
 - packages/domain：新增 `test/block-model.test.cjs`，覆盖注册表一致性、树重建顺序、self / missing / cross-page / cycle / 重复 id 拒绝、删除顺序、按组分配 orderKey、child 类型白名单。
@@ -239,6 +329,8 @@ P7.4 于 2026-10-09 完成验收并 PASS。
 - apps/api：`server-domain.test.ts` 增加 move 与 parent 类型 invariant；`mcp-read.contract.test.ts` 增加 nested 深度优先读取、不可达环 fail-closed，以及 P7.4 的 table `rows` DTO、嵌套读取与退化 grid 拒绝。
 - packages/domain：`block-model.test.cjs` 增加 table 单 block / editor-internal rows 事实、`validateTableBlockProps`、共享 cell span 校验与 `TABLE_LIMITS` 边界（1000/200/100 接受，+1 拒绝）。
 - apps/web：新增 `product-table.spec.ts`（已加入 `test:product`），并扩展 `product-blocks.spec.ts`（table codec round-trip）与 `product-slash-context.spec.ts`（codeBlock 上下文）。
+- apps/web：新增 `product-content-rules.spec.ts` 与 `product-p75-acceptance.spec.ts`（均已加入 `test:product`），覆盖 registry 收窄后的 paste/input rule/属性归一化边界、混合文档端到端与旧页面兼容。
+- apps/api：`mcp-read.contract.test.ts` 增加整页混合文档深度优先读取；`mcp-write.contract.test.ts` 显式断言 Table / Toggle 在 create 与 update schema 下均被拒绝（read-only）。
 
 P7.4 补充回归：Table 的 slash 创建、单元格编辑、Tab/Shift+Tab、末行追加、增删行列、删除表格与唯一 block 替换、单格与跨格复制粘贴、TSV 纯文本粘贴、拖拽重排、Toggle 嵌套、quote/listItem/cell 上下文筛选、390px 横向滚动、20×10 编辑、offline→reload→进程重启→reconnect push/pull，以及 Table codec round-trip 与非法 grid 拒绝、domain props/schema 校验、MCP `rows` DTO 与嵌套读取、Electron SQLite grid round-trip；同时补 codeBlock slash context 回归。
 
@@ -259,7 +351,7 @@ pnpm --filter @eotion/web run test:product
 pnpm --filter @eotion/web run test:storage
 ```
 
-本环境运行 `test:product` 时默认多 worker 偶发与改动无关的 UI 失败，每次失败项不同，单独复现均通过；P7.3 最终验收以 `--workers=1` 串行运行 189/189 通过；P7.4 以同一方式运行 206/206 通过。本轮同时把两处会采样中间态的断言改为等待收敛（`product-blocks.spec.ts` 清空文档后断言最终为单个 root block）。运行 `test:storage` 前需清除本沙箱默认设置的 `ELECTRON_RUN_AS_NODE`，否则 Electron 用例会报 `Process failed to launch`。
+本环境运行 `test:product` 时默认多 worker 偶发与改动无关的 UI 失败，每次失败项不同，单独复现均通过；P7.3 最终验收以 `--workers=1` 串行运行 189/189 通过；P7.4 以同一方式运行 206/206 通过；P7.5 以同一方式运行 211/211 通过（唯一一次长串行失败是 `product-pages.spec.ts` 的移动端 move 对话框高度断言，单项复现 25/25 通过，为本环境既有 flaky）。P7.5 另修复了会让 `pnpm dev` 在测试期间因 `EBUSY` 崩溃的 Vite watcher 问题（`vite.config.ts` 的 `server.watch.ignored`）。运行 `test:storage` 前需清除本沙箱默认设置的 `ELECTRON_RUN_AS_NODE`，否则 Electron 用例会报 `Process failed to launch`；新增依赖后需重启 `pnpm dev`。
 
 ## 明确不在 P7.x 范围
 

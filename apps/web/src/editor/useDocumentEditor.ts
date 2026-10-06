@@ -3,6 +3,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { useEditor } from '@tiptap/vue-3'
 import { toValue, watch, type MaybeRefOrGetter } from 'vue'
 
+import { EotionBlockquote, EotionListItem, EotionOrderedList } from './contentRules'
 import { cloneEditorDocument, type EditorDocument } from './editorDocument'
 
 type EditorCallbacks = Partial<Pick<EditorOptions, 'onCreate' | 'onSelectionUpdate' | 'onTransaction'>>
@@ -23,7 +24,15 @@ function snapshot(editor: Editor): EditorDocument {
 /** Shared Tiptap lifecycle and JSON boundary; product behavior stays in the caller. */
 export function useDocumentEditor(options: DocumentEditorOptions) {
   const editor = useEditor({
-    extensions: [StarterKit.configure({ link: false, underline: false }), ...(options.extensions ?? [])],
+    extensions: [
+      // StarterKit's listItem/blockquote accept every block node; the registry-derived
+      // replacements keep the editable structure identical to the saved structure.
+      StarterKit.configure({ link: false, underline: false, blockquote: false, listItem: false, orderedList: false }),
+      EotionBlockquote,
+      EotionListItem,
+      EotionOrderedList,
+      ...(options.extensions ?? []),
+    ],
     content: cloneEditorDocument(options.content),
     editable: toValue(options.editable ?? true),
     editorProps: {

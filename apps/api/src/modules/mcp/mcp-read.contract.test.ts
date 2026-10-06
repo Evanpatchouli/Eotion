@@ -195,6 +195,55 @@ test('MCP table read exposes a stable rows grid and never the editor AST', () =>
   assert.deepEqual(multiline.rows, [['one\ntwo', '']])
 })
 
+test('MCP reads a full P7 mixed page depth first with stable parent ids and no internal leaks', () => {
+  const order = (value: string) => value.padStart(4, '0')
+  const entry = (id: string, type: string, node: unknown, key: string, parentBlockId: string | null = null) => ({
+    ...block(type, node, id), parentBlockId, orderKey: order(key),
+  })
+  const mixed: ServerBlockRecord[] = [
+    entry('mix-heading', 'heading', { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Mixed' }] }, '10'),
+    entry('mix-intro', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Intro' }] }, '20'),
+    entry('mix-list', 'bulleted-list', { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Bullet' }] }] }] }, '30'),
+    entry('mix-todo', 'todo', { type: 'eotionTodo', attrs: { checked: true }, content: [{ type: 'text', text: 'Task' }] }, '40'),
+    entry('mix-quote', 'quote', { type: 'blockquote', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Quoted' }] }] }, '50'),
+    entry('mix-code', 'code', { type: 'codeBlock', attrs: { language: 'typescript' }, content: [{ type: 'text', text: 'const x = 1' }] }, '60'),
+    entry('mix-callout', 'callout', { type: 'eotionCallout', attrs: { icon: '🚀', tone: 'warning' }, content: [{ type: 'text', text: 'Note' }] }, '70'),
+    entry('mix-toggle', 'toggle', { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Summary' }] }] }, '80'),
+    entry('mix-child', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Child' }] }, '10', 'mix-toggle'),
+    entry('mix-inner', 'toggle', { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Inner' }] }] }, '20', 'mix-toggle'),
+    entry('mix-grandchild', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Grandchild' }] }, '10', 'mix-inner'),
+    entry('mix-nested-table', 'table', tableNode([['N1', 'N2']]), '30', 'mix-toggle'),
+    entry('mix-table', 'table', tableNode([['H1', 'H2'], ['A1', 'A2']]), '90'),
+    entry('mix-divider', 'divider', { type: 'horizontalRule' }, '100'),
+    entry('mix-tail', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Tail' }] }, '110'),
+  ]
+  // Descendants deliberately arrive before their parents, exactly like a shuffled server read.
+  const shuffled = [...mixed].reverse()
+  const mapped = toMcpBlocks(shuffled)
+  assert.deepEqual(mapped.map(({ id }) => id), [
+    'mix-heading', 'mix-intro', 'mix-list', 'mix-todo', 'mix-quote', 'mix-code', 'mix-callout', 'mix-toggle',
+    'mix-child', 'mix-inner', 'mix-grandchild', 'mix-nested-table', 'mix-table', 'mix-divider', 'mix-tail',
+  ])
+  assert.deepEqual(mapped.map(({ depth }) => depth), [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 1, 0, 0, 0])
+  assert.deepEqual(mapped.map(({ parentBlockId }) => parentBlockId), [
+    null, null, null, null, null, null, null, null, 'mix-toggle', 'mix-toggle', 'mix-inner', 'mix-toggle', null, null, null,
+  ])
+  const byId = new Map(mapped.map((dto) => [dto.id, dto]))
+  assert.equal(byId.get('mix-heading')?.level, 1)
+  assert.equal(byId.get('mix-list')?.text, '• Bullet')
+  assert.equal(byId.get('mix-todo')?.checked, true)
+  assert.equal(byId.get('mix-quote')?.text, '> Quoted')
+  assert.equal(byId.get('mix-code')?.language, 'typescript')
+  assert.deepEqual({ icon: byId.get('mix-callout')?.icon, tone: byId.get('mix-callout')?.tone }, { icon: '🚀', tone: 'warning' })
+  assert.equal(byId.get('mix-toggle')?.text, 'Summary')
+  assert.deepEqual(byId.get('mix-table')?.rows, [['H1', 'H2'], ['A1', 'A2']])
+  assert.deepEqual(byId.get('mix-nested-table')?.rows, [['N1', 'N2']])
+  assert.equal(byId.get('mix-divider')?.text, '')
+  assert.equal(GetPageOutputSchema.parse({ ...toMcpPageSummary(page), blocks: mapped }).blocks.length, 15)
+  // The read DTO never leaks the editor AST, props, order keys or internal cell structure.
+  assert.doesNotMatch(JSON.stringify(mapped), /props|node|blockId|orderKey|eotionToggle|eotionCallout|tableRow|tableCell|attrs/)
+})
+
 test('MCP table read stays nested under a toggle and rejects non-grid content', () => {
   const parent = block('toggle', { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Parent' }] }] }, 'table-parent')
   const child = { ...block('table', tableNode([['A']]), 'table-child'), parentBlockId: parent.id, orderKey: 'a' }

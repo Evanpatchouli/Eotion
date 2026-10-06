@@ -1,15 +1,21 @@
-# 当前任务：P7.4 Table
+# 当前任务：P7.5 Advanced Blocks Final Acceptance
 
-状态：PASS；P7.1/P7.2/P7.3 已 PASS，本轮基线 `5724b8a`，本轮只做 P7.4 Table。
+状态：PASS（2026-10-11）；P7.1–P7.4 已 PASS，本轮基线 `84f5c0d`，本轮只做 P7.5 验收，不新增 Block、不开始 Database。
 
 | Work Unit | 模式/评级 | 负责 | 结果 |
 | --- | --- | --- | --- |
-| registry/codec/sync/nested 现状与 Table 集成点调查 | investigate/S0 | 主 Agent | Evidence Pack（含 Tiptap table API 事实） |
-| Table 单 block 模型与 nested 边界决策 | decide/S2 | 主 Agent | 整表一个 block + editor-internal rows/cells |
-| domain registry / 校验 / MCP DTO / editor UX 实现 | execute/S1 | 主 Agent | product-table 14/14，domain 17/17，MCP 24/24 |
-| codeBlock slash context 收口（P7.3 minor） | execute/S1 | 主 Agent | codeBlock 内仅保留文本/标题转换 |
-| 完整验证与独立 review | verify/S0、Review | reviewer | product 206/206、visual 6/7（既有基线）、BLOCKER 0 |
+| 混合文档端到端 + 交互/local-first/MCP/兼容/性能现状调查 | investigate/S0 | 主 Agent | Context Pack |
+| 混合文档验收、回归与边界判断 | verify/S0 | 主 Agent | product 211/211、visual 6/7（既有基线） |
+| 两处 blocker 最小修复（registry 收窄 + 属性归一化） | execute/S1 | 主 Agent | contentRules + 回归，BLOCKER 0 |
+| 独立只读 review（两轮定向复核） | Review | reviewer | BLOCKER 0 |
 
-验收结果：见 `docs/p7-advanced-blocks.md` 的「P7.4 Table」与「P7.4 Final Acceptance」。review 第一轮报 MAJOR 1（web codec 缺 table 规模上限，超大 HTML 粘贴会使整页无法保存）；已通过共享 `TABLE_LIMITS` + 编辑器粘贴守卫关闭，第二轮定向复核 BLOCKER 0、PASS 为是。
+验收结果：见 `docs/p7-advanced-blocks.md` 的「P7.5 Advanced Blocks Final Acceptance」。
 
-下一步：不开始 P7.5。
+修复：
+
+1. 编辑器可产出 codec/domain 拒绝的结构（paste/input rule 产生 `li > heading`、`blockquote > table`），导致整页永久无法保存 —— 用 registry 派生 `listItem`/`blockquote` 的 ProseMirror content。
+2. `<ol type="A">` / `<ol start="abc">` / 非法 cell span / HTML 注入 `blockId` 同类漏洞 —— 属性归一化。
+3. P7.3 回归：Toggle 子块内 slash「折叠列表」静默无效 —— 修正 `isBlockCommandRangeSafe` 的容器误判。
+4. 测试环境：Vite watcher 因 Playwright 临时目录 EBUSY 崩溃 —— `server.watch.ignored`。
+
+下一步：P7 Advanced Blocks COMPLETE；不开始下一阶段（Database / 协作等），等待用户指令。

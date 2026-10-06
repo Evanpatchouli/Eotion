@@ -4,6 +4,8 @@ import { Plugin } from '@tiptap/pm/state'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import { TABLE_LIMITS } from '@eotion/domain/block-types'
 
+import { positiveInteger } from './contentRules'
+
 /**
  * A table is one Eotion block. Rows and cells are editor-internal nodes of the
  * table node: they never carry a blockId and never appear in the page block
@@ -17,11 +19,13 @@ const cellConfig = {
   content: 'paragraph+',
   addAttributes() {
     // The table extensions declare an alignment attribute as well; P7.4 keeps
-    // cells to a strict grid, so only span/width survive.
+    // cells to a strict grid, so only span/width survive. Tiptap's default raw
+    // HTML parse can yield values validateTableCellAttrs rejects, which would
+    // make the page unsaveable, so spans are normalized and widths are dropped.
     return {
-      colspan: { default: 1 },
-      rowspan: { default: 1 },
-      colwidth: { default: null },
+      colspan: { default: 1, parseHTML: (element: HTMLElement) => positiveInteger(element.getAttribute('colspan'), 1) },
+      rowspan: { default: 1, parseHTML: (element: HTMLElement) => positiveInteger(element.getAttribute('rowspan'), 1) },
+      colwidth: { default: null, rendered: false, parseHTML: () => null },
     }
   },
 }

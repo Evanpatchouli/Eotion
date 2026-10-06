@@ -53,6 +53,21 @@ test('writable block schemas enforce content limits and block-specific attribute
   assert.equal(create({ type: 'quote', paragraphs: ['x'], extra: true }), false)
   assert.equal(create({ type: 'paragraph', text: 'x'.repeat(100_001) }), false)
   assert.equal(create({ type: 'paragraph', text: 'x', extra: true }), false)
+
+  // Table and Toggle stay read-only through the existing tools: no write shape accepts them.
+  const update = (block: unknown) => UpdatePageInputSchema.safeParse({
+    pageId: 'p', expectedUpdatedAt: '2026-10-06T12:00:00.000Z', idempotencyKey: 'k', blocks: [block],
+  }).success
+  for (const block of [
+    { type: 'table', rows: [['A']] },
+    { type: 'table', id: 'b', rows: [['A']] },
+    { type: 'toggle', text: 'x' },
+    { type: 'toggle', id: 'b', text: 'x' },
+    { type: 'image', id: 'b', text: 'x' },
+  ]) {
+    assert.equal(create(block), false)
+    assert.equal(update(block), false)
+  }
 })
 
 test('callout write accepts only stable icon, tone and plain text', () => {

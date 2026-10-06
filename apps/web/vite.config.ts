@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "0.0.0.0",
       port: env.VITE_PORT ? parseInt(env.VITE_PORT) : 7173,
+      // Playwright writes short-lived transform dirs next to its specs; a watcher
+      // that picks one up while it is locked crashes the dev server mid-test-run.
+      watch: { ignored: ["**/test-results/**", "**/.*.tmpdir/**"] },
       proxy: {
         "/api": {
           target: env.EOTION_API_PROXY_TARGET || "http://127.0.0.1:7137",

@@ -60,6 +60,9 @@ export const BlockIdentity = Extension.create({
         blockId: {
           default: null,
           rendered: false,
+          // Identity is assigned by this extension only: pasted HTML must never
+          // inject a server block id that could collide with an existing block.
+          parseHTML: () => null,
         },
       },
     }]

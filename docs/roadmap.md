@@ -137,7 +137,7 @@ P7.1 Block Model Foundation 已 PASS：block registry 单一来源、block tree 
 - P7.2 Rich Blocks：PASS，Callout 与现有 Rich Block 属性保真收敛，验收见 P7 文档。
 - P7.3 Nested Blocks UX：PASS，Tab/拖拽嵌套、移动端操作与 slash 上下文筛选。
 - P7.4 Table：PASS，普通文档表格（单 block 承载整张 grid），明确不是 Database；详见 [P7 Advanced Blocks](p7-advanced-blocks.md)。
-- P7.5 Advanced Blocks Acceptance：not started。
+- P7.5 Advanced Blocks Acceptance：PASS（2026-10-11）。混合文档端到端、Local-first/sync、Desktop/Mobile 交互、MCP 回归、旧页面兼容、完整测试与独立 review 均通过；**P7 Advanced Blocks COMPLETE**。验收与已知限制见 [P7 Advanced Blocks](p7-advanced-blocks.md)。
 - 明确不在 P7.x 范围：Database / Database View / Relation / Rollup / Formula / Notion Import / Agent UI / Automation / 新 MCP Tools / 完整 block plugin framework / 大规模 editor 重构。
 
 ## P7.x - 协作（后续）

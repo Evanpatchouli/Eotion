@@ -98,7 +98,26 @@ test('slash commands follow root, quote, list item and toggle summary/child cont
   await expect(option(page, '提示块')).toBeVisible()
   await expect(option(page, '图片')).toHaveCount(0)
   await expect(option(page, '文件')).toHaveCount(0)
+
+  // Selecting an offered command must actually apply it: a wrapper toggle around
+  // the cursor is not swallowed content, so a nested toggle is created and the
+  // trigger character never stays behind in the paragraph.
+  await option(page, '折叠列表').click()
+  await expect(editor.locator('.eotion-toggle')).toHaveCount(2)
+  await expect(editor.locator('.eotion-toggle .eotion-toggle')).toHaveCount(1)
+  await expect(editor.locator('.eotion-toggle .eotion-toggle p').first()).toHaveText('')
+  await page.keyboard.type('Inner summary')
+  await expect.poll(() => blocks(page), { timeout: 5000 }).toEqual(
+    expect.arrayContaining([expect.objectContaining({ type: 'toggle', parentBlockId: expect.any(String) })]),
+  )
 })
+
+async function blocks(page: Page) {
+  return page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    return (await (await useProductSyncStore().store()).listBlocksByPage('page-slash')) as unknown as Array<{ type: string; parentBlockId: string | null }>
+  })
+}
 
 test.describe('touch block commands', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
