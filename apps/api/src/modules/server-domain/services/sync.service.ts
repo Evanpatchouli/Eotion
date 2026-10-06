@@ -91,6 +91,11 @@ export class SyncService {
       case 'block.delete':
         await this.blocks.delete(userId, operation.workspaceId, operation.payload.id, session)
         break
+      case 'block.move':
+        if (!(await this.blocks.move(userId, operation.workspaceId, operation.payload.pageId, operation.payload.id, operation.payload.parentBlockId, operation.payload.orderKey, session))) {
+          throw new NotFoundException('Block not found in workspace page')
+        }
+        break
     }
   }
 }

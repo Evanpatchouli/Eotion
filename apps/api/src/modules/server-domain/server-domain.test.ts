@@ -229,7 +229,8 @@ test('server domain persists scoped records and creates the declared Mongo index
     id: 'block-root',
     pageId: root.id,
     parentBlockId: null,
-    type: 'paragraph',
+    // Only child-capable block types may own children, so the nested fixture uses a toggle.
+    type: 'toggle',
     orderKey: 'b',
     props: { text: 'root' },
   })
@@ -318,6 +319,50 @@ test('server domain persists scoped records and creates the declared Mongo index
   assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, nestedBlock.id), true)
   assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, blockRoot.id), true)
   assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, blockRoot.id), false)
+
+  // Nested block invariants: only child-capable parents accept children, and block.move enforces the tree.
+  await assert.rejects(
+    blocks.create(userA.id, workspaceA.id, root.id, {
+      id: 'block-under-paragraph',
+      pageId: root.id,
+      parentBlockId: 'block-first',
+      type: 'paragraph',
+      orderKey: 'z',
+      props: {},
+    }),
+    /Parent block type does not support child blocks/,
+  )
+
+  const moveParentA = await blocks.create(userA.id, workspaceA.id, root.id, {
+    id: 'block-move-parent-a', pageId: root.id, parentBlockId: null, type: 'toggle', orderKey: 'c', props: {},
+  })
+  const moveParentB = await blocks.create(userA.id, workspaceA.id, root.id, {
+    id: 'block-move-parent-b', pageId: root.id, parentBlockId: null, type: 'toggle', orderKey: 'd', props: {},
+  })
+  const moveChild = await blocks.create(userA.id, workspaceA.id, root.id, {
+    id: 'block-move-child', pageId: root.id, parentBlockId: moveParentA.id, type: 'paragraph', orderKey: 'a', props: {},
+  })
+  const crossPageBlock = await blocks.create(userA.id, workspaceA.id, sibling.id, {
+    id: 'block-move-cross-page', pageId: sibling.id, parentBlockId: null, type: 'paragraph', orderKey: 'a', props: {},
+  })
+
+  const movedBlock = await blocks.move(userA.id, workspaceA.id, root.id, moveChild.id, moveParentB.id, 'm')
+  assert.equal(movedBlock?.parentBlockId, moveParentB.id)
+  assert.equal(movedBlock?.orderKey, 'm')
+  assert.equal((await blocks.find(userA.id, workspaceA.id, root.id, moveChild.id))?.parentBlockId, moveParentB.id)
+
+  await assert.rejects(blocks.move(userA.id, workspaceA.id, root.id, moveParentA.id, moveParentA.id, 'z'), /cannot be its own parent/)
+  await assert.rejects(blocks.move(userA.id, workspaceA.id, root.id, moveParentB.id, moveChild.id, 'z'), /cannot move under its own descendant/)
+  await assert.rejects(blocks.move(userA.id, workspaceA.id, root.id, moveChild.id, crossPageBlock.id, 'z'), /is unavailable/)
+  await assert.rejects(blocks.move(userA.id, workspaceA.id, root.id, moveChild.id, 'block-first', 'z'), /Parent block type does not support child blocks/)
+  await assert.rejects(blocks.move(userB.id, workspaceA.id, root.id, moveChild.id, null, 'z'), /Workspace not found/)
+
+  // Remove the move fixtures so the block count assertion below keeps its meaning.
+  assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, moveChild.id), true)
+  assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, moveParentA.id), true)
+  assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, moveParentB.id), true)
+  assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, sibling.id, crossPageBlock.id), true)
+
   await assert.rejects(
     blocks.create(userA.id, workspaceA.id, root.id, {
       id: 'block-invalid-parent',

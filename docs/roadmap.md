@@ -128,7 +128,18 @@ P5 不要求实现多人实时协作、完整权限体系、模板市场、复�
 
 分阶段计划与当前验收见 [P6 MCP](p6-mcp.md)：P6.1 Foundation + Auth、P6.2 Read Tools、P6.3 Write Tools 与 P6.4 MCP Acceptance 均 PASS，P6 MCP COMPLETE。Agent UI / automation 不属于此阶段。范围和安全边界见 [Agent 集成基线](architecture/agent-integration.md)。
 
-## P7 - 协作
+## P7 - Advanced Blocks
+
+P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础：先把 Block 类型/能力与嵌套树不变量收敛到 domain 单一来源并接入 move/reparent，再扩展更丰富的区块、嵌套交互与 Table。
+
+P7.1 Block Model Foundation 本轮完成：block registry 单一来源、block tree invariant、move/reparent、snapshot 校验与 Toggle 验证。实现事实与验证命令见 [P7 Advanced Blocks](p7-advanced-blocks.md)。
+
+- P7.2 Rich Blocks（Callout 等）、P7.3 Nested Blocks UX、P7.4 Table、P7.5 Advanced Blocks Acceptance：待开始。
+- 明确不在 P7.x 范围：Database / Database View / Relation / Rollup / Formula / Notion Import / Agent UI / Automation / 新 MCP Tools / 完整 block plugin framework / 大规模 editor 重构。
+
+## P7.x - 协作（后续）
+
+协作阶段顺延：Advanced Blocks 先推进，之后再按下列内容引入协作。
 
 - 仅在单用户本地优先产品路径稳定之后再添加 Yjs。
 - 决定协作服务器持久化/压缩策略。

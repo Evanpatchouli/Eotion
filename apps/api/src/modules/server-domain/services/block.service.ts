@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
+import { isAllowedChildBlockType, parentRejection, parentRejectionMessage } from '@eotion/domain'
 import type { ServerBlockRecord } from '../types'
 import type { ClientSession, Connection } from 'mongoose'
 
@@ -28,6 +29,7 @@ export class BlockService {
       if (parentBlockId !== null) {
         const parent = await this.blocks.findInWorkspace(workspaceId, parentBlockId)
         if (!parent || parent.pageId !== pageId) throw new BadRequestException('Parent block must belong to the same page and workspace')
+        if (!isAllowedChildBlockType(parent.type, input.type)) throw new BadRequestException('Parent block type does not support child blocks')
       }
       if (!(await this.pages.touchStructure(workspaceId, pageId))) throw new NotFoundException('Page not found in workspace')
       return this.blocks.create(workspaceId, input)
@@ -94,6 +96,40 @@ export class BlockService {
     return updated
   }
 
+  async move(userId: string, workspaceId: string, pageId: string, id: string, parentBlockId: string | null, orderKey: string, session?: ClientSession): Promise<ServerBlockRecord | null> {
+    await this.permissions.assertCanWrite(userId, workspaceId)
+    if (!session && await supportsTransactions(this.connection)) {
+      const ownSession = await this.connection.startSession()
+      try {
+        let moved: ServerBlockRecord | null = null
+        await ownSession.withTransaction(async () => { moved = await this.move(userId, workspaceId, pageId, id, parentBlockId, orderKey, ownSession) })
+        return moved
+      } finally {
+        await ownSession.endSession()
+      }
+    }
+    const page = await this.pages.findInWorkspace(workspaceId, pageId, session)
+    if (!page) return null
+    const pageBlocks = await this.blocks.listByPage(workspaceId, pageId, undefined, session)
+    const existing = pageBlocks.find((block) => block.id === id)
+    if (!existing) return null
+    const rejection = parentRejection(pageBlocks, id, parentBlockId, pageId)
+    if (rejection !== null) throw new BadRequestException(parentRejectionMessage(rejection, id, parentBlockId ?? ''))
+    if (parentBlockId !== null) {
+      const parent = pageBlocks.find((block) => block.id === parentBlockId)
+      if (!parent || !isAllowedChildBlockType(parent.type, existing.type)) throw new BadRequestException('Parent block type does not support child blocks')
+    }
+    const moved = await this.blocks.moveInWorkspace(workspaceId, pageId, id, parentBlockId, orderKey, session)
+    if (!moved) return null
+    if (!(await this.pages.touchStructure(workspaceId, pageId, session))) throw new NotFoundException('Page not found in workspace')
+    // Refresh the structure fence of both ends of the moved link so clients see the change.
+    if (session) {
+      if (existing.parentBlockId) await this.blocks.touchStructure(workspaceId, pageId, existing.parentBlockId, session)
+      if (parentBlockId) await this.blocks.touchStructure(workspaceId, pageId, parentBlockId, session)
+    }
+    return moved
+  }
+
   async upsertSnapshot(userId: string, workspaceId: string, input: BlockCreate, session: ClientSession): Promise<void> {
     await this.permissions.assertCanWrite(userId, workspaceId)
     const existing = await this.blocks.findInWorkspace(workspaceId, input.id, session)
@@ -143,8 +179,11 @@ export class BlockService {
   private async createInSession(workspaceId: string, pageId: string, input: BlockCreate, session: ClientSession): Promise<ServerBlockRecord> {
     if (!(await this.pages.touchStructure(workspaceId, pageId, session))) throw new NotFoundException('Page not found in workspace')
     const parentBlockId = input.parentBlockId ?? null
-    if (parentBlockId !== null && !(await this.blocks.touchStructure(workspaceId, pageId, parentBlockId, session))) {
-      throw new BadRequestException('Parent block must belong to the same page and workspace')
+    if (parentBlockId !== null) {
+      const parent = await this.blocks.findInWorkspace(workspaceId, parentBlockId, session)
+      if (!parent || parent.pageId !== pageId) throw new BadRequestException('Parent block must belong to the same page and workspace')
+      if (!isAllowedChildBlockType(parent.type, input.type)) throw new BadRequestException('Parent block type does not support child blocks')
+      await this.blocks.touchStructure(workspaceId, pageId, parentBlockId, session)
     }
     return this.blocks.create(workspaceId, input, session)
   }

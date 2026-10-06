@@ -46,6 +46,15 @@ export class BlockRepository {
     return doc ? this.toRecord(doc) : null
   }
 
+  async moveInWorkspace(workspaceId: string, pageId: string, id: string, parentBlockId: string | null, orderKey: string, session?: ClientSession): Promise<ServerBlockRecord | null> {
+    const doc = await this.model.findOneAndUpdate(
+      { workspaceId, pageId, id },
+      { parentBlockId, orderKey },
+      { returnDocument: 'after', runValidators: true, session },
+    ).exec()
+    return doc ? this.toRecord(doc) : null
+  }
+
   async hasChildren(workspaceId: string, pageId: string, id: string, session?: ClientSession): Promise<boolean> {
     return !!(await this.model.exists({ workspaceId, pageId, parentBlockId: id }).session(session ?? null))
   }

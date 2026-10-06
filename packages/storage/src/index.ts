@@ -1,4 +1,5 @@
 import type { BlockRecord, PageSummary } from '@eotion/domain'
+import { validateBlockTree } from '@eotion/domain/block-tree'
 import type { SyncOperation } from '@eotion/contracts'
 
 export { createLocalId } from './id.ts'
@@ -54,8 +55,11 @@ export interface LocalStore {
   replaceWorkspaceSnapshot(workspaceId: string, pages: LocalPageRecord[], blocks: LocalBlockRecord[]): Promise<void>
 
   getBlock(id: string): Promise<LocalBlockRecord | undefined>
+  /** Returns the page's blocks in stable orderKey/id order, including nested blocks. */
   listBlocksByPage(pageId: string): Promise<LocalBlockRecord[]>
   upsertBlock(block: LocalBlockRecord): Promise<void>
+  /** Reparents and reorders one existing block, recording exactly one block.move operation. */
+  moveBlock(workspaceId: string, id: string, parentBlockId: string | null, orderKey: string): Promise<void>
   deleteBlock(workspaceId: string, id: string): Promise<void>
 
   /** Returns pending and failed operations in increasing sequence order. */
@@ -94,17 +98,9 @@ export function validateWorkspaceSnapshot(workspaceId: string, pages: LocalPageR
     }
     blockById.set(block.id, block)
   }
-  for (const block of blocks) {
-    const visited = new Set<string>([block.id])
-    let parentId = block.parentBlockId ?? null
-    while (parentId !== null) {
-      if (visited.has(parentId)) throw new Error(`Block ${block.id} has a cyclic parent`)
-      visited.add(parentId)
-      const parent = blockById.get(parentId)
-      if (!parent || parent.pageId !== block.pageId) throw new Error(`Parent block ${parentId} is missing from snapshot page`)
-      parentId = parent.parentBlockId ?? null
-    }
-  }
+  // Self-parent, missing parent, cross-page parent and cycles share one
+  // implementation with the local stores and the server domain.
+  validateBlockTree(blocks)
 }
 
 /** Sends one canonical operation; adapters retain the stable id for retries. */

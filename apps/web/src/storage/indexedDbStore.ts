@@ -1,4 +1,6 @@
 import type { SyncOperation } from '@eotion/contracts'
+import { isAllowedChildBlockType } from '@eotion/domain/block-types'
+import { parentRejection, parentRejectionMessage } from '@eotion/domain/block-tree'
 import { createLocalId, validateWorkspaceSnapshot, type FileCleanupTask, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 const DB_VERSION = 2
@@ -265,9 +267,31 @@ export class IndexedDbLocalStore implements LocalStore {
       if (parentBlockId) {
         const parent = await request<LocalBlockRecord | undefined>(blocks.get(parentBlockId))
         if (!parent || parent.pageId !== pageId || parent.workspaceId !== block.workspaceId) throw new Error(`Parent block ${parentBlockId} is unavailable in this workspace page`)
+        if (!isAllowedChildBlockType(parent.type, type)) throw new Error(`Parent block ${parentBlockId} cannot own a ${type} block`)
       }
       blocks.put(block)
       if (oldFileId && oldFileId !== newFileId) this.enqueueCleanupInTransaction(tx, block.workspaceId, oldFileId, operationId)
+    })
+  }
+
+  moveBlock(workspaceId: string, id: string, parentBlockId: string | null, orderKey: string): Promise<void> {
+    // mutate() records the operation after change() resolves, so the page id is
+    // filled from the same transaction that moves the block.
+    const payload = { id, pageId: '', parentBlockId, orderKey }
+    return this.mutate(workspaceId, 'block.move', payload, async (tx) => {
+      const blocks = tx.objectStore('blocks')
+      const block = await request<LocalBlockRecord | undefined>(blocks.get(id))
+      if (!block || block.workspaceId !== workspaceId) throw new Error(`Block ${id} is unavailable in this workspace`)
+      payload.pageId = block.pageId
+      const siblings = await request<LocalBlockRecord[]>(blocks.index('pageId').getAll(block.pageId))
+      const rejection = parentRejection(siblings, id, parentBlockId, block.pageId)
+      if (rejection) throw new Error(parentRejectionMessage(rejection, id, parentBlockId ?? ''))
+      if (parentBlockId !== null) {
+        const parent = siblings.find((candidate) => candidate.id === parentBlockId)
+        if (!parent) throw new Error(`Parent block ${parentBlockId} is unavailable in this workspace page`)
+        if (!isAllowedChildBlockType(parent.type, block.type)) throw new Error(`Parent block ${parentBlockId} cannot own a ${block.type} block`)
+      }
+      blocks.put({ ...block, parentBlockId, orderKey })
     })
   }
 

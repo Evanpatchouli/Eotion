@@ -11,6 +11,7 @@ import { nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
 import { BlockIdentity } from '../../editor/blockIdentity'
+import { EotionToggle } from '../../editor/toggleNodes'
 import { createUploadPlaceholderExtension, UploadPlaceholderRegistry, type UploadPlaceholderTask, type UploadTarget } from '../../editor/uploadPlaceholders'
 import { isSafeLinkHref } from '../../editor/link'
 import { runBlockCommand, type BlockCommand } from '../../editor/blockCommands'
@@ -115,7 +116,7 @@ function updateSelection() {
 }
 
 const { editor, getDocument } = useDocumentEditor({
-  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, AttachmentLifetime, BlockIdentity,
+  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, AttachmentLifetime, BlockIdentity,
     createUploadPlaceholderExtension(uploadRegistry, { cancel: cancelUpload, retry: task => { void upload(task) }, remove: removeTask }),
     createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
   content: props.content,

@@ -1,20 +1,64 @@
 import { Extension } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { BLOCK_NODE_NAMES, blockCapability, blockTypeForNode } from '@eotion/domain/block-types'
 import { createLocalId } from '@eotion/storage'
 
-const blockNodes = ['paragraph', 'heading', 'bulletList', 'orderedList', 'blockquote', 'codeBlock', 'horizontalRule', 'eotionImage', 'eotionFile', 'eotionTodo']
+type NodeRange = { offset: number; end: number; id: unknown; type: string }
 
-/** A top-level node owns one stable server Block ID, including across split and paste. */
+/** A node owns server block identity when it is a root block or a child of a child-owning block. */
+function ownsBlocks(typeName: string): boolean {
+  if (typeName === 'doc') return true
+  const type = blockTypeForNode(typeName)
+  return type !== undefined && blockCapability(type).allowsChildren
+}
+
+/** Every server block node in the document, at any depth, with its absolute position. */
+function collectBlockNodes(doc: ProseMirrorNode): NodeRange[] {
+  const found: NodeRange[] = []
+  const walk = (parent: ProseMirrorNode, contentStart: number): void => {
+    const parentOwnsBlocks = ownsBlocks(parent.type.name)
+    parent.forEach((node, offset) => {
+      const start = contentStart + offset
+      if (parentOwnsBlocks && blockTypeForNode(node.type.name) !== undefined) {
+        found.push({ offset: start, end: start + node.nodeSize, id: node.attrs.blockId, type: node.type.name })
+      }
+      if (node.childCount && ownsBlocks(node.type.name)) walk(node, start + 1)
+    })
+  }
+  walk(doc, 0)
+  return found
+}
+
+/**
+ * Collected range containing pos. Nested ranges overlap at a child's start, so a
+ * range that keeps the previous node type wins; otherwise the deepest match is
+ * the node that now occupies that position.
+ */
+function rangeAt(ranges: readonly NodeRange[], pos: number, previousType?: string): NodeRange | undefined {
+  let deepest: NodeRange | undefined
+  let sameType: NodeRange | undefined
+  for (const range of ranges) {
+    if (range.offset > pos || pos >= range.end) continue
+    if (!deepest || range.offset > deepest.offset) deepest = range
+    if (previousType !== undefined && range.type === previousType && (!sameType || range.offset > sameType.offset)) sameType = range
+  }
+  return sameType ?? deepest
+}
+
+/**
+ * A server block owns one stable Block ID across split, paste and nesting.
+ * Identity lives in editor JSON, never in clipboard HTML, so pasting a block
+ * into another page always receives a fresh ID.
+ */
 export const BlockIdentity = Extension.create({
   name: 'blockIdentity',
   addGlobalAttributes() {
     return [{
-      types: blockNodes,
+      types: [...BLOCK_NODE_NAMES],
       attributes: {
         blockId: {
           default: null,
-          // Identity lives in editor JSON, never in clipboard HTML. Pasting a
-          // block into another page must receive a fresh ID.
           rendered: false,
         },
       },
@@ -24,54 +68,40 @@ export const BlockIdentity = Extension.create({
     return [new Plugin({
       appendTransaction: (transactions, oldState, state) => {
         if (transactions.every((change) => !change.docChanged)) return null
-        const currentIds = new Set<string>()
+        const current = collectBlockNodes(state.doc)
+        const seenIds = new Set<string>()
         let needsRepair = false
-        state.doc.forEach((node) => {
-          if (!blockNodes.includes(node.type.name)) return
-          const id = node.attrs.blockId
-          if (typeof id !== 'string' || !id || currentIds.has(id)) needsRepair = true
-          else currentIds.add(id)
-        })
+        for (const range of current) {
+          if (typeof range.id !== 'string' || !range.id || seenIds.has(range.id)) { needsRepair = true; break }
+          seenIds.add(range.id)
+        }
         if (!needsRepair) return null
-        let transaction = state.tr
-        const seen = new Set<string>()
         const inherited = new Map<number, string>()
-        const positions: Array<{ offset: number; end: number }> = []
-        state.doc.forEach((node, offset) => { positions.push({ offset, end: offset + node.nodeSize }) })
-        oldState.doc.forEach((node, offset) => {
-          const id = node.attrs.blockId
-          if (typeof id !== 'string' || !id) return
-          let mapped = offset + 1
+        for (const previous of collectBlockNodes(oldState.doc)) {
+          if (typeof previous.id !== 'string' || !previous.id) continue
+          let mapped = previous.offset + 1
           for (const change of transactions) {
             const result = change.mapping.mapResult(mapped)
-            if (result.deleted) return
+            if (result.deleted) { mapped = -1; break }
             mapped = result.pos
           }
-          let low = 0
-          let high = positions.length - 1
-          while (low <= high) {
-            const middle = (low + high) >> 1
-            const next = positions[middle]!
-            if (mapped < next.offset) high = middle - 1
-            else if (mapped >= next.end) low = middle + 1
-            else {
-              if (!inherited.has(next.offset)) inherited.set(next.offset, id)
-              break
-            }
-          }
-        })
+          if (mapped < 0) continue
+          const target = rangeAt(current, mapped, previous.type)
+          if (target && !inherited.has(target.offset)) inherited.set(target.offset, previous.id)
+        }
         const preferred = new Map([...inherited].map(([offset, id]) => [id, offset]))
-        state.doc.forEach((node, offset) => {
-          if (!blockNodes.includes(node.type.name)) return
-          const id = node.attrs.blockId
-          const keepId = typeof id === 'string' && !!id && !seen.has(id) && (preferred.get(id) === undefined || preferred.get(id) === offset)
-          const candidate = inherited.get(offset)
-          const nextId = keepId ? id! : candidate && !seen.has(candidate) ? candidate : createLocalId()
+        const seen = new Set<string>()
+        let transaction = state.tr
+        for (const range of current) {
+          const keepId = typeof range.id === 'string' && !!range.id && !seen.has(range.id) && (preferred.get(range.id) === undefined || preferred.get(range.id) === range.offset)
+          const candidate = inherited.get(range.offset)
+          const nextId = keepId ? range.id as string : candidate && !seen.has(candidate) ? candidate : createLocalId()
           seen.add(nextId)
-          if (keepId) return
-          const attrs = { ...node.attrs, blockId: nextId }
-          transaction = transaction.setNodeMarkup(offset, undefined, attrs)
-        })
+          if (keepId) continue
+          const node = state.doc.nodeAt(range.offset)
+          if (!node) continue
+          transaction = transaction.setNodeMarkup(range.offset, undefined, { ...node.attrs, blockId: nextId })
+        }
         return transaction.docChanged ? transaction : null
       },
     })]

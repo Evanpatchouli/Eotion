@@ -677,7 +677,7 @@ test('slash lists Chinese grouped commands, filters, navigates and respects IME 
   const menu = page.locator('.p2-slash-menu')
   await expect(bubble(page)).toHaveCount(0)
   await expect(menu.getByRole('option')).toHaveText([
-    '文本', '一级标题', '二级标题', '项目列表', '编号列表', '待办', '引用', '代码块', '分割线', '图片', '文件',
+    '文本', '一级标题', '二级标题', '项目列表', '编号列表', '待办', '引用', '代码块', '折叠列表', '分割线', '图片', '文件',
   ])
   await expect(menu.locator('.p2-slash-group')).toHaveText(['基础', '块', '媒体'])
   await page.keyboard.press('ArrowUp')
@@ -698,7 +698,7 @@ test('slash lists Chinese grouped commands, filters, navigates and respects IME 
   await body.press('Control+A')
   await body.press('Backspace')
   await body.pressSequentially('/列表')
-  await expect(menu.getByRole('option')).toHaveText(['项目列表', '编号列表'])
+  await expect(menu.getByRole('option')).toHaveText(['项目列表', '编号列表', '折叠列表'])
   await page.keyboard.press('ArrowDown')
   await expect(menu.getByRole('option', { name: '编号列表' })).toHaveAttribute('aria-selected', 'true')
   await page.keyboard.press('ArrowUp')
@@ -780,6 +780,7 @@ for (const { label, type, selector } of [
   { label: '待办', type: 'todo', selector: '.attachment-todo' },
   { label: '引用', type: 'quote', selector: 'blockquote' },
   { label: '代码块', type: 'code', selector: 'pre' },
+  { label: '折叠列表', type: 'toggle', selector: '.eotion-toggle' },
   { label: '分割线', type: 'divider', selector: 'hr' },
 ]) {
   test(`slash ${label} saves and reloads the supported block`, async ({ page }) => {

@@ -1,13 +1,20 @@
 import type { BlockResponse, BlockUpdateRequest } from '@eotion/contracts'
+import { orderForDeletion } from '@eotion/domain/block-tree'
 
 import { errorMessage } from '../services/productApi'
 import { useProductSyncStore } from '../stores/productSync'
-import { assignBlockOrder } from './blockOrder'
+import { assignBlockTreeOrder } from './blockOrder'
 import { blocksToDocument, documentToBlocks, type EditorBlock } from './blockCodec'
 import type { EditorDocument } from './editorDocument'
 import { rememberPageDraft } from './pendingPageDraft'
 
 export type SaveStatus = 'loading' | 'saved' | 'saving' | 'error'
+
+type Change =
+  | { kind: 'create'; block: EditorBlock }
+  | { kind: 'update'; block: EditorBlock; patch: BlockUpdateRequest }
+  | { kind: 'move'; block: EditorBlock }
+  | { kind: 'delete'; block: BlockResponse }
 
 export class PagePersistence {
   status: SaveStatus = 'loading'
@@ -88,6 +95,7 @@ export class PagePersistence {
     return blocks.every((block) => {
       const old = this.baseline.get(block.id)
       return old?.type === block.type && old.orderKey === block.orderKey &&
+        (old.parentBlockId ?? null) === (block.parentBlockId ?? null) &&
         JSON.stringify(old.props) === JSON.stringify(block.props)
     })
   }
@@ -145,13 +153,13 @@ export class PagePersistence {
   private currentBlocks(): EditorBlock[] {
     if (!this.document) return []
     const decoded = documentToBlocks(this.document, [...this.baseline.values()], this.hasStoredBlocks)
-    return assignBlockOrder(decoded, new Map([...this.baseline].map(([id, block]) => [id, block.orderKey])))
+    return assignBlockTreeOrder(decoded, new Map([...this.baseline].map(([id, block]) => [id, block.orderKey])))
   }
 
-  private changes(): Array<{ kind: 'create' | 'update' | 'delete'; block: EditorBlock | BlockResponse; patch?: BlockUpdateRequest }> {
+  private changes(): Change[] {
     const current = this.currentBlocks()
     const byId = new Map(current.map((block) => [block.id, block]))
-    const changes: Array<{ kind: 'create' | 'update' | 'delete'; block: EditorBlock | BlockResponse; patch?: BlockUpdateRequest }> = []
+    const changes: Change[] = []
     for (const block of current) {
       const old = this.baseline.get(block.id)
       if (!old) {
@@ -163,10 +171,12 @@ export class PagePersistence {
       if (old.orderKey !== block.orderKey) patch.orderKey = block.orderKey
       if (JSON.stringify(old.props) !== JSON.stringify(block.props)) patch.props = block.props
       if (Object.keys(patch).length) changes.push({ kind: 'update', block, patch })
+      if ((old.parentBlockId ?? null) !== (block.parentBlockId ?? null)) changes.push({ kind: 'move', block })
     }
-    for (const old of this.baseline.values()) {
-      if (!byId.has(old.id)) changes.push({ kind: 'delete', block: old })
-    }
+    // Nested blocks must be removed children first, so the parent delete never
+    // races a surviving child on either the local store or the server.
+    const removed = [...this.baseline.values()].filter((block) => !byId.has(block.id))
+    for (const block of orderForDeletion([...this.baseline.values()], removed)) changes.push({ kind: 'delete', block })
     return changes
   }
 
@@ -180,31 +190,31 @@ export class PagePersistence {
           this.state('saved')
           return true
         }
-        try {
-          if (next.kind === 'delete') {
-            await local.deleteBlock(this.workspaceId, next.block.id)
-            this.baseline.delete(next.block.id)
-          } else if (next.kind === 'create') {
-            const block = next.block as EditorBlock
-            const now = new Date().toISOString()
-            const created: BlockResponse = {
-              id: block.id, workspaceId: this.workspaceId, pageId: this.pageId, parentBlockId: null,
-              type: block.type, orderKey: block.orderKey, props: block.props, createdAt: now, updatedAt: now,
-            }
-            await local.upsertBlock(created)
-            this.baseline.set(created.id, created)
-            this.hasStoredBlocks = true
-          } else {
-            const old = this.baseline.get(next.block.id)!
-            const updated: BlockResponse = { ...old, ...next.patch!, updatedAt: new Date().toISOString() }
-            await local.upsertBlock(updated)
-            this.baseline.set(updated.id, updated)
-            this.hasStoredBlocks = true
+        const now = new Date().toISOString()
+        if (next.kind === 'delete') {
+          await local.deleteBlock(this.workspaceId, next.block.id)
+          this.baseline.delete(next.block.id)
+        } else if (next.kind === 'create') {
+          const block = next.block
+          const created: BlockResponse = {
+            id: block.id, workspaceId: this.workspaceId, pageId: this.pageId, parentBlockId: block.parentBlockId,
+            type: block.type, orderKey: block.orderKey, props: block.props, createdAt: now, updatedAt: now,
           }
-          sync.localMutation()
-        } catch (cause) {
-          throw cause
+          await local.upsertBlock(created)
+          this.baseline.set(created.id, created)
+          this.hasStoredBlocks = true
+        } else if (next.kind === 'move') {
+          const old = this.baseline.get(next.block.id)!
+          await local.moveBlock(this.workspaceId, next.block.id, next.block.parentBlockId, next.block.orderKey)
+          this.baseline.set(next.block.id, { ...old, parentBlockId: next.block.parentBlockId, orderKey: next.block.orderKey, updatedAt: now })
+        } else {
+          const old = this.baseline.get(next.block.id)!
+          const updated: BlockResponse = { ...old, ...next.patch, updatedAt: now }
+          await local.upsertBlock(updated)
+          this.baseline.set(updated.id, updated)
+          this.hasStoredBlocks = true
         }
+        sync.localMutation()
       }
       return false
     } catch (cause) {
@@ -212,5 +222,4 @@ export class PagePersistence {
       return false
     }
   }
-
 }

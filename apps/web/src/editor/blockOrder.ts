@@ -1,1 +1,1 @@
-export { assignBlockOrder } from '@eotion/domain/order'
+export { assignBlockOrder, assignBlockTreeOrder } from '@eotion/domain/order'

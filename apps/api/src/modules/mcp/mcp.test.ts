@@ -462,20 +462,21 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
       assert.match(pagePayload.updatedAt, /^\d{4}-\d\d-\d\dT/);
       assert.deepEqual(pagePayload.blocks.map(({ id }: { id: string }) => id), blockFixtures.map(({ id }) => id));
       assert.deepEqual(pagePayload.blocks.slice(0, 5), [
-        { id: "mcp-block-a", type: "paragraph", text: "A paragraph" },
-        { id: "mcp-block-b", type: "heading", text: "A heading", level: 2 },
-        { id: "mcp-block-c", type: "todo", text: "A task", checked: true },
-        { id: "mcp-block-d", type: "code", text: "const answer = 42", language: "typescript" },
-        { id: "mcp-block-e", type: "numbered-list", text: "3. Third item", start: 3, items: ["Third item"] },
+        { id: "mcp-block-a", type: "paragraph", text: "A paragraph", parentBlockId: null, depth: 0 },
+        { id: "mcp-block-b", type: "heading", text: "A heading", level: 2, parentBlockId: null, depth: 0 },
+        { id: "mcp-block-c", type: "todo", text: "A task", checked: true, parentBlockId: null, depth: 0 },
+        { id: "mcp-block-d", type: "code", text: "const answer = 42", language: "typescript", parentBlockId: null, depth: 0 },
+        { id: "mcp-block-e", type: "numbered-list", text: "3. Third item", start: 3, items: ["Third item"], parentBlockId: null, depth: 0 },
       ]);
       assert.deepEqual(pagePayload.blocks.slice(5), [
-        { id: "mcp-block-f", type: "image", text: "", fileId: "file-image", name: "diagram.png", mimeType: "image/png", size: 1234 },
-        { id: "mcp-block-g", type: "file", text: "", fileId: "file-doc", name: "notes.pdf", mimeType: "application/pdf", size: 5678 },
+        { id: "mcp-block-f", type: "image", text: "", fileId: "file-image", name: "diagram.png", mimeType: "image/png", size: 1234, parentBlockId: null, depth: 0 },
+        { id: "mcp-block-g", type: "file", text: "", fileId: "file-doc", name: "notes.pdf", mimeType: "application/pdf", size: 5678, parentBlockId: null, depth: 0 },
       ]);
       const pageText = pageResult.content.find((item) => item.type === "text");
       assert.ok(pageText?.type === "text");
       assert.deepEqual(JSON.parse(pageText.text), pageResult.structuredContent);
-      assert.doesNotMatch(JSON.stringify(pageResult.structuredContent), /privateExtension|private\.example|orderKey|props|node|url|token|authorization|oplog|editor|session|blockId/i);
+      // parentBlockId is an intentional public field of P7.1; the internal blockId attribute must still never leak.
+      assert.doesNotMatch(JSON.stringify(pageResult.structuredContent), /privateExtension|private\.example|orderKey|props|node|url|token|authorization|oplog|editor|session|\bblockId\b/i);
 
       const missingPage = await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: "mcp-page-missing" } });
       const otherUsersPage = await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: "mcp-page-e" } });

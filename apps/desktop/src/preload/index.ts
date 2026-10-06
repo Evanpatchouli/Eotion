@@ -14,6 +14,7 @@ const storage: LocalStore = {
   getBlock: (id) => ipcRenderer.invoke('eotion:storage:getBlock', id),
   listBlocksByPage: (pageId) => ipcRenderer.invoke('eotion:storage:listBlocksByPage', pageId),
   upsertBlock: (block) => ipcRenderer.invoke('eotion:storage:upsertBlock', block),
+  moveBlock: (workspaceId, id, parentBlockId, orderKey) => ipcRenderer.invoke('eotion:storage:moveBlock', workspaceId, id, parentBlockId, orderKey),
   deleteBlock: (workspaceId, id) => ipcRenderer.invoke('eotion:storage:deleteBlock', workspaceId, id),
   getPendingOperations: () => ipcRenderer.invoke('eotion:storage:getPendingOperations'),
   markOperationSynced: (id) => ipcRenderer.invoke('eotion:storage:markOperationSynced', id),

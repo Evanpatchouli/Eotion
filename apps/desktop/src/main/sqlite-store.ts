@@ -2,6 +2,8 @@ import { mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import type { SyncOperation } from '@eotion/contracts'
+import { isAllowedChildBlockType } from '@eotion/domain/block-types'
+import { parentRejection, parentRejectionMessage } from '@eotion/domain/block-tree'
 import { createLocalId, validateWorkspaceSnapshot, type FileCleanupTask, type LocalBlockRecord, type LocalPageRecord, type LocalStore, type StorageOperation } from '@eotion/storage'
 
 type OperationKind = SyncOperation['kind']
@@ -262,6 +264,7 @@ export class SqliteLocalStore implements LocalStore {
         const parentRow = this.database.prepare('SELECT document FROM blocks WHERE id = ?').get(block.parentBlockId) as { document: string } | undefined
         const parent = parentRow ? JSON.parse(parentRow.document) as LocalBlockRecord : undefined
         if (!parent || parent.pageId !== block.pageId || parent.workspaceId !== block.workspaceId) throw new Error(`Parent block ${block.parentBlockId} is unavailable in this workspace page`)
+        if (!isAllowedChildBlockType(parent.type, block.type)) throw new Error(`Parent block ${block.parentBlockId} cannot own a ${block.type} block`)
       }
       this.database.prepare(`
         INSERT INTO blocks (id, page_id, order_key, document) VALUES (?, ?, ?, ?)
@@ -272,6 +275,26 @@ export class SqliteLocalStore implements LocalStore {
       const operationId = this.appendOperation({ kind: 'block.upsert', workspaceId, payload: { id, pageId, parentBlockId: parentBlockId ?? null, type, orderKey, props } })
       const oldFileId = existing ? getAttachmentFileId(existing) : undefined
       if (oldFileId && oldFileId !== getAttachmentFileId(block)) this.enqueueCleanup(workspaceId, oldFileId, operationId)
+    })
+  }
+
+  async moveBlock(workspaceId: string, id: string, parentBlockId: string | null, orderKey: string): Promise<void> {
+    this.transaction(() => {
+      const row = this.database.prepare('SELECT document FROM blocks WHERE id = ?').get(id) as { document: string } | undefined
+      const block = row ? JSON.parse(row.document) as LocalBlockRecord : undefined
+      if (!block || block.workspaceId !== workspaceId) throw new Error(`Block ${id} is unavailable in this workspace`)
+      const siblingRows = this.database.prepare('SELECT document FROM blocks WHERE page_id = ?').all(block.pageId) as { document: string }[]
+      const siblings = siblingRows.map(({ document }) => JSON.parse(document) as LocalBlockRecord)
+      const rejection = parentRejection(siblings, id, parentBlockId, block.pageId)
+      if (rejection) throw new Error(parentRejectionMessage(rejection, id, parentBlockId ?? ''))
+      if (parentBlockId !== null) {
+        const parent = siblings.find((candidate) => candidate.id === parentBlockId)
+        if (!parent) throw new Error(`Parent block ${parentBlockId} is unavailable in this workspace page`)
+        if (!isAllowedChildBlockType(parent.type, block.type)) throw new Error(`Parent block ${parentBlockId} cannot own a ${block.type} block`)
+      }
+      this.database.prepare('UPDATE blocks SET document = ?, order_key = ? WHERE id = ?')
+        .run(JSON.stringify({ ...block, parentBlockId, orderKey }), orderKey, id)
+      this.appendOperation({ kind: 'block.move', workspaceId, payload: { id, pageId: block.pageId, parentBlockId, orderKey } })
     })
   }
 

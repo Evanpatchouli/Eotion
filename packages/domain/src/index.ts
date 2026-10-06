@@ -9,9 +9,40 @@ export interface PageSummary {
 
 import type { BlockType } from './block-types'
 
-export { BLOCK_TYPES } from './block-types'
-export type { BlockType } from './block-types'
-export { assignBlockOrder, nextOrderKey } from './order'
+export {
+  BLOCK_CAPABILITIES,
+  BLOCK_COMMANDS,
+  BLOCK_NODE_NAMES,
+  BLOCK_NODE_TYPES,
+  BLOCK_TYPES,
+  EDITOR_NODE_NAMES,
+  EDITOR_NODE_RULES,
+  blockAllowsChildren,
+  blockCapability,
+  blockTypeForNode,
+  editorNodeRule,
+  isAllowedChildBlockType,
+  isAttachmentBlockType,
+  isBlockType,
+  isMcpReadableBlockType,
+  isMcpWritableBlockType,
+  nodeTypeForBlock,
+  slashCommands,
+} from './block-types'
+export type { BlockCapability, BlockCommandId, BlockCommandSpec, BlockType, EditorNodeRule } from './block-types'
+export {
+  blockDepthMap,
+  buildBlockTree,
+  descendantIds,
+  flattenBlockTree,
+  orderForDeletion,
+  parentOf,
+  parentRejection,
+  parentRejectionMessage,
+  validateBlockTree,
+} from './block-tree'
+export type { BlockLink, BlockTreeOrderLink, BlockTreeNode, ParentRejection } from './block-tree'
+export { assignBlockOrder, assignBlockTreeOrder, nextOrderKey } from './order'
 
 export interface BlockRecord {
   id: Id

@@ -158,6 +158,16 @@ const syncOperationSchema = z.discriminatedUnion('kind', [
     kind: z.literal('block.delete'),
     payload: z.object({ id: idSchema }).strict(),
   }).strict(),
+  z.object({
+    ...syncOperationBase,
+    kind: z.literal('block.move'),
+    payload: z.object({
+      id: idSchema,
+      pageId: idSchema,
+      parentBlockId: idSchema.nullable(),
+      orderKey: idSchema,
+    }).strict(),
+  }).strict(),
 ])
 
 export const SyncOperationSchema = syncOperationSchema

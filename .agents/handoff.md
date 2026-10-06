@@ -1,5 +1,18 @@
 # Handoff
 
+## 2026-10-06 P7.1 Advanced Blocks 交接
+
+P7.1 Block Model Foundation 实现完成。阶段重定义：P7 由「协作」调整为 Advanced Blocks（P7.1 Block Model Foundation / P7.2 Rich Blocks / P7.3 Nested Blocks UX / P7.4 Table / P7.5 Acceptance），原协作内容顺延为 P7.x，docs/roadmap.md 与 docs/README.md 已同步。
+
+- Block 单一来源：packages/domain/src/block-types.ts 的 BLOCK_TYPES / BLOCK_NODE_TYPES / BLOCK_CAPABILITIES / EDITOR_NODE_RULES / BLOCK_COMMANDS 同时服务 editor codec、server domain、MCP read 与 slash menu；BLOCK_TYPES 新增 toggle 属加性扩展，旧数据仍合法。
+- 嵌套模型：复用 parentBlockId；packages/domain/src/block-tree.ts 提供 self-parent / missing parent / cross-page parent / cycle 校验与稳定树重建（buildBlockTree / flattenBlockTree / orderForDeletion）；LocalStore、SqliteLocalStore、BlockService、validateWorkspaceSnapshot 共用同一实现；reparent 走新的 block.move（contracts + LocalStore.moveBlock + SyncService）。
+- 编辑器：EotionToggle + ToggleNodeView；折叠状态是 localStorage 偏好（eotion:collapsed-toggles），不进入 props；BlockIdentity 覆盖 toggle 子区块；PagePersistence 按 parent 分组分配 orderKey、parent 变化发 block.move、删除按子先于父排序。
+- MCP：无新 tool；read 增加可选 parentBlockId/depth 并按深度优先返回，toggle 可读不可写。
+- 验证：domain 10/10、storage 6/6、api domain 2/2、api mcp 16/16、web test:product 167/167（含新增 product-blocks，需 `--workers=1`；本沙箱默认多 worker 运行偶发与本次改动无关的 UI 超时，逐个单独运行均通过）、test:storage 11/11、root typecheck、build:web/build:api、git diff --check 通过。注意本沙箱默认 ELECTRON_RUN_AS_NODE=1，会让 3 个 Electron 用例报 Process failed to launch，运行前需清除该变量。test:visual 为 6/7，Connectivity backend unavailable desktop 在干净基线同样失败，属既有环境基线差异，与本阶段无关。
+- 独立 review（只读）无 blocker；review 提出的 Major（新测试未接入脚本、BlockIdentity 身份继承、环/损坏树未 fail-closed、allowedChildTypes 未落地、toggle summary 假设）已在提交前修复并补回归测试。
+- 已知限制：已有段落转 Toggle 会走一次 block 重建（旧段落 block 删除 + 新 toggle block 创建）；wrapIn 与 Quote 相同会留下尾部空段落区块；拖拽嵌套与 Tab/Shift+Tab 缩进属于 P7.3。
+- 下一步：本轮只到 P7.1，不开始 P7.2。
+
 ## 2026-10-06 HarmonyOS 应用内补测交接
 
 用户指定根 release/0.0.1-beta/Eotion-0.0.1-beta-harmony.hap，构建 a0d3a4da93eb，已通过 hdc install -r 覆盖安装 nova 14 (TLR-AL00/OpenHarmony-6.1.1.120)。用户帮登录后只执行应用内剩余项目；用户说已手测断网重连等，本轮不重复网络切换/kill。附件上传也由用户接手，当前未收到结果。

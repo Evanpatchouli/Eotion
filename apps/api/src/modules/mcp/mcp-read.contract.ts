@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { BLOCK_NODE_TYPES, BLOCK_TYPES, EDITOR_NODE_NAMES, EDITOR_NODE_RULES, blockDepthMap, flattenBlockTree } from '@eotion/domain'
 import type { PageRecord, ServerBlockRecord } from '../server-domain/types'
 
 const idSchema = z.string().trim().min(1).max(128)
@@ -27,11 +28,13 @@ export const McpPageSummarySchema = z.strictObject({
   updatedAt: z.string(),
 })
 
-const McpBlockTypeSchema = z.enum(['paragraph', 'heading', 'bulleted-list', 'numbered-list', 'quote', 'code', 'divider', 'image', 'file', 'todo'])
+const McpBlockTypeSchema = z.enum(BLOCK_TYPES)
 const McpBlockBaseSchema = z.strictObject({
   id: z.string(), type: McpBlockTypeSchema, text: z.string(),
   items: z.array(z.string()).max(1000).optional(),
   paragraphs: z.array(z.string()).max(1000).optional(),
+  parentBlockId: z.string().nullable().optional(),
+  depth: z.number().int().min(0).optional(),
 })
 export const McpBlockSchema = McpBlockBaseSchema.extend({
   level: z.number().int().min(1).max(6).optional(),
@@ -58,34 +61,8 @@ const MAX_NODE_DEPTH = 32
 const MAX_NODES = 10_000
 const MAX_RESULT_BYTES = 1024 * 1024
 
-const blockTypeToNode: Record<string, string> = {
-  paragraph: 'paragraph',
-  heading: 'heading',
-  'bulleted-list': 'bulletList',
-  'numbered-list': 'orderedList',
-  quote: 'blockquote',
-  code: 'codeBlock',
-  divider: 'horizontalRule',
-  image: 'eotionImage',
-  file: 'eotionFile',
-  todo: 'eotionTodo',
-}
-
-const nodeTypeSet = new Set(Object.values(blockTypeToNode).concat(['text', 'hardBreak', 'listItem']))
+const nodeTypeSet = new Set(EDITOR_NODE_NAMES)
 const safeImageMimeTypes = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'])
-const allowedAttrs: Record<string, readonly string[]> = {
-  paragraph: [], heading: ['level'], bulletList: [], orderedList: ['start', 'type'], listItem: [],
-  blockquote: [], codeBlock: ['language'], hardBreak: [], horizontalRule: [],
-  eotionImage: ['fileId', 'name', 'mimeType', 'size', 'url'], eotionFile: ['fileId', 'name', 'mimeType', 'size', 'url'],
-  eotionTodo: ['checked'], text: [],
-}
-const allowedChildren: Record<string, readonly string[] | null> = {
-  text: null, paragraph: ['text', 'hardBreak'], heading: ['text', 'hardBreak'],
-  bulletList: ['listItem'], orderedList: ['listItem'], listItem: ['paragraph', 'bulletList', 'orderedList'],
-  blockquote: ['paragraph', 'heading', 'bulletList', 'orderedList', 'blockquote', 'codeBlock', 'horizontalRule'],
-  codeBlock: ['text'], hardBreak: null, horizontalRule: null, eotionImage: null, eotionFile: null,
-  eotionTodo: ['text', 'hardBreak'],
-}
 
 type JsonNode = { type: string; text?: string; attrs?: Record<string, unknown>; content?: JsonNode[]; marks?: unknown[] }
 
@@ -119,10 +96,12 @@ function readNode(value: unknown, depth: number, counter: { nodes: number; textC
     if (counter.textChars > MAX_TEXT_CHARS) throw new Error('Block text too large')
   }
   if (attrs !== undefined && !isRecord(attrs)) throw new Error('Unsupported block')
+  const rule = EDITOR_NODE_RULES[type]
+  if (!rule) throw new Error('Unsupported block')
   const cleanAttrs = attrs ? { ...attrs } : undefined
-  if (cleanAttrs && Object.keys(cleanAttrs).some((key) => key === 'blockId' || !allowedAttrs[type]!.includes(key))) throw new Error('Unsupported block')
-  if (content !== undefined && (!Array.isArray(content) || content.some((child) => !isRecord(child) || typeof child.type !== 'string' || !allowedChildren[type]?.includes(child.type)))) throw new Error('Unsupported block')
-  if ((allowedChildren[type] === null || !allowedChildren[type]) && content !== undefined && content.length > 0) throw new Error('Unsupported block')
+  if (cleanAttrs && Object.keys(cleanAttrs).some((key) => key === 'blockId' || !rule.attrs.includes(key))) throw new Error('Unsupported block')
+  if (content !== undefined && (!Array.isArray(content) || content.some((child) => !isRecord(child) || typeof child.type !== 'string' || !rule.children?.includes(child.type)))) throw new Error('Unsupported block')
+  if (rule.children === null && content !== undefined && content.length > 0) throw new Error('Unsupported block')
   if (type === 'heading' && cleanAttrs?.level !== undefined && ![1, 2, 3, 4, 5, 6].includes(Number(cleanAttrs.level))) throw new Error('Unsupported block')
   if (type === 'eotionTodo' && typeof cleanAttrs?.checked !== 'boolean') throw new Error('Unsupported block')
   if (type === 'orderedList' && cleanAttrs?.type !== undefined && cleanAttrs.type !== null) throw new Error('Unsupported block')
@@ -188,6 +167,8 @@ function textFor(type: string, node: JsonNode): string {
   if (type === 'quote') return renderQuote(node)
   if (type === 'code') return inlineText(node.content)
   if (type === 'divider' || type === 'image' || type === 'file') return ''
+  // A toggle renders the inline text of its first content child (the summary paragraph).
+  if (type === 'toggle') return inlineText(node.content?.[0]?.content)
   return inlineText(node.content)
 }
 
@@ -207,15 +188,14 @@ export function toMcpPageSummary(page: PageRecord): McpPageSummary {
   return { id: page.id, workspaceId: page.workspaceId, title: page.title, parentPageId: page.parentPageId, updatedAt: page.updatedAt }
 }
 
-export function toMcpBlock(block: ServerBlockRecord, counter = { nodes: 0 }): McpBlock {
-  if (block.parentBlockId != null) throw new Error('Unsupported nested block')
-  const expectedNode = blockTypeToNode[block.type]
+export function toMcpBlock(block: ServerBlockRecord, counter = { nodes: 0 }, depth = 0): McpBlock {
+  const expectedNode = BLOCK_NODE_TYPES[block.type]
   if (!expectedNode || !isRecord(block.props) || Object.keys(block.props).length !== 1 || !('node' in block.props)) throw new Error('Unsupported block')
   const textCounter = { nodes: counter.nodes, textChars: 0 }
   const node = readNode(block.props.node, 1, textCounter)
   counter.nodes = textCounter.nodes
   if (node.type !== expectedNode) throw new Error('Unsupported block')
-  const dto: McpBlock = { id: block.id, type: block.type, text: textFor(block.type, node) }
+  const dto: McpBlock = { id: block.id, type: block.type, text: textFor(block.type, node), parentBlockId: block.parentBlockId ?? null, depth }
   if (block.type === 'bulleted-list' || block.type === 'numbered-list') {
     const items = listItems(node)
     if (items) dto.items = items
@@ -246,11 +226,16 @@ export function assertMcpResultSize<T>(result: T): T {
 
 export function toMcpBlocks(blocks: ServerBlockRecord[]): McpBlock[] {
   if (blocks.length > MAX_BLOCKS) throw new Error('Too many blocks')
+  const ordered = flattenBlockTree(blocks)
+  // Fail closed on a rootless parent cycle: a partial read must never look like
+  // a complete one.
+  if (ordered.length !== blocks.length) throw new Error('Unsupported block')
+  const depths = blockDepthMap(blocks)
   const counter = { nodes: 0 }
   const mapped: McpBlock[] = []
   let mappedBytes = 2 // JSON array brackets
-  for (const block of blocks) {
-    const dto = toMcpBlock(block, counter)
+  for (const block of ordered) {
+    const dto = toMcpBlock(block, counter, depths.get(block.id) ?? 0)
     mappedBytes += Buffer.byteLength(JSON.stringify(dto), 'utf8') + (mapped.length ? 1 : 0)
     if (mappedBytes > MAX_RESULT_BYTES) throw new Error('MCP result too large')
     mapped.push(dto)

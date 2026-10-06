@@ -71,3 +71,25 @@ export function assignBlockOrder<T extends { id: string; orderKey: string }>(blo
   }
   return blocks.map((block, index) => ({ ...block, orderKey: formatBlockKey(allocated[index]!) }))
 }
+
+/**
+ * Assigns order keys per sibling group so nested blocks keep an independent
+ * order from their tree position. Input order is preserved.
+ */
+export function assignBlockTreeOrder<T extends { id: string; parentBlockId?: string | null; orderKey: string }>(
+  blocks: readonly T[],
+  previous: ReadonlyMap<string, string>,
+): T[] {
+  const groups = new Map<string | null, T[]>()
+  for (const block of blocks) {
+    const parent = block.parentBlockId ?? null
+    const group = groups.get(parent)
+    if (group) group.push(block)
+    else groups.set(parent, [block])
+  }
+  const ordered = new Map<string, T>()
+  for (const group of groups.values()) {
+    for (const block of assignBlockOrder(group, previous)) ordered.set(block.id, block)
+  }
+  return blocks.map((block) => ordered.get(block.id)!)
+}

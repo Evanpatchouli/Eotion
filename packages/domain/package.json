@@ -20,11 +20,18 @@
       "import": "./src/order.ts",
       "require": "./dist/order.js",
       "default": "./dist/order.js"
+    },
+    "./block-tree": {
+      "types": "./src/block-tree.ts",
+      "node": "./dist/block-tree.js",
+      "import": "./src/block-tree.ts",
+      "default": "./src/block-tree.ts"
     }
   },
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && node --test test/*.test.cjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

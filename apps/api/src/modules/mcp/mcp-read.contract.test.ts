@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { PageRecord, ServerBlockRecord } from '../server-domain/types'
-import { assertMcpResultSize, toMcpBlock, toMcpBlocks, toMcpPageSummary } from './mcp-read.contract'
+import { GetPageOutputSchema, assertMcpResultSize, toMcpBlock, toMcpBlocks, toMcpPageSummary } from './mcp-read.contract'
 
 const page = {
   id: 'page-1', workspaceId: 'workspace-1', title: 'A page', parentPageId: null,
@@ -34,7 +34,7 @@ test('MCP block mapper renders all ten supported block types and preserves order
     block('image', { type: 'eotionImage', attrs: { fileId: 'file-image', name: 'image.png', mimeType: 'image/png', size: 12, url: 'https://private.invalid/signed' } }),
     block('file', { type: 'eotionFile', attrs: { fileId: 'file-doc', name: 'doc.pdf', mimeType: 'application/pdf', size: 34, url: 'https://private.invalid/signed' } }),
     block('todo', { type: 'eotionTodo', attrs: { checked: true }, content: [{ type: 'text', text: 'done' }] }),
-  ]
+  ].map((entry, index) => ({ ...entry, orderKey: String(index).padStart(2, '0') }))
   const mapped = toMcpBlocks(blocks)
   assert.deepEqual(mapped.map(({ type }) => type), ['paragraph', 'heading', 'bulleted-list', 'numbered-list', 'quote', 'code', 'divider', 'image', 'file', 'todo'])
   assert.deepEqual(mapped.map(({ id }) => id), blocks.map(({ id }) => id))
@@ -53,16 +53,43 @@ test('MCP block mapper renders all ten supported block types and preserves order
   assert.equal(mapped[8]!.fileId, 'file-doc')
   assert.equal(mapped[9]!.checked, true)
   assert.equal(mapped[9]!.text, 'done')
-  assert.doesNotMatch(JSON.stringify(mapped), /workspaceId|pageId|parentBlockId|orderKey|createdAt|updatedAt|signed|props|url|node|blockId/)
+  assert.ok(mapped.every((entry) => entry.parentBlockId === null && entry.depth === 0))
+  assert.doesNotMatch(JSON.stringify(mapped), /workspaceId|pageId|orderKey|createdAt|updatedAt|signed|props|url|node|blockId/)
 })
 
-test('MCP mapper rejects unsupported, malformed, nested, and oversized data without passthrough', () => {
+test('MCP mapper rejects unsupported, malformed, and oversized data without passthrough', () => {
   assert.throws(() => toMcpBlock(block('paragraph', { type: 'paragraph', attrs: { blockId: 'internal' } })))
   assert.throws(() => toMcpBlock(block('paragraph', { type: 'unknown', content: [] })))
-  assert.throws(() => toMcpBlock({ ...block('paragraph', { type: 'paragraph' }), parentBlockId: 'parent' }))
+  const nested = toMcpBlock({ ...block('paragraph', { type: 'paragraph' }), parentBlockId: 'parent' })
+  assert.equal(nested.parentBlockId, 'parent')
+  assert.equal(nested.depth, 0)
   assert.throws(() => toMcpBlocks([block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'x'.repeat(100_001) }] })]))
   assert.throws(() => toMcpBlocks(Array.from({ length: 1001 }, (_, index) => block('divider', { type: 'horizontalRule' }, `block-${index}`))))
   assert.throws(() => assertMcpResultSize({ text: 'x'.repeat(1024 * 1024) }))
+})
+
+test('MCP mapper reads nested toggle blocks depth first and exposes parent ids', () => {
+  const summary = { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Summary' }] }] }
+  const toggle = { ...block('toggle', summary, 'block-toggle'), orderKey: 'a' }
+  const root = { ...block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Root' }] }, 'block-root'), orderKey: 'a' }
+  const child = { ...block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Child' }] }, 'block-child'), parentBlockId: 'block-toggle', orderKey: 'b' }
+  const grandchild = { ...block('paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Grandchild' }] }, 'block-grandchild'), parentBlockId: 'block-child', orderKey: 'a' }
+
+  // Deliberately shuffled: descendants arrive before their parents.
+  const mapped = toMcpBlocks([grandchild, child, toggle, root])
+  assert.deepEqual(mapped.map(({ id }) => id), ['block-root', 'block-toggle', 'block-child', 'block-grandchild'])
+  assert.deepEqual(mapped.map(({ parentBlockId }) => parentBlockId), [null, null, 'block-toggle', 'block-child'])
+  assert.deepEqual(mapped.map(({ depth }) => depth), [0, 0, 1, 2])
+  assert.equal(mapped[1]!.type, 'toggle')
+  assert.equal(mapped[1]!.text, 'Summary')
+  assert.equal(mapped[2]!.text, 'Child')
+  assert.equal(GetPageOutputSchema.parse({ ...toMcpPageSummary(page), blocks: mapped }).blocks.length, 4)
+})
+
+test('MCP mapper fails closed on a rootless parent cycle instead of returning a partial page', () => {
+  const first = { ...block('paragraph', { type: 'paragraph' }, 'cycle-a'), parentBlockId: 'cycle-b' }
+  const second = { ...block('paragraph', { type: 'paragraph' }, 'cycle-b'), parentBlockId: 'cycle-a' }
+  assert.throws(() => toMcpBlocks([first, second]), /Unsupported block/)
 })
 
 test('MCP mapper accepts the depth and cumulative node limits, then rejects the next level or node', () => {

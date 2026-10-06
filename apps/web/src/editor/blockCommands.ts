@@ -1,6 +1,8 @@
 import type { Editor } from '@tiptap/core'
+import type { BlockCommandId } from '@eotion/domain/block-types'
 
-export type BlockCommand = 'paragraph' | 'heading1' | 'heading2' | 'bulletList' | 'orderedList' | 'todo' | 'blockquote' | 'codeBlock' | 'horizontalRule'
+/** Commands that create a block. Attachment commands are handled by the attachment picker. */
+export type BlockCommand = Exclude<BlockCommandId, 'image' | 'file'>
 
 /** The same supported block commands back Slash and the optional fixed toolbar. */
 export function runBlockCommand(editor: Editor, command: BlockCommand, range?: { from: number; to: number }): boolean {
@@ -13,8 +15,10 @@ export function runBlockCommand(editor: Editor, command: BlockCommand, range?: {
     case 'bulletList': return chain.setParagraph().toggleBulletList().run()
     case 'orderedList': return chain.setParagraph().toggleOrderedList().run()
     case 'todo': return chain.setNode('eotionTodo', { checked: false }).run()
-    case 'blockquote': return chain.setBlockquote().run()
+    case 'quote': return chain.setBlockquote().run()
     case 'codeBlock': return chain.setCodeBlock().run()
     case 'horizontalRule': return chain.setHorizontalRule().run()
+    // A toggle wraps the current block as its summary; Enter then creates children.
+    case 'toggle': return chain.wrapIn('eotionToggle').run()
   }
 }

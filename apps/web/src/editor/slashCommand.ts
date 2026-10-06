@@ -1,26 +1,24 @@
 import { Extension } from '@tiptap/core'
 import Suggestion, { type SuggestionProps } from '@tiptap/suggestion'
+import { slashCommands, type BlockCommandId } from '@eotion/domain/block-types'
 import { h, render } from 'vue'
 
 import EotionIcon from '../components/ui/EotionIcon.vue'
 import { runBlockCommand, type BlockCommand } from './blockCommands'
 import type { IconName } from '../components/ui/icons'
 
-type SlashItem = { id: BlockCommand | 'image' | 'file'; label: string; group: '基础' | '块' | '媒体'; icon: `${IconName}`; search?: string }
+type SlashItem = { id: BlockCommandId; label: string; group: '基础' | '块' | '媒体'; icon: `${IconName}`; search: string }
 
-const items: SlashItem[] = [
-  { id: 'paragraph', label: '文本', group: '基础', icon: 'text', search: 'text paragraph' },
-  { id: 'heading1', label: '一级标题', group: '基础', icon: 'heading', search: 'h1 heading' },
-  { id: 'heading2', label: '二级标题', group: '基础', icon: 'heading', search: 'h2 heading' },
-  { id: 'bulletList', label: '项目列表', group: '基础', icon: 'list', search: 'bullet list' },
-  { id: 'orderedList', label: '编号列表', group: '基础', icon: 'list-ordered', search: 'ordered numbered list' },
-  { id: 'todo', label: '待办', group: '基础', icon: 'list-todo', search: 'todo task' },
-  { id: 'blockquote', label: '引用', group: '块', icon: 'quote', search: 'quote' },
-  { id: 'codeBlock', label: '代码块', group: '块', icon: 'code', search: 'code' },
-  { id: 'horizontalRule', label: '分割线', group: '块', icon: 'minus', search: 'divider rule' },
-  { id: 'image', label: '图片', group: '媒体', icon: 'image', search: 'image photo' },
-  { id: 'file', label: '文件', group: '媒体', icon: 'file-text', search: 'file attachment' },
-]
+/** Slash entries come from the domain block registry so the menu cannot drift from the block model. */
+const items: SlashItem[] = slashCommands().map((command) => ({
+  id: command.id,
+  label: command.label,
+  group: command.group,
+  icon: command.icon as `${IconName}`,
+  search: command.search ?? '',
+}))
+
+const attachmentCommands = new Set<BlockCommandId>(['image', 'file'])
 
 export function createSlashCommand(isComposing: () => boolean, onAttachmentCommand?: (type: 'image' | 'file') => void, attachmentsEnabled = true) {
   return Extension.create({
@@ -32,16 +30,16 @@ export function createSlashCommand(isComposing: () => boolean, onAttachmentComma
           char: '/',
           startOfLine: true,
           allow: () => !isComposing(),
-          items: ({ query }) => items.filter(item => (attachmentsEnabled || !['image', 'file'].includes(item.id)) &&
-            `${item.label} ${item.search ?? ''}`.toLowerCase().includes(query.toLowerCase()),
+          items: ({ query }) => items.filter(item => (attachmentsEnabled || !attachmentCommands.has(item.id)) &&
+            `${item.label} ${item.search}`.toLowerCase().includes(query.toLowerCase()),
           ),
           command: ({ editor, range, props: item }) => {
             if (isComposing()) return
 
-            if (item.id === 'image' || item.id === 'file') {
+            if (attachmentCommands.has(item.id)) {
               editor.chain().focus().deleteRange(range).setParagraph().run()
-              onAttachmentCommand?.(item.id)
-            } else runBlockCommand(editor, item.id, range)
+              onAttachmentCommand?.(item.id as 'image' | 'file')
+            } else runBlockCommand(editor, item.id as BlockCommand, range)
           },
           render: () => {
             let element: HTMLElement | undefined

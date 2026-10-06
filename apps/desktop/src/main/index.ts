@@ -29,6 +29,7 @@ function registerStorageBridge(store: SqliteLocalStore): void {
   handle('getBlock', (id: string) => store.getBlock(id))
   handle('listBlocksByPage', (pageId: string) => store.listBlocksByPage(pageId))
   handle('upsertBlock', (block: Parameters<SqliteLocalStore['upsertBlock']>[0]) => store.upsertBlock(block))
+  handle('moveBlock', (workspaceId: string, id: string, parentBlockId: string | null, orderKey: string) => store.moveBlock(workspaceId, id, parentBlockId, orderKey))
   handle('deleteBlock', (workspaceId: string, id: string) => store.deleteBlock(workspaceId, id))
   handle('getPendingOperations', () => store.getPendingOperations())
   handle('markOperationSynced', (id: string) => store.markOperationSynced(id))
