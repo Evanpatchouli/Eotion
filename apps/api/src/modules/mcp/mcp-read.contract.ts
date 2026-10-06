@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BLOCK_NODE_TYPES, BLOCK_TYPES, EDITOR_NODE_NAMES, EDITOR_NODE_RULES, blockDepthMap, flattenBlockTree, isAllowedChildBlockType, validateBlockTree, validateCalloutAttrs } from '@eotion/domain'
+import { BLOCK_NODE_TYPES, BLOCK_TYPES, EDITOR_NODE_NAMES, EDITOR_NODE_RULES, TABLE_LIMITS, blockDepthMap, flattenBlockTree, isAllowedChildBlockType, validateBlockTree, validateCalloutAttrs, validateTableCellAttrs } from '@eotion/domain'
 import type { PageRecord, ServerBlockRecord } from '../server-domain/types'
 
 const idSchema = z.string().trim().min(1).max(128)
@@ -47,6 +47,8 @@ export const McpBlockSchema = McpBlockBaseSchema.extend({
   size: z.number().int().nonnegative().optional(),
   icon: z.string().min(1).max(32).regex(/^[^\u0000-\u001f\u007f-\u009f]*$/u).optional(),
   tone: z.enum(['neutral', 'info', 'warning']).optional(),
+  /** Table content as a stable grid of cell texts; never the editor AST. */
+  rows: z.array(z.array(z.string()).max(TABLE_LIMITS.maxCellsPerRow)).max(TABLE_LIMITS.maxRows).optional(),
 })
 
 export const ListPagesOutputSchema = z.strictObject({ items: z.array(McpPageSummarySchema), nextCursor: z.string().nullable() })
@@ -104,9 +106,15 @@ function readNode(value: unknown, depth: number, counter: { nodes: number; textC
   if (cleanAttrs && Object.keys(cleanAttrs).some((key) => key === 'blockId' || !rule.attrs.includes(key))) throw new Error('Unsupported block')
   if (content !== undefined && (!Array.isArray(content) || content.some((child) => !isRecord(child) || typeof child.type !== 'string' || !rule.children?.includes(child.type)))) throw new Error('Unsupported block')
   if (rule.children === null && content !== undefined && content.length > 0) throw new Error('Unsupported block')
+  // A table must read as a non-degenerate grid: at least one row and one cell
+  // per row, exactly like the props validator that guards persistence.
+  if (type === 'table' && (!content?.length || content.some((row) => !Array.isArray((row as JsonNode).content) || (row as JsonNode).content!.length === 0))) throw new Error('Unsupported block')
+  if ((type === 'tableCell' || type === 'tableHeader') && !content?.length) throw new Error('Unsupported block')
   if (type === 'heading' && cleanAttrs?.level !== undefined && ![1, 2, 3, 4, 5, 6].includes(Number(cleanAttrs.level))) throw new Error('Unsupported block')
   if (type === 'eotionTodo' && typeof cleanAttrs?.checked !== 'boolean') throw new Error('Unsupported block')
   if (type === 'eotionCallout' && !validateCalloutAttrs(cleanAttrs)) throw new Error('Unsupported block')
+  // Table cells keep their span attributes; only the declared shape is restored.
+  if ((type === 'tableCell' || type === 'tableHeader') && !validateTableCellAttrs(cleanAttrs ?? {})) throw new Error('Unsupported block')
   if (type === 'orderedList' && cleanAttrs?.type !== undefined && cleanAttrs.type !== null) throw new Error('Unsupported block')
   if (type === 'eotionImage' || type === 'eotionFile') {
     if (typeof cleanAttrs?.fileId !== 'string' || !cleanAttrs.fileId.trim() || cleanAttrs.fileId.length > 256
@@ -165,10 +173,19 @@ function renderQuote(node: JsonNode, depth = 0): string {
   }).join('\n')
 }
 
+/** Cell text for one table: one string per cell, one array per row. */
+function tableRows(node: JsonNode): string[][] {
+  return (node.content ?? []).map((row) => (row.content ?? []).map((cell) => (cell.content ?? [])
+    .map((paragraph) => inlineText(paragraph.content))
+    .join('\n')))
+}
+
 function textFor(type: string, node: JsonNode): string {
   if (type === 'bulleted-list' || type === 'numbered-list') return renderList(node, 0)
   if (type === 'quote') return renderQuote(node)
   if (type === 'code') return inlineText(node.content)
+  // Tables read as tab separated rows; the structured contract is the `rows` field.
+  if (type === 'table') return tableRows(node).map((cells) => cells.join('\t')).join('\n')
   if (type === 'divider' || type === 'image' || type === 'file') return ''
   // A toggle renders the inline text of its first content child (the summary paragraph).
   if (type === 'toggle') return inlineText(node.content?.[0]?.content)
@@ -207,6 +224,7 @@ export function toMcpBlock(block: ServerBlockRecord, counter = { nodes: 0 }, dep
     const paragraphs = quoteParagraphs(node)
     if (paragraphs) dto.paragraphs = paragraphs
   }
+  if (block.type === 'table') dto.rows = tableRows(node)
   const attrs = node.attrs ?? {}
   if (block.type === 'heading' && attrs.level !== undefined) dto.level = Number(attrs.level)
   if (block.type === 'todo') dto.checked = Boolean(attrs.checked)

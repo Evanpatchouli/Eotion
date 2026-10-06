@@ -17,8 +17,10 @@ export {
   BLOCK_TYPES,
   EDITOR_NODE_NAMES,
   EDITOR_NODE_RULES,
+  TABLE_LIMITS,
   blockAllowsChildren,
   blockCapability,
+  blockHasInternalContent,
   blockTypeForNode,
   editorNodeRule,
   isAllowedChildBlockType,
@@ -31,6 +33,8 @@ export {
   validateCalloutAttrs,
   validateCalloutBlockProps,
   validateBlockProps,
+  validateTableCellAttrs,
+  validateTableBlockProps,
 } from './block-types'
 export type { BlockCapability, BlockCommandId, BlockCommandSpec, BlockType, CalloutTone, EditorNodeRule } from './block-types'
 export {

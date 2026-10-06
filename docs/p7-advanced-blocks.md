@@ -1,13 +1,13 @@
 # P7 Advanced Blocks
 
-P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1 与 P7.2 已 PASS；P7.3 在既有 nested model 与 local-first/sync 链路上增加可操作的嵌套 UX。本页记录实现、验收结果与已知限制。
+P7 在 P5 编辑器与 P6 MCP 之上补齐 Advanced Blocks 基础。P7.1–P7.3 已 PASS；P7.4 在既有 block registry 与 local-first/sync 链路上加入普通文档表格（非 Database）。本页记录实现、验收结果与已知限制。
 
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
 | P7.1 Block Model Foundation | block registry、block tree invariant、move/reparent、snapshot 校验、Toggle 验证 | PASS |
 | P7.2 Rich Blocks | Callout 与现有 Rich Block 保真收敛 | PASS |
 | P7.3 Nested Blocks UX | 拖拽嵌套、Tab/Shift+Tab 缩进、移动端操作与上下文筛选 | PASS |
-| P7.4 Table | Table 区块 | not started |
+| P7.4 Table | Table 区块 | PASS / current |
 | P7.5 Advanced Blocks Acceptance | 最终验收 | not started |
 
 ## P7.1 Block model 收敛
@@ -139,14 +139,108 @@ P7.3 于 2026-10-07 完成验收并 PASS。
 - MCP nested document replacement 仍显式拒绝；不新增 MCP tool。
 - 大文档持续输入仍是 O(N)/docChanged（既有 BlockIdentity/AttachmentLifetime 同量级）；5000 块只验证了加载，未建立持续输入延迟基线。
 - 被拒绝的 drop 为静默 no-op，无用户提示；拒绝类拖拽测试只断言结构未变。
-- root codeBlock 内通过 slash 创建 Toggle/Callout 会产生可保存但结构怪异的结果。
 - 真实设备输入法/原生宿主验收不由浏览器回归替代。
+
+root codeBlock 的 slash context 缺口已在 P7.4 关闭，见下文「P7.4 Table」的代码块上下文一节。
+
+## P7.4 Table
+
+P7.4 实现「普通文档表格」，明确不是 Database。没有 property / filter / sort / view / relation / rollup / formula / database row / database schema / database query / column type 语义，也没有新增 MCP tool。
+
+### Table 数据模型
+
+- 一个 Table 就是一个 Block。`BLOCK_TYPES` 追加 `table`，`BLOCK_NODE_TYPES.table = 'table'`，`BLOCK_CAPABILITIES.table` 为 `internalContent: true`、`mcp.readable: true`、`mcp.writable: false`，不拥有子区块。
+- 整张表格（行、单元格及其文本）都存放在该 block 的 `props.node` 内。行与单元格属于 **editor internal node**，不是 Eotion Block：
+  - `EDITOR_NODE_NAMES` 去掉 `BLOCK_NODE_NAMES` 后剩下的 `tableRow` / `tableCell` / `tableHeader`（以及既有的 `listItem`、`text`、`hardBreak`）都是 editor node，不是 Eotion Block。
+  - 它们没有 `blockId`，不进入 `parentBlockId` block tree，不参与 `block.move`、嵌套拖拽或 Tab 缩进。
+  - 页面树形态固定为 `page block tree → table block → editor-internal rows/cells`。
+- `EDITOR_NODE_RULES` 新增 `table` / `tableRow` / `tableCell` / `tableHeader`：`table → tableRow+`、`tableRow → tableCell | tableHeader`、单元格 `→ paragraph+`。
+- 粘贴 HTML 表格是超大 grid 唯一可达的入口：编辑器用 `createTablePasteGuard` 在粘贴/拖放时按 `TABLE_LIMITS` 拒绝超限表格并给出 `role="alert"` 提示，避免一次粘贴把整页变成无法保存；正常尺寸的 HTML 表格仍可粘贴。
+- 单元格只允许 `paragraph`（可含 plain text、bold / italic / strike / inline code / link 与 hardBreak）。Toggle、Callout、Table、attachment 及任何 block-level 节点都无法进入单元格：限制落在 ProseMirror schema（`content: 'paragraph+'`），而不是事后校验，因此编辑器不可能产出 codec 拒绝的单元格。
+- 单元格 span 属性（`colspan` / `rowspan` / `colwidth`）由 `validateTableCellAttrs` 单点校验，domain props 校验、web codec 与 MCP read 共用。ProseMirror table 插件依赖这些属性，因此保留但不提供合并 UI。
+- `validateTableBlockProps` 与 callout 校验并列，挂在 `validateBlockProps` 上，因此 contracts / LocalStore / snapshot / server 写入同一套 grid 约束：至少一行、每行至少一个单元格、单元格只能是段落、拒绝未知属性与嵌套 blockId。规模预算由 domain 的 `TABLE_LIMITS` 单点定义（1000 行 / 每行 200 格 / 每格 100 段），web codec、domain 校验、编辑器粘贴守卫与 MCP read schema 共用同一组数字，任何一层都不会接受另一层拒绝的 grid。
+- Table 与 P7.1/P7.3 nested blocks 的关系：Table 本身是普通 page block，可同级排序、拖拽、按 registry 白名单嵌套进 Toggle；单元格不参与这些操作。`nestedBlockInteractions` 通过 `blockHasInternalContent` 识别「光标位于某区块的 editor-internal 结构内」，此时 Tab/Shift+Tab 交给 table 插件在单元格间移动，而不是缩进整个 Table block。
+
+### Editor / UX
+
+- 表格用 Tiptap 官方 `@tiptap/extension-table`（Table / TableRow / TableHeader / TableCell），不自建表格编辑器。`EotionTable` 配置 `cellMinWidth: 100`、关闭 resizable；cell/header 以 `content: 'paragraph+'` 收窄内容模型并去掉未使用的 `align` 属性。
+- Slash 菜单新增「表格」，默认创建 3×3 且带表头行（自然最小尺寸），光标落在第一个单元格。总表宽小于阅读列时铺满，超出时在表格容器内横向滚动。
+- 行/列操作走选区旁的轻量上下文菜单（`TableMenu.vue`）：上方/下方插入行、删除行、左侧/右侧插入列、删除列、删除表格。保持 Quiet Studio，没有做 spreadsheet 式重操作 UI（无行号列、无拖拽调宽、无合并）。
+- 单元格内正常输入；Enter 只会在单元格内新增段落，不会创建 page-level block；删除空表格会把 Table block 作为一个整体删除；当表格是页面唯一 block 时，删除会原地替换为段落，避免产生非法空文档。
+
+### Keyboard 与 copy/paste
+
+- Tab 前往下一个单元格，Shift+Tab 返回上一个；最后一个单元格 Tab 追加一行（Tiptap 表格插件默认行为）。单元格内 Tab 不再触发区块缩进逻辑。
+- 单格复制粘贴、跨多格复制的文本提取、以及从 tab/newline 文本粘贴都已验证：粘贴只会产生合法 inline 文本，不会伪造 block 节点，表格结构保持不变。TSV/Excel 文本按普通文本插入，不隐式建表；不做 Excel 完整兼容。
+
+### Mobile
+
+- 390px 下 `.tableWrapper` 横向滚动，页面本身不产生横向溢出；列宽保持 `cellMinWidth`（100px）可读，不压缩到不可读。
+- 单元格仍可选择与编辑，Touch Toolbar 不受影响；行列管理不要求在移动端完成（上下文菜单在触屏同样可用，但不是必须路径）。
+
+### Sync / local-first
+
+- Table 复用既有 create/update/move 与 `block.upsert` / `block.move` / `block.delete`，没有新增 sync operation。
+- 已验证：创建表格、编辑多个单元格、增删行列、offline 修改、reload、Chromium 进程重启、reconnect 后先 push 再 pull snapshot。单元格内容不丢、行列顺序不漂移、table block ID 稳定，不产生 orphan 或 malformed document。
+
+### MCP
+
+- 不新增 MCP tool。Table 通过既有 `get_page` 只读暴露，DTO 只增加稳定字段 `rows: string[][]`（每个单元格一个字符串，单元格内多段落以换行连接），`text` 为同一 grid 的 tab 分隔渲染；不暴露 TipTap AST / `props` / `node` / cell attrs。
+- 读取校验与 web codec 同源：拒绝单元格内非段落节点、空行、退化 grid、非法 span 属性与嵌套 blockId；表格可以出现在 Toggle 之下，`parentBlockId` / `depth` 照常输出。
+- MCP write 暂不支持 Table（`mcp.writable: false`）。`rows` 无法表达 marks、多段落与 merged cell，写入会是静默有损转换；因此先 read-only 并显式记录。`eotion_update_page` 的 blocks 全量替换语义与 image/file 一致，会删除未包含的 Table block。
+
+### 与未来 Database 的边界
+
+- Table 只是文档内容块：没有 schema、没有列类型、没有查询/过滤/排序/视图，也没有「database row」概念。
+- 未来 Database 必须是独立 domain（独立记录/属性/视图模型与独立同步语义），不复用 Table 的 `props.node` 或 MCP `rows` 契约。本轮没有为 Database 预留半成品抽象。
+
+### 代码块 slash 上下文收口（P7.3 minor）
+
+- 根级 codeBlock 内 `/` 曾可创建 Toggle / Callout / Table / 列表 / 引用，并产生「代码块被包成 Toggle summary」或「代码块被容器替换」等结构怪异但可保存的结果。
+- 原因是 `isBlockCommandAllowed` 只检查当前选区的**外层容器**规则，而 codeBlock 是逐字文本容器，其内部位置不会命中任何容器规则。
+- 最小修复：光标位于 codeBlock 内时只保留「转换为普通文本」的命令（文本 / 一级标题 / 二级标题），其余 block 级命令与附件命令一并过滤；不改动 registry 结构，不扩展到其他上下文。
+
+## P7.4 Final Acceptance
+
+P7.4 于 2026-10-09 完成验收并 PASS。
+
+- Table 真正可编辑：slash 创建 3×3 带表头表格，单元格内正常输入，Enter 只在单元格内新增段落，空表格删除后页面仍合法。
+- 行列操作稳定：上下文菜单增删行列，reload 后行列顺序与内容不漂移，table block ID 稳定。
+- keyboard：Tab / Shift+Tab 单元格导航，最后一个单元格 Tab 追加行；单元格内 Tab 不再触发区块缩进。
+- copy/paste：单格与跨格文本复制、粘贴到其他单元格、tab/newline 纯文本粘贴均不破坏结构，也不产生非法节点；不做 Excel 完整兼容。
+- mobile：390px 下 `.tableWrapper` 横向滚动，页面无横向溢出，列宽 ≥ 100px 可读，单元格可编辑，Touch Toolbar 正常。
+- local-first/sync：offline 编辑单元格与增删行后经 reload、Chromium 进程重启仍保持；恢复联网先 push 再 pull snapshot；SQLite（Electron）写入、reconnect snapshot 与重开后 grid 完整。
+- 不污染 nested block model：单元格不进入 block tree（无 blockId、无 parentBlockId、无 block.move），Table 可同级拖拽重排、可嵌套进 Toggle。
+- MCP contract 稳定：`get_page` 只读返回 `rows: string[][]` 与 tab 分隔 `text`，不新增 tool，不暴露 AST；Table 仍为 write read-only。
+- 未引入 Database 语义。
+- 独立 review：BLOCKER 0。
+
+验证（2026-10-09）：
+
+- domain 17/17、contracts 6/6、storage 7/7、API domain 2/2、API HTTP 24/24、MCP 24/24、test:storage（含 Electron SQLite）11/11。
+- `pnpm typecheck`、`build:web`、`build:api`、`git diff --check` 通过。
+- `test:product`：206/206（`--workers=1`；新增 `product-table.spec.ts` 14 项、table codec round-trip 与 codeBlock slash context 用例，其余为既有回归）。
+- `test:visual`：6/7；唯一失败仍为既有 `Connectivity backend unavailable desktop` 基线差异（21748 px，ratio 0.02），与 P7.2/P7.3 记录一致，不更新基线。
+- 环境：本沙箱默认设置 `ELECTRON_RUN_AS_NODE=1`，运行 Electron 用例前需清除；新增依赖后需重启 `pnpm dev`（Vite 依赖重新预构建期间动态 import 会瞬时失败），否则个别既有用例会假失败。
+- 依赖：新增 `@tiptap/extension-table`（apps/web），lockfile 只记录 integrity，不绑定 registry。
+
+剩余已知限制（不阻塞 P7.4）：
+
+- MCP write 不支持 Table：`rows` 无法表达 marks、多段落与 merged cell，写入会有损；`eotion_update_page` 的 blocks 全量替换会删除未包含的 Table block（与 image/file 一致）。
+- 单元格不提供合并/拆分 UI；`colspan`/`rowspan` 只在 schema 与校验层保留，`rows` DTO 每个 cell 只出现一次。
+- 无列宽拖拽、无对齐/颜色、无表头行切换 UI、无 spreadsheet 级大数据优化；验证规模为 20×10。
+- 表格内粘贴 TSV 文本按普通文本插入，不会自动建表。
+- 真实设备输入法/原生宿主验收仍不由浏览器回归替代。
 
 ## 测试与验证
 
 - packages/domain：新增 `test/block-model.test.cjs`，覆盖注册表一致性、树重建顺序、self / missing / cross-page / cycle / 重复 id 拒绝、删除顺序、按组分配 orderKey、child 类型白名单。
 - apps/web：新增 `tests/product-blocks.spec.ts`（已加入 `test:product`），覆盖 toggle 创建 / 嵌套 / reload / 折叠 / 清理流程、嵌套编辑后的 block 身份稳定、IndexedDB `moveBlock` 与父类型 invariant、blockCodec 嵌套 round-trip、leaf 节点不被注入 content、不可达环拒绝加载、summary 归一化。
-- apps/api：`server-domain.test.ts` 增加 move 与 parent 类型 invariant；`mcp-read.contract.test.ts` 增加 nested 深度优先读取与不可达环 fail-closed。
+- apps/api：`server-domain.test.ts` 增加 move 与 parent 类型 invariant；`mcp-read.contract.test.ts` 增加 nested 深度优先读取、不可达环 fail-closed，以及 P7.4 的 table `rows` DTO、嵌套读取与退化 grid 拒绝。
+- packages/domain：`block-model.test.cjs` 增加 table 单 block / editor-internal rows 事实、`validateTableBlockProps`、共享 cell span 校验与 `TABLE_LIMITS` 边界（1000/200/100 接受，+1 拒绝）。
+- apps/web：新增 `product-table.spec.ts`（已加入 `test:product`），并扩展 `product-blocks.spec.ts`（table codec round-trip）与 `product-slash-context.spec.ts`（codeBlock 上下文）。
+
+P7.4 补充回归：Table 的 slash 创建、单元格编辑、Tab/Shift+Tab、末行追加、增删行列、删除表格与唯一 block 替换、单格与跨格复制粘贴、TSV 纯文本粘贴、拖拽重排、Toggle 嵌套、quote/listItem/cell 上下文筛选、390px 横向滚动、20×10 编辑、offline→reload→进程重启→reconnect push/pull，以及 Table codec round-trip 与非法 grid 拒绝、domain props/schema 校验、MCP `rows` DTO 与嵌套读取、Electron SQLite grid round-trip；同时补 codeBlock slash context 回归。
 
 P7.2 补充回归：Callout codec/marks/attrs、IndexedDB 与真实 Electron SQLite snapshot/重启、真实 HTTP sync create/update/delete、MCP create/update/read、orphan / leaf parent 拒绝、slash、键盘 split/退出/清空、移动 Touch Toolbar、桌面 Bubble Menu，以及 code language 编辑/reload 保真。开发服务器测试只中断 API 以验证离线数据恢复；既有生产 offline shell 验收边界不变。
 验证命令：
@@ -165,7 +259,7 @@ pnpm --filter @eotion/web run test:product
 pnpm --filter @eotion/web run test:storage
 ```
 
-本环境运行 `test:product` 时默认多 worker 偶发与改动无关的 UI 失败，每次失败项不同，单独复现均通过；P7.3 最终验收以 `--workers=1` 串行运行，189/189 通过。本轮同时把两处会采样中间态的断言改为等待收敛（`product-blocks.spec.ts` 清空文档后断言最终为单个 root block）。运行 `test:storage` 前需清除本沙箱默认设置的 `ELECTRON_RUN_AS_NODE`，否则 Electron 用例会报 `Process failed to launch`。
+本环境运行 `test:product` 时默认多 worker 偶发与改动无关的 UI 失败，每次失败项不同，单独复现均通过；P7.3 最终验收以 `--workers=1` 串行运行 189/189 通过；P7.4 以同一方式运行 206/206 通过。本轮同时把两处会采样中间态的断言改为等待收敛（`product-blocks.spec.ts` 清空文档后断言最终为单个 root block）。运行 `test:storage` 前需清除本沙箱默认设置的 `ELECTRON_RUN_AS_NODE`，否则 Electron 用例会报 `Process failed to launch`。
 
 ## 明确不在 P7.x 范围
 

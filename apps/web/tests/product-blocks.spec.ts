@@ -787,3 +787,122 @@ test('code block language survives codec conversion, editing and reload', async 
   await expect(editor(page).locator('pre')).toContainText('const before = 1; // edited')
   expect((api.blocks.find((item) => item.id === code.id)?.props.node as any).attrs).toEqual({ language: 'typescript' })
 })
+test('table codec round-trips one grid block and refuses grids the server would reject', async ({ page }) => {
+  await page.goto('/#/__dev/editor-foundation')
+  const result = await page.evaluate(async () => {
+    const { blocksToDocument, documentToBlocks } = await import('/src/editor/blockCodec.ts')
+    const stamp = new Date().toISOString()
+    const cell = (type: string, text: string) => ({
+      type,
+      attrs: { colspan: 1, rowspan: 1, colwidth: null },
+      content: [{ type: 'paragraph', content: text ? [{ type: 'text', text }] : [] }],
+    })
+    const tableNode = (rows: string[][]) => ({
+      type: 'table',
+      content: rows.map((cells, rowIndex) => ({ type: 'tableRow', content: cells.map((text) => cell(rowIndex === 0 ? 'tableHeader' : 'tableCell', text)) })),
+    })
+    const record = (id: string, type: string, node: unknown, parentBlockId: string | null, orderKey: string) =>
+      ({ id, workspaceId: 'ws', pageId: 'page-1', parentBlockId, type, orderKey, props: { node }, createdAt: stamp, updatedAt: stamp })
+    const stored = tableNode([['A', 'B'], ['C', 'D']])
+    const table = record('table-1', 'table', stored, null, 'a')
+
+    const document = blocksToDocument([table])
+    const loaded = document.content![0] as any
+    const encoded = documentToBlocks(document, [table], true)
+
+    const toggle = record('toggle-1', 'toggle', { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Parent' }] }] }, null, 'a')
+    const nested = record('table-2', 'table', tableNode([['X']]), 'toggle-1', 'a')
+    const nestedDecoded = documentToBlocks(blocksToDocument([toggle, nested]), [toggle, nested], true)
+      .map((block) => ({ id: block.id, type: block.type, parentBlockId: block.parentBlockId }))
+
+    const encodedNode = encoded[0]!.props.node
+    // The web codec must enforce the same size budget the domain props validator
+    // does, otherwise a large HTML paste could make a whole page unsaveable.
+    const bigCell = (paragraphs: number) => ({ type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: Array.from({ length: paragraphs }, () => ({ type: 'paragraph' })) })
+    const rowOf = (cells: number) => ({ type: 'tableRow', content: Array.from({ length: cells }, () => ({ type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [{ type: 'paragraph' }] })) })
+    const tooManyRows = { type: 'table', content: Array.from({ length: 1001 }, () => rowOf(1)) }
+    const tooManyCells = { type: 'table', content: [rowOf(201)] }
+    const tooManyParagraphs = { type: 'table', content: [{ type: 'tableRow', content: [bigCell(101)] }] }
+    const atRowLimit = { type: 'table', content: Array.from({ length: 1000 }, () => rowOf(1)) }
+    const atCellLimit = { type: 'table', content: [rowOf(200)] }
+    const atParagraphLimit = { type: 'table', content: [{ type: 'tableRow', content: [bigCell(100)] }] }
+    // Stored props and re-encoded props may order object keys differently, so the
+    // reload check compares the canonical shape instead of raw JSON text.
+    const canonical = (value: any): any => Array.isArray(value)
+      ? value.map(canonical)
+      : value && typeof value === 'object'
+        ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]))
+        : value
+    const stable = JSON.stringify(canonical(blocksToDocument(encoded.map((block) => ({ ...block, orderKey: 'a' }))))) === JSON.stringify(canonical(document))
+    const rejects = (blocks: unknown[]) => { try { blocksToDocument(blocks as any); return false } catch { return true } }
+    return {
+      loaded: {
+        type: loaded.type,
+        id: loaded.attrs.blockId,
+        rowTypes: loaded.content.map((row: any) => row.type),
+        cellTypes: loaded.content[0].content.map((item: any) => item.type),
+        paragraphTypes: loaded.content[0].content[0].content.map((item: any) => item.type),
+      },
+      encoded: encoded.map((block) => ({ id: block.id, type: block.type, parentBlockId: block.parentBlockId })),
+      encodedNode,
+      stable,
+      nestedDecoded,
+      rejects: {
+        headingInCell: rejects([record('t', 'table', { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', content: [{ type: 'heading', attrs: { level: 2 } }] }] }] }, null, 'a')]),
+        emptyTable: rejects([record('t', 'table', { type: 'table', content: [] }, null, 'a')]),
+        emptyRow: rejects([record('t', 'table', { type: 'table', content: [{ type: 'tableRow', content: [] }] }, null, 'a')]),
+        cellWithoutParagraph: rejects([record('t', 'table', { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [] }] }] }, null, 'a')]),
+        badSpan: rejects([record('t', 'table', { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', attrs: { colspan: 0 }, content: [{ type: 'paragraph' }] }] }] }, null, 'a')]),
+        unknownCellAttr: rejects([record('t', 'table', { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', attrs: { align: 'left' }, content: [{ type: 'paragraph' }] }] }] }, null, 'a')]),
+        nestedIdentity: rejects([record('t', 'table', { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [{ type: 'paragraph', attrs: { blockId: 'inner' } }] }] }] }, null, 'a')]),
+        childOnTable: rejects([record('t', 'table', tableNode([['A']]), null, 'a'), record('p', 'paragraph', { type: 'paragraph' }, 't', 'b')]),
+        tooManyRows: rejects([record('t', 'table', tooManyRows, null, 'a')]),
+        tooManyCells: rejects([record('t', 'table', tooManyCells, null, 'a')]),
+        tooManyParagraphs: rejects([record('t', 'table', tooManyParagraphs, null, 'a')]),
+      },
+      acceptedAtLimits: [atRowLimit, atCellLimit, atParagraphLimit].map((node) => rejects([record('t', 'table', node, null, 'a')])),
+    }
+  })
+  expect(result).toEqual({
+    loaded: {
+      type: 'table',
+      id: 'table-1',
+      rowTypes: ['tableRow', 'tableRow'],
+      cellTypes: ['tableHeader', 'tableHeader'],
+      paragraphTypes: ['paragraph'],
+    },
+    encoded: [{ id: 'table-1', type: 'table', parentBlockId: null }],
+    encodedNode: {
+      type: 'table',
+      content: [
+        { type: 'tableRow', content: [
+          { type: 'tableHeader', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'A' }] }] },
+          { type: 'tableHeader', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'B' }] }] },
+        ] },
+        { type: 'tableRow', content: [
+          { type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'C' }] }] },
+          { type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'D' }] }] },
+        ] },
+      ],
+    },
+    stable: true,
+    nestedDecoded: [
+      { id: 'toggle-1', type: 'toggle', parentBlockId: null },
+      { id: 'table-2', type: 'table', parentBlockId: 'toggle-1' },
+    ],
+    rejects: {
+      headingInCell: true,
+      emptyTable: true,
+      emptyRow: true,
+      cellWithoutParagraph: true,
+      badSpan: true,
+      unknownCellAttr: true,
+      nestedIdentity: true,
+      childOnTable: true,
+      tooManyRows: true,
+      tooManyCells: true,
+      tooManyParagraphs: true,
+    },
+    acceptedAtLimits: [false, false, false],
+  })
+})

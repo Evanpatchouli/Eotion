@@ -1,6 +1,6 @@
 import type { BlockCreateRequest, BlockResponse } from '@eotion/contracts'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
-import { blockCapability, blockTypeForNode, editorNodeRule, isAttachmentBlockType, nodeTypeForBlock, validateCalloutAttrs } from '@eotion/domain/block-types'
+import { TABLE_LIMITS, blockCapability, blockTypeForNode, editorNodeRule, isAttachmentBlockType, nodeTypeForBlock, validateCalloutAttrs, validateTableCellAttrs } from '@eotion/domain/block-types'
 import type { JSONContent } from '@tiptap/core'
 import type { EditorDocument } from './editorDocument'
 import { isSafeLinkHref } from './link'
@@ -41,6 +41,11 @@ function validNode(node: JSONContent): boolean {
     const { blockId: _blockId, ...attrs } = node.attrs ?? {}
     if (!validateCalloutAttrs(attrs)) return false
   }
+  if ((type === 'tableCell' || type === 'tableHeader') && !validateTableCellAttrs(node.attrs ?? {})) return false
+  // The schema forbids most bad grids, but a stored table must never load or save
+  // with a shape the domain props validator would reject: paste can otherwise
+  // produce a table the server refuses, which would make the whole page unsaveable.
+  if (type === 'table' && !tableWithinLimits(node)) return false
   if (type === 'heading' && node.attrs?.level !== undefined && ![1, 2, 3, 4, 5, 6].includes(node.attrs.level)) return false
   // Tiptap 3 includes a null marker style on ordinary numbered lists.
   if (type === 'orderedList' && node.attrs?.type !== undefined && node.attrs.type !== null) return false
@@ -55,6 +60,20 @@ function validNode(node: JSONContent): boolean {
   if (node.content?.some((child) => !child.type || !children?.includes(child.type))) return false
   if (node.content?.some((child) => !validNode(child))) return false
   return true
+}
+
+/** The same size budget the domain props validator and MCP read contract enforce. */
+function tableWithinLimits(table: JSONContent): boolean {
+  const rows = table.content ?? []
+  if (rows.length < 1 || rows.length > TABLE_LIMITS.maxRows) return false
+  return rows.every((row) => {
+    const cells = row.content ?? []
+    if (cells.length < 1 || cells.length > TABLE_LIMITS.maxCellsPerRow) return false
+    return cells.every((cell) => {
+      const paragraphs = cell.content ?? []
+      return paragraphs.length >= 1 && paragraphs.length <= TABLE_LIMITS.maxParagraphsPerCell
+    })
+  })
 }
 
 function stripIdentity(node: JSONContent): JSONContent {

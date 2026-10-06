@@ -10,6 +10,14 @@ import {
   type BlockCommandId,
 } from '@eotion/domain/block-types'
 
+/**
+ * A code block is a verbatim text container: its editor content is its own raw
+ * text, never page blocks. Commands that wrap it (toggle), insert structure
+ * (table/list/quote/attachment) or turn it into a rich block would silently
+ * restructure the code block, so only plain text conversions stay available.
+ */
+const CODE_BLOCK_COMMANDS: ReadonlySet<BlockCommandId> = new Set(['paragraph', 'heading1', 'heading2'])
+
 /** Whether a slash/toolbar command is valid at the current structural position. */
 export function isBlockCommandAllowed(editor: Editor, commandId: BlockCommandId, position?: number): boolean {
   const command = slashCommands().find((item) => item.id === commandId)
@@ -22,6 +30,9 @@ export function isBlockCommandAllowed(editor: Editor, commandId: BlockCommandId,
   }
 
   const $position = editor.state.doc.resolve(position ?? selection.from)
+  // A cursor inside a code block is inside that block's own verbatim text; the
+  // registry's container rules below never see it, so gate it explicitly.
+  if ($position.parent.type.name === 'codeBlock' && !CODE_BLOCK_COMMANDS.has(commandId)) return false
   const ancestors = Array.from({ length: $position.depth + 1 }, (_, index) => ({
     depth: index,
     node: $position.node(index),

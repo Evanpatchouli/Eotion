@@ -158,3 +158,68 @@ test('MCP mapper stops when the cumulative block DTO JSON exceeds one MiB', () =
   }, `large-${index}`))
   assert.throws(() => toMcpBlocks(blocks))
 })
+function tableNode(rows: string[][]) {
+  return {
+    type: 'table',
+    content: rows.map((cells, rowIndex) => ({
+      type: 'tableRow',
+      content: cells.map((text) => ({
+        type: rowIndex === 0 ? 'tableHeader' : 'tableCell',
+        attrs: { colspan: 1, rowspan: 1, colwidth: null },
+        content: [{ type: 'paragraph', content: text ? [{ type: 'text', text }] : [] }],
+      })),
+    })),
+  }
+}
+
+test('MCP table read exposes a stable rows grid and never the editor AST', () => {
+  const table = block('table', tableNode([['A', 'B'], ['C', 'D']]))
+  const dto = toMcpBlock(table)
+  assert.deepEqual(dto, {
+    id: table.id, type: 'table', text: 'A\tB\nC\tD', rows: [['A', 'B'], ['C', 'D']], parentBlockId: null, depth: 0,
+  })
+  assert.equal(GetPageOutputSchema.safeParse({ ...toMcpPageSummary(page), blocks: [dto] }).success, true)
+  assert.doesNotMatch(JSON.stringify(dto), /attrs|content|node|props|marks|tableRow|tableCell|colspan/)
+
+  // Multi-paragraph cells join with a newline; empty cells stay empty strings.
+  const multiline = toMcpBlock(block('table', {
+    type: 'table',
+    content: [{ type: 'tableRow', content: [
+      { type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'one' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: 'two' }] },
+      ] },
+      { type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [{ type: 'paragraph' }] },
+    ] }],
+  }))
+  assert.deepEqual(multiline.rows, [['one\ntwo', '']])
+})
+
+test('MCP table read stays nested under a toggle and rejects non-grid content', () => {
+  const parent = block('toggle', { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Parent' }] }] }, 'table-parent')
+  const child = { ...block('table', tableNode([['A']]), 'table-child'), parentBlockId: parent.id, orderKey: 'a' }
+  const mapped = toMcpBlocks([child, parent])
+  assert.deepEqual(mapped.map(({ id, type, depth, parentBlockId }) => ({ id, type, depth, parentBlockId })), [
+    { id: 'table-parent', type: 'toggle', depth: 0, parentBlockId: null },
+    { id: 'table-child', type: 'table', depth: 1, parentBlockId: 'table-parent' },
+  ])
+
+  // A cell may only hold plain paragraphs.
+  assert.throws(() => toMcpBlock(block('table', {
+    type: 'table',
+    content: [{ type: 'tableRow', content: [{ type: 'tableCell', content: [{ type: 'heading', attrs: { level: 2 } }] }] }],
+  })), /Unsupported block/)
+  assert.throws(() => toMcpBlock(block('table', { type: 'table', content: [{ type: 'tableRow', content: [] }] })), /Unsupported block/)
+  // Span attributes are validated, not passed through.
+  assert.throws(() => toMcpBlock(block('table', {
+    type: 'table',
+    content: [{ type: 'tableRow', content: [{ type: 'tableCell', attrs: { colspan: 0 }, content: [{ type: 'paragraph' }] }] }],
+  })), /Unsupported block/)
+  assert.throws(() => toMcpBlock(block('table', {
+    type: 'table',
+    content: [{ type: 'tableRow', content: [{ type: 'tableCell', attrs: { align: 'left' }, content: [{ type: 'paragraph' }] }] }],
+  })), /Unsupported block/)
+  // A table can never be a child of a leaf block.
+  const callout = block('callout', { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'x' }] }, 'leaf-callout')
+  assert.throws(() => toMcpBlocks([callout, { ...block('table', tableNode([['A']]), 'nested-table'), parentBlockId: callout.id }]), /Unsupported block/)
+})

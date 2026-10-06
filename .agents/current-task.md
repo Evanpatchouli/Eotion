@@ -1,22 +1,15 @@
-# 当前任务：P7.3 Nested Blocks UX
+# 当前任务：P7.4 Table
 
-状态：PASS；P7.1/P7.2/P7.3 已 PASS，基线 a9459d8。P7.4 未开始。
+状态：PASS；P7.1/P7.2/P7.3 已 PASS，本轮基线 `5724b8a`，本轮只做 P7.4 Table。
 
 | Work Unit | 模式/评级 | 负责 | 结果 |
 | --- | --- | --- | --- |
-| nested/storage/MCP/hardBreak 边界证据 | investigate/S0 | scout inspect | Evidence Pack |
-| Tab、drag、mobile 方案 | decide/S2 | worker nested_ux | 单事务 move + 深度/树 invariant |
-| 已定 nested UX 实现与浏览器回归 | execute/S1 | nested_ux 降级执行 | product-nested 12/12 |
-| slash context/附件创建保护 | execute/S1 | fast_worker slash | product-slash-context 2/2 |
-| move 持久化及 hardBreak 一致性 | decide/execute S2→S1 | 主 Agent | domain/storage/sync 回归 |
-| 完整验证和最终 review | verify/S0、Review | scout/reviewer | 全部命令通过、BLOCKER 0 |
+| registry/codec/sync/nested 现状与 Table 集成点调查 | investigate/S0 | 主 Agent | Evidence Pack（含 Tiptap table API 事实） |
+| Table 单 block 模型与 nested 边界决策 | decide/S2 | 主 Agent | 整表一个 block + editor-internal rows/cells |
+| domain registry / 校验 / MCP DTO / editor UX 实现 | execute/S1 | 主 Agent | product-table 14/14，domain 17/17，MCP 24/24 |
+| codeBlock slash context 收口（P7.3 minor） | execute/S1 | 主 Agent | codeBlock 内仅保留文本/标题转换 |
+| 完整验证与独立 review | verify/S0、Review | reviewer | product 206/206、visual 6/7（既有基线）、BLOCKER 0 |
 
-验收结果：
+验收结果：见 `docs/p7-advanced-blocks.md` 的「P7.4 Table」与「P7.4 Final Acceptance」。review 第一轮报 MAJOR 1（web codec 缺 table 规模上限，超大 HTML 粘贴会使整页无法保存）；已通过共享 `TABLE_LIMITS` + 编辑器粘贴守卫关闭，第二轮定向复核 BLOCKER 0、PASS 为是。
 
-- Tab/Shift+Tab、drag/drop、slash context、移动端 nested UX、附件边界、hardBreak+marks、sync/local-first 全部实现并验证。
-- `test:product` 189/189；visual 6/7（唯一失败为既有 Connectivity 基线差异 21748 px）。
-- domain 13/13、contracts 6/6、storage 7/7、API domain 2/2、HTTP 24/24、MCP 22/22、Electron SQLite 17/17、test:storage 11/11；typecheck / build:web / build:api / git diff --check 通过。
-- 独立 review：0 blocker，8 minor；关闭 minor 1（移动端工具栏绕过上下文过滤）、minor 2（工具栏选区 range safety）、minor 5（浏览器 mock 30 位 orderKey）。
-- 性能：拖拽把手定位由 O(n²) 改为每帧一次批量定位，5000 块 `readyMs` 38.5s → 约 4.5s。
-
-下一步：P7.4 Table 未开始；启动前先读 `docs/p7-advanced-blocks.md` 的 P7.3 已知限制。
+下一步：不开始 P7.5。

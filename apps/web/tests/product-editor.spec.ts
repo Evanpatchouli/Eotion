@@ -680,7 +680,7 @@ test('slash lists Chinese grouped commands, filters, navigates and respects IME 
   const menu = page.locator('.p2-slash-menu')
   await expect(bubble(page)).toHaveCount(0)
   await expect(menu.getByRole('option')).toHaveText([
-    '文本', '一级标题', '二级标题', '项目列表', '编号列表', '待办', '引用', '代码块', '折叠列表', '提示块', '分割线', '图片', '文件',
+    '文本', '一级标题', '二级标题', '项目列表', '编号列表', '待办', '引用', '代码块', '折叠列表', '提示块', '表格', '分割线', '图片', '文件',
   ])
   await expect(menu.locator('.p2-slash-group')).toHaveText(['基础', '块', '媒体'])
   await page.keyboard.press('ArrowUp')
@@ -784,6 +784,7 @@ for (const { label, type, selector } of [
   { label: '引用', type: 'quote', selector: 'blockquote' },
   { label: '代码块', type: 'code', selector: 'pre' },
   { label: '折叠列表', type: 'toggle', selector: '.eotion-toggle' },
+  { label: '表格', type: 'table', selector: 'table' },
   { label: '分割线', type: 'divider', selector: 'hr' },
 ]) {
   test(`slash ${label} saves and reloads the supported block`, async ({ page }) => {

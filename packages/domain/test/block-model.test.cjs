@@ -10,12 +10,17 @@ const {
   BLOCK_TYPES,
   EDITOR_NODE_NAMES,
   EDITOR_NODE_RULES,
+  TABLE_LIMITS,
   blockAllowsChildren,
   blockTypeForNode,
   isAllowedChildBlockType,
   nodeTypeForBlock,
+  blockHasInternalContent,
   validateCalloutAttrs,
   validateCalloutBlockProps,
+  validateTableCellAttrs,
+  validateTableBlockProps,
+  validateBlockProps,
 } = require('../dist/block-types.js')
 const {
   blockDepthMap,
@@ -87,6 +92,88 @@ test('callout is a writable inline leaf with strict icon and tone attributes', (
   assert.equal(validateCalloutBlockProps({ node: { type: 'eotionCallout', attrs: { blockId: 'b1', icon: '💡', tone: 'neutral' } } }), false)
   assert.equal(validateCalloutBlockProps({ node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'danger' } } }), false)
   assert.equal(validateCalloutBlockProps({ node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'paragraph' }] } }), false)
+})
+
+test('table is one self-contained block whose rows and cells are editor-internal', () => {
+  assert.equal(BLOCK_NODE_TYPES.table, 'table')
+  assert.equal(BLOCK_CAPABILITIES.table.internalContent, true)
+  assert.equal(BLOCK_CAPABILITIES.table.allowsChildren, false)
+  assert.equal(BLOCK_CAPABILITIES.table.mcp.readable, true)
+  assert.equal(BLOCK_CAPABILITIES.table.mcp.writable, false)
+  assert.deepEqual([...EDITOR_NODE_RULES.table.children], ['tableRow'])
+  assert.deepEqual([...EDITOR_NODE_RULES.tableRow.children], ['tableCell', 'tableHeader'])
+  assert.deepEqual([...EDITOR_NODE_RULES.tableCell.children], ['paragraph'])
+  assert.deepEqual([...EDITOR_NODE_RULES.tableCell.attrs], ['colspan', 'rowspan', 'colwidth'])
+  // Only the table owns editor-internal structure today.
+  assert.deepEqual(BLOCK_TYPES.filter((type) => blockHasInternalContent(type)), ['table'])
+  // Editor-internal names are exactly the stored editor nodes that are not blocks.
+  assert.deepEqual(EDITOR_NODE_NAMES.filter((name) => !BLOCK_NODE_NAMES.includes(name)), ['text', 'hardBreak', 'listItem', 'tableRow', 'tableCell', 'tableHeader'])
+  assert.deepEqual(BLOCK_COMMANDS.find(({ id }) => id === 'table'), {
+    id: 'table', type: 'table', label: '表格', group: '块', icon: 'table', search: 'table grid sheet',
+  })
+})
+
+test('table props validation keeps the grid a strict grid of paragraphs', () => {
+  const cell = (type, text, attrs = { colspan: 1, rowspan: 1, colwidth: null }) => ({
+    type,
+    attrs,
+    content: [{ type: 'paragraph', content: text ? [{ type: 'text', text, marks: [{ type: 'bold' }] }] : [] }],
+  })
+  // table([[cells...], [cells...]]) builds a real grid: one row node per array.
+  const table = (rows) => ({ node: { type: 'table', content: rows.map((cells) => ({ type: 'tableRow', content: cells })) } })
+  const good = table([[cell('tableHeader', 'A'), cell('tableHeader', 'B')], [cell('tableCell', 'C'), cell('tableCell', 'D')]])
+  assert.equal(validateTableBlockProps(good), true)
+  assert.equal(validateBlockProps('table', good), true)
+  assert.equal(validateBlockProps('paragraph', { anything: true }), true)
+
+  // Structure: exactly one table node, at least one row and one cell per row.
+  for (const invalid of [
+    null,
+    {},
+    { node: { type: 'table', attrs: { blockId: 'b1' }, content: [] } },
+    table([]),
+    table([[]]),
+    { node: { type: 'table', content: [{ type: 'tableRow' }] } },
+    { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' } } },
+  ]) {
+    assert.equal(validateTableBlockProps(invalid), false)
+  }
+  // Cells hold plain paragraphs only; no nested block may get inside a cell.
+  assert.equal(validateTableBlockProps(table([[cell('tableCell', 'A', undefined)]])), true)
+  for (const child of [
+    { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'h' }] },
+    { type: 'eotionToggle', content: [{ type: 'paragraph' }] },
+    { type: 'table', content: [] },
+    { type: 'eotionImage', attrs: { fileId: 'f' } },
+  ]) {
+    assert.equal(validateTableBlockProps({ node: { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', content: [child] }] }] } }), false)
+  }
+  assert.equal(validateTableBlockProps(table([[{ type: 'tableCell', content: [] }]])), false)
+  assert.equal(validateTableBlockProps(table([[{ type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'x' }] }], attrs: { colspan: 0 } }]])), false)
+  assert.equal(validateTableBlockProps(table([[{ type: 'tableCell', content: [{ type: 'paragraph' }], attrs: { colspan: 1, rowspan: 1, colwidth: [40, -1] } }]])), false)
+})
+
+test('the shared table size budget is pinned and enforced at its boundaries', () => {
+  assert.deepEqual(TABLE_LIMITS, { maxRows: 1000, maxCellsPerRow: 200, maxParagraphsPerCell: 100 })
+  const oneCell = { type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [{ type: 'paragraph' }] }
+  const rowsOf = (count) => ({ node: { type: 'table', content: Array.from({ length: count }, () => ({ type: 'tableRow', content: [oneCell] })) } })
+  const cellsInRow = (count) => ({ node: { type: 'table', content: [{ type: 'tableRow', content: Array.from({ length: count }, () => oneCell) }] } })
+  const paragraphsInCell = (count) => ({ node: { type: 'table', content: [{ type: 'tableRow', content: [{ ...oneCell, content: Array.from({ length: count }, () => ({ type: 'paragraph' })) }] }] } })
+  assert.equal(validateTableBlockProps(rowsOf(TABLE_LIMITS.maxRows)), true)
+  assert.equal(validateTableBlockProps(rowsOf(TABLE_LIMITS.maxRows + 1)), false)
+  assert.equal(validateTableBlockProps(cellsInRow(TABLE_LIMITS.maxCellsPerRow)), true)
+  assert.equal(validateTableBlockProps(cellsInRow(TABLE_LIMITS.maxCellsPerRow + 1)), false)
+  assert.equal(validateTableBlockProps(paragraphsInCell(TABLE_LIMITS.maxParagraphsPerCell)), true)
+  assert.equal(validateTableBlockProps(paragraphsInCell(TABLE_LIMITS.maxParagraphsPerCell + 1)), false)
+})
+
+test('cell span attributes are validated by one shared rule', () => {
+  assert.equal(validateTableCellAttrs({}), true)
+  assert.equal(validateTableCellAttrs({ colspan: 2, rowspan: 1, colwidth: [40] }), true)
+  assert.equal(validateTableCellAttrs({ colspan: 1, rowspan: 1, colwidth: null }), true)
+  for (const attrs of [null, [], { colspan: 0 }, { rowspan: -1 }, { colspan: 1.5 }, { colwidth: 40 }, { colwidth: [40, -1] }, { align: 'left' }]) {
+    assert.equal(validateTableCellAttrs(attrs), false)
+  }
 })
 
 test('callout hardBreak preserves the same safe marks as text and rejects malformed marks', () => {

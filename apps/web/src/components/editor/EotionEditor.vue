@@ -13,6 +13,7 @@ import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../e
 import { BlockIdentity } from '../../editor/blockIdentity'
 import { EotionToggle } from '../../editor/toggleNodes'
 import { EotionCallout } from '../../editor/calloutNodes'
+import { createTablePasteGuard, EotionTable, EotionTableCell, EotionTableHeader, EotionTableRow } from '../../editor/tableNodes'
 import { createUploadPlaceholderExtension, UploadPlaceholderRegistry, type UploadPlaceholderTask, type UploadTarget } from '../../editor/uploadPlaceholders'
 import { isSafeLinkHref } from '../../editor/link'
 import { runBlockCommand, type BlockCommand } from '../../editor/blockCommands'
@@ -25,6 +26,7 @@ import { useDocumentEditor } from '../../editor/useDocumentEditor'
 import { ApiError, api, errorMessage, expireSessionFromApi } from '../../services/productApi'
 import EotionIcon from '../ui/EotionIcon.vue'
 import EotionBubbleMenu from './EotionBubbleMenu.vue'
+import TableMenu from './TableMenu.vue'
 
 type AttachmentKind = 'image' | 'file'
 type UploadTask = UploadPlaceholderTask
@@ -56,6 +58,10 @@ const keyboardInset = ref(0)
 const uploads = ref<UploadTask[]>([])
 const uploadRegistry = new UploadPlaceholderRegistry()
 const uploadAlert = ref('')
+const editorAlert = ref('')
+const TablePasteGuard = createTablePasteGuard(() => {
+  editorAlert.value = '粘贴的表格超出可保存的规模，已取消这次粘贴。'
+})
 const draggingFiles = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -121,7 +127,7 @@ function updateSelection() {
 }
 
 const { editor, getDocument } = useDocumentEditor({
-  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionCallout, AttachmentLifetime, BlockIdentity, NestedBlockInteractions,
+  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionCallout, EotionTable, EotionTableRow, EotionTableHeader, EotionTableCell, TablePasteGuard, AttachmentLifetime, BlockIdentity, NestedBlockInteractions,
     createUploadPlaceholderExtension(uploadRegistry, { cancel: cancelUpload, retry: task => { void upload(task) }, remove: removeTask }),
     createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
   content: props.content,
@@ -129,7 +135,10 @@ const { editor, getDocument } = useDocumentEditor({
   attributes: { spellcheck: 'false' },
   onCreate: updateSelection,
   onSelectionUpdate: updateSelection,
-  onUpdate: document => emit('update', document),
+  onUpdate: document => {
+    editorAlert.value = ''
+    emit('update', document)
+  },
   onTransaction: ({ transaction }) => {
     emit('transaction', transaction.docChanged)
     if (transaction.docChanged || transaction.selectionSet) scheduleCaretVisibility()
@@ -506,6 +515,7 @@ defineExpose({ editor })
       </p>
     </div>
     <p v-if="uploadAlert" class="eotion-upload-alert" role="alert">{{ uploadAlert }}</p>
+    <p v-if="editorAlert" class="eotion-upload-alert" role="alert">{{ editorAlert }}</p>
     <div v-if="pendingCleanup.length" class="eotion-cleanup-retry" role="alert">
       <span>有附件尚未加入本地清理队列。</span>
       <button type="button" @click="retryCleanups">重试清理</button>
@@ -531,6 +541,7 @@ defineExpose({ editor })
     />
     <!-- Tiptap moves the menu element; keep the component mounted across input-mode changes. -->
     <EotionBubbleMenu v-if="editor" :editor="editor" :composing="composing" :enabled="!touchToolbar" />
+    <TableMenu v-if="editor" :editor="editor" :composing="composing" />
     <div v-if="touchToolbar" ref="touchToolbarElement" class="eotion-touch-toolbar" role="toolbar" aria-label="触摸编辑工具栏" :style="{ bottom: `${keyboardInset}px` }">
       <button type="button" aria-label="粗体" :aria-pressed="editor?.isActive('bold') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleBold().run()"><EotionIcon name="bold" :size="18" /></button>
       <button type="button" aria-label="斜体" :aria-pressed="editor?.isActive('italic') ?? false" :disabled="!editor" @click="editor?.chain().focus().toggleItalic().run()"><EotionIcon name="italic" :size="18" /></button>
@@ -601,6 +612,14 @@ defineExpose({ editor })
 .eotion-block-drag-handle:hover, .eotion-block-drag-handle:focus-visible { background: var(--e-color-hover); color: var(--e-color-text-primary); opacity: 1; }
 .eotion-block-drag-handle::before { content: '⠿'; }
 .eotion-block-drag-handle:active { cursor: grabbing; }
+/* Tables scroll horizontally instead of squeezing columns into an unreadable width. */
+.eotion-editor-content .tiptap .tableWrapper { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.eotion-editor-content .tiptap table { margin: 10px 0; border-collapse: collapse; table-layout: fixed; width: 100%; }
+.eotion-editor-content .tiptap th, .eotion-editor-content .tiptap td { position: relative; box-sizing: border-box; min-width: 100px; border: 1px solid var(--e-color-border); padding: 6px 8px; vertical-align: top; }
+.eotion-editor-content .tiptap th { background: var(--e-color-surface-subtle); font-weight: 600; text-align: left; }
+.eotion-editor-content .tiptap th p, .eotion-editor-content .tiptap td p { margin: 0; }
+.eotion-editor-content .tiptap th p + p, .eotion-editor-content .tiptap td p + p { margin-top: 6px; }
+.eotion-editor-content .tiptap .selectedCell::after { position: absolute; z-index: 2; inset: 0; background: var(--e-color-selected); content: ''; pointer-events: none; }
 .eotion-editor-content .tiptap [data-eotion-drop-zone="before"] { box-shadow: 0 -2px 0 var(--e-color-focus); }
 .eotion-editor-content .tiptap [data-eotion-drop-zone="after"] { box-shadow: 0 2px 0 var(--e-color-focus); }
 .eotion-editor-content .tiptap [data-eotion-drop-zone="inside"] { outline: 2px solid var(--e-color-focus); outline-offset: 2px; border-radius: var(--e-radius-block); }

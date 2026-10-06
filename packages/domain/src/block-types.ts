@@ -11,6 +11,7 @@ export const BLOCK_TYPES = [
   'divider',
   'toggle',
   'callout',
+  'table',
 ] as const
 
 export type BlockType = (typeof BLOCK_TYPES)[number]
@@ -33,6 +34,7 @@ export const BLOCK_NODE_TYPES: Record<BlockType, string> = {
   divider: 'horizontalRule',
   toggle: 'eotionToggle',
   callout: 'eotionCallout',
+  table: 'table',
 }
 
 /** Every editor node name that a block document may contain, block nodes first. */
@@ -51,6 +53,7 @@ export type BlockCommandId =
   | 'horizontalRule'
   | 'toggle'
   | 'callout'
+  | 'table'
   | 'image'
   | 'file'
 
@@ -82,6 +85,13 @@ export interface BlockCapability {
   mcp: { readable: boolean; writable: boolean }
   /** The block references a stored attachment file. */
   attachment: boolean
+  /**
+   * The editor node keeps its own editor-internal structure (table rows/cells)
+   * that is never part of the page block tree. Such interior nodes carry no
+   * blockId, never take part in block.move/parentBlockId and must not be treated
+   * as page blocks by keyboard/indent/drag handling.
+   */
+  internalContent: boolean
 }
 
 function capability(type: BlockType, patch: Partial<Omit<BlockCapability, 'type' | 'nodeType'>> = {}): BlockCapability {
@@ -94,6 +104,7 @@ function capability(type: BlockType, patch: Partial<Omit<BlockCapability, 'type'
     slash: true,
     mcp: { readable: true, writable: true },
     attachment: false,
+    internalContent: false,
     ...patch,
   }
 }
@@ -114,6 +125,9 @@ export const BLOCK_CAPABILITIES: Record<BlockType, BlockCapability> = {
   // parentBlockId field keeps the tree model identical to the page tree.
   toggle: capability('toggle', { hasText: true, allowsChildren: true, allowedChildTypes: BLOCK_TYPES, mcp: { readable: true, writable: false } }),
   callout: capability('callout', { hasText: true }),
+  // One table is one block. Rows and cells are editor-internal nodes owned by
+  // the table node, so the page block tree never sees them.
+  table: capability('table', { internalContent: true, mcp: { readable: true, writable: false } }),
 }
 
 export interface EditorNodeRule {
@@ -144,9 +158,20 @@ export const EDITOR_NODE_RULES: Record<string, EditorNodeRule> = {
   eotionTodo: { attrs: ['checked'], children: ['text', 'hardBreak'] },
   eotionToggle: { attrs: [], children: BLOCK_NODE_NAMES },
   eotionCallout: { attrs: ['icon', 'tone'], children: ['text', 'hardBreak'] },
+  // Table rows/cells are editor-internal nodes of the table block. Cells hold
+  // plain paragraphs only, so a cell can never smuggle in another block.
+  table: { attrs: [], children: ['tableRow'] },
+  tableRow: { attrs: [], children: ['tableCell', 'tableHeader'] },
+  tableCell: { attrs: ['colspan', 'rowspan', 'colwidth'], children: ['paragraph'] },
+  tableHeader: { attrs: ['colspan', 'rowspan', 'colwidth'], children: ['paragraph'] },
 }
 
-/** All editor node names accepted in a stored block document. */
+/**
+ * All editor node names accepted in a stored block document. `EDITOR_NODE_NAMES`
+ * minus `BLOCK_NODE_NAMES` (text/hardBreak, listItem and the table rows/cells)
+ * are editor-internal: they belong to a block's own content, never to the page
+ * block tree.
+ */
 export const EDITOR_NODE_NAMES: readonly string[] = Object.keys(EDITOR_NODE_RULES)
 
 /** Slash menu order and labels. Attachment commands are filtered by workspace availability. */
@@ -161,6 +186,7 @@ export const BLOCK_COMMANDS: readonly BlockCommandSpec[] = [
   { id: 'codeBlock', type: 'code', label: '代码块', group: '块', icon: 'code', search: 'code' },
   { id: 'toggle', type: 'toggle', label: '折叠列表', group: '块', icon: 'chevron-right', search: 'toggle collapse fold' },
   { id: 'callout', type: 'callout', label: '提示块', group: '块', icon: 'info', search: 'callout tip info' },
+  { id: 'table', type: 'table', label: '表格', group: '块', icon: 'table', search: 'table grid sheet' },
   { id: 'horizontalRule', type: 'divider', label: '分割线', group: '块', icon: 'minus', search: 'divider rule' },
   { id: 'image', type: 'image', label: '图片', group: '媒体', icon: 'image', search: 'image photo' },
   { id: 'file', type: 'file', label: '文件', group: '媒体', icon: 'file-text', search: 'file attachment' },
@@ -190,6 +216,11 @@ export function editorNodeRule(nodeType: string): EditorNodeRule | undefined {
 
 export function blockAllowsChildren(type: BlockType): boolean {
   return BLOCK_CAPABILITIES[type].allowsChildren
+}
+
+/** The block's editor node owns editor-internal structure instead of page blocks. */
+export function blockHasInternalContent(type: BlockType): boolean {
+  return BLOCK_CAPABILITIES[type].internalContent
 }
 
 export function isAllowedChildBlockType(parentType: BlockType, childType: BlockType): boolean {
@@ -269,7 +300,94 @@ function validCalloutMark(value: unknown): boolean {
   }
 }
 
+const TABLE_ATTRS = ['colspan', 'rowspan', 'colwidth'] as const
+
+/**
+ * One shared size budget for a table. The web codec, the domain props validator,
+ * the editor paste guard and the MCP read contract all read it, so no layer can
+ * accept a grid another layer would refuse.
+ */
+export const TABLE_LIMITS = {
+  maxRows: 1000,
+  maxCellsPerRow: 200,
+  maxParagraphsPerCell: 100,
+} as const
+
+/** Cell span/width attributes are shared by the domain validator, the web codec and MCP read. */
+export function validateTableCellAttrs(attrs: unknown): boolean {
+  if (typeof attrs !== 'object' || attrs === null || Array.isArray(attrs)) return false
+  const value = attrs as Record<string, unknown>
+  if (Object.keys(value).some((key) => !(TABLE_ATTRS as readonly string[]).includes(key))) return false
+  for (const span of ['colspan', 'rowspan'] as const) {
+    const size = value[span]
+    if (size !== undefined && (!Number.isSafeInteger(size) || (size as number) < 1)) return false
+  }
+  const colwidth = value.colwidth
+  if (colwidth === undefined || colwidth === null) return true
+  return Array.isArray(colwidth) && colwidth.every((width) => Number.isSafeInteger(width) && (width as number) >= 0)
+}
+
+function validInlineContent(content: unknown): boolean {
+  if (content === undefined) return true
+  if (!Array.isArray(content)) return false
+  return content.every((child: unknown) => {
+    if (typeof child !== 'object' || child === null || Array.isArray(child)) return false
+    const inline = child as Record<string, unknown>
+    if (inline.type === 'hardBreak') {
+      if (Object.keys(inline).some((key) => !['type', 'marks'].includes(key))) return false
+      return inline.marks === undefined || (Array.isArray(inline.marks) && inline.marks.every(validCalloutMark))
+    }
+    if (inline.type !== 'text' || typeof inline.text !== 'string' || Object.keys(inline).some((key) => !['type', 'text', 'marks'].includes(key))) return false
+    return inline.marks === undefined || (Array.isArray(inline.marks) && inline.marks.every(validCalloutMark))
+  })
+}
+
+function validTableCellNode(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const cell = value as Record<string, unknown>
+  if (cell.type !== 'tableCell' && cell.type !== 'tableHeader') return false
+  if (cell.text !== undefined || cell.marks !== undefined) return false
+  if (Object.keys(cell).some((key) => !['type', 'attrs', 'content'].includes(key))) return false
+  if (cell.attrs !== undefined && !validateTableCellAttrs(cell.attrs)) return false
+  const paragraphs = cell.content
+  if (!Array.isArray(paragraphs) || paragraphs.length < 1 || paragraphs.length > TABLE_LIMITS.maxParagraphsPerCell) return false
+  return paragraphs.every((paragraph: unknown) => {
+    if (typeof paragraph !== 'object' || paragraph === null || Array.isArray(paragraph)) return false
+    const record = paragraph as Record<string, unknown>
+    if (record.type !== 'paragraph' || record.text !== undefined || record.marks !== undefined) return false
+    if (Object.keys(record).some((key) => !['type', 'content'].includes(key))) return false
+    return validInlineContent(record.content)
+  })
+}
+
+/**
+ * Validate a persisted table block. Rows and cells live inside the single
+ * table node, so this is the only place that may accept or reject them.
+ */
+export function validateTableBlockProps(props: unknown): boolean {
+  if (typeof props !== 'object' || props === null || Array.isArray(props)) return false
+  if (Object.keys(props).length !== 1 || !Object.hasOwn(props, 'node')) return false
+  const node = (props as Record<string, unknown>).node
+  if (typeof node !== 'object' || node === null || Array.isArray(node)) return false
+  const table = node as Record<string, unknown>
+  // Identity is stored by the editor identity layer, never inside the props node.
+  if (table.type !== 'table' || table.attrs !== undefined || table.text !== undefined || table.marks !== undefined) return false
+  if (Object.keys(table).some((key) => !['type', 'content'].includes(key))) return false
+  const rows = table.content
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > TABLE_LIMITS.maxRows) return false
+  return rows.every((row: unknown) => {
+    if (typeof row !== 'object' || row === null || Array.isArray(row)) return false
+    const record = row as Record<string, unknown>
+    if (record.type !== 'tableRow' || record.attrs !== undefined || record.text !== undefined || record.marks !== undefined) return false
+    if (Object.keys(record).some((key) => !['type', 'content'].includes(key))) return false
+    const cells = record.content
+    return Array.isArray(cells) && cells.length >= 1 && cells.length <= TABLE_LIMITS.maxCellsPerRow && cells.every(validTableCellNode)
+  })
+}
+
 /** Type-specific persisted props checks live with the block registry. */
 export function validateBlockProps(type: BlockType, props: unknown): boolean {
-  return type === 'callout' ? validateCalloutBlockProps(props) : true
+  if (type === 'callout') return validateCalloutBlockProps(props)
+  if (type === 'table') return validateTableBlockProps(props)
+  return true
 }

@@ -27,5 +27,8 @@ export function runBlockCommand(editor: Editor, command: BlockCommand, range?: {
     // A toggle wraps the current block as its summary; Enter then creates children.
     case 'toggle': return chain.wrapIn('eotionToggle').run()
     case 'callout': return chain.setNode('eotionCallout', { icon: '💡', tone: 'neutral' }).run()
+    // One table is one block: a 3x3 grid with a header row is the smallest
+    // useful default, and the cursor starts in the first cell.
+    case 'table': return chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
   }
 }

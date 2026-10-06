@@ -4,7 +4,7 @@ import { NodeSelection, Plugin, PluginKey, TextSelection } from '@tiptap/pm/stat
 import type { Selection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import type { EditorView } from '@tiptap/pm/view'
-import { blockCapability, blockTypeForNode, isAllowedChildBlockType } from '@eotion/domain/block-types'
+import { blockCapability, blockHasInternalContent, blockTypeForNode, isAllowedChildBlockType } from '@eotion/domain/block-types'
 
 const MAX_BLOCK_DEPTH = 8
 const DRAG_TYPE = 'application/x-eotion-block'
@@ -56,9 +56,24 @@ function entriesFor(doc: ProseMirrorNode): BlockEntry[] {
   return entries
 }
 
+/**
+ * A selection inside a block's editor-internal structure (table rows and cells)
+ * belongs to that block's interior, not to the page block tree. Tab/indent must
+ * leave it alone so the table extension can navigate between cells.
+ */
+function insideEditorInternalBlock(selection: Selection): boolean {
+  const position = selection.$from
+  for (let depth = 1; depth <= position.depth; depth += 1) {
+    const type = blockTypeForNode(position.node(depth).type.name)
+    if (type && blockHasInternalContent(type)) return true
+  }
+  return false
+}
+
 function entryAtSelection(doc: ProseMirrorNode, selection: Selection, requireBlockStart = true): BlockEntry | undefined {
   const entries = entriesFor(doc)
   if (selection instanceof NodeSelection) return entries.find((entry) => entry.pos === selection.from && entry.node === selection.node)
+  if (insideEditorInternalBlock(selection)) return undefined
   if (requireBlockStart) {
     if (!selection.empty || !selection.$from.parent.isTextblock || selection.$from.parentOffset !== 0) return undefined
     for (let depth = selection.$from.depth; depth > 0; depth -= 1) {
