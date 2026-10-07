@@ -2,6 +2,12 @@ import { Module } from '@nestjs/common'
 import { MongooseModule } from '@nestjs/mongoose'
 
 import { BlockRepository } from './repositories/block.repository'
+import { DatabaseRepository, DatabasePropertyRepository, DatabaseRecordRepository, DatabaseViewRepository } from './repositories/database.repository'
+import { DatabaseEntity, DatabaseSchema } from './schemas/database.schema'
+import { DatabasePropertyEntity, DatabasePropertySchema } from './schemas/database-property.schema'
+import { DatabaseRecordEntity, DatabaseRecordSchema } from './schemas/database-record.schema'
+import { DatabaseViewEntity, DatabaseViewSchema } from './schemas/database-view.schema'
+import { DatabaseService } from './services/database.service'
 import { FileMetadataRepository } from './repositories/file-metadata.repository'
 import { PageRepository } from './repositories/page.repository'
 import { WorkspaceRepository } from './repositories/workspace.repository'
@@ -36,6 +42,10 @@ import { DocumentMutationService } from './services/document-mutation.service'
       { name: WorkspaceEntity.name, schema: WorkspaceSchema },
       { name: PageEntity.name, schema: PageSchema },
       { name: BlockEntity.name, schema: BlockSchema },
+      { name: DatabaseEntity.name, schema: DatabaseSchema },
+      { name: DatabasePropertyEntity.name, schema: DatabasePropertySchema },
+      { name: DatabaseRecordEntity.name, schema: DatabaseRecordSchema },
+      { name: DatabaseViewEntity.name, schema: DatabaseViewSchema },
       { name: FileMetadataEntity.name, schema: FileMetadataSchema },
       { name: UserEntity.name, schema: UserSchema },
       { name: SessionEntity.name, schema: SessionSchema },
@@ -48,6 +58,10 @@ import { DocumentMutationService } from './services/document-mutation.service'
     WorkspaceRepository,
     PageRepository,
     BlockRepository,
+    DatabaseRepository,
+    DatabasePropertyRepository,
+    DatabaseRecordRepository,
+    DatabaseViewRepository,
     FileMetadataRepository,
     UserRepository,
     SessionRepository,
@@ -56,6 +70,7 @@ import { DocumentMutationService } from './services/document-mutation.service'
     WorkspaceService,
     PageService,
     BlockService,
+    DatabaseService,
     FileMetadataService,
     AliOssObjectStorage,
     { provide: FILE_OBJECT_STORAGE, useExisting: AliOssObjectStorage },
@@ -66,6 +81,6 @@ import { DocumentMutationService } from './services/document-mutation.service'
     SyncService,
     DocumentMutationService,
   ],
-  exports: [WorkspaceService, PageService, BlockService, FileMetadataService, AuthService, SessionService, McpTokenService, WorkspacePermissionService, SyncService, DocumentMutationService],
+  exports: [WorkspaceService, PageService, BlockService, DatabaseService, FileMetadataService, AuthService, SessionService, McpTokenService, WorkspacePermissionService, SyncService, DocumentMutationService],
 })
 export class ServerDomainModule {}

@@ -33,10 +33,31 @@ export {
   validateCalloutAttrs,
   validateCalloutBlockProps,
   validateBlockProps,
+  validateDatabaseReferenceAttrs,
+  validateDatabaseBlockProps,
   validateTableCellAttrs,
   validateTableBlockProps,
 } from './block-types'
 export type { BlockCapability, BlockCommandId, BlockCommandSpec, BlockType, CalloutTone, EditorNodeRule } from './block-types'
+export {
+  isValidDatabase,
+  isValidDatabaseProperty,
+  isValidDatabasePropertyDefinition,
+  isValidDatabaseRecord,
+  isValidDatabaseView,
+  validateDatabaseRecordValues,
+} from './database'
+export type {
+  Database,
+  DatabaseProperty,
+  DatabasePropertyDefinition,
+  DatabasePropertyType,
+  DatabasePropertyValue,
+  DatabaseRecord,
+  DatabaseRecordValues,
+  DatabaseSelectOption,
+  DatabaseView,
+} from './database'
 export {
   blockDepthMap,
   buildBlockTree,

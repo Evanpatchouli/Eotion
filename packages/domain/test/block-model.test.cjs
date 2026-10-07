@@ -54,7 +54,7 @@ test('the editor node model covers inline nodes and the full block set', () => {
   assert.deepEqual([...EDITOR_NODE_RULES.paragraph.children], ['text', 'hardBreak'])
 })
 
-test('only toggle owns child blocks today and every block type stays slash addressable', () => {
+test('only toggle owns child blocks and database remains unavailable from slash commands', () => {
   const childOwners = BLOCK_TYPES.filter((type) => blockAllowsChildren(type))
   assert.deepEqual(childOwners, ['toggle'])
   assert.deepEqual([...BLOCK_CAPABILITIES.toggle.allowedChildTypes], [...BLOCK_TYPES])
@@ -71,6 +71,10 @@ test('only toggle owns child blocks today and every block type stays slash addre
   assert.equal(new Set(BLOCK_COMMANDS.map((command) => command.id)).size, BLOCK_COMMANDS.length)
   for (const command of BLOCK_COMMANDS) assert.ok(BLOCK_TYPES.includes(command.type), command.type)
   assert.ok(BLOCK_COMMANDS.some((command) => command.id === 'toggle' && command.type === 'toggle'))
+  assert.ok(BLOCK_COMMANDS.some((command) => command.id === 'database' && command.type === 'database'))
+  assert.equal(BLOCK_CAPABILITIES.database.slash, false)
+  assert.equal(BLOCK_CAPABILITIES.database.mcp.readable, true)
+  assert.equal(BLOCK_CAPABILITIES.database.mcp.writable, false)
 })
 
 test('callout is a writable inline leaf with strict icon and tone attributes', () => {
@@ -111,6 +115,19 @@ test('table is one self-contained block whose rows and cells are editor-internal
   assert.deepEqual(BLOCK_COMMANDS.find(({ id }) => id === 'table'), {
     id: 'table', type: 'table', label: '表格', group: '块', icon: 'table', search: 'table grid sheet',
   })
+})
+
+test('database block is a strict leaf that only references a database and view', () => {
+  const props = { node: { type: 'eotionDatabase', attrs: { databaseId: 'db-1', viewId: 'view-1' } } }
+  assert.equal(BLOCK_NODE_TYPES.database, 'eotionDatabase')
+  assert.deepEqual(EDITOR_NODE_RULES.eotionDatabase, { attrs: ['databaseId', 'viewId'], children: null })
+  assert.equal(validateBlockProps('database', props), true)
+  for (const invalid of [
+    { node: { type: 'eotionDatabase', attrs: { databaseId: '', viewId: 'view-1' } } },
+    { node: { type: 'eotionDatabase', attrs: { databaseId: 'db-1', viewId: ' ' } } },
+    { node: { type: 'eotionDatabase', attrs: { databaseId: 'db-1', viewId: 'view-1', data: [] } } },
+    { node: { type: 'eotionDatabase', attrs: { databaseId: 'db-1', viewId: 'view-1' }, content: [] } },
+  ]) assert.equal(validateBlockProps('database', invalid), false)
 })
 
 test('table props validation keeps the grid a strict grid of paragraphs', () => {
@@ -171,6 +188,7 @@ test('validateBlockProps strictly validates all registered block node shapes', (
     toggle: { type: 'eotionToggle', content: [paragraph] },
     callout: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: inline },
     table: { type: 'table', content: [{ type: 'tableRow', content: [cell] }] },
+    database: { type: 'eotionDatabase', attrs: { databaseId: 'db-1', viewId: 'view-1' } },
   }
   for (const type of BLOCK_TYPES) {
     assert.equal(validateBlockProps(type, { node: validNodes[type] }), true, `${type} accepts a formal node`)
@@ -192,6 +210,7 @@ test('validateBlockProps strictly validates all registered block node shapes', (
     toggle: { attrs: { blockId: 'inside-props' } },
     callout: { attrs: { icon: '💡', tone: 'danger' } },
     table: { attrs: { blockId: 'inside-props' } },
+    database: { attrs: { databaseId: 'db-1', viewId: 'view-1', data: [] } },
   }
   for (const type of BLOCK_TYPES) {
     assert.equal(validateBlockProps(type, { node: { ...validNodes[type], ...invalidAttrs[type] } }), false, `${type} rejects invalid attrs`)

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BLOCK_CAPABILITIES, BLOCK_NODE_TYPES, BLOCK_TYPES, EDITOR_NODE_NAMES, EDITOR_NODE_RULES, TABLE_LIMITS, blockDepthMap, flattenBlockTree, isAllowedChildBlockType, validateBlockProps, validateBlockTree, validateCalloutAttrs, validateTableCellAttrs } from '@eotion/domain'
+import { BLOCK_CAPABILITIES, BLOCK_NODE_TYPES, BLOCK_TYPES, EDITOR_NODE_NAMES, EDITOR_NODE_RULES, TABLE_LIMITS, blockDepthMap, flattenBlockTree, isAllowedChildBlockType, validateBlockProps, validateBlockTree, validateCalloutAttrs, validateDatabaseReferenceAttrs, validateTableCellAttrs } from '@eotion/domain'
 import type { PageRecord, ServerBlockRecord } from '../server-domain/types'
 
 const idSchema = z.string().trim().min(1).max(128)
@@ -43,6 +43,8 @@ const McpBlockContentSchema = z.strictObject({
   size: z.number().int().nonnegative().optional(),
   icon: z.string().min(1).max(32).regex(/^[^\u0000-\u001f\u007f-\u009f]*$/u).optional(),
   tone: z.enum(['neutral', 'info', 'warning']).optional(),
+  databaseId: z.string().min(1).max(256).optional(),
+  viewId: z.string().min(1).max(256).optional(),
   /** Table content as a stable grid of cell texts; never the editor AST. */
   rows: z.array(z.array(z.string()).max(TABLE_LIMITS.maxCellsPerRow)).max(TABLE_LIMITS.maxRows).optional(),
 })
@@ -68,16 +70,19 @@ export const McpSummaryContentSchema: z.ZodType<McpSummaryContent> = z.lazy(() =
     'numbered-list': ['items', 'entries', 'start'], todo: ['checked'],
     quote: ['paragraphs', 'children'], code: ['language'], divider: [],
     image: ['fileId', 'name', 'mimeType', 'size'], file: ['fileId', 'name', 'mimeType', 'size'],
-    callout: ['icon', 'tone'], table: ['rows'],
+    callout: ['icon', 'tone'], table: ['rows'], database: ['databaseId', 'viewId'],
   }
   const fields = allowed[type as Exclude<typeof type, 'toggle'>]
   if (Object.keys(value).some((key) => key !== 'type' && key !== 'text' && !fields.includes(key)))
     ctx.addIssue({ code: 'custom', message: 'Unsupported summary field' })
+  if (type === 'database' && (value.text !== '' || !validateDatabaseReferenceAttrs({ databaseId: value.databaseId, viewId: value.viewId })))
+    ctx.addIssue({ code: 'custom', message: 'Invalid database summary' })
   if (((type === 'bulleted-list' || type === 'numbered-list') && value.entries === undefined)
     || (type === 'quote' && value.children === undefined)
     || (type === 'table' && value.rows === undefined)
     || (type === 'callout' && (value.icon === undefined || value.tone === undefined))
     || (type === 'todo' && value.checked === undefined)
+    || (type === 'database' && (value.databaseId === undefined || value.viewId === undefined))
     || ((type === 'image' || type === 'file') && (value.fileId === undefined || value.name === undefined
       || value.mimeType === undefined || value.size === undefined)))
     ctx.addIssue({ code: 'custom', message: 'Incomplete summary' })
@@ -88,6 +93,15 @@ export const McpBlockSchema = McpBlockContentSchema.extend({
   depth: z.number().int().min(0).optional(),
   /** The toggle's own summary; nested child blocks remain in the page block list. */
   summary: z.array(McpSummaryContentSchema).length(1).optional(),
+}).superRefine((value, ctx) => {
+  const hasDatabaseRef = value.databaseId !== undefined || value.viewId !== undefined
+  if (value.type === 'database') {
+    if (!validateDatabaseReferenceAttrs({ databaseId: value.databaseId, viewId: value.viewId })
+      || value.text !== ''
+      || Object.keys(value).some((key) => !['type', 'text', 'databaseId', 'viewId', 'id', 'parentBlockId', 'depth'].includes(key))) {
+      ctx.addIssue({ code: 'custom', message: 'Invalid database block DTO' })
+    }
+  } else if (hasDatabaseRef) ctx.addIssue({ code: 'custom', message: 'Unexpected database reference' })
 })
 
 export const ListPagesOutputSchema = z.strictObject({ items: z.array(McpPageSummarySchema), nextCursor: z.string().nullable() })
@@ -152,6 +166,7 @@ function readNode(value: unknown, depth: number, counter: { nodes: number; textC
   if ((type === 'tableCell' || type === 'tableHeader') && !content?.length) throw new Error('Unsupported block')
   if (type === 'heading' && cleanAttrs?.level !== undefined && ![1, 2, 3, 4, 5, 6].includes(Number(cleanAttrs.level))) throw new Error('Unsupported block')
   if (type === 'eotionTodo' && typeof cleanAttrs?.checked !== 'boolean') throw new Error('Unsupported block')
+  if (type === 'eotionDatabase' && !validateDatabaseReferenceAttrs(cleanAttrs)) throw new Error('Unsupported block')
   if (type === 'eotionCallout' && !validateCalloutAttrs(cleanAttrs)) throw new Error('Unsupported block')
   // Table cells keep their span attributes; only the declared shape is restored.
   if ((type === 'tableCell' || type === 'tableHeader') && !validateTableCellAttrs(cleanAttrs ?? {})) throw new Error('Unsupported block')
@@ -265,6 +280,10 @@ function contentFor(type: ServerBlockRecord['type'], node: JsonNode): McpBlockCo
   if (type === 'callout') {
     dto.icon = attrs.icon as string
     dto.tone = attrs.tone as 'neutral' | 'info' | 'warning'
+  }
+  if (type === 'database') {
+    dto.databaseId = String(attrs.databaseId)
+    dto.viewId = String(attrs.viewId)
   }
   if (type === 'code' && typeof attrs.language === 'string') dto.language = attrs.language
   if (type === 'numbered-list' && typeof attrs.start === 'number') dto.start = attrs.start

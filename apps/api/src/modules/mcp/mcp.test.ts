@@ -14,6 +14,7 @@ import { McpTokenService } from "../server-domain/services/mcp-token.service";
 import { PageService } from "../server-domain/services/page.service";
 import { BlockService } from "../server-domain/services/block.service";
 import { WorkspaceService } from "../server-domain/services/workspace.service";
+import { DatabaseService } from "../server-domain/services/database.service";
 
 type JsonResponse = {
   status: number;
@@ -155,6 +156,7 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     const workspaces = app.get(WorkspaceService);
     const pages = app.get(PageService);
     const blocks = app.get(BlockService);
+    const databases = app.get(DatabaseService);
 
     const emailA = `mcp-a-${randomUUID()}@example.test`;
     const passwordA = "correct horse battery staple";
@@ -213,6 +215,10 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
         orderKey: String(index).padStart(4, "0"),
       });
     }
+    await databases.createInPage(userA.id, "mcp-a-1", "mcp-page-a", {
+      id: "database-1", name: "MCP database fixture", titlePropertyId: "database-title-property", viewId: "view-1",
+      blockId: "mcp-block-h", orderKey: "0007", parentBlockId: null,
+    });
     const blockFixtures = [
       { id: "mcp-block-a", type: "paragraph", node: { type: "paragraph", content: [{ type: "text", text: "A paragraph" }] } },
       { id: "mcp-block-b", type: "heading", node: { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "A heading" }] } },
@@ -221,8 +227,10 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
       { id: "mcp-block-e", type: "numbered-list", node: { type: "orderedList", attrs: { start: 3 }, content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Third item" }] }] }] } },
       { id: "mcp-block-f", type: "image", node: { type: "eotionImage", attrs: { fileId: "file-image", name: "diagram.png", mimeType: "image/png", size: 1234, url: "https://private.example.test/image" } } },
       { id: "mcp-block-g", type: "file", node: { type: "eotionFile", attrs: { fileId: "file-doc", name: "notes.pdf", mimeType: "application/pdf", size: 5678, url: "https://private.example.test/file" } } },
+      { id: "mcp-block-h", type: "database", node: { type: "eotionDatabase", attrs: { databaseId: "database-1", viewId: "view-1" } } },
     ] as const;
     for (const [index, block] of blockFixtures.entries()) {
+      if (block.type === "database") continue;
       await blocks.create(userA.id, "mcp-a-1", "mcp-page-a", {
         id: block.id,
         pageId: "mcp-page-a",
@@ -471,6 +479,7 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
       assert.deepEqual(pagePayload.blocks.slice(5), [
         { id: "mcp-block-f", type: "image", text: "", fileId: "file-image", name: "diagram.png", mimeType: "image/png", size: 1234, parentBlockId: null, depth: 0 },
         { id: "mcp-block-g", type: "file", text: "", fileId: "file-doc", name: "notes.pdf", mimeType: "application/pdf", size: 5678, parentBlockId: null, depth: 0 },
+        { id: "mcp-block-h", type: "database", text: "", databaseId: "database-1", viewId: "view-1", parentBlockId: null, depth: 0 },
       ]);
       const pageText = pageResult.content.find((item) => item.type === "text");
       assert.ok(pageText?.type === "text");

@@ -5,6 +5,7 @@ import type { PageRecord } from '../types'
 
 import { PagePatch, PageRepository } from '../repositories/page.repository'
 import { BlockRepository } from '../repositories/block.repository'
+import { DatabaseRecordRepository } from '../repositories/database.repository'
 import { WorkspacePermissionService } from './workspace-permission.service'
 import { supportsTransactions } from './mongo-transactions'
 
@@ -12,7 +13,7 @@ type PageCreate = Pick<PageRecord, 'id' | 'parentPageId' | 'title' | 'orderKey'>
 
 @Injectable()
 export class PageService {
-  constructor(private readonly pages: PageRepository, private readonly permissions: WorkspacePermissionService, private readonly blocks: BlockRepository, @InjectConnection() private readonly connection: Connection) {}
+  constructor(private readonly pages: PageRepository, private readonly permissions: WorkspacePermissionService, private readonly blocks: BlockRepository, private readonly records: DatabaseRecordRepository, @InjectConnection() private readonly connection: Connection) {}
 
   async create(userId: string, workspaceId: string, input: PageCreate, session?: ClientSession): Promise<PageRecord> {
     await this.permissions.assertCanWrite(userId, workspaceId)
@@ -159,6 +160,8 @@ export class PageService {
 
   private async deleteLeaf(workspaceId: string, id: string, session?: ClientSession): Promise<boolean> {
     if (await this.pages.hasChildren(workspaceId, id, session)) throw new BadRequestException('Delete child pages first')
+    if (session && !(await this.pages.touchStructure(workspaceId, id, session))) return false
+    if (await this.records.referencesPage(workspaceId, id, session)) throw new BadRequestException('Delete the database record before its linked page')
     await this.blocks.deleteByPage(workspaceId, id, session)
     return this.pages.deleteInWorkspace(workspaceId, id, session)
   }

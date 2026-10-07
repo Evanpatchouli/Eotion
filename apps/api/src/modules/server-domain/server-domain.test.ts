@@ -42,7 +42,7 @@ class ServerDomainTestModule {}
 function validBlockProps(type: BlockType, text = 'test'): { node: Record<string, unknown> } {
   const inline = [{ type: 'text', text }]
   const paragraph = { type: 'paragraph', content: inline }
-  const propsByType: Record<BlockType, Record<string, unknown>> = {
+  const propsByType: Record<Exclude<BlockType, 'database'>, Record<string, unknown>> = {
     paragraph: { type: 'paragraph', content: inline },
     heading: { type: 'heading', attrs: { level: 1 }, content: inline },
     'bulleted-list': { type: 'bulletList', content: [{ type: 'listItem', content: [paragraph] }] },
@@ -57,6 +57,7 @@ function validBlockProps(type: BlockType, text = 'test'): { node: Record<string,
     callout: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: inline },
     table: { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', content: [paragraph] }] }] },
   }
+  if (type === 'database') throw new Error('Database blocks require a persisted database and view')
   return { node: propsByType[type] }
 }
 
@@ -303,7 +304,7 @@ test('server domain persists scoped records and creates the declared Mongo index
   await assert.rejects(blocks.update(userB.id, workspaceA.id, root.id, blockRoot.id, { props: validBlockProps('toggle', 'stolen') }), /Workspace not found/)
   assert.deepEqual((await blocks.list(userA.id, workspaceA.id, root.id)).map(({ id }) => id), ['block-first', 'block-root', 'block-child'])
   const calloutProps = validBlockProps('callout', 'note')
-  for (const [index, type] of BLOCK_TYPES.entries()) {
+  for (const [index, type] of BLOCK_TYPES.filter(type => type !== 'database').entries()) {
     const id = `block-validation-${type}`
     const props = validBlockProps(type, `valid ${type}`)
     const created = await blocks.create(userA.id, workspaceA.id, root.id, {
@@ -326,7 +327,7 @@ test('server domain persists scoped records and creates the declared Mongo index
         `${type} invalid ${failure} update must preserve the stored props`)
     }
   }
-  for (const type of BLOCK_TYPES) {
+  for (const type of BLOCK_TYPES.filter(type => type !== 'database')) {
     assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, `block-validation-${type}`), true)
   }
   await assert.rejects(blocks.update(userA.id, workspaceA.id, root.id, blockRoot.id, {

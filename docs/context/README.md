@@ -60,3 +60,5 @@ P5.7.5.3 共享交互入口：`components/ui/EotionNavItem.vue`、`components/pr
 
 
 P5.7 已进入 closeout：Quiet Studio 方向与正式 Product UI 已通过迭代实现和 review 收敛；P5 已存在能力的 Design System v1、六个核心 Screen Spec 与 visual regression 见 `docs/design/design-system-v1.md`、`docs/design/core-screen-spec.md`、`docs/design/visual-acceptance.md`。原计划的预实施 Gate A 顺序没有完整执行，最终用户视觉签字仍待完成；不要按旧文档重复实现 Quiet Studio。
+
+P8.1 Database 检索入口：`packages/domain/src/database.ts`、`packages/contracts/src/index.ts`、`apps/api/src/modules/server-domain/services/database.service.ts`、`repositories/database.repository.ts`、`schemas/database*.schema.ts`、`apps/web/src/editor/databaseNodes.ts` 与 MCP read contract。核心行为与边界见 `docs/p8-database.md`；Database 数据独立于 Page/Block snapshot，仅引用继续既有 sync。

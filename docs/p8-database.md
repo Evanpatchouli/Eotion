@@ -1,0 +1,85 @@
+# P8 Database
+
+P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1 Database Domain Foundation 于 2026-10-08 验收 PASS；本轮到此停止，P8.2 未开始。
+
+| 阶段 | 范围 | 状态 |
+| --- | --- | --- |
+| P8.1 | Database / Property / Record / View、稳定 Block 引用、权限与原子创建 | PASS |
+| P8.2 | Inline Database + Table View | 未开始 |
+| P8.3 | Properties + Record Editing | 未开始 |
+| P8.4 | Views / Filter / Sort | 未开始 |
+| P8.5 | Advanced Properties | 未开始 |
+| P8.6 | Database Acceptance | 未开始 |
+
+## 核心模型
+
+`packages/domain` 定义 Database、DatabaseProperty、DatabaseRecord、DatabaseView；`packages/contracts` 提供严格的 runtime contract。服务端在 `server-domain` 使用四个独立 Mongo 集合：`databases`、`database_properties`、`database_records`、`database_views`。稳定 ID、workspaceId、version 与 timestamps 是领域边界，不把 persistence schema 暴露给客户端。
+
+Database Block ≠ Database 数据本体。普通 Table Block 仍是一个文档内 grid，与 Database 无关联。
+
+Database Block 沿用既有 Block props wrapper，只保存引用：
+
+```ts
+{
+  type: 'database',
+  props: {
+    node: {
+      type: 'eotionDatabase',
+      attrs: { databaseId: 'database-id', viewId: 'view-id' }
+    }
+  }
+}
+```
+
+Block 的 ID/pageId/parentBlockId/orderKey 继续由现有模型维护。properties、records、views 不进入 `props.node`。同一 Database 可以有多个引用，每个引用选择属于该 Database 的 View。
+
+Property 第一版支持 title、text、number、checkbox、select、date。Property ID 是 Record properties 的键；select 值是稳定 option ID，date 是有效的 YYYY-MM-DD。每个 Database 恰好一个 title Property，Record 必须包含非空 title 值；其他字段可以缺失或为 null。没有 relation、rollup、formula、people、files 或 property 插件系统。View 第一版只有 table，没有 filter/sort 表达式。
+
+## Record 与 Page
+
+Record 的结构化值保存在 `properties`，正文保存在 `pageId` 指向的既有 Eotion Page 中。Page 必须已存在且属于同一个 Workspace，不再造正文 Block 系统。正文编辑继续使用现有 Page/Block 能力；第一版不实现点击行打开页面。有关联 Record 的 Page 禁止删除，避免产生失效正文引用；解除关联/Record 删除业务操作留到后续阶段。
+
+## 权限、生命周期与一致性
+
+所有业务服务使用既有 WorkspacePermissionService，继承 Workspace owner 权限。Database / Property / Record / View 的读写按 workspace 与 database 作用域查询，跨 Workspace Database/Block 引用、Record/Page 关联以及不属于 Database 的 View 均拒绝。
+
+删除 Database Block 仅删除文档引用；删除包含引用的普通 Page 也不删除 Database、Property、Record 或 View。没有最后一个引用删除触发的清理，没有 Database 删除 UI/业务操作。
+
+原子创建由 `DatabaseService.createInPage` 在同一个 Mongo transaction 中创建 Database、默认 title Property、默认 Table View 和 database Block。失败全部回滚；Mongo 不支持事务时显式失败，不进行不可靠写入。Database 的其他新增写入同样要求事务。
+
+## Editor、MCP 与同步边界
+
+Web editor 只提供可读取、可保存稳定引用的占位节点，复用到 Electron / Mobile WebView。P8.1 不提供 Slash 创建入口；默认数据与引用创建走应用服务，完整创建 UI 留到 P8.2。
+
+既有 MCP `eotion_get_page` 只返回 database Block 的稳定 databaseId/viewId，以及现有通用 Block 字段；不返回数据库记录、editor AST 或 persistence schema。没有新增 MCP tools，database Block 不开放 MCP write。
+
+Database 四类实体目前属于 server-domain。version 从 1 开始，为未来冲突检测留下明确实体版本边界；本轮不提供实体更新/CAS 或完整 Database Local-first 协议。Workspace snapshot 与既有 Page/Block oplog 只携带 database Block 引用，不携带数据库数据。客户端离线可保留已有引用并编辑周边正文，不能离线创建 Database 或编辑结构化值。后续 Database sync 必须另行定义操作、版本与冲突语义。
+
+## 验证
+
+验证环境为隔离的本机 MongoDB 单节点副本集，测试为每轮创建并清理独立数据库；没有使用生产数据。Browser 插件未列出，产品验证使用仓库已有 Playwright。
+
+| 验证 | 结果 |
+| --- | --- |
+| `pnpm --filter @eotion/domain test` | 23/23 |
+| `pnpm --filter @eotion/contracts test` | 10/10 |
+| Storage / SDK 源码测试 | 7/7、18/18 |
+| `pnpm --filter @eotion/api test:domain` | 4/4；contracts 收紧后 Database 定向复跑 2/2 |
+| `pnpm --filter @eotion/api test:http` | 26/26，含真实 sync/receipt 与 File 回归 |
+| `pnpm --filter @eotion/api test:mcp` | 30/30，含真实 MCP get_page Database 引用输出 |
+| Database placeholder + P7 relevant product | 49 个不同用例通过（P7+桌面 48/48，Database 桌面/移动补测 2/2） |
+| 旧编辑器 / 附件 / sync 产品回归 | 最终 fixture 下完整重跑 110/110；相关产品合计 159 个不同用例通过 |
+| `pnpm typecheck` | Web / Desktop / API 通过 |
+| `pnpm build:web` / `pnpm build:api` | 通过；Web 条件导出修复后重新 build 通过 |
+| `git diff --check` | 通过 |
+| 独立 review | MCP fixture blocker 修复后最终复核无 blocker；引用/事务/Page fence/叶节点身份映射已检查 |
+
+产品验证发现并修复了既有 BlockIdentity 对 nodeSize=1 叶节点使用 offset+1 的映射错误：其锚点会落到下一 sibling，身份修复时可能重分配原 Block ID。叶节点改用 offset 并显式采用右侧关联；非叶继续使用内部位置。Database、divider、image、file 的 ID 保真纳入产品回归。Contracts 使用 domain 的条件子路径导出，Web dev 读取 TS 源码，API CommonJS 读取 dist。
+
+API tests 覆盖 workspace ownership、跨 workspace/missing/mismatched view 拒绝、Toggle summary 递归引用校验、Record/Page 同 workspace、关联 Page 删除防护、共享引用与最后引用移除不清理数据、创建失败回滚和无事务时 503/零写入。Domain/contracts 覆盖属性类型、title invariant、select option ID、合法日期、稳定 ID/version 与严格 shape。
+
+P8.1 目前仅提供应用服务与 contracts，不提供 Database HTTP/SDK CRUD、Slash 创建或结构化编辑 UI。已有 Block HTTP/sync 入口仍可保存合法引用。部署需 Mongo replica set/sharded transaction 支持；初始 version 不代表已经实现实体更新或冲突协议。
+
+附件回归首轮发现测试 fixture 与既有 P7 hardening 不一致：同 BrowserContext 的 tab 会命中合法 IndexedDB cache，而非法快照应验证首次加载；两个非法场景改为隔离 context，明确断言快照校验错误且编辑器不存在。另为首项成功图片上传/重载测试显式提供 tinyPng 响应，消除已记录的远端图片未 mock 竞态；不改变上传 URL、持久属性、重载等断言。两项定向重复 6/6 通过，独立 review 确认未削弱安全/成功路径断言。
+
+最终执行 `pnpm --filter @eotion/web exec playwright test tests/product-editor.spec.ts tests/product-sync.spec.ts tests/product-attachments.spec.ts --workers=1`：110/110、exit 0。独立 review 最终 0 blocker；没有开始 P8.2。

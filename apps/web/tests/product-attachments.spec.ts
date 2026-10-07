@@ -151,6 +151,7 @@ test('slash image command and picker upload become one local block, sync operati
   const pageErrors: string[] = []
   page.on('pageerror', (error) => pageErrors.push(error.stack ?? error.message))
   const api = await installApi(page)
+  await page.route('https://objects.example.test/**', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: tinyPng }))
   api.controls.holdUploadResponse = true
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
@@ -737,19 +738,33 @@ test('failed image uses fallback and unsafe URL or unknown attachment attrs keep
   await expect(page.locator('.attachment-image-fallback')).toHaveAttribute('role', 'img')
   expect(blockOperations(api)).toHaveLength(0)
 
+  const browser = page.context().browser()
+  expect(browser).not.toBeNull()
+  // Each malformed snapshot needs a clean local store: another tab with this
+  // workspace/page can otherwise open its valid IndexedDB cache before the API fixture.
   const unsafe = { ...badImage, props: { node: { type: 'eotionImage', attrs: { fileId: 'unsafe-id', name: 'unsafe.png', mimeType: 'image/png', size: 10, url: 'javascript:alert(1)' } } } }
-  const second = await page.context().newPage()
-  await installApi(second, [unsafe])
-  await second.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
-  await expect(second.getByRole('alert')).toContainText('尚不支持编辑')
-  await expect(editor(second)).toHaveCount(0)
+  const second = await browser!.newPage()
+  try {
+    await installApi(second, [unsafe])
+    await second.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+    await expect(second.getByRole('region', { name: '暂时无法加载页面' }).getByRole('alert'))
+      .toHaveText('Invalid block attributes in workspace snapshot')
+    await expect(editor(second)).toHaveCount(0)
+  } finally {
+    await second.close()
+  }
 
   const unknown = { ...badImage, props: { node: { type: 'eotionImage', attrs: { fileId: 'unknown-id', name: 'x.png', mimeType: 'image/png', size: 10, url: 'https://objects.example.test/x', serverSecret: 'preserve' } } } }
-  const third = await page.context().newPage()
-  await installApi(third, [unknown])
-  await third.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
-  await expect(third.getByRole('alert')).toContainText('尚不支持编辑')
-  await expect(editor(third)).toHaveCount(0)
+  const third = await browser!.newPage()
+  try {
+    await installApi(third, [unknown])
+    await third.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+    await expect(third.getByRole('region', { name: '暂时无法加载页面' }).getByRole('alert'))
+      .toHaveText('Invalid block attributes in workspace snapshot')
+    await expect(editor(third)).toHaveCount(0)
+  } finally {
+    await third.close()
+  }
 })
 
 test('long attachment names fit a 390px viewport and action buttons remain touch sized', async ({ page }) => {

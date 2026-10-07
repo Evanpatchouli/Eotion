@@ -16,6 +16,13 @@
       "require": "./dist/block-types.js",
       "default": "./dist/block-types.js"
     },
+    "./database": {
+      "types": "./src/database.ts",
+      "node": "./dist/database.js",
+      "import": "./src/database.ts",
+      "require": "./dist/database.js",
+      "default": "./dist/database.js"
+    },
     "./order": {
       "types": "./src/order.ts",
       "import": "./src/order.ts",

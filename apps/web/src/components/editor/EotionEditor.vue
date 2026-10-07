@@ -12,6 +12,7 @@ import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
 import { BlockIdentity } from '../../editor/blockIdentity'
 import { EotionToggle } from '../../editor/toggleNodes'
+import { EotionDatabase } from '../../editor/databaseNodes'
 import { EotionCallout } from '../../editor/calloutNodes'
 import { createTablePasteGuard, EotionTable, EotionTableCell, EotionTableHeader, EotionTableRow } from '../../editor/tableNodes'
 import { createUploadPlaceholderExtension, UploadPlaceholderRegistry, type UploadPlaceholderTask, type UploadTarget } from '../../editor/uploadPlaceholders'
@@ -127,7 +128,7 @@ function updateSelection() {
 }
 
 const { editor, getDocument } = useDocumentEditor({
-  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionCallout, EotionTable, EotionTableRow, EotionTableHeader, EotionTableCell, TablePasteGuard, AttachmentLifetime, BlockIdentity, NestedBlockInteractions,
+  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionDatabase, EotionCallout, EotionTable, EotionTableRow, EotionTableHeader, EotionTableCell, TablePasteGuard, AttachmentLifetime, BlockIdentity, NestedBlockInteractions,
     createUploadPlaceholderExtension(uploadRegistry, { cancel: cancelUpload, retry: task => { void upload(task) }, remove: removeTask }),
     createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
   content: props.content,

@@ -148,7 +148,11 @@ P7.1 Block Model Foundation 已 PASS：block registry 单一来源、block tree 
 - 决定协作服务器持久化/压缩策略。
 - 仅在存在在线状态/扇出/水平扩展需求时才添加 Redis。
 
-## P8 - 异步基础设施
+## P8 - Database
+
+P8.1 Database Domain Foundation：✅ **PASS（2026-10-08）**。独立 Database / Property / Record / View、稳定 database Block 引用、Record → Page 关系、Workspace 权限与 Mongo 原子创建。范围与分阶段计划见 [P8 Database](p8-database.md)。本轮完成 P8.1 并停止；P8.2–P8.6 未开始。
+
+## 后续 - 异步基础设施
 
 仅在存在具体消费者时引入 Kafka，例如：
 

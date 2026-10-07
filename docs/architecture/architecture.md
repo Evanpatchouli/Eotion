@@ -103,6 +103,8 @@ Mobile WebView 的 IndexedDB 持久性依赖稳定的 origin 和 storage partiti
 
 P3 reconnect 依赖持久 oplog，以稳定 operation id 至少一次投递；同一 JS realm 中同一 store 对象的并发调用会合并，但跨实例和跨 renderer 不互斥。P4 的 sync transport/server 必须按 operation id 幂等。
 
+P8.1 Database 作为独立 server-domain 数据域存在：Database / Property / Record / View 使用独立 Mongo 集合，Database Block 只携带稳定 databaseId/viewId 引用。Record 的正文继续由同 Workspace 的既有 Page/Block 承载；移除 Block 引用不删除 Database。Database 原子创建要求 Mongo 多文档事务，权限复用 WorkspacePermissionService。Database 数据尚不进入 LocalStore / Page-Block oplog；实体 ID、version 与后续 sync 边界见 [P8 Database](../p8-database.md)。
+
 ## 6. 编辑器方向
 
 编辑器应在所有目标平台上保持 Web 技术。Eotion 的编辑器框架只有 **Tiptap 3**；ProseMirror 是 Tiptap 的底层编辑引擎，不作为第二套编辑器并行接入。

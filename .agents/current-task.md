@@ -1,17 +1,21 @@
-# 当前任务：P7 两项边界修复
+# 当前任务：P8.1 Database Domain Foundation
 
-状态：COMPLETE；基线 2a59ce3；不进入 P8，不新增 Block / MCP Tool / MCP write 能力。
+状态：COMPLETE / P8.1 PASS（2026-10-08）；基线 c0e716f；只完成 P8.1，不进入 P8.2；最终一个聚焦 commit。
 
 | Work Unit | 模式/评级 | 负责 | 结果 |
 | --- | --- | --- | --- |
-| 服务端写路径与 domain validator 调查 | investigate/S0 | scout | HTTP/sync/MCP 均汇入 BlockService |
-| Toggle read DTO 决策与实现 | decide/S2 -> execute/S1 | worker | summary 递归业务 DTO、旧 text 兼容 |
-| 统一 props 校验与入口回归 | execute/S1 | fast_worker | 13 类型矩阵、HTTP/sync/MCP derived props |
-| tests/typecheck/build/product | verify/S0 | scout + 主 Agent | domain 20、contracts 7、storage 7、API domain 2/HTTP 24/MCP 29 通过 |
-| 最终独立 review | review | reviewer | 兼容边界修复后无 blocker |
+| domain/server 与 editor/MCP 边界检索 | investigate/S0 | scouts | Evidence Pack 完成 |
+| 模型、引用与原子创建决策 | decide/S2 | 主 Agent | 独立实体、稳定引用、事务 fail-closed |
+| domain/contracts registry 基础 | execute/S1 | fast_worker | domain 23/23、contracts 10/10 |
+| 独立 Mongo domain/service | execute/S1（必要边界 S2） | worker | API domain 4/4、引用/Record Page/原子性 |
+| editor placeholder/MCP 兼容 | execute/S1 | fast_worker | MCP 30/30、P7+Database 49 个不同产品用例通过 |
+| 最终回归与独立 review | verify/S0 + review | scout/reviewer | HTTP 26/26、Storage 7/7、SDK 18/18、typecheck/Web/API build；review 0 blocker |
 
-兼容：空 list/quote、嵌套列表开头的 listItem、旧 Toggle 空 summary 回退；旧合法 P5/P6/P7 文档不迁移。
-非法 snapshot 在 hydration 前拒绝；已有合法本地正文保留，首次加载非法文档不开放编辑。
-Typecheck、Web/API build、diff check 通过。相关 product 129 项均有通过结果（初跑 124/129，5 个失败项修正/定向复跑通过，未重跑全 suite）；browser storage 8 项均通过（2 个环境失败项定向复跑通过）。
+旧 editor/sync/attachments 110 组发现 fixture 问题：非法快照需隔离 IndexedDB context，成功图片资源需显式 mock。修正后受影响两项 repeat3 共 6/6，最终完整组 110/110、exit 0；相关产品合计 159 个不同用例通过。没有削弱拒绝加载/无 editor、安全与持久化断言。
 
-最终一个聚焦 commit，工作区干净后停止。
+核心：Database/Property/Record/View 独立 Mongo 集合；Block 仅 databaseId/viewId；title/text/number/checkbox/select/date；table-only View；Record 指向同 workspace Page，关联 Page 删除拒绝；移除最后 Block 引用不删除数据。createInPage 原子创建 Database + title Property + default View + Block，不支持 transaction 返回503/零写入。
+Database 数据不加入 Page/Block oplog；既有 Block 引用继续 sync。无新 MCP tools、无 Database HTTP/SDK CRUD、无 slash/完整 Table UI/Database sync。
+
+产品验证发现 BlockIdentity 对单位置 leaf 的 offset+1 锚点越界；改用 leaf offset+assoc1，Database/divider/image/file IDs 稳定，非leaf保留原逻辑。
+
+正式文档：docs/p8-database.md、roadmap、architecture、文档地图/context 已更新。验证与最终独立复核均已完成；一个聚焦 commit，确认 Git clean 后停止，不开始 P8.2。

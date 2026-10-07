@@ -6,6 +6,7 @@ import type { ClientSession, Connection } from 'mongoose'
 
 import { BlockPatch, BlockRepository } from '../repositories/block.repository'
 import { PageRepository } from '../repositories/page.repository'
+import { DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
 import { WorkspacePermissionService } from './workspace-permission.service'
 import { supportsTransactions } from './mongo-transactions'
 
@@ -16,6 +17,8 @@ export class BlockService {
   constructor(
     private readonly blocks: BlockRepository,
     private readonly pages: PageRepository,
+    private readonly databases: DatabaseRepository,
+    private readonly views: DatabaseViewRepository,
     private readonly permissions: WorkspacePermissionService,
     @InjectConnection() private readonly connection: Connection,
   ) {}
@@ -24,6 +27,7 @@ export class BlockService {
     await this.permissions.assertCanWrite(userId, workspaceId)
     if (input.pageId !== pageId) throw new BadRequestException('Block pageId does not match the target page')
     if (!validateBlockProps(input.type, input.props)) throw new BadRequestException('Invalid block attributes')
+    await this.assertDatabaseReference(workspaceId, input.type, input.props, session)
     if (!session && !(await supportsTransactions(this.connection))) {
       if (!(await this.pages.findInWorkspace(workspaceId, pageId))) throw new NotFoundException('Page not found in workspace')
       const parentBlockId = input.parentBlockId ?? null
@@ -97,6 +101,7 @@ export class BlockService {
     if (!validateBlockProps(patch.type ?? existing.type, patch.props ?? existing.props)) {
       throw new BadRequestException('Invalid block attributes')
     }
+    await this.assertDatabaseReference(workspaceId, patch.type ?? existing.type, patch.props ?? existing.props, session)
     const targetType = patch.type
     if (targetType !== undefined && targetType !== existing.type) {
       const capability = blockCapability(targetType)
@@ -207,5 +212,24 @@ export class BlockService {
       await this.blocks.touchStructure(workspaceId, pageId, parentBlockId, session)
     }
     return this.blocks.create(workspaceId, input, session)
+  }
+
+  private async assertDatabaseReference(workspaceId: string, _type: ServerBlockRecord['type'], props: Record<string, unknown>, session?: ClientSession): Promise<void> {
+    const pending: unknown[] = [props.node]
+    while (pending.length > 0) {
+      const node = pending.pop()
+      if (typeof node !== 'object' || node === null || Array.isArray(node)) continue
+      const value = node as Record<string, unknown>
+      if (value.type === 'eotionDatabase') {
+        const attrs = value.attrs as { databaseId?: string; viewId?: string } | undefined
+        const databaseId = attrs?.databaseId
+        const viewId = attrs?.viewId
+        if (!databaseId || !viewId) throw new BadRequestException('Invalid database block reference')
+        const database = await this.databases.findInWorkspace(workspaceId, databaseId, session)
+        const view = await this.views.findInWorkspace(workspaceId, viewId, session)
+        if (!database || !view || view.databaseId !== database.id) throw new BadRequestException('Database block reference must belong to the same workspace and database')
+      }
+      if (Array.isArray(value.content)) pending.push(...value.content)
+    }
   }
 }

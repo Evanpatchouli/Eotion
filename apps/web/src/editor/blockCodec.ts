@@ -1,6 +1,6 @@
 import type { BlockCreateRequest, BlockResponse } from '@eotion/contracts'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
-import { TABLE_LIMITS, blockCapability, blockTypeForNode, editorNodeRule, isAttachmentBlockType, nodeTypeForBlock, validateCalloutAttrs, validateTableCellAttrs } from '@eotion/domain/block-types'
+import { TABLE_LIMITS, blockCapability, blockTypeForNode, editorNodeRule, isAttachmentBlockType, nodeTypeForBlock, validateCalloutAttrs, validateDatabaseBlockProps, validateDatabaseReferenceAttrs, validateTableCellAttrs } from '@eotion/domain/block-types'
 import type { JSONContent } from '@tiptap/core'
 import type { EditorDocument } from './editorDocument'
 import { isSafeLinkHref } from './link'
@@ -40,6 +40,11 @@ function validNode(node: JSONContent): boolean {
   if (type === 'eotionCallout') {
     const { blockId: _blockId, ...attrs } = node.attrs ?? {}
     if (!validateCalloutAttrs(attrs)) return false
+  }
+  if (type === 'eotionDatabase') {
+    if (node.content !== undefined || node.marks !== undefined) return false
+    const { blockId: _blockId, ...attrs } = node.attrs ?? {}
+    if (!validateDatabaseReferenceAttrs(attrs)) return false
   }
   if ((type === 'tableCell' || type === 'tableHeader') && !validateTableCellAttrs(node.attrs ?? {})) return false
   // The schema forbids most bad grids, but a stored table must never load or save
@@ -108,6 +113,7 @@ function blockToNode(block: BlockResponse, attachmentFileIds: Set<string>): JSON
     if (typeof fileId !== 'string' || attachmentFileIds.has(fileId)) throw new Error(DUPLICATE_ATTACHMENT)
     attachmentFileIds.add(fileId)
   }
+  if (block.type === 'database' && !validateDatabaseBlockProps(block.props)) throw new Error(UNSUPPORTED_PAGE)
   return { ...node, attrs: { ...node.attrs, blockId: block.id } }
 }
 

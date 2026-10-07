@@ -57,6 +57,31 @@ test('MCP block mapper renders all ten supported block types and preserves order
   assert.doesNotMatch(JSON.stringify(mapped), /workspaceId|pageId|orderKey|createdAt|updatedAt|signed|props|url|node|blockId/)
 })
 
+test('MCP database read exposes only stable references and rejects malformed data', () => {
+  const record = block('database', { type: 'eotionDatabase', attrs: { databaseId: 'database-1', viewId: 'view-1' } }, 'database-block')
+  const dto = toMcpBlock(record)
+  assert.deepEqual(dto, {
+    id: 'database-block', type: 'database', text: '', databaseId: 'database-1', viewId: 'view-1', parentBlockId: null, depth: 0,
+  })
+  assert.equal(GetPageOutputSchema.safeParse({ ...toMcpPageSummary(page), blocks: [dto] }).success, true)
+  assert.doesNotMatch(JSON.stringify(dto), /"data"\s*:|props|node|record|property|url|blockId/)
+
+  for (const attrs of [
+    { databaseId: 'database-1' },
+    { databaseId: 'database-1', viewId: ' ' },
+    { databaseId: 'database-1', viewId: 'view-1', data: [] },
+  ]) assert.throws(() => toMcpBlock(block('database', { type: 'eotionDatabase', attrs })))
+
+  const extraField = { ...dto, data: [] }
+  const extraContent = { ...dto, text: 'rows' }
+  const invalidSummary = { type: 'database', text: '', databaseId: 'database-1', viewId: ' view-1' }
+  assert.equal(GetPageOutputSchema.safeParse({ ...toMcpPageSummary(page), blocks: [extraField] }).success, false)
+  assert.equal(GetPageOutputSchema.safeParse({ ...toMcpPageSummary(page), blocks: [extraContent] }).success, false)
+  const toggle = toMcpBlock(block('toggle', { type: 'eotionToggle', content: [{ type: 'eotionDatabase', attrs: { databaseId: 'database-1', viewId: 'view-1' } }] }))
+  assert.deepEqual(toggle.summary, [{ type: 'database', text: '', databaseId: 'database-1', viewId: 'view-1' }])
+  assert.equal(GetPageOutputSchema.safeParse({ ...toMcpPageSummary(page), blocks: [{ ...toggle, summary: [invalidSummary] }] }).success, false)
+})
+
 test('MCP mapper rejects unsupported, malformed, and oversized data without passthrough', () => {
   assert.throws(() => toMcpBlock(block('paragraph', { type: 'paragraph', attrs: { blockId: 'internal' } })))
   assert.throws(() => toMcpBlock(block('paragraph', { type: 'unknown', content: [] })))

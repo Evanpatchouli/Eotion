@@ -82,9 +82,12 @@ export const BlockIdentity = Extension.create({
         const inherited = new Map<number, string>()
         for (const previous of collectBlockNodes(oldState.doc)) {
           if (typeof previous.id !== 'string' || !previous.id) continue
-          let mapped = previous.offset + 1
+          // Non-leaf blocks have an interior position; atoms and other one-token
+          // leaves do not. Mapping `offset + 1` for those leaves lands exactly
+          // at the next sibling, so a repair transaction can steal their ID.
+          let mapped = previous.offset + (previous.end - previous.offset > 1 ? 1 : 0)
           for (const change of transactions) {
-            const result = change.mapping.mapResult(mapped)
+            const result = change.mapping.mapResult(mapped, 1)
             if (result.deleted) { mapped = -1; break }
             mapped = result.pos
           }

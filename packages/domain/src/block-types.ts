@@ -1,3 +1,6 @@
+import { validateDatabaseReferenceAttrs } from './database'
+export { validateDatabaseReferenceAttrs } from './database'
+
 export const BLOCK_TYPES = [
   'paragraph',
   'heading',
@@ -12,6 +15,7 @@ export const BLOCK_TYPES = [
   'toggle',
   'callout',
   'table',
+  'database',
 ] as const
 
 export type BlockType = (typeof BLOCK_TYPES)[number]
@@ -35,6 +39,7 @@ export const BLOCK_NODE_TYPES: Record<BlockType, string> = {
   toggle: 'eotionToggle',
   callout: 'eotionCallout',
   table: 'table',
+  database: 'eotionDatabase',
 }
 
 /** Every editor node name that a block document may contain, block nodes first. */
@@ -54,6 +59,7 @@ export type BlockCommandId =
   | 'toggle'
   | 'callout'
   | 'table'
+  | 'database'
   | 'image'
   | 'file'
 
@@ -128,6 +134,7 @@ export const BLOCK_CAPABILITIES: Record<BlockType, BlockCapability> = {
   // One table is one block. Rows and cells are editor-internal nodes owned by
   // the table node, so the page block tree never sees them.
   table: capability('table', { internalContent: true, mcp: { readable: true, writable: false } }),
+  database: capability('database', { slash: false, mcp: { readable: true, writable: false } }),
 }
 
 export interface EditorNodeRule {
@@ -158,6 +165,7 @@ export const EDITOR_NODE_RULES: Record<string, EditorNodeRule> = {
   eotionTodo: { attrs: ['checked'], children: ['text', 'hardBreak'] },
   eotionToggle: { attrs: [], children: BLOCK_NODE_NAMES },
   eotionCallout: { attrs: ['icon', 'tone'], children: ['text', 'hardBreak'] },
+  eotionDatabase: { attrs: ['databaseId', 'viewId'], children: null },
   // Table rows/cells are editor-internal nodes of the table block. Cells hold
   // plain paragraphs only, so a cell can never smuggle in another block.
   table: { attrs: [], children: ['tableRow'] },
@@ -187,6 +195,7 @@ export const BLOCK_COMMANDS: readonly BlockCommandSpec[] = [
   { id: 'toggle', type: 'toggle', label: '折叠列表', group: '块', icon: 'chevron-right', search: 'toggle collapse fold' },
   { id: 'callout', type: 'callout', label: '提示块', group: '块', icon: 'info', search: 'callout tip info' },
   { id: 'table', type: 'table', label: '表格', group: '块', icon: 'table', search: 'table grid sheet' },
+  { id: 'database', type: 'database', label: '数据库', group: '块', icon: 'database', search: 'database' },
   { id: 'horizontalRule', type: 'divider', label: '分割线', group: '块', icon: 'minus', search: 'divider rule' },
   { id: 'image', type: 'image', label: '图片', group: '媒体', icon: 'image', search: 'image photo' },
   { id: 'file', type: 'file', label: '文件', group: '媒体', icon: 'file-text', search: 'file attachment' },
@@ -358,6 +367,7 @@ function validateNodeAttrs(type: string, attrs: unknown): boolean {
   if (type === 'eotionTodo' && typeof value.checked !== 'boolean') return false
   if (type === 'codeBlock' && value.language !== undefined && value.language !== null && typeof value.language !== 'string') return false
   if (type === 'eotionCallout' && !validateCalloutAttrs(value)) return false
+  if (type === 'eotionDatabase') return validateDatabaseReferenceAttrs(value)
   if (type === 'eotionImage' || type === 'eotionFile') return validateAttachmentAttrs(value, type)
   if (type === 'tableCell' || type === 'tableHeader') return validateTableCellAttrs(value)
   return true
@@ -374,7 +384,7 @@ function validateEditorNode(value: unknown, budget: ValidationBudget, depth: num
   if (type === 'text') {
     if (typeof node.text !== 'string' || node.content !== undefined) return false
   } else if (node.text !== undefined) return false
-  if ((type === 'eotionImage' || type === 'eotionFile') && node.content !== undefined) return false
+  if ((type === 'eotionImage' || type === 'eotionFile' || type === 'eotionDatabase') && node.content !== undefined) return false
 
   if (type === 'text' || type === 'hardBreak') {
     if (node.marks !== undefined && (!Array.isArray(node.marks) || !node.marks.every(validCalloutMark))) return false
@@ -412,4 +422,9 @@ export function validateBlockProps(type: BlockType, props: unknown): boolean {
   } catch {
     return false
   }
+}
+
+/** Database blocks only reference a database and view; data stays in domain records. */
+export function validateDatabaseBlockProps(props: unknown): boolean {
+  return validateBlockProps('database', props)
 }

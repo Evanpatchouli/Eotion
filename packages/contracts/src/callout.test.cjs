@@ -30,6 +30,7 @@ function validProps(type, text = 'body') {
     toggle: { type: 'eotionToggle', content: [paragraph] },
     callout: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: inline },
     table: { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', content: [paragraph] }] }] },
+    database: { type: 'eotionDatabase', attrs: { databaseId: 'database-1', viewId: 'view-1' } },
   }[type]
   return { node }
 }
@@ -89,7 +90,7 @@ test('callout attrs are rejected at all typed contract boundaries', () => {
 })
 
 test('all registered block types enforce matching node, attrs, and child content at contract boundaries', () => {
-  assert.equal(BLOCK_TYPES.length, 13)
+  assert.equal(BLOCK_TYPES.length, 14)
   for (const type of BLOCK_TYPES) {
     const valid = validProps(type, `valid ${type}`)
     assert.equal(BlockCreateRequestSchema.safeParse(blockFor(type, valid)).success, true, `${type} create`)

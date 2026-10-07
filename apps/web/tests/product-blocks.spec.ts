@@ -312,10 +312,10 @@ test('block codec round-trips nested toggles and refuses unrepresentable structu
     let orphan = false
     try { blocksToDocument([record('c', 'paragraph', summary('C'), 'missing', 'a')]) }
     catch { orphan = true }
-    let unknownType = false
-    try { blocksToDocument([record('x', 'database', summary('X'), null, 'a')]) }
-    catch { unknownType = true }
-    return { shape: shape(document.content[1]), decoded, stable, leafShape, leafRoundTrip, unsafeAttachment, cyclicTree, nestedSummary, paragraphWithChild, orphan, unknownType }
+    let invalidDatabaseReference = false
+    try { blocksToDocument([record('x', 'database', { type: 'eotionDatabase', attrs: { databaseId: 'db-1' } }, null, 'a')]) }
+    catch { invalidDatabaseReference = true }
+    return { shape: shape(document.content[1]), decoded, stable, leafShape, leafRoundTrip, unsafeAttachment, cyclicTree, nestedSummary, paragraphWithChild, orphan, invalidDatabaseReference }
   })
   expect(result).toEqual({
     shape: {
@@ -358,7 +358,7 @@ test('block codec round-trips nested toggles and refuses unrepresentable structu
     ],
     paragraphWithChild: true,
     orphan: true,
-    unknownType: true,
+    invalidDatabaseReference: true,
   })
 })
 
