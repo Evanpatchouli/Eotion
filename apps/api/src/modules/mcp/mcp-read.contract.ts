@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BLOCK_NODE_TYPES, BLOCK_TYPES, EDITOR_NODE_NAMES, EDITOR_NODE_RULES, TABLE_LIMITS, blockDepthMap, flattenBlockTree, isAllowedChildBlockType, validateBlockTree, validateCalloutAttrs, validateTableCellAttrs } from '@eotion/domain'
+import { BLOCK_CAPABILITIES, BLOCK_NODE_TYPES, BLOCK_TYPES, EDITOR_NODE_NAMES, EDITOR_NODE_RULES, TABLE_LIMITS, blockDepthMap, flattenBlockTree, isAllowedChildBlockType, validateBlockProps, validateBlockTree, validateCalloutAttrs, validateTableCellAttrs } from '@eotion/domain'
 import type { PageRecord, ServerBlockRecord } from '../server-domain/types'
 
 const idSchema = z.string().trim().min(1).max(128)
@@ -29,14 +29,10 @@ export const McpPageSummarySchema = z.strictObject({
 })
 
 const McpBlockTypeSchema = z.enum(BLOCK_TYPES)
-const McpBlockBaseSchema = z.strictObject({
-  id: z.string(), type: McpBlockTypeSchema, text: z.string(),
+const McpBlockContentSchema = z.strictObject({
+  type: McpBlockTypeSchema, text: z.string(),
   items: z.array(z.string()).max(1000).optional(),
   paragraphs: z.array(z.string()).max(1000).optional(),
-  parentBlockId: z.string().nullable().optional(),
-  depth: z.number().int().min(0).optional(),
-})
-export const McpBlockSchema = McpBlockBaseSchema.extend({
   level: z.number().int().min(1).max(6).optional(),
   checked: z.boolean().optional(),
   language: z.string().optional(),
@@ -49,6 +45,49 @@ export const McpBlockSchema = McpBlockBaseSchema.extend({
   tone: z.enum(['neutral', 'info', 'warning']).optional(),
   /** Table content as a stable grid of cell texts; never the editor AST. */
   rows: z.array(z.array(z.string()).max(TABLE_LIMITS.maxCellsPerRow)).max(TABLE_LIMITS.maxRows).optional(),
+})
+type McpBlockContent = z.infer<typeof McpBlockContentSchema>
+export type McpSummaryContent = McpBlockContent & {
+  entries?: { parts: McpSummaryContent[] }[]
+  children?: McpSummaryContent[]
+}
+export const McpSummaryContentSchema: z.ZodType<McpSummaryContent> = z.lazy(() => McpBlockContentSchema.extend({
+  /** List items preserve paragraphs and nested lists in their original order. */
+  entries: z.array(z.strictObject({ parts: z.array(McpSummaryContentSchema) })).optional(),
+  /** Quote children preserve their block kinds and nesting in order. */
+  children: z.array(McpSummaryContentSchema).optional(),
+}).superRefine((value, ctx) => {
+  const type = value.type
+  const capability = BLOCK_CAPABILITIES[type]
+  if (!capability.mcp.readable || capability.allowsChildren) {
+    ctx.addIssue({ code: 'custom', message: 'Unsupported summary type' })
+    return
+  }
+  const allowed: Record<Exclude<typeof type, 'toggle'>, readonly string[]> = {
+    paragraph: [], heading: ['level'], 'bulleted-list': ['items', 'entries'],
+    'numbered-list': ['items', 'entries', 'start'], todo: ['checked'],
+    quote: ['paragraphs', 'children'], code: ['language'], divider: [],
+    image: ['fileId', 'name', 'mimeType', 'size'], file: ['fileId', 'name', 'mimeType', 'size'],
+    callout: ['icon', 'tone'], table: ['rows'],
+  }
+  const fields = allowed[type as Exclude<typeof type, 'toggle'>]
+  if (Object.keys(value).some((key) => key !== 'type' && key !== 'text' && !fields.includes(key)))
+    ctx.addIssue({ code: 'custom', message: 'Unsupported summary field' })
+  if (((type === 'bulleted-list' || type === 'numbered-list') && value.entries === undefined)
+    || (type === 'quote' && value.children === undefined)
+    || (type === 'table' && value.rows === undefined)
+    || (type === 'callout' && (value.icon === undefined || value.tone === undefined))
+    || (type === 'todo' && value.checked === undefined)
+    || ((type === 'image' || type === 'file') && (value.fileId === undefined || value.name === undefined
+      || value.mimeType === undefined || value.size === undefined)))
+    ctx.addIssue({ code: 'custom', message: 'Incomplete summary' })
+}))
+export const McpBlockSchema = McpBlockContentSchema.extend({
+  id: z.string(),
+  parentBlockId: z.string().nullable().optional(),
+  depth: z.number().int().min(0).optional(),
+  /** The toggle's own summary; nested child blocks remain in the page block list. */
+  summary: z.array(McpSummaryContentSchema).length(1).optional(),
 })
 
 export const ListPagesOutputSchema = z.strictObject({ items: z.array(McpPageSummarySchema), nextCursor: z.string().nullable() })
@@ -66,6 +105,7 @@ const MAX_NODES = 10_000
 const MAX_RESULT_BYTES = 1024 * 1024
 
 const nodeTypeSet = new Set(EDITOR_NODE_NAMES)
+const blockTypeByNode = new Map(BLOCK_TYPES.map((type) => [BLOCK_NODE_TYPES[type], type] as const))
 const safeImageMimeTypes = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'])
 
 type JsonNode = { type: string; text?: string; attrs?: Record<string, unknown>; content?: JsonNode[]; marks?: unknown[] }
@@ -187,7 +227,7 @@ function textFor(type: string, node: JsonNode): string {
   // Tables read as tab separated rows; the structured contract is the `rows` field.
   if (type === 'table') return tableRows(node).map((cells) => cells.join('\t')).join('\n')
   if (type === 'divider' || type === 'image' || type === 'file') return ''
-  // A toggle renders the inline text of its first content child (the summary paragraph).
+  // Keep the legacy toggle text projection; summary carries its complete public structure.
   if (type === 'toggle') return inlineText(node.content?.[0]?.content)
   return inlineText(node.content)
 }
@@ -208,39 +248,65 @@ export function toMcpPageSummary(page: PageRecord): McpPageSummary {
   return { id: page.id, workspaceId: page.workspaceId, title: page.title, parentPageId: page.parentPageId, updatedAt: page.updatedAt }
 }
 
-export function toMcpBlock(block: ServerBlockRecord, counter = { nodes: 0 }, depth = 0): McpBlock {
-  const expectedNode = BLOCK_NODE_TYPES[block.type]
-  if (!expectedNode || !isRecord(block.props) || Object.keys(block.props).length !== 1 || !('node' in block.props)) throw new Error('Unsupported block')
-  const textCounter = { nodes: counter.nodes, textChars: 0 }
-  const node = readNode(block.props.node, 1, textCounter)
-  counter.nodes = textCounter.nodes
-  if (node.type !== expectedNode) throw new Error('Unsupported block')
-  const dto: McpBlock = { id: block.id, type: block.type, text: textFor(block.type, node), parentBlockId: block.parentBlockId ?? null, depth }
-  if (block.type === 'bulleted-list' || block.type === 'numbered-list') {
+function contentFor(type: ServerBlockRecord['type'], node: JsonNode): McpBlockContent {
+  const dto: McpBlockContent = { type, text: textFor(type, node) }
+  if (type === 'bulleted-list' || type === 'numbered-list') {
     const items = listItems(node)
     if (items) dto.items = items
   }
-  if (block.type === 'quote') {
+  if (type === 'quote') {
     const paragraphs = quoteParagraphs(node)
     if (paragraphs) dto.paragraphs = paragraphs
   }
-  if (block.type === 'table') dto.rows = tableRows(node)
+  if (type === 'table') dto.rows = tableRows(node)
   const attrs = node.attrs ?? {}
-  if (block.type === 'heading' && attrs.level !== undefined) dto.level = Number(attrs.level)
-  if (block.type === 'todo') dto.checked = Boolean(attrs.checked)
-  if (block.type === 'callout') {
+  if (type === 'heading' && attrs.level !== undefined) dto.level = Number(attrs.level)
+  if (type === 'todo') dto.checked = Boolean(attrs.checked)
+  if (type === 'callout') {
     dto.icon = attrs.icon as string
     dto.tone = attrs.tone as 'neutral' | 'info' | 'warning'
   }
-  if (block.type === 'code' && typeof attrs.language === 'string') dto.language = attrs.language
-  if (block.type === 'numbered-list' && typeof attrs.start === 'number') dto.start = attrs.start
-  if (block.type === 'image' || block.type === 'file') {
+  if (type === 'code' && typeof attrs.language === 'string') dto.language = attrs.language
+  if (type === 'numbered-list' && typeof attrs.start === 'number') dto.start = attrs.start
+  if (type === 'image' || type === 'file') {
     dto.fileId = String(attrs.fileId)
     dto.name = String(attrs.name)
     dto.mimeType = String(attrs.mimeType)
     dto.size = Number(attrs.size)
   }
   if (dto.text.length > MAX_TEXT_CHARS) throw new Error('Block text too large')
+  return dto
+}
+
+function summaryContentFor(node: JsonNode): McpSummaryContent {
+  const type = blockTypeByNode.get(node.type)
+  if (!type || !BLOCK_CAPABILITIES[type].mcp.readable || BLOCK_CAPABILITIES[type].allowsChildren) throw new Error('Unsupported block')
+  const dto: McpSummaryContent = contentFor(type, node)
+  if (type === 'bulleted-list' || type === 'numbered-list') {
+    dto.entries = (node.content ?? []).map((item) => ({ parts: (item.content ?? []).map(summaryContentFor) }))
+  } else if (type === 'quote') {
+    dto.children = (node.content ?? []).map(summaryContentFor)
+  }
+  return dto
+}
+
+export function toMcpBlock(block: ServerBlockRecord, counter = { nodes: 0 }, depth = 0): McpBlock {
+  const expectedNode = BLOCK_NODE_TYPES[block.type]
+  if (!expectedNode || !isRecord(block.props) || Object.keys(block.props).length !== 1 || !('node' in block.props)
+    || !validateBlockProps(block.type, block.props)) throw new Error('Unsupported block')
+  const textCounter = { nodes: counter.nodes, textChars: 0 }
+  const node = readNode(block.props.node, 1, textCounter)
+  counter.nodes = textCounter.nodes
+  if (node.type !== expectedNode) throw new Error('Unsupported block')
+  const dto: McpBlock = { id: block.id, ...contentFor(block.type, node), parentBlockId: block.parentBlockId ?? null, depth }
+  if (block.type === 'toggle') {
+    if ((node.content?.length ?? 0) > 1) throw new Error('Unsupported block')
+    const summaryNode = node.content?.[0] ?? { type: 'paragraph' }
+    const summaryType = blockTypeByNode.get(summaryNode.type)
+    if (!summaryType || !BLOCK_CAPABILITIES[summaryType].mcp.readable || BLOCK_CAPABILITIES[summaryType].allowsChildren
+      || !validateBlockProps(summaryType, { node: summaryNode })) throw new Error('Unsupported block')
+    dto.summary = [summaryContentFor(summaryNode)]
+  }
   return dto
 }
 

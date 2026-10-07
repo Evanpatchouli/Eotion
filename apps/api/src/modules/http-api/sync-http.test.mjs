@@ -141,7 +141,7 @@ test("authenticated real sync transport applies durable SQLite operations idempo
       parentBlockId: null,
       type: "paragraph",
       orderKey: "a",
-      props: { text },
+      props: { node: { type: "paragraph", content: [{ type: "text", text }] } },
       createdAt: now,
       updatedAt: now,
     });
@@ -251,7 +251,7 @@ test("authenticated real sync transport applies durable SQLite operations idempo
     assert.equal(initialPage.parentPageId, null);
     assert.equal(initialPage.orderKey, "b");
     const initialBlock = await blocks.findOne({ id: blockId });
-    assert.equal(initialBlock.props.text, "hello");
+    assert.equal(initialBlock.props.node.content[0].text, "hello");
 
     // Snapshot is a read-only, workspace-wide view protected by the same
     // cookie session and owner-only hidden-404 policy as the domain routes.
@@ -284,6 +284,28 @@ test("authenticated real sync transport applies durable SQLite operations idempo
     await store.upsertBlock({ ...callout, props: calloutProps("updated\nline", "info") });
     assert.deepEqual(await reconnectPending(store, transport), { synced: 1, failed: 0 });
     assert.deepEqual((await client.sync.snapshot(workspaceId)).blocks.find(({ id }) => id === calloutId)?.props, calloutProps("updated\nline", "info"));
+
+    // The pre-advanced-block editor codec used these P5/P6 node forms. They
+    // remain valid inputs to the canonical sync upsert path.
+    const legacyBlocks = [
+      { id: `legacy-heading-${database}`, pageId, parentBlockId: null, type: "heading", orderKey: "legacy-a", props: { node: { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "legacy heading" }] } } },
+      { id: `legacy-list-${database}`, pageId, parentBlockId: null, type: "bulleted-list", orderKey: "legacy-b", props: { node: { type: "bulletList", content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "legacy item" }] }] }] } } },
+      { id: `legacy-code-${database}`, pageId, parentBlockId: null, type: "code", orderKey: "legacy-c", props: { node: { type: "codeBlock", attrs: { language: "typescript" }, content: [{ type: "text", text: "const old = true" }] } } },
+    ];
+    const legacyOperations = legacyBlocks.map((payload, index) => ({
+      id: `legacy-block-${index}-${database}`, clientId: beforeFailure.clientId,
+      sequence: 30 + index, workspaceId, createdAt: new Date().toISOString(), kind: "block.upsert", payload,
+    }));
+    for (const operation of legacyOperations) await transport.send(operation);
+    assert.equal(await receipts.countDocuments({ id: { $in: legacyOperations.map(({ id }) => id) } }), legacyOperations.length);
+    assert.deepEqual((await client.sync.snapshot(workspaceId)).blocks.filter(({ id }) => legacyBlocks.some((block) => block.id === id)).map(({ type }) => type), ["heading", "bulleted-list", "code"]);
+    for (const [index, block] of legacyBlocks.entries()) {
+      await transport.send({
+        id: `legacy-delete-${index}-${database}`, clientId: beforeFailure.clientId,
+        sequence: 33 + index, workspaceId, createdAt: new Date().toISOString(),
+        kind: "block.delete", payload: { id: block.id },
+      });
+    }
 
     // block.move uses the same authenticated operation transport as other local
     // mutations, and snapshots preserve the complete nested tree and sibling order.
@@ -384,6 +406,24 @@ test("authenticated real sync transport applies durable SQLite operations idempo
     assert.equal(invalidCalloutResponse.status, 400);
     assert.equal(await receipts.countDocuments({ id: invalidCalloutOperation.id }), 0);
     assert.deepEqual((await client.sync.snapshot(workspaceId)).blocks.find(({ id }) => id === calloutId)?.props, calloutProps("updated\nline", "info"));
+    const stableBeforeInvalidUpserts = structuredClone((await client.sync.snapshot(workspaceId)).blocks);
+    for (const [suffix, payload] of [
+      ["create", { id: `invalid-create-${database}`, pageId, parentBlockId: null, type: "paragraph", orderKey: "invalid-create", props: { node: { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "wrong type" }] } } }],
+      ["update", { id: blockId, pageId, parentBlockId: null, type: "paragraph", orderKey: "a", props: { node: { type: "paragraph", content: [{ type: "unsupportedChild" }] } } }],
+    ]) {
+      const operation = {
+        id: `invalid-upsert-${suffix}-${database}`, clientId: beforeFailure.clientId,
+        sequence: suffix === "create" ? 45 : 46, workspaceId, createdAt: new Date().toISOString(), kind: "block.upsert", payload,
+      };
+      const response = await rawFetch(`${baseUrl}/api/sync/operations`, {
+        method: "POST", headers: { cookie: sessionCookie, "content-type": "application/json" },
+        body: JSON.stringify(operation),
+      });
+      assert.equal(response.status, 400, `${suffix} with invalid props must be rejected`);
+      assert.equal(await receipts.countDocuments({ id: operation.id }), 0, `${suffix} rejection must not create a success receipt`);
+      assert.deepEqual((await client.sync.snapshot(workspaceId)).blocks, stableBeforeInvalidUpserts,
+        `${suffix} rejection must preserve the workspace snapshot`);
+    }
     await store.deleteBlock(workspaceId, calloutId);
     assert.deepEqual(await reconnectPending(store, transport), { synced: 1, failed: 0 });
     assert.equal((await client.sync.snapshot(workspaceId)).blocks.some(({ id }) => id === calloutId), false);
@@ -454,7 +494,7 @@ test("authenticated real sync transport applies durable SQLite operations idempo
       failed: 0,
     });
     assert.equal(
-      (await blocks.findOne({ id: blockId })).props.text,
+      (await blocks.findOne({ id: blockId })).props.node.content[0].text,
       "ack retry",
     );
     assert.equal(await receipts.countDocuments({ id: ackOperation.id }), 1);
@@ -606,7 +646,7 @@ test("authenticated real sync transport applies durable SQLite operations idempo
           parentBlockId: null,
           type: "paragraph",
           orderKey: "a",
-          props: { text: "racing" },
+          props: { node: { type: "paragraph", content: [{ type: "text", text: "racing" }] } },
         },
       );
       assert.equal(createDuringDelete.id, raceBlockId);

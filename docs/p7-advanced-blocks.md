@@ -315,9 +315,9 @@ P7.3/P7.4 交互套件全部保留并通过：Tab/Shift+Tab 缩进与反缩进�
 
 ### 9. 本轮剩余已知限制（不阻塞 P7.5）
 
-- Toggle 的 summary 位置仍可创建 list/quote/table 等非 inline 块；这类结构可保存、可编辑，但 MCP `get_page` 的 toggle `text` 只取 summary 的内联文本，会读不到 summary 里的 table `rows` / callout `icon`/`tone`。属于只读保真度问题，不影响保存或加载。
-- 服务端 `validateBlockProps` 只对 callout/table 做类型化校验；其他类型的 `props.node` 不匹配时，读路径仍然 fail-closed（编辑器拒绝加载、MCP read 抛错），但写入侧没有第二次校验。非编辑器客户端写坏数据时不会静默产生错误页面。
-- 嵌套在 Toggle summary 内的 Table 只在 web codec 层共享 `TABLE_LIMITS`，MCP read 对该位置只做非退化 grid 校验。
+- Toggle summary 的 MCP 读取保真度已由 P7 封板后边界修复补齐：既有 `text` 保持兼容，结构化 `summary` 暴露业务内容 DTO（含嵌套 list/quote、Table `rows`、Callout `icon`/`tone`），不暴露 editor AST；child blocks 继续通过 `parentBlockId` / `depth` 表达。Toggle 与 Table 仍为 MCP read-only。
+- 服务端写入校验已由 P7 封板后边界修复统一：domain `validateBlockProps` 从 registry 校验所有正式类型的 node/attrs/child/leaf/content，HTTP create/update、sync `block.upsert`（snapshot upsert）、MCP document mutation 均经 `BlockService` 校验后写入；没有新增写工具或 nested MCP write。
+- Toggle summary 内的 Table 也复用 domain Table 校验与 `TABLE_LIMITS`，超限或非法结构在写入和 MCP read 时 fail-closed。
 - Table cell 内的图片/文件上传入口未被 `isBlockCommandAllowed` 的附件分支排除，附件会落到表格之后的顶层位置（P7.3 的「嵌套附件只读」边界仍成立，附件不会被插进单元格）。
 - 连续输入在 5,000 块文档上仍是 O(N)/docChanged（见性能烟测），本轮不做性能重构。
 - 真实设备输入法/原生宿主验收仍不由浏览器回归替代。

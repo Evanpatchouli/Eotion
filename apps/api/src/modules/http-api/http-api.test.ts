@@ -607,7 +607,7 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
       parentBlockId: null,
       type: "paragraph",
       orderKey: "a",
-      props: { text: "hello" },
+      props: { node: { type: "paragraph", content: [{ type: "text", text: "hello" }] } },
     };
     const blockCreate = await request(
       baseUrl,
@@ -650,11 +650,11 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
       "PATCH",
       {
         cookie: cookieA,
-        body: { props: { text: "updated" } },
+        body: { props: { node: { type: "paragraph", content: [{ type: "text", text: "updated" }] } } },
       },
     );
     assert.equal(blockUpdate.status, 200);
-    assert.equal(blockUpdate.body.props.text, "updated");
+    assert.equal(blockUpdate.body.props.node.content[0].text, "updated");
     const badBlockCreate = await request(
       baseUrl,
       "/api/workspaces/ws-owner/pages/page-owner/blocks",
@@ -677,7 +677,7 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
       {
         cookie: cookieA,
         body: {
-          props: {},
+          props: { node: { type: "paragraph", content: [{ type: "text", text: "invalid update" }] } },
           workspaceId: "ws-foreign",
           parentBlockId: "foreign",
         },
@@ -696,6 +696,21 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
     );
     assert.equal(badBlockType.status, 400);
     assert.equal(await blockModel.countDocuments({ id: "bad-block" }), 0);
+    const mismatchedBlockNode = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/blocks", "POST", {
+      cookie: cookieA,
+      body: { ...blockPayload, id: "mismatched-block-node", type: "heading" },
+    });
+    assert.equal(mismatchedBlockNode.status, 400);
+    assert.equal(await blockModel.countDocuments({ id: "mismatched-block-node" }), 0);
+    const blockPropsBeforeRejectedPatch = (await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner", "GET", { cookie: cookieA })).body.props;
+    for (const patch of [
+      { type: "heading" },
+      { props: { node: { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "wrong node" }] } } },
+    ]) {
+      const rejectedPatch = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner", "PATCH", { cookie: cookieA, body: patch });
+      assert.equal(rejectedPatch.status, 400);
+      assert.deepEqual((await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner", "GET", { cookie: cookieA })).body.props, blockPropsBeforeRejectedPatch);
+    }
 
     const credentialsB = {
       email: "other@example.test",
@@ -734,7 +749,7 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
             ? { parentPageId: null, orderKey: "z" }
             : method === "PATCH"
               ? route.includes("/blocks/")
-                ? { props: { text: "stolen" } }
+                ? { props: { node: { type: "paragraph", content: [{ type: "text", text: "stolen" }] } } }
                 : route.includes("/pages/")
                   ? { title: "stolen" }
                   : { name: "stolen" }
@@ -751,7 +766,7 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
                       parentBlockId: null,
                       type: "paragraph",
                       orderKey: "z",
-                      props: {},
+                      props: { node: { type: "paragraph", content: [{ type: "text", text: "foreign" }] } },
                     }
                   : undefined;
       const result = await request(baseUrl, route, method, {
@@ -782,7 +797,7 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
     assert.equal(makeToggleParent.body.type, "toggle");
     const childBlock = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/blocks", "POST", {
       cookie: cookieA,
-      body: { id: "block-delete-child", parentBlockId: "block-owner", type: "paragraph", orderKey: "b", props: {} },
+      body: { id: "block-delete-child", parentBlockId: "block-owner", type: "paragraph", orderKey: "b", props: { node: { type: "paragraph" } } },
     });
     assert.equal(childBlock.status, 201);
     assert.equal((await request(baseUrl, blockRoute, "DELETE", { cookie: cookieA })).status, 400);

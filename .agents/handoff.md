@@ -13,7 +13,7 @@ P7.1–P7.5 全部 PASS，**P7 Advanced Blocks COMPLETE**。本轮只做验收�
 
 另外修复：P7.3 回归「Toggle 子块内 slash 折叠列表静默无效」（`isBlockCommandRangeSafe` 把包住选区的父 toggle 误判为被吞掉的 child owner）；测试环境「Vite watcher 因 Playwright 临时目录 EBUSY 崩掉 `pnpm dev`」（`vite.config.ts` 的 `server.watch.ignored`）。
 
-已知限制（不阻塞，详见 P7 文档第 9 节）：Toggle summary 位置仍可放 list/quote/table，MCP `get_page` 只读 summary 内联文本因而读不到其中的 table rows / callout attrs；服务端 `validateBlockProps` 只类型化校验 callout/table，其他类型读路径仍 fail-closed；5,000 块连续输入仍是既有 O(N)/docChanged（基线约 112 ms/字符，本轮约 119 ms/字符）；真实设备输入法与原生宿主验收仍不由浏览器回归替代。运行 `test:storage` 前需清除 `ELECTRON_RUN_AS_NODE`。
+当时记录的 Toggle summary MCP 保真度和服务端 props 校验缺口已在封板后边界修复中解决（见 `docs/p6-mcp.md` 与 `docs/p7-advanced-blocks.md`）。仍保留的已知限制：5,000 块连续输入仍是既有 O(N)/docChanged（基线约 112 ms/字符，本轮约 119 ms/字符）；真实设备输入法与原生宿主验收仍不由浏览器回归替代。运行 `test:storage` 前需清除 `ELECTRON_RUN_AS_NODE`。
 
 环境：本轮在 `apps/web/package.json` 新增 `@tiptap/extension-blockquote@3.31.3` 与 `@tiptap/extension-list@3.31.3`（starter-kit 已依赖的同版本），新增依赖后需重启 `pnpm dev`。
 

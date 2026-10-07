@@ -260,26 +260,7 @@ export function validateCalloutAttrs(attrs: unknown): attrs is { icon: string; t
 
 /** Block props use the shared editor node wrapper; blockId is stored by the editor identity layer. */
 export function validateCalloutBlockProps(props: unknown): boolean {
-  if (typeof props !== 'object' || props === null || Array.isArray(props)) return false
-  if (Object.keys(props).length !== 1 || !Object.hasOwn(props, 'node')) return false
-  const node = (props as Record<string, unknown>).node
-  if (typeof node !== 'object' || node === null || Array.isArray(node)) return false
-  const record = node as Record<string, unknown>
-  if (record.type !== 'eotionCallout' || Object.keys(record).some((key) => !['type', 'attrs', 'content'].includes(key))) return false
-  if (!validateCalloutAttrs(record.attrs)) return false
-  if (record.content === undefined) return true
-  if (!Array.isArray(record.content)) return false
-  return record.content.every((child: unknown) => {
-    if (typeof child !== 'object' || child === null || Array.isArray(child)) return false
-    const inline = child as Record<string, unknown>
-    if (inline.type === 'hardBreak') {
-      if (Object.keys(inline).some((key) => !['type', 'marks'].includes(key))) return false
-      return inline.marks === undefined || (Array.isArray(inline.marks) && inline.marks.every(validCalloutMark))
-    }
-    if (inline.type !== 'text' || typeof inline.text !== 'string' || Object.keys(inline).some((key) => !['type', 'text', 'marks'].includes(key))) return false
-    if (inline.marks === undefined) return true
-    return Array.isArray(inline.marks) && inline.marks.every(validCalloutMark)
-  })
+  return validateBlockProps('callout', props)
 }
 
 function validCalloutMark(value: unknown): boolean {
@@ -327,67 +308,108 @@ export function validateTableCellAttrs(attrs: unknown): boolean {
   return Array.isArray(colwidth) && colwidth.every((width) => Number.isSafeInteger(width) && (width as number) >= 0)
 }
 
-function validInlineContent(content: unknown): boolean {
-  if (content === undefined) return true
-  if (!Array.isArray(content)) return false
-  return content.every((child: unknown) => {
-    if (typeof child !== 'object' || child === null || Array.isArray(child)) return false
-    const inline = child as Record<string, unknown>
-    if (inline.type === 'hardBreak') {
-      if (Object.keys(inline).some((key) => !['type', 'marks'].includes(key))) return false
-      return inline.marks === undefined || (Array.isArray(inline.marks) && inline.marks.every(validCalloutMark))
-    }
-    if (inline.type !== 'text' || typeof inline.text !== 'string' || Object.keys(inline).some((key) => !['type', 'text', 'marks'].includes(key))) return false
-    return inline.marks === undefined || (Array.isArray(inline.marks) && inline.marks.every(validCalloutMark))
-  })
-}
-
-function validTableCellNode(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
-  const cell = value as Record<string, unknown>
-  if (cell.type !== 'tableCell' && cell.type !== 'tableHeader') return false
-  if (cell.text !== undefined || cell.marks !== undefined) return false
-  if (Object.keys(cell).some((key) => !['type', 'attrs', 'content'].includes(key))) return false
-  if (cell.attrs !== undefined && !validateTableCellAttrs(cell.attrs)) return false
-  const paragraphs = cell.content
-  if (!Array.isArray(paragraphs) || paragraphs.length < 1 || paragraphs.length > TABLE_LIMITS.maxParagraphsPerCell) return false
-  return paragraphs.every((paragraph: unknown) => {
-    if (typeof paragraph !== 'object' || paragraph === null || Array.isArray(paragraph)) return false
-    const record = paragraph as Record<string, unknown>
-    if (record.type !== 'paragraph' || record.text !== undefined || record.marks !== undefined) return false
-    if (Object.keys(record).some((key) => !['type', 'content'].includes(key))) return false
-    return validInlineContent(record.content)
-  })
-}
-
 /**
  * Validate a persisted table block. Rows and cells live inside the single
  * table node, so this is the only place that may accept or reject them.
  */
 export function validateTableBlockProps(props: unknown): boolean {
-  if (typeof props !== 'object' || props === null || Array.isArray(props)) return false
-  if (Object.keys(props).length !== 1 || !Object.hasOwn(props, 'node')) return false
-  const node = (props as Record<string, unknown>).node
-  if (typeof node !== 'object' || node === null || Array.isArray(node)) return false
-  const table = node as Record<string, unknown>
-  // Identity is stored by the editor identity layer, never inside the props node.
-  if (table.type !== 'table' || table.attrs !== undefined || table.text !== undefined || table.marks !== undefined) return false
-  if (Object.keys(table).some((key) => !['type', 'content'].includes(key))) return false
-  const rows = table.content
-  if (!Array.isArray(rows) || rows.length < 1 || rows.length > TABLE_LIMITS.maxRows) return false
-  return rows.every((row: unknown) => {
-    if (typeof row !== 'object' || row === null || Array.isArray(row)) return false
-    const record = row as Record<string, unknown>
-    if (record.type !== 'tableRow' || record.attrs !== undefined || record.text !== undefined || record.marks !== undefined) return false
-    if (Object.keys(record).some((key) => !['type', 'content'].includes(key))) return false
-    const cells = record.content
-    return Array.isArray(cells) && cells.length >= 1 && cells.length <= TABLE_LIMITS.maxCellsPerRow && cells.every(validTableCellNode)
-  })
+  return validateBlockProps('table', props)
 }
 
-/** Type-specific persisted props checks live with the block registry. */
-export function validateBlockProps(type: BlockType, props: unknown): boolean {
-  if (type === 'callout') return validateCalloutBlockProps(props)
-  if (type === 'table') return validateTableBlockProps(props)
+const MAX_EDITOR_NODE_DEPTH = 64
+const MAX_EDITOR_NODE_COUNT = 100_000
+const SAFE_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'] as const
+
+interface ValidationBudget { count: number }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function validateAttachmentAttrs(attrs: unknown, nodeType: string): boolean {
+  if (!isRecord(attrs)) return false
+  const expected = ['fileId', 'name', 'mimeType', 'size', 'url']
+  if (Object.keys(attrs).length !== expected.length || expected.some((key) => !Object.hasOwn(attrs, key))) return false
+  if (typeof attrs.fileId !== 'string' || attrs.fileId.trim().length < 1 || attrs.fileId.trim().length > 256) return false
+  if (typeof attrs.name !== 'string' || attrs.name.trim().length < 1 || attrs.name.trim().length > 200) return false
+  if (typeof attrs.mimeType !== 'string' || attrs.mimeType.trim().length < 1 || attrs.mimeType.trim().length > 256) return false
+  if (typeof attrs.size !== 'number' || !Number.isSafeInteger(attrs.size) || attrs.size < 0) return false
+  if (typeof attrs.url !== 'string') return false
+  try {
+    const url = new URL(attrs.url)
+    if (!url.hostname || (url.protocol !== 'http:' && url.protocol !== 'https:') || url.username || url.password) return false
+  } catch {
+    return false
+  }
+  return nodeType !== 'eotionImage' || (SAFE_IMAGE_MIME_TYPES as readonly string[]).includes(attrs.mimeType)
+}
+
+function validateNodeAttrs(type: string, attrs: unknown): boolean {
+  if (attrs !== undefined && !isRecord(attrs)) return false
+  const value = (attrs ?? {}) as Record<string, unknown>
+  const rule = EDITOR_NODE_RULES[type]
+  if (!rule || Object.keys(value).some((key) => !rule.attrs.includes(key))) return false
+
+  if (type === 'heading' && value.level !== undefined && (!Number.isSafeInteger(value.level) || (value.level as number) < 1 || (value.level as number) > 6)) return false
+  if (type === 'orderedList') {
+    if (value.start !== undefined && !Number.isSafeInteger(value.start)) return false
+    if (value.type !== undefined && value.type !== null) return false
+  }
+  if (type === 'eotionTodo' && typeof value.checked !== 'boolean') return false
+  if (type === 'codeBlock' && value.language !== undefined && value.language !== null && typeof value.language !== 'string') return false
+  if (type === 'eotionCallout' && !validateCalloutAttrs(value)) return false
+  if (type === 'eotionImage' || type === 'eotionFile') return validateAttachmentAttrs(value, type)
+  if (type === 'tableCell' || type === 'tableHeader') return validateTableCellAttrs(value)
   return true
+}
+
+function validateEditorNode(value: unknown, budget: ValidationBudget, depth: number): value is Record<string, unknown> {
+  if (depth > MAX_EDITOR_NODE_DEPTH || ++budget.count > MAX_EDITOR_NODE_COUNT || !isRecord(value)) return false
+  const node = value
+  if (typeof node.type !== 'string') return false
+  const type = node.type
+  const rule = EDITOR_NODE_RULES[type]
+  if (!rule || Object.keys(node).some((key) => !['type', 'text', 'attrs', 'content', 'marks'].includes(key))) return false
+  if (!validateNodeAttrs(type, node.attrs)) return false
+  if (type === 'text') {
+    if (typeof node.text !== 'string' || node.content !== undefined) return false
+  } else if (node.text !== undefined) return false
+  if ((type === 'eotionImage' || type === 'eotionFile') && node.content !== undefined) return false
+
+  if (type === 'text' || type === 'hardBreak') {
+    if (node.marks !== undefined && (!Array.isArray(node.marks) || !node.marks.every(validCalloutMark))) return false
+  } else if (node.marks !== undefined) return false
+
+  const children = node.content
+  if (children !== undefined && !Array.isArray(children)) return false
+  if (rule.children === null && Array.isArray(children) && children.length > 0) return false
+  const list = (children ?? []) as unknown[]
+  if (list.some((child) => !isRecord(child) || typeof child.type !== 'string' || !rule.children?.includes(child.type))) return false
+
+  // Older persisted toggles may omit the empty summary; the codec restores a paragraph.
+  if (type === 'eotionToggle' && list.length > 1) return false
+  if (type === 'table' && (list.length < 1 || list.length > TABLE_LIMITS.maxRows)) return false
+  if (type === 'tableRow' && (list.length < 1 || list.length > TABLE_LIMITS.maxCellsPerRow)) return false
+  if ((type === 'tableCell' || type === 'tableHeader') && (list.length < 1 || list.length > TABLE_LIMITS.maxParagraphsPerCell)) return false
+
+  for (const child of list) {
+    if (type === 'eotionToggle') {
+      const childType = blockTypeForNode((child as Record<string, unknown>).type as string)
+      if (childType && blockCapability(childType).allowsChildren) return false
+    }
+    if (!validateEditorNode(child, budget, depth + 1)) return false
+  }
+  return true
+}
+
+/** Validate a strict persisted block wrapper using the shared editor registry. */
+export function validateBlockProps(type: BlockType, props: unknown): boolean {
+  try {
+    if (!isRecord(props) || Object.keys(props).length !== 1 || !Object.hasOwn(props, 'node')) return false
+    const node = props.node
+    if (!isRecord(node) || node.type !== BLOCK_NODE_TYPES[type]) return false
+    return validateEditorNode(node, { count: 0 }, 0)
+  } catch {
+    return false
+  }
 }

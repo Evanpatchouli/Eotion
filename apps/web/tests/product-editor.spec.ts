@@ -254,13 +254,6 @@ test('product page shows one sync status and keeps local save errors retryable',
   await expect(page.getByText('已同步', { exact: true })).toHaveCount(1)
   await expect(page.getByText('已保存到本地', { exact: true })).toHaveCount(0)
 
-  await page.context().setOffline(true)
-  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await expect(syncStatus).toHaveAttribute('data-state', 'offline')
-  await expect(syncStatus).toContainText('离线 · 本地已保存')
-  await expect(page.locator('.product-editor-heading .product-save-status')).toHaveCount(0)
-  await expect(page.getByText('离线 · 本地已保存', { exact: true })).toHaveCount(1)
-
   await page.evaluate(async () => {
     const { useProductSyncStore } = await import('/src/stores/productSync.ts')
     const local = await useProductSyncStore().store()
@@ -274,6 +267,13 @@ test('product page shows one sync status and keeps local save errors retryable',
       return upsertBlock(record)
     }
   })
+
+  await page.context().setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(syncStatus).toHaveAttribute('data-state', 'offline')
+  await expect(syncStatus).toContainText('离线 · 本地已保存')
+  await expect(page.locator('.product-editor-heading .product-save-status')).toHaveCount(0)
+  await expect(page.getByText('离线 · 本地已保存', { exact: true })).toHaveCount(1)
 
   await editor(page).fill('Retry local save')
   const saveError = page.getByRole('alert')
@@ -967,7 +967,7 @@ test('selection bubble creates, edits, removes and combines links across save an
   await expect(editor(page).locator('p').nth(1).locator('a strong')).toHaveText('Bold link')
 })
 
-test('link editor rejects unsafe schemes and persisted links or mark attributes fail closed', async ({ page }) => {
+test('link editor rejects unsafe schemes and invalid snapshots preserve the valid local page', async ({ page }) => {
   const api = await installApi(page, {
     pages: [pageRecord('page-a', 'Alpha', 1)],
     blocks: [block('page-a', 'unsafe-link', 1, { type: 'paragraph', content: [{ type: 'text', text: 'Reject this' }] })],
@@ -995,8 +995,15 @@ test('link editor rejects unsafe schemes and persisted links or mark attributes 
   for (const [index, node] of invalidNodes.entries()) {
     api.blocks.splice(0, api.blocks.length, block('page-a', `invalid-${index}`, 1, node))
     await page.reload()
-    await expect(page.getByRole('alert')).toContainText('尚不支持编辑')
-    await expect(editor(page)).toHaveCount(0)
+    await expect(page.locator('.product-sync-status')).toHaveAttribute('data-state', 'error')
+    await expect(editor(page)).toContainText('Reject this')
+    await expect(editor(page).locator('a')).toHaveCount(0)
+    const localBlocks = await page.evaluate(async () => {
+      const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+      return (await useProductSyncStore().store()).listBlocksByPage('page-a')
+    })
+    expect(localBlocks.map(({ id }) => id)).toEqual(['unsafe-link'])
+    expect(localBlocks[0]?.props.node).toEqual({ type: 'paragraph', content: [{ type: 'text', text: 'Reject this' }] })
     expect(blockRequests(api.requests)).toHaveLength(0)
   }
 })
@@ -1182,7 +1189,7 @@ test('refuses unsupported persisted blocks without opening a writable blank edit
   }
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)], blocks: [unsupported] })
   await page.goto('/#/app/ws-a/page/page-a')
-  await expect(page.getByRole('alert')).toContainText('尚不支持编辑')
+  await expect(page.getByRole('region', { name: '暂时无法加载页面' }).getByRole('alert')).toContainText('Invalid block attributes')
   await expect(editor(page)).toHaveCount(0)
   expect(blockRequests(api.requests)).toHaveLength(0)
   expect(api.blocks[0]?.props).toEqual(unsupported.props)

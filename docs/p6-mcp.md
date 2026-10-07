@@ -93,6 +93,8 @@ Page summary 明确包含 `id/workspaceId/title/parentPageId/updatedAt`，不透
 
 只支持当前 P5 可编辑的顶层 Block 及其正文结构。未知/畸形节点、业务嵌套 parentBlockId 等不支持内容安全失败，不透传 `props/node/attrs/marks`，不返回 sync/oplog、持久化字段或认证资料。
 
+P7 后续读取扩展：`get_page` 现支持 registry 中可读的 Toggle、Callout、Table 及嵌套 Block，子 Block 在平面 `blocks` 列表中以 `parentBlockId/depth` 表达。Toggle 保留原有 `text` 投影，并增加 `summary: [...]` 表达其唯一 summary 节点；元素沿用公开 Block 的 `type/text/items/paragraphs/rows/icon/tone` 等字段。summary 为复杂列表时，`entries[].parts[]` 按顺序保留每项的段落和嵌套列表；为 quote 时，`children[]` 按顺序保留嵌套内容。这里的 type 使用业务 Block 类型，不返回 editor 节点名、AST、marks 或私有 attrs；Table 单元格继续以现有 `rows` 文本网格表达。Toggle 和 Table 在 MCP 中仍只读，不增加工具或写入能力。旧 Toggle 缺省/空 summary 延续 codec 的空段落回退，并归一成 `[{ type: "paragraph", text: "" }]`；畸形、未知、多 summary 或可拥有子 Block 的 summary 安全失败。递归列表/引用不额外施加 1000 项截断，仍受既有节点、文本和输出字节预算保护。
+
 ### 大小边界
 
 get 最多读取 1000 个 Block（仓库最多取 1001 个用于探测超限），单 Block 文本最多 100000 字符、节点深度最多 32、单页最多 10000 个正文节点。list/search/get 的结果 DTO 序列化为 UTF-8 JSON 后最多 1 MiB；MCP 为兼容客户端同时返回 structuredContent 和文本 JSON，因此协议响应含两份 DTO，另有转义与协议封装开销，1 MiB 不是完整 HTTP body 上限。超限通用失败，不截断正文，不改变已有 HTTP/P5 读取行为，也不引入分块协议。

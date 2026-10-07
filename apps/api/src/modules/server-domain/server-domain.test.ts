@@ -7,7 +7,7 @@ import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { getConnectionToken, getModelToken, MongooseModule } from '@nestjs/mongoose'
 import { FastifyAdapter } from '@nestjs/platform-fastify'
-import { BLOCK_TYPES } from '@eotion/domain'
+import { BLOCK_TYPES, type BlockType } from '@eotion/domain'
 import type { Connection, Model } from 'mongoose'
 
 import { ServerDomainModule } from './server-domain.module'
@@ -38,6 +38,39 @@ function testMongoUri(): string {
   imports: [MongooseModule.forRoot(testMongoUri()), ServerDomainModule],
 })
 class ServerDomainTestModule {}
+
+function validBlockProps(type: BlockType, text = 'test'): { node: Record<string, unknown> } {
+  const inline = [{ type: 'text', text }]
+  const paragraph = { type: 'paragraph', content: inline }
+  const propsByType: Record<BlockType, Record<string, unknown>> = {
+    paragraph: { type: 'paragraph', content: inline },
+    heading: { type: 'heading', attrs: { level: 1 }, content: inline },
+    'bulleted-list': { type: 'bulletList', content: [{ type: 'listItem', content: [paragraph] }] },
+    'numbered-list': { type: 'orderedList', attrs: { start: 1, type: null }, content: [{ type: 'listItem', content: [paragraph] }] },
+    todo: { type: 'eotionTodo', attrs: { checked: false }, content: inline },
+    quote: { type: 'blockquote', content: [paragraph] },
+    code: { type: 'codeBlock', attrs: { language: null }, content: inline },
+    image: { type: 'eotionImage', attrs: { fileId: 'file-image', name: 'image.png', mimeType: 'image/png', size: 12, url: 'https://private.invalid/image' } },
+    file: { type: 'eotionFile', attrs: { fileId: 'file-doc', name: 'doc.pdf', mimeType: 'application/pdf', size: 12, url: 'https://private.invalid/file' } },
+    divider: { type: 'horizontalRule' },
+    toggle: { type: 'eotionToggle', content: [paragraph] },
+    callout: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: inline },
+    table: { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', content: [paragraph] }] }] },
+  }
+  return { node: propsByType[type] }
+}
+
+function invalidBlockProps(type: BlockType, failure: 'node' | 'attrs' | 'child'): { node: Record<string, unknown> } {
+  const node = structuredClone(validBlockProps(type).node)
+  if (failure === 'node') node.type = type === 'paragraph' ? 'heading' : 'paragraph'
+  else if (failure === 'attrs') {
+    const attrs = typeof node.attrs === 'object' && node.attrs !== null ? node.attrs as Record<string, unknown> : {}
+    node.attrs = { ...attrs, unexpected: true }
+  } else {
+    node.content = [{ type: 'unsupportedChild' }]
+  }
+  return { node }
+}
 
 test('server domain persists scoped records and creates the declared Mongo indexes', async (t) => {
   const app = await NestFactory.createApplicationContext(ServerDomainTestModule, { logger: false })
@@ -214,7 +247,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     parentBlockId: null,
     type: 'paragraph',
     orderKey: 'a',
-    props: { text: 'removed with page' },
+    props: validBlockProps('paragraph', 'removed with page'),
   })
   await assert.rejects(pages.delete(userA.id, workspaceA.id, deleteParent.id), /Delete child pages first/)
   assert.ok(await pages.find(userA.id, workspaceA.id, deleteParent.id))
@@ -232,7 +265,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     // Only child-capable block types may own children, so the nested fixture uses a toggle.
     type: 'toggle',
     orderKey: 'b',
-    props: { text: 'root' },
+    props: validBlockProps('toggle', 'root'),
   })
   await blocks.create(userA.id, workspaceA.id, root.id, {
     id: 'block-first',
@@ -240,7 +273,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     parentBlockId: null,
     type: 'paragraph',
     orderKey: 'a',
-    props: { text: 'first' },
+    props: validBlockProps('paragraph', 'first'),
   })
   const nestedBlock = await blocks.create(userA.id, workspaceA.id, root.id, {
     id: 'block-child',
@@ -248,7 +281,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     parentBlockId: blockRoot.id,
     type: 'paragraph',
     orderKey: 'a',
-    props: { text: 'nested' },
+    props: validBlockProps('paragraph', 'nested'),
   })
   const foreignBlock = await blocks.create(userB.id, workspaceB.id, foreignPage.id, {
     id: 'block-foreign',
@@ -256,7 +289,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     parentBlockId: null,
     type: 'paragraph',
     orderKey: 'a',
-    props: {},
+    props: validBlockProps('paragraph'),
   })
   assert.equal(typeof nestedBlock.id, 'string')
   assert.equal(nestedBlock.id, 'block-child')
@@ -265,11 +298,37 @@ test('server domain persists scoped records and creates the declared Mongo index
   assert.equal(await blocks.find(userA.id, workspaceA.id, root.id, foreignBlock.id), null)
   await assert.rejects(blocks.find(userB.id, workspaceA.id, root.id, blockRoot.id), /Workspace not found/)
   await assert.rejects(blocks.create(userB.id, workspaceA.id, root.id, {
-    id: 'unauthorized-block', pageId: root.id, parentBlockId: null, type: 'paragraph', orderKey: 'z', props: {},
+    id: 'unauthorized-block', pageId: root.id, parentBlockId: null, type: 'paragraph', orderKey: 'z', props: validBlockProps('paragraph'),
   }), /Workspace not found/)
-  await assert.rejects(blocks.update(userB.id, workspaceA.id, root.id, blockRoot.id, { props: { text: 'stolen' } }), /Workspace not found/)
+  await assert.rejects(blocks.update(userB.id, workspaceA.id, root.id, blockRoot.id, { props: validBlockProps('toggle', 'stolen') }), /Workspace not found/)
   assert.deepEqual((await blocks.list(userA.id, workspaceA.id, root.id)).map(({ id }) => id), ['block-first', 'block-root', 'block-child'])
-  const calloutProps = { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [{ type: 'text', text: 'note' }] } }
+  const calloutProps = validBlockProps('callout', 'note')
+  for (const [index, type] of BLOCK_TYPES.entries()) {
+    const id = `block-validation-${type}`
+    const props = validBlockProps(type, `valid ${type}`)
+    const created = await blocks.create(userA.id, workspaceA.id, root.id, {
+      id, pageId: root.id, parentBlockId: null, type, orderKey: `validation-${index}`, props,
+    })
+    assert.deepEqual(created.props, props, `${type} create must accept its registered editor node`)
+    const updatedProps = validBlockProps(type, `updated ${type}`)
+    const updated = await blocks.update(userA.id, workspaceA.id, root.id, id, { props: updatedProps })
+    assert.deepEqual(updated?.props, updatedProps, `${type} update must accept its registered editor node`)
+
+    for (const failure of ['node', 'attrs', 'child'] as const) {
+      const invalidProps = invalidBlockProps(type, failure)
+      await assert.rejects(blocks.create(userA.id, workspaceA.id, root.id, {
+        id: `${id}-invalid-${failure}`, pageId: root.id, parentBlockId: null, type,
+        orderKey: `invalid-${type}-${failure}`, props: invalidProps,
+      }), /Invalid block attributes/, `${type} create must reject invalid ${failure}`)
+      await assert.rejects(blocks.update(userA.id, workspaceA.id, root.id, id, { props: invalidProps }),
+        /Invalid block attributes/, `${type} update must reject invalid ${failure}`)
+      assert.deepEqual((await blocks.find(userA.id, workspaceA.id, root.id, id))?.props, updatedProps,
+        `${type} invalid ${failure} update must preserve the stored props`)
+    }
+  }
+  for (const type of BLOCK_TYPES) {
+    assert.equal(await blocks.deleteFromPage(userA.id, workspaceA.id, root.id, `block-validation-${type}`), true)
+  }
   await assert.rejects(blocks.update(userA.id, workspaceA.id, root.id, blockRoot.id, {
     type: 'callout', props: calloutProps,
   }), /does not support its existing child blocks/)
@@ -284,7 +343,7 @@ test('server domain persists scoped records and creates the declared Mongo index
     props: { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'danger' } } },
   }), /Invalid block attributes/)
   assert.deepEqual((await blocks.find(userA.id, workspaceA.id, root.id, 'block-first'))?.props, calloutProps)
-  await blocks.update(userA.id, workspaceA.id, root.id, 'block-first', { type: 'paragraph', props: { text: 'first' } })
+  await blocks.update(userA.id, workspaceA.id, root.id, 'block-first', { type: 'paragraph', props: validBlockProps('paragraph', 'first') })
   await assert.rejects(
     blocks.create(userB.id, workspaceB.id, foreignPage.id, {
       id: blockRoot.id,
@@ -292,7 +351,7 @@ test('server domain persists scoped records and creates the declared Mongo index
       parentBlockId: null,
       type: 'paragraph',
       orderKey: 'z',
-      props: {},
+      props: validBlockProps('paragraph'),
     }),
     (error: { code?: number }) => error.code === 11000,
   )
@@ -303,7 +362,7 @@ test('server domain persists scoped records and creates the declared Mongo index
       parentBlockId: null,
       type: 'paragraph',
       orderKey: 'z',
-      props: {},
+      props: validBlockProps('paragraph'),
     }),
     /Page not found in workspace/,
   )
@@ -314,7 +373,7 @@ test('server domain persists scoped records and creates the declared Mongo index
       parentBlockId: null,
       type: 'paragraph',
       orderKey: 'z',
-      props: {},
+      props: validBlockProps('paragraph'),
     }),
     /Block pageId does not match the target page/,
   )
@@ -344,22 +403,22 @@ test('server domain persists scoped records and creates the declared Mongo index
       parentBlockId: 'block-first',
       type: 'paragraph',
       orderKey: 'z',
-      props: {},
+      props: validBlockProps('paragraph'),
     }),
     /Parent block type does not support child blocks/,
   )
 
   const moveParentA = await blocks.create(userA.id, workspaceA.id, root.id, {
-    id: 'block-move-parent-a', pageId: root.id, parentBlockId: null, type: 'toggle', orderKey: 'c', props: {},
+    id: 'block-move-parent-a', pageId: root.id, parentBlockId: null, type: 'toggle', orderKey: 'c', props: validBlockProps('toggle'),
   })
   const moveParentB = await blocks.create(userA.id, workspaceA.id, root.id, {
-    id: 'block-move-parent-b', pageId: root.id, parentBlockId: null, type: 'toggle', orderKey: 'd', props: {},
+    id: 'block-move-parent-b', pageId: root.id, parentBlockId: null, type: 'toggle', orderKey: 'd', props: validBlockProps('toggle'),
   })
   const moveChild = await blocks.create(userA.id, workspaceA.id, root.id, {
-    id: 'block-move-child', pageId: root.id, parentBlockId: moveParentA.id, type: 'paragraph', orderKey: 'a', props: {},
+    id: 'block-move-child', pageId: root.id, parentBlockId: moveParentA.id, type: 'paragraph', orderKey: 'a', props: validBlockProps('paragraph'),
   })
   const crossPageBlock = await blocks.create(userA.id, workspaceA.id, sibling.id, {
-    id: 'block-move-cross-page', pageId: sibling.id, parentBlockId: null, type: 'paragraph', orderKey: 'a', props: {},
+    id: 'block-move-cross-page', pageId: sibling.id, parentBlockId: null, type: 'paragraph', orderKey: 'a', props: validBlockProps('paragraph'),
   })
 
   const movedBlock = await blocks.move(userA.id, workspaceA.id, root.id, moveChild.id, moveParentB.id, 'm')
@@ -386,7 +445,7 @@ test('server domain persists scoped records and creates the declared Mongo index
       parentBlockId: foreignBlock.id,
       type: 'paragraph',
       orderKey: 'z',
-      props: {},
+      props: validBlockProps('paragraph'),
     }),
     /Parent block must belong to the same page and workspace/,
   )

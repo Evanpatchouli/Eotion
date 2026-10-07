@@ -124,7 +124,7 @@ test('table props validation keeps the grid a strict grid of paragraphs', () => 
   const good = table([[cell('tableHeader', 'A'), cell('tableHeader', 'B')], [cell('tableCell', 'C'), cell('tableCell', 'D')]])
   assert.equal(validateTableBlockProps(good), true)
   assert.equal(validateBlockProps('table', good), true)
-  assert.equal(validateBlockProps('paragraph', { anything: true }), true)
+  assert.equal(validateBlockProps('paragraph', { anything: true }), false)
 
   // Structure: exactly one table node, at least one row and one cell per row.
   for (const invalid of [
@@ -151,6 +151,95 @@ test('table props validation keeps the grid a strict grid of paragraphs', () => 
   assert.equal(validateTableBlockProps(table([[{ type: 'tableCell', content: [] }]])), false)
   assert.equal(validateTableBlockProps(table([[{ type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'x' }] }], attrs: { colspan: 0 } }]])), false)
   assert.equal(validateTableBlockProps(table([[{ type: 'tableCell', content: [{ type: 'paragraph' }], attrs: { colspan: 1, rowspan: 1, colwidth: [40, -1] } }]])), false)
+})
+
+test('validateBlockProps strictly validates all registered block node shapes', () => {
+  const inline = [{ type: 'text', text: 'body', marks: [{ type: 'bold' }] }, { type: 'hardBreak' }]
+  const paragraph = { type: 'paragraph', content: inline }
+  const cell = { type: 'tableCell', attrs: { colspan: 1, rowspan: 1, colwidth: null }, content: [{ type: 'paragraph', content: inline }] }
+  const validNodes = {
+    paragraph,
+    heading: { type: 'heading', attrs: { level: 2 }, content: inline },
+    'bulleted-list': { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: inline }] }] },
+    'numbered-list': { type: 'orderedList', attrs: { start: 3, type: null }, content: [{ type: 'listItem', content: [{ type: 'paragraph', content: inline }] }] },
+    todo: { type: 'eotionTodo', attrs: { checked: false }, content: inline },
+    quote: { type: 'blockquote', content: [{ type: 'paragraph', content: inline }] },
+    code: { type: 'codeBlock', attrs: { language: null }, content: [{ type: 'text', text: 'const x = 1' }] },
+    image: { type: 'eotionImage', attrs: { fileId: 'file-1', name: 'photo.png', mimeType: 'image/png', size: 0, url: 'https://example.com/photo.png' } },
+    file: { type: 'eotionFile', attrs: { fileId: 'file-2', name: 'notes.txt', mimeType: 'text/plain', size: 12, url: 'https://example.com/notes.txt' } },
+    divider: { type: 'horizontalRule' },
+    toggle: { type: 'eotionToggle', content: [paragraph] },
+    callout: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: inline },
+    table: { type: 'table', content: [{ type: 'tableRow', content: [cell] }] },
+  }
+  for (const type of BLOCK_TYPES) {
+    assert.equal(validateBlockProps(type, { node: validNodes[type] }), true, `${type} accepts a formal node`)
+    assert.equal(validateBlockProps(type, { node: type === 'paragraph' ? validNodes.heading : validNodes.paragraph }), false, `${type} rejects a mismatched root`)
+    assert.equal(validateBlockProps(type, { node: { ...validNodes[type], unexpected: true } }), false, `${type} rejects unknown node keys`)
+  }
+
+  const invalidAttrs = {
+    paragraph: { attrs: { blockId: 'inside-props' } },
+    heading: { attrs: { level: 1.5 } },
+    'bulleted-list': { attrs: { start: 2 } },
+    'numbered-list': { attrs: { start: Number.MAX_SAFE_INTEGER + 1 } },
+    todo: { attrs: { checked: 'false' } },
+    quote: { attrs: { blockId: 'inside-props' } },
+    code: { attrs: { language: 123 } },
+    image: { attrs: { ...validNodes.image.attrs, size: Number.MAX_SAFE_INTEGER + 1 } },
+    file: { attrs: { ...validNodes.file.attrs, url: 'javascript:alert(1)' } },
+    divider: { attrs: { blockId: 'inside-props' } },
+    toggle: { attrs: { blockId: 'inside-props' } },
+    callout: { attrs: { icon: '💡', tone: 'danger' } },
+    table: { attrs: { blockId: 'inside-props' } },
+  }
+  for (const type of BLOCK_TYPES) {
+    assert.equal(validateBlockProps(type, { node: { ...validNodes[type], ...invalidAttrs[type] } }), false, `${type} rejects invalid attrs`)
+  }
+
+  for (const type of ['paragraph', 'heading', 'todo', 'code', 'image', 'file', 'divider', 'callout']) {
+    assert.equal(validateBlockProps(type, { node: { ...validNodes[type], content: [{ type: 'paragraph' }] } }), false, `${type} rejects an illegal child`)
+  }
+  assert.equal(validateBlockProps('bulleted-list', { node: { type: 'bulletList', content: [{ type: 'paragraph' }] } }), false)
+  assert.equal(validateBlockProps('numbered-list', { node: { type: 'orderedList', content: [{ type: 'listItem', content: [{ type: 'heading', attrs: { level: 2 } }] }] } }), false)
+  assert.equal(validateBlockProps('quote', { node: { type: 'blockquote', content: [{ type: 'table' }] } }), false)
+  for (const [type, nodeType] of [['bulleted-list', 'bulletList'], ['numbered-list', 'orderedList'], ['quote', 'blockquote']]) {
+    assert.equal(validateBlockProps(type, { node: { type: nodeType, content: [] } }), true, 'preserve legacy empty container reads')
+  }
+  assert.equal(validateBlockProps('toggle', { node: { type: 'eotionToggle', content: [] } }), true)
+  assert.equal(validateBlockProps('toggle', { node: { type: 'eotionToggle', content: [{ type: 'eotionToggle', content: [paragraph] }] } }), false)
+  assert.equal(validateBlockProps('table', { node: { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'heading', attrs: { level: 1 } }] }] }] }] } }), false)
+  assert.equal(validateBlockProps('paragraph', { node: { type: 'paragraph' } }), true)
+  assert.equal(validateBlockProps('code', { node: { type: 'codeBlock' } }), true)
+  assert.equal(validateBlockProps('paragraph', { node: { type: 'paragraph', marks: [] } }), false)
+  assert.equal(validateBlockProps('paragraph', { node: { type: 'paragraph', content: [{ type: 'text', text: 'x', marks: [{ type: 'link', attrs: { href: 'https://example.com' } }] }] } }), true)
+  assert.equal(validateBlockProps('paragraph', { node: { type: 'paragraph', content: [{ type: 'text', text: 'x', marks: [{ type: 'link', attrs: { href: 'https://example.com', target: '_blank' } }] }] } }), false)
+})
+
+test('toggle accepts the single stored summary shape emitted by the formal codec', () => {
+  const summary = { type: 'paragraph', content: [{ type: 'text', text: 'summary' }] }
+  assert.equal(validateBlockProps('toggle', { node: { type: 'eotionToggle', content: [summary] } }), true)
+  assert.equal(validateBlockProps('toggle', { node: { type: 'eotionToggle' } }), true)
+  const nestedList = { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph' }] }] }
+  assert.equal(validateBlockProps('bulleted-list', { node: { type: 'bulletList', content: [{ type: 'listItem', content: [nestedList] }] } }), true)
+  assert.equal(validateBlockProps('toggle', { node: { type: 'eotionToggle', content: [summary, { type: 'paragraph' }] } }), false)
+  assert.equal(validateBlockProps('toggle', { node: { type: 'eotionToggle', content: [{ type: 'paragraph' }, { type: 'table', content: [] }] } }), false)
+})
+
+test('props validation rejects malformed content and bounds recursive input', () => {
+  for (const node of [
+    { type: 'paragraph', content: 'text' },
+    { type: 'paragraph', attrs: null },
+    { type: 'paragraph', content: [null] },
+    { type: 'paragraph', content: [{ type: 'text', text: 'x', content: [] }] },
+  ]) assert.equal(validateBlockProps('paragraph', { node }), false)
+  let deep = { type: 'paragraph' }
+  for (let depth = 0; depth < 66; depth++) deep = { type: 'blockquote', content: [deep] }
+  assert.equal(validateBlockProps('quote', { node: deep }), false)
+  const cyclic = { type: 'blockquote', content: [] }
+  cyclic.content.push(cyclic)
+  assert.equal(validateBlockProps('quote', { node: cyclic }), false)
+  assert.equal(validateBlockProps('paragraph', { node: { type: 'paragraph', content: Array.from({ length: 100_001 }, () => ({ type: 'text', text: 'x' })) } }), false)
 })
 
 test('the shared table size budget is pinned and enforced at its boundaries', () => {

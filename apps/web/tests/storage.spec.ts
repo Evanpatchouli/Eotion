@@ -64,7 +64,7 @@ test('IndexedDB content and operation log survive reopen, reject partial writes,
     const dbName = `p3-test-${createLocalId()}`
     let store = await IndexedDbLocalStore.open(dbName)
     const page = { id: 'p', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'First', updatedAt: new Date().toISOString() }
-    const block = { id: 'b', workspaceId: 'ws', pageId: 'p', parentBlockId: null, type: 'paragraph' as const, orderKey: 'a', props: { text: 'hello' }, createdAt: page.updatedAt, updatedAt: page.updatedAt }
+    const block = { id: 'b', workspaceId: 'ws', pageId: 'p', parentBlockId: null, type: 'paragraph' as const, orderKey: 'a', props: { node: { type: 'paragraph', content: [{ type: 'text', text: 'hello' }] } }, createdAt: page.updatedAt, updatedAt: page.updatedAt }
     await store.upsertPage(page)
     await store.upsertBlock(block)
     await store.upsertPage({ ...page, title: 'Updated' })
@@ -134,7 +134,7 @@ test('Page and Block creation works when crypto.randomUUID is unavailable', asyn
     const pageRecord = { id: createLocalId(), workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Offline page', updatedAt: now }
     const block = {
       id: createLocalId(), workspaceId: 'ws', pageId: pageRecord.id, parentBlockId: null, type: 'paragraph' as const,
-      orderKey: 'a', props: { text: 'Offline block' }, createdAt: now, updatedAt: now,
+      orderKey: 'a', props: { node: { type: 'paragraph', content: [{ type: 'text', text: 'Offline block' }] } }, createdAt: now, updatedAt: now,
     }
     await store.upsertPage(pageRecord)
     await store.upsertBlock(block)
@@ -330,9 +330,9 @@ test('IndexedDB file cleanup waits for source sync, respects references, and sur
     const migrated = (await store.getPage('legacy-page'))?.title === 'Legacy' && (await store.getBlock('legacy-block'))?.id === 'legacy-block'
     const now = new Date().toISOString()
     const pageRecord = { id: 'p', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Page', updatedAt: now }
-    const image = (id: string, fileId: string) => ({ id, workspaceId: 'ws', pageId: 'p', parentBlockId: null, type: 'image' as const, orderKey: id, props: { node: { attrs: { fileId } } }, createdAt: now, updatedAt: now })
+    const image = (id: string, fileId: string) => ({ id, workspaceId: 'ws', pageId: 'p', parentBlockId: null, type: 'image' as const, orderKey: id, props: { node: { type: 'eotionImage', attrs: { fileId, name: 'image.png', mimeType: 'image/png', size: 1, url: 'https://objects.example.test/image.png' } } }, createdAt: now, updatedAt: now })
     await store.upsertPage(pageRecord)
-    await store.upsertBlock({ ...image('paragraph', 'ignored-file-id'), type: 'paragraph' as const })
+    await store.upsertBlock({ ...image('paragraph', 'ignored-file-id'), type: 'paragraph' as const, props: { node: { type: 'paragraph' } } })
     await store.deleteBlock('ws', 'paragraph')
     const paragraphNoCleanup = (await store.listFileCleanups()).length === 0
     await store.upsertBlock(image('b1', 'shared-file'))
@@ -352,7 +352,7 @@ test('IndexedDB file cleanup waits for source sync, respects references, and sur
     const error = (await store.listFileCleanups()).find((item) => item.fileId === 'shared-file')?.lastError
     await store.completeFileCleanup('ws', 'shared-file')
     await store.upsertBlock(image('replace', 'replace-file'))
-    await store.upsertBlock({ ...image('replace', ''), type: 'paragraph', props: { text: 'replaced' } })
+    await store.upsertBlock({ ...image('replace', ''), type: 'paragraph', props: { node: { type: 'paragraph', content: [{ type: 'text', text: 'replaced' }] } } })
     const replaceOp = (await store.getPendingOperations()).at(-1)!
     const replaceGate = (await store.listFileCleanups()).find((item) => item.fileId === 'replace-file')
     await store.markOperationSynced((await store.getPendingOperations()).at(-1)!.id)

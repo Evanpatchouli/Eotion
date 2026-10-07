@@ -180,7 +180,7 @@ test('local store enforces nested block invariants and records one block.move', 
     const stamp = new Date().toISOString()
     const pageMeta = (id: string, orderKey: string) => ({ id, workspaceId: 'ws', parentPageId: null, orderKey, title: id, updatedAt: stamp })
     const blockRecord = (id: string, pageId: string, parentBlockId: string | null, orderKey: string, type = 'paragraph') =>
-      ({ id, workspaceId: 'ws', pageId, parentBlockId, type, orderKey, props: { node: { type: 'paragraph' } }, createdAt: stamp, updatedAt: stamp })
+      ({ id, workspaceId: 'ws', pageId, parentBlockId, type, orderKey, props: { node: type === 'toggle' ? { type: 'eotionToggle', content: [{ type: 'paragraph' }] } : { type: 'paragraph' } }, createdAt: stamp, updatedAt: stamp })
     const outcome = { rejected: [] as string[], immutableParent: false, paragraphParent: false, childOwnerReplacement: false, moveCount: 0, movePayload: null as unknown, movedParent: 'unset', snapshotRejections: [] as string[] }
     try {
       await store.upsertPage(pageMeta('page-1', 'a'))

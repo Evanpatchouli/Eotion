@@ -82,8 +82,72 @@ test('MCP mapper reads nested toggle blocks depth first and exposes parent ids',
   assert.deepEqual(mapped.map(({ depth }) => depth), [0, 0, 1, 2])
   assert.equal(mapped[1]!.type, 'toggle')
   assert.equal(mapped[1]!.text, 'Summary')
+  assert.deepEqual(mapped[1]!.summary, [{ type: 'paragraph', text: 'Summary' }])
   assert.equal(mapped[2]!.text, 'Child')
   assert.equal(GetPageOutputSchema.parse({ ...toMcpPageSummary(page), blocks: mapped }).blocks.length, 4)
+})
+
+test('MCP toggle summary preserves public content for plain, nested list, quote, table and callout', () => {
+  const paragraph = { type: 'paragraph', content: [{ type: 'text', text: 'Plain' }] }
+  const list = { type: 'bulletList', content: [{ type: 'listItem', content: [
+    { type: 'paragraph', content: [{ type: 'text', text: 'First' }] },
+    { type: 'orderedList', attrs: { start: 3, type: null }, content: [{ type: 'listItem', content: [
+      { type: 'paragraph', content: [{ type: 'text', text: 'Nested' }] },
+    ] }] },
+  ] }] }
+  const quote = { type: 'blockquote', content: [
+    { type: 'paragraph', content: [{ type: 'text', text: 'Quoted' }] },
+    { type: 'blockquote', content: [{ type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Inner' }] }] },
+  ] }
+  const table = tableNode([['A', 'B'], ['1', '2']])
+  const callout = { type: 'eotionCallout', attrs: { icon: '💡', tone: 'info' }, content: [{ type: 'text', text: 'Note' }] }
+  const cases = [paragraph, list, quote, table, callout]
+  const results = cases.map((summary, index) => toMcpBlock(block('toggle', { type: 'eotionToggle', content: [summary] }, `summary-${index}`)))
+
+  assert.equal(results[0]!.text, 'Plain')
+  assert.deepEqual(results[0]!.summary, [{ type: 'paragraph', text: 'Plain' }])
+  assert.equal(results[1]!.text, '') // Legacy text stays inline-only for a non-inline summary.
+  assert.deepEqual(results[1]!.summary?.[0]?.entries, [{ parts: [
+    { type: 'paragraph', text: 'First' },
+    { type: 'numbered-list', text: '3. Nested', items: ['Nested'], start: 3, entries: [{ parts: [{ type: 'paragraph', text: 'Nested' }] }] },
+  ] }])
+  assert.deepEqual(results[2]!.summary?.[0]?.children, [
+    { type: 'paragraph', text: 'Quoted' },
+    { type: 'quote', text: '> Inner', children: [{ type: 'heading', text: 'Inner', level: 2 }] },
+  ])
+  assert.deepEqual(results[3]!.summary, [{ type: 'table', text: 'A\tB\n1\t2', rows: [['A', 'B'], ['1', '2']] }])
+  assert.deepEqual(results[4]!.summary, [{ type: 'callout', text: 'Note', icon: '💡', tone: 'info' }])
+  assert.equal(GetPageOutputSchema.safeParse({ ...toMcpPageSummary(page), blocks: results }).success, true)
+  assert.doesNotMatch(JSON.stringify(results), /props|node|blockId|orderKey|eotionToggle|eotionCallout|tableRow|tableCell|attrs|marks/)
+})
+
+test('MCP toggle summary restores legacy empty summaries and rejects malformed content', () => {
+  const valid = { type: 'paragraph', content: [{ type: 'text', text: 'ok' }] }
+  for (const content of [undefined, []]) {
+    const dto = toMcpBlock(block('toggle', { type: 'eotionToggle', ...(content === undefined ? {} : { content }) }))
+    assert.equal(dto.text, '')
+    assert.deepEqual(dto.summary, [{ type: 'paragraph', text: '' }])
+  }
+  for (const content of [[valid, valid], [{ type: 'eotionToggle', content: [valid] }],
+    [{ type: 'table', content: [{ type: 'tableRow', content: [] }] }],
+    [{ type: 'eotionCallout', attrs: { icon: '!', tone: 'unknown' } }]]) {
+    assert.throws(() => toMcpBlock(block('toggle', { type: 'eotionToggle', ...(content === undefined ? {} : { content }) })), /Unsupported block/)
+  }
+})
+
+test('MCP output schema rejects unsupported or incomplete toggle summary DTOs', () => {
+  const dto = toMcpBlock(block('toggle', { type: 'eotionToggle', content: [{ type: 'paragraph' }] }))
+  const parses = (summary: unknown) => GetPageOutputSchema.safeParse({ ...toMcpPageSummary(page), blocks: [{ ...dto, summary }] }).success
+  for (const summary of [
+    [{ type: 'toggle', text: 'nested' }],
+    [{ type: 'table', text: 'A' }],
+    [{ type: 'callout', text: 'A', icon: '!', tone: 'info', rows: [['A']] }],
+    [{ type: 'bulleted-list', text: '• A' }],
+    [{ type: 'quote', text: '> A' }],
+    [{ type: 'paragraph', text: 'A', children: [] }],
+    [{ type: 'paragraph', text: 'A', props: { node: {} } }],
+  ]) assert.equal(parses(summary), false)
+  assert.equal(parses([{ type: 'paragraph', text: '' }]), true)
 })
 
 test('MCP mapper fails closed on a rootless parent cycle instead of returning a partial page', () => {
@@ -136,10 +200,10 @@ test('MCP callout read exposes only stable icon, tone and plain text', () => {
 
 test('MCP mapper accepts the depth and cumulative node limits, then rejects the next level or node', () => {
   const nestedQuote = (depth: number): unknown => depth === 1
-    ? { type: 'blockquote' }
+    ? { type: 'blockquote', content: [{ type: 'paragraph' }] }
     : { type: 'blockquote', content: [nestedQuote(depth - 1)] }
-  assert.equal(toMcpBlock(block('quote', nestedQuote(32))).type, 'quote')
-  assert.throws(() => toMcpBlock(block('quote', nestedQuote(33))))
+  assert.equal(toMcpBlock(block('quote', nestedQuote(31))).type, 'quote')
+  assert.throws(() => toMcpBlock(block('quote', nestedQuote(32))))
 
   const atLimit = Array.from({ length: 1000 }, (_, index) => block('paragraph', {
     type: 'paragraph', content: Array.from({ length: 9 }, () => ({ type: 'hardBreak' })),
@@ -242,6 +306,20 @@ test('MCP reads a full P7 mixed page depth first with stable parent ids and no i
   assert.equal(GetPageOutputSchema.parse({ ...toMcpPageSummary(page), blocks: mapped }).blocks.length, 15)
   // The read DTO never leaks the editor AST, props, order keys or internal cell structure.
   assert.doesNotMatch(JSON.stringify(mapped), /props|node|blockId|orderKey|eotionToggle|eotionCallout|tableRow|tableCell|attrs/)
+})
+
+test('Toggle summary preserves legacy empty and large list/quote structures within read budgets', () => {
+  const paragraph = { type: 'paragraph', content: [{ type: 'text', text: 'x' }] }
+  for (const count of [0, 1001]) {
+    for (const summary of [
+      { type: 'bulletList', content: Array.from({ length: count }, () => ({ type: 'listItem', content: [paragraph] })) },
+      { type: 'blockquote', content: Array.from({ length: count }, () => paragraph) },
+    ]) {
+      const dto = toMcpBlock(block('toggle', { type: 'eotionToggle', content: [summary] }))
+      const parsed = GetPageOutputSchema.parse({ ...toMcpPageSummary(page), blocks: [dto] }).blocks[0]!
+      assert.equal((parsed.summary![0]!.entries ?? parsed.summary![0]!.children)!.length, count)
+    }
+  }
 })
 
 test('MCP table read stays nested under a toggle and rejects non-grid content', () => {

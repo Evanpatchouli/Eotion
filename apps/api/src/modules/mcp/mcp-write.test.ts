@@ -262,6 +262,33 @@ test("MCP write tools persist bounded page mutations atomically and enforce docu
       workspaceId: "mcp-write-a-one", title: "MCP callout roundtrip", idempotencyKey: `mcp-callout-create-${randomUUID()}`,
       blocks: [{ type: "callout", text: "first\nsecond" }],
     };
+    const pageCountBeforeInvalidCallout = (await pages.list(userA.id, calloutCreateInput.workspaceId)).length;
+    const invalidCalloutCreateInput = {
+      ...calloutCreateInput, idempotencyKey: `mcp-callout-invalid-create-${randomUUID()}`,
+      blocks: [{ type: "callout", text: "must not persist", tone: "danger" }],
+    };
+    expectToolFailure(await clientA.callTool({ name: "eotion_create_page", arguments: invalidCalloutCreateInput }));
+    assert.equal((await pages.list(userA.id, calloutCreateInput.workspaceId)).length, pageCountBeforeInvalidCallout);
+    assert.equal(await mutationReceipts.find({
+      userId: userA.id, tool: "eotion_create_page", idempotencyKey: invalidCalloutCreateInput.idempotencyKey,
+    }), null);
+    const invalidDerivedCalloutCreateInput = {
+      ...calloutCreateInput, idempotencyKey: `mcp-callout-invalid-derived-create-${randomUUID()}`,
+      title: "MCP derived props rejection", blocks: [{ type: "callout", text: "valid MCP DTO" }],
+    };
+    const originalBlockCreate = blocks.create.bind(blocks);
+    blocks.create = async (...args) => originalBlockCreate(
+      args[0], args[1], args[2], { ...args[3], props: { node: { type: "paragraph" } } }, args[4],
+    );
+    try {
+      expectToolFailure(await clientA.callTool({ name: "eotion_create_page", arguments: invalidDerivedCalloutCreateInput }));
+    } finally {
+      blocks.create = originalBlockCreate;
+    }
+    assert.equal((await pages.list(userA.id, calloutCreateInput.workspaceId)).length, pageCountBeforeInvalidCallout);
+    assert.equal(await mutationReceipts.find({
+      userId: userA.id, tool: "eotion_create_page", idempotencyKey: invalidDerivedCalloutCreateInput.idempotencyKey,
+    }), null, "invalid derived BlockService props must not commit an MCP create or receipt");
     const calloutCreated = expectToolSuccess(await clientA.callTool({ name: "eotion_create_page", arguments: calloutCreateInput }));
     assert.equal(calloutCreated.blocks.length, 1);
     const calloutBlockId = calloutCreated.blocks[0].id as string;
@@ -280,6 +307,34 @@ test("MCP write tools persist bounded page mutations atomically and enforce docu
     }]);
     assert.deepEqual(expectToolSuccess(await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: calloutCreated.id } })), calloutUpdated);
     assert.deepEqual(expectToolSuccess(await clientA.callTool({ name: "eotion_update_page", arguments: calloutUpdateInput })), calloutUpdated);
+    const invalidCalloutUpdateInput = {
+      pageId: calloutCreated.id, expectedUpdatedAt: calloutUpdated.updatedAt,
+      idempotencyKey: `mcp-callout-invalid-update-${randomUUID()}`,
+      blocks: [{ id: calloutBlockId, type: "callout", text: "must not persist", tone: "danger" }],
+    };
+    expectToolFailure(await clientA.callTool({ name: "eotion_update_page", arguments: invalidCalloutUpdateInput }));
+    assert.deepEqual(expectToolSuccess(await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: calloutCreated.id } })), calloutUpdated);
+    assert.equal(await mutationReceipts.find({
+      userId: userA.id, tool: "eotion_update_page", idempotencyKey: invalidCalloutUpdateInput.idempotencyKey,
+    }), null);
+    const invalidDerivedCalloutUpdateInput = {
+      pageId: calloutCreated.id, expectedUpdatedAt: calloutUpdated.updatedAt,
+      idempotencyKey: `mcp-callout-invalid-derived-update-${randomUUID()}`,
+      blocks: [{ id: calloutBlockId, type: "callout", text: "valid MCP DTO", tone: "info" }],
+    };
+    const originalBlockUpdate = blocks.update.bind(blocks);
+    blocks.update = async (...args) => originalBlockUpdate(
+      args[0], args[1], args[2], args[3], { ...args[4], props: { node: { type: "paragraph" } } }, args[5],
+    );
+    try {
+      expectToolFailure(await clientA.callTool({ name: "eotion_update_page", arguments: invalidDerivedCalloutUpdateInput }));
+    } finally {
+      blocks.update = originalBlockUpdate;
+    }
+    assert.deepEqual(expectToolSuccess(await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: calloutCreated.id } })), calloutUpdated);
+    assert.equal(await mutationReceipts.find({
+      userId: userA.id, tool: "eotion_update_page", idempotencyKey: invalidDerivedCalloutUpdateInput.idempotencyKey,
+    }), null, "invalid derived BlockService props must not commit an MCP update or receipt");
 
     const twoPages = await Promise.all([
       clientA.callTool({ name: "eotion_create_page", arguments: { ...createInput, idempotencyKey: `mcp-concurrent-${randomUUID()}` } }),

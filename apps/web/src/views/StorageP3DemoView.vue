@@ -53,7 +53,7 @@ function savePage() {
 
 function saveBlock() {
   void run((local) => local.upsertBlock({
-    id: blockId, workspaceId, pageId, parentBlockId: null, type: 'paragraph', orderKey: 'a', props: { text: blockText.value },
+    id: blockId, workspaceId, pageId, parentBlockId: null, type: 'paragraph', orderKey: 'a', props: { node: { type: 'paragraph', content: [{ type: 'text', text: blockText.value }] } },
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   }))
 }
