@@ -152,7 +152,9 @@ P7.1 Block Model Foundation 已 PASS：block registry 单一来源、block tree 
 
 P8.1 Database Domain Foundation：✅ **PASS（2026-10-08）**。独立 Database / Property / Record / View、稳定 database Block 引用、Record → Page 关系、Workspace 权限与 Mongo 原子创建。范围与分阶段计划见 [P8 Database](p8-database.md)。
 
-P8.2 Inline Database + Table View：✅ **PASS / current（2026-10-09）**。Slash 原子创建 Database/View/Block、linked view 共享引用、正文内 Table 基础值与有界分页、最小 Record/Page 创建和标题导航已交付。Block 与 Database 生命周期保持解耦，Page/Block 继续既有 Local-first；Database 数据仍在线读取。完整产品回归 231/231、visual 7/7、领域/API/MCP、typecheck/build 与独立 review 均通过。本轮到此停止；P8.3–P8.6 not started。
+P8.2 Inline Database + Table View：✅ **PASS（2026-10-09）**。Slash 原子创建 Database/View/Block、linked view 共享引用、正文内 Table 基础值与有界分页、最小 Record/Page 创建和标题导航已交付。Block 与 Database 生命周期保持解耦，Page/Block 继续既有 Local-first；Database 数据仍在线读取。完整产品回归 231/231、visual 7/7、领域/API/MCP、typecheck/build 与独立 review 均通过。P8.2 交付边界见阶段文档。
+
+P8.3 Properties + Record Editing：✅ **PASS / current（2026-10-09）**。六种基础属性、schema 管理、在线行内编辑、Page.title 唯一标题来源、Record/Page 原子写入与版本条件更新。完整产品回归 237/237、visual 7/7、领域/API/MCP/storage、typecheck/build 与独立 review 均通过。验收证据与已知限制见 [P8 Database](p8-database.md)；P8.4–P8.6 not started。
 
 ## 后续 - 异步基础设施
 

@@ -1,5 +1,17 @@
 # Handoff
 
+## 2026-10-09 P8.3 Properties + Record Editing 完成
+
+P8.1 PASS；P8.2 PASS；P8.3 **PASS / current**，基线 `014ddbbcb1b4be104a7c9c08950e1a545102de99`。本轮仅交付 P8.3，P8.4–P8.6 not started。正式契约与检索入口见 `docs/p8-database.md`、`docs/context/README.md`。
+
+Property 支持 title/text/number/checkbox/select/date；非 title 可新增/删除，全部可重命名，select option 使用稳定 ID。Table 提供 typed cell 编辑、清空、校验、保存错误与冲突重试；linked 引用刷新共享数据并保留分页深度，390px 可编辑。Page.title 是唯一持久化标题来源，Record 读响应投影标题与 pageVersion，后续写入清除旧 title 副本；Table 标题写入与 Record 在同一事务内 CAS。新记录先输入非空标题，再原子创建 Record + Page。
+
+HTTP/application/domain/repository 继续复用 Workspace owner 权限，拒绝跨 Workspace/Database 注入；schema/cell 使用共同 Database version，Property/Record/Page 使用对应版本条件。删除 Property 或 option 在同一事务内清理受影响值。Database 编辑仅在线；Page/Block 继续 Local-first，MCP 不新增工具，get_page 只返回 Database 引用。
+
+验收：Domain 23/23、Contracts 12/12、SDK 19/19、API domain 4/4、HTTP 27/27、MCP 30/30，零 skip；product 237/237（Database 26 + 其余 211，单 worker）、storage package 7/7 与浏览器/Electron 11/11、visual 7/7、根 typecheck、Web/API build、git diff --check、UTF-8 无 BOM 通过。Desktop Light/Dark 与 390×844 cell/property/select 编辑截图已人工检查，保留在 ignored `test-results/p83-visual/`。最终独立 review 0 blocker。
+
+已知边界：没有类型互转、Filter/Sort/其他 View、高级属性、Database MCP 或完整 Database offline sync；共同 Database version 可产生需刷新重试的冲突，删除 Property/option 的事务扫描成本随记录数增长。Page 离线改名继承现有 last-writer 同步语义；未知创建跨重启幂等恢复仍未扩展。移动验收为 Chromium 响应式证据，Web 保留既有大 chunk 提示。本轮到此停止。
+
 ## 2026-10-09 P8.2 Inline Database + Table View 完成
 
 P8.1 PASS；P8.2 **PASS / current**，基线 `3ddab71784220fd928be9c411cc19965323679cc`。本轮只交付 P8.2，P8.3–P8.6 not started。实现与正式边界见 `docs/p8-database.md`，检索入口见 `docs/context/README.md`。

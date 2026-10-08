@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common'
-import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseTableQuerySchema, DatabaseViewListQuerySchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema } from '@eotion/contracts'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseTableQuerySchema, DatabaseViewListQuerySchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema } from '@eotion/contracts'
 import { DatabaseService } from '../server-domain/services/database.service'
 import type { UserRecord } from '../server-domain/types'
 import { CurrentUser, SessionAuthGuard } from './auth.transport'
@@ -41,5 +41,25 @@ export class DatabaseController {
   createRecord(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Body() body: unknown) {
     const input = parseBody(DatabaseRecordPageCreateRequestSchema, body)
     return this.databases.createRecordPage(user.id, parseId(workspaceId), parseId(databaseId), input)
+  }
+
+  @Post('databases/:databaseId/properties')
+  createProperty(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Body() body: unknown) {
+    return this.databases.createProperty(user.id, parseId(workspaceId), parseId(databaseId), parseBody(DatabasePropertyCreateRequestSchema, body))
+  }
+
+  @Patch('databases/:databaseId/properties/:propertyId')
+  updateProperty(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('propertyId') propertyId: string, @Body() body: unknown) {
+    return this.databases.updateProperty(user.id, parseId(workspaceId), parseId(databaseId), parseId(propertyId), parseBody(DatabasePropertyUpdateRequestSchema, body))
+  }
+
+  @Delete('databases/:databaseId/properties/:propertyId')
+  deleteProperty(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('propertyId') propertyId: string, @Body() body: unknown) {
+    return this.databases.deleteProperty(user.id, parseId(workspaceId), parseId(databaseId), parseId(propertyId), parseBody(DatabasePropertyDeleteRequestSchema, body))
+  }
+
+  @Patch('databases/:databaseId/records/:recordId/cells/:propertyId')
+  updateRecordCell(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('recordId') recordId: string, @Param('propertyId') propertyId: string, @Body() body: unknown) {
+    return this.databases.updateRecordCell(user.id, parseId(workspaceId), parseId(databaseId), parseId(recordId), parseId(propertyId), parseBody(DatabaseRecordCellUpdateRequestSchema, body))
   }
 }

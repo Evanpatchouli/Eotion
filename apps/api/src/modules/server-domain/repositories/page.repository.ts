@@ -23,6 +23,11 @@ export class PageRepository {
     return doc ? this.toRecord(doc) : null
   }
 
+  async findManyInWorkspace(workspaceId: string, ids: readonly string[], session?: ClientSession): Promise<PageRecord[]> {
+    if (ids.length === 0) return []
+    return (await this.model.find({ workspaceId, id: { $in: [...new Set(ids)] } }).session(session ?? null).exec()).map(doc => this.toRecord(doc))
+  }
+
   async findById(id: string, session?: ClientSession): Promise<PageRecord | null> {
     const doc = await this.model.findOne({ id }).session(session ?? null).exec()
     return doc ? this.toRecord(doc) : null

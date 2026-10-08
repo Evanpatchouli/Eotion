@@ -46,6 +46,7 @@ export {
   isValidDatabaseRecord,
   isValidDatabaseView,
   validateDatabaseRecordValues,
+  validateStoredDatabaseRecordValues,
 } from './database'
 export type {
   Database,
@@ -55,6 +56,7 @@ export type {
   DatabasePropertyValue,
   DatabaseRecord,
   DatabaseRecordValues,
+  DatabaseTableRecord,
   DatabaseSelectOption,
   DatabaseView,
 } from './database'

@@ -8,7 +8,7 @@
     "build": "pnpm --filter @eotion/domain build && pnpm --filter @eotion/contracts build && nest build",
     "start": "node dist/main.js",
     "test:domain": "pnpm build && node --test dist/modules/server-domain/server-domain.test.js dist/modules/server-domain/database.test.js",
-    "test:http": "pnpm build && node --test dist/modules/http-api/http-api.test.js && node --experimental-strip-types --test src/modules/http-api/sync-http.test.mjs && node --experimental-strip-types --test src/modules/http-api/file-http.test.mjs",
+    "test:http": "pnpm build && node --test dist/modules/http-api/http-api.test.js dist/modules/http-api/database-http.test.js && node --experimental-strip-types --test src/modules/http-api/sync-http.test.mjs && node --experimental-strip-types --test src/modules/http-api/file-http.test.mjs",
     "typecheck": "tsc --noEmit",
     "test:mcp": "pnpm build && node --test dist/modules/mcp/mcp.test.js dist/modules/mcp/mcp-read.contract.test.js dist/modules/mcp/mcp-write.contract.test.js dist/modules/mcp/mcp-write.test.js"
   },

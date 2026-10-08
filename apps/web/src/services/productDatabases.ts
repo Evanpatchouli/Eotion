@@ -1,7 +1,8 @@
 import { createLocalId } from '@eotion/storage'
+import type { DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest } from '@eotion/contracts'
 import { nextOrderKey } from '../utils/pageTree'
 
-import { notifyDatabaseRecordCreated } from '../editor/databaseEvents'
+import { notifyDatabaseRecordCreated, notifyDatabaseUpdated } from '../editor/databaseEvents'
 import { reactive } from 'vue'
 import { ApiError, api } from './productApi'
 import { useProductPagesStore } from '../stores/productPages'
@@ -11,6 +12,23 @@ import { useAuthStore } from '../stores/auth'
 const uncertainRecordScopes = reactive(new Set<string>())
 const uncertainDatabaseInsertionScopes = reactive(new Set<string>())
 const uncertainRecordMessage = '上次记录创建结果尚未确认，请联网并刷新页面后确认。'
+const databaseMutationTails = new Map<string, Promise<unknown>>()
+
+function serializeDatabaseMutation<T>(workspaceId: string, databaseId: string, mutation: () => Promise<T>): Promise<T> {
+  const key = JSON.stringify([workspaceId, databaseId])
+  const previous = databaseMutationTails.get(key) ?? Promise.resolve()
+  const current = previous.catch(() => undefined).then(mutation)
+  databaseMutationTails.set(key, current)
+  void current.finally(() => { if (databaseMutationTails.get(key) === current) databaseMutationTails.delete(key) }).catch(() => undefined)
+  return current
+}
+
+function assertOnlineAndCurrent(workspaceId: string, userId: string): void {
+  if (!navigator.onLine) throw new Error('离线时数据库为只读。')
+  const auth = useAuthStore()
+  const pages = useProductPagesStore()
+  if (auth.user?.id !== userId || pages.forWorkspaceId !== workspaceId) throw new Error('登录状态或工作区已切换，请刷新后重试。')
+}
 
 function mayHaveCommitted(error: unknown): boolean {
   return !(error instanceof ApiError && error.statusCode >= 400 && error.statusCode < 500)
@@ -74,7 +92,7 @@ export async function loadProductDatabaseTable(
   return result
 }
 
-export async function createProductDatabaseRecord(workspaceId: string, databaseId: string): Promise<{ refreshWarning?: string }> {
+export async function createProductDatabaseRecord(workspaceId: string, databaseId: string, title: string): Promise<{ refreshWarning?: string }> {
   if (!navigator.onLine) throw new Error('离线时无法新建记录。')
   const auth = useAuthStore()
   const userId = auth.user?.id
@@ -88,7 +106,7 @@ export async function createProductDatabaseRecord(workspaceId: string, databaseI
   const input = {
     id: recordId,
     pageId,
-    title: '无标题',
+    title: title.trim(),
     orderKey: nextOrderKey(siblingPages),
   }
   try {
@@ -135,4 +153,76 @@ export async function createProductDatabaseRecord(workspaceId: string, databaseI
     refreshWarning = true
   }
   return refreshWarning ? { refreshWarning: '记录已创建，页面列表暂未刷新，请稍后刷新。' } : {}
+}
+
+export async function createProductDatabaseProperty(workspaceId: string, databaseId: string, input: DatabasePropertyCreateRequest) {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再编辑数据库。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const result = await api.databases.createDatabaseProperty(workspaceId, databaseId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
+}
+
+export async function updateProductDatabaseProperty(workspaceId: string, databaseId: string, propertyId: string, input: DatabasePropertyUpdateRequest) {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再编辑数据库。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const result = await api.databases.updateDatabaseProperty(workspaceId, databaseId, propertyId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
+}
+
+export async function deleteProductDatabaseProperty(workspaceId: string, databaseId: string, propertyId: string, input: DatabasePropertyDeleteRequest) {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再编辑数据库。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const result = await api.databases.deleteDatabaseProperty(workspaceId, databaseId, propertyId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
+}
+
+export async function updateProductDatabaseRecordCell(workspaceId: string, databaseId: string, recordId: string, propertyId: string, input: DatabaseRecordCellUpdateRequest) {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再编辑数据库。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const isTitle = input.expectedPageUpdatedAt !== undefined
+    const sync = useProductSyncStore()
+    const pages = useProductPagesStore()
+    if (isTitle) {
+      await sync.runSync()
+      assertOnlineAndCurrent(workspaceId, userId)
+      if (sync.state !== 'synced') throw new Error('页面尚未同步，标题暂不能修改。')
+    }
+    const result = await api.databases.updateDatabaseRecordCell(workspaceId, databaseId, recordId, propertyId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    let refreshWarning: string | undefined
+    if (isTitle) {
+      try {
+        await sync.runSync()
+        assertOnlineAndCurrent(workspaceId, userId)
+        await pages.refresh(workspaceId)
+        assertOnlineAndCurrent(workspaceId, userId)
+        if (sync.state !== 'synced') refreshWarning = '标题已更新，但页面列表暂未同步。'
+      } catch {
+        refreshWarning = '标题已更新，但页面列表暂未同步。'
+      }
+    }
+    return { ...result, ...(refreshWarning ? { refreshWarning } : {}) }
+  })
 }

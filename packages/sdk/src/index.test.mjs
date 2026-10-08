@@ -37,12 +37,20 @@ test('database APIs encode scoped routes, query windows, and strict write payloa
   const create = { id: 'db-1', name: 'Tasks', titlePropertyId: 'title-1', viewId: 'view-1', blockId: 'block-1', orderKey: 'a', parentBlockId: null }
   const link = { databaseId: 'db-1', viewId: 'view-1', blockId: 'block-2', orderKey: 'b', parentBlockId: null }
   const record = { id: 'record-1', pageId: 'page-1', title: 'A task', orderKey: 'c' }
+  const propertyCreate = { id: 'prop-1', name: 'Notes', type: 'text', expectedDatabaseVersion: 1 }
+  const propertyPatch = { name: 'Summary', expectedDatabaseVersion: 2, expectedPropertyVersion: 1 }
+  const propertyDelete = { expectedDatabaseVersion: 3, expectedPropertyVersion: 2 }
+  const cellPatch = { value: 'Updated', expectedDatabaseVersion: 4, expectedRecordVersion: 1 }
   await client.databases.listDatabases('workspace/1', { limit: 5, cursor: 'db 1' })
   await client.databases.listDatabaseViews('workspace/1', 'database/1')
   await client.databases.getDatabaseTable('workspace/1', 'database/1', 'view/1', { limit: 10 })
   await client.databases.createDatabaseInPage('workspace/1', 'page/1', create)
   await client.databases.linkDatabaseInPage('workspace/1', 'page/2', link)
   await client.databases.createDatabaseRecord('workspace/1', 'database/1', record)
+  await client.databases.createDatabaseProperty('workspace/1', 'database/1', propertyCreate)
+  await client.databases.updateDatabaseProperty('workspace/1', 'database/1', 'prop/1', propertyPatch)
+  await client.databases.deleteDatabaseProperty('workspace/1', 'database/1', 'prop/1', propertyDelete)
+  await client.databases.updateDatabaseRecordCell('workspace/1', 'database/1', 'record/1', 'prop/1', cellPatch)
   assert.deepEqual(requests.map(request => request.url), [
     'https://eotion.test/api/workspaces/workspace%2F1/databases?limit=5&cursor=db+1',
     'https://eotion.test/api/workspaces/workspace%2F1/databases/database%2F1/views',
@@ -50,11 +58,20 @@ test('database APIs encode scoped routes, query windows, and strict write payloa
     'https://eotion.test/api/workspaces/workspace%2F1/pages/page%2F1/databases',
     'https://eotion.test/api/workspaces/workspace%2F1/pages/page%2F2/database-links',
     'https://eotion.test/api/workspaces/workspace%2F1/databases/database%2F1/records',
+    'https://eotion.test/api/workspaces/workspace%2F1/databases/database%2F1/properties',
+    'https://eotion.test/api/workspaces/workspace%2F1/databases/database%2F1/properties/prop%2F1',
+    'https://eotion.test/api/workspaces/workspace%2F1/databases/database%2F1/properties/prop%2F1',
+    'https://eotion.test/api/workspaces/workspace%2F1/databases/database%2F1/records/record%2F1/cells/prop%2F1',
   ])
   assert.ok(requests.every(request => request.credentials === 'include'))
   assert.deepEqual(await requests[3].json(), create)
   assert.deepEqual(await requests[4].json(), link)
   assert.deepEqual(await requests[5].json(), record)
+  assert.deepEqual(await requests[6].json(), propertyCreate)
+  assert.deepEqual(await requests[7].json(), propertyPatch)
+  assert.deepEqual(await requests[8].json(), propertyDelete)
+  assert.deepEqual(await requests[9].json(), cellPatch)
+  assert.deepEqual(requests.slice(6).map(request => request.method), ['POST', 'PATCH', 'DELETE', 'PATCH'])
 })
 
 test('API error responses become ApiError values carrying the server status', async () => {

@@ -9,13 +9,17 @@ import type {
   DatabaseCreateInPageRequest,
   DatabaseLinkInPageRequest,
   DatabaseRecordPageCreateRequest,
+  DatabasePropertyCreateRequest,
+  DatabasePropertyUpdateRequest,
+  DatabasePropertyDeleteRequest,
+  DatabaseRecordCellUpdateRequest,
+  DatabaseTableRecordResponse,
   DatabaseTableQuery,
   DatabaseTableResponse,
   DatabaseViewResponse,
   DatabaseWindowResponse,
   DatabaseResponse,
   DatabasePropertyResponse,
-  DatabaseRecordResponse,
   FileResponse,
   FileUpdateRequest,
   HealthResponse,
@@ -99,7 +103,11 @@ export class EotionApiClient {
     getDatabaseTable: (workspaceId: string, databaseId: string, viewId: string, window?: Partial<Pick<DatabaseTableQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseTableResponse>
     createDatabaseInPage: (workspaceId: string, pageId: string, input: DatabaseCreateInPageRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; titleProperty: DatabasePropertyResponse; view: DatabaseViewResponse; block: BlockResponse }>
     linkDatabaseInPage: (workspaceId: string, pageId: string, input: DatabaseLinkInPageRequest, signal?: AbortSignal) => Promise<{ block: BlockResponse }>
-    createDatabaseRecord: (workspaceId: string, databaseId: string, input: DatabaseRecordPageCreateRequest, signal?: AbortSignal) => Promise<{ record: DatabaseRecordResponse; page: PageResponse }>
+    createDatabaseRecord: (workspaceId: string, databaseId: string, input: DatabaseRecordPageCreateRequest, signal?: AbortSignal) => Promise<{ record: DatabaseTableRecordResponse; page: PageResponse }>
+    createDatabaseProperty: (workspaceId: string, databaseId: string, input: DatabasePropertyCreateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; property: DatabasePropertyResponse }>
+    updateDatabaseProperty: (workspaceId: string, databaseId: string, propertyId: string, input: DatabasePropertyUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; property: DatabasePropertyResponse }>
+    deleteDatabaseProperty: (workspaceId: string, databaseId: string, propertyId: string, input: DatabasePropertyDeleteRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse }>
+    updateDatabaseRecordCell: (workspaceId: string, databaseId: string, recordId: string, propertyId: string, input: DatabaseRecordCellUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; record: DatabaseTableRecordResponse; page?: PageResponse }>
   }
   readonly sync: {
     send: (operation: SyncOperation, signal?: AbortSignal) => Promise<void>
@@ -170,6 +178,10 @@ export class EotionApiClient {
       createDatabaseInPage: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/databases`, { method: 'POST', body: input, signal }),
       linkDatabaseInPage: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/database-links`, { method: 'POST', body: input, signal }),
       createDatabaseRecord: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/records`, { method: 'POST', body: input, signal }),
+      createDatabaseProperty: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/properties`, { method: 'POST', body: input, signal }),
+      updateDatabaseProperty: (workspaceId, databaseId, propertyId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/properties/${segment(propertyId)}`, { method: 'PATCH', body: input, signal }),
+      deleteDatabaseProperty: (workspaceId, databaseId, propertyId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/properties/${segment(propertyId)}`, { method: 'DELETE', body: input, signal }),
+      updateDatabaseRecordCell: (workspaceId, databaseId, recordId, propertyId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/records/${segment(recordId)}/cells/${segment(propertyId)}`, { method: 'PATCH', body: input, signal }),
     }
     this.sync = {
       send: async (operation, signal) => {

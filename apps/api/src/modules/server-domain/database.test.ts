@@ -11,6 +11,7 @@ import { DatabaseEntity } from './schemas/database.schema'
 import { DatabasePropertyEntity } from './schemas/database-property.schema'
 import { DatabaseRecordEntity } from './schemas/database-record.schema'
 import { DatabaseViewEntity } from './schemas/database-view.schema'
+import { DatabaseRecordRepository } from './repositories/database.repository'
 import { BlockService } from './services/block.service'
 import { DatabaseService } from './services/database.service'
 import { supportsTransactions } from './services/mongo-transactions'
@@ -37,6 +38,7 @@ test('database service keeps references scoped and writes initial data atomicall
   const recordModel = app.get<Model<unknown>>(getModelToken(DatabaseRecordEntity.name))
   const viewModel = app.get<Model<unknown>>(getModelToken(DatabaseViewEntity.name))
   await Promise.all([databaseModel.init(), propertyModel.init(), recordModel.init(), viewModel.init()])
+  const storedProperties = async (id: string) => ((await recordModel.findOne({ id }).lean()) as { properties?: Record<string, unknown> } | null)?.properties ?? {}
   assert.deepEqual([databaseModel.collection.name, propertyModel.collection.name, recordModel.collection.name, viewModel.collection.name], ['databases', 'database_properties', 'database_records', 'database_views'])
   const titleIndex = (await propertyModel.collection.indexes()).find(index => index.partialFilterExpression?.type === 'title')
   assert.equal(titleIndex?.unique, true)
@@ -97,10 +99,10 @@ test('database service keeps references scoped and writes initial data atomicall
     await syncSession.endSession()
   }
 
-  await assert.rejects(databases.createProperty(owner.id, 'workspace-a', 'database-a', { id: 'second-title', name: 'Other', type: 'title' }), /title property/)
-  await assert.rejects(databases.createProperty(owner.id, 'workspace-a', 'database-a', { id: 'invalid-select', name: 'Invalid', type: 'select' }), /Invalid database input/)
-  await assert.rejects(databases.createProperty(outsider.id, 'workspace-a', 'database-a', { id: 'forbidden', name: 'Forbidden', type: 'text' }), /Workspace not found/)
-  await databases.createProperty(owner.id, 'workspace-a', 'database-a', { id: 'status', name: 'Status', type: 'select', options: [{ id: 'open', name: 'Open' }] })
+  await assert.rejects(databases.createProperty(owner.id, 'workspace-a', 'database-a', { id: 'second-title', name: 'Other', type: 'title', expectedDatabaseVersion: 1 }), /title property/)
+  await assert.rejects(databases.createProperty(owner.id, 'workspace-a', 'database-a', { id: 'invalid-select', name: 'Invalid', type: 'select', expectedDatabaseVersion: 1 }), /Invalid database input/)
+  await assert.rejects(databases.createProperty(outsider.id, 'workspace-a', 'database-a', { id: 'forbidden', name: 'Forbidden', type: 'text', expectedDatabaseVersion: 1 }), /Workspace not found/)
+  await databases.createProperty(owner.id, 'workspace-a', 'database-a', { id: 'status', name: 'Status', type: 'select', options: [{ id: 'open', name: 'Open' }], expectedDatabaseVersion: 1 })
   await assert.rejects(databases.createView(owner.id, 'workspace-a', 'database-a', { id: 'invalid-view', name: 'Other', type: 'board' as 'table' }), /Invalid database input/)
   const secondView = await databases.createView(owner.id, 'workspace-a', 'database-a', { id: 'table-two', name: 'Other table', type: 'table' })
   assert.equal(secondView.version, 1)
@@ -108,6 +110,7 @@ test('database service keeps references scoped and writes initial data atomicall
   await assert.rejects(databases.createRecord(owner.id, 'workspace-a', 'database-a', { id: 'row-foreign', pageId: 'page-b', properties: { 'database-a-title': 'Foreign' } }), /Record page/)
   const record = await databases.createRecord(owner.id, 'workspace-a', 'database-a', { id: 'row-a', pageId: 'page-row', properties: { 'database-a-title': 'Row', status: 'open' } })
   assert.equal(record.version, 1)
+  assert.deepEqual(await storedProperties('row-a'), { status: 'open' })
   assert.equal((await databases.listRecords(owner.id, 'workspace-a', 'database-a')).length, 1)
   // P8.2 uses the same permission boundary for linked blocks and table windows.
   await assert.rejects(databases.linkInPage(owner.id, 'workspace-c', 'page-c', { databaseId: 'database-a', viewId: 'database-a-view', blockId: 'cross-workspace-link', parentBlockId: null, orderKey: 'b' }), /database and workspace/)
@@ -120,12 +123,134 @@ test('database service keeps references scoped and writes initial data atomicall
   const newRow = await databases.createRecordPage(owner.id, 'workspace-a', 'database-a', { id: 'row-z', pageId: 'page-new-row', title: 'New row', orderKey: 'c' })
   assert.equal(newRow.record.pageId, newRow.page.id)
   assert.deepEqual(newRow.record.properties, { 'database-a-title': 'New row' })
+  assert.deepEqual(await storedProperties('row-z'), {}, 'the projected title must not be stored on the record')
+  assert.equal(newRow.page.title, 'New row')
+  assert.deepEqual((await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 5 })).records.find(row => row.id === 'row-z')?.properties, { 'database-a-title': 'New row' })
+  await recordModel.updateOne({ id: 'row-z' }, { $set: { 'properties.database-a-title': 'Legacy cached title' } })
+  assert.deepEqual((await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 5 })).records.find(row => row.id === 'row-z')?.properties, { 'database-a-title': 'New row' })
   const firstRows = await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 1 })
   assert.deepEqual(firstRows.records.map(row => row.id), ['row-a'])
   assert.equal(firstRows.nextCursor, 'row-a')
   const remainingRows = await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 1, cursor: firstRows.nextCursor! })
   assert.deepEqual(remainingRows.records.map(row => row.id), ['row-z'])
   assert.equal(remainingRows.nextCursor, null)
+
+  // P8.3 schema and cell mutations use the database and record versions as CAS fences.
+  const addProperty = async (id: string, name: string, type: 'text' | 'number' | 'checkbox' | 'date') => {
+    const current = await databases.find(owner.id, 'workspace-a', 'database-a')
+    assert.ok(current)
+    return databases.createProperty(owner.id, 'workspace-a', 'database-a', { id, name, type, expectedDatabaseVersion: current.version })
+  }
+  const textProperty = await addProperty('notes', 'Notes', 'text')
+  const legacyRow = (await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 10 })).records.find(row => row.id === 'row-z')!
+  const legacyDb = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  await databases.updateRecordCell(owner.id, 'workspace-a', 'database-a', 'row-z', textProperty.property.id, { value: 'touch legacy row', expectedDatabaseVersion: legacyDb.version, expectedRecordVersion: legacyRow.version })
+  assert.equal(Object.hasOwn(await storedProperties('row-z'), 'database-a-title'), false)
+  assert.equal((await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 10 })).records.find(row => row.id === 'row-z')?.properties['database-a-title'], 'New row')
+  await addProperty('count', 'Count', 'number')
+  await addProperty('done', 'Done', 'checkbox')
+  await addProperty('due', 'Due', 'date')
+  const unsafeProperty = await addProperty('property.$key', 'Unsafe key', 'text')
+  const cell = async (propertyId: string, value: string | number | boolean | null, expectedPageUpdatedAt?: string) => {
+    const currentDatabase = await databases.find(owner.id, 'workspace-a', 'database-a')
+    const currentRecord = (await databases.listRecords(owner.id, 'workspace-a', 'database-a')).find(row => row.id === 'row-a')
+    assert.ok(currentDatabase && currentRecord)
+    return databases.updateRecordCell(owner.id, 'workspace-a', 'database-a', 'row-a', propertyId, {
+      value,
+      expectedDatabaseVersion: currentDatabase.version,
+      expectedRecordVersion: currentRecord.version,
+      ...(expectedPageUpdatedAt ? { expectedPageUpdatedAt } : {}),
+    })
+  }
+  await cell('notes', 'Ship the first draft')
+  await cell('count', 3.5)
+  await cell('done', true)
+  await cell('due', '2026-10-10')
+  await cell(unsafeProperty.property.id, 'safe whole-object update')
+  await cell('status', 'open')
+  const titleRow = (await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 10 })).records.find(row => row.id === 'row-a')
+  assert.ok(titleRow)
+  const renamed = await cell('database-a-title', '  Renamed row  ', titleRow.pageVersion)
+  assert.equal(renamed.page?.title, 'Renamed row')
+  assert.equal(renamed.record.properties['database-a-title'], 'Renamed row')
+  const beforeStaleTitle = {
+    database: (await databases.find(owner.id, 'workspace-a', 'database-a'))!,
+    record: (await databases.listRecords(owner.id, 'workspace-a', 'database-a')).find(row => row.id === 'row-a')!,
+    page: (await pages.find(owner.id, 'workspace-a', 'page-row'))!,
+  }
+  await assert.rejects(databases.updateRecordCell(owner.id, 'workspace-a', 'database-a', 'row-a', 'database-a-title', {
+    value: 'stale title', expectedDatabaseVersion: beforeStaleTitle.database.version, expectedRecordVersion: beforeStaleTitle.record.version,
+    expectedPageUpdatedAt: '2000-01-01T00:00:00.000Z',
+  }), /Page title changed/)
+  assert.equal((await databases.find(owner.id, 'workspace-a', 'database-a'))?.version, beforeStaleTitle.database.version)
+  assert.equal((await databases.listRecords(owner.id, 'workspace-a', 'database-a')).find(row => row.id === 'row-a')?.version, beforeStaleTitle.record.version)
+  assert.equal((await pages.find(owner.id, 'workspace-a', 'page-row'))?.updatedAt, beforeStaleTitle.page.updatedAt)
+  await cell('notes', null)
+  let projectedRow = (await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 10 })).records.find(row => row.id === 'row-a')
+  assert.ok(projectedRow)
+  assert.equal(Object.hasOwn(projectedRow.properties, 'notes'), false)
+  assert.equal(projectedRow.properties.count, 3.5)
+  assert.equal(projectedRow.properties.done, true)
+  assert.equal(projectedRow.properties.due, '2026-10-10')
+  assert.equal(projectedRow.properties.status, 'open')
+  assert.equal(projectedRow.properties['property.$key'], 'safe whole-object update')
+  assert.equal(projectedRow.properties['database-a-title'], 'Renamed row')
+
+  const status = (await databases.listProperties(owner.id, 'workspace-a', 'database-a')).find(row => row.id === 'status')!
+  const currentDatabase = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  await assert.rejects(databases.updateProperty(owner.id, 'workspace-a', 'database-a', status.id, { options: [{ id: 'duplicate', name: 'Same' }, { id: 'duplicate', name: 'Other' }], expectedDatabaseVersion: currentDatabase.version, expectedPropertyVersion: status.version }), /Invalid database property/)
+  await assert.rejects(databases.updateProperty(owner.id, 'workspace-a', 'database-a', status.id, { options: [{ id: 'one', name: 'Same' }, { id: 'two', name: 'Same' }], expectedDatabaseVersion: currentDatabase.version, expectedPropertyVersion: status.version }), /Invalid database property/)
+  assert.equal((await databases.find(owner.id, 'workspace-a', 'database-a'))?.version, currentDatabase.version)
+  assert.deepEqual((await databases.listProperties(owner.id, 'workspace-a', 'database-a')).find(row => row.id === status.id)?.options, status.options)
+  await recordModel.updateOne({ id: 'row-a' }, { $set: { 'properties.database-a-title': 'Legacy row title' } })
+  const recordRepository = app.get(DatabaseRecordRepository)
+  const updateProperties = recordRepository.updateProperties.bind(recordRepository)
+  const beforeCleanupRecord = (await recordModel.findOne({ id: 'row-a' }).lean()) as { properties: Record<string, unknown>; version: number } | null
+  recordRepository.updateProperties = async () => { throw new Error('forced option cleanup failure') }
+  try {
+    await assert.rejects(databases.updateProperty(owner.id, 'workspace-a', 'database-a', status.id, { options: [], expectedDatabaseVersion: currentDatabase.version, expectedPropertyVersion: status.version }), /forced option cleanup failure/)
+  } finally {
+    recordRepository.updateProperties = updateProperties
+  }
+  assert.equal((await databases.find(owner.id, 'workspace-a', 'database-a'))?.version, currentDatabase.version)
+  assert.deepEqual((await databases.listProperties(owner.id, 'workspace-a', 'database-a')).find(row => row.id === status.id)?.options, status.options)
+  const afterFailedCleanup = (await recordModel.findOne({ id: 'row-a' }).lean()) as { properties: Record<string, unknown>; version: number } | null
+  assert.deepEqual({ properties: afterFailedCleanup?.properties, version: afterFailedCleanup?.version }, { properties: beforeCleanupRecord?.properties, version: beforeCleanupRecord?.version })
+  await databases.updateProperty(owner.id, 'workspace-a', 'database-a', status.id, { options: [], expectedDatabaseVersion: currentDatabase.version, expectedPropertyVersion: status.version })
+  assert.equal(Object.hasOwn(await storedProperties('row-a'), 'database-a-title'), false)
+  projectedRow = (await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 10 })).records.find(row => row.id === 'row-a')
+  assert.ok(projectedRow)
+  assert.equal(Object.hasOwn(projectedRow.properties, 'status'), false)
+  assert.ok(projectedRow.version > 1)
+
+  await assert.rejects(cell('count', 'not a number'), /Invalid value/)
+  await assert.rejects(cell('missing-property', 'x'), /property not found/)
+  const current = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  await assert.rejects(databases.deleteProperty(owner.id, 'workspace-a', 'database-a', 'database-a-title', { expectedDatabaseVersion: current.version, expectedPropertyVersion: 1 }), /cannot be deleted/)
+  const deleteable = (await databases.listProperties(owner.id, 'workspace-a', 'database-a')).find(row => row.id === textProperty.property.id)!
+  const beforeDelete = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  await databases.updateRecordCell(owner.id, 'workspace-a', 'database-a', 'row-a', 'notes', { value: 'remove me', expectedDatabaseVersion: beforeDelete.version, expectedRecordVersion: projectedRow.version })
+  await recordModel.updateOne({ id: 'row-a' }, { $set: { 'properties.database-a-title': 'Legacy row title' } })
+  const latestRecord = (await databases.listRecords(owner.id, 'workspace-a', 'database-a')).find(row => row.id === 'row-a')!
+  const latestDatabase = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  await databases.deleteProperty(owner.id, 'workspace-a', 'database-a', deleteable.id, { expectedDatabaseVersion: latestDatabase.version, expectedPropertyVersion: deleteable.version })
+  assert.equal(Object.hasOwn(await storedProperties('row-a'), 'database-a-title'), false)
+  projectedRow = (await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 10 })).records.find(row => row.id === 'row-a')
+  assert.ok(projectedRow)
+  assert.equal(Object.hasOwn(projectedRow.properties, 'notes'), false)
+  assert.ok(projectedRow.version > latestRecord.version)
+
+  const concurrencyDatabase = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  const concurrencyRecord = (await databases.listRecords(owner.id, 'workspace-a', 'database-a')).find(row => row.id === 'row-a')!
+  const countProperty = (await databases.listProperties(owner.id, 'workspace-a', 'database-a')).find(row => row.id === 'count')!
+  const concurrent = await Promise.allSettled([
+    databases.updateProperty(owner.id, 'workspace-a', 'database-a', countProperty.id, { name: 'Count changed', expectedDatabaseVersion: concurrencyDatabase.version, expectedPropertyVersion: countProperty.version }),
+    databases.updateRecordCell(owner.id, 'workspace-a', 'database-a', 'row-a', countProperty.id, { value: 4, expectedDatabaseVersion: concurrencyDatabase.version, expectedRecordVersion: concurrencyRecord.version }),
+  ])
+  assert.ok(concurrent.some(result => result.status === 'fulfilled'))
+  assert.ok(concurrent.some(result => result.status === 'rejected'))
+  const consistentAfterRace = await databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 10 })
+  assert.ok([3.5, 4].includes(consistentAfterRace.records.find(row => row.id === 'row-a')?.properties.count as number))
   // Record insertion and its Page are one transaction, even on a duplicate record ID.
   await assert.rejects(databases.createRecordPage(owner.id, 'workspace-a', 'database-a', { id: 'row-z', pageId: 'page-rolled-back-row', title: 'Duplicate', orderKey: 'd' }), /duplicate key/i)
   assert.equal(await pages.find(owner.id, 'workspace-a', 'page-rolled-back-row'), null)
@@ -137,7 +262,7 @@ test('database service keeps references scoped and writes initial data atomicall
   await blocks.deleteFromPage(owner.id, 'workspace-a', 'page-a', 'block-b')
   assert.equal(await pages.delete(owner.id, 'workspace-a', 'page-a'), true)
   assert.ok(await databases.find(owner.id, 'workspace-a', 'database-a'))
-  assert.equal((await databases.listProperties(owner.id, 'workspace-a', 'database-a')).length, 2)
+  assert.equal((await databases.listProperties(owner.id, 'workspace-a', 'database-a')).length, 6)
 })
 
 test('database writes reject unsupported transactions before any write', async () => {

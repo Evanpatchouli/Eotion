@@ -12,7 +12,7 @@ const pageRecord: PageResponse = { id: 'database-page', workspaceId: workspace.i
 type TestDatabase = { id: string; workspaceId: string; name: string; version: number; createdAt: string; updatedAt: string }
 type TestProperty = { id: string; databaseId: string; workspaceId: string; name: string; type: 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date'; version: number; createdAt: string; updatedAt: string; options?: Array<{ id: string; name: string }> }
 type TestView = { id: string; databaseId: string; workspaceId: string; name: string; type: 'table'; version: number; createdAt: string; updatedAt: string }
-type TestRecord = { id: string; databaseId: string; workspaceId: string; pageId: string; properties: Record<string, string | number | boolean | null>; version: number; createdAt: string; updatedAt: string }
+type TestRecord = { id: string; databaseId: string; workspaceId: string; pageId: string; properties: Record<string, string | number | boolean | null>; version: number; pageVersion: string; createdAt: string; updatedAt: string }
 
 function database(id: string, name = 'Projects'): TestDatabase { return { id, workspaceId: workspace.id, name, version: 1, createdAt: now, updatedAt: now } }
 function property(id: string, databaseId: string, name: string, type: TestProperty['type'], options?: TestProperty['options']): TestProperty {
@@ -20,7 +20,7 @@ function property(id: string, databaseId: string, name: string, type: TestProper
 }
 function view(id: string, databaseId: string, name = 'Table'): TestView { return { id, databaseId, workspaceId: workspace.id, name, type: 'table', version: 1, createdAt: now, updatedAt: now } }
 function record(id: string, databaseId: string, pageId: string, properties: TestRecord['properties']): TestRecord {
-  return { id, databaseId, workspaceId: workspace.id, pageId, properties, version: 1, createdAt: now, updatedAt: now }
+  return { id, databaseId, workspaceId: workspace.id, pageId, properties, version: 1, pageVersion: now, createdAt: now, updatedAt: now }
 }
 
 function block(id: string, type: BlockResponse['type'], node: Record<string, unknown>, order: number, parentBlockId: string | null = null): BlockResponse {
@@ -45,6 +45,8 @@ type DatabaseApi = {
   abortDatabaseCreatesAfterCommit: number
   failDatabaseReferenceReads: number
   abortRecordCreatesAfterCommit: number
+  failCellUpdates: number
+  conflictCellUpdates: number
   failRecordPageReads: number
   failSnapshots: number
   failSnapshotAfterRecordCreate: boolean
@@ -61,7 +63,7 @@ type DatabaseApi = {
   offline: boolean
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
@@ -71,13 +73,15 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
   const databaseCreateResponseStarted = new Promise<void>((resolve) => { signalDatabaseCreateResponseStarted = resolve })
   const databaseCreateResponseGate = new Promise<void>((resolve) => { releaseDatabaseCreateResponse = resolve })
   const api: DatabaseApi = {
-    pages: [pageRecord], blocks: [...seed], databases: options.databases ?? [], views: options.views ?? [],
-    properties: options.properties ?? [], records: options.records ?? [], requests: [],
+    pages: [{ ...pageRecord }], blocks: [...seed], databases: (options.databases ?? []).map((item) => ({ ...item })), views: (options.views ?? []).map((item) => ({ ...item })),
+    properties: (options.properties ?? []).map((item) => ({ ...item, ...(item.options ? { options: [...item.options] } : {}) })), records: (options.records ?? []).map((item) => ({ ...item, properties: { ...item.properties } })), requests: [],
     failTableLoads: options.failTableLoads ?? 0, failTableAppendLoads: options.failTableAppendLoads ?? 0,
     tableLoadDelayMs: options.tableLoadDelayMs ?? 0, failDatabaseCreates: options.failDatabaseCreates ?? 0,
     abortDatabaseCreatesAfterCommit: options.abortDatabaseCreatesAfterCommit ?? 0,
     failDatabaseReferenceReads: options.failDatabaseReferenceReads ?? 0,
     abortRecordCreatesAfterCommit: options.abortRecordCreatesAfterCommit ?? 0,
+    failCellUpdates: options.failCellUpdates ?? 0,
+    conflictCellUpdates: options.conflictCellUpdates ?? 0,
     failRecordPageReads: options.failRecordPageReads ?? 0, failSnapshots: options.failSnapshots ?? 0,
     failSnapshotAfterRecordCreate: options.failSnapshotAfterRecordCreate ?? false,
     holdRecordCreateResponse: options.holdRecordCreateResponse ?? false,
@@ -167,6 +171,63 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       api.blocks.push(linkedBlock)
       return json(route, 201, { block: linkedBlock })
     }
+    const createProperty = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/properties$`, 'u').exec(pathname)
+    if (createProperty && request.method() === 'POST') {
+      const databaseItem = api.databases.find((item) => item.id === createProperty[1])
+      if (!databaseItem) return json(route, 404, { statusCode: 404, message: 'Database not found' })
+      const input = payload as Omit<TestProperty, 'databaseId' | 'workspaceId' | 'version' | 'createdAt' | 'updatedAt'> & { expectedDatabaseVersion: number }
+      if (input.expectedDatabaseVersion !== databaseItem.version) return json(route, 409, { statusCode: 409, message: 'Database version conflict' })
+      databaseItem.version += 1
+      const created = property(input.id, databaseItem.id, input.name, input.type, input.options)
+      api.properties.push(created)
+      return json(route, 201, { database: databaseItem, property: created })
+    }
+    const propertyPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/properties/([^/]+)$`, 'u').exec(pathname)
+    if (propertyPath && request.method() === 'PATCH') {
+      const databaseItem = api.databases.find((item) => item.id === propertyPath[1])!
+      const propertyItem = api.properties.find((item) => item.id === propertyPath[2])!
+      const input = payload as { name?: string; options?: TestProperty['options']; expectedDatabaseVersion: number; expectedPropertyVersion: number }
+      if (input.expectedDatabaseVersion !== databaseItem.version || input.expectedPropertyVersion !== propertyItem.version) return json(route, 409, { statusCode: 409, message: 'Property version conflict' })
+      if (input.name !== undefined) propertyItem.name = input.name
+      if (input.options !== undefined) propertyItem.options = input.options
+      propertyItem.version += 1; databaseItem.version += 1
+      return json(route, 200, { database: databaseItem, property: propertyItem })
+    }
+    if (propertyPath && request.method() === 'DELETE') {
+      const databaseItem = api.databases.find((item) => item.id === propertyPath[1])!
+      const propertyItem = api.properties.find((item) => item.id === propertyPath[2])!
+      const input = payload as { expectedDatabaseVersion: number; expectedPropertyVersion: number }
+      if (input.expectedDatabaseVersion !== databaseItem.version || input.expectedPropertyVersion !== propertyItem.version) return json(route, 409, { statusCode: 409, message: 'Property version conflict' })
+      api.properties = api.properties.filter((item) => item.id !== propertyItem.id)
+      for (const item of api.records) { delete item.properties[propertyItem.id]; item.version += 1 }
+      databaseItem.version += 1
+      return json(route, 200, { database: databaseItem })
+    }
+    const cellPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/records/([^/]+)/cells/([^/]+)$`, 'u').exec(pathname)
+    if (cellPath && request.method() === 'PATCH') {
+      if (api.failCellUpdates > 0) { api.failCellUpdates -= 1; return json(route, 400, { statusCode: 400, message: 'Cell update rejected' }) }
+      const databaseItem = api.databases.find((item) => item.id === cellPath[1])!
+      const recordItem = api.records.find((item) => item.id === cellPath[2])!
+      const prop = api.properties.find((item) => item.id === cellPath[3])!
+      const input = payload as { value: string | number | boolean | null; expectedDatabaseVersion: number; expectedRecordVersion: number; expectedPageUpdatedAt?: string }
+      if (api.conflictCellUpdates > 0) {
+        api.conflictCellUpdates -= 1
+        recordItem.properties[prop.id] = 'Concurrent edit'
+        recordItem.version += 1; databaseItem.version += 1
+        return json(route, 409, { statusCode: 409, message: 'Record version conflict' })
+      }
+      const pageItem = api.pages.find((item) => item.id === recordItem.pageId)!
+      if (input.expectedDatabaseVersion !== databaseItem.version || input.expectedRecordVersion !== recordItem.version || (input.expectedPageUpdatedAt && input.expectedPageUpdatedAt !== pageItem.updatedAt)) return json(route, 409, { statusCode: 409, message: 'Record version conflict' })
+      recordItem.properties[prop.id] = input.value
+      recordItem.version += 1; recordItem.updatedAt = later; databaseItem.version += 1; databaseItem.updatedAt = later
+      let updatedPage: PageResponse | undefined
+      if (prop.type === 'title' && input.value !== null) {
+        updatedPage = { ...pageItem, title: String(input.value), updatedAt: later }
+        api.pages.splice(api.pages.indexOf(pageItem), 1, updatedPage)
+        recordItem.pageVersion = later
+      }
+      return json(route, 200, { database: databaseItem, record: recordItem, ...(updatedPage ? { page: updatedPage } : {}) })
+    }
     const createRecord = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/records$`, 'u').exec(pathname)
     if (createRecord && request.method() === 'POST') {
       const input = payload as { id: string; pageId: string; title: string; orderKey: string }
@@ -174,6 +235,8 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       const titleProperty = api.properties.find((item) => item.databaseId === databaseId && item.type === 'title')!
       const titlePage: PageResponse = { ...pageRecord, id: input.pageId, title: input.title, orderKey: input.orderKey }
       const createdRecord = record(input.id, databaseId, input.pageId, { [titleProperty.id]: input.title })
+      const databaseItem = api.databases.find((item) => item.id === databaseId)!
+      databaseItem.version += 1
       api.pages.push(titlePage); api.records.push(createdRecord)
       if (api.holdRecordCreateResponse) {
         api.signalRecordCreateResponseStarted()
@@ -204,6 +267,12 @@ async function screenshot(page: Page, name: string) {
   if (!directory) return
   await mkdir(directory, { recursive: true })
   await page.screenshot({ path: path.join(directory, `${name}.png`), animations: 'disabled', fullPage: true })
+}
+
+async function submitNewRecord(table: ReturnType<Page['locator']>, title: string) {
+  await table.getByRole('button', { name: '+ 新建记录' }).click()
+  await table.getByRole('textbox', { name: '记录标题' }).fill(title)
+  await table.getByRole('button', { name: '创建', exact: true }).click()
 }
 
 async function startDatabaseSlash(page: Page) {
@@ -270,7 +339,7 @@ test('database tables render and references round-trip at root and under a toggl
   const references = editor.locator('.eotion-database')
   await expect(references).toHaveCount(2)
   await expect(references.first()).toContainText('Root projects')
-  await expect(references.first().locator('th')).toHaveText(['Name', 'Notes', 'Points', 'Done', 'Status', 'Due'])
+  await expect(references.first().locator('th button.eotion-database-property-trigger')).toHaveText(['Name⌄', 'Notes⌄', 'Points⌄', 'Done⌄', 'Status⌄', 'Due⌄'])
   await expect(references.first().locator('tbody tr td')).toHaveText(['Launch plan', 'Draft ready', '42', '已完成', 'Open', '2026-10-04'])
   await expect(references.nth(1)).toContainText('Nested projects')
   await expect(references.nth(1)).toContainText('暂无记录')
@@ -500,10 +569,10 @@ test('linking a shared database adds only a reference and new records create pag
   expect(api.properties).toHaveLength(6)
   const linked = api.blocks.find((item) => item.type === 'database')
   expect((linked?.props as any)?.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: 'view-root-id' })
-  await table.getByRole('button', { name: '+ 新建记录' }).click()
+  await submitNewRecord(table, 'First record')
   await expect.poll(() => api.records).toHaveLength(2)
-  await expect.poll(() => api.pages.some((item) => item.title === '无标题')).toBe(true)
-  await expect(table).toContainText('无标题')
+  await expect.poll(() => api.pages.some((item) => item.title === 'First record')).toBe(true)
+  await expect(table).toContainText('First record')
   await expect.poll(() => api.requests.some(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/records`))).toBe(true)
   expect(api.databases).toHaveLength(1)
   expect(api.properties).toHaveLength(6)
@@ -520,7 +589,7 @@ test('record title refreshes a missing page before opening its ordinary editor',
   const table = page.locator('.eotion-editor-content .eotion-database')
   await expect.poll(() => api.pages.some((item) => item.id === basicRecord.pageId)).toBe(false)
   api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan', orderKey: '0000000000000002' })
-  await table.getByRole('link', { name: 'Launch plan' }).click()
+  await table.getByRole('link', { name: '打开记录页面：Launch plan' }).click()
   await expect(page).toHaveURL(new RegExp(`/page/${basicRecord.pageId}$`, 'u'))
   await expect(page.locator('.eotion-editor-content .tiptap')).toBeVisible()
   expect(api.pages.some((item) => item.id === basicRecord.pageId)).toBe(true)
@@ -541,12 +610,13 @@ test('two references share record refresh and removing one keeps the other refer
   await expect(tables.nth(0).locator('tbody tr')).toHaveCount(1)
   await expect(tables.nth(1).locator('tbody tr')).toHaveCount(1)
 
-  await tables.nth(0).getByRole('button', { name: '+ 新建记录' }).click()
+  await submitNewRecord(tables.nth(0), 'Shared record')
   await expect(tables.nth(0).locator('tbody tr')).toHaveCount(2)
   await expect(tables.nth(1).locator('tbody tr')).toHaveCount(2)
-  await expect(tables.nth(0)).toContainText('无标题')
-  await expect(tables.nth(1)).toContainText('无标题')
-  expect(api.databases).toEqual([rootDatabase])
+  await expect(tables.nth(0)).toContainText('Shared record')
+  await expect(tables.nth(1)).toContainText('Shared record')
+  expect(api.databases).toHaveLength(1)
+  expect(api.databases[0]).toMatchObject({ id: rootDatabase.id, version: 2 })
   expect(api.views).toEqual([view('view-root-id', rootDatabase.id)])
   expect(api.properties).toEqual(rootProperties)
   expect(api.records).toHaveLength(2)
@@ -557,9 +627,9 @@ test('two references share record refresh and removing one keeps the other refer
   await expect(page.locator('.eotion-editor-content .eotion-database')).toHaveCount(1)
   const remaining = page.locator('.eotion-editor-content .eotion-database')
   await expect(remaining).toContainText('Launch plan')
-  await expect(remaining).toContainText('无标题')
+  await expect(remaining).toContainText('Shared record')
   await expect.poll(() => api.blocks.filter((item) => item.type === 'database').map((item) => item.id)).toEqual(['shared-reference-two'])
-  expect(api.databases).toEqual([rootDatabase])
+  expect(api.databases[0]).toMatchObject({ id: rootDatabase.id, version: 2 })
   expect(api.views).toEqual([view('view-root-id', rootDatabase.id)])
   expect(api.properties).toEqual(rootProperties)
   expect(api.records).toHaveLength(2)
@@ -574,11 +644,226 @@ test('record creation remains successful when the following snapshot refresh fai
   })
   await page.goto('/#/app/database-workspace/page/database-page')
   const table = page.locator('.eotion-editor-content .eotion-database')
-  await table.getByRole('button', { name: '+ 新建记录' }).click()
+  await submitNewRecord(table, 'Snapshot warning')
   await expect.poll(() => api.records).toHaveLength(2)
   await expect(table.locator('tbody tr')).toHaveCount(2)
   await expect(table.getByRole('alert')).toContainText('记录已创建，页面列表暂未刷新，请稍后刷新。')
   await expect(table).not.toContainText('无法新建记录')
+})
+
+test('edits versioned cells and manages property options without losing stable IDs', async ({ page, context }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', error => pageErrors.push(error.message))
+  const seededRecord = { ...basicRecord, properties: { ...basicRecord.properties, 'root-checkbox': null } }
+  const api = await installApi(page, [
+    block('offline-body', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Offline body' }] }, 50),
+    block('p83-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [seededRecord] })
+  api.pages.push({ ...pageRecord, id: seededRecord.pageId, title: 'Launch plan', orderKey: '0000000000000002' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  await expect(table).toContainText('Launch plan')
+
+  await table.getByRole('button', { name: '编辑Name' }).click()
+  let titleInput = table.getByRole('textbox', { name: 'Name 值' })
+  await titleInput.fill('Planning')
+  await expect(titleInput).toBeFocused()
+  await screenshot(page, 'p83-desktop-light-cell-edit')
+  await titleInput.press('Enter')
+  await expect(table.getByRole('button', { name: '编辑Name：Planning' })).toBeVisible()
+  expect(api.pages.find((item) => item.id === seededRecord.pageId)?.title).toBe('Planning')
+
+  await table.getByRole('button', { name: 'Draft ready' }).click()
+  const textInput = table.getByRole('textbox', { name: 'Notes 值' })
+  await textInput.fill('Revised notes')
+  await textInput.press('Enter')
+  await expect(table).toContainText('Revised notes')
+
+  await table.getByRole('button', { name: '42', exact: true }).click()
+  const numberInput = table.getByRole('textbox', { name: 'Points 值' })
+  await numberInput.fill('not-a-number')
+  await numberInput.press('Enter')
+  await expect(table.getByRole('alert')).toContainText('请输入有效数字')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.includes('/cells/root-number'))).toHaveLength(0)
+  await numberInput.fill('12.5')
+  await table.getByRole('button', { name: '保存' }).click()
+  await expect(table).toContainText('12.5')
+  await table.getByRole('button', { name: '12.5', exact: true }).click()
+  await table.getByRole('textbox', { name: 'Points 值' }).fill('')
+  await table.getByRole('textbox', { name: 'Points 值' }).press('Enter')
+  await expect(table.locator('tbody tr').first().locator('td').nth(2).getByRole('button', { name: '—', exact: true })).toBeVisible()
+  expect(api.records[0]?.properties['root-number']).toBeNull()
+
+  const checkCell = table.locator('tbody tr').first().locator('td').nth(3).getByRole('button', { name: '—', exact: true })
+  await expect(checkCell).toHaveAttribute('aria-pressed', 'false')
+  await checkCell.click()
+  await expect(table.getByRole('button', { name: '已完成' })).toHaveAttribute('aria-pressed', 'true')
+  await table.getByRole('button', { name: '已完成' }).click()
+  await expect(table.getByRole('button', { name: '未完成' })).toHaveAttribute('aria-pressed', 'false')
+
+  await table.getByRole('button', { name: 'Open' }).click()
+  await expect(page.locator('body > .eotion-database-popover')).toBeVisible()
+  await page.getByRole('button', { name: 'Done', exact: true }).last().click()
+  await expect(table.getByRole('button', { name: 'Done', exact: true })).toBeVisible()
+  await table.getByRole('button', { name: 'Done', exact: true }).click()
+  await page.getByRole('button', { name: '清除' }).click()
+  await expect(table.locator('tbody tr').first().locator('td').nth(4).getByRole('button', { name: '—', exact: true })).toBeVisible()
+
+  await table.getByRole('button', { name: 'Due⌄' }).click()
+  await page.getByRole('textbox', { name: '属性名称' }).fill('Deadline')
+  await screenshot(page, 'p83-desktop-light-property-menu')
+  await page.getByRole('button', { name: '重命名', exact: true }).click()
+  await expect(table.getByRole('button', { name: 'Deadline⌄' })).toBeVisible()
+  await table.getByRole('button', { name: '2026-10-04' }).click()
+  const dateInput = table.getByRole('textbox', { name: 'Deadline 值' })
+  await dateInput.fill('2026-11-05')
+  await dateInput.press('Enter')
+  await expect(table.getByRole('button', { name: '2026-11-05' })).toBeVisible()
+  await table.getByRole('button', { name: '2026-11-05' }).click()
+  await table.getByRole('button', { name: '清除' }).click()
+  await expect(table.locator('tbody tr').first().locator('td').nth(5).getByRole('button', { name: '—', exact: true })).toBeVisible()
+
+  await table.getByRole('button', { name: 'Status⌄' }).click()
+  await screenshot(page, 'p83-desktop-light-select-menu')
+  const optionInput = page.getByRole('textbox', { name: '新选项名称' })
+  await optionInput.fill('Review')
+  await page.getByRole('button', { name: '添加', exact: true }).click()
+  const reviewOption = api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Review')
+  expect(reviewOption?.id).toBeTruthy()
+  await table.getByRole('button', { name: 'Status⌄' }).click()
+  await expect(page.locator('.eotion-database-option-edit').filter({ hasText: 'Review' })).toBeVisible()
+  const openOption = api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Open')
+  await page.locator('.eotion-database-option-edit').filter({ hasText: 'Open' }).getByRole('button', { name: '重命名' }).click()
+  await page.getByRole('textbox', { name: '重命名选项 Open' }).fill('Opened')
+  await page.locator('.eotion-database-option-edit').filter({ has: page.getByRole('textbox', { name: '重命名选项 Open' }) }).getByRole('button', { name: '保存' }).click()
+  expect(api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Opened')?.id).toBe(openOption?.id)
+  await table.getByRole('button', { name: 'Status⌄' }).click()
+  await expect(page.locator('.eotion-database-option-edit').filter({ hasText: 'Opened' })).toBeVisible()
+  await page.locator('.eotion-database-option-edit').filter({ hasText: 'Review' }).getByRole('button', { name: '删除' }).click()
+  expect(api.properties.find((item) => item.id === 'root-select')?.options?.some((item) => item.id === reviewOption?.id)).toBe(false)
+
+  await table.getByRole('button', { name: 'Points⌄' }).click()
+  await page.getByRole('button', { name: '删除属性' }).click()
+  await expect(table.getByRole('button', { name: 'Points⌄' })).toHaveCount(0)
+  expect(api.records[0]?.properties['root-number']).toBeUndefined()
+  expect(api.requests.some(({ method, path }) => method === 'DELETE' && path.endsWith('/properties/root-number'))).toBe(true)
+  await table.getByRole('button', { name: '属性' }).click()
+  await page.getByRole('button', { name: '文本', exact: true }).click()
+  await expect(table.getByRole('button', { name: '文本⌄' })).toBeVisible()
+  await table.getByRole('button', { name: '文本⌄' }).click()
+  await page.getByRole('textbox', { name: '属性名称' }).fill('Context')
+  await page.getByRole('button', { name: '重命名', exact: true }).click()
+  await expect(table.getByRole('button', { name: 'Context⌄' })).toBeVisible()
+  await table.getByRole('button', { name: 'Context⌄' }).click()
+  await page.getByRole('button', { name: '删除属性' }).click()
+  await expect(table.getByRole('button', { name: 'Context⌄' })).toHaveCount(0)
+  await page.reload()
+  await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('Planning')
+  await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('Revised notes')
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await table.getByRole('button', { name: 'Deadline⌄' }).click()
+  await screenshot(page, 'p83-desktop-dark-property-menu')
+  api.offline = true
+  const writesBeforeOffline = api.requests.filter(({ method, path }) => path.includes('/databases/') && (method === 'POST' || method === 'PATCH' || method === 'DELETE')).length
+  await context.setOffline(true)
+  await expect(table.getByRole('status')).toContainText('数据库只读')
+  await expect(table.getByRole('button', { name: '属性' })).toBeDisabled()
+  await expect(table.getByRole('button', { name: '编辑Name：Planning' })).toBeDisabled()
+  expect(api.requests.filter(({ method, path }) => path.includes('/databases/') && (method === 'POST' || method === 'PATCH' || method === 'DELETE'))).toHaveLength(writesBeforeOffline)
+  const offlineBody = page.locator('.eotion-editor-content .tiptap p').filter({ hasText: 'Offline body' })
+  await offlineBody.click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' remains editable')
+  await expect.poll(() => page.evaluate(async (id) => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    return JSON.stringify(await local.listBlocksByPage(id))
+  }, pageRecord.id)).toContain('remains editable')
+  expect(JSON.stringify(api.blocks.find((item) => item.id === 'offline-body')?.props)).not.toContain('remains editable')
+  await expect.poll(() => pageErrors).toEqual([])
+})
+
+test('keeps failed text drafts for retry and Escape cancels without a write', async ({ page }) => {
+  const api = await installApi(page, [
+    block('draft-retry-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord], failCellUpdates: 1 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  await table.getByRole('button', { name: 'Draft ready' }).click()
+  const input = table.getByRole('textbox', { name: 'Notes 值' })
+  await input.fill('Keep this draft')
+  await input.press('Enter')
+  await expect(table.getByRole('alert')).toContainText('Cell update rejected')
+  await expect(table.getByRole('textbox', { name: 'Notes 值' })).toHaveValue('Keep this draft')
+  await table.getByRole('button', { name: '重试' }).click()
+  await expect(table).toContainText('Keep this draft')
+  expect(api.records[0]?.properties['root-text']).toBe('Keep this draft')
+  await table.getByRole('button', { name: 'Keep this draft' }).click()
+  const blurInput = table.getByRole('textbox', { name: 'Notes 值' })
+  await blurInput.fill('Saved on blur')
+  await blurInput.evaluate(element => (element as HTMLInputElement).blur())
+  await expect(table).toContainText('Saved on blur')
+
+  await table.getByRole('button', { name: '42', exact: true }).click()
+  const numberInput = table.getByRole('textbox', { name: 'Points 值' })
+  await numberInput.fill('99')
+  const writesBeforeEscape = api.requests.filter(({ method, path }) => method === 'PATCH' && path.includes('/cells/root-number')).length
+  await numberInput.evaluate((element) => element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, isComposing: true, keyCode: 229 })))
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.includes('/cells/root-number'))).toHaveLength(writesBeforeEscape)
+  await numberInput.press('Escape')
+  await expect(table.getByRole('button', { name: '42', exact: true })).toBeVisible()
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.includes('/cells/root-number'))).toHaveLength(writesBeforeEscape)
+})
+
+test('409 refreshes the latest record version while retaining the cell draft for retry', async ({ page }) => {
+  const api = await installApi(page, [
+    block('conflict-retry-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord], conflictCellUpdates: 1 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  await table.getByRole('button', { name: 'Draft ready' }).click()
+  const input = table.getByRole('textbox', { name: 'Notes 值' })
+  await input.fill('My retry draft')
+  await input.press('Enter')
+  await expect(table.getByRole('alert')).toContainText('内容已变化')
+  await expect(table.getByRole('textbox', { name: 'Notes 值' })).toHaveValue('My retry draft')
+  expect(api.records[0]?.properties['root-text']).toBe('Concurrent edit')
+  await table.getByRole('button', { name: '重试' }).click()
+  await expect(table).toContainText('My retry draft')
+  expect(api.records[0]?.properties['root-text']).toBe('My retry draft')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/cells/root-text'))).toHaveLength(2)
+})
+
+test('empty new-record titles send no request and Escape cancels title entry', async ({ page }) => {
+  const api = await installApi(page, [
+    block('empty-title-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  await table.getByRole('button', { name: '+ 新建记录' }).click()
+  const titleInput = table.getByRole('textbox', { name: '记录标题' })
+  await titleInput.fill('   ')
+  await expect(table.getByRole('button', { name: '创建', exact: true })).toBeDisabled()
+  await titleInput.evaluate((element) => element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, isComposing: true, keyCode: 229 })))
+  expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/records`))).toHaveLength(0)
+  await titleInput.press('Enter')
+  expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/records`))).toHaveLength(0)
+  await titleInput.press('Escape')
+  await expect(table.getByRole('button', { name: '+ 新建记录' })).toBeVisible()
+})
+
+test('missing constructor-like property IDs render as empty values', async ({ page }) => {
+  const inheritedProperty = property('constructor', rootDatabase.id, 'Inherited field', 'text')
+  const api = await installApi(page, [
+    block('constructor-property-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties, inheritedProperty], records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const inheritedCell = table.locator('tbody tr td').nth(6)
+  await expect(inheritedCell).toHaveText('—')
+  await inheritedCell.getByRole('button', { name: '—' }).click()
+  await expect(table.getByRole('textbox', { name: 'Inherited field 值' })).toHaveValue('')
+  expect(Object.hasOwn(api.records[0]?.properties ?? {}, 'constructor')).toBe(false)
 })
 
 test('uncertain record creation fences all references until page refresh', async ({ page }) => {
@@ -591,7 +876,7 @@ test('uncertain record creation fences all references until page refresh', async
   })
   await page.goto('/#/app/database-workspace/page/database-page')
   const tables = page.locator('.eotion-editor-content .eotion-database')
-  await tables.nth(0).getByRole('button', { name: '+ 新建记录' }).click()
+  await submitNewRecord(tables.nth(0), 'Uncertain title')
   const message = '上次记录创建结果尚未确认，请联网并刷新页面后确认。'
   await expect(tables.nth(0).getByRole('alert')).toContainText(message)
   await expect(tables.nth(0).getByRole('button', { name: '+ 新建记录' })).toBeDisabled()
@@ -609,7 +894,7 @@ test('record POST success during auth switch fences the original user and databa
   })
   await page.goto('/#/app/database-workspace/page/database-page')
   const table = page.locator('.eotion-editor-content .eotion-database')
-  await table.getByRole('button', { name: '+ 新建记录' }).click()
+  await submitNewRecord(table, 'Auth switch')
   await api.recordCreateResponseStarted
   await page.evaluate(async () => {
     const { useAuthStore } = await import('/src/stores/auth.ts')
@@ -640,7 +925,7 @@ test('record POST success during workspace switch fences the original workspace'
     properties: rootProperties, records: [basicRecord], holdRecordCreateResponse: true,
   })
   await page.goto('/#/app/database-workspace/page/database-page')
-  await page.locator('.eotion-editor-content .eotion-database').getByRole('button', { name: '+ 新建记录' }).click()
+  await submitNewRecord(page.locator('.eotion-editor-content .eotion-database'), 'Workspace switch')
   await api.recordCreateResponseStarted
   await page.evaluate(async () => {
     const { useProductPagesStore } = await import('/src/stores/productPages.ts')
@@ -728,6 +1013,37 @@ test('failed load more keeps existing rows and retries the same cursor', async (
   expect(appendRequests[0]?.search).toBe(appendRequests[1]?.search)
 })
 
+test('linked mutation refresh during a pending page append leaves pagination usable', async ({ page }) => {
+  const records = Array.from({ length: 31 }, (_, index) => {
+    const number = String(index + 1).padStart(3, '0')
+    return record(`race-record-${number}`, rootDatabase.id, `race-page-${number}`, { 'root-title': `Race ${number}`, 'root-checkbox': false })
+  })
+  const api = await installApi(page, [
+    block('race-reference-one', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+    block('race-reference-two', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 200),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [rootProperties[0]!, rootProperties[3]!], records, tableLoadDelayMs: 700 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const tables = page.locator('.eotion-editor-content .eotion-database')
+  await expect(tables.nth(0).locator('tbody tr')).toHaveCount(25)
+  const appendStarted = page.waitForRequest((request) => request.url().includes('cursor='))
+  await tables.nth(0).getByRole('button', { name: '加载更多' }).click()
+  await appendStarted
+  await tables.nth(1).locator('tbody tr').first().locator('td').nth(1).getByRole('button', { name: '未完成' }).click()
+  await expect(tables.nth(0).locator('tbody tr')).toHaveCount(25)
+  await expect(tables.nth(0).locator('tbody tr').first().getByRole('button', { name: '已完成' })).toBeVisible()
+  const loadMore = tables.nth(0).getByRole('button', { name: '加载更多' })
+  await expect(loadMore).toBeEnabled()
+  await loadMore.click()
+  await expect(tables.nth(0).locator('tbody tr')).toHaveCount(31)
+  await tables.nth(1).getByRole('button', { name: '加载更多' }).click()
+  await expect(tables.nth(1).locator('tbody tr')).toHaveCount(31)
+  await tables.nth(1).locator('tbody tr').nth(1).locator('td').nth(1).getByRole('button', { name: '未完成' }).click()
+  await expect(tables.nth(0).locator('tbody tr')).toHaveCount(31)
+  await expect(tables.nth(1).locator('tbody tr')).toHaveCount(31)
+  await expect(tables.nth(0).locator('tbody tr').nth(1).getByRole('button', { name: '已完成' })).toBeVisible()
+  expect(api.records[0]?.properties['root-checkbox']).toBe(true)
+})
+
 test('failed database creation leaves no partial reference and can be retried', async ({ page }) => {
   const api = await installApi(page, [], { failDatabaseCreates: 1 })
   await page.goto('/#/app/database-workspace/page/database-page')
@@ -789,7 +1105,7 @@ test('database table scrolls horizontally on mobile without document overflow', 
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
-  await installApi(page, [
+  const api = await installApi(page, [
     block('mobile-before', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Mobile page' }] }, 100),
     block('mobile-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: 'mobile-database-id', viewId: 'mobile-view-id' } }, 200),
   ], {
@@ -813,6 +1129,10 @@ test('database table scrolls horizontally on mobile without document overflow', 
   const table = page.locator('.eotion-editor-content .eotion-database')
   await expect(table).toBeVisible()
   await expect(table).toContainText('Mobile row')
+  await table.getByRole('button', { name: 'Long enough for scrolling' }).click()
+  await expect(table.getByRole('textbox', { name: 'Description 值' })).toBeFocused()
+  await screenshot(page, 'p83-mobile-text-active-editor')
+  await page.keyboard.press('Escape')
   const widths = await page.evaluate(() => ({
     document: document.documentElement.scrollWidth,
     viewport: document.documentElement.clientWidth,
@@ -835,6 +1155,24 @@ test('database table scrolls horizontally on mobile without document overflow', 
   })
   expect(horizontalScroll).toBe(0)
   expect(horizontalScrollAfter).toBeGreaterThan(0)
+  const description = table.getByRole('button', { name: 'Long enough for scrolling' })
+  await description.click()
+  const mobileText = table.getByRole('textbox', { name: 'Description 值' })
+  await expect(mobileText).toBeFocused()
+  await mobileText.fill('Saved on mobile')
+  await mobileText.press('Enter')
+  await expect(table).toContainText('Saved on mobile')
+  await table.getByRole('button', { name: '2026-10-08' }).click()
+  const mobileDate = table.getByRole('textbox', { name: 'Due date 值' })
+  await mobileDate.fill('2026-12-15')
+  await mobileDate.press('Enter')
+  await expect(table.getByRole('button', { name: '2026-12-15' })).toBeVisible()
+  expect(api.records[0]?.properties['mobile-text']).toBe('Saved on mobile')
+  expect(api.records[0]?.properties['mobile-date']).toBe('2026-12-15')
+  await table.getByRole('button', { name: 'Open' }).click()
+  await screenshot(page, 'p83-mobile-select-popover')
+  await page.keyboard.press('Escape')
+  await screenshot(page, 'p83-mobile-390-saved-cells')
   expect(errors).toEqual([])
   await screenshot(page, 'product-database-mobile-390x844')
 })

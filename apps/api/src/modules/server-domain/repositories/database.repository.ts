@@ -21,6 +21,10 @@ export class DatabaseRepository {
     const doc = await this.model.findOne({ workspaceId, id }).session(session ?? null).exec()
     return doc ? { id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) } : null
   }
+  async compareAndBump(workspaceId: string, id: string, expectedVersion: number, session: ClientSession): Promise<Database | null> {
+    const doc = await this.model.findOneAndUpdate({ workspaceId, id, version: expectedVersion }, [{ $set: { version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
+    return doc ? { id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) } : null
+  }
   async listWindow(workspaceId: string, input: { cursor?: string; limit: number }, session?: ClientSession): Promise<Database[]> {
     const filter: Record<string, unknown> = { workspaceId }
     if (input.cursor !== undefined) filter.id = { $gt: input.cursor }
@@ -43,6 +47,20 @@ export class DatabasePropertyRepository {
     const docs = await this.model.find({ workspaceId, databaseId }).sort({ createdAt: 1, id: 1 }).limit(limit).session(session ?? null).exec()
     return docs.map(doc => this.toRecord(doc))
   }
+  async findInDatabase(workspaceId: string, databaseId: string, id: string, session?: ClientSession): Promise<DatabaseProperty | null> {
+    const doc = await this.model.findOne({ workspaceId, databaseId, id }).session(session ?? null).exec()
+    return doc ? this.toRecord(doc) : null
+  }
+  async update(workspaceId: string, databaseId: string, id: string, expectedVersion: number, patch: { name?: string; options?: DatabaseProperty['options'] }, session: ClientSession): Promise<DatabaseProperty | null> {
+    const set: Record<string, unknown> = { version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } }
+    if (patch.name !== undefined) set.name = { $literal: patch.name }
+    if (patch.options !== undefined) set.options = { $literal: patch.options }
+    const doc = await this.model.findOneAndUpdate({ workspaceId, databaseId, id, version: expectedVersion }, [{ $set: set }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
+    return doc ? this.toRecord(doc) : null
+  }
+  async delete(workspaceId: string, databaseId: string, id: string, expectedVersion: number, session: ClientSession): Promise<boolean> {
+    return !!(await this.model.findOneAndDelete({ workspaceId, databaseId, id, version: expectedVersion }, { session }).exec())
+  }
   private toRecord(doc: DatabasePropertyDocument): DatabaseProperty {
     return { id: doc.id, workspaceId: doc.workspaceId, databaseId: doc.databaseId, name: doc.name, type: doc.type as DatabaseProperty['type'], ...(doc.options === undefined ? {} : { options: doc.options.map(option => ({ id: option.id, name: option.name })) }), version: doc.version, ...dates(doc) }
   }
@@ -58,6 +76,10 @@ export class DatabaseRecordRepository {
   async list(workspaceId: string, databaseId: string, session?: ClientSession): Promise<DatabaseRecord[]> {
     return (await this.model.find({ workspaceId, databaseId }).sort({ createdAt: 1, id: 1 }).session(session ?? null).exec()).map(doc => this.toRecord(doc))
   }
+  async findInDatabase(workspaceId: string, databaseId: string, id: string, session?: ClientSession): Promise<DatabaseRecord | null> {
+    const doc = await this.model.findOne({ workspaceId, databaseId, id }).session(session ?? null).exec()
+    return doc ? this.toRecord(doc) : null
+  }
   async listWindow(workspaceId: string, databaseId: string, input: { cursor?: string; limit: number }, session?: ClientSession): Promise<DatabaseRecord[]> {
     const filter: Record<string, unknown> = { workspaceId, databaseId }
     if (input.cursor !== undefined) filter.id = { $gt: input.cursor }
@@ -66,6 +88,13 @@ export class DatabaseRecordRepository {
   }
   async referencesPage(workspaceId: string, pageId: string, session?: ClientSession): Promise<boolean> {
     return !!(await this.model.exists({ workspaceId, pageId }).session(session ?? null))
+  }
+  async updateProperties(workspaceId: string, databaseId: string, id: string, expectedVersion: number, properties: DatabaseRecord['properties'], session: ClientSession): Promise<DatabaseRecord | null> {
+    const doc = await this.model.findOneAndUpdate({ workspaceId, databaseId, id, version: expectedVersion }, [{ $set: { properties: { $literal: properties }, version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
+    return doc ? this.toRecord(doc) : null
+  }
+  async listForCleanup(workspaceId: string, databaseId: string, session: ClientSession): Promise<DatabaseRecord[]> {
+    return (await this.model.find({ workspaceId, databaseId }).session(session).exec()).map(doc => this.toRecord(doc))
   }
   private toRecord(doc: DatabaseRecordDocument): DatabaseRecord {
     return { id: doc.id, workspaceId: doc.workspaceId, databaseId: doc.databaseId, pageId: doc.pageId, properties: doc.properties, version: doc.version, ...dates(doc) }

@@ -52,6 +52,12 @@ export interface DatabaseRecord {
   updatedAt: string
 }
 
+/** Database record as returned by the API after projecting Page.title into its title property. */
+export interface DatabaseTableRecord extends Omit<DatabaseRecord, 'properties'> {
+  properties: DatabaseRecordValues
+  pageVersion: string
+}
+
 export interface DatabaseView {
   id: string
   databaseId: string
@@ -212,12 +218,38 @@ export function validateDatabaseRecordValues(values: unknown, properties: readon
   return true
 }
 
+/** Validates persisted values, where the Page is authoritative for its title. */
+export function validateStoredDatabaseRecordValues(values: unknown, properties: readonly DatabaseProperty[]): values is DatabaseRecordValues {
+  if (!isObject(values) || !Array.isArray(properties)) return false
+  const byId = new Map<string, DatabaseProperty>()
+  let databaseId: string | undefined
+  let workspaceId: string | undefined
+  let titleProperty: DatabaseProperty | undefined
+  for (const property of properties) {
+    if (!isValidDatabaseProperty(property) || byId.has(property.id)
+      || (databaseId !== undefined && property.databaseId !== databaseId)
+      || (workspaceId !== undefined && property.workspaceId !== workspaceId)) return false
+    databaseId = property.databaseId
+    workspaceId = property.workspaceId
+    if (property.type === 'title') {
+      if (titleProperty) return false
+      titleProperty = property
+    }
+    byId.set(property.id, property)
+  }
+  if (!titleProperty || Object.hasOwn(values, titleProperty.id)) return false
+  return Object.entries(values).every(([propertyId, value]) => {
+    const property = byId.get(propertyId)
+    return isStableId(propertyId) && property !== undefined && property.type !== 'title' && isValidPropertyValue(value, property)
+  })
+}
+
 export function isValidDatabaseRecord(value: unknown, properties: readonly DatabaseProperty[]): value is DatabaseRecord {
   if (!isObject(value) || !hasExactFields(value, ENTITY_FIELDS.record)) return false
   if (!isStableId(value.id) || !isStableId(value.databaseId) || !isStableId(value.workspaceId)
     || !isStableId(value.pageId) || !isVersion(value.version)
     || !isIsoTimestamp(value.createdAt) || !isIsoTimestamp(value.updatedAt)
-    || !validateDatabaseRecordValues(value.properties, properties)) return false
+    || !validateStoredDatabaseRecordValues(value.properties, properties)) return false
   return properties.every((property) => property.databaseId === value.databaseId && property.workspaceId === value.workspaceId)
 }
 

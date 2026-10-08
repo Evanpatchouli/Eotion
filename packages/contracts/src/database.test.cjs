@@ -27,13 +27,13 @@ test('database entity schemas reuse the strict domain validators', () => {
   assert.deepEqual(DatabasePropertySchema.parse(property), property)
   assert.deepEqual(DatabaseViewSchema.parse(view), view)
   assert.deepEqual(databaseRecordSchema([property]).parse({
-    id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task' },
+    id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: {},
     version: 1, createdAt: timestamp, updatedAt: timestamp,
-  }).properties, { 'title-1': 'A task' })
+  }).properties, {})
   assert.equal(DatabaseSchema.safeParse({ ...database, extra: true }).success, false)
   assert.equal(DatabasePropertySchema.safeParse({ ...property, options: [] }).success, false)
   assert.equal(databaseRecordSchema([property]).safeParse({
-    id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: {},
+    id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task' },
     version: 1, createdAt: timestamp, updatedAt: timestamp,
   }).success, false)
 })
@@ -43,7 +43,7 @@ test('database create request schemas enforce exact request shapes', () => {
   assert.deepEqual(DatabaseCreateInPageRequestSchema.parse(createInPage), createInPage)
   assert.equal(DatabaseCreateInPageRequestSchema.safeParse({ ...createInPage, extra: true }).success, false)
 
-  const select = { id: 'status-1', name: 'Status', type: 'select', options: [{ id: 'open', name: 'Open' }] }
+  const select = { id: 'status-1', name: 'Status', type: 'select', options: [{ id: 'open', name: 'Open' }], expectedDatabaseVersion: 1 }
   assert.deepEqual(DatabasePropertyCreateRequestSchema.parse(select), select)
   assert.equal(DatabasePropertyCreateRequestSchema.safeParse({ id: 'status-1', name: 'Status', type: 'select' }).success, false)
   assert.equal(DatabasePropertyCreateRequestSchema.safeParse({ id: 'text-1', name: 'Notes', type: 'text', options: [] }).success, false)
@@ -68,7 +68,7 @@ test('database create request schemas reject unstable or oversized ids and names
   assert.equal(DatabaseCreateInPageRequestSchema.safeParse({ ...validCreateInPage, name: ' Tasks' }).success, false)
   assert.equal(DatabaseCreateInPageRequestSchema.safeParse({ ...validCreateInPage, name: 'n'.repeat(201) }).success, false)
 
-  const property = { id: 'prop-1', name: 'Status', type: 'select', options: [{ id: 'open', name: 'Open' }] }
+  const property = { id: 'prop-1', name: 'Status', type: 'select', options: [{ id: 'open', name: 'Open' }], expectedDatabaseVersion: 1 }
   invalidId(DatabasePropertyCreateRequestSchema, { ...property, id: 'prop-1 ' })
   invalidId(DatabasePropertyCreateRequestSchema, { ...property, options: [{ id: ' open', name: 'Open' }] })
   assert.equal(DatabasePropertyCreateRequestSchema.safeParse({ ...property, name: ' Status' }).success, false)
@@ -100,7 +100,7 @@ test('database HTTP contracts strictly validate page creation, links, and bounde
 })
 
 test('database table response validates scope, property values, and the property cap', () => {
-  const record = { id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task' }, version: 1, createdAt: timestamp, updatedAt: timestamp }
+  const record = { id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task' }, version: 1, createdAt: timestamp, updatedAt: timestamp, pageVersion: timestamp }
   const table = { database, view, properties: [property], records: [record], nextCursor: null }
   assert.deepEqual(DatabaseTableResponseSchema.parse(table), table)
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, view: { ...view, workspaceId: 'ws-2' } }).success, false)

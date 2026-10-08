@@ -7,6 +7,7 @@ const {
   isValidDatabaseRecord,
   isValidDatabaseView,
   validateDatabaseRecordValues,
+  validateStoredDatabaseRecordValues,
 } = require('../dist/database.js')
 
 const timestamp = '2026-01-02T03:04:05.000Z'
@@ -58,8 +59,16 @@ test('record values strictly follow definitions and require the unique non-empty
   assert.equal(validateDatabaseRecordValues(values, [...properties, { ...title, id: 'second-title' }]), false)
   assert.equal(validateDatabaseRecordValues(values, [{ ...title, workspaceId: 'other' }, ...properties.slice(1)]), false)
 
+  const storedValues = Object.fromEntries(Object.entries(values).filter(([id]) => id !== 'prop-title'))
+  assert.equal(validateStoredDatabaseRecordValues(storedValues, properties), true)
+  assert.equal(validateStoredDatabaseRecordValues(values, properties), false)
+  assert.equal(validateStoredDatabaseRecordValues({ ...storedValues, 'prop-select': 'unknown-option' }, properties), false)
+  const dangerousProperty = { ...properties[1], id: '__proto__' }
+  const dangerousStoredValues = Object.fromEntries([['__proto__', 'kept as data']])
+  assert.equal(validateStoredDatabaseRecordValues(dangerousStoredValues, [title, dangerousProperty]), true)
+
   const record = {
-    id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: values,
+    id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: storedValues,
     version: 1, createdAt: timestamp, updatedAt: timestamp,
   }
   assert.equal(isValidDatabaseRecord(record, properties), true)

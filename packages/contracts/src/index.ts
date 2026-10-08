@@ -6,8 +6,9 @@ import {
   isValidDatabasePropertyDefinition,
   isValidDatabaseRecord,
   isValidDatabaseView,
+  validateDatabaseRecordValues,
 } from '@eotion/domain/database'
-import type { Database, DatabaseProperty, DatabaseRecord, DatabaseView } from '@eotion/domain/database'
+import type { Database, DatabaseProperty, DatabaseRecord, DatabaseTableRecord, DatabaseView } from '@eotion/domain/database'
 export { BLOCK_TYPES }
 
 export interface HealthResponse {
@@ -108,6 +109,7 @@ export function databaseRecordSchema(properties: readonly DatabaseProperty[]) {
   return z.custom<DatabaseRecord>((value) => isValidDatabaseRecord(value, properties))
 }
 export type DatabaseRecordResponse = DatabaseRecord
+export type DatabaseTableRecordResponse = DatabaseTableRecord
 export const DatabaseViewSchema = z.custom<DatabaseView>(isValidDatabaseView)
 export type DatabaseViewResponse = z.infer<typeof DatabaseViewSchema>
 
@@ -145,7 +147,7 @@ export type DatabaseTableResponse = {
   database: Database
   view: DatabaseView
   properties: DatabaseProperty[]
-  records: DatabaseRecord[]
+  records: DatabaseTableRecord[]
   nextCursor: string | null
 }
 export const DatabaseTableResponseSchema = z.custom<DatabaseTableResponse>(isValidDatabaseTableResponse)
@@ -161,9 +163,24 @@ function isValidDatabaseTableResponse(value: unknown): value is DatabaseTableRes
   const properties = table.properties as DatabaseProperty[]
   if (!properties.every(property => property.databaseId === database.id && property.workspaceId === database.workspaceId)) return false
   if (properties.filter(property => property.type === 'title').length !== 1 || new Set(properties.map(property => property.id)).size !== properties.length) return false
-  if (!Array.isArray(table.records) || table.records.length > 100 || !table.records.every(record => isValidDatabaseRecord(record, properties))) return false
-  if (!table.records.every(record => (record as DatabaseRecord).databaseId === database.id && (record as DatabaseRecord).workspaceId === database.workspaceId)) return false
+  if (!Array.isArray(table.records) || table.records.length > 100 || !table.records.every(record => isValidDatabaseTableRecord(record, properties))) return false
+  if (!table.records.every(record => (record as DatabaseTableRecord).databaseId === database.id && (record as DatabaseTableRecord).workspaceId === database.workspaceId)) return false
   return table.nextCursor === null || (typeof table.nextCursor === 'string' && databaseStableIdSchema.safeParse(table.nextCursor).success)
+}
+
+function isValidDatabaseTableRecord(value: unknown, properties: readonly DatabaseProperty[]): value is DatabaseTableRecord {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const record = value as Record<string, unknown>
+  if (Object.keys(record).sort().join(',') !== 'createdAt,databaseId,id,pageId,pageVersion,properties,updatedAt,version,workspaceId') return false
+  const { pageVersion, ...persistedShape } = record
+  if (typeof pageVersion !== 'string' || !dateSchema.safeParse(pageVersion).success) return false
+  const projected = record.properties
+  const title = properties.find(property => property.type === 'title')
+  if (!title || typeof projected !== 'object' || projected === null || Array.isArray(projected)) return false
+  const storedValues = { ...(projected as Record<string, unknown>) }
+  delete storedValues[title.id]
+  return validateDatabaseRecordValues(projected, properties)
+    && isValidDatabaseRecord({ ...persistedShape, properties: storedValues }, properties)
 }
 
 export const DatabaseCreateInPageRequestSchema = z.object({
@@ -182,8 +199,34 @@ export const DatabasePropertyCreateRequestSchema = z.object({
   name: databaseNameSchema,
   type: z.enum(['title', 'text', 'number', 'checkbox', 'select', 'date']),
   options: z.array(z.object({ id: databaseStableIdSchema, name: databaseNameSchema }).strict()).optional(),
-}).strict().refine(isValidDatabasePropertyDefinition, { message: 'Invalid database property definition' })
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+}).strict().refine(value => {
+  const { expectedDatabaseVersion: _version, ...definition } = value
+  return isValidDatabasePropertyDefinition(definition)
+}, { message: 'Invalid database property definition' })
 export type DatabasePropertyCreateRequest = z.infer<typeof DatabasePropertyCreateRequestSchema>
+
+export const DatabasePropertyUpdateRequestSchema = z.object({
+  name: databaseNameSchema.optional(),
+  options: z.array(z.object({ id: databaseStableIdSchema, name: databaseNameSchema }).strict()).optional(),
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+  expectedPropertyVersion: z.number().int().positive().safe(),
+}).strict().refine(value => value.name !== undefined || value.options !== undefined, { message: 'At least one field must be provided' })
+export type DatabasePropertyUpdateRequest = z.infer<typeof DatabasePropertyUpdateRequestSchema>
+
+export const DatabasePropertyDeleteRequestSchema = z.object({
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+  expectedPropertyVersion: z.number().int().positive().safe(),
+}).strict()
+export type DatabasePropertyDeleteRequest = z.infer<typeof DatabasePropertyDeleteRequestSchema>
+
+export const DatabaseRecordCellUpdateRequestSchema = z.object({
+  value: z.string().or(z.number().finite()).or(z.boolean()).nullable(),
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+  expectedRecordVersion: z.number().int().positive().safe(),
+  expectedPageUpdatedAt: dateSchema.optional(),
+}).strict()
+export type DatabaseRecordCellUpdateRequest = z.infer<typeof DatabaseRecordCellUpdateRequestSchema>
 
 export const DatabaseRecordCreateRequestSchema = z.object({
   id: databaseStableIdSchema,

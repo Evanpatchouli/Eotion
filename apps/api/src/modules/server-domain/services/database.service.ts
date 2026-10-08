@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
-import { isValidDatabaseProperty, validateDatabaseRecordValues, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseView } from '@eotion/domain'
-import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema } from '@eotion/contracts'
+import { isValidDatabaseProperty, validateDatabaseRecordValues, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView } from '@eotion/domain'
+import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
 import { PageRepository } from '../repositories/page.repository'
@@ -11,7 +11,7 @@ import { WorkspacePermissionService } from './workspace-permission.service'
 import type { ServerBlockRecord } from '../types'
 
 type CreateInPage = { id: string; name: string; titlePropertyId: string; viewId: string; blockId: string; orderKey: string; parentBlockId: string | null }
-type CreateProperty = { id: string; name: string; type: DatabaseProperty['type']; options?: DatabaseProperty['options'] }
+type CreateProperty = { id: string; name: string; type: DatabaseProperty['type']; options?: DatabaseProperty['options']; expectedDatabaseVersion: number }
 type CreateRecord = { id: string; pageId: string; properties: DatabaseRecord['properties'] }
 type CreateView = { id: string; name: string; type: DatabaseView['type'] }
 type WindowInput = { cursor?: string; limit: number }
@@ -69,7 +69,10 @@ export class DatabaseService {
     if (properties.length > 100) throw new BadRequestException('Database exceeds the maximum of 100 properties')
     const records = await this.records.listWindow(workspaceId, databaseId, input)
     const window = this.toWindow(records, input.limit)
-    return { database, view, properties, records: window.items, nextCursor: window.nextCursor }
+    const projected = await this.projectRecords(workspaceId, window.items, properties)
+    const latestDatabase = await this.databases.findInWorkspace(workspaceId, databaseId)
+    if (!latestDatabase || latestDatabase.version !== database.version) throw new ConflictException('Database changed during table read; refresh and retry')
+    return { database, view, properties, records: projected, nextCursor: window.nextCursor }
   }
 
   async linkInPage(userId: string, workspaceId: string, pageId: string, input: { databaseId: string; viewId: string; blockId: string; orderKey: string; parentBlockId: string | null }): Promise<{ block: ServerBlockRecord }> {
@@ -91,19 +94,18 @@ export class DatabaseService {
     })
   }
 
-  async createRecordPage(userId: string, workspaceId: string, databaseId: string, input: { id: string; pageId: string; title: string; orderKey: string }): Promise<{ record: DatabaseRecord; page: Awaited<ReturnType<PageRepository['create']>> }> {
+  async createRecordPage(userId: string, workspaceId: string, databaseId: string, input: { id: string; pageId: string; title: string; orderKey: string }): Promise<{ record: DatabaseTableRecord; page: Awaited<ReturnType<PageRepository['create']>> }> {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabaseRecordPageCreateRequestSchema, input)
     return this.transact(async session => {
       const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
+      await this.bumpDatabaseVersion(database, session)
       const properties = await this.properties.list(workspaceId, databaseId, session)
       const title = properties.find(property => property.type === 'title')
       if (!title) throw new BadRequestException('Database title property is missing')
-      const values = { [title.id]: input.title }
-      if (!validateDatabaseRecordValues(values, properties)) throw new BadRequestException('Invalid database record properties')
       const page = await this.pages.create(workspaceId, { id: input.pageId, parentPageId: null, title: input.title, orderKey: input.orderKey }, session)
-      const record = await this.records.create({ id: input.id, workspaceId, databaseId: database.id, pageId: page.id, properties: values, version: 1 }, session)
-      return { record, page }
+      const record = await this.records.create({ id: input.id, workspaceId, databaseId: database.id, pageId: page.id, properties: {}, version: 1 }, session)
+      return { record: { ...record, properties: { [title.id]: page.title }, pageVersion: page.updatedAt }, page }
     })
   }
 
@@ -112,9 +114,25 @@ export class DatabaseService {
     return this.properties.list(workspaceId, databaseId)
   }
 
-  async listRecords(userId: string, workspaceId: string, databaseId: string): Promise<DatabaseRecord[]> {
-    await this.requireDatabase(userId, workspaceId, databaseId, false)
-    return this.records.list(workspaceId, databaseId)
+  async listRecords(userId: string, workspaceId: string, databaseId: string): Promise<DatabaseTableRecord[]> {
+    const database = await this.requireDatabase(userId, workspaceId, databaseId, false)
+    const [records, properties] = await Promise.all([this.records.list(workspaceId, databaseId), this.properties.list(workspaceId, databaseId)])
+    const projected = await this.projectRecords(workspaceId, records, properties)
+    const latest = await this.databases.findInWorkspace(workspaceId, databaseId)
+    if (!latest || latest.version !== database.version) throw new ConflictException('Database changed during record read; refresh and retry')
+    return projected
+  }
+
+  private async projectRecords(workspaceId: string, records: DatabaseRecord[], properties: DatabaseProperty[]): Promise<DatabaseTableRecord[]> {
+    const title = properties.find(property => property.type === 'title')
+    if (!title) throw new BadRequestException('Database title property is missing')
+    const pages = await this.pages.findManyInWorkspace(workspaceId, records.map(record => record.pageId))
+    const pageById = new Map(pages.map(page => [page.id, page]))
+    return records.flatMap(record => {
+      const page = pageById.get(record.pageId)
+      if (!page) return []
+      return [{ ...record, properties: { ...record.properties, [title.id]: page.title }, pageVersion: page.updatedAt }]
+    })
   }
 
   async listViews(userId: string, workspaceId: string, databaseId: string): Promise<DatabaseView[]> {
@@ -122,15 +140,118 @@ export class DatabaseService {
     return this.views.list(workspaceId, databaseId)
   }
 
-  async createProperty(userId: string, workspaceId: string, databaseId: string, input: CreateProperty): Promise<DatabaseProperty> {
+  async createProperty(userId: string, workspaceId: string, databaseId: string, input: CreateProperty): Promise<{ database: Database; property: DatabaseProperty }> {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabasePropertyCreateRequestSchema, input)
     return this.transact(async session => {
-      await this.requireDatabase(userId, workspaceId, databaseId, true, session)
-      const candidate = { ...input, workspaceId, databaseId, version: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      if (!database) throw new ConflictException('Database version is stale')
+      const candidate = { id: input.id, name: input.name, type: input.type, ...(input.options === undefined ? {} : { options: input.options }), workspaceId, databaseId, version: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
       if (!isValidDatabaseProperty(candidate)) throw new BadRequestException('Invalid database property')
       if (input.type === 'title' && (await this.properties.list(workspaceId, databaseId, session)).some(property => property.type === 'title')) throw new BadRequestException('Database already has a title property')
-      return this.properties.create({ id: input.id, workspaceId, databaseId, name: input.name, type: input.type, ...(input.options === undefined ? {} : { options: input.options }), version: 1 }, session)
+      if ((await this.properties.listLimited(workspaceId, databaseId, 101, session)).length >= 100) throw new BadRequestException('Database exceeds the maximum of 100 properties')
+      const property = await this.properties.create({ id: input.id, workspaceId, databaseId, name: input.name, type: input.type, ...(input.options === undefined ? {} : { options: input.options }), version: 1 }, session)
+      return { database, property }
+    })
+  }
+
+  async updateProperty(userId: string, workspaceId: string, databaseId: string, propertyId: string, input: { name?: string; options?: DatabaseProperty['options']; expectedDatabaseVersion: number; expectedPropertyVersion: number }): Promise<{ database: Database; property: DatabaseProperty }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    this.parse(DatabasePropertyUpdateRequestSchema, input)
+    return this.transact(async session => {
+      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      if (!database) throw new ConflictException('Database version is stale')
+      const existing = await this.properties.findInDatabase(workspaceId, databaseId, propertyId, session)
+      if (!existing) throw new NotFoundException('Database property not found')
+      if (input.options !== undefined && existing.type !== 'select') throw new BadRequestException('Only select properties have options')
+      const candidate = {
+        ...existing,
+        ...(input.name === undefined ? {} : { name: input.name }),
+        ...(input.options === undefined ? {} : { options: input.options }),
+        version: existing.version + 1,
+        updatedAt: new Date().toISOString(),
+      }
+      if (!isValidDatabaseProperty(candidate)) throw new BadRequestException('Invalid database property')
+      const property = await this.properties.update(workspaceId, databaseId, propertyId, input.expectedPropertyVersion, { ...(input.name === undefined ? {} : { name: input.name }), ...(input.options === undefined ? {} : { options: input.options }) }, session)
+      if (!property) throw new ConflictException('Database property version is stale')
+      if (input.options !== undefined) {
+        const kept = new Set(input.options.map(option => option.id))
+        const removed = new Set((existing.options ?? []).map(option => option.id).filter(optionId => !kept.has(optionId)))
+        if (removed.size > 0) {
+          const titleId = (await this.properties.list(workspaceId, databaseId, session)).find(row => row.type === 'title')?.id
+          for (const record of await this.records.listForCleanup(workspaceId, databaseId, session)) {
+            const current = record.properties[existing.id]
+            if (typeof current === 'string' && removed.has(current)) {
+              const values = { ...record.properties }
+              delete values[existing.id]
+              if (titleId) delete values[titleId]
+              if (!await this.records.updateProperties(workspaceId, databaseId, record.id, record.version, values, session)) throw new ConflictException('Database record changed during option cleanup')
+            }
+          }
+        }
+      }
+      return { database, property }
+    })
+  }
+
+  async deleteProperty(userId: string, workspaceId: string, databaseId: string, propertyId: string, input: { expectedDatabaseVersion: number; expectedPropertyVersion: number }): Promise<{ database: Database }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    this.parse(DatabasePropertyDeleteRequestSchema, input)
+    return this.transact(async session => {
+      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      if (!database) throw new ConflictException('Database version is stale')
+      const existing = await this.properties.findInDatabase(workspaceId, databaseId, propertyId, session)
+      if (!existing) throw new NotFoundException('Database property not found')
+      if (existing.type === 'title') throw new BadRequestException('The title property cannot be deleted')
+      if (!await this.properties.delete(workspaceId, databaseId, propertyId, input.expectedPropertyVersion, session)) throw new ConflictException('Database property version is stale')
+      const titleId = (await this.properties.list(workspaceId, databaseId, session)).find(row => row.type === 'title')?.id
+      for (const record of await this.records.listForCleanup(workspaceId, databaseId, session)) {
+        if (!Object.hasOwn(record.properties, propertyId)) continue
+        const values = { ...record.properties }
+        delete values[propertyId]
+        if (titleId) delete values[titleId]
+        if (!await this.records.updateProperties(workspaceId, databaseId, record.id, record.version, values, session)) throw new ConflictException('Database record changed during property cleanup')
+      }
+      return { database }
+    })
+  }
+
+  async updateRecordCell(userId: string, workspaceId: string, databaseId: string, recordId: string, propertyId: string, input: { value: string | number | boolean | null; expectedDatabaseVersion: number; expectedRecordVersion: number; expectedPageUpdatedAt?: string }): Promise<{ database: Database; record: DatabaseTableRecord; page?: NonNullable<Awaited<ReturnType<PageRepository['findInWorkspace']>>> }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    this.parse(DatabaseRecordCellUpdateRequestSchema, input)
+    return this.transact(async session => {
+      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      if (!database) throw new ConflictException('Database version is stale')
+      const record = await this.records.findInDatabase(workspaceId, databaseId, recordId, session)
+      if (!record) throw new NotFoundException('Database record not found')
+      const properties = await this.properties.list(workspaceId, databaseId, session)
+      const property = properties.find(row => row.id === propertyId)
+      if (!property) throw new NotFoundException('Database property not found')
+      const titleProperty = properties.find(row => row.type === 'title')
+      if (!titleProperty) throw new BadRequestException('Database title property is missing')
+      const page = await this.pages.findInWorkspace(workspaceId, record.pageId, session)
+      if (!page) throw new NotFoundException('Record page not found in workspace')
+      let value = input.value
+      if (property.type === 'title') {
+        if (typeof value !== 'string' || !value.trim() || value.trim().length > 200) throw new BadRequestException('Title must contain 1 to 200 characters')
+        value = value.trim()
+        if (!input.expectedPageUpdatedAt) throw new BadRequestException('expectedPageUpdatedAt is required for title updates')
+      }
+      const projectedValues = { ...record.properties, [titleProperty.id]: page.title, ...(property.type === 'title' ? {} : { [propertyId]: value }) }
+      if (!validateDatabaseRecordValues(projectedValues, properties)) throw new BadRequestException('Invalid value for database property')
+      let values = { ...record.properties }
+      delete values[titleProperty.id]
+      if (property.type === 'title') delete values[propertyId]
+      else if (value === null) delete values[propertyId]
+      else values = { ...values, [propertyId]: value }
+      const updatedRecord = await this.records.updateProperties(workspaceId, databaseId, recordId, input.expectedRecordVersion, values, session)
+      if (!updatedRecord) throw new ConflictException('Database record version is stale')
+      if (property.type === 'title') {
+        const updatedPage = await this.pages.compareAndUpdate(workspaceId, record.pageId, input.expectedPageUpdatedAt!, { title: value as string }, session)
+        if (!updatedPage) throw new ConflictException('Page title changed; refresh before editing')
+        return { database, record: { ...updatedRecord, properties: { ...updatedRecord.properties, [property.id]: updatedPage.title }, pageVersion: updatedPage.updatedAt }, page: updatedPage }
+      }
+      return { database, record: { ...updatedRecord, properties: { ...updatedRecord.properties, [titleProperty.id]: page.title }, pageVersion: page.updatedAt } }
     })
   }
 
@@ -138,11 +259,18 @@ export class DatabaseService {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabaseRecordCreateRequestSchema, input)
     return this.transact(async session => {
-      await this.requireDatabase(userId, workspaceId, databaseId, true, session)
+      const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
+      await this.bumpDatabaseVersion(database, session)
       const properties = await this.properties.list(workspaceId, databaseId, session)
       if (!validateDatabaseRecordValues(input.properties, properties)) throw new BadRequestException('Invalid database record properties')
+      const page = await this.pages.findInWorkspace(workspaceId, input.pageId, session)
+      if (!page) throw new BadRequestException('Record page must belong to the same workspace')
+      const title = properties.find(property => property.type === 'title')!
+      if (input.properties[title.id] !== page.title) throw new BadRequestException('Record title must match its Page title')
       if (!(await this.pages.touchStructure(workspaceId, input.pageId, session))) throw new BadRequestException('Record page must belong to the same workspace')
-      return this.records.create({ id: input.id, workspaceId, databaseId, pageId: input.pageId, properties: input.properties, version: 1 }, session)
+      const persisted = { ...input.properties }
+      delete persisted[title.id]
+      return this.records.create({ id: input.id, workspaceId, databaseId, pageId: input.pageId, properties: persisted, version: 1 }, session)
     })
   }
 
@@ -150,7 +278,8 @@ export class DatabaseService {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabaseViewCreateRequestSchema, input)
     return this.transact(async session => {
-      await this.requireDatabase(userId, workspaceId, databaseId, true, session)
+      const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
+      await this.bumpDatabaseVersion(database, session)
       return this.views.create({ id: input.id, workspaceId, databaseId, name: input.name, type: 'table', version: 1 }, session)
     })
   }
@@ -161,6 +290,12 @@ export class DatabaseService {
     const database = await this.databases.findInWorkspace(workspaceId, databaseId, session)
     if (!database) throw new NotFoundException('Database not found in workspace')
     return database
+  }
+
+  private async bumpDatabaseVersion(database: Database, session: ClientSession): Promise<Database> {
+    const updated = await this.databases.compareAndBump(database.workspaceId, database.id, database.version, session)
+    if (!updated) throw new ConflictException('Database version is stale')
+    return updated
   }
 
   private parse(schema: { safeParse: (value: unknown) => { success: boolean } }, input: unknown): void {
