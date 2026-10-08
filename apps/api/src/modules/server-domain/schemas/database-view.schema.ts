@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
+import type { DatabaseViewConfig } from '@eotion/domain'
 
 @Schema({ collection: 'database_views', timestamps: true, versionKey: false })
 export class DatabaseViewEntity {
@@ -8,7 +9,9 @@ export class DatabaseViewEntity {
   @Prop({ type: String, required: true }) databaseId!: string
   @Prop({ type: String, required: true }) name!: string
   @Prop({ type: String, required: true, enum: ['table'] }) type!: 'table'
+  @Prop({ type: Object, required: false }) config?: DatabaseViewConfig
   @Prop({ type: Number, required: true, default: 1 }) version!: number
+  @Prop({ type: Number, required: true, default: 0 }) referenceFence!: number
   createdAt!: Date
   updatedAt!: Date
 }

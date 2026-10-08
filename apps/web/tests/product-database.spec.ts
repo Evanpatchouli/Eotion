@@ -2,6 +2,7 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
+import { DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig } from '@eotion/domain/database'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -11,16 +12,53 @@ const pageRecord: PageResponse = { id: 'database-page', workspaceId: workspace.i
 
 type TestDatabase = { id: string; workspaceId: string; name: string; version: number; createdAt: string; updatedAt: string }
 type TestProperty = { id: string; databaseId: string; workspaceId: string; name: string; type: 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date'; version: number; createdAt: string; updatedAt: string; options?: Array<{ id: string; name: string }> }
-type TestView = { id: string; databaseId: string; workspaceId: string; name: string; type: 'table'; version: number; createdAt: string; updatedAt: string }
+type TestView = { id: string; databaseId: string; workspaceId: string; name: string; type: 'table'; config: DatabaseViewConfig; version: number; createdAt: string; updatedAt: string }
 type TestRecord = { id: string; databaseId: string; workspaceId: string; pageId: string; properties: Record<string, string | number | boolean | null>; version: number; pageVersion: string; createdAt: string; updatedAt: string }
 
 function database(id: string, name = 'Projects'): TestDatabase { return { id, workspaceId: workspace.id, name, version: 1, createdAt: now, updatedAt: now } }
 function property(id: string, databaseId: string, name: string, type: TestProperty['type'], options?: TestProperty['options']): TestProperty {
   return { id, databaseId, workspaceId: workspace.id, name, type, version: 1, createdAt: now, updatedAt: now, ...(options ? { options } : {}) }
 }
-function view(id: string, databaseId: string, name = 'Table'): TestView { return { id, databaseId, workspaceId: workspace.id, name, type: 'table', version: 1, createdAt: now, updatedAt: now } }
+function view(id: string, databaseId: string, name = 'Table', config: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG }): TestView { return { id, databaseId, workspaceId: workspace.id, name, type: 'table', config: structuredClone(config), version: 1, createdAt: now, updatedAt: now } }
 function record(id: string, databaseId: string, pageId: string, properties: TestRecord['properties']): TestRecord {
   return { id, databaseId, workspaceId: workspace.id, pageId, properties, version: 1, pageVersion: now, createdAt: now, updatedAt: now }
+}
+function matchesFilter(item: TestRecord, filter: DatabaseFilter): boolean {
+  const value = item.properties[filter.propertyId]
+  const empty = value === undefined || value === null || value === ''
+  if (filter.operator === 'is_empty') return empty
+  if (filter.operator === 'is_not_empty') return !empty
+  if (filter.operator === 'checked') return value === true
+  if (filter.operator === 'unchecked') return value === false
+  if (empty) return false
+  if (typeof filter.value === 'number') {
+    if (typeof value !== 'number') return false
+    if (filter.operator === 'eq') return value === filter.value
+    if (filter.operator === 'ne') return value !== filter.value
+    if (filter.operator === 'gt') return value > filter.value
+    if (filter.operator === 'gte') return value >= filter.value
+    if (filter.operator === 'lt') return value < filter.value
+    if (filter.operator === 'lte') return value <= filter.value
+    return false
+  }
+  const actual = typeof value === 'string' ? value : ''
+  const expected = String(filter.value ?? '')
+  if (filter.operator === 'is') return actual === expected
+  if (filter.operator === 'is_not') return actual !== expected
+  if (filter.operator === 'contains') return actual.includes(expected)
+  if (filter.operator === 'does_not_contain') return !actual.includes(expected)
+  if (filter.operator === 'before') return actual < expected
+  if (filter.operator === 'after') return actual > expected
+  return false
+}
+function compareDatabaseValues(left: string | number | boolean | null | undefined, right: string | number | boolean | null | undefined): number {
+  const leftEmpty = left === undefined || left === null || left === ''
+  const rightEmpty = right === undefined || right === null || right === ''
+  if (leftEmpty || rightEmpty) return leftEmpty === rightEmpty ? 0 : leftEmpty ? 1 : -1
+  if (typeof left === 'number' && typeof right === 'number') return left < right ? -1 : left > right ? 1 : 0
+  const leftText = String(left)
+  const rightText = String(right)
+  return leftText < rightText ? -1 : leftText > rightText ? 1 : 0
 }
 
 function block(id: string, type: BlockResponse['type'], node: Record<string, unknown>, order: number, parentBlockId: string | null = null): BlockResponse {
@@ -28,6 +66,22 @@ function block(id: string, type: BlockResponse['type'], node: Record<string, unk
     id, type, pageId: pageRecord.id, workspaceId: workspace.id, parentBlockId,
     orderKey: String(order).padStart(16, '0'), props: { node }, createdAt: now, updatedAt: now,
   }
+}
+
+async function installLocalBlockReader(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const local = await useProductSyncStore().store()
+    ;(window as Window & { __eotionListLocalBlocks?: (pageId: string) => Promise<unknown> }).__eotionListLocalBlocks = pageId => local.listBlocksByPage(pageId)
+  })
+}
+
+async function readLocalBlocks(page: Page, pageId: string): Promise<string> {
+  return page.evaluate(async (id) => {
+    const read = (window as Window & { __eotionListLocalBlocks?: (pageId: string) => Promise<unknown> }).__eotionListLocalBlocks
+    if (!read) throw new Error('Local block reader was not installed while online')
+    return JSON.stringify(await read(id))
+  }, pageId)
 }
 
 type DatabaseApi = {
@@ -47,6 +101,9 @@ type DatabaseApi = {
   abortRecordCreatesAfterCommit: number
   failCellUpdates: number
   conflictCellUpdates: number
+  failViewUpdates: number
+  abortViewCreatesAfterCommit: number
+  abortViewDeletesAfterCommit: number
   failRecordPageReads: number
   failSnapshots: number
   failSnapshotAfterRecordCreate: boolean
@@ -63,7 +120,7 @@ type DatabaseApi = {
   offline: boolean
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
@@ -82,6 +139,9 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     abortRecordCreatesAfterCommit: options.abortRecordCreatesAfterCommit ?? 0,
     failCellUpdates: options.failCellUpdates ?? 0,
     conflictCellUpdates: options.conflictCellUpdates ?? 0,
+    failViewUpdates: options.failViewUpdates ?? 0,
+    abortViewCreatesAfterCommit: options.abortViewCreatesAfterCommit ?? 0,
+    abortViewDeletesAfterCommit: options.abortViewDeletesAfterCommit ?? 0,
     failRecordPageReads: options.failRecordPageReads ?? 0, failSnapshots: options.failSnapshots ?? 0,
     failSnapshotAfterRecordCreate: options.failSnapshotAfterRecordCreate ?? false,
     holdRecordCreateResponse: options.holdRecordCreateResponse ?? false,
@@ -126,6 +186,44 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     if (databaseList.test(pathname) && request.method() === 'GET') return json(route, 200, { items: api.databases, nextCursor: null })
     const viewsPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views$`, 'u').exec(pathname)
     if (viewsPath && request.method() === 'GET') return json(route, 200, api.views.filter((item) => item.databaseId === viewsPath[1]))
+    if (viewsPath && request.method() === 'POST') {
+      const databaseItem = api.databases.find(item => item.id === viewsPath[1])
+      const input = payload as { id: string; name: string; type: 'table'; config?: DatabaseViewConfig; expectedDatabaseVersion: number }
+      if (!databaseItem) return json(route, 404, { statusCode: 404, message: 'Database not found' })
+      if (input.expectedDatabaseVersion !== databaseItem.version) return json(route, 409, { statusCode: 409, message: 'Database version conflict' })
+      const created = view(input.id, databaseItem.id, input.name, input.config)
+      databaseItem.version += 1
+      api.views.push(created)
+      if (api.abortViewCreatesAfterCommit > 0) { api.abortViewCreatesAfterCommit -= 1; return route.abort('failed') }
+      return json(route, 201, { database: databaseItem, view: created })
+    }
+    const viewPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views/([^/]+)$`, 'u').exec(pathname)
+    if (viewPath && request.method() === 'PATCH') {
+      if (api.failViewUpdates > 0) { api.failViewUpdates -= 1; return json(route, 503, { statusCode: 503, message: 'View temporarily unavailable' }) }
+      const databaseItem = api.databases.find(item => item.id === viewPath[1])
+      const viewItem = api.views.find(item => item.id === viewPath[2] && item.databaseId === viewPath[1])
+      const input = payload as { name?: string; config?: DatabaseViewConfig; expectedDatabaseVersion: number; expectedViewVersion: number }
+      if (!databaseItem || !viewItem) return json(route, 404, { statusCode: 404, message: 'Database view not found' })
+      if (input.expectedDatabaseVersion !== databaseItem.version || input.expectedViewVersion !== viewItem.version) return json(route, 409, { statusCode: 409, message: 'Database view version conflict' })
+      if (input.name !== undefined) viewItem.name = input.name
+      if (input.config !== undefined) viewItem.config = input.config
+      viewItem.version += 1; viewItem.updatedAt = later
+      databaseItem.version += 1; databaseItem.updatedAt = later
+      return json(route, 200, { database: databaseItem, view: viewItem })
+    }
+    if (viewPath && request.method() === 'DELETE') {
+      const databaseItem = api.databases.find(item => item.id === viewPath[1])
+      const viewItem = api.views.find(item => item.id === viewPath[2] && item.databaseId === viewPath[1])
+      const input = payload as { expectedDatabaseVersion: number; expectedViewVersion: number }
+      if (!databaseItem || !viewItem) return json(route, 404, { statusCode: 404, message: 'Database view not found' })
+      if (api.views.filter(item => item.databaseId === databaseItem.id).length < 2) return json(route, 409, { statusCode: 409, message: 'Cannot delete the last database view' })
+      if (api.blocks.some(item => item.type === 'database' && item.props.node?.attrs && (item.props.node.attrs as { databaseId?: string; viewId?: string }).databaseId === databaseItem.id && (item.props.node.attrs as { viewId?: string }).viewId === viewItem.id)) return json(route, 409, { statusCode: 409, message: 'Database view is still referenced by blocks' })
+      if (input.expectedDatabaseVersion !== databaseItem.version || input.expectedViewVersion !== viewItem.version) return json(route, 409, { statusCode: 409, message: 'Database view version conflict' })
+      api.views = api.views.filter(item => item.id !== viewItem.id)
+      databaseItem.version += 1; databaseItem.updatedAt = later
+      if (api.abortViewDeletesAfterCommit > 0) { api.abortViewDeletesAfterCommit -= 1; return route.abort('failed') }
+      return json(route, 200, { database: databaseItem })
+    }
     const tablePath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views/([^/]+)/table$`, 'u').exec(pathname)
     if (tablePath && request.method() === 'GET') {
       if (api.tableLoadDelayMs > 0) await page.waitForTimeout(api.tableLoadDelayMs)
@@ -140,7 +238,22 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       const properties = api.properties.filter((item) => item.databaseId === database.id)
       const limit = Number.parseInt(url.searchParams.get('limit') ?? '50', 10)
       const cursor = url.searchParams.get('cursor')
-      const matchingRecords = api.records.filter((item) => item.databaseId === database.id).sort((left, right) => left.id.localeCompare(right.id))
+      const filters = view.config?.filters ?? []
+      const sorts = view.config?.sorts ?? []
+      const matchingRecords = api.records.filter((item) => item.databaseId === database.id && filters.every(filter => matchesFilter(item, filter)))
+      matchingRecords.sort((left, right) => {
+        for (const sort of sorts) {
+          const leftValue = left.properties[sort.propertyId]
+          const rightValue = right.properties[sort.propertyId]
+          const compared = compareDatabaseValues(leftValue, rightValue)
+          if (compared) {
+            const leftEmpty = leftValue === undefined || leftValue === null || leftValue === ''
+            const rightEmpty = rightValue === undefined || rightValue === null || rightValue === ''
+            return leftEmpty || rightEmpty || sort.direction === 'asc' ? compared : -compared
+          }
+        }
+        return left.id < right.id ? -1 : left.id > right.id ? 1 : 0
+      })
       const remainingRecords = cursor ? matchingRecords.filter((item) => item.id > cursor) : matchingRecords
       const records = remainingRecords.slice(0, limit)
       const nextCursor = remainingRecords.length > limit ? records[records.length - 1]?.id ?? null : null
@@ -312,6 +425,192 @@ const rootProperties = [
 const basicRecord = record('root-record', rootDatabase.id, 'root-record-page', {
   'root-title': 'Launch plan', 'root-text': 'Draft ready', 'root-number': 42,
   'root-checkbox': true, 'root-select': 'status-open', 'root-date': '2026-10-04',
+})
+
+test('database views create, rename, switch, delete and persist the selected reference', async ({ page }) => {
+  const api = await installApi(page, [
+    block('view-lifecycle', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+    block('view-lifecycle-linked', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 200),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord], abortViewCreatesAfterCommit: 1, abortViewDeletesAfterCommit: 1 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const tables = page.locator('.eotion-editor-content .eotion-database')
+  const table = tables.nth(0)
+  await expect(table).toContainText('Launch plan')
+  await screenshot(page, 'p84-database-view-desktop')
+
+  await table.getByRole('button', { name: '切换视图' }).click()
+  const viewsMenu = page.locator('.eotion-database-view-menu')
+  await expect(viewsMenu.getByRole('button', { name: 'Table' })).toBeVisible()
+  await viewsMenu.getByRole('button', { name: '＋ 新建视图' }).click()
+  await expect(table.locator('.eotion-database-copy small')).toHaveText('表格 2')
+  expect(api.views).toHaveLength(2)
+  expect(api.requests.some(({ method, path, payload }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`) && payload?.expectedDatabaseVersion === 1)).toBe(true)
+
+  await table.getByRole('button', { name: '切换视图' }).click()
+  const renameMenu = page.locator('.eotion-database-view-menu')
+  await renameMenu.getByRole('textbox', { name: '当前视图名称' }).fill('Quarterly')
+  await renameMenu.getByRole('button', { name: '保存名称' }).click()
+  await expect(table.locator('.eotion-database-copy small')).toHaveText('Quarterly')
+  expect(api.views.find(item => item.name === 'Quarterly')?.version).toBe(2)
+
+  await expect(page.locator('.eotion-database-view-menu')).toBeVisible()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: /^Table/u }).click()
+  await expect(table.locator('.eotion-database-copy small')).toHaveText('Table')
+  await expect.poll(() => api.blocks.find(item => item.id === 'view-lifecycle')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: 'view-root-id' })
+
+  expect(api.blocks.filter(item => item.type === 'database' && (item.props.node?.attrs as { viewId?: string } | undefined)?.viewId === 'view-root-id')).toHaveLength(2)
+  await table.getByRole('button', { name: '切换视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '删除视图' }).click()
+  await expect.poll(() => api.requests.some(({ method, path }) => method === 'DELETE' && path.endsWith('/views/view-root-id'))).toBe(true)
+  await expect.poll(() => api.views).toHaveLength(2)
+  await expect(page.getByRole('alert')).toContainText('仍被其它数据库块引用')
+  await expect(table.locator('.eotion-database-copy small')).toHaveText('Quarterly')
+
+  await tables.nth(1).getByRole('button', { name: '切换视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: 'Quarterly' }).click()
+  await expect(tables.nth(1).locator('.eotion-database-copy small')).toHaveText('Quarterly')
+  await tables.nth(1).getByRole('button', { name: '切换视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: /^Table/u }).click()
+  await expect(tables.nth(1).locator('.eotion-database-copy small')).toHaveText('Table')
+  await tables.nth(1).getByRole('button', { name: '切换视图' }).click()
+  const deleteMenu = page.locator('.eotion-database-view-menu')
+  await deleteMenu.getByRole('button', { name: '删除视图' }).click()
+  await expect.poll(() => api.views.map(item => item.name)).toEqual(['Quarterly'])
+  expect(api.requests.some(({ method, path }) => method === 'DELETE' && path.endsWith('/views/view-root-id'))).toBe(true)
+
+  await table.getByRole('button', { name: '切换视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '＋ 新建视图' }).click()
+  await expect(table.locator('.eotion-database-copy small')).toHaveText('表格 2')
+  await table.getByRole('button', { name: '切换视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '删除视图' }).click()
+  await expect(table.locator('.eotion-database-copy small')).toHaveText('Quarterly')
+  await expect.poll(() => api.views.map(item => item.name)).toEqual(['Quarterly'])
+  await expect.poll(() => api.blocks.find(item => item.id === 'view-lifecycle')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: api.views[0]?.id })
+
+  await page.reload()
+  await expect(page.locator('.eotion-editor-content .eotion-database').nth(0).locator('.eotion-database-copy small')).toHaveText('Quarterly')
+  await page.locator('.eotion-editor-content .eotion-database').nth(0).getByRole('button', { name: '切换视图' }).click()
+  const lastViewMenu = page.locator('.eotion-database-view-menu')
+  await expect(lastViewMenu.getByRole('button', { name: '删除视图' })).toBeDisabled()
+})
+
+test('linked views keep independent server filters, multi-sort order and column layout', async ({ page, context }) => {
+  const records = [
+    record('view-row-alpha', rootDatabase.id, 'page-alpha', { 'root-title': 'Alpha done', 'root-number': 10, 'root-select': 'status-done', 'root-text': 'visible' }),
+    record('view-row-beta', rootDatabase.id, 'page-beta', { 'root-title': 'Beta done', 'root-number': 30, 'root-select': 'status-done', 'root-text': 'hidden' }),
+    record('view-row-delta', rootDatabase.id, 'page-delta', { 'root-title': 'Delta done', 'root-number': 30, 'root-select': 'status-done', 'root-text': 'hidden' }),
+    record('view-row-open', rootDatabase.id, 'page-open', { 'root-title': 'Open task', 'root-number': 99, 'root-select': 'status-open', 'root-text': 'hidden' }),
+    record('view-row-empty', rootDatabase.id, 'page-empty', { 'root-title': 'Empty done', 'root-select': 'status-done', 'root-text': 'hidden' }),
+  ]
+  const api = await installApi(page, [
+    block('linked-view-one', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+    block('linked-view-two', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 200),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records, failViewUpdates: 1 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const tables = page.locator('.eotion-editor-content .eotion-database')
+  await expect(tables).toHaveCount(2)
+  await expect(tables.nth(0).locator('tbody tr')).toHaveCount(5)
+  await tables.nth(1).getByRole('button', { name: '切换视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '＋ 新建视图' }).click()
+  await expect(tables.nth(1).locator('.eotion-database-copy small')).toHaveText('表格 2')
+  await expect(tables.nth(0).locator('.eotion-database-copy small')).toHaveText('Table')
+
+  await tables.nth(1).getByRole('button', { name: '筛选' }).click()
+  const filterPanel = page.getByRole('group', { name: '筛选条件' })
+  await screenshot(page, 'p84-database-filter-desktop')
+  await filterPanel.getByRole('button', { name: '＋ 添加筛选条件' }).click()
+  await filterPanel.getByRole('combobox', { name: '筛选属性 1' }).selectOption('root-select')
+  await filterPanel.getByRole('combobox', { name: '筛选值 1' }).selectOption('status-done')
+  await filterPanel.getByRole('button', { name: '保存筛选' }).click()
+  await expect(page.getByRole('alert')).toContainText('View temporarily unavailable')
+  await expect(filterPanel.getByRole('combobox', { name: '筛选值 1' })).toHaveValue('status-done')
+  await filterPanel.getByRole('button', { name: '保存筛选' }).click()
+  await expect(tables.nth(1).locator('tbody tr')).toHaveCount(4)
+  await expect(tables.nth(1)).not.toContainText('Open task')
+  expect(api.views.find(item => item.id !== 'view-root-id')?.config.filters).toEqual([{ propertyId: 'root-select', operator: 'is', value: 'status-done' }])
+  await expect(tables.nth(0).locator('tbody tr')).toHaveCount(5)
+
+  await tables.nth(1).getByRole('button', { name: '排序' }).click()
+  const sortPanel = page.getByRole('group', { name: '排序条件' })
+  await screenshot(page, 'p84-database-sort-desktop')
+  await sortPanel.getByRole('button', { name: '＋ 添加排序' }).click()
+  await sortPanel.getByRole('combobox', { name: '排序属性 1' }).selectOption('root-number')
+  await sortPanel.getByRole('combobox', { name: '排序方向 1' }).selectOption('desc')
+  await sortPanel.getByRole('button', { name: '＋ 添加排序' }).click()
+  await sortPanel.getByRole('button', { name: '保存排序' }).click()
+  await expect(tables.nth(1).locator('tbody tr').nth(0)).toContainText('Beta done')
+  await expect(tables.nth(1).locator('tbody tr').nth(1)).toContainText('Delta done')
+  await expect(tables.nth(1).locator('tbody tr').nth(2)).toContainText('Alpha done')
+  await expect(tables.nth(1).locator('tbody tr').nth(3)).toContainText('Empty done')
+  const configuredView = api.views.find(item => item.id !== 'view-root-id')!
+  expect(configuredView.config.sorts).toEqual([{ propertyId: 'root-number', direction: 'desc' }, { propertyId: 'root-title', direction: 'asc' }])
+
+  await tables.nth(1).getByRole('button', { name: '排序' }).click()
+  const reorderPanel = page.getByRole('group', { name: '排序条件' })
+  await reorderPanel.getByRole('button', { name: '排序下移 1' }).click()
+  await reorderPanel.getByRole('button', { name: '保存排序' }).click()
+  await expect(tables.nth(1).locator('tbody tr').nth(0)).toContainText('Alpha done')
+  expect(configuredView.config.sorts[0]?.propertyId).toBe('root-title')
+
+  await tables.nth(1).getByRole('button', { name: '视图列设置' }).click()
+  const columnsPanel = page.getByRole('group', { name: '列设置' })
+  await screenshot(page, 'p84-database-columns-desktop')
+  await columnsPanel.getByRole('checkbox', { name: 'Notes' }).uncheck()
+  for (let index = 0; index < 3; index += 1) await columnsPanel.getByRole('button', { name: '列上移 Due' }).click()
+  await columnsPanel.getByRole('button', { name: '保存列设置' }).click()
+  const headers = await tables.nth(1).locator('thead th').allTextContents()
+  expect(headers.some(header => header.includes('Notes'))).toBe(false)
+  expect(headers.indexOf('Due⌄')).toBeLessThan(headers.indexOf('Points⌄'))
+  expect(await tables.nth(0).locator('thead th').allTextContents()).toContain('Notes⌄')
+  expect(configuredView.config.visibleProperties).not.toContain('root-text')
+
+  await tables.nth(0).getByRole('button', { name: 'Open', exact: true }).click()
+  await page.locator('.eotion-database-cell-menu').getByRole('button', { name: 'Done', exact: true }).click()
+  await expect(tables.nth(1).locator('tbody tr')).toHaveCount(5)
+  await tables.nth(0).locator('tbody tr').filter({ hasText: 'Beta done' }).getByRole('button', { name: 'Done', exact: true }).click()
+  await page.locator('.eotion-database-cell-menu').getByRole('button', { name: 'Open', exact: true }).click()
+  await expect(tables.nth(1).locator('tbody tr')).toHaveCount(4)
+  await expect(tables.nth(0).locator('tbody tr')).toHaveCount(5)
+
+  await expect.poll(() => api.blocks.find(item => item.id === 'linked-view-two')?.props.node?.attrs).not.toEqual({ databaseId: rootDatabase.id, viewId: 'view-root-id' })
+  await page.reload()
+  const reloadedTables = page.locator('.eotion-editor-content .eotion-database')
+  await expect(reloadedTables.nth(1).locator('.eotion-database-copy small')).toHaveText('表格 2')
+  const reloadedHeaders = await reloadedTables.nth(1).locator('thead th').allTextContents()
+  expect(reloadedHeaders.some(header => header.includes('Notes'))).toBe(false)
+  await expect(reloadedTables.nth(1).locator('tbody tr')).toHaveCount(4)
+
+  const filterButton = tables.nth(1).getByRole('button', { name: /筛选/u })
+  await filterButton.click()
+  await expect(page.getByRole('group', { name: '筛选条件' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('group', { name: '筛选条件' })).toHaveCount(0)
+  await expect(filterButton).toBeFocused()
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await filterButton.click()
+  await screenshot(page, 'p84-database-filter-dark')
+  await page.keyboard.press('Escape')
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'))
+  await page.setViewportSize({ width: 390, height: 844 })
+  await filterButton.click()
+  await screenshot(page, 'p84-database-filter-mobile-390')
+  const overflow = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }))
+  expect(overflow.width).toBeLessThanOrEqual(overflow.client)
+  await page.keyboard.press('Escape')
+  await tables.nth(1).getByRole('button', { name: /排序/u }).click()
+  await screenshot(page, 'p84-database-sort-mobile-390')
+  await page.keyboard.press('Escape')
+  await tables.nth(1).getByRole('button', { name: '视图列设置' }).click()
+  await screenshot(page, 'p84-database-columns-mobile-390')
+  await page.keyboard.press('Escape')
+  const mutationCount = api.requests.filter(({ method, path }) => ['POST', 'PATCH', 'DELETE'].includes(method) && path.includes(`/databases/${rootDatabase.id}/views`)).length
+  await context.setOffline(true)
+  api.offline = true
+  await expect(tables.nth(1).getByRole('button', { name: '切换视图' })).toBeDisabled()
+  await expect(tables.nth(1).getByRole('button', { name: /筛选/u })).toBeDisabled()
+  await expect(tables.nth(1).getByRole('button', { name: /排序/u })).toBeDisabled()
+  await expect(tables.nth(1).getByRole('button', { name: '视图列设置' })).toBeDisabled()
+  expect(api.requests.filter(({ method, path }) => ['POST', 'PATCH', 'DELETE'].includes(method) && path.includes(`/databases/${rootDatabase.id}/views`))).toHaveLength(mutationCount)
 })
 
 test('database tables render and references round-trip at root and under a toggle', async ({ page }) => {
@@ -760,6 +1059,7 @@ test('edits versioned cells and manages property options without losing stable I
   await page.reload()
   await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('Planning')
   await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('Revised notes')
+  await installLocalBlockReader(page)
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
   await table.getByRole('button', { name: 'Deadline⌄' }).click()
   await screenshot(page, 'p83-desktop-dark-property-menu')
@@ -774,11 +1074,7 @@ test('edits versioned cells and manages property options without losing stable I
   await offlineBody.click()
   await page.keyboard.press('End')
   await page.keyboard.type(' remains editable')
-  await expect.poll(() => page.evaluate(async (id) => {
-    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
-    const local = await useProductSyncStore().store()
-    return JSON.stringify(await local.listBlocksByPage(id))
-  }, pageRecord.id)).toContain('remains editable')
+  await expect.poll(() => readLocalBlocks(page, pageRecord.id)).toContain('remains editable')
   expect(JSON.stringify(api.blocks.find((item) => item.id === 'offline-body')?.props)).not.toContain('remains editable')
   await expect.poll(() => pageErrors).toEqual([])
 })
@@ -1078,6 +1374,7 @@ test('database loading error retries and offline state preserves the page body',
   await expect(table.getByRole('alert')).toContainText('Database temporarily unavailable')
   await screenshot(page, 'product-database-error')
   await expect(page.locator('.eotion-editor-content .tiptap')).toContainText('正文离线可见')
+  await installLocalBlockReader(page)
   await context.setOffline(true)
   api.offline = true
   await table.getByRole('button', { name: '重试加载' }).click()
@@ -1087,11 +1384,7 @@ test('database loading error retries and offline state preserves the page body',
   await editor.locator('p').first().click()
   await page.keyboard.press('End')
   await page.keyboard.type('，离线修改已保存')
-  await expect.poll(() => page.evaluate(async (id) => {
-    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
-    const local = await useProductSyncStore().store()
-    return JSON.stringify(await local.listBlocksByPage(id))
-  }, pageRecord.id)).toContain('离线修改已保存')
+  await expect.poll(() => readLocalBlocks(page, pageRecord.id)).toContain('离线修改已保存')
   expect(JSON.stringify(api.blocks.find((item) => item.id === 'offline-body')?.props)).not.toContain('离线修改已保存')
   expect(api.blocks.some((item) => item.id === 'offline-body')).toBe(true)
   expect(api.blocks.find((item) => item.id === 'error-database')?.props.node).toEqual({

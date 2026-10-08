@@ -74,6 +74,26 @@ test('database APIs encode scoped routes, query windows, and strict write payloa
   assert.deepEqual(requests.slice(6).map(request => request.method), ['POST', 'PATCH', 'DELETE', 'PATCH'])
 })
 
+test('database view mutations use scoped endpoints and typed versioned payloads', async () => {
+  const requests = []
+  const client = new EotionApiClient({ baseUrl: 'https://eotion.test', fetch: async (input, init) => { requests.push(new Request(input, init)); return Response.json({}) } })
+  const config = { filters: [{ propertyId: 'status', operator: 'is', value: 'open' }], sorts: [{ propertyId: 'title', direction: 'asc' }], visibleProperties: null, propertyOrder: null }
+  const create = { id: 'view-2', name: 'Open', type: 'table', config, expectedDatabaseVersion: 3 }
+  const update = { config, expectedDatabaseVersion: 4, expectedViewVersion: 1 }
+  const remove = { expectedDatabaseVersion: 5, expectedViewVersion: 2 }
+  await client.databases.createDatabaseView('ws/1', 'db/1', create)
+  await client.databases.updateDatabaseView('ws/1', 'db/1', 'view/2', update)
+  await client.databases.deleteDatabaseView('ws/1', 'db/1', 'view/2', remove)
+  assert.deepEqual(requests.map(request => [request.method, request.url]), [
+    ['POST', 'https://eotion.test/api/workspaces/ws%2F1/databases/db%2F1/views'],
+    ['PATCH', 'https://eotion.test/api/workspaces/ws%2F1/databases/db%2F1/views/view%2F2'],
+    ['DELETE', 'https://eotion.test/api/workspaces/ws%2F1/databases/db%2F1/views/view%2F2'],
+  ])
+  assert.deepEqual(await requests[0].json(), create)
+  assert.deepEqual(await requests[1].json(), update)
+  assert.deepEqual(await requests[2].json(), remove)
+})
+
 test('API error responses become ApiError values carrying the server status', async () => {
   const client = new EotionApiClient({
     baseUrl: 'https://eotion.test',

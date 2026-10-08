@@ -6,10 +6,15 @@ const {
   DatabasePropertyCreateRequestSchema,
   DatabaseRecordCreateRequestSchema,
   DatabaseViewCreateRequestSchema,
+  DatabaseViewHttpCreateRequestSchema,
+  DatabaseViewUpdateRequestSchema,
+  DatabaseViewDeleteRequestSchema,
+  DatabaseViewConfigSchema,
   DatabaseLinkInPageRequestSchema,
   DatabaseRecordPageCreateRequestSchema,
   DatabaseListQuerySchema,
   DatabaseViewListQuerySchema,
+  DatabaseTableQuerySchema,
   DatabaseTableResponseSchema,
   DatabaseSchema,
   DatabasePropertySchema,
@@ -20,7 +25,7 @@ const {
 const timestamp = '2026-01-02T03:04:05.000Z'
 const property = { id: 'title-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'Name', type: 'title', version: 1, createdAt: timestamp, updatedAt: timestamp }
 const database = { id: 'db-1', workspaceId: 'ws-1', name: 'Tasks', version: 1, createdAt: timestamp, updatedAt: timestamp }
-const view = { id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All tasks', type: 'table', version: 1, createdAt: timestamp, updatedAt: timestamp }
+const view = { id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All tasks', type: 'table', config: { filters: [], sorts: [], visibleProperties: null, propertyOrder: null }, version: 1, createdAt: timestamp, updatedAt: timestamp }
 
 test('database entity schemas reuse the strict domain validators', () => {
   assert.deepEqual(DatabaseSchema.parse(database), database)
@@ -57,6 +62,12 @@ test('database create request schemas enforce exact request shapes', () => {
   const createView = { id: 'view-1', name: 'All tasks', type: 'table' }
   assert.deepEqual(DatabaseViewCreateRequestSchema.parse(createView), createView)
   assert.equal(DatabaseViewCreateRequestSchema.safeParse({ ...createView, type: 'board' }).success, false)
+  assert.equal(DatabaseViewHttpCreateRequestSchema.safeParse(createView).success, false)
+  assert.deepEqual(DatabaseViewHttpCreateRequestSchema.parse({ ...createView, expectedDatabaseVersion: 1 }), { ...createView, expectedDatabaseVersion: 1 })
+  assert.equal(DatabaseViewUpdateRequestSchema.safeParse({ expectedDatabaseVersion: 1, expectedViewVersion: 1 }).success, false)
+  assert.deepEqual(DatabaseViewDeleteRequestSchema.parse({ expectedDatabaseVersion: 1, expectedViewVersion: 1 }), { expectedDatabaseVersion: 1, expectedViewVersion: 1 })
+  assert.equal(DatabaseViewConfigSchema.safeParse({ filters: [{ propertyId: 'p', operator: 'checked' }], sorts: [], visibleProperties: null, propertyOrder: null }).success, true)
+  assert.equal(DatabaseViewConfigSchema.safeParse({ filters: [{ propertyId: 'p', operator: 'checked', value: true }], sorts: [], visibleProperties: null, propertyOrder: null }).success, false)
 })
 
 test('database create request schemas reject unstable or oversized ids and names without trimming input', () => {
@@ -97,6 +108,8 @@ test('database HTTP contracts strictly validate page creation, links, and bounde
   assert.equal(DatabaseListQuerySchema.safeParse({ limit: '101' }).success, false)
   assert.equal(DatabaseListQuerySchema.safeParse({ cursor: ' db-1' }).success, false)
   assert.deepEqual(DatabaseViewListQuerySchema.parse({}), { limit: 100 })
+  assert.equal(DatabaseTableQuerySchema.safeParse({ cursor: 'x'.repeat(256) }).success, true)
+  assert.equal(DatabaseTableQuerySchema.safeParse({ cursor: 'x'.repeat(16_385) }).success, false)
 })
 
 test('database table response validates scope, property values, and the property cap', () => {

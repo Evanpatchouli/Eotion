@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
 import { BLOCK_TYPES, blockCapability, isAllowedChildBlockType, parentRejection, parentRejectionMessage, validateBlockProps } from '@eotion/domain'
 import type { ServerBlockRecord } from '../types'
@@ -28,6 +28,9 @@ export class BlockService {
     if (input.pageId !== pageId) throw new BadRequestException('Block pageId does not match the target page')
     if (!validateBlockProps(input.type, input.props)) throw new BadRequestException('Invalid block attributes')
     await this.assertDatabaseReference(workspaceId, input.type, input.props, session)
+    if (!session && this.databaseReferenceIds(input.type, input.props).length > 0 && !(await supportsTransactions(this.connection))) {
+      throw new ServiceUnavailableException('Database block references require MongoDB replica set transactions')
+    }
     if (!session && !(await supportsTransactions(this.connection))) {
       if (!(await this.pages.findInWorkspace(workspaceId, pageId))) throw new NotFoundException('Page not found in workspace')
       const parentBlockId = input.parentBlockId ?? null
@@ -81,6 +84,10 @@ export class BlockService {
     return this.blocks.listByWorkspace(workspaceId)
   }
 
+  async hasDatabaseViewReference(workspaceId: string, databaseId: string, viewId: string, session?: ClientSession): Promise<boolean> {
+    return this.blocks.hasDatabaseViewReference(workspaceId, databaseId, viewId, session)
+  }
+
   async update(userId: string, workspaceId: string, pageId: string, id: string, patch: BlockPatch, session?: ClientSession): Promise<ServerBlockRecord | null> {
     await this.permissions.assertCanWrite(userId, workspaceId)
     if ('parentBlockId' in patch) throw new BadRequestException('Moving a block is not supported yet')
@@ -102,6 +109,9 @@ export class BlockService {
       throw new BadRequestException('Invalid block attributes')
     }
     await this.assertDatabaseReference(workspaceId, patch.type ?? existing.type, patch.props ?? existing.props, session)
+    if (!session && this.databaseReferenceIds(patch.type ?? existing.type, patch.props ?? existing.props).length > 0 && !(await supportsTransactions(this.connection))) {
+      throw new ServiceUnavailableException('Database block references require MongoDB replica set transactions')
+    }
     const targetType = patch.type
     if (targetType !== undefined && targetType !== existing.type) {
       const capability = blockCapability(targetType)
@@ -203,6 +213,8 @@ export class BlockService {
   }
 
   private async createInSession(workspaceId: string, pageId: string, input: BlockCreate, session: ClientSession): Promise<ServerBlockRecord> {
+    // Validate again inside the transaction; the preflight check cannot protect against a concurrent view delete.
+    await this.assertDatabaseReference(workspaceId, input.type, input.props, session)
     if (!(await this.pages.touchStructure(workspaceId, pageId, session))) throw new NotFoundException('Page not found in workspace')
     const parentBlockId = input.parentBlockId ?? null
     if (parentBlockId !== null) {
@@ -215,21 +227,30 @@ export class BlockService {
   }
 
   private async assertDatabaseReference(workspaceId: string, _type: ServerBlockRecord['type'], props: Record<string, unknown>, session?: ClientSession): Promise<void> {
+    for (const { databaseId, viewId } of this.databaseReferenceIds(_type, props)) {
+      const database = await this.databases.findInWorkspace(workspaceId, databaseId, session)
+      const view = await this.views.findInWorkspace(workspaceId, viewId, session)
+      if (!database || !view || view.databaseId !== database.id) throw new BadRequestException('Database block reference must belong to the same workspace and database')
+      if (session && !(await this.views.touchReferenceFence(workspaceId, databaseId, viewId, session))) {
+        throw new BadRequestException('Database view reference must belong to the same workspace and database')
+      }
+    }
+  }
+
+  private databaseReferenceIds(_type: ServerBlockRecord['type'], props: Record<string, unknown>): Array<{ databaseId: string; viewId: string }> {
+    const references: Array<{ databaseId: string; viewId: string }> = []
     const pending: unknown[] = [props.node]
     while (pending.length > 0) {
       const node = pending.pop()
       if (typeof node !== 'object' || node === null || Array.isArray(node)) continue
       const value = node as Record<string, unknown>
       if (value.type === 'eotionDatabase') {
-        const attrs = value.attrs as { databaseId?: string; viewId?: string } | undefined
-        const databaseId = attrs?.databaseId
-        const viewId = attrs?.viewId
-        if (!databaseId || !viewId) throw new BadRequestException('Invalid database block reference')
-        const database = await this.databases.findInWorkspace(workspaceId, databaseId, session)
-        const view = await this.views.findInWorkspace(workspaceId, viewId, session)
-        if (!database || !view || view.databaseId !== database.id) throw new BadRequestException('Database block reference must belong to the same workspace and database')
+        const attrs = value.attrs as { databaseId?: unknown; viewId?: unknown } | undefined
+        if (typeof attrs?.databaseId !== 'string' || typeof attrs.viewId !== 'string') throw new BadRequestException('Invalid database block reference')
+        references.push({ databaseId: attrs.databaseId, viewId: attrs.viewId })
       }
       if (Array.isArray(value.content)) pending.push(...value.content)
     }
+    return references
   }
 }

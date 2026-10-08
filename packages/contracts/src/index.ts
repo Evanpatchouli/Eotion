@@ -6,9 +6,11 @@ import {
   isValidDatabasePropertyDefinition,
   isValidDatabaseRecord,
   isValidDatabaseView,
+  isValidDatabaseViewConfigShape,
   validateDatabaseRecordValues,
+  validateDatabaseViewConfig,
 } from '@eotion/domain/database'
-import type { Database, DatabaseProperty, DatabaseRecord, DatabaseTableRecord, DatabaseView } from '@eotion/domain/database'
+import type { Database, DatabaseProperty, DatabaseRecord, DatabaseTableRecord, DatabaseView, DatabaseViewConfig } from '@eotion/domain/database'
 export { BLOCK_TYPES }
 
 export interface HealthResponse {
@@ -112,6 +114,8 @@ export type DatabaseRecordResponse = DatabaseRecord
 export type DatabaseTableRecordResponse = DatabaseTableRecord
 export const DatabaseViewSchema = z.custom<DatabaseView>(isValidDatabaseView)
 export type DatabaseViewResponse = z.infer<typeof DatabaseViewSchema>
+export const DatabaseViewConfigSchema = z.custom<DatabaseViewConfig>(isValidDatabaseViewConfigShape)
+export type DatabaseViewConfigRequest = z.infer<typeof DatabaseViewConfigSchema>
 
 const databaseWindowQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
@@ -119,7 +123,10 @@ const databaseWindowQuerySchema = z.object({
 }).strict()
 export const DatabaseListQuerySchema = databaseWindowQuerySchema
 export const DatabaseViewListQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(100).default(100) }).strict()
-export const DatabaseTableQuerySchema = databaseWindowQuerySchema
+export const DatabaseTableQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  cursor: z.string().min(1).max(16_384).refine(value => value.trim() === value).optional(),
+}).strict()
 export type DatabaseListQuery = z.infer<typeof DatabaseListQuerySchema>
 export type DatabaseViewListQuery = z.infer<typeof DatabaseViewListQuerySchema>
 export type DatabaseTableQuery = z.infer<typeof DatabaseTableQuerySchema>
@@ -163,9 +170,10 @@ function isValidDatabaseTableResponse(value: unknown): value is DatabaseTableRes
   const properties = table.properties as DatabaseProperty[]
   if (!properties.every(property => property.databaseId === database.id && property.workspaceId === database.workspaceId)) return false
   if (properties.filter(property => property.type === 'title').length !== 1 || new Set(properties.map(property => property.id)).size !== properties.length) return false
+  if (!validateDatabaseViewConfig(view.config, properties)) return false
   if (!Array.isArray(table.records) || table.records.length > 100 || !table.records.every(record => isValidDatabaseTableRecord(record, properties))) return false
   if (!table.records.every(record => (record as DatabaseTableRecord).databaseId === database.id && (record as DatabaseTableRecord).workspaceId === database.workspaceId)) return false
-  return table.nextCursor === null || (typeof table.nextCursor === 'string' && databaseStableIdSchema.safeParse(table.nextCursor).success)
+  return table.nextCursor === null || (typeof table.nextCursor === 'string' && table.nextCursor.length > 0 && table.nextCursor.length <= 16_384 && table.nextCursor.trim() === table.nextCursor)
 }
 
 function isValidDatabaseTableRecord(value: unknown, properties: readonly DatabaseProperty[]): value is DatabaseTableRecord {
@@ -239,8 +247,26 @@ export const DatabaseViewCreateRequestSchema = z.object({
   id: databaseStableIdSchema,
   name: databaseNameSchema,
   type: z.literal('table'),
+  config: DatabaseViewConfigSchema.optional(),
+  expectedDatabaseVersion: z.number().int().positive().safe().optional(),
 }).strict()
 export type DatabaseViewCreateRequest = z.infer<typeof DatabaseViewCreateRequestSchema>
+export const DatabaseViewHttpCreateRequestSchema = DatabaseViewCreateRequestSchema.extend({
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+}).strict()
+export type DatabaseViewHttpCreateRequest = z.infer<typeof DatabaseViewHttpCreateRequestSchema>
+export const DatabaseViewUpdateRequestSchema = z.object({
+  name: databaseNameSchema.optional(),
+  config: DatabaseViewConfigSchema.optional(),
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+  expectedViewVersion: z.number().int().positive().safe(),
+}).strict().refine(value => value.name !== undefined || value.config !== undefined, 'At least one field must be provided')
+export type DatabaseViewUpdateRequest = z.infer<typeof DatabaseViewUpdateRequestSchema>
+export const DatabaseViewDeleteRequestSchema = z.object({
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+  expectedViewVersion: z.number().int().positive().safe(),
+}).strict()
+export type DatabaseViewDeleteRequest = z.infer<typeof DatabaseViewDeleteRequestSchema>
 
 export const SAFE_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'] as const
 

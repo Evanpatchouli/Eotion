@@ -1,13 +1,13 @@
 # P8 Database
 
-P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1 Database Domain Foundation 于 2026-10-08 验收 PASS；P8.2 Inline Database + Table View 与 P8.3 Properties + Record Editing 于 2026-10-09 验收 PASS。P8.3 为 current，本轮不进入 P8.4。
+P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1 Database Domain Foundation 于 2026-10-08 验收 PASS；P8.2 Inline Database + Table View、P8.3 Properties + Record Editing 与 P8.4 Views + Filter + Sort 于 2026-10-09 验收 PASS。P8.4 为 current，本轮不进入 P8.5。
 
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
 | P8.1 | Database / Property / Record / View、稳定 Block 引用、权限与原子创建 | PASS |
 | P8.2 | Inline Database + Table View | PASS |
-| P8.3 | Properties + Record Editing | PASS / current |
-| P8.4 | Views / Filter / Sort | not started |
+| P8.3 | Properties + Record Editing | PASS |
+| P8.4 | Views / Filter / Sort | PASS / current |
 | P8.5 | Advanced Properties | not started |
 | P8.6 | Database Acceptance | not started |
 
@@ -33,7 +33,7 @@ Database Block 沿用既有 Block props wrapper，只保存引用：
 
 Block 的 ID/pageId/parentBlockId/orderKey 继续由现有模型维护。properties、records、views 不进入 `props.node`。同一 Database 可以有多个引用，每个引用选择属于该 Database 的 View。
 
-Property 第一版支持 title、text、number、checkbox、select、date。Property ID 是 Record properties 的键；select 值是稳定 option ID，date 是有效的 YYYY-MM-DD。每个 Database 恰好一个 title Property。P8.3 中 title 由关联 Page.title 投影，Record 持久化 properties 不再保存 title 副本；其他字段可以缺失，显式清空删除键。没有 relation、rollup、formula、people、files 或 property 插件系统。View 第一版只有 table，没有 filter/sort 表达式。
+Property 第一版支持 title、text、number、checkbox、select、date。Property ID 是 Record properties 的键；select 值是稳定 option ID，date 是有效的 YYYY-MM-DD。每个 Database 恰好一个 title Property。P8.3 中 title 由关联 Page.title 投影，Record 持久化 properties 不再保存 title 副本；其他字段可以缺失，显式清空删除键。没有 relation、rollup、formula、people、files 或 property 插件系统。View 只有 table；P8.4 增加独立 AND 筛选、多级排序和列配置。
 
 ## Record 与 Page
 
@@ -132,7 +132,7 @@ Database 数据仍只从服务端读取，不进入 LocalStore、Page snapshot�
 
 自动产品测试使用 mock transport 覆盖 Web 流程；事务、分页和权限由真实 Mongo/API 集成测试验证。移动端证据为 390px Chromium 响应式验收，不代替新的原生宿主/真机验收。P8.2 交付时只提供 Table 与基础值读取，新记录默认“无标题”；当时 schema/cell 编辑尚未开始。P8.3 行为见下文，Filter/Sort、其他 View、Database MCP、完整 Database offline/sync 仍未开始。
 
-## P8.3 Properties + Record Editing（current）
+## P8.3 Properties + Record Editing
 
 ### 属性与 typed value contract
 
@@ -193,4 +193,64 @@ Database schema/cell 只在线编辑，断网时明确只读，不进入 LocalSt
 | 独立 review | 发现的问题已修复并补回归；最终定向复核 0 blocker |
 | `git diff --check` / UTF-8 无 BOM | 通过 |
 
-Web 产品回归使用 mock transport；typed validation、Workspace/Database 隔离、版本冲突、标题同步与事务回滚另由真实 HTTP/Mongo 集成测试验证。移动端证据为 Chromium 响应式编辑验收。P8.3 PASS；P8.4–P8.6 not started。
+Web 产品回归使用 mock transport；typed validation、Workspace/Database 隔离、版本冲突、标题同步与事务回滚另由真实 HTTP/Mongo 集成测试验证。移动端证据为 Chromium 响应式编辑验收。以上为 P8.3 交付时的验收：P8.3 PASS，当时 P8.4–P8.6 not started；当前阶段见顶部状态与下文。
+
+## P8.4 Views + Filter + Sort（PASS / current）
+
+同一个 Database 支持多个 Table View。records / properties 共享，View 名称与 `config` 独立持久化。配置包含 AND `filters`、按优先级排列的 `sorts`、`visibleProperties` 和 `propertyOrder`。列配置为 null 时分别表示全部列、schema 顺序；显式显示列表必须包含 title，列顺序可为子集，其余列按 schema 顺序补到末尾。配置只影响展示，不修改 Property schema。旧 View 没有 config 时读取为默认配置。
+
+### Filter operator matrix
+
+| Property | Operators | Value |
+| --- | --- | --- |
+| title / text | is、is_not、contains、does_not_contain、is_empty、is_not_empty | 文本；空值 operator 无 value |
+| number | eq、ne、gt、gte、lt、lte、is_empty、is_not_empty | finite number；空值 operator 无 value |
+| checkbox | checked、unchecked | 无 value；分别匹配 true / false |
+| select | is、is_not、is_empty、is_not_empty | 当前合法 option ID；空值 operator 无 value |
+| date | is、before、after、is_empty、is_not_empty | 合法 YYYY-MM-DD；空值 operator 无 value |
+
+最多 20 条 AND 条件，文本条件值最多 2000 字符，不支持 OR、嵌套组、相对日期或表达式。缺失、null、空字符串视为空值；0 与 false 是实际值。带值比较只匹配非空值，空值需用明确的空值条件。文本匹配区分大小写，使用二进制规则，不把用户文本当正则表达式；select 比较稳定 ID，option 改名不改变匹配。
+
+### Sort 与有界查询
+
+最多 10 条排序，不允许重复 Property，按用户配置顺序依次生效。title/text 与 date 按二进制字符串排序，number 按数值，checkbox 为 false < true，select 按稳定 option ID。所有方向都将空值放在末尾；最后追加 Record ID asc 作为确定性 tie-break，无配置时直接按 Record ID asc。
+
+有 Filter/Sort 的 Table 查询从服务端持久化 View 配置生成已校验的 Mongo aggregation。按 Workspace/Database 约束记录、关联同 Workspace 的 Page 并投影权威标题，再过滤、排序和分页；不会先读一页再由前端筛选。没有 Filter/Sort 时保留既有 ID 索引分页快路径：先取最多 limit + 1 个 Record，再批量读取这些 Page，列配置不触发全库 join。默认路径发现窗口内缺失关联 Page 时明确拒绝查询，避免静默缩短窗口或漏掉下一页。
+
+每次默认 50、最大 100，UI 每次 25，仓储只返回 limit + 1。有限长度游标绑定 Workspace/Database/View、Database/View 版本、配置 hash、最后 Record ID 和该 Record 的 Page version，服务端读取锚点排序元组后执行 keyset 查询；不在游标中保存任意长度的文本值，也不允许任意 Mongo expression。配置、Database 数据或锚点 Page 变化后需从首窗重新加载。排序确定性保证数据不变时跨页无重复/遗漏，不代表并发 Page 改名时的跨请求快照隔离。
+
+### View 生命周期、linked view 与并发
+
+View 可以创建、重命名、切换和删除；每个 Database 至少保留一个 View。删除采用 fail-closed：仍被任意持久化 Block（含递归 node content）引用的 View 返回冲突，用户先切换或移除引用并完成同步，再删除。不会自动改写其它 Page/Block。引用写入与 View 删除在事务内竞争同一个内部引用 fence，防止检查之后插入新引用。离线旧引用恢复仍须通过服务端引用校验。
+
+删除当前 View 前，UI 先选择另一个 View 并等待当前引用同步完成；其它 Block 仍有引用时保留 View，显示解除引用后重试的提示。删除过程中及失败提示以用户、Workspace、Database 和 Block 限定的会话内状态跨编辑器重建保留，重载不持久化该状态。创建响应不确定时按固定 View ID 重读列表核对；删除响应不确定时重读列表确认，不乐观移除 View。
+
+Block 只保存 databaseId/viewId。切换 View 改变当前 Block 的引用，沿用 Page/Block 保存与同步；View 配置修改是在线 typed API。相同 viewId 的引用共享配置，不同 viewId 的引用独立配置。Record 或 schema 修改后，当前已加载的同 Database 引用按各自配置重新查询，并保留已加载分页深度；结果变少时自然缩短。配置重载后保留。
+
+View create/update/delete 沿用 Cookie Session、SameOriginGuard、Workspace owner 权限与 Database 作用域，写入要求 Mongo transaction。更新/删除携带 expectedDatabaseVersion 与 expectedViewVersion；过期版本返回 409，不无条件覆盖草稿。服务端按当前 schema 校验 Property ID、operator/type、value、option ID、列集合与 title invariant，拒绝跨 Database/Workspace 注入。
+
+### Property 变化与同步边界
+
+删除 Property 在同一事务中清理所有 View 的相关 Filter、Sort、显示列和列顺序，并递增受影响 View version。删除 select option 同事务移除带有已删除 option ID 的 Filter，保留无 value 的空值条件，并继续清理 Record value；Property/option rename 保留稳定 ID，不改变引用。
+
+Page/Block 继续 Local-first；Database/View/Filter/Sort online-only，离线 Table 只读、不可配置。没有 Database oplog 或完整 offline sync。MCP get_page 仍只返回稳定 databaseId/viewId，不自动暴露配置或 records，也没有新增 Database MCP tools。本轮仅 table 与六种基础 Property，不包含 Board/Calendar/List、Relation/Rollup/Formula、分组/聚合、导入或 P8.5。
+
+已知规模边界：最多 100 个 Property / View；动态 Filter/Sort 使用聚合，不承诺任意规模的索引覆盖查询。安全删除 View 的递归引用检查扫描当前 Workspace 的 Block；Property/option 清理继续扫描该 Database 的 Record。没有持久化列宽或跨客户端实时 Database 推送。移动端复用 Web UI，390px Chromium 验收不代替原生宿主真机测试。
+
+### P8.4 验证
+
+| 验证 | 结果 |
+| --- | --- |
+| Domain / Contracts / SDK | 24/24、12/12、20/20，通过，零 skip；SDK typecheck 与缺少创建版本号的负向编译检查通过 |
+| API domain / HTTP / MCP | 5/5、27/27、30/30，通过，零 skip；隔离本机 Mongo replica set |
+| 默认查询成本 | 500 条 Record 的真实 Mongo profiler 回归通过；首、次页的 Record / Page 读取均受 limit + 1 约束，默认窗口孤儿 Page 返回冲突 |
+| 完整产品回归 | 239/239，通过，零 skip；Database 28 项与其余 211 项，最终源码与 fresh Vite、单 worker 完整执行 |
+| Storage | package 7/7、完整 IndexedDB / Electron SQLite / Desktop sync 11/11，通过，零 skip |
+| `pnpm typecheck` / Web / API build | 最终源码通过；Web 保留既有大 chunk 提示 |
+| Visual | 7/7，通过，无基线更新；Desktop Light/Dark 与 390×844 View / Filter / Sort / 列设置截图已人工检查 |
+| 独立 review | 默认查询成本、SDK 入参类型与特殊 option ID 清理问题已修复；最终定向复核 0 blocker |
+| `git diff --check` / UTF-8 无 BOM | 通过 |
+
+Web 产品测试使用 mock transport，真实 operator、权限、版本、游标、引用竞争与事务清理由 HTTP/Mongo 集成测试覆盖。Database 离线测试维护为断网前加载真实 IndexedDB 读取 helper，避免断网后动态加载开发模块；仍验证本地引用、正文和 oplog，不模拟离线写入成功。首轮旧编辑器 retry / Electron restart 用例各出现一次超时，两类定向重复各 6/6 通过；没有修改对应产品代码或削弱断言。完整 Storage 复跑 11/11、产品最终完整复跑 239/239 通过。日志与人工视觉截图保留在 ignored `test-results/p84-validation/`、`test-results/p84-visual/`。
+
+P8.1–P8.4 PASS，P8.4 为 current；P8.5–P8.6 not started。本轮到此停止。

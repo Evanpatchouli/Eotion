@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
-import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseTableQuerySchema, DatabaseViewListQuerySchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema } from '@eotion/contracts'
+import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseTableQuerySchema, DatabaseViewListQuerySchema, DatabaseViewHttpCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema } from '@eotion/contracts'
 import { DatabaseService } from '../server-domain/services/database.service'
 import type { UserRecord } from '../server-domain/types'
 import { CurrentUser, SessionAuthGuard } from './auth.transport'
@@ -30,6 +30,21 @@ export class DatabaseController {
   @Get('databases/:databaseId/views')
   listViews(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Query() query: unknown) {
     return this.databases.listViewsWindow(user.id, parseId(workspaceId), parseId(databaseId), parseBody(DatabaseViewListQuerySchema, query).limit)
+  }
+
+  @Post('databases/:databaseId/views')
+  createView(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Body() body: unknown) {
+    return this.databases.createView(user.id, parseId(workspaceId), parseId(databaseId), parseBody(DatabaseViewHttpCreateRequestSchema, body))
+  }
+
+  @Patch('databases/:databaseId/views/:viewId')
+  updateView(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('viewId') viewId: string, @Body() body: unknown) {
+    return this.databases.updateView(user.id, parseId(workspaceId), parseId(databaseId), parseId(viewId), parseBody(DatabaseViewUpdateRequestSchema, body))
+  }
+
+  @Delete('databases/:databaseId/views/:viewId')
+  deleteView(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('viewId') viewId: string, @Body() body: unknown) {
+    return this.databases.deleteView(user.id, parseId(workspaceId), parseId(databaseId), parseId(viewId), parseBody(DatabaseViewDeleteRequestSchema, body))
   }
 
   @Get('databases/:databaseId/views/:viewId/table')

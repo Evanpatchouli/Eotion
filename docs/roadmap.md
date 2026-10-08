@@ -154,7 +154,9 @@ P8.1 Database Domain Foundation：✅ **PASS（2026-10-08）**。独立 Database
 
 P8.2 Inline Database + Table View：✅ **PASS（2026-10-09）**。Slash 原子创建 Database/View/Block、linked view 共享引用、正文内 Table 基础值与有界分页、最小 Record/Page 创建和标题导航已交付。Block 与 Database 生命周期保持解耦，Page/Block 继续既有 Local-first；Database 数据仍在线读取。完整产品回归 231/231、visual 7/7、领域/API/MCP、typecheck/build 与独立 review 均通过。P8.2 交付边界见阶段文档。
 
-P8.3 Properties + Record Editing：✅ **PASS / current（2026-10-09）**。六种基础属性、schema 管理、在线行内编辑、Page.title 唯一标题来源、Record/Page 原子写入与版本条件更新。完整产品回归 237/237、visual 7/7、领域/API/MCP/storage、typecheck/build 与独立 review 均通过。验收证据与已知限制见 [P8 Database](p8-database.md)；P8.4–P8.6 not started。
+P8.3 Properties + Record Editing：✅ **PASS（2026-10-09）**。六种基础属性、schema 管理、在线行内编辑、Page.title 唯一标题来源、Record/Page 原子写入与版本条件更新。完整产品回归 237/237、visual 7/7、领域/API/MCP/storage、typecheck/build 与独立 review 均通过。验收证据与已知限制见 [P8 Database](p8-database.md)。
+
+P8.4 Views + Filter + Sort：✅ **PASS / current（2026-10-09）**。同一 Database 多 Table View、独立筛选/排序/列配置、服务端有界查询、安全生命周期与事务清理已交付。完整产品回归 239/239、visual 7/7、领域/API/MCP/storage、typecheck/build 与独立 review 0 blocker 均通过。P8.5–P8.6 not started；语义、验收和规模限制见 [P8 Database](p8-database.md)。
 
 ## 后续 - 异步基础设施
 

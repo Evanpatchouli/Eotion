@@ -1,5 +1,17 @@
 # Handoff
 
+## 2026-10-09 P8.4 Views + Filter + Sort 完成
+
+P8.1–P8.4 **PASS**，P8.4 为 **current**；基线 `4f123090066b7016f1c658a3536f4bd88c624853`。本轮仅交付 P8.4，P8.5/P8.6 not started，到此停止。正式契约与检索入口见 `docs/p8-database.md`、`docs/context/README.md`。
+
+同一 Database 多 Table View 支持创建、重命名、切换和安全删除。View 独立保存 AND filters、多级 sorts、visibleProperties/propertyOrder，records/properties 共享；linked 引用修改 Record 后按各自配置刷新并保留加载深度。六种基础 Property 有严格 operator/type/option ID 校验；空值双向排序均末尾，Record ID asc 最终兜底。服务端先筛选/排序再 keyset 分页；无 Filter/Sort 保留索引 limit+1 与批量 Page 投影，动态查询采用受校验的 Mongo 映射。
+
+至少保留一个 View；被持久化 Block 引用的 View 拒绝删除，当前引用先切换并同步，不自动改写其它 Page。View 引用写入与删除使用事务 fence；配置和生命周期沿用 owner 权限、Database/View version CAS。Property 删除同事务清理所有相关 View 配置；option 删除只移除真正带该 option ID 的 Filter，保留空值条件。Page/Block 继续 Local-first，Database/View online-only，没有 Database oplog、新 MCP tools 或 Page DTO 数据扩展。
+
+验收：Domain 24/24、Contracts 12/12、SDK 20/20、API domain 5/5、HTTP 27/27、MCP 30/30、完整 product 239/239、storage package 7/7、浏览器/Electron 11/11、visual 7/7，零 skip；根 typecheck、Web/API build、SDK 缺版本负向编译检查、git diff --check 与 UTF-8 无 BOM 通过。500 条记录的真实 Mongo profiler 回归验证默认首/次页查询成本。Desktop Light/Dark 与 390×844 View/Filter/Sort/列设置截图已人工检查；独立 review 最终 0 blocker。首轮两个旧回归超时后定向重复各 6/6，最终完整 product/storage 均通过，未削弱断言。日志和截图保留于 ignored `test-results/p84-validation/`、`test-results/p84-visual/`。
+
+已知边界：仅 Table、20 条 AND Filter、10 条 Sort、最多 100 Property/View；没有 OR/nested、高级属性、列宽持久化、完整 Database offline sync 或跨客户端实时推送。动态筛选/排序、View 删除引用扫描、Property/option 清理成本随数据规模增长；共同 Database version 可能要求刷新重试。Page 并发改名不提供跨页快照隔离；未知操作恢复仅限客户端会话。移动验收为响应式 Chromium，不替代原生宿主真机测试；Web 保留既有大 chunk 提示。
+
 ## 2026-10-09 P8.3 Properties + Record Editing 完成
 
 P8.1 PASS；P8.2 PASS；P8.3 **PASS / current**，基线 `014ddbbcb1b4be104a7c9c08950e1a545102de99`。本轮仅交付 P8.3，P8.4–P8.6 not started。正式契约与检索入口见 `docs/p8-database.md`、`docs/context/README.md`。

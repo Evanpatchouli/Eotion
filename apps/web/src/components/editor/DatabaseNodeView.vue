@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import type { DatabasePropertyResponse, DatabaseRecordCellUpdateRequest, DatabaseTableResponse } from '@eotion/contracts'
+import type { DatabasePropertyResponse, DatabaseRecordCellUpdateRequest, DatabaseTableResponse, DatabaseViewCreateRequest, DatabaseViewResponse } from '@eotion/contracts'
+import { DEFAULT_DATABASE_VIEW_CONFIG, validateDatabaseViewConfig, type DatabaseFilter, type DatabaseFilterOperator, type DatabaseViewConfig } from '@eotion/domain/database'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { createLocalId } from '@eotion/storage'
 import { RouterLink, useRouter } from 'vue-router'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
+  createProductDatabaseView, deleteProductDatabaseView, listProductDatabaseViews,
+  clearProductDatabaseViewDeleteState, getProductDatabaseViewDeleteState, setProductDatabaseViewDeleteState,
   isProductDatabaseRecordCreationUncertain, loadProductDatabaseTable, prepareProductDatabaseRecordPage,
-  updateProductDatabaseProperty, updateProductDatabaseRecordCell,
+  updateProductDatabaseProperty, updateProductDatabaseRecordCell, updateProductDatabaseView,
 } from '../../services/productDatabases'
 import { ApiError, errorMessage } from '../../services/productApi'
 import { useAuthStore } from '../../stores/auth'
-import { DATABASE_RECORD_CREATED_EVENT, DATABASE_UPDATED_EVENT, type DatabaseRecordCreatedDetail, type DatabaseUpdatedDetail } from '../../editor/databaseEvents'
+import { useProductSyncStore } from '../../stores/productSync'
+import { DATABASE_RECORD_CREATED_EVENT, DATABASE_UPDATED_EVENT, notifyDatabaseUpdated, type DatabaseRecordCreatedDetail, type DatabaseUpdatedDetail } from '../../editor/databaseEvents'
 import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'
 
 const props = defineProps(nodeViewProps)
@@ -21,8 +25,38 @@ const router = useRouter()
 const workspaceId = computed(() => String(props.extension.options.workspaceId ?? ''))
 const databaseId = computed(() => String(props.node.attrs.databaseId ?? ''))
 const viewId = computed(() => String(props.node.attrs.viewId ?? ''))
+const blockId = computed(() => String(props.node.attrs.blockId ?? ''))
+const scopedViewDeleteState = computed(() => {
+  const state = getProductDatabaseViewDeleteState(blockId.value)
+  return state && state.userId === (auth.user?.id ?? '') && state.workspaceId === workspaceId.value && state.databaseId === databaseId.value ? state : undefined
+})
 const title = ref('数据库')
 const viewName = ref('表格')
+const viewVersion = ref(1)
+const viewConfig = ref<DatabaseViewConfig>({ ...DEFAULT_DATABASE_VIEW_CONFIG })
+const views = ref<DatabaseViewResponse[]>([])
+const viewMenuOpen = ref(false)
+const viewMenuStyle = ref<Record<string, string>>({})
+const viewControlsOpen = ref<'filters' | 'sorts' | 'columns' | ''>('')
+const controlStyle = ref<Record<string, string>>({})
+const viewSubmitting = ref(false)
+const viewBusy = computed(() => !props.editor.isEditable || !online.value || staleReadonly.value || loading.value || loadingMore.value || savingCell.value || creating.value || viewSubmitting.value || scopedViewDeleteState.value?.status === 'pending')
+const visibleViewCount = computed(() => viewConfig.value.filters.length)
+const sortViewCount = computed(() => viewConfig.value.sorts.length)
+const displayProperties = computed(() => {
+  const all = properties.value
+  const orderedIds = viewConfig.value.propertyOrder ?? []
+  const ordered = [...orderedIds.map(id => all.find(property => property.id === id)).filter((property): property is DatabasePropertyResponse => Boolean(property)), ...all.filter(property => !orderedIds.includes(property.id))]
+  const visible = viewConfig.value.visibleProperties
+  return visible === null ? ordered : ordered.filter(property => property.type === 'title' || visible.includes(property.id))
+})
+const filterDrafts = ref<DatabaseFilter[]>([])
+const sortDrafts = ref<DatabaseViewConfig['sorts']>([])
+const columnDraft = ref<{ visible: string[]; order: string[] }>({ visible: [], order: [] })
+const renameViewDraft = ref('')
+const viewError = ref('')
+const visibleViewError = computed(() => viewError.value || (scopedViewDeleteState.value?.status === 'failed' && scopedViewDeleteState.value.replacementViewId === viewId.value ? scopedViewDeleteState.value.error : ''))
+const pendingCreateView = ref<DatabaseViewCreateRequest | null>(null)
 const databaseVersion = ref(1)
 const addableProperties = [
   { type: 'text', label: '文本' }, { type: 'number', label: '数字' }, { type: 'checkbox', label: '复选框' },
@@ -41,7 +75,7 @@ const moreError = ref('')
 const online = ref(navigator.onLine)
 const staleReadonly = ref(false)
 const creationUncertain = computed(() => isProductDatabaseRecordCreationUncertain(auth.user?.id ?? '', workspaceId.value, databaseId.value))
-const writable = computed(() => online.value && !staleReadonly.value && !loading.value && !savingCell.value)
+const writable = computed(() => online.value && !staleReadonly.value && !loading.value && !savingCell.value && !viewSubmitting.value)
 const addTitleMode = ref(false)
 const addTitleDraft = ref('')
 const propertyMenuId = ref('')
@@ -106,6 +140,8 @@ async function loadTable(append = false): Promise<void> {
     title.value = result.database.name
     databaseVersion.value = result.database.version
     viewName.value = result.view.name
+    viewVersion.value = result.view.version
+    viewConfig.value = result.view.config ?? { ...DEFAULT_DATABASE_VIEW_CONFIG }
     properties.value = result.properties
     if (append) records.value = [...records.value, ...result.records.filter(record => !records.value.some(existing => existing.id === record.id))]
     else records.value = result.records
@@ -136,6 +172,8 @@ async function refreshLoadedWindow(): Promise<void> {
   let nextDatabaseVersion = databaseVersion.value
   let nextTitle = title.value
   let nextViewName = viewName.value
+  let nextViewVersion = viewVersion.value
+  let nextViewConfig = viewConfig.value
   let nextProperties = properties.value
   try {
     do {
@@ -144,6 +182,8 @@ async function refreshLoadedWindow(): Promise<void> {
       nextTitle = result.database.name
       nextDatabaseVersion = result.database.version
       nextViewName = result.view.name
+      nextViewVersion = result.view.version
+      nextViewConfig = result.view.config ?? { ...DEFAULT_DATABASE_VIEW_CONFIG }
       nextProperties = result.properties
       for (const record of result.records) if (!refreshed.some(existing => existing.id === record.id)) refreshed.push(record)
       cursor = result.nextCursor ?? undefined
@@ -153,6 +193,8 @@ async function refreshLoadedWindow(): Promise<void> {
     title.value = nextTitle
     databaseVersion.value = nextDatabaseVersion
     viewName.value = nextViewName
+    viewVersion.value = nextViewVersion
+    viewConfig.value = nextViewConfig
     properties.value = nextProperties
     nextCursor.value = cursor ?? null
     staleReadonly.value = false
@@ -201,12 +243,286 @@ function openPropertyMenu(property: DatabasePropertyResponse, event: MouseEvent)
   event.stopPropagation()
 }
 
-function anchoredStyle(anchor: HTMLElement): Record<string, string> {
+function anchoredStyle(anchor: HTMLElement, preferredWidth = 280): Record<string, string> {
   const rect = anchor.getBoundingClientRect()
-  const width = Math.min(280, window.innerWidth - 16)
+  const width = Math.min(preferredWidth, window.innerWidth - 16)
   const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
   const top = rect.bottom + 4 + 220 > window.innerHeight ? Math.max(8, rect.top - 224) : rect.bottom + 4
   return { position: 'fixed', left: `${left}px`, top: `${top}px`, width: `${width}px`, maxHeight: `${Math.max(120, window.innerHeight - top - 8)}px`, overflowY: 'auto' }
+}
+
+function filterOperators(property: DatabasePropertyResponse): DatabaseFilterOperator[] {
+  if (property.type === 'number') return ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'is_empty', 'is_not_empty']
+  if (property.type === 'checkbox') return ['checked', 'unchecked']
+  if (property.type === 'date') return ['is', 'before', 'after', 'is_empty', 'is_not_empty']
+  if (property.type === 'select') return property.options?.length ? ['is', 'is_not', 'is_empty', 'is_not_empty'] : ['is_empty', 'is_not_empty']
+  return ['is', 'is_not', 'contains', 'does_not_contain', 'is_empty', 'is_not_empty']
+}
+function operatorLabel(operator: DatabaseFilterOperator): string {
+  return ({ is: '是', is_not: '不是', contains: '包含', does_not_contain: '不包含', is_empty: '为空', is_not_empty: '不为空', eq: '=', ne: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤', checked: '已勾选', unchecked: '未勾选', before: '早于', after: '晚于' })[operator]
+}
+function needsFilterValue(operator: DatabaseFilterOperator): boolean { return operator !== 'is_empty' && operator !== 'is_not_empty' && operator !== 'checked' && operator !== 'unchecked' }
+function openViewMenu(event: MouseEvent): void {
+  if (viewBusy.value) return
+  if (viewMenuOpen.value) { viewMenuOpen.value = false; return }
+  returnFocusTo.value = event.currentTarget as HTMLElement
+  viewMenuStyle.value = anchoredStyle(event.currentTarget as HTMLElement)
+  viewMenuOpen.value = true
+  viewError.value = ''
+  void refreshViewList()
+}
+async function refreshViewList(): Promise<void> {
+  try { views.value = await listProductDatabaseViews(workspaceId.value, databaseId.value) }
+  catch (cause) { viewError.value = errorMessage(cause, '无法加载视图列表，请重试。') }
+}
+function openViewControls(kind: 'filters' | 'sorts' | 'columns', event: MouseEvent): void {
+  if (viewBusy.value) return
+  if (viewControlsOpen.value === kind) { viewControlsOpen.value = ''; return }
+  returnFocusTo.value = event.currentTarget as HTMLElement
+  controlStyle.value = anchoredStyle(event.currentTarget as HTMLElement, window.innerWidth < 768 ? 374 : 320)
+  if (kind === 'filters') filterDrafts.value = viewConfig.value.filters.map(filter => ({ ...filter }))
+  if (kind === 'sorts') sortDrafts.value = viewConfig.value.sorts.map(sort => ({ ...sort }))
+  if (kind === 'columns') columnDraft.value = {
+    visible: viewConfig.value.visibleProperties === null ? properties.value.map(property => property.id) : [...viewConfig.value.visibleProperties],
+    order: viewConfig.value.propertyOrder === null ? properties.value.map(property => property.id) : [...viewConfig.value.propertyOrder, ...properties.value.map(property => property.id).filter(id => !viewConfig.value.propertyOrder!.includes(id))],
+  }
+  viewControlsOpen.value = kind
+}
+function switchView(targetId: string, force = false): void {
+  if ((!force && viewBusy.value) || (force && (!props.editor.isEditable || !online.value || savingCell.value)) || targetId === viewId.value) { viewMenuOpen.value = false; return }
+  if (!force && blockId.value) clearProductDatabaseViewDeleteState(blockId.value)
+  viewError.value = ''
+  records.value = []
+  nextCursor.value = null
+  loadError.value = ''
+  refreshError.value = ''
+  properties.value = []
+  viewMenuOpen.value = false
+  viewControlsOpen.value = ''
+  props.updateAttributes({ viewId: targetId })
+}
+async function createView(): Promise<void> {
+  if (viewBusy.value) return
+  const workspace = workspaceId.value
+  const database = databaseId.value
+  const userId = auth.user?.id
+  if (!userId) return
+  pendingCreateView.value ??= { id: createLocalId(), name: `表格 ${views.value.length + 1}`, type: 'table', config: { ...DEFAULT_DATABASE_VIEW_CONFIG }, expectedDatabaseVersion: databaseVersion.value }
+  viewSubmitting.value = true
+  viewError.value = ''
+  try {
+    let created = views.value.find(item => item.id === pendingCreateView.value?.id)
+    if (!created) {
+      try {
+        const result = await createProductDatabaseView(workspace, database, { ...pendingCreateView.value, expectedDatabaseVersion: databaseVersion.value })
+        if (auth.user?.id !== userId || workspaceId.value !== workspace || databaseId.value !== database) throw new Error('登录状态或工作区已切换，请刷新后重试。')
+        databaseVersion.value = result.database.version
+        created = result.view
+      } catch (cause) {
+        const uncertain = !(cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500)
+        if (!uncertain) throw cause
+        const confirmed = await listProductDatabaseViews(workspace, database)
+        if (auth.user?.id !== userId || workspaceId.value !== workspace || databaseId.value !== database) throw new Error('登录状态或工作区已切换，请刷新后重试。')
+        created = confirmed.find(item => item.id === pendingCreateView.value?.id)
+        if (!created) throw new Error('视图创建结果暂未确认。请刷新视图列表后重试。')
+        views.value = confirmed
+        notifyDatabaseUpdated({ workspaceId: workspace, databaseId: database })
+      }
+    }
+    pendingCreateView.value = null
+    if (!views.value.some(item => item.id === created!.id)) views.value = [...views.value, created!]
+    viewSubmitting.value = false
+    switchView(created.id, true)
+  } catch (cause) {
+    await handleViewMutationError(cause, '视图未创建，请重试。')
+  } finally { viewSubmitting.value = false }
+}
+async function handleViewMutationError(cause: unknown, fallback: string): Promise<void> {
+  if (cause instanceof ApiError && cause.statusCode === 409) {
+    await refreshLoadedWindow()
+    await refreshViewList()
+    viewError.value = `数据库或视图已变化，已刷新版本。${errorMessage(cause, '请重试。')}`
+  } else viewError.value = errorMessage(cause, fallback)
+}
+async function renameView(view: DatabaseViewResponse): Promise<void> {
+  const name = renameViewDraft.value.trim()
+  if (!name || name.length > 100 || viewBusy.value) return
+  viewSubmitting.value = true
+  viewError.value = ''
+  try {
+    const result = await updateProductDatabaseView(workspaceId.value, databaseId.value, view.id, { name, expectedDatabaseVersion: databaseVersion.value, expectedViewVersion: view.version })
+    databaseVersion.value = result.database.version
+    viewVersion.value = result.view.version
+    viewName.value = result.view.name
+    views.value = views.value.map(item => item.id === view.id ? result.view : item)
+    renameViewDraft.value = ''
+  } catch (cause) { await handleViewMutationError(cause, '视图名称未更新，请重试。') }
+  finally { viewSubmitting.value = false }
+}
+async function deleteView(view: DatabaseViewResponse): Promise<void> {
+  if (viewBusy.value || views.value.length < 2) return
+  const workspace = workspaceId.value
+  const database = databaseId.value
+  const userId = auth.user?.id
+  const block = blockId.value
+  const fromViewId = viewId.value
+  if (!userId || !block) return
+  const deletingCurrent = view.id === fromViewId
+  const replacement = deletingCurrent ? views.value.find(item => item.id !== view.id) : undefined
+  if (deletingCurrent && !replacement) return
+  viewSubmitting.value = true
+  viewError.value = ''
+  if (deletingCurrent) setProductDatabaseViewDeleteState({ userId, workspaceId: workspace, databaseId: database, blockId: block, fromViewId, replacementViewId: replacement!.id, status: 'pending', error: '' })
+  try {
+    if (deletingCurrent) {
+      switchView(replacement!.id, true)
+      const sync = useProductSyncStore()
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        await sync.runSync()
+        if (sync.state === 'synced' && sync.pending === 0) break
+      }
+      if (auth.user?.id !== userId || workspaceId.value !== workspace || databaseId.value !== database || blockId.value !== block || viewId.value !== replacement!.id) throw new Error('登录状态或工作区已切换，请刷新后重试。')
+      if (sync.state !== 'synced' || sync.pending > 0) throw new Error('视图引用尚未同步，暂不能删除。')
+    }
+    if (auth.user?.id !== userId || workspaceId.value !== workspace || databaseId.value !== database || blockId.value !== block) throw new Error('登录状态或工作区已切换，请刷新后重试。')
+    const result = await deleteProductDatabaseView(workspace, database, view.id, { expectedDatabaseVersion: databaseVersion.value, expectedViewVersion: view.version })
+    if (auth.user?.id !== userId || workspaceId.value !== workspace || databaseId.value !== database || blockId.value !== block || (deletingCurrent && viewId.value !== replacement!.id)) throw new Error('登录状态或工作区已切换，请刷新后重试。')
+    databaseVersion.value = result.database.version
+    views.value = views.value.filter(item => item.id !== view.id)
+    if (deletingCurrent) clearProductDatabaseViewDeleteState(block)
+  } catch (cause) {
+    const sameScope = auth.user?.id === userId && workspaceId.value === workspace && databaseId.value === database && blockId.value === block
+    const unknownOutcome = !(cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500)
+    if (sameScope && unknownOutcome) {
+      try {
+        const latestViews = await listProductDatabaseViews(workspace, database)
+        if (auth.user?.id !== userId || workspaceId.value !== workspace || databaseId.value !== database) throw new Error('登录状态或工作区已切换，请刷新后重试。')
+        views.value = latestViews
+        if (!latestViews.some(item => item.id === view.id)) {
+          if (deletingCurrent) clearProductDatabaseViewDeleteState(block)
+          notifyDatabaseUpdated({ workspaceId: workspace, databaseId: database })
+          await refreshLoadedWindow()
+          return
+        }
+      } catch (readCause) {
+        const message = `删除结果暂未确认。${errorMessage(readCause, '请刷新视图列表后重试。')}`
+        viewError.value = message
+        if (deletingCurrent && sameScope) setProductDatabaseViewDeleteState({ userId, workspaceId: workspace, databaseId: database, blockId: block, fromViewId, replacementViewId: replacement!.id, status: 'failed', error: message })
+        return
+      }
+    }
+    if (cause instanceof ApiError && cause.statusCode === 409) {
+      const message = `${errorMessage(cause, '数据库或视图已变化。')} 若该视图仍被其它数据库块引用，请先切换这些引用并同步后重试。`
+      viewError.value = message
+      if (sameScope) { await refreshLoadedWindow(); await refreshViewList() }
+      viewError.value = message
+      if (deletingCurrent && sameScope) setProductDatabaseViewDeleteState({ userId, workspaceId: workspace, databaseId: database, blockId: block, fromViewId, replacementViewId: replacement!.id, status: 'failed', error: message })
+    } else {
+      const message = errorMessage(cause, '视图未删除。若仍有数据库块引用此视图，请先将这些引用切换到其他视图并同步，再重试。')
+      viewError.value = message
+      if (deletingCurrent && sameScope) setProductDatabaseViewDeleteState({ userId, workspaceId: workspace, databaseId: database, blockId: block, fromViewId, replacementViewId: replacement!.id, status: 'failed', error: message })
+    }
+  } finally {
+    viewSubmitting.value = false
+    const pendingState = getProductDatabaseViewDeleteState(block)
+    if (pendingState?.userId === userId && pendingState.workspaceId === workspace && pendingState.databaseId === database && pendingState.fromViewId === fromViewId && pendingState.status === 'pending' && (auth.user?.id !== userId || workspaceId.value !== workspace || databaseId.value !== database || blockId.value !== block)) clearProductDatabaseViewDeleteState(block)
+  }
+}
+function addFilter(): void {
+  if (filterDrafts.value.length >= 20 || !properties.value.length) return
+  const property = properties.value[0]!
+  const operator = filterOperators(property)[0]!
+  const filter: DatabaseFilter = { propertyId: property.id, operator, ...(needsFilterValue(operator) ? { value: property.type === 'number' ? 0 : property.type === 'select' ? property.options?.[0]?.id ?? '' : '' } : {}) }
+  filterDrafts.value.push(filter)
+}
+function changeFilterProperty(index: number, propertyId: string): void {
+  const property = properties.value.find(item => item.id === propertyId)
+  if (!property) return
+  const operator = filterOperators(property)[0]!
+  filterDrafts.value[index] = { propertyId, operator, ...(needsFilterValue(operator) ? { value: property.type === 'number' ? 0 : property.type === 'select' ? property.options?.[0]?.id ?? '' : '' } : {}) }
+}
+function changeFilterOperator(index: number, operator: DatabaseFilterOperator): void {
+  const filter = filterDrafts.value[index]
+  const property = properties.value.find(item => item.id === filter?.propertyId)
+  if (!filter || !property) return
+  if (needsFilterValue(operator)) filter.value = property.type === 'number' ? 0 : property.type === 'select' ? property.options?.[0]?.id ?? '' : ''
+  else delete filter.value
+  filter.operator = operator
+}
+function setFilterValue(index: number, raw: string): void {
+  const filter = filterDrafts.value[index]
+  const property = properties.value.find(item => item.id === filter?.propertyId)
+  if (!filter || !property) return
+  filter.value = property.type === 'number' ? (raw === '' ? 0 : Number(raw)) : raw
+}
+function addSort(): void {
+  const available = properties.value.find(property => !sortDrafts.value.some(sort => sort.propertyId === property.id))
+  if (!available || sortDrafts.value.length >= 10) return
+  sortDrafts.value.push({ propertyId: available.id, direction: 'asc' })
+}
+function moveSort(index: number, delta: number): void {
+  const target = index + delta
+  if (target < 0 || target >= sortDrafts.value.length) return
+  const next = [...sortDrafts.value]
+  const [item] = next.splice(index, 1)
+  next.splice(target, 0, item!)
+  sortDrafts.value = next
+}
+async function saveViewConfig(next: DatabaseViewConfig): Promise<void> {
+  if (viewBusy.value) return
+  for (const filter of next.filters) {
+    const property = properties.value.find(item => item.id === filter.propertyId)
+    if (property?.type === 'number' && typeof filter.value === 'number' && !Number.isFinite(filter.value)) {
+      viewError.value = '数字筛选条件需要有效数字。'
+      return
+    }
+    if (property?.type === 'date' && typeof filter.value === 'string' && filter.operator !== 'is_empty' && filter.operator !== 'is_not_empty' && !/^\d{4}-\d{2}-\d{2}$/u.test(filter.value)) {
+      viewError.value = '请选择有效日期；如需匹配空值，请选择“为空”。'
+      return
+    }
+  }
+  if (!validateDatabaseViewConfig(next, properties.value)) {
+    viewError.value = '筛选或列设置与属性类型不匹配，请检查后重试。'
+    return
+  }
+  viewSubmitting.value = true
+  viewError.value = ''
+  try {
+    const result = await updateProductDatabaseView(workspaceId.value, databaseId.value, viewId.value, { config: next, expectedDatabaseVersion: databaseVersion.value, expectedViewVersion: viewVersion.value })
+    databaseVersion.value = result.database.version
+    viewVersion.value = result.view.version
+    viewConfig.value = result.view.config ?? next
+    viewControlsOpen.value = ''
+  } catch (cause) { await handleViewMutationError(cause, '视图设置未保存，请重试。') }
+  finally { viewSubmitting.value = false }
+}
+function saveFilters(): void {
+  void saveViewConfig({ ...viewConfig.value, filters: filterDrafts.value.map(filter => ({ ...filter })) })
+}
+function saveSorts(): void {
+  void saveViewConfig({ ...viewConfig.value, sorts: sortDrafts.value.map(sort => ({ ...sort })) })
+}
+function toggleColumn(propertyId: string): void {
+  const property = properties.value.find(item => item.id === propertyId)
+  if (!property || property.type === 'title') return
+  columnDraft.value.visible = columnDraft.value.visible.includes(propertyId)
+    ? columnDraft.value.visible.filter(id => id !== propertyId)
+    : [...columnDraft.value.visible, propertyId]
+}
+function moveColumn(propertyId: string, delta: number): void {
+  const index = columnDraft.value.order.indexOf(propertyId)
+  const target = index + delta
+  if (index < 0 || target < 0 || target >= columnDraft.value.order.length) return
+  const next = [...columnDraft.value.order]
+  const [item] = next.splice(index, 1)
+  next.splice(target, 0, item!)
+  columnDraft.value.order = next
+}
+function saveColumns(): void {
+  const ids = properties.value.map(property => property.id)
+  const visibleProperties = columnDraft.value.visible.length === ids.length ? null : [...new Set(['', ...columnDraft.value.visible].filter(Boolean))]
+  const propertyOrder = columnDraft.value.order.every((id, index) => id === ids[index]) ? null : [...columnDraft.value.order]
+  void saveViewConfig({ ...viewConfig.value, visibleProperties, propertyOrder })
 }
 
 async function savePropertyName(property: DatabasePropertyResponse): Promise<void> {
@@ -404,15 +720,17 @@ function togglePropertyCreator(event: MouseEvent): void {
 function onRecordCreated(event: Event): void { onDatabaseChanged(event) }
 function onOnlineChange(): void {
   online.value = navigator.onLine
-  if (!online.value) { propertyMenuId.value = ''; cellPopover.value = null }
+  if (!online.value) { propertyMenuId.value = ''; cellPopover.value = null; viewMenuOpen.value = false; viewControlsOpen.value = '' }
   else void loadTable()
 }
 function onEscape(event: KeyboardEvent): void {
   if (event.key !== 'Escape') return
   if (cellEdit.value) cancelCellEdit()
-  const hadPopover = Boolean(cellPopover.value || propertyMenuId.value)
+  const hadPopover = Boolean(cellPopover.value || propertyMenuId.value || viewMenuOpen.value || viewControlsOpen.value)
   if (cellPopover.value) cellPopover.value = null
   if (propertyMenuId.value) propertyMenuId.value = ''
+  viewMenuOpen.value = false
+  viewControlsOpen.value = ''
   if (hadPopover) void nextTick(() => returnFocusTo.value?.focus())
   if (addTitleMode.value) cancelNewRecord()
 }
@@ -420,13 +738,18 @@ function onOutsidePointer(event: PointerEvent): void {
   if ((event.target as HTMLElement | null)?.closest('.eotion-database') || (event.target as HTMLElement | null)?.closest('.eotion-database-popover')) return
   propertyMenuId.value = ''
   cellPopover.value = null
+  viewMenuOpen.value = false
+  viewControlsOpen.value = ''
 }
 function closePopoversForViewportChange(): void {
   const anchor = returnFocusTo.value
   if (!anchor?.isConnected) { propertyMenuId.value = ''; cellPopover.value = null; return }
   const style = anchoredStyle(anchor)
+  const controlsAnchorStyle = anchoredStyle(anchor, window.innerWidth < 768 ? 374 : 320)
   if (propertyMenuId.value) propertyMenuStyle.value = style
   if (cellPopover.value) cellPopoverStyle.value = style
+  if (viewMenuOpen.value) viewMenuStyle.value = style
+  if (viewControlsOpen.value) controlStyle.value = controlsAnchorStyle
 }
 
 onMounted(() => {
@@ -451,11 +774,14 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', closePopoversForViewportChange, true)
   window.removeEventListener('resize', closePopoversForViewportChange)
 })
-watch([workspaceId, databaseId, viewId, () => auth.user?.id], () => {
+watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous) => {
   requestEpoch += 1
   cellEdit.value = null
   cellPopover.value = null
   propertyMenuId.value = ''
+  viewMenuOpen.value = false
+  viewControlsOpen.value = ''
+  if (current[0] !== previous[0] || current[1] !== previous[1] || current[3] !== previous[3]) viewError.value = ''
   addTitleMode.value = false
   addTitleDraft.value = ''
   mutationError.value = ''
@@ -473,6 +799,59 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], () => {
     <header class="eotion-database-header">
       <span class="eotion-database-mark" aria-hidden="true" @click.stop="selectBlock">▦</span>
       <span class="eotion-database-copy" @click.stop="selectBlock"><strong>{{ title }}</strong><small>{{ viewName }}</small></span>
+      <div class="eotion-database-view-controls">
+        <button type="button" class="eotion-database-control-trigger" aria-label="切换视图" :disabled="viewBusy" @click.stop="openViewMenu($event)">{{ viewName }} <span aria-hidden="true">⌄</span></button>
+        <button type="button" class="eotion-database-control-trigger" :aria-label="`筛选${visibleViewCount ? `，${visibleViewCount} 个条件` : ''}`" :disabled="viewBusy" @click.stop="openViewControls('filters', $event)">Filter<span v-if="visibleViewCount" class="eotion-database-count">{{ visibleViewCount }}</span></button>
+        <button type="button" class="eotion-database-control-trigger" :aria-label="`排序${sortViewCount ? `，${sortViewCount} 个条件` : ''}`" :disabled="viewBusy" @click.stop="openViewControls('sorts', $event)">Sort<span v-if="sortViewCount" class="eotion-database-count">{{ sortViewCount }}</span></button>
+        <button type="button" class="eotion-database-control-trigger" aria-label="视图列设置" :disabled="viewBusy" @click.stop="openViewControls('columns', $event)">…</button>
+        <Teleport to="body"><section v-if="viewMenuOpen" class="eotion-database-popover eotion-database-teleport eotion-database-view-menu" :style="viewMenuStyle" role="group" aria-label="数据库视图" @click.stop>
+          <strong>视图</strong>
+          <button v-for="item in views" :key="item.id" type="button" class="eotion-database-view-option" :aria-current="item.id === viewId ? 'true' : undefined" @click.stop="switchView(item.id)">{{ item.name }}<span v-if="item.id === viewId">当前</span></button>
+          <p v-if="!views.length && !viewError" class="eotion-database-view-hint">正在加载视图…</p>
+          <button type="button" :disabled="viewBusy || views.length >= 100" @click.stop="createView">＋ 新建视图</button>
+          <form v-if="views.find(item => item.id === viewId)" class="eotion-database-view-rename" @submit.prevent="renameView(views.find(item => item.id === viewId)!)">
+            <label :for="`database-view-name-${viewId}`">重命名当前视图</label>
+            <input :id="`database-view-name-${viewId}`" v-model="renameViewDraft" maxlength="100" :placeholder="viewName" aria-label="当前视图名称">
+            <button type="submit" :disabled="viewBusy || !renameViewDraft.trim()">保存名称</button>
+            <button type="button" class="danger" :disabled="viewBusy || views.length < 2" @click.stop="deleteView(views.find(item => item.id === viewId)!)">删除视图</button>
+          </form>
+        </section></Teleport>
+        <Teleport to="body"><section v-if="viewControlsOpen === 'filters'" class="eotion-database-popover eotion-database-teleport eotion-database-settings" :style="controlStyle" role="group" aria-label="筛选条件" @click.stop>
+          <strong>所有筛选条件都需匹配</strong>
+          <div v-for="(filter, index) in filterDrafts" :key="`${index}-${filter.propertyId}`" class="eotion-database-filter-row">
+            <select :value="filter.propertyId" :aria-label="`筛选属性 ${index + 1}`" @change="changeFilterProperty(index, ($event.target as HTMLSelectElement).value)"><option v-for="property in properties" :key="property.id" :value="property.id">{{ property.name }}</option></select>
+            <select :value="filter.operator" :aria-label="`筛选条件 ${index + 1}`" @change="changeFilterOperator(index, ($event.target as HTMLSelectElement).value as DatabaseFilterOperator)"><option v-for="operator in filterOperators(properties.find(item => item.id === filter.propertyId)!)" :key="operator" :value="operator">{{ operatorLabel(operator) }}</option></select>
+            <template v-if="needsFilterValue(filter.operator)">
+              <select v-if="properties.find(item => item.id === filter.propertyId)?.type === 'select'" class="eotion-database-filter-value" :value="filter.value" :aria-label="`筛选值 ${index + 1}`" @change="setFilterValue(index, ($event.target as HTMLSelectElement).value)"><option v-for="option in properties.find(item => item.id === filter.propertyId)?.options ?? []" :key="option.id" :value="option.id">{{ option.name }}</option></select>
+              <input v-else class="eotion-database-filter-value" :value="filter.value" :type="properties.find(item => item.id === filter.propertyId)?.type === 'number' ? 'number' : properties.find(item => item.id === filter.propertyId)?.type === 'date' ? 'date' : 'text'" :aria-label="`筛选值 ${index + 1}`" @input="setFilterValue(index, ($event.target as HTMLInputElement).value)">
+            </template>
+            <button type="button" :aria-label="`删除筛选条件 ${index + 1}`" @click.stop="filterDrafts.splice(index, 1)">×</button>
+          </div>
+          <button type="button" :disabled="filterDrafts.length >= 20" @click.stop="addFilter">＋ 添加筛选条件</button>
+          <button type="button" :disabled="viewBusy" @click.stop="saveFilters">保存筛选</button>
+        </section></Teleport>
+        <Teleport to="body"><section v-if="viewControlsOpen === 'sorts'" class="eotion-database-popover eotion-database-teleport eotion-database-settings" :style="controlStyle" role="group" aria-label="排序条件" @click.stop>
+          <strong>排序优先级（顶部优先）</strong>
+          <div v-for="(sort, index) in sortDrafts" :key="`${index}-${sort.propertyId}`" class="eotion-database-sort-row">
+            <select v-model="sort.propertyId" :aria-label="`排序属性 ${index + 1}`"><option v-for="property in properties" :key="property.id" :value="property.id" :disabled="sortDrafts.some((other, otherIndex) => otherIndex !== index && other.propertyId === property.id)">{{ property.name }}</option></select>
+            <select v-model="sort.direction" :aria-label="`排序方向 ${index + 1}`"><option value="asc">升序</option><option value="desc">降序</option></select>
+            <button type="button" :aria-label="`排序上移 ${index + 1}`" :disabled="index === 0" @click.stop="moveSort(index, -1)">↑</button>
+            <button type="button" :aria-label="`排序下移 ${index + 1}`" :disabled="index === sortDrafts.length - 1" @click.stop="moveSort(index, 1)">↓</button>
+            <button type="button" :aria-label="`删除排序 ${index + 1}`" @click.stop="sortDrafts.splice(index, 1)">×</button>
+          </div>
+          <button type="button" :disabled="sortDrafts.length >= 10 || sortDrafts.length >= properties.length" @click.stop="addSort">＋ 添加排序</button>
+          <button type="button" :disabled="viewBusy" @click.stop="saveSorts">保存排序</button>
+        </section></Teleport>
+        <Teleport to="body"><section v-if="viewControlsOpen === 'columns'" class="eotion-database-popover eotion-database-teleport eotion-database-settings" :style="controlStyle" role="group" aria-label="列设置" @click.stop>
+          <strong>显示与排列</strong>
+          <div v-for="(propertyId, index) in columnDraft.order" :key="propertyId" class="eotion-database-column-row">
+            <label><input type="checkbox" :checked="columnDraft.visible.includes(propertyId)" :disabled="properties.find(item => item.id === propertyId)?.type === 'title'" @change="toggleColumn(propertyId)">{{ properties.find(item => item.id === propertyId)?.name }}</label>
+            <button type="button" :aria-label="`列上移 ${properties.find(item => item.id === propertyId)?.name}`" :disabled="index === 0" @click.stop="moveColumn(propertyId, -1)">↑</button>
+            <button type="button" :aria-label="`列下移 ${properties.find(item => item.id === propertyId)?.name}`" :disabled="index === columnDraft.order.length - 1" @click.stop="moveColumn(propertyId, 1)">↓</button>
+          </div>
+          <button type="button" :disabled="viewBusy" @click.stop="saveColumns">保存列设置</button>
+        </section></Teleport>
+      </div>
       <form v-if="addTitleMode" class="eotion-database-new" @submit.prevent="createRecord">
         <input v-model="addTitleDraft" autofocus maxlength="200" aria-label="记录标题" placeholder="记录标题" :disabled="creating || !writable" @keydown.enter="onNewRecordEnter" @keydown.esc.prevent="cancelNewRecord">
         <button type="submit" :disabled="creating || !writable || !addTitleDraft.trim()">{{ creating ? '正在新建…' : '创建' }}</button>
@@ -486,6 +865,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], () => {
         </div></Teleport>
       </div>
     </header>
+    <p v-if="visibleViewError" class="eotion-database-error" role="alert">{{ visibleViewError }}</p>
     <p v-if="!online && !loading && !loadError" class="eotion-database-offline" role="status">离线 · 数据库只读，已加载内容仍可查看</p>
     <p v-if="refreshError" class="eotion-database-error" role="alert"><span>{{ refreshError }}</span><button type="button" @click.stop="void refreshLoadedWindow()">重试刷新</button></p>
     <p v-if="loading" class="eotion-database-state" role="status">正在加载数据库…</p>
@@ -495,7 +875,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], () => {
       <div v-if="properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>
-            <th v-for="property in properties" :key="property.id" scope="col">
+            <th v-for="property in displayProperties" :key="property.id" scope="col">
               <button class="eotion-database-property-trigger" type="button" :disabled="!writable" @click.stop="openPropertyMenu(property, $event)">{{ property.name }}⌄</button>
               <Teleport to="body"><div v-if="propertyMenuId === property.id" class="eotion-database-popover eotion-database-teleport eotion-database-property-menu" :style="propertyMenuStyle" @click.stop>
                 <form @submit.prevent="savePropertyName(property)"><input v-model="propertyNameDraft" maxlength="100" aria-label="属性名称"><button type="submit">重命名</button></form>
@@ -515,7 +895,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], () => {
           </tr></thead>
           <tbody>
             <tr v-for="record in records" :key="record.id">
-              <td v-for="property in properties" :key="property.id">
+              <td v-for="property in displayProperties" :key="property.id">
                 <template v-if="property.type === 'title' && !isEditingCell(record, property)"><button class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-label="`编辑${property.name}：${formatValue(getCellValue(record, property.id), property)}`" @click.stop="startCellEdit(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button><RouterLink class="eotion-database-title" :aria-label="`打开记录页面：${formatValue(getCellValue(record, property.id), property)}`" :to="{ name: 'product-page', params: { workspaceId, pageId: record.pageId } }" @pointerdown.stop @mousedown.stop @click.capture="openRecordPage($event, record.pageId)"></RouterLink></template>
                 <input v-else-if="isEditingCell(record, property)" v-model="cellDraft" :ref="setCellInputRef" class="eotion-database-cell-input" :type="property.type === 'date' ? 'date' : 'text'" :inputmode="property.type === 'number' ? 'decimal' : undefined" :aria-label="`${property.name} 值`" :disabled="savingCell || !writable" @keydown.enter="onCellEnter($event, record, property)" @keydown.esc.prevent="cancelCellEdit" @blur="saveCell(record, property)">
                 <button v-else-if="property.type === 'checkbox'" class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-pressed="getCellValue(record, property.id) === true" @click.stop="toggleCheckbox(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
@@ -550,6 +930,29 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], () => {
 .eotion-database-add,.eotion-database-more,.eotion-database-error button,.eotion-database-new button,.eotion-database-properties-menu>button { min-height:32px; border:1px solid var(--border-editor); border-radius:6px; padding:5px 9px; background:var(--surface-editor-hover); color:inherit; font:inherit; cursor:pointer; }
 .eotion-database-add:disabled,.eotion-database-more:disabled,.eotion-database-error button:disabled,button:disabled { opacity:.6; cursor:default; }
 .eotion-database-new { display:flex; flex-wrap:wrap; gap:5px; }.eotion-database-new input { width:160px; min-height:32px; }.eotion-database-properties-menu { position:relative; }
+.eotion-database-view-controls { display:flex; align-items:center; gap:4px; flex:0 1 auto; }
+.eotion-database-control-trigger { min-height:32px; border:1px solid transparent; border-radius:6px; padding:5px 8px; background:transparent; color:inherit; font:inherit; cursor:pointer; white-space:nowrap; }
+.eotion-database-control-trigger:hover,.eotion-database-view-option[aria-current="true"] { background:var(--surface-editor-hover); }
+.eotion-database-control-trigger:disabled { opacity:.55; cursor:default; }
+.eotion-database-count { display:inline-grid; min-width:17px; height:17px; margin-left:4px; place-items:center; border-radius:9px; background:var(--surface-editor-hover); color:var(--editor-muted); font-size:11px; }
+.eotion-database-view-menu { width:min(300px, calc(100vw - 16px)); }
+.eotion-database-view-option { display:flex!important; align-items:center; justify-content:space-between; gap:8px; }
+.eotion-database-view-option span,.eotion-database-view-hint { color:var(--editor-muted); font-size:12px; }
+.eotion-database-view-rename { display:grid!important; grid-template-columns:minmax(0,1fr) auto; gap:5px!important; border-top:1px solid var(--border-editor); padding-top:8px; }
+.eotion-database-view-rename label { grid-column:1/-1; color:var(--editor-muted); font-size:12px; }
+.eotion-database-view-rename input { min-width:0; }
+.eotion-database-view-rename .danger,.eotion-database-view-error { color:var(--danger); }
+.eotion-database-settings { width:min(374px, calc(100vw - 16px)); }
+.eotion-database-filter-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px; align-items:center; gap:5px; min-width:0; }
+.eotion-database-sort-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) repeat(3,32px); align-items:center; gap:4px; min-width:0; }
+.eotion-database-column-row { display:flex; align-items:center; gap:4px; min-width:0; }
+.eotion-database-filter-row select,.eotion-database-filter-row input,.eotion-database-sort-row select { box-sizing:border-box; min-width:0; width:100%; min-height:36px; }
+.eotion-database-filter-value { grid-column:1/3; grid-row:2; }
+.eotion-database-filter-row>button { grid-column:3; grid-row:1; }
+.eotion-database-filter-row button,.eotion-database-sort-row button,.eotion-database-column-row button { min-width:30px; min-height:32px; border:0; border-radius:4px; background:var(--surface-editor-hover); color:inherit; font:inherit; cursor:pointer; }
+.eotion-database-column-row label { display:flex; align-items:center; gap:8px; min-width:0; flex:1; min-height:32px; overflow-wrap:normal; word-break:normal; white-space:normal; }
+.eotion-database-column-row label input[type="checkbox"] { box-sizing:border-box; flex:0 0 18px; width:18px; min-width:18px; height:18px; min-height:18px; margin:0; }
+.eotion-database-settings>button { margin-top:3px; }
 .eotion-database-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain; border-top:1px solid var(--border-editor); }.eotion-database-table { width:max-content; min-width:100%; border-collapse:collapse; font-size:13px; }.eotion-database-table th,.eotion-database-table td { position:relative; width:180px; min-width:180px; max-width:260px; overflow-wrap:anywhere; border-right:1px solid var(--border-editor); border-bottom:1px solid var(--border-editor); padding:8px 11px; text-align:left; vertical-align:top; }.eotion-database-table th { color:var(--editor-muted); font-size:12px; font-weight:600; }.eotion-database-property-trigger,.eotion-database-cell-button { min-height:28px; border:0; padding:2px 4px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-title { color:inherit; text-decoration:underline; text-decoration-color:var(--editor-muted); text-underline-offset:2px; }.eotion-database-cell-input { box-sizing:border-box; width:100%; min-height:32px; border:1px solid var(--border-editor); border-radius:4px; padding:4px 6px; color:inherit; font:inherit; }.eotion-database-cell-error { display:block; color:var(--danger); }
 .eotion-database-popover { z-index:10000; display:grid; min-width:170px; max-width:min(280px,80vw); gap:5px; border:1px solid var(--border-editor); border-radius:8px; padding:8px; background:var(--surface-raised); box-shadow:var(--e-shadow-popover,0 8px 24px #0002); color:var(--editor-text); }.eotion-database-popover button { min-height:32px; border:0; border-radius:4px; padding:5px 8px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-popover button:hover { background:var(--surface-editor-hover); }.eotion-database-popover form,.eotion-database-option-edit { display:flex; align-items:center; gap:4px; }.eotion-database-popover input { min-width:0; width:100%; min-height:32px; }.eotion-database-popover .danger { color:var(--danger); }.eotion-database-title-edit,.eotion-database-cell-save { margin-left:6px; min-height:28px; border:0; background:transparent; color:var(--editor-muted); font:inherit; cursor:pointer; }
 .eotion-database-title-edit::before { content:'✎'; }
@@ -559,5 +962,5 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], () => {
 .eotion-database-popover form input { flex:1; width:auto; }
 .eotion-database-option-edit span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .eotion-database-table tr:last-child td { border-bottom:0; }.eotion-database-state,.eotion-database-error { margin:0; padding:12px 14px; color:var(--editor-muted); font-size:13px; }.eotion-database-offline { margin:0; border-top:1px solid var(--border-editor); padding:7px 14px; color:var(--editor-muted); font-size:12px; }.eotion-database-error { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; color:var(--danger); }.eotion-database-more { margin:10px 14px; }
-@media (max-width:767px) { .eotion-database-header { gap:8px; padding:9px 10px; flex-wrap:wrap; }.eotion-database-add { min-height:36px; padding-inline:7px; }.eotion-database-table th,.eotion-database-table td { width:160px; min-width:160px; }.eotion-database-cell-button,.eotion-database-property-trigger,.eotion-database-popover button { min-height:44px; }.eotion-database-cell-input { min-height:44px; } }
+@media (max-width:767px) { .eotion-database-header { gap:6px; padding:9px 10px; flex-wrap:wrap; }.eotion-database-copy { flex-basis:calc(100% - 56px); }.eotion-database-view-controls { order:3; max-width:100%; overflow-x:auto; }.eotion-database-control-trigger { min-height:44px; padding-inline:8px; }.eotion-database-add { min-height:44px; padding-inline:7px; }.eotion-database-new { order:4; }.eotion-database-table th,.eotion-database-table td { width:160px; min-width:160px; }.eotion-database-cell-button,.eotion-database-property-trigger,.eotion-database-popover button { min-height:44px; }.eotion-database-cell-input { min-height:44px; }.eotion-database-filter-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-sort-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-filter-row select,.eotion-database-filter-row input,.eotion-database-sort-row select { min-height:44px; }.eotion-database-filter-row>button,.eotion-database-sort-row button,.eotion-database-column-row button { min-width:44px; min-height:44px; }.eotion-database-column-row label { min-height:44px; }.eotion-database-sort-row button:nth-of-type(1) { grid-column:1; grid-row:2; }.eotion-database-sort-row button:nth-of-type(2) { grid-column:2; grid-row:2; }.eotion-database-sort-row button:nth-of-type(3) { grid-column:3; grid-row:2; } }
 </style>

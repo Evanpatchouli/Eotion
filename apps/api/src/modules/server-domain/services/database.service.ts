@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
-import { isValidDatabaseProperty, validateDatabaseRecordValues, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView } from '@eotion/domain'
-import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema } from '@eotion/contracts'
+import { createHash } from 'node:crypto'
+import { DEFAULT_DATABASE_VIEW_CONFIG, isValidDatabaseProperty, validateDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig } from '@eotion/domain'
+import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
 import { PageRepository } from '../repositories/page.repository'
@@ -13,8 +14,9 @@ import type { ServerBlockRecord } from '../types'
 type CreateInPage = { id: string; name: string; titlePropertyId: string; viewId: string; blockId: string; orderKey: string; parentBlockId: string | null }
 type CreateProperty = { id: string; name: string; type: DatabaseProperty['type']; options?: DatabaseProperty['options']; expectedDatabaseVersion: number }
 type CreateRecord = { id: string; pageId: string; properties: DatabaseRecord['properties'] }
-type CreateView = { id: string; name: string; type: DatabaseView['type'] }
+type CreateView = { id: string; name: string; type: DatabaseView['type']; config?: DatabaseViewConfig; expectedDatabaseVersion?: number }
 type WindowInput = { cursor?: string; limit: number }
+type TableCursor = { w: string; d: string; v: string; dv: number; vv: number; ch: string; r: string; p: string }
 
 @Injectable()
 export class DatabaseService {
@@ -61,18 +63,41 @@ export class DatabaseService {
   }
 
   async getTable(userId: string, workspaceId: string, databaseId: string, viewId: string, input: WindowInput) {
-    this.validateWindow(input)
+    this.validateTableWindow(input)
     const database = await this.requireDatabase(userId, workspaceId, databaseId, false)
     const view = await this.views.findInWorkspace(workspaceId, viewId)
     if (!view || view.databaseId !== database.id || view.type !== 'table') throw new NotFoundException('Database view not found')
     const properties = await this.properties.listLimited(workspaceId, databaseId, 101)
     if (properties.length > 100) throw new BadRequestException('Database exceeds the maximum of 100 properties')
-    const records = await this.records.listWindow(workspaceId, databaseId, input)
-    const window = this.toWindow(records, input.limit)
-    const projected = await this.projectRecords(workspaceId, window.items, properties)
+    const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+    if (!validateDatabaseViewConfig(config, properties)) throw new ConflictException('Database view configuration is invalid; refresh and repair the view before querying it')
+    const configHash = this.viewConfigHash(config)
+    let anchor: DatabaseTableRecord | undefined
+    if (input.cursor !== undefined) {
+      const cursor = this.decodeTableCursor(input.cursor)
+      if (cursor.w !== workspaceId || cursor.d !== databaseId || cursor.v !== viewId) throw new BadRequestException('Table cursor belongs to a different workspace, database, or view')
+      if (cursor.dv !== database.version || cursor.vv !== view.version || cursor.ch !== configHash) throw new ConflictException('Database or view changed; reload the table before continuing')
+      const record = await this.records.findInDatabase(workspaceId, databaseId, cursor.r)
+      const page = record ? await this.pages.findInWorkspace(workspaceId, record.pageId) : null
+      if (!record || !page || page.updatedAt !== cursor.p) throw new ConflictException('Table cursor anchor changed; reload the table before continuing')
+      const titleProperty = properties.find(property => property.type === 'title')!
+      anchor = { ...record, properties: { ...record.properties, [titleProperty.id]: page.title }, pageVersion: page.updatedAt }
+    }
+    const isDefaultQuery = config.filters.length === 0 && config.sorts.length === 0
+    const rows = isDefaultQuery
+      ? await this.records.listWindow(workspaceId, databaseId, { limit: input.limit, ...(anchor ? { cursor: anchor.id } : {}) })
+      : await this.records.queryTableWindow({ workspaceId, databaseId, properties, config, limit: input.limit, ...(anchor ? { anchor } : {}) })
+    const projectedRows: DatabaseTableRecord[] = isDefaultQuery
+      ? await this.projectRecords(workspaceId, rows, properties)
+      : rows as DatabaseTableRecord[]
+    if (projectedRows.length !== rows.length) throw new ConflictException('Record page missing from workspace; reload the table after repairing record data')
+    const hasMore = rows.length > input.limit
+    const projected = projectedRows.slice(0, input.limit)
     const latestDatabase = await this.databases.findInWorkspace(workspaceId, databaseId)
-    if (!latestDatabase || latestDatabase.version !== database.version) throw new ConflictException('Database changed during table read; refresh and retry')
-    return { database, view, properties, records: projected, nextCursor: window.nextCursor }
+    const latestView = await this.views.findInWorkspace(workspaceId, viewId)
+    if (!latestDatabase || latestDatabase.version !== database.version || !latestView || latestView.version !== view.version) throw new ConflictException('Database or view changed during table read; refresh and retry')
+    const last = projected.at(-1)
+    return { database, view, properties, records: projected, nextCursor: hasMore && last ? this.encodeTableCursor({ w: workspaceId, d: databaseId, v: viewId, dv: database.version, vv: view.version, ch: configHash, r: last.id, p: last.pageVersion }) : null }
   }
 
   async linkInPage(userId: string, workspaceId: string, pageId: string, input: { databaseId: string; viewId: string; blockId: string; orderKey: string; parentBlockId: string | null }): Promise<{ block: ServerBlockRecord }> {
@@ -188,6 +213,13 @@ export class DatabaseService {
               if (!await this.records.updateProperties(workspaceId, databaseId, record.id, record.version, values, session)) throw new ConflictException('Database record changed during option cleanup')
             }
           }
+          for (const view of await this.views.list(workspaceId, databaseId, session)) {
+            const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+            const nextConfig = { ...config, filters: config.filters.filter(filter => !(filter.propertyId === existing.id && typeof filter.value === 'string' && removed.has(filter.value))) }
+            if (nextConfig.filters.length === config.filters.length) continue
+            if (!validateDatabaseViewConfig(nextConfig, (await this.properties.list(workspaceId, databaseId, session)))) throw new ConflictException('Database view configuration could not be repaired after deleting a select option')
+            if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during option cleanup')
+          }
         }
       }
       return { database, property }
@@ -211,6 +243,19 @@ export class DatabaseService {
         delete values[propertyId]
         if (titleId) delete values[titleId]
         if (!await this.records.updateProperties(workspaceId, databaseId, record.id, record.version, values, session)) throw new ConflictException('Database record changed during property cleanup')
+      }
+      for (const view of await this.views.list(workspaceId, databaseId, session)) {
+        const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+        const nextConfig: DatabaseViewConfig = {
+          filters: config.filters.filter(filter => filter.propertyId !== propertyId),
+          sorts: config.sorts.filter(sort => sort.propertyId !== propertyId),
+          visibleProperties: config.visibleProperties?.filter(id => id !== propertyId) ?? null,
+          propertyOrder: config.propertyOrder?.filter(id => id !== propertyId) ?? null,
+        }
+        if (JSON.stringify(nextConfig) === JSON.stringify(config)) continue
+        const remainingProperties = await this.properties.list(workspaceId, databaseId, session)
+        if (!validateDatabaseViewConfig(nextConfig, remainingProperties)) throw new ConflictException('Database view configuration could not be repaired after deleting a property')
+        if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during property cleanup')
       }
       return { database }
     })
@@ -274,13 +319,54 @@ export class DatabaseService {
     })
   }
 
-  async createView(userId: string, workspaceId: string, databaseId: string, input: CreateView): Promise<DatabaseView> {
+  async createView(userId: string, workspaceId: string, databaseId: string, input: CreateView): Promise<{ database: Database; view: DatabaseView }> {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabaseViewCreateRequestSchema, input)
     return this.transact(async session => {
       const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
-      await this.bumpDatabaseVersion(database, session)
-      return this.views.create({ id: input.id, workspaceId, databaseId, name: input.name, type: 'table', version: 1 }, session)
+      const expectedVersion = input.expectedDatabaseVersion ?? database.version
+      const bumped = await this.databases.compareAndBump(workspaceId, databaseId, expectedVersion, session)
+      if (!bumped) throw new ConflictException('Database version is stale')
+      if ((await this.views.listWindow(workspaceId, databaseId, 101, session)).length >= 100) throw new ConflictException('Database already has the maximum of 100 views')
+      const properties = await this.properties.list(workspaceId, databaseId, session)
+      const config = input.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+      if (!validateDatabaseViewConfig(config, properties)) throw new BadRequestException('Invalid database view configuration for this database')
+      const view = await this.views.create({ id: input.id, workspaceId, databaseId, name: input.name, type: 'table', config, version: 1 }, session)
+      return { database: bumped, view }
+    })
+  }
+
+  async updateView(userId: string, workspaceId: string, databaseId: string, viewId: string, input: { name?: string; config?: DatabaseViewConfig; expectedDatabaseVersion: number; expectedViewVersion: number }): Promise<{ database: Database; view: DatabaseView }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    this.parse(DatabaseViewUpdateRequestSchema, input)
+    return this.transact(async session => {
+      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      if (!database) throw new ConflictException('Database version is stale')
+      const existing = await this.views.findInWorkspace(workspaceId, viewId, session)
+      if (!existing || existing.databaseId !== databaseId) throw new NotFoundException('Database view not found')
+      const properties = await this.properties.list(workspaceId, databaseId, session)
+      const config = input.config ?? existing.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+      if (!validateDatabaseViewConfig(config, properties)) throw new BadRequestException('Invalid database view configuration for this database')
+      const view = await this.views.update(workspaceId, databaseId, viewId, input.expectedViewVersion, { ...(input.name === undefined ? {} : { name: input.name }), ...(input.config === undefined ? {} : { config }) }, session)
+      if (!view) throw new ConflictException('Database view version is stale')
+      return { database, view }
+    })
+  }
+
+  async deleteView(userId: string, workspaceId: string, databaseId: string, viewId: string, input: { expectedDatabaseVersion: number; expectedViewVersion: number }): Promise<{ database: Database }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    this.parse(DatabaseViewDeleteRequestSchema, input)
+    return this.transact(async session => {
+      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      if (!database) throw new ConflictException('Database version is stale')
+      const existing = await this.views.findInWorkspace(workspaceId, viewId, session)
+      if (!existing || existing.databaseId !== databaseId) throw new NotFoundException('Database view not found')
+      if ((await this.views.listWindow(workspaceId, databaseId, 2, session)).length <= 1) throw new ConflictException('A database must keep at least one view')
+      if (!await this.views.delete(workspaceId, databaseId, viewId, input.expectedViewVersion, session)) throw new ConflictException('Database view version is stale')
+      if (await this.blocks.hasDatabaseViewReference(workspaceId, databaseId, viewId, session)) {
+        throw new ConflictException('This view is still referenced by a Database Block. Switch those blocks to another view or remove the references, then retry.')
+      }
+      return { database }
     })
   }
 
@@ -305,6 +391,40 @@ export class DatabaseService {
   private validateWindow(input: WindowInput): void {
     if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > 100) throw new BadRequestException('Limit must be an integer between 1 and 100')
     if (input.cursor !== undefined && (input.cursor.length < 1 || input.cursor.length > 256 || input.cursor.trim() !== input.cursor)) throw new BadRequestException('Invalid cursor')
+  }
+
+  private validateTableWindow(input: WindowInput): void {
+    if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > 100) throw new BadRequestException('Limit must be an integer between 1 and 100')
+    if (input.cursor !== undefined && (input.cursor.length < 1 || input.cursor.length > 16_384 || input.cursor.trim() !== input.cursor)) throw new BadRequestException('Invalid table cursor')
+  }
+
+  private viewConfigHash(config: DatabaseViewConfig): string {
+    return createHash('sha256').update(JSON.stringify(config)).digest('hex')
+  }
+
+  private encodeTableCursor(cursor: TableCursor): string {
+    const encoded = Buffer.from(JSON.stringify(cursor), 'utf8').toString('base64url')
+    if (encoded.length > 16_384) throw new ConflictException('Table cursor exceeded its maximum size; reload the table')
+    return encoded
+  }
+
+  private decodeTableCursor(value: string): TableCursor {
+    try {
+      if (value.length > 16_384 || !/^[A-Za-z0-9_-]+$/u.test(value)) throw new Error('invalid encoding')
+      const json = Buffer.from(value, 'base64url').toString('utf8')
+      if (Buffer.from(json, 'utf8').toString('base64url') !== value) throw new Error('non-canonical encoding')
+      const parsed: unknown = JSON.parse(json)
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error('invalid payload')
+      const cursor = parsed as Record<string, unknown>
+      if (Object.keys(cursor).sort().join(',') !== 'ch,d,dv,p,r,v,vv,w'
+        || ![cursor.w, cursor.d, cursor.v, cursor.r].every(value => typeof value === 'string' && value.length > 0 && value.length <= 256 && value.trim() === value)
+        || !Number.isSafeInteger(cursor.dv) || (cursor.dv as number) < 1 || !Number.isSafeInteger(cursor.vv) || (cursor.vv as number) < 1
+        || typeof cursor.ch !== 'string' || !/^[a-f0-9]{64}$/u.test(cursor.ch)
+        || typeof cursor.p !== 'string' || !Number.isFinite(Date.parse(cursor.p))) throw new Error('invalid fields')
+      return cursor as TableCursor
+    } catch {
+      throw new BadRequestException('Invalid table cursor')
+    }
   }
 
   private toWindow<T extends { id: string }>(rows: T[], limit: number): { items: T[]; nextCursor: string | null } {

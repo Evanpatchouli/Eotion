@@ -1,5 +1,5 @@
 import { createLocalId } from '@eotion/storage'
-import type { DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest } from '@eotion/contracts'
+import type { DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest } from '@eotion/contracts'
 import { nextOrderKey } from '../utils/pageTree'
 
 import { notifyDatabaseRecordCreated, notifyDatabaseUpdated } from '../editor/databaseEvents'
@@ -8,6 +8,28 @@ import { ApiError, api } from './productApi'
 import { useProductPagesStore } from '../stores/productPages'
 import { useProductSyncStore } from '../stores/productSync'
 import { useAuthStore } from '../stores/auth'
+
+export type ProductDatabaseViewDeleteState = {
+  userId: string
+  workspaceId: string
+  databaseId: string
+  blockId: string
+  fromViewId: string
+  replacementViewId: string
+  status: 'pending' | 'failed'
+  error: string
+}
+const databaseViewDeleteStates = reactive(new Map<string, ProductDatabaseViewDeleteState>())
+
+export function getProductDatabaseViewDeleteState(blockId: string): ProductDatabaseViewDeleteState | undefined {
+  return databaseViewDeleteStates.get(blockId)
+}
+export function setProductDatabaseViewDeleteState(state: ProductDatabaseViewDeleteState): void {
+  databaseViewDeleteStates.set(state.blockId, state)
+}
+export function clearProductDatabaseViewDeleteState(blockId: string): void {
+  databaseViewDeleteStates.delete(blockId)
+}
 
 const uncertainRecordScopes = reactive(new Set<string>())
 const uncertainDatabaseInsertionScopes = reactive(new Set<string>())
@@ -90,6 +112,53 @@ export async function loadProductDatabaseTable(
   const result = await api.databases.getDatabaseTable(workspaceId, databaseId, viewId, window)
   if (!userId || auth.user?.id !== userId) throw new Error('登录状态已切换，请重新加载数据库。')
   return result
+}
+
+export async function listProductDatabaseViews(workspaceId: string, databaseId: string) {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  const result = await api.databases.listDatabaseViews(workspaceId, databaseId)
+  if (!userId || auth.user?.id !== userId) throw new Error('登录状态已切换，请重新加载数据库。')
+  return result
+}
+
+export async function createProductDatabaseView(workspaceId: string, databaseId: string, input: DatabaseViewHttpCreateRequest) {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再编辑数据库视图。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const result = await api.databases.createDatabaseView(workspaceId, databaseId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
+}
+
+export async function updateProductDatabaseView(workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewUpdateRequest) {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再编辑数据库视图。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const result = await api.databases.updateDatabaseView(workspaceId, databaseId, viewId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
+}
+
+export async function deleteProductDatabaseView(workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewDeleteRequest) {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再编辑数据库视图。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const result = await api.databases.deleteDatabaseView(workspaceId, databaseId, viewId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
 }
 
 export async function createProductDatabaseRecord(workspaceId: string, databaseId: string, title: string): Promise<{ refreshWarning?: string }> {

@@ -64,9 +64,106 @@ export interface DatabaseView {
   workspaceId: string
   name: string
   type: 'table'
+  /** Absent on legacy stored views; repositories project the default config. */
+  config?: DatabaseViewConfig
   version: number
   createdAt: string
   updatedAt: string
+}
+
+export type DatabaseFilterOperator = 'is' | 'is_not' | 'contains' | 'does_not_contain' | 'is_empty' | 'is_not_empty' | 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'checked' | 'unchecked' | 'before' | 'after'
+export interface DatabaseFilter {
+  propertyId: string
+  operator: DatabaseFilterOperator
+  value?: string | number
+}
+export type DatabaseSortDirection = 'asc' | 'desc'
+export interface DatabaseSort {
+  propertyId: string
+  direction: DatabaseSortDirection
+}
+export interface DatabaseViewConfig {
+  filters: DatabaseFilter[]
+  sorts: DatabaseSort[]
+  visibleProperties: string[] | null
+  propertyOrder: string[] | null
+}
+
+export const DEFAULT_DATABASE_VIEW_CONFIG: DatabaseViewConfig = {
+  filters: [], sorts: [], visibleProperties: null, propertyOrder: null,
+}
+
+const FILTER_OPERATORS: readonly string[] = ['is', 'is_not', 'contains', 'does_not_contain', 'is_empty', 'is_not_empty', 'eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'checked', 'unchecked', 'before', 'after']
+const NO_VALUE_FILTER_OPERATORS = new Set(['is_empty', 'is_not_empty', 'checked', 'unchecked'])
+const FILTERS_BY_TYPE: Record<DatabasePropertyType, readonly string[]> = {
+  title: ['is', 'is_not', 'contains', 'does_not_contain', 'is_empty', 'is_not_empty'],
+  text: ['is', 'is_not', 'contains', 'does_not_contain', 'is_empty', 'is_not_empty'],
+  number: ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'is_empty', 'is_not_empty'],
+  checkbox: ['checked', 'unchecked'],
+  select: ['is', 'is_not', 'is_empty', 'is_not_empty'],
+  date: ['is', 'before', 'after', 'is_empty', 'is_not_empty'],
+}
+
+/** Checks the strict wire shape without needing the referenced database properties. */
+export function isValidDatabaseViewConfigShape(value: unknown): value is DatabaseViewConfig {
+  if (!isObject(value) || !hasExactFields(value, ['filters', 'sorts', 'visibleProperties', 'propertyOrder'])) return false
+  if (!Array.isArray(value.filters) || value.filters.length > 20 || !Array.isArray(value.sorts) || value.sorts.length > 10) return false
+  for (const filter of value.filters) {
+    if (!isObject(filter) || !hasExactFields(filter, ['propertyId', 'operator'], ['value'])
+      || !isStableId(filter.propertyId) || typeof filter.operator !== 'string' || !FILTER_OPERATORS.includes(filter.operator)) return false
+    if (NO_VALUE_FILTER_OPERATORS.has(filter.operator)) {
+      if (Object.hasOwn(filter, 'value')) return false
+    } else if (!Object.hasOwn(filter, 'value') || !(typeof filter.value === 'string' && filter.value.length <= 2000 || (typeof filter.value === 'number' && Number.isFinite(filter.value)))) return false
+  }
+  const sortIds = new Set<string>()
+  for (const sort of value.sorts) {
+    if (!isObject(sort) || !hasExactFields(sort, ['propertyId', 'direction']) || !isStableId(sort.propertyId)
+      || (sort.direction !== 'asc' && sort.direction !== 'desc') || sortIds.has(sort.propertyId)) return false
+    sortIds.add(sort.propertyId)
+  }
+  for (const ids of [value.visibleProperties, value.propertyOrder]) {
+    if (ids !== null && (!Array.isArray(ids) || ids.length > 100 || !ids.every(isStableId) || new Set(ids).size !== ids.length)) return false
+  }
+  return true
+}
+
+/** Validates both config structure and property-specific filter/operator semantics. */
+export function validateDatabaseViewConfig(value: unknown, properties: readonly DatabaseProperty[]): value is DatabaseViewConfig {
+  if (!isValidDatabaseViewConfigShape(value) || !Array.isArray(properties)) return false
+  const byId = new Map<string, DatabaseProperty>()
+  let databaseId: string | undefined
+  let workspaceId: string | undefined
+  let titleId: string | undefined
+  for (const property of properties) {
+    if (!isValidDatabaseProperty(property) || byId.has(property.id)
+      || (databaseId !== undefined && property.databaseId !== databaseId)
+      || (workspaceId !== undefined && property.workspaceId !== workspaceId)) return false
+    databaseId = property.databaseId
+    workspaceId = property.workspaceId
+    byId.set(property.id, property)
+    if (property.type === 'title') {
+      if (titleId !== undefined) return false
+      titleId = property.id
+    }
+  }
+  if (titleId === undefined) return false
+  for (const filter of value.filters) {
+    const property = byId.get(filter.propertyId)
+    if (!property || !FILTERS_BY_TYPE[property.type].includes(filter.operator)) return false
+    if (NO_VALUE_FILTER_OPERATORS.has(filter.operator)) continue
+    if (property.type === 'number') {
+      if (typeof filter.value !== 'number' || !Number.isFinite(filter.value)) return false
+    } else {
+      if (typeof filter.value !== 'string') return false
+      if (property.type === 'select' && !property.options?.some(option => option.id === filter.value)) return false
+      if (property.type === 'date' && !isValidDateOnly(filter.value)) return false
+    }
+  }
+  if (value.sorts.some(sort => !byId.has(sort.propertyId))) return false
+  for (const ids of [value.visibleProperties, value.propertyOrder]) {
+    if (ids !== null && ids.some(id => !byId.has(id))) return false
+  }
+  return value.visibleProperties === null || value.visibleProperties.includes(titleId)
 }
 
 const PROPERTY_TYPES: readonly string[] = ['title', 'text', 'number', 'checkbox', 'select', 'date']
@@ -255,12 +352,13 @@ export function isValidDatabaseRecord(value: unknown, properties: readonly Datab
 
 export function isValidDatabaseView(value: unknown): value is DatabaseView {
   return isObject(value)
-    && hasExactFields(value, ENTITY_FIELDS.view)
+    && hasExactFields(value, ENTITY_FIELDS.view, ['config'])
     && isStableId(value.id)
     && isStableId(value.databaseId)
     && isStableId(value.workspaceId)
     && isName(value.name)
     && value.type === 'table'
+    && (!Object.hasOwn(value, 'config') || isValidDatabaseViewConfigShape(value.config))
     && isVersion(value.version)
     && isIsoTimestamp(value.createdAt)
     && isIsoTimestamp(value.updatedAt)

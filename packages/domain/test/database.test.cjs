@@ -6,7 +6,9 @@ const {
   isValidDatabaseProperty,
   isValidDatabaseRecord,
   isValidDatabaseView,
+  isValidDatabaseViewConfigShape,
   validateDatabaseRecordValues,
+  validateDatabaseViewConfig,
   validateStoredDatabaseRecordValues,
 } = require('../dist/database.js')
 
@@ -74,4 +76,21 @@ test('record values strictly follow definitions and require the unique non-empty
   assert.equal(isValidDatabaseRecord(record, properties), true)
   assert.equal(isValidDatabaseRecord({ ...record, workspaceId: 'other' }, properties), false)
   assert.equal(isValidDatabaseRecord({ ...record, unknown: true }, properties), false)
+})
+
+test('view config shape and property-aware validation enforce strict operators and scopes', () => {
+  const base = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null }
+  assert.equal(validateDatabaseViewConfig(base, properties), true)
+  assert.equal(validateDatabaseViewConfig({ ...base, filters: [{ propertyId: 'prop-checkbox', operator: 'checked' }] }, properties), true)
+  assert.equal(isValidDatabaseViewConfigShape({ ...base, filters: [{ propertyId: 'prop-checkbox', operator: 'unchecked', value: false }] }), false)
+  assert.equal(isValidDatabaseViewConfigShape({ ...base, filters: [{ propertyId: 'prop-text', operator: 'is_empty', value: '' }] }), false)
+  assert.equal(validateDatabaseViewConfig({ ...base, filters: [{ propertyId: 'prop-number', operator: 'gt', value: 2 }] }, properties), true)
+  assert.equal(validateDatabaseViewConfig({ ...base, filters: [{ propertyId: 'prop-number', operator: 'contains', value: 'x' }] }, properties), false)
+  assert.equal(validateDatabaseViewConfig({ ...base, filters: [{ propertyId: 'prop-select', operator: 'is', value: 'Open' }] }, properties), false)
+  assert.equal(validateDatabaseViewConfig({ ...base, filters: [{ propertyId: 'missing', operator: 'is_empty' }] }, properties), false)
+  assert.equal(validateDatabaseViewConfig({ ...base, visibleProperties: ['prop-text'] }, properties), false)
+  assert.equal(validateDatabaseViewConfig({ ...base, visibleProperties: ['prop-title', 'prop-title'] }, properties), false)
+  assert.equal(validateDatabaseViewConfig({ ...base, propertyOrder: ['prop-text'] }, properties), true)
+  assert.equal(validateDatabaseViewConfig({ ...base, sorts: [{ propertyId: 'prop-text', direction: 'asc' }, { propertyId: 'prop-text', direction: 'desc' }] }, properties), false)
+  assert.equal(validateDatabaseViewConfig({ ...base, filters: Array(21).fill({ propertyId: 'prop-text', operator: 'is_empty' }) }, properties), false)
 })

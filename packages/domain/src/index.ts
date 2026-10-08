@@ -45,8 +45,11 @@ export {
   isValidDatabasePropertyDefinition,
   isValidDatabaseRecord,
   isValidDatabaseView,
+  isValidDatabaseViewConfigShape,
   validateDatabaseRecordValues,
+  validateDatabaseViewConfig,
   validateStoredDatabaseRecordValues,
+  DEFAULT_DATABASE_VIEW_CONFIG,
 } from './database'
 export type {
   Database,
@@ -59,6 +62,11 @@ export type {
   DatabaseTableRecord,
   DatabaseSelectOption,
   DatabaseView,
+  DatabaseFilter,
+  DatabaseFilterOperator,
+  DatabaseSort,
+  DatabaseSortDirection,
+  DatabaseViewConfig,
 } from './database'
 export {
   blockDepthMap,

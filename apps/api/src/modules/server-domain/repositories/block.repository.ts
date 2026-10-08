@@ -40,6 +40,24 @@ export class BlockRepository {
     return (await this.model.find({ workspaceId }).sort({ pageId: 1, parentBlockId: 1, orderKey: 1, id: 1 }).exec()).map((doc) => this.toRecord(doc))
   }
 
+  /** Scans workspace block ASTs, including nested Toggle/content nodes. Cost is O(workspace blocks). */
+  async hasDatabaseViewReference(workspaceId: string, databaseId: string, viewId: string, session?: ClientSession): Promise<boolean> {
+    const rows = await this.model.find({ workspaceId }, { props: 1 }).session(session ?? null).lean().exec()
+    const pending: unknown[] = rows.map(row => row.props)
+    while (pending.length > 0) {
+      const node = pending.pop()
+      if (Array.isArray(node)) { pending.push(...node); continue }
+      if (typeof node !== 'object' || node === null) continue
+      const value = node as Record<string, unknown>
+      if (value.type === 'eotionDatabase' && typeof value.attrs === 'object' && value.attrs !== null && !Array.isArray(value.attrs)) {
+        const attrs = value.attrs as Record<string, unknown>
+        if (attrs.databaseId === databaseId && attrs.viewId === viewId) return true
+      }
+      for (const child of Object.values(value)) if (typeof child === 'object' && child !== null) pending.push(child)
+    }
+    return false
+  }
+
   async updateInWorkspace(workspaceId: string, pageId: string, id: string, patch: BlockPatch, session?: ClientSession): Promise<ServerBlockRecord | null> {
     assertUpdateFields(patch, ['type', 'orderKey', 'props'])
     const doc = await this.model.findOneAndUpdate({ workspaceId, pageId, id }, patch, { returnDocument: 'after', runValidators: true, session }).exec()
