@@ -60,6 +60,7 @@ test('slash commands follow root, quote, list item and toggle summary/child cont
   await expect(option(page, '提示块')).toBeVisible()
   await expect(option(page, '折叠列表')).toBeVisible()
   await expect(option(page, '表格')).toBeVisible()
+  await expect(option(page, '数据库')).toBeVisible()
   await expect(option(page, '图片')).toBeVisible()
   await expect(option(page, '文件')).toBeVisible()
   await option(page, '引用').click()
@@ -68,6 +69,7 @@ test('slash commands follow root, quote, list item and toggle summary/child cont
   await expect(option(page, '提示块')).toHaveCount(0)
   await expect(option(page, '折叠列表')).toHaveCount(0)
   await expect(option(page, '一级标题')).toBeVisible()
+  await expect(option(page, '数据库')).toHaveCount(0)
   await page.keyboard.press('Escape')
 
   // The root trailing paragraph is the next sibling after the quote.
@@ -78,6 +80,7 @@ test('slash commands follow root, quote, list item and toggle summary/child cont
   await expect(option(page, '引用')).toHaveCount(0)
   await expect(option(page, '提示块')).toHaveCount(0)
   await expect(option(page, '图片')).toHaveCount(0)
+  await expect(option(page, '数据库')).toHaveCount(0)
   await page.keyboard.press('Escape')
 
   // Use the root trailing paragraph to create a toggle and inspect its summary.
@@ -88,6 +91,7 @@ test('slash commands follow root, quote, list item and toggle summary/child cont
   await expect(option(page, '折叠列表')).toHaveCount(0)
   await expect(option(page, '提示块')).toBeVisible()
   await expect(option(page, '图片')).toHaveCount(0)
+  await expect(option(page, '数据库')).toHaveCount(0)
   await page.keyboard.press('Escape')
 
   await toggleParagraphs.first().click()
@@ -98,6 +102,7 @@ test('slash commands follow root, quote, list item and toggle summary/child cont
   await expect(option(page, '提示块')).toBeVisible()
   await expect(option(page, '图片')).toHaveCount(0)
   await expect(option(page, '文件')).toHaveCount(0)
+  await expect(option(page, '数据库')).toBeVisible()
 
   // Selecting an offered command must actually apply it: a wrapper toggle around
   // the cursor is not swallowed content, so a nested toggle is created and the
@@ -158,6 +163,7 @@ test('slash inside a code block only offers plain text conversions', async ({ pa
   await expect(option(page, '提示块')).toHaveCount(0)
   await expect(option(page, '表格')).toHaveCount(0)
   await expect(option(page, '图片')).toHaveCount(0)
+  await expect(option(page, '数据库')).toHaveCount(0)
   await expect(option(page, '文件')).toHaveCount(0)
   await option(page, '文本').click()
   await expect(editor.locator('pre')).toHaveCount(0)

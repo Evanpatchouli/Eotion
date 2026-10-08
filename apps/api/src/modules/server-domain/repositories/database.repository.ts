@@ -21,6 +21,12 @@ export class DatabaseRepository {
     const doc = await this.model.findOne({ workspaceId, id }).session(session ?? null).exec()
     return doc ? { id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) } : null
   }
+  async listWindow(workspaceId: string, input: { cursor?: string; limit: number }, session?: ClientSession): Promise<Database[]> {
+    const filter: Record<string, unknown> = { workspaceId }
+    if (input.cursor !== undefined) filter.id = { $gt: input.cursor }
+    const docs = await this.model.find(filter).sort({ id: 1 }).limit(input.limit + 1).session(session ?? null).exec()
+    return docs.map(doc => ({ id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) }))
+  }
 }
 
 @Injectable()
@@ -32,6 +38,10 @@ export class DatabasePropertyRepository {
   }
   async list(workspaceId: string, databaseId: string, session?: ClientSession): Promise<DatabaseProperty[]> {
     return (await this.model.find({ workspaceId, databaseId }).sort({ createdAt: 1, id: 1 }).session(session ?? null).exec()).map(doc => this.toRecord(doc))
+  }
+  async listLimited(workspaceId: string, databaseId: string, limit: number, session?: ClientSession): Promise<DatabaseProperty[]> {
+    const docs = await this.model.find({ workspaceId, databaseId }).sort({ createdAt: 1, id: 1 }).limit(limit).session(session ?? null).exec()
+    return docs.map(doc => this.toRecord(doc))
   }
   private toRecord(doc: DatabasePropertyDocument): DatabaseProperty {
     return { id: doc.id, workspaceId: doc.workspaceId, databaseId: doc.databaseId, name: doc.name, type: doc.type as DatabaseProperty['type'], ...(doc.options === undefined ? {} : { options: doc.options.map(option => ({ id: option.id, name: option.name })) }), version: doc.version, ...dates(doc) }
@@ -47,6 +57,12 @@ export class DatabaseRecordRepository {
   }
   async list(workspaceId: string, databaseId: string, session?: ClientSession): Promise<DatabaseRecord[]> {
     return (await this.model.find({ workspaceId, databaseId }).sort({ createdAt: 1, id: 1 }).session(session ?? null).exec()).map(doc => this.toRecord(doc))
+  }
+  async listWindow(workspaceId: string, databaseId: string, input: { cursor?: string; limit: number }, session?: ClientSession): Promise<DatabaseRecord[]> {
+    const filter: Record<string, unknown> = { workspaceId, databaseId }
+    if (input.cursor !== undefined) filter.id = { $gt: input.cursor }
+    const docs = await this.model.find(filter).sort({ id: 1 }).limit(input.limit + 1).session(session ?? null).exec()
+    return docs.map(doc => this.toRecord(doc))
   }
   async referencesPage(workspaceId: string, pageId: string, session?: ClientSession): Promise<boolean> {
     return !!(await this.model.exists({ workspaceId, pageId }).session(session ?? null))
@@ -69,6 +85,10 @@ export class DatabaseViewRepository {
   }
   async list(workspaceId: string, databaseId: string, session?: ClientSession): Promise<DatabaseView[]> {
     return (await this.model.find({ workspaceId, databaseId }).sort({ createdAt: 1, id: 1 }).session(session ?? null).exec()).map(doc => this.toRecord(doc))
+  }
+  async listWindow(workspaceId: string, databaseId: string, limit: number, session?: ClientSession): Promise<DatabaseView[]> {
+    const docs = await this.model.find({ workspaceId, databaseId }).sort({ id: 1 }).limit(limit + 1).session(session ?? null).exec()
+    return docs.map(doc => this.toRecord(doc))
   }
   private toRecord(doc: DatabaseViewDocument): DatabaseView {
     return { id: doc.id, workspaceId: doc.workspaceId, databaseId: doc.databaseId, name: doc.name, type: doc.type, version: doc.version, ...dates(doc) }

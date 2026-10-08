@@ -357,6 +357,69 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
     assert.equal(pageCreate.status, 201);
     assert.equal(pageCreate.body.workspaceId, "ws-owner");
     assertNoSecretFields(pageCreate.body);
+    const databaseCollection = connection.db!.collection("databases");
+    const propertyCollection = connection.db!.collection("database_properties");
+    const viewCollection = connection.db!.collection("database_views");
+    const recordCollection = connection.db!.collection("database_records");
+    const databaseInput = { id: "db-http-one", name: "HTTP tasks", titlePropertyId: "db-http-one-title", viewId: "db-http-one-view", blockId: "db-http-one-block", orderKey: "b", parentBlockId: null };
+    assert.equal((await request(baseUrl, "/api/workspaces/ws-owner/databases", "GET")).status, 401);
+    assert.equal((await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/databases", "POST", { body: databaseInput })).status, 401);
+    const createdDatabase = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/databases", "POST", { cookie: cookieA, body: databaseInput });
+    assert.equal(createdDatabase.status, 201);
+    assert.equal(createdDatabase.body.database.id, databaseInput.id);
+    assert.equal(createdDatabase.body.titleProperty.type, "title");
+    assert.equal(createdDatabase.body.view.id, databaseInput.viewId);
+    assert.equal(createdDatabase.body.block.props.node.attrs.databaseId, databaseInput.id);
+    assert.equal(await databaseCollection.countDocuments({ workspaceId: "ws-owner" }), 1);
+    assert.deepEqual((await request(baseUrl, "/api/workspaces/ws-owner/databases", "GET", { cookie: cookieA })).body.items.map((item: { id: string }) => item.id), [databaseInput.id]);
+    const defaultViews = await request(baseUrl, `/api/workspaces/ws-owner/databases/${databaseInput.id}/views`, "GET", { cookie: cookieA });
+    assert.equal(defaultViews.status, 200);
+    assert.deepEqual(defaultViews.body.map((item: { id: string }) => item.id), [databaseInput.viewId]);
+    const badViewLink = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/database-links", "POST", { cookie: cookieA, body: { databaseId: databaseInput.id, viewId: "missing-view", blockId: "bad-view-link", orderKey: "z", parentBlockId: null } });
+    assert.equal(badViewLink.status, 400);
+    assert.equal(await connection.db!.collection("blocks").countDocuments({ id: "bad-view-link" }), 0);
+    const badCreate = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/databases", "POST", { cookie: cookieA, body: { ...databaseInput, extra: true } });
+    assert.equal(badCreate.status, 400);
+    const failedDatabaseCreate = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/databases", "POST", { cookie: cookieA, body: { ...databaseInput, id: "db-http-rollback-create", blockId: "db-http-rollback-block" } });
+    assert.equal(failedDatabaseCreate.status, 500);
+    assert.equal(await databaseCollection.countDocuments({ id: "db-http-rollback-create" }), 0);
+    const recordInput = { id: "db-http-record-one", pageId: "db-http-page-one", title: "First row", orderKey: "a" };
+    const createdRecord = await request(baseUrl, `/api/workspaces/ws-owner/databases/${databaseInput.id}/records`, "POST", { cookie: cookieA, body: recordInput });
+    assert.equal(createdRecord.status, 201);
+    assert.equal(createdRecord.body.page.parentPageId, null);
+    assert.equal(createdRecord.body.record.properties[databaseInput.titlePropertyId], "First row");
+    const tableRoute = `/api/workspaces/ws-owner/databases/${databaseInput.id}/views/${databaseInput.viewId}/table`;
+    const table = await request(baseUrl, tableRoute, "GET", { cookie: cookieA });
+    assert.equal(table.status, 200);
+    assert.deepEqual(table.body.records.map((item: { id: string }) => item.id), [recordInput.id]);
+    assert.equal((await request(baseUrl, `/api/workspaces/ws-owner/pages/${recordInput.pageId}`, "DELETE", { cookie: cookieA })).status, 400);
+    assert.equal((await request(baseUrl, `/api/workspaces/ws-owner/pages/${recordInput.pageId}`, "GET", { cookie: cookieA })).status, 200);
+    assert.equal((await request(baseUrl, `${tableRoute}?limit=0`, "GET", { cookie: cookieA })).status, 400);
+    assert.equal((await request(baseUrl, `/api/workspaces/ws-owner/databases/${databaseInput.id}/views/missing-view/table`, "GET", { cookie: cookieA })).status, 404);
+    const secondDatabase = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/databases", "POST", { cookie: cookieA, body: { id: "db-http-two", name: "Second", titlePropertyId: "db-http-two-title", viewId: "db-http-two-view", blockId: "db-http-two-block", orderKey: "c", parentBlockId: null } });
+    assert.equal(secondDatabase.status, 201);
+    const wrongDatabaseView = await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/database-links", "POST", { cookie: cookieA, body: { databaseId: databaseInput.id, viewId: "db-http-two-view", blockId: "db-http-wrong-view", orderKey: "z", parentBlockId: null } });
+    assert.equal(wrongDatabaseView.status, 400);
+    const firstWindow = await request(baseUrl, "/api/workspaces/ws-owner/databases?limit=1", "GET", { cookie: cookieA });
+    assert.equal(firstWindow.body.items.length, 1);
+    assert.equal(firstWindow.body.nextCursor, "db-http-one");
+    const secondWindow = await request(baseUrl, `/api/workspaces/ws-owner/databases?limit=1&cursor=${firstWindow.body.nextCursor}`, "GET", { cookie: cookieA });
+    assert.deepEqual(secondWindow.body.items.map((item: { id: string }) => item.id), ["db-http-two"]);
+    const linkPage = await request(baseUrl, "/api/workspaces/ws-owner/pages", "POST", { cookie: cookieA, body: { id: "db-http-link-page", parentPageId: null, title: "Link", orderKey: "z" } });
+    assert.equal(linkPage.status, 201);
+    const linked = await request(baseUrl, "/api/workspaces/ws-owner/pages/db-http-link-page/database-links", "POST", { cookie: cookieA, body: { databaseId: databaseInput.id, viewId: databaseInput.viewId, blockId: "db-http-shared-block", orderKey: "a", parentBlockId: null } });
+    assert.equal(linked.status, 201);
+    assert.equal(linked.body.block.props.node.attrs.databaseId, databaseInput.id);
+    assert.equal(await databaseCollection.countDocuments({ id: databaseInput.id }), 1);
+    assert.equal(await propertyCollection.countDocuments({ databaseId: databaseInput.id }), 1);
+    assert.equal(await viewCollection.countDocuments({ databaseId: databaseInput.id }), 1);
+    assert.equal(await recordCollection.countDocuments({ databaseId: databaseInput.id }), 1);
+    assert.equal((await request(baseUrl, "/api/workspaces/ws-owner/pages/db-http-link-page", "DELETE", { cookie: cookieA })).status, 200);
+    assert.equal(await databaseCollection.countDocuments({ id: databaseInput.id }), 1);
+    assert.equal(await recordCollection.countDocuments({ databaseId: databaseInput.id }), 1);
+    const duplicateRecord = await request(baseUrl, `/api/workspaces/ws-owner/databases/${databaseInput.id}/records`, "POST", { cookie: cookieA, body: { ...recordInput, pageId: "db-http-rollback-page" } });
+    assert.equal(duplicateRecord.status, 500);
+    assert.equal((await request(baseUrl, "/api/workspaces/ws-owner/pages/db-http-rollback-page", "GET", { cookie: cookieA })).status, 404);
     assert.equal(
       (
         await request(baseUrl, "/api/workspaces/ws-owner/pages", "GET", {
@@ -779,6 +842,15 @@ test("typed HTTP API authenticates with opaque cookies and scopes workspace, pag
         `another user must not access ${method} ${route}`,
       );
     }
+
+    for (const route of [
+      "/api/workspaces/ws-owner/databases",
+      `/api/workspaces/ws-owner/databases/${databaseInput.id}/views`,
+      `/api/workspaces/ws-owner/databases/${databaseInput.id}/views/${databaseInput.viewId}/table`,
+    ]) {
+      assert.equal((await request(baseUrl, route, "GET", { cookie: cookieB })).status, 404, `foreign user must not read ${route}`);
+    }
+    assert.equal((await request(baseUrl, "/api/workspaces/ws-owner/pages/page-owner/databases", "POST", { cookie: cookieB, body: { ...databaseInput, id: "db-http-foreign", titlePropertyId: "db-http-foreign-title", viewId: "db-http-foreign-view", blockId: "db-http-foreign-block" } })).status, 404);
 
     const blockRoute = "/api/workspaces/ws-owner/pages/page-owner/blocks/block-owner";
     assert.equal((await request(baseUrl, blockRoute, "DELETE")).status, 401);

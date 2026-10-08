@@ -1,5 +1,17 @@
 # Handoff
 
+## 2026-10-09 P8.2 Inline Database + Table View 完成
+
+P8.1 PASS；P8.2 **PASS / current**，基线 `3ddab71784220fd928be9c411cc19965323679cc`。本轮只交付 P8.2，P8.3–P8.6 not started。实现与正式边界见 `docs/p8-database.md`，检索入口见 `docs/context/README.md`。
+
+`/database` 在独立正文空行或 Toggle 真实子块打开选择器：新建 Database/默认 title Property/Table View/引用 Block 走同一 Mongo transaction；linked 绑定当前 Workspace 的既有 Database/View，不复制数据。Table 展示基础属性、分页及 empty/loading/error，390px 使用块内横向滚动。新增 Record 同事务创建普通 Page，标题沿用现有 Page 路由与编辑器；删除 Block 不删除 Database。Block props/MCP/Page snapshot 继续只保存引用；Database 数据没有完整 offline/sync。
+
+未知提交按本次固定 Block/Page ID 核对；不能确认时会话内禁止同页面再次插入、同 Database 再次新建 Record，并提示联网刷新确认。周边正文继续本地保存。跨应用重启幂等恢复、结构化属性编辑、Filter/Sort、其他 View 与 Database MCP tools 均未实现。
+
+验收：Domain 23/23、Contracts 12/12、SDK 19/19、API domain 4/4、HTTP 26/26、MCP 30/30，零 skip；完整 product 单 worker 231/231（含 Database 20/20 与 P7），根 typecheck、Web/API build、visual 7/7、`git diff --check`、UTF-8 无 BOM 通过。独立 review 最终 0 blocker。Connectivity 单张陈旧截图按现有 env 关闭诊断行的行为维护，视觉阈值未变；桌面明暗主题、空表、错误和 390px 初始/横向滚动截图已人工检查。
+
+真实事务与权限使用隔离 Mongo replica set 测试，已关闭本任务启动的实例；Web 使用 mock transport，移动端证据为 Chromium 响应式截图。截图保留于 gitignored `test-results/p82-visual/`。Web 仍有既有大 chunk 构建提示。到此停止，等待用户下一个阶段指令。
+
 ## 2026-10-11 P7.5 Advanced Blocks 验收完成（P7 COMPLETE）
 
 P7.1–P7.5 全部 PASS，**P7 Advanced Blocks COMPLETE**。本轮只做验收（不新增 Block、不开始 Database），基线 `84f5c0d`，验收记录见 `docs/p7-advanced-blocks.md` 的「P7.5 Advanced Blocks Final Acceptance」。

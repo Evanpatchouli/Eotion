@@ -6,6 +6,16 @@ import type {
   BlockResponse,
   BlockUpdateRequest,
   ChangePasswordRequest,
+  DatabaseCreateInPageRequest,
+  DatabaseLinkInPageRequest,
+  DatabaseRecordPageCreateRequest,
+  DatabaseTableQuery,
+  DatabaseTableResponse,
+  DatabaseViewResponse,
+  DatabaseWindowResponse,
+  DatabaseResponse,
+  DatabasePropertyResponse,
+  DatabaseRecordResponse,
   FileResponse,
   FileUpdateRequest,
   HealthResponse,
@@ -83,6 +93,14 @@ export class EotionApiClient {
     update: (workspaceId: string, fileId: string, input: FileUpdateRequest, signal?: AbortSignal) => Promise<FileResponse>
     delete: (workspaceId: string, fileId: string, signal?: AbortSignal) => Promise<void>
   }
+  readonly databases: {
+    listDatabases: (workspaceId: string, window?: Partial<Pick<DatabaseTableQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseWindowResponse>
+    listDatabaseViews: (workspaceId: string, databaseId: string, signal?: AbortSignal) => Promise<DatabaseViewResponse[]>
+    getDatabaseTable: (workspaceId: string, databaseId: string, viewId: string, window?: Partial<Pick<DatabaseTableQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseTableResponse>
+    createDatabaseInPage: (workspaceId: string, pageId: string, input: DatabaseCreateInPageRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; titleProperty: DatabasePropertyResponse; view: DatabaseViewResponse; block: BlockResponse }>
+    linkDatabaseInPage: (workspaceId: string, pageId: string, input: DatabaseLinkInPageRequest, signal?: AbortSignal) => Promise<{ block: BlockResponse }>
+    createDatabaseRecord: (workspaceId: string, databaseId: string, input: DatabaseRecordPageCreateRequest, signal?: AbortSignal) => Promise<{ record: DatabaseRecordResponse; page: PageResponse }>
+  }
   readonly sync: {
     send: (operation: SyncOperation, signal?: AbortSignal) => Promise<void>
     snapshot: (workspaceId: string, signal?: AbortSignal) => Promise<WorkspaceSnapshotResponse>
@@ -144,6 +162,14 @@ export class EotionApiClient {
       get: (workspaceId, fileId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/files/${segment(fileId)}`, { method: 'GET', signal }),
       update: (workspaceId, fileId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/files/${segment(fileId)}`, { method: 'PATCH', body: input, signal }),
       delete: (workspaceId, fileId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/files/${segment(fileId)}`, { method: 'DELETE', signal }),
+    }
+    this.databases = {
+      listDatabases: (workspaceId, window = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases${query(window)}`, { method: 'GET', signal }),
+      listDatabaseViews: (workspaceId, databaseId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views`, { method: 'GET', signal }),
+      getDatabaseTable: (workspaceId, databaseId, viewId, window = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}/table${query(window)}`, { method: 'GET', signal }),
+      createDatabaseInPage: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/databases`, { method: 'POST', body: input, signal }),
+      linkDatabaseInPage: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/database-links`, { method: 'POST', body: input, signal }),
+      createDatabaseRecord: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/records`, { method: 'POST', body: input, signal }),
     }
     this.sync = {
       send: async (operation, signal) => {
@@ -215,4 +241,12 @@ export class EotionOperationTransport {
 
 function segment(value: string): string {
   return encodeURIComponent(value)
+}
+
+function query(value: { limit?: number; cursor?: string }): string {
+  const params = new URLSearchParams()
+  if (value.limit !== undefined) params.set('limit', String(value.limit))
+  if (value.cursor !== undefined) params.set('cursor', value.cursor)
+  const encoded = params.toString()
+  return encoded ? `?${encoded}` : ''
 }

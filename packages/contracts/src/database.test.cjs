@@ -6,6 +6,11 @@ const {
   DatabasePropertyCreateRequestSchema,
   DatabaseRecordCreateRequestSchema,
   DatabaseViewCreateRequestSchema,
+  DatabaseLinkInPageRequestSchema,
+  DatabaseRecordPageCreateRequestSchema,
+  DatabaseListQuerySchema,
+  DatabaseViewListQuerySchema,
+  DatabaseTableResponseSchema,
   DatabaseSchema,
   DatabasePropertySchema,
   DatabaseViewSchema,
@@ -78,4 +83,31 @@ test('database create request schemas reject unstable or oversized ids and names
   invalidId(DatabaseViewCreateRequestSchema, { ...view, id: ' view-1' })
   assert.equal(DatabaseViewCreateRequestSchema.safeParse({ ...view, name: 'All tasks ' }).success, false)
   assert.equal(DatabaseViewCreateRequestSchema.safeParse({ ...view, name: 'V'.repeat(201) }).success, false)
+})
+
+test('database HTTP contracts strictly validate page creation, links, and bounded windows', () => {
+  const link = { databaseId: 'db-1', viewId: 'view-1', blockId: 'block-2', orderKey: 'b', parentBlockId: null }
+  assert.deepEqual(DatabaseLinkInPageRequestSchema.parse(link), link)
+  assert.equal(DatabaseLinkInPageRequestSchema.safeParse({ ...link, viewId: ' view-1' }).success, false)
+  const recordPage = { id: 'record-1', pageId: 'page-2', title: 'A task', orderKey: 'a' }
+  assert.deepEqual(DatabaseRecordPageCreateRequestSchema.parse(recordPage), recordPage)
+  assert.equal(DatabaseRecordPageCreateRequestSchema.safeParse({ ...recordPage, parentPageId: null }).success, false)
+  assert.deepEqual(DatabaseListQuerySchema.parse({}), { limit: 50 })
+  assert.deepEqual(DatabaseListQuerySchema.parse({ limit: '12', cursor: 'db-1' }), { limit: 12, cursor: 'db-1' })
+  assert.equal(DatabaseListQuerySchema.safeParse({ limit: '101' }).success, false)
+  assert.equal(DatabaseListQuerySchema.safeParse({ cursor: ' db-1' }).success, false)
+  assert.deepEqual(DatabaseViewListQuerySchema.parse({}), { limit: 100 })
+})
+
+test('database table response validates scope, property values, and the property cap', () => {
+  const record = { id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task' }, version: 1, createdAt: timestamp, updatedAt: timestamp }
+  const table = { database, view, properties: [property], records: [record], nextCursor: null }
+  assert.deepEqual(DatabaseTableResponseSchema.parse(table), table)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, view: { ...view, workspaceId: 'ws-2' } }).success, false)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: [{ ...record, properties: { 'title-1': 4 } }] }).success, false)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: [{ ...record, databaseId: 'db-2' }] }).success, false)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, properties: [{ ...property, workspaceId: 'ws-2' }] }).success, false)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, properties: Array(101).fill(property) }).success, false)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, extra: true }).success, false)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: Array(101).fill(record) }).success, false)
 })

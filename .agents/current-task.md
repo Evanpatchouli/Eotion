@@ -1,21 +1,18 @@
-# 当前任务：P8.1 Database Domain Foundation
+# 当前任务：P8.2 Inline Database + Table View
 
-状态：COMPLETE / P8.1 PASS（2026-10-08）；基线 c0e716f；只完成 P8.1，不进入 P8.2；最终一个聚焦 commit。
+状态：COMPLETE / P8.2 PASS；基线 3ddab71784220fd928be9c411cc19965323679cc。仅 P8.2，最终一个聚焦 commit；不开始 P8.3。
 
-| Work Unit | 模式/评级 | 负责 | 结果 |
+| Work Unit | 模式/评级 | 负责 | 验收 |
 | --- | --- | --- | --- |
-| domain/server 与 editor/MCP 边界检索 | investigate/S0 | scouts | Evidence Pack 完成 |
-| 模型、引用与原子创建决策 | decide/S2 | 主 Agent | 独立实体、稳定引用、事务 fail-closed |
-| domain/contracts registry 基础 | execute/S1 | fast_worker | domain 23/23、contracts 10/10 |
-| 独立 Mongo domain/service | execute/S1（必要边界 S2） | worker | API domain 4/4、引用/Record Page/原子性 |
-| editor placeholder/MCP 兼容 | execute/S1 | fast_worker | MCP 30/30、P7+Database 49 个不同产品用例通过 |
-| 最终回归与独立 review | verify/S0 + review | scout/reviewer | HTTP 26/26、Storage 7/7、SDK 18/18、typecheck/Web/API build；review 0 blocker |
+| 继承实现与领域边界核对 | investigate/S0 | 主 Agent | 已核对工作区未提交的 P8.2 实现与 P8.1 基线 |
+| 原子插入/未知提交结果边界 | decide/S2 | 主 Agent + reviewer | 固定 ID 核对、会话内 fence、正文继续保存 |
+| HTTP/contracts/Table 与回归收敛 | execute/S1 | 主 Agent + p82_test_gaps | 创建/linked、Record/Page、状态/分页、标题导航 |
+| API/domain/contracts/SDK/MCP 验证 | verify/S0 | p82_api_verify | 全部通过；独立 Mongo replica set，无 skip |
+| 产品与 visual 最终验收 | verify/S0 | p82_web_verify + 主 Agent | visual 7/7；完整产品 231/231，exit 0；已检查 P8 截图 |
+| 最终独立 review | review | p82_review | 已完成最终独立复核，0 个可操作 blocker |
 
-旧 editor/sync/attachments 110 组发现 fixture 问题：非法快照需隔离 IndexedDB context，成功图片资源需显式 mock。修正后受影响两项 repeat3 共 6/6，最终完整组 110/110、exit 0；相关产品合计 159 个不同用例通过。没有削弱拒绝加载/无 editor、安全与持久化断言。
+禁止 P8.3 属性编辑、filter/sort、其他 View、Database MCP tools、完整 Database sync。
 
-核心：Database/Property/Record/View 独立 Mongo 集合；Block 仅 databaseId/viewId；title/text/number/checkbox/select/date；table-only View；Record 指向同 workspace Page，关联 Page 删除拒绝；移除最后 Block 引用不删除数据。createInPage 原子创建 Database + title Property + default View + Block，不支持 transaction 返回503/零写入。
-Database 数据不加入 Page/Block oplog；既有 Block 引用继续 sync。无新 MCP tools、无 Database HTTP/SDK CRUD、无 slash/完整 Table UI/Database sync。
+已通过：Domain 23/23、Contracts 12/12、SDK 19/19、API domain 4/4、HTTP 26/26、MCP 30/30，均 exit 0 / skip 0。最终 Web 源码收敛后根 typecheck、Web/API build、visual 7/7、diff check 通过。首轮产品 215/218，失败均已定位并修复/补明确前置；后续完整产品 230/231，唯一旧 Table 加粗用例定向连续复跑 3/3 通过，没有修改该用例或 Table 实现；最终全量单 worker 231/231，exit 0（6.1m）。Database 20/20；完整回归包括 P7。
 
-产品验证发现 BlockIdentity 对单位置 leaf 的 offset+1 锚点越界；改用 leaf offset+assoc1，Database/divider/image/file IDs 稳定，非leaf保留原逻辑。
-
-正式文档：docs/p8-database.md、roadmap、architecture、文档地图/context 已更新。验证与最终独立复核均已完成；一个聚焦 commit，确认 Git clean 后停止，不开始 P8.2。
+Connectivity 陈旧视觉基线仅更新一张：现行 env 关闭诊断行，与 556603b 的已有行为一致；实际图已人工核对，阈值保持 0.001，没有改动产品 UI。

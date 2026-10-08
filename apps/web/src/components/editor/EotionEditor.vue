@@ -5,8 +5,10 @@ import { EditorContent } from '@tiptap/vue-3'
 import Link from '@tiptap/extension-link'
 import { exitSuggestion } from '@tiptap/suggestion'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
+import { blockTypeForNode } from '@eotion/domain/block-types'
 import { createLocalId } from '@eotion/storage'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { NodeSelection } from '@tiptap/pm/state'
 
 import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
@@ -23,6 +25,7 @@ import { canIndentBlock, canOutdentBlock, indentBlock, NestedBlockInteractions, 
 import { enqueueAttachmentCleanup, pendingAttachmentCleanups } from '../../editor/attachmentCleanup'
 import { createSlashCommand } from '../../editor/slashCommand'
 import type { EditorDocument } from '../../editor/editorDocument'
+import type { DatabaseReferenceAttrs } from '@eotion/domain/database'
 import { useDocumentEditor } from '../../editor/useDocumentEditor'
 import { ApiError, api, errorMessage, expireSessionFromApi } from '../../services/productApi'
 import EotionIcon from '../ui/EotionIcon.vue'
@@ -33,7 +36,17 @@ type AttachmentKind = 'image' | 'file'
 type UploadTask = UploadPlaceholderTask
 const pendingCleanup = pendingAttachmentCleanups
 
-const props = defineProps<{ content: EditorDocument; touchToolbar: boolean; fixedToolbar?: boolean; ariaLabel?: string; workspaceId?: string; commitAttachment?: (blockId: string) => Promise<boolean> }>()
+type DatabaseInsertionRequest = { document: EditorDocument; blockId: string }
+const props = defineProps<{
+  content: EditorDocument
+  touchToolbar: boolean
+  fixedToolbar?: boolean
+  ariaLabel?: string
+  workspaceId?: string
+  commitAttachment?: (blockId: string) => Promise<boolean>
+  createDatabaseReference?: (request: DatabaseInsertionRequest) => Promise<DatabaseReferenceAttrs | null>
+  commitDatabaseReference?: (blockId: string) => Promise<boolean>
+}>()
 const emit = defineEmits<{
   update: [document: EditorDocument]
   composition: [active: boolean, event: CompositionEvent]
@@ -64,6 +77,7 @@ const TablePasteGuard = createTablePasteGuard(() => {
   editorAlert.value = '粘贴的表格超出可保存的规模，已取消这次粘贴。'
 })
 const draggingFiles = ref(false)
+const databaseCommandPending = ref(false)
 const imageInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const touchToolbarElement = ref<HTMLElement | null>(null)
@@ -128,9 +142,9 @@ function updateSelection() {
 }
 
 const { editor, getDocument } = useDocumentEditor({
-  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionDatabase, EotionCallout, EotionTable, EotionTableRow, EotionTableHeader, EotionTableCell, TablePasteGuard, AttachmentLifetime, BlockIdentity, NestedBlockInteractions,
+  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionDatabase.configure({ workspaceId: props.workspaceId ?? '' }), EotionCallout, EotionTable, EotionTableRow, EotionTableHeader, EotionTableCell, TablePasteGuard, AttachmentLifetime, BlockIdentity, NestedBlockInteractions,
     createUploadPlaceholderExtension(uploadRegistry, { cancel: cancelUpload, retry: task => { void upload(task) }, remove: removeTask }),
-    createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId))],
+    createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId), props.workspaceId && props.createDatabaseReference ? openDatabaseCommand : undefined)],
   content: props.content,
   ariaLabel: props.ariaLabel ?? 'Tiptap 编辑区域',
   attributes: { spellcheck: 'false' },
@@ -145,6 +159,74 @@ const { editor, getDocument } = useDocumentEditor({
     if (transaction.docChanged || transaction.selectionSet) scheduleCaretVisibility()
   },
 })
+
+async function openDatabaseCommand(range: { from: number; to: number }): Promise<void> {
+  const current = editor.value
+  if (!props.workspaceId || !props.createDatabaseReference || !current || composing.value || databaseCommandPending.value || uploads.value.some(task => task.phase === 'uploading' || task.phase === 'saving')) return
+  if (!isBlockCommandAllowed(current, 'database', range.from)) return
+  const $position = current.state.doc.resolve(range.from)
+  let depth = $position.depth
+  while (depth > 0 && !blockTypeForNode($position.node(depth).type.name)) depth -= 1
+  if (depth === 0) return
+  const block = $position.node(depth)
+  const position = $position.before(depth)
+  if (range.from !== position + 1 || range.to !== position + block.nodeSize - 1) {
+    editorAlert.value = '请在独立空行输入 /database，已有正文会保留。'
+    return
+  }
+  const originalBlockId = typeof block.attrs.blockId === 'string' ? block.attrs.blockId : ''
+  if (!originalBlockId) return
+  const blockId = createLocalId()
+  const databaseNode = current.schema.nodes.eotionDatabase?.create({ databaseId: 'pending-database', viewId: 'pending-view', blockId })
+  if (!databaseNode) return
+  const transaction = current.state.tr.replaceWith(position, position + block.nodeSize, databaseNode)
+  const candidate = transaction.doc.toJSON() as EditorDocument
+  databaseCommandPending.value = true
+  current.setEditable(false, false)
+  if (disposed) return
+  let databaseRequestHasServerCommit = false
+  try {
+    const reference = await props.createDatabaseReference({ document: candidate, blockId })
+    if (!reference) return
+    databaseRequestHasServerCommit = true
+    if (disposed || editor.value !== current) {
+      await props.commitDatabaseReference?.(blockId)
+      return
+    }
+    let insertion = transaction
+    let insertionPosition = position
+    if (!current.state.doc.eq(transaction.before)) {
+      let targetPosition = -1
+      let targetNode: ProseMirrorNode | undefined
+      current.state.doc.descendants((node, at) => {
+        if (node.attrs.blockId === originalBlockId) { targetPosition = at; targetNode = node; return false }
+      })
+      if (targetPosition < 0 || !targetNode) throw new Error('页面内容在数据库创建期间发生变化。数据库已创建，请刷新页面后确认引用。')
+      const currentDatabaseNode = current.schema.nodes.eotionDatabase!.create({ databaseId: reference.databaseId, viewId: reference.viewId, blockId })
+      insertion = current.state.tr.replaceWith(targetPosition, targetPosition + targetNode.nodeSize, currentDatabaseNode)
+      insertionPosition = targetPosition
+    } else {
+      const inserted = transaction.doc.nodeAt(position)
+      if (!inserted || inserted.type.name !== 'eotionDatabase') throw new Error('数据库引用没有插入，请重试。')
+      transaction.setNodeMarkup(position, undefined, { ...inserted.attrs, databaseId: reference.databaseId, viewId: reference.viewId })
+    }
+    insertion.setSelection(NodeSelection.create(insertion.doc, insertionPosition))
+    current.view.dispatch(insertion)
+    const committed = await props.commitDatabaseReference?.(blockId)
+    if (committed === false) editorAlert.value = '数据库已创建，但页面引用尚未保存。请使用页面上的“重试保存”继续保存同一个引用。'
+    else editorAlert.value = ''
+  } catch (cause) {
+    if (databaseRequestHasServerCommit) {
+      const recovered = await props.commitDatabaseReference?.(blockId)
+      editorAlert.value = recovered === false
+        ? '数据库已创建，页面正在恢复引用；若引用没有出现，请刷新后确认。'
+        : '数据库已创建，但页面引用无法自动恢复。请刷新页面后确认数据库是否已插入。'
+    } else editorAlert.value = cause instanceof Error ? cause.message : '数据库操作失败，请重试。'
+  } finally {
+    databaseCommandPending.value = false
+    if (!disposed && editor.value === current) current.setEditable(true, false)
+  }
+}
 
 function previewable(file: File): boolean {
   return SAFE_IMAGE_MIME_TYPES.includes(file.type as typeof SAFE_IMAGE_MIME_TYPES[number])

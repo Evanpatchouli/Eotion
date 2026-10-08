@@ -8,11 +8,12 @@ import { SessionAuthGuard } from './auth.transport'
 import { WorkspaceController } from './workspace.controller'
 import { SyncController } from './sync.controller'
 import { FileController } from './file.controller'
+import { DatabaseController } from './database.controller'
 import { ServerDomainModule } from '../server-domain/server-domain.module'
 
 @Module({
   imports: [ServerDomainModule],
-  controllers: [AuthController, WorkspaceController, PageController, BlockController, SyncController, FileController],
+  controllers: [AuthController, WorkspaceController, PageController, BlockController, SyncController, FileController, DatabaseController],
   providers: [SessionAuthGuard, { provide: APP_GUARD, useClass: SameOriginGuard }],
 })
 export class HttpApiModule implements OnModuleInit {

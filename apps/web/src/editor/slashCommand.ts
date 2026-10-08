@@ -21,7 +21,12 @@ const items: SlashItem[] = slashCommands().map((command) => ({
 
 const attachmentCommands = new Set<BlockCommandId>(['image', 'file'])
 
-export function createSlashCommand(isComposing: () => boolean, onAttachmentCommand?: (type: 'image' | 'file') => void, attachmentsEnabled = true) {
+export function createSlashCommand(
+  isComposing: () => boolean,
+  onAttachmentCommand?: (type: 'image' | 'file') => void,
+  attachmentsEnabled = true,
+  onDatabaseCommand?: (range: { from: number; to: number }) => void,
+) {
   return Extension.create({
     name: 'p2SlashCommand',
     addProseMirrorPlugins() {
@@ -32,6 +37,7 @@ export function createSlashCommand(isComposing: () => boolean, onAttachmentComma
           startOfLine: true,
           allow: () => !isComposing(),
           items: ({ query, editor }) => items.filter(item => (attachmentsEnabled || !attachmentCommands.has(item.id)) &&
+            (item.id !== 'database' || !!onDatabaseCommand) &&
             isBlockCommandAllowed(editor, item.id, editor.state.selection.from) &&
             `${item.label} ${item.search}`.toLowerCase().includes(query.toLowerCase()),
           ),
@@ -42,6 +48,8 @@ export function createSlashCommand(isComposing: () => boolean, onAttachmentComma
               if (!isBlockCommandAllowed(editor, item.id, range.from)) return
               editor.chain().focus().deleteRange(range).setParagraph().run()
               onAttachmentCommand?.(item.id as 'image' | 'file')
+            } else if (item.id === 'database') {
+              if (isBlockCommandAllowed(editor, item.id, range.from)) onDatabaseCommand?.(range)
             } else runBlockCommand(editor, item.id as BlockCommand, range)
           },
           render: () => {

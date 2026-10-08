@@ -67,6 +67,13 @@ export function isBlockCommandAllowed(editor: Editor, commandId: BlockCommandId,
     if (toggleAncestor && $position.index(toggleAncestor.depth) === 0) return false
   }
 
+  // Database references can only be inserted at the page root or as a real
+  // Toggle child. The first Toggle child is its summary, not a child block.
+  if (command.type === 'database') {
+    const toggleAncestor = [...ancestors].reverse().find(({ node }) => node.type.name === 'eotionToggle')
+    if (toggleAncestor && $position.index(toggleAncestor.depth) === 0) return false
+  }
+
   return true
 }
 

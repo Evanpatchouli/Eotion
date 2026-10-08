@@ -25,6 +25,38 @@ test('login sends JSON to the auth endpoint with session credentials enabled', a
   assert.deepEqual(await request.json(), { email: 'a@example.com', password: 'secret' })
 })
 
+test('database APIs encode scoped routes, query windows, and strict write payloads', async () => {
+  const requests = []
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test/',
+    fetch: async (input, init) => {
+      requests.push(new Request(input, init))
+      return Response.json({})
+    },
+  })
+  const create = { id: 'db-1', name: 'Tasks', titlePropertyId: 'title-1', viewId: 'view-1', blockId: 'block-1', orderKey: 'a', parentBlockId: null }
+  const link = { databaseId: 'db-1', viewId: 'view-1', blockId: 'block-2', orderKey: 'b', parentBlockId: null }
+  const record = { id: 'record-1', pageId: 'page-1', title: 'A task', orderKey: 'c' }
+  await client.databases.listDatabases('workspace/1', { limit: 5, cursor: 'db 1' })
+  await client.databases.listDatabaseViews('workspace/1', 'database/1')
+  await client.databases.getDatabaseTable('workspace/1', 'database/1', 'view/1', { limit: 10 })
+  await client.databases.createDatabaseInPage('workspace/1', 'page/1', create)
+  await client.databases.linkDatabaseInPage('workspace/1', 'page/2', link)
+  await client.databases.createDatabaseRecord('workspace/1', 'database/1', record)
+  assert.deepEqual(requests.map(request => request.url), [
+    'https://eotion.test/api/workspaces/workspace%2F1/databases?limit=5&cursor=db+1',
+    'https://eotion.test/api/workspaces/workspace%2F1/databases/database%2F1/views',
+    'https://eotion.test/api/workspaces/workspace%2F1/databases/database%2F1/views/view%2F1/table?limit=10',
+    'https://eotion.test/api/workspaces/workspace%2F1/pages/page%2F1/databases',
+    'https://eotion.test/api/workspaces/workspace%2F1/pages/page%2F2/database-links',
+    'https://eotion.test/api/workspaces/workspace%2F1/databases/database%2F1/records',
+  ])
+  assert.ok(requests.every(request => request.credentials === 'include'))
+  assert.deepEqual(await requests[3].json(), create)
+  assert.deepEqual(await requests[4].json(), link)
+  assert.deepEqual(await requests[5].json(), record)
+})
+
 test('API error responses become ApiError values carrying the server status', async () => {
   const client = new EotionApiClient({
     baseUrl: 'https://eotion.test',

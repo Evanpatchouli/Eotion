@@ -83,3 +83,7 @@ Closeout B 验证：`test:product` **148/148 PASS**，`interaction-foundation.sp
 - Engineering review：本轮独立复核发现的 3 项文档/测试边界问题已修正；复核与验证结果见 `.agents/current-task.md`。
 - P5.7 最终 PASS：**已声明（2026-10-06）**。
 - P5 Final Acceptance：**PASS（2026-10-06）**，见 [P5 Final Acceptance](../p5-final-acceptance.md)。
+
+## P8.2 视觉回归夹具维护（2026-10-09）
+
+`556603b` 已将连接失败页的诊断信息改为仅 `VITE_SHOW_DIAGNOSTIC_DETAILS=true` 显示，但旧 Connectivity snapshot 仍包含该行；P7 验收已记录相同的 21,748 px 差异。本轮人工对比确认仅诊断行隐藏及卡片重新居中，更新这一张陈旧基线，与现行默认配置一致。没有改动连接失败 UI 或其他六张基线，`maxDiffPixelRatio: 0.001` 保持；`test:visual` 复跑 7/7 通过。P8.2 Inline Table 的桌面 Light/Dark、空表、错误及 390px 截图按本阶段单独验收。

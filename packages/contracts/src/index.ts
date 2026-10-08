@@ -111,6 +111,61 @@ export type DatabaseRecordResponse = DatabaseRecord
 export const DatabaseViewSchema = z.custom<DatabaseView>(isValidDatabaseView)
 export type DatabaseViewResponse = z.infer<typeof DatabaseViewSchema>
 
+const databaseWindowQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  cursor: databaseStableIdSchema.optional(),
+}).strict()
+export const DatabaseListQuerySchema = databaseWindowQuerySchema
+export const DatabaseViewListQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(100).default(100) }).strict()
+export const DatabaseTableQuerySchema = databaseWindowQuerySchema
+export type DatabaseListQuery = z.infer<typeof DatabaseListQuerySchema>
+export type DatabaseViewListQuery = z.infer<typeof DatabaseViewListQuerySchema>
+export type DatabaseTableQuery = z.infer<typeof DatabaseTableQuerySchema>
+
+export const DatabaseLinkInPageRequestSchema = z.object({
+  databaseId: databaseStableIdSchema,
+  viewId: databaseStableIdSchema,
+  blockId: databaseStableIdSchema,
+  orderKey: idSchema,
+  parentBlockId: databaseStableIdSchema.nullable(),
+}).strict()
+export type DatabaseLinkInPageRequest = z.infer<typeof DatabaseLinkInPageRequestSchema>
+
+export const DatabaseRecordPageCreateRequestSchema = z.object({
+  id: databaseStableIdSchema,
+  pageId: databaseStableIdSchema,
+  title: nameSchema,
+  orderKey: idSchema,
+}).strict()
+export type DatabaseRecordPageCreateRequest = z.infer<typeof DatabaseRecordPageCreateRequestSchema>
+
+export const DatabaseWindowResponseSchema = z.object({ items: z.array(DatabaseSchema), nextCursor: databaseStableIdSchema.nullable() }).strict()
+export type DatabaseWindowResponse = z.infer<typeof DatabaseWindowResponseSchema>
+export type DatabaseTableResponse = {
+  database: Database
+  view: DatabaseView
+  properties: DatabaseProperty[]
+  records: DatabaseRecord[]
+  nextCursor: string | null
+}
+export const DatabaseTableResponseSchema = z.custom<DatabaseTableResponse>(isValidDatabaseTableResponse)
+
+function isValidDatabaseTableResponse(value: unknown): value is DatabaseTableResponse {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const table = value as Record<string, unknown>
+  if (Object.keys(table).sort().join(',') !== 'database,nextCursor,properties,records,view') return false
+  const database = table.database as Database
+  const view = table.view as DatabaseView
+  if (!isValidDatabase(database) || !isValidDatabaseView(view) || view.databaseId !== database.id || view.workspaceId !== database.workspaceId) return false
+  if (!Array.isArray(table.properties) || table.properties.length > 100 || !table.properties.every(isValidDatabaseProperty)) return false
+  const properties = table.properties as DatabaseProperty[]
+  if (!properties.every(property => property.databaseId === database.id && property.workspaceId === database.workspaceId)) return false
+  if (properties.filter(property => property.type === 'title').length !== 1 || new Set(properties.map(property => property.id)).size !== properties.length) return false
+  if (!Array.isArray(table.records) || table.records.length > 100 || !table.records.every(record => isValidDatabaseRecord(record, properties))) return false
+  if (!table.records.every(record => (record as DatabaseRecord).databaseId === database.id && (record as DatabaseRecord).workspaceId === database.workspaceId)) return false
+  return table.nextCursor === null || (typeof table.nextCursor === 'string' && databaseStableIdSchema.safeParse(table.nextCursor).success)
+}
+
 export const DatabaseCreateInPageRequestSchema = z.object({
   id: databaseStableIdSchema,
   name: databaseNameSchema,

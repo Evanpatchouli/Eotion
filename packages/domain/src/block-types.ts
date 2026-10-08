@@ -134,7 +134,7 @@ export const BLOCK_CAPABILITIES: Record<BlockType, BlockCapability> = {
   // One table is one block. Rows and cells are editor-internal nodes owned by
   // the table node, so the page block tree never sees them.
   table: capability('table', { internalContent: true, mcp: { readable: true, writable: false } }),
-  database: capability('database', { slash: false, mcp: { readable: true, writable: false } }),
+  database: capability('database', { slash: true, mcp: { readable: true, writable: false } }),
 }
 
 export interface EditorNodeRule {

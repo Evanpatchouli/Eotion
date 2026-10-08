@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
 import { isValidDatabaseProperty, validateDatabaseRecordValues, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseView } from '@eotion/domain'
-import { DatabaseCreateInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseViewCreateRequestSchema } from '@eotion/contracts'
+import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
 import { PageRepository } from '../repositories/page.repository'
@@ -14,6 +14,7 @@ type CreateInPage = { id: string; name: string; titlePropertyId: string; viewId:
 type CreateProperty = { id: string; name: string; type: DatabaseProperty['type']; options?: DatabaseProperty['options'] }
 type CreateRecord = { id: string; pageId: string; properties: DatabaseRecord['properties'] }
 type CreateView = { id: string; name: string; type: DatabaseView['type'] }
+type WindowInput = { cursor?: string; limit: number }
 
 @Injectable()
 export class DatabaseService {
@@ -43,6 +44,67 @@ export class DatabaseService {
   async find(userId: string, workspaceId: string, id: string): Promise<Database | null> {
     await this.permissions.assertCanRead(userId, workspaceId)
     return this.databases.findInWorkspace(workspaceId, id)
+  }
+
+  async listWindow(userId: string, workspaceId: string, input: WindowInput): Promise<{ items: Database[]; nextCursor: string | null }> {
+    this.validateWindow(input)
+    await this.permissions.assertCanRead(userId, workspaceId)
+    return this.toWindow(await this.databases.listWindow(workspaceId, input), input.limit)
+  }
+
+  async listViewsWindow(userId: string, workspaceId: string, databaseId: string, limit: number): Promise<DatabaseView[]> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new BadRequestException('Limit must be an integer between 1 and 100')
+    await this.requireDatabase(userId, workspaceId, databaseId, false)
+    const rows = await this.views.listWindow(workspaceId, databaseId, limit)
+    if (rows.length > limit) throw new BadRequestException('Database exceeds the maximum of 100 views')
+    return rows
+  }
+
+  async getTable(userId: string, workspaceId: string, databaseId: string, viewId: string, input: WindowInput) {
+    this.validateWindow(input)
+    const database = await this.requireDatabase(userId, workspaceId, databaseId, false)
+    const view = await this.views.findInWorkspace(workspaceId, viewId)
+    if (!view || view.databaseId !== database.id || view.type !== 'table') throw new NotFoundException('Database view not found')
+    const properties = await this.properties.listLimited(workspaceId, databaseId, 101)
+    if (properties.length > 100) throw new BadRequestException('Database exceeds the maximum of 100 properties')
+    const records = await this.records.listWindow(workspaceId, databaseId, input)
+    const window = this.toWindow(records, input.limit)
+    return { database, view, properties, records: window.items, nextCursor: window.nextCursor }
+  }
+
+  async linkInPage(userId: string, workspaceId: string, pageId: string, input: { databaseId: string; viewId: string; blockId: string; orderKey: string; parentBlockId: string | null }): Promise<{ block: ServerBlockRecord }> {
+    await this.permissions.assertCanWrite(userId, workspaceId)
+    this.parse(DatabaseLinkInPageRequestSchema, input)
+    return this.transact(async session => {
+      const database = await this.databases.findInWorkspace(workspaceId, input.databaseId, session)
+      const view = await this.views.findInWorkspace(workspaceId, input.viewId, session)
+      if (!database || !view || view.databaseId !== database.id || view.type !== 'table') throw new BadRequestException('Database view must belong to the database and workspace')
+      const block = await this.blocks.create(userId, workspaceId, pageId, {
+        id: input.blockId,
+        pageId,
+        parentBlockId: input.parentBlockId,
+        type: 'database',
+        orderKey: input.orderKey,
+        props: { node: { type: 'eotionDatabase', attrs: { databaseId: input.databaseId, viewId: input.viewId } } },
+      }, session)
+      return { block }
+    })
+  }
+
+  async createRecordPage(userId: string, workspaceId: string, databaseId: string, input: { id: string; pageId: string; title: string; orderKey: string }): Promise<{ record: DatabaseRecord; page: Awaited<ReturnType<PageRepository['create']>> }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    this.parse(DatabaseRecordPageCreateRequestSchema, input)
+    return this.transact(async session => {
+      const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
+      const properties = await this.properties.list(workspaceId, databaseId, session)
+      const title = properties.find(property => property.type === 'title')
+      if (!title) throw new BadRequestException('Database title property is missing')
+      const values = { [title.id]: input.title }
+      if (!validateDatabaseRecordValues(values, properties)) throw new BadRequestException('Invalid database record properties')
+      const page = await this.pages.create(workspaceId, { id: input.pageId, parentPageId: null, title: input.title, orderKey: input.orderKey }, session)
+      const record = await this.records.create({ id: input.id, workspaceId, databaseId: database.id, pageId: page.id, properties: values, version: 1 }, session)
+      return { record, page }
+    })
   }
 
   async listProperties(userId: string, workspaceId: string, databaseId: string): Promise<DatabaseProperty[]> {
@@ -103,6 +165,17 @@ export class DatabaseService {
 
   private parse(schema: { safeParse: (value: unknown) => { success: boolean } }, input: unknown): void {
     if (!schema.safeParse(input).success) throw new BadRequestException('Invalid database input')
+  }
+
+  private validateWindow(input: WindowInput): void {
+    if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > 100) throw new BadRequestException('Limit must be an integer between 1 and 100')
+    if (input.cursor !== undefined && (input.cursor.length < 1 || input.cursor.length > 256 || input.cursor.trim() !== input.cursor)) throw new BadRequestException('Invalid cursor')
+  }
+
+  private toWindow<T extends { id: string }>(rows: T[], limit: number): { items: T[]; nextCursor: string | null } {
+    const hasMore = rows.length > limit
+    const items = hasMore ? rows.slice(0, limit) : rows
+    return { items, nextCursor: hasMore ? items.at(-1)!.id : null }
   }
 
   private async transact<T>(operation: (session: ClientSession) => Promise<T>): Promise<T> {

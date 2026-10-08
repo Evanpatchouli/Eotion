@@ -54,7 +54,7 @@ test('the editor node model covers inline nodes and the full block set', () => {
   assert.deepEqual([...EDITOR_NODE_RULES.paragraph.children], ['text', 'hardBreak'])
 })
 
-test('only toggle owns child blocks and database remains unavailable from slash commands', () => {
+test('only toggle owns child blocks and database is available from slash commands', () => {
   const childOwners = BLOCK_TYPES.filter((type) => blockAllowsChildren(type))
   assert.deepEqual(childOwners, ['toggle'])
   assert.deepEqual([...BLOCK_CAPABILITIES.toggle.allowedChildTypes], [...BLOCK_TYPES])
@@ -72,7 +72,7 @@ test('only toggle owns child blocks and database remains unavailable from slash 
   for (const command of BLOCK_COMMANDS) assert.ok(BLOCK_TYPES.includes(command.type), command.type)
   assert.ok(BLOCK_COMMANDS.some((command) => command.id === 'toggle' && command.type === 'toggle'))
   assert.ok(BLOCK_COMMANDS.some((command) => command.id === 'database' && command.type === 'database'))
-  assert.equal(BLOCK_CAPABILITIES.database.slash, false)
+  assert.equal(BLOCK_CAPABILITIES.database.slash, true)
   assert.equal(BLOCK_CAPABILITIES.database.mcp.readable, true)
   assert.equal(BLOCK_CAPABILITIES.database.mcp.writable, false)
 })

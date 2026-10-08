@@ -30,7 +30,7 @@ export function runBlockCommand(editor: Editor, command: BlockCommand, range?: {
     // One table is one block: a 3x3 grid with a header row is the smallest
     // useful default, and the cursor starts in the first cell.
     case 'table': return chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
-    // Database references are loaded from saved blocks only; there is no create flow yet.
+    // Database references are inserted through the async slash chooser.
     case 'database': return false
   }
 }
