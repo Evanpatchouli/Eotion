@@ -1,6 +1,32 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { LocalStore } from '@eotion/storage'
 
+type ThemeDocument = {
+  documentElement: { dataset: Record<string, string | undefined> }
+  addEventListener: (type: 'DOMContentLoaded', listener: () => void, options: { once: true }) => void
+}
+type ThemeObserver = {
+  observe: (target: object, options: { attributes: boolean; attributeFilter: string[] }) => void
+}
+type ThemeObserverConstructor = new (callback: () => void) => ThemeObserver
+
+const pageDocument = (globalThis as typeof globalThis & { document: ThemeDocument }).document
+const PageMutationObserver = (globalThis as typeof globalThis & { MutationObserver: ThemeObserverConstructor }).MutationObserver
+let lastTheme: string | undefined
+
+function syncTheme(): void {
+  const theme = pageDocument.documentElement.dataset.theme
+  if ((theme !== 'light' && theme !== 'dark') || theme === lastTheme) return
+  lastTheme = theme
+  ipcRenderer.send('eotion:appearance:theme', theme)
+}
+
+pageDocument.addEventListener('DOMContentLoaded', () => {
+  syncTheme()
+  const observer = new PageMutationObserver(syncTheme)
+  observer.observe(pageDocument.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+}, { once: true })
+
 const storage: LocalStore = {
   clearAllData: () => ipcRenderer.invoke('eotion:storage:clearAllData'),
   getPage: (id) => ipcRenderer.invoke('eotion:storage:getPage', id),

@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-10-09 Desktop Custom Title Bar 独立修复
+
+基线 `50a914d15c716576926098672b9dde53960ffd9f`。实现和独立 review 完成（0 blocker）；仅桌面标题栏，不开始 P8.5。BrowserWindow hidden + 44px Windows/Linux native overlay，主题外观同步；ProductShell drag/no-drag 和 CSS env safe area；无 Product Topbar 的页面补 Electron fallback header。正式契约见 `docs/runbooks/desktop-production.md`，回归入口 `apps/web/tests/desktop-titlebar.spec.ts`。
+
+Desktop/Web typecheck/build、相关 Desktop/ProductShell/interaction/theme 回归通过，新 titlebar 2/2。最终完整 product 238/239：linked-view 列上移点击 DOM detached/30s 超时，隔离单 worker 通过；没有削弱断言。Desktop node tests 12/17，5 项 SQLite 测试失败（Invalid block attributes、EPERM）；对应实现和测试与基线 HEAD hash 一致，未顺手修复。diff-check 通过。
+
+真实 Windows 原生 UI 已检查窗口按钮、双击最大化/还原、顶部内容、普通/最大化布局、顶栏/侧栏/SyncStatus 点击和 Light/Dark。**真人鼠标拖动仍待确认**：Sky 对默认原生标题栏对照窗口同样无法移动，不能将自动化工具结果当作产品拖动失败或人工通过。已向用户请求确认并保留隔离 Eotion 测试窗口；后续只收尾这项验收，不启动 P8.5。macOS/Linux 原生视觉未验收。
+
 ## 2026-10-09 P8.4 Views + Filter + Sort 完成
 
 P8.1–P8.4 **PASS**，P8.4 为 **current**；基线 `4f123090066b7016f1c658a3536f4bd88c624853`。本轮仅交付 P8.4，P8.5/P8.6 not started，到此停止。正式契约与检索入口见 `docs/p8-database.md`、`docs/context/README.md`。

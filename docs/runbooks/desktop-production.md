@@ -1,6 +1,18 @@
 # Desktop production API connectivity
 
-Desktop dev 和 production 均复用 `apps/web` 与 `@eotion/sdk`，SQLite/preload 不变。
+Desktop dev 和 production 均复用 `apps/web` 与 `@eotion/sdk`，SQLite/storage bridge 保持既有契约。
+
+## Desktop 标题栏
+
+BrowserWindow 使用 Electron 官方 `titleBarStyle: 'hidden'` 和 Window Controls Overlay，保留系统最小化、最大化/还原及关闭按钮；隐藏默认应用菜单。Windows/Linux overlay 高度为 44px，与 Product Topbar 相同，不添加第二条产品顶栏，也不使用 `frame: false` 或窗口按钮 IPC。
+
+Product Topbar 与 sidebar brand row 的空白区域可拖拽；按钮、链接、表单控件、可聚焦元素、SyncStatus 和用户身份区域为 `no-drag`。控件避让取 `env(titlebar-area-x)` / `env(titlebar-area-width)`，不固定系统按钮宽度。长同步状态在窄 Electron 窗口内收缩，避免侵入窗口控件区域。登录、注册、会话恢复/连接错误、设置等无 Product Topbar 的页面使用 44px Electron fallback header。浏览器和 Mobile WebView 不显示该 header，也不启用这些拖拽样式。
+
+Preload 观察既有 `html[data-theme]`，仅发送经过主 frame 和 light/dark 枚举校验的外观消息；main 更新 overlay 背景和符号颜色，与 Quiet Studio canvas/text tokens 对齐。切换主题不显示或恢复最小化窗口。macOS 保留系统 traffic lights，不调用 Windows/Linux 的 overlay 颜色 setter；其原生视觉尚需对应平台验收。
+
+回归入口：先 `pnpm build:desktop`，再 `pnpm --filter @eotion/web exec playwright test tests/desktop-titlebar.spec.ts`。该测试使用真实 Electron，覆盖 WCO 几何、44px 顶栏、普通/最大化/还原/390px 窗口、交互与主题、非工作区页面，并对普通浏览器行为做对照。通过 BrowserWindow API 或 DOM click 的结果不等同于系统按钮和原生拖动已通过人工验收。
+
+Windows 人工验收需在真实 Electron 窗口检查：完整原生标题栏消失、内容从顶部开始、系统三个按钮、顶栏双击最大化/还原、鼠标拖动窗口、侧栏与顶栏按钮及 SyncStatus 点击、普通/最大化状态无重叠、浅色/深色一致。自动化浏览器截图不能证明 native chrome；无法完成的项目须单独记录。
 
 ## 配置与启动
 

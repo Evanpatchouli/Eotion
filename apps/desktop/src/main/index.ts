@@ -1,9 +1,22 @@
-import { app, BrowserWindow, ipcMain, session, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeTheme, session, shell } from 'electron'
 import { join } from 'node:path'
 import { registerProductionProtocol } from './production-protocol'
 import { SqliteLocalStore } from './sqlite-store'
 
 declare const __EOTION_DESKTOP_API_ORIGIN__: string
+
+type ThemeName = 'light' | 'dark'
+
+function getThemeColors(theme: ThemeName) {
+  return theme === 'dark'
+    ? { background: '#1C1B1A', symbol: '#EDECE8' }
+    : { background: '#FAF9F6', symbol: '#1F1F1E' }
+}
+
+function getTitleBarOverlay(theme: ThemeName) {
+  const colors = getThemeColors(theme)
+  return { height: 44, color: colors.background, symbolColor: colors.symbol }
+}
 
 function registerStorageBridge(store: SqliteLocalStore): void {
   const trusted = (senderId: number, frame: Electron.WebFrameMain | null): void => {
@@ -43,13 +56,17 @@ function registerStorageBridge(store: SqliteLocalStore): void {
 
 function createWindow() {
   const appIconPath = join(__dirname, '../../resources/icon.png')
+  const initialTheme: ThemeName = nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+  const initialColors = getThemeColors(initialTheme)
   const window = new BrowserWindow({
     width: 1380,
     height: 900,
     minWidth: 390,
     minHeight: 620,
     show: false,
-    backgroundColor: '#ffffff',
+    backgroundColor: initialColors.background,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: process.platform === 'darwin' ? true : getTitleBarOverlay(initialTheme),
     icon: appIconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -59,7 +76,18 @@ function createWindow() {
     },
   })
 
+  window.setMenu(null)
   window.once('ready-to-show', () => window.show())
+
+  window.webContents.on('ipc-message', (event, channel, ...args) => {
+    if (channel !== 'eotion:appearance:theme' || event.senderFrame !== window.webContents.mainFrame || args.length !== 1) return
+    const theme = args[0]
+    if (theme !== 'light' && theme !== 'dark') return
+
+    const colors = getThemeColors(theme)
+    window.setBackgroundColor(colors.background)
+    if (process.platform !== 'darwin') window.setTitleBarOverlay(getTitleBarOverlay(theme))
+  })
 
   window.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url)

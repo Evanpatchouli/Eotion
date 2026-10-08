@@ -28,6 +28,46 @@
   backdrop-filter: none;
 }
 
+.product-shell[data-runtime="electron"] .product-topbar {
+  padding-right: calc(14px + max(0px, 100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)));
+  -webkit-app-region: drag;
+}
+
+.product-shell[data-runtime="electron"] .brand-row {
+  padding-left: calc(4px + env(titlebar-area-x, 0px));
+  -webkit-app-region: drag;
+}
+
+.product-shell[data-runtime="electron"] .product-topbar :is(button, a, input, select, textarea, [role="button"], [tabindex]),
+.product-shell[data-runtime="electron"] .brand-row :is(button, a, input, select, textarea, [role="button"], [tabindex]),
+.product-shell[data-runtime="electron"] .product-sync-status,
+.product-shell[data-runtime="electron"] .product-sync-status *,
+.product-shell[data-runtime="electron"] .product-user-identity,
+.product-shell[data-runtime="electron"] .product-user-identity * {
+  -webkit-app-region: no-drag;
+}
+
+.product-shell[data-runtime="electron"].product-shell--sidebar-collapsed .product-topbar,
+.product-shell[data-runtime="electron"][data-layout="mobile"] .product-topbar {
+  padding-left: calc(14px + env(titlebar-area-x, 0px));
+}
+
+/* Long offline/error labels must also fit beside the native controls. */
+.product-shell[data-runtime="electron"] .product-topbar > button {
+  flex: none;
+}
+
+.product-shell[data-runtime="electron"] .product-sync-status {
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-shell[data-runtime="electron"] .product-sync-action {
+  max-width: 100%;
+  overflow: hidden;
+}
+
 .product-shell .breadcrumb,
 .product-shell .product-save-status {
   color: var(--e-color-text-secondary);

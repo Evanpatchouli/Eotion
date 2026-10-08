@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import { useRuntimeContext } from './composables/useRuntimeContext'
 import EotionIcon from './components/ui/EotionIcon.vue'
 import './styles/product.css'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const { runtime } = useRuntimeContext()
 const diagnosticsOpen = ref(false)
 const showDiagnosticDetails = import.meta.env.VITE_SHOW_DIAGNOSTIC_DETAILS === 'true'
 
@@ -16,6 +18,10 @@ function toggleDiagnostics(event: Event) {
 }
 
 const isDevRoute = () => route.path.startsWith('/__dev')
+const isProductShellRoute = computed(() => /^\/app(?:\/|$)/.test(route.path)
+  && Boolean(auth.user))
+const showDesktopFallbackTitlebar = computed(() => runtime.value === 'electron'
+  && !isProductShellRoute.value)
 
 async function retryRestore() {
   await auth.retryRestore()
@@ -37,8 +43,9 @@ async function retryRestore() {
 </script>
 
 <template>
-  <div class="app-viewport" :data-route="route.name">
-    <main v-if="!isDevRoute() && !auth.user && auth.status === 'restoring'" role="status" class="connectivity-state">
+  <div class="app-viewport" :class="{ 'app-viewport--desktop-titlebar': showDesktopFallbackTitlebar }" :data-runtime="runtime" :data-route="route.name">
+    <header v-if="showDesktopFallbackTitlebar" class="desktop-fallback-titlebar">Eotion</header>
+    <main v-if="!isDevRoute() && !auth.user && auth.status === 'restoring'" role="status" class="connectivity-state" :class="{ 'desktop-fallback-content': showDesktopFallbackTitlebar }">
       <section class="connectivity-card">
         <div class="connectivity-brand">
           <span class="connectivity-mark connectivity-mark--loading"><EotionIcon name="refresh" :size="20" /></span>
@@ -47,7 +54,7 @@ async function retryRestore() {
         <p class="connectivity-copy">正在恢复登录状态…</p>
       </section>
     </main>
-    <main v-else-if="!isDevRoute() && !auth.user && auth.restoreError" role="alert" class="connectivity-state">
+    <main v-else-if="!isDevRoute() && !auth.user && auth.restoreError" role="alert" class="connectivity-state" :class="{ 'desktop-fallback-content': showDesktopFallbackTitlebar }">
       <section class="connectivity-card" aria-labelledby="connectivity-title">
         <div class="connectivity-brand">
           <span class="connectivity-mark"><EotionIcon name="alert" :size="20" /></span>
@@ -67,7 +74,7 @@ async function retryRestore() {
         </details>
       </section>
     </main>
-    <RouterView v-else />
+    <RouterView v-else :class="{ 'desktop-fallback-content': showDesktopFallbackTitlebar }" />
   </div>
 </template>
 
@@ -78,6 +85,37 @@ async function retryRestore() {
   place-items: center;
   padding: 24px;
   background: var(--surface-muted);
+}
+
+.app-viewport--desktop-titlebar {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.desktop-fallback-titlebar {
+  display: flex;
+  height: 44px;
+  min-height: 44px;
+  flex: none;
+  align-items: center;
+  padding-left: calc(14px + env(titlebar-area-x, 0px));
+  padding-right: calc(14px + max(0px, 100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)));
+  background: var(--e-color-canvas);
+  color: var(--e-color-text-primary);
+  font: var(--e-type-ui-weight) var(--e-type-ui-size) / var(--e-type-ui-line) var(--e-type-family);
+  -webkit-app-region: drag;
+}
+
+.desktop-fallback-content {
+  min-height: 0;
+  flex: 1;
+}
+
+.app-viewport--desktop-titlebar > .connectivity-state,
+.app-viewport--desktop-titlebar > .product-login-page {
+  min-height: 0;
 }
 
 .connectivity-card {
