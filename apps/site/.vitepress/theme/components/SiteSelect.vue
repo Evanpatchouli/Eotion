@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, type ComponentPublicInstance } from 'vue'
 
-export interface SiteSelectOption {
+interface SiteSelectOption {
   value: string
   label: string
 }
@@ -25,8 +25,8 @@ const activeIndex = ref(0)
 const listboxId = computed(() => `${props.id}-listbox`)
 const selected = computed(() => props.options.find((option) => option.value === props.modelValue) ?? props.options[0])
 
-function setOptionRef(element: HTMLButtonElement | null, index: number): void {
-  if (element) optionButtons.value[index] = element
+function setOptionRef(element: Element | ComponentPublicInstance | null, index: number): void {
+  if (element instanceof HTMLButtonElement) optionButtons.value[index] = element
 }
 function focusActive(): void {
   void nextTick(() => optionButtons.value[activeIndex.value]?.focus())
@@ -106,7 +106,7 @@ onUnmounted(() => document.removeEventListener('pointerdown', onDocumentPointerD
         <button
           v-for="(option, index) in options"
           :key="option.value"
-          :ref="(element) => setOptionRef(element as HTMLButtonElement | null, index)"
+          :ref="(element) => setOptionRef(element, index)"
           class="site-select-option"
           type="button"
           role="option"

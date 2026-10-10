@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useData } from 'vitepress'
-import SiteSelect, { type SiteSelectOption } from './SiteSelect.vue'
+import SiteSelect from './SiteSelect.vue'
 
 type AppearanceChoice = 'auto' | 'light' | 'dark'
 
-const options: SiteSelectOption[] = [
+const options = [
   { value: 'auto', label: '跟随系统' },
   { value: 'light', label: '浅色' },
   { value: 'dark', label: '深色' },
