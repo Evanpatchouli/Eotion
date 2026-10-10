@@ -18,6 +18,8 @@ import { useAuthStore } from '../../stores/auth'
 import { useProductSyncStore } from '../../stores/productSync'
 import { DATABASE_RECORD_CREATED_EVENT, DATABASE_UPDATED_EVENT, notifyDatabaseUpdated, type DatabaseRecordCreatedDetail, type DatabaseUpdatedDetail } from '../../editor/databaseEvents'
 import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'
+import EotionIcon from '../ui/EotionIcon.vue'
+import { IconName } from '../ui/icons'
 
 const props = defineProps(nodeViewProps)
 const auth = useAuthStore()
@@ -1053,13 +1055,13 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 <template>
   <NodeViewWrapper class="eotion-database" :data-cell-popover="cellPopover?.propertyId ?? ''" contenteditable="false" aria-label="数据库视图">
     <header class="eotion-database-header">
-      <span class="eotion-database-mark" aria-hidden="true" @click.stop="selectBlock">▦</span>
+      <span class="eotion-database-mark" aria-hidden="true" @click.stop="selectBlock"><EotionIcon :name="IconName.Table" :size="20" /></span>
       <span class="eotion-database-copy" @click.stop="selectBlock"><strong>{{ title }}</strong><small>{{ viewName }}</small></span>
       <div class="eotion-database-view-controls">
-        <button type="button" class="eotion-database-control-trigger" aria-label="切换视图" :disabled="viewBusy" @click.stop="openViewMenu($event)">{{ viewName }} <span aria-hidden="true">⌄</span></button>
-        <button type="button" class="eotion-database-control-trigger" :aria-label="`筛选${visibleViewCount ? `，${visibleViewCount} 个条件` : ''}`" :disabled="viewBusy" @click.stop="openViewControls('filters', $event)">Filter<span v-if="visibleViewCount" class="eotion-database-count">{{ visibleViewCount }}</span></button>
-        <button type="button" class="eotion-database-control-trigger" :aria-label="`排序${sortViewCount ? `，${sortViewCount} 个条件` : ''}`" :disabled="viewBusy" @click.stop="openViewControls('sorts', $event)">Sort<span v-if="sortViewCount" class="eotion-database-count">{{ sortViewCount }}</span></button>
-        <button type="button" class="eotion-database-control-trigger" aria-label="视图列设置" :disabled="viewBusy" @click.stop="openViewControls('columns', $event)">…</button>
+        <button type="button" class="eotion-database-control-trigger" aria-label="切换视图" :disabled="viewBusy" @click.stop="openViewMenu($event)"><span>{{ viewName }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button>
+        <button type="button" class="eotion-database-control-trigger" :aria-label="`筛选${visibleViewCount ? `，${visibleViewCount} 个条件` : ''}`" :disabled="viewBusy" @click.stop="openViewControls('filters', $event)"><EotionIcon :name="IconName.Filter" :size="16" /><span>筛选</span><span v-if="visibleViewCount" class="eotion-database-count">{{ visibleViewCount }}</span></button>
+        <button type="button" class="eotion-database-control-trigger" :aria-label="`排序${sortViewCount ? `，${sortViewCount} 个条件` : ''}`" :disabled="viewBusy" @click.stop="openViewControls('sorts', $event)"><EotionIcon :name="IconName.Sort" :size="16" /><span>排序</span><span v-if="sortViewCount" class="eotion-database-count">{{ sortViewCount }}</span></button>
+        <button type="button" class="eotion-database-control-trigger" aria-label="视图列设置" :disabled="viewBusy" @click.stop="openViewControls('columns', $event)"><EotionIcon :name="IconName.More" :size="18" /></button>
         <Teleport to="body"><section v-if="viewMenuOpen" class="eotion-database-popover eotion-database-teleport eotion-database-view-menu" :style="viewMenuStyle" role="group" aria-label="数据库视图" @click.stop>
           <strong>视图</strong>
           <button v-for="item in views" :key="item.id" type="button" class="eotion-database-view-option" :aria-current="item.id === viewId ? 'true' : undefined" @click.stop="switchView(item.id)">{{ item.name }}<span v-if="item.id === viewId">当前</span></button>
@@ -1113,7 +1115,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
         <button type="submit" :disabled="creating || !writable || !addTitleDraft.trim()">{{ creating ? '正在新建…' : '创建' }}</button>
         <button type="button" :disabled="creating" @click="cancelNewRecord">取消</button>
       </form>
-      <button v-else class="eotion-database-add" type="button" :disabled="creating || creationUncertain || !writable" @pointerdown.stop @mousedown.stop @click.stop="addTitleMode = true; addTitleDraft = ''">+ 新建记录</button>
+      <button v-else class="eotion-database-add" type="button" :disabled="creating || creationUncertain || !writable" @pointerdown.stop @mousedown.stop @click.stop="addTitleMode = true; addTitleDraft = ''"><EotionIcon :name="IconName.Plus" :size="16" />新建记录</button>
       <div class="eotion-database-properties-menu">
         <button type="button" aria-label="添加属性" :disabled="!writable" @click.stop="togglePropertyCreator($event)">属性</button>
         <Teleport to="body"><div v-if="propertyMenuId === '__add'" class="eotion-database-popover eotion-database-teleport" :style="propertyMenuStyle" role="group" aria-label="添加属性类型">
@@ -1159,7 +1161,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
         <table class="eotion-database-table">
           <thead><tr>
             <th v-for="property in displayProperties" :key="property.id" scope="col">
-              <button class="eotion-database-property-trigger" type="button" :disabled="!writable" @click.stop="openPropertyMenu(property, $event)">{{ property.name }}⌄</button>
+              <button class="eotion-database-property-trigger" type="button" :disabled="!writable" @click.stop="openPropertyMenu(property, $event)"><span>{{ property.name }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button>
               <Teleport to="body"><div v-if="propertyMenuId === property.id" class="eotion-database-popover eotion-database-teleport eotion-database-property-menu" :style="propertyMenuStyle" @click.stop>
                 <form @submit.prevent="savePropertyName(property)"><input v-model="propertyNameDraft" maxlength="100" aria-label="属性名称"><button type="submit">重命名</button></form>
                 <template v-if="property.type === 'select'">
@@ -1241,11 +1243,11 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-header { display:flex; min-height:58px; align-items:center; gap:12px; padding:10px 14px; }
 .eotion-database-mark { display:grid; width:34px; height:34px; flex:0 0 auto; place-items:center; border-radius:7px; background:var(--surface-editor-hover); color:var(--editor-muted); font-size:20px; }
 .eotion-database-copy { display:grid; min-width:0; flex:1; gap:3px; }.eotion-database-copy strong { overflow:hidden; font-size:13px; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }.eotion-database-copy small { color:var(--editor-muted); font-size:12px; }
-.eotion-database-add,.eotion-database-more,.eotion-database-error button,.eotion-database-new button,.eotion-database-properties-menu>button { min-height:32px; border:1px solid var(--border-editor); border-radius:6px; padding:5px 9px; background:var(--surface-editor-hover); color:inherit; font:inherit; cursor:pointer; }
+.eotion-database-add,.eotion-database-more,.eotion-database-error button,.eotion-database-new button,.eotion-database-properties-menu>button { min-height:32px; border:1px solid var(--border-editor); border-radius:6px; padding:5px 9px; background:var(--surface-editor-hover); color:inherit; font:inherit; cursor:pointer; }.eotion-database-add { display:inline-flex; align-items:center; gap:5px; }
 .eotion-database-add:disabled,.eotion-database-more:disabled,.eotion-database-error button:disabled,button:disabled { opacity:.6; cursor:default; }
 .eotion-database-new { display:flex; flex-wrap:wrap; gap:5px; }.eotion-database-new input { width:160px; min-height:32px; }.eotion-database-properties-menu { position:relative; }
 .eotion-database-view-controls { display:flex; align-items:center; gap:4px; flex:0 1 auto; }
-.eotion-database-control-trigger { min-height:32px; border:1px solid transparent; border-radius:6px; padding:5px 8px; background:transparent; color:inherit; font:inherit; cursor:pointer; white-space:nowrap; }
+.eotion-database-control-trigger { display:inline-flex; min-height:32px; align-items:center; gap:5px; border:1px solid transparent; border-radius:6px; padding:5px 8px; background:transparent; color:inherit; font:inherit; cursor:pointer; white-space:nowrap; }
 .eotion-database-control-trigger:hover,.eotion-database-view-option[aria-current="true"] { background:var(--surface-editor-hover); }
 .eotion-database-control-trigger:disabled { opacity:.55; cursor:default; }
 .eotion-database-count { display:inline-grid; min-width:17px; height:17px; margin-left:4px; place-items:center; border-radius:9px; background:var(--surface-editor-hover); color:var(--editor-muted); font-size:11px; }
@@ -1267,7 +1269,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-column-row label { display:flex; align-items:center; gap:8px; min-width:0; flex:1; min-height:32px; overflow-wrap:normal; word-break:normal; white-space:normal; }
 .eotion-database-column-row label input[type="checkbox"] { box-sizing:border-box; flex:0 0 18px; width:18px; min-width:18px; height:18px; min-height:18px; margin:0; }
 .eotion-database-settings>button { margin-top:3px; }
-.eotion-database-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain; border-top:1px solid var(--border-editor); }.eotion-database-table { width:max-content; min-width:100%; border-collapse:collapse; font-size:13px; }.eotion-database-table th,.eotion-database-table td { position:relative; width:180px; min-width:180px; max-width:260px; overflow-wrap:anywhere; border-right:1px solid var(--border-editor); border-bottom:1px solid var(--border-editor); padding:8px 11px; text-align:left; vertical-align:top; }.eotion-database-table th { color:var(--editor-muted); font-size:12px; font-weight:600; }.eotion-database-property-trigger,.eotion-database-cell-button { min-height:28px; border:0; padding:2px 4px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-title { color:inherit; text-decoration:underline; text-decoration-color:var(--editor-muted); text-underline-offset:2px; }.eotion-database-cell-input { box-sizing:border-box; width:100%; min-height:32px; border:1px solid var(--border-editor); border-radius:4px; padding:4px 6px; color:inherit; font:inherit; }.eotion-database-cell-error { display:block; color:var(--danger); }
+.eotion-database-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain; border-top:1px solid var(--border-editor); }.eotion-database-table { width:max-content; min-width:100%; border-collapse:collapse; font-size:13px; }.eotion-database-table th,.eotion-database-table td { position:relative; width:180px; min-width:180px; max-width:260px; overflow-wrap:anywhere; border-right:1px solid var(--border-editor); border-bottom:1px solid var(--border-editor); padding:8px 11px; text-align:left; vertical-align:top; }.eotion-database-table th { color:var(--editor-muted); font-size:12px; font-weight:600; }.eotion-database-property-trigger,.eotion-database-cell-button { min-height:28px; border:0; padding:2px 4px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-property-trigger { display:inline-flex; align-items:center; gap:3px; }.eotion-database-title { color:inherit; text-decoration:underline; text-decoration-color:var(--editor-muted); text-underline-offset:2px; }.eotion-database-cell-input { box-sizing:border-box; width:100%; min-height:32px; border:1px solid var(--border-editor); border-radius:4px; padding:4px 6px; color:inherit; font:inherit; }.eotion-database-cell-error { display:block; color:var(--danger); }
 .eotion-database-popover { z-index:10000; display:grid; min-width:170px; max-width:min(280px,80vw); gap:5px; border:1px solid var(--border-editor); border-radius:8px; padding:8px; background:var(--surface-raised); box-shadow:var(--e-shadow-popover,0 8px 24px #0002); color:var(--editor-text); }.eotion-database-popover button { min-height:32px; border:0; border-radius:4px; padding:5px 8px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-popover button:hover { background:var(--surface-editor-hover); }.eotion-database-popover form,.eotion-database-option-edit { display:flex; align-items:center; gap:4px; }.eotion-database-popover input { min-width:0; width:100%; min-height:32px; }.eotion-database-popover .danger { color:var(--danger); }.eotion-database-title-edit,.eotion-database-cell-save { margin-left:6px; min-height:28px; border:0; background:transparent; color:var(--editor-muted); font:inherit; cursor:pointer; }
 .eotion-database-title-edit::before { content:'✎'; }
 .eotion-database-title { text-decoration:none; }.eotion-database-title::before { content:'↗'; display:inline-block; margin-left:4px; color:var(--editor-muted); }

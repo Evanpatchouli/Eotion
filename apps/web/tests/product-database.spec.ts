@@ -665,7 +665,7 @@ test('database tables render and references round-trip at root and under a toggl
   const references = editor.locator('.eotion-database')
   await expect(references).toHaveCount(2)
   await expect(references.first()).toContainText('Root projects')
-  await expect(references.first().locator('th button.eotion-database-property-trigger')).toHaveText(['Name⌄', 'Notes⌄', 'Points⌄', 'Done⌄', 'Status⌄', 'Due⌄'])
+  await expect(references.first().locator('th button.eotion-database-property-trigger')).toHaveText(['Name', 'Notes', 'Points', 'Done', 'Status', 'Due'])
   await expect(references.first().locator('tbody tr td')).toHaveText(['Launch plan', 'Draft ready', '42', '已完成', 'Open', '2026-10-04'])
   await expect(references.nth(1)).toContainText('Nested projects')
   await expect(references.nth(1)).toContainText('暂无记录')
