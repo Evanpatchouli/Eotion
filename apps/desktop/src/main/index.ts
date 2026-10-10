@@ -34,6 +34,7 @@ function registerStorageBridge(store: SqliteLocalStore): void {
   handle('clearAllData', () => store.clearAllData())
   handle('listPages', () => store.listPages())
   handle('listPagesByWorkspace', (workspaceId: string) => store.listPagesByWorkspace(workspaceId))
+  handle('listNavigationPagesByWorkspace', (workspaceId: string) => store.listNavigationPagesByWorkspace(workspaceId))
   handle('hasWorkspaceSnapshot', (workspaceId: string) => store.hasWorkspaceSnapshot(workspaceId))
   handle('upsertPage', (page: Parameters<SqliteLocalStore['upsertPage']>[0]) => store.upsertPage(page))
   handle('movePage', (workspaceId: string, id: string, parentPageId: string | null, orderKey: string) => store.movePage(workspaceId, id, parentPageId, orderKey))

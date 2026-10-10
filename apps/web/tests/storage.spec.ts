@@ -3,6 +3,22 @@ import { resolve } from 'node:path'
 
 const storageModuleUrl = `/@fs/${resolve('../..', 'packages/storage/src/index.ts').replaceAll('\\', '/')}`
 
+test('IndexedDB navigation leaves record pages available for direct opening', async ({ page }) => {
+  await page.goto('/#/__dev/storage-p3')
+  const result = await page.evaluate(async () => {
+    const { IndexedDbLocalStore } = await import('/src/storage/indexedDbStore.ts')
+    const store = await IndexedDbLocalStore.open(`navigation-${crypto.randomUUID()}`)
+    const now = '2026-01-01T00:00:00.000Z'
+    const ordinary = { id: 'ordinary', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Ordinary', updatedAt: now }
+    const record = { id: 'record', workspaceId: 'ws', parentPageId: null, orderKey: 'b', title: 'Record', role: 'database-record' as const, updatedAt: now }
+    try {
+      await store.replaceWorkspaceSnapshot('ws', [ordinary, record], [])
+      return { navigation: (await store.listNavigationPagesByWorkspace('ws')).map(page => page.id), all: (await store.listPagesByWorkspace('ws')).map(page => page.id), direct: (await store.getPage('record'))?.role }
+    } finally { store.close() }
+  })
+  expect(result).toEqual({ navigation: ['ordinary'], all: ['ordinary', 'record'], direct: 'database-record' })
+})
+
 test('IndexedDB move and workspace hydrate preserve unrelated data and local operation identity', async ({ page }) => {
   await page.goto('/#/__dev/storage-p3')
   const result = await page.evaluate(async () => {

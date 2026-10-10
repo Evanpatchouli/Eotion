@@ -6,6 +6,7 @@ import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, Dat
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
 import { PageRepository } from '../repositories/page.repository'
+import { BlockRepository } from '../repositories/block.repository'
 import { BlockService } from './block.service'
 import { supportsTransactions } from './mongo-transactions'
 import { WorkspacePermissionService } from './workspace-permission.service'
@@ -27,6 +28,7 @@ export class DatabaseService {
     private readonly views: DatabaseViewRepository,
     private readonly pages: PageRepository,
     private readonly blocks: BlockService,
+    private readonly blockRepository: BlockRepository,
     private readonly permissions: WorkspacePermissionService,
     @InjectConnection() private readonly connection: Connection,
   ) {}
@@ -35,9 +37,9 @@ export class DatabaseService {
     await this.permissions.assertCanWrite(userId, workspaceId)
     this.parse(DatabaseCreateInPageRequestSchema, input)
     return this.transact(async session => {
-      const database = await this.databases.create({ id: input.id, workspaceId, name: input.name, version: 1 }, session)
-      const titleProperty = await this.properties.create({ id: input.titlePropertyId, workspaceId, databaseId: input.id, name: 'Name', type: 'title', version: 1 }, session)
-      const view = await this.views.create({ id: input.viewId, workspaceId, databaseId: input.id, name: 'Table', type: 'table', version: 1 }, session)
+      const database = await this.databases.create({ id: input.id, workspaceId, name: input.name, version: 1, parentPageId: pageId, orderKey: input.orderKey }, session)
+      const titleProperty = await this.properties.create({ id: input.titlePropertyId, workspaceId, databaseId: input.id, name: '名称', type: 'title', version: 1 }, session)
+      const view = await this.views.create({ id: input.viewId, workspaceId, databaseId: input.id, name: '表格视图', type: 'table', version: 1 }, session)
       const block = await this.blocks.create(userId, workspaceId, pageId, { id: input.blockId, pageId, parentBlockId: input.parentBlockId, type: 'database', orderKey: input.orderKey, props: { node: { type: 'eotionDatabase', attrs: { databaseId: input.id, viewId: input.viewId } } } }, session)
       return { database, titleProperty, view, block }
     })
@@ -52,6 +54,27 @@ export class DatabaseService {
     this.validateWindow(input)
     await this.permissions.assertCanRead(userId, workspaceId)
     return this.toWindow(await this.databases.listWindow(workspaceId, input), input.limit)
+  }
+
+  async listNavigationWindow(userId: string, workspaceId: string, input: WindowInput) {
+    this.validateWindow(input)
+    await this.permissions.assertCanRead(userId, workspaceId)
+    const rows = await this.databases.listNavigationWindow(workspaceId, input)
+    const items = rows.slice(0, input.limit)
+    const references = await this.blockRepository.firstDatabaseReferences(workspaceId, items.map(item => item.id))
+    const pages = await this.pages.findManyInWorkspace(workspaceId, items.flatMap(item => {
+      const parent = item.parentPageId ?? references.get(item.id)?.pageId
+      return parent ? [parent] : []
+    }))
+    const validPages = new Set(pages.map(page => page.id))
+    return { items: items.map(item => {
+      const reference = references.get(item.id)
+      const parentPageId = item.parentPageId ?? reference?.pageId ?? null
+      return { id: item.id, workspaceId: item.workspaceId, name: item.name,
+        parentPageId: parentPageId && validPages.has(parentPageId) ? parentPageId : null,
+        orderKey: item.orderKey ?? reference?.orderKey ?? item.id,
+        viewId: reference?.viewId ?? null }
+    }), nextCursor: rows.length > input.limit ? items.at(-1)!.id : null }
   }
 
   async listViewsWindow(userId: string, workspaceId: string, databaseId: string, limit: number): Promise<DatabaseView[]> {
@@ -157,7 +180,7 @@ export class DatabaseService {
       const properties = await this.properties.list(workspaceId, databaseId, session)
       const title = properties.find(property => property.type === 'title')
       if (!title) throw new BadRequestException('Database title property is missing')
-      const page = await this.pages.create(workspaceId, { id: input.pageId, parentPageId: null, title: input.title, orderKey: input.orderKey }, session)
+      const page = await this.pages.create(workspaceId, { id: input.pageId, parentPageId: null, title: input.title, orderKey: input.orderKey, role: 'database-record' }, session)
       const record = await this.records.create({ id: input.id, workspaceId, databaseId: database.id, pageId: page.id, properties: {}, version: 1 }, session)
       const projected = { ...record, properties: { [title.id]: page.title }, pageVersion: page.updatedAt }
       return { record: (await this.projectDerived(workspaceId, [projected], properties, session))[0]!, page }
@@ -461,7 +484,9 @@ export class DatabaseService {
       const persisted = { ...input.properties }
       delete persisted[title.id]
       if (!validateStoredDatabaseRecordValues(persisted, properties)) throw new BadRequestException('Derived values cannot be persisted')
-      return this.records.create({ id: input.id, workspaceId, databaseId, pageId: input.pageId, properties: persisted, version: 1 }, session)
+      const record = await this.records.create({ id: input.id, workspaceId, databaseId, pageId: input.pageId, properties: persisted, version: 1 }, session)
+      if (!await this.pages.markDatabaseRecordRole(workspaceId, input.pageId, session)) throw new ConflictException('Record page is missing')
+      return record
     })
   }
 
@@ -504,7 +529,9 @@ export class DatabaseService {
         const source = await this.databases.findInWorkspace(workspaceId, sourceId, session)
         if (!source || !await this.databases.compareAndBump(workspaceId, sourceId, source.version, session)) throw new ConflictException('Linked database changed during relation cleanup')
       }
+      const deletedRecord = await this.records.findInDatabase(workspaceId, databaseId, recordId, session)
       if (!await this.records.delete(workspaceId, databaseId, recordId, input.expectedRecordVersion, session)) throw new ConflictException('Database record version is stale')
+      if (deletedRecord && !await this.pages.markDatabaseRecordRole(workspaceId, deletedRecord.pageId, session)) throw new ConflictException('Record page is missing')
       return { database }
     })
   }

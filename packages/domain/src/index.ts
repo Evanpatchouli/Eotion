@@ -4,6 +4,8 @@ export interface PageSummary {
   id: Id
   title: string
   icon?: string
+  /** Server-owned classification; absent on ordinary and legacy pages. */
+  role?: 'database-record'
   updatedAt: string
 }
 
@@ -141,6 +143,7 @@ export interface PageRecord {
   parentPageId: Id | null
   title: string
   icon?: string
+  role?: 'database-record'
   orderKey: string
   createdAt: string
   updatedAt: string

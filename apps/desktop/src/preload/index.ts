@@ -32,6 +32,7 @@ const storage: LocalStore = {
   getPage: (id) => ipcRenderer.invoke('eotion:storage:getPage', id),
   listPages: () => ipcRenderer.invoke('eotion:storage:listPages'),
   listPagesByWorkspace: (workspaceId) => ipcRenderer.invoke('eotion:storage:listPagesByWorkspace', workspaceId),
+  listNavigationPagesByWorkspace: (workspaceId) => ipcRenderer.invoke('eotion:storage:listNavigationPagesByWorkspace', workspaceId),
   hasWorkspaceSnapshot: (workspaceId) => ipcRenderer.invoke('eotion:storage:hasWorkspaceSnapshot', workspaceId),
   upsertPage: (page) => ipcRenderer.invoke('eotion:storage:upsertPage', page),
   movePage: (workspaceId, id, parentPageId, orderKey) => ipcRenderer.invoke('eotion:storage:movePage', workspaceId, id, parentPageId, orderKey),

@@ -58,6 +58,17 @@ export class BlockRepository {
     return false
   }
 
+  /** One indexed reference per Database, selecting the earliest persisted block. */
+  async firstDatabaseReferences(workspaceId: string, databaseIds: readonly string[]): Promise<Map<string, { pageId: string; orderKey: string; viewId: string }>> {
+    if (databaseIds.length === 0) return new Map()
+    const rows = await this.model.aggregate<{ _id: string; pageId: string; orderKey: string; viewId: string }>([
+      { $match: { workspaceId, type: 'database', 'props.node.attrs.databaseId': { $in: [...databaseIds] } } },
+      { $sort: { createdAt: 1, id: 1 } },
+      { $group: { _id: '$props.node.attrs.databaseId', pageId: { $first: '$pageId' }, orderKey: { $first: '$orderKey' }, viewId: { $first: '$props.node.attrs.viewId' } } },
+    ]).exec()
+    return new Map(rows.filter(row => typeof row._id === 'string' && typeof row.viewId === 'string').map(row => [row._id, { pageId: row.pageId, orderKey: row.orderKey, viewId: row.viewId }]))
+  }
+
   async updateInWorkspace(workspaceId: string, pageId: string, id: string, patch: BlockPatch, session?: ClientSession): Promise<ServerBlockRecord | null> {
     assertUpdateFields(patch, ['type', 'orderKey', 'props'])
     const doc = await this.model.findOneAndUpdate({ workspaceId, pageId, id }, patch, { returnDocument: 'after', runValidators: true, session }).exec()

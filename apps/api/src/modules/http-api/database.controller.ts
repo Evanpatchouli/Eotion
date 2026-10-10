@@ -15,6 +15,11 @@ export class DatabaseController {
     return this.databases.listWindow(user.id, parseId(workspaceId), parseBody(DatabaseListQuerySchema, query))
   }
 
+  @Get('database-navigation')
+  navigation(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Query() query: unknown) {
+    return this.databases.listNavigationWindow(user.id, parseId(workspaceId), parseBody(DatabaseListQuerySchema, query))
+  }
+
   @Post('pages/:pageId/databases')
   createInPage(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('pageId') pageId: string, @Body() body: unknown) {
     const input = parseBody(DatabaseCreateInPageRequestSchema, body)

@@ -213,6 +213,13 @@ test('P8.6 database Mongo performance acceptance at 5k and 10k records', async t
       await recordModel.insertMany(recordRows, { ordered: true })
     }
 
+    const navigationPages = await measure(`${size}: sidebar page tree`, () => pages.listNavigation(owner.id, workspaceId))
+    assert.deepEqual(navigationPages.map(page => page.id), [homePageId], 'record count must not expand the sidebar')
+    const navigationDatabases = await databases.listNavigationWindow(owner.id, workspaceId, { limit: 10 })
+    assert.equal(navigationDatabases.items.length, size === 5_000 ? 1 : 2)
+    assert.equal(navigationDatabases.items.find(item => item.id === databaseId)?.parentPageId, homePageId)
+    assert.ok(await pages.find(owner.id, workspaceId, `perf-page-${suffix}-00000`), 'legacy record pages remain directly accessible')
+
     const tableConfig = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null } satisfies DatabaseViewConfig
     const defaultPage = await measure(`${size}: default table first page`, () => databases.getTable(owner.id, workspaceId, databaseId, viewId, { limit: 100 }))
     assert.equal(defaultPage.records.length, 100)

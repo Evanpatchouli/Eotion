@@ -6,7 +6,7 @@ import { assertUpdateFields } from './assert-update-fields'
 
 import { PageDocument, PageEntity } from '../schemas/page.schema'
 
-type PageCreate = Pick<PageRecord, 'id' | 'parentPageId' | 'title' | 'orderKey'> & { icon?: string }
+type PageCreate = Pick<PageRecord, 'id' | 'parentPageId' | 'title' | 'orderKey'> & { icon?: string; role?: 'database-record' }
 export type PagePatch = Partial<Pick<PageRecord, 'title' | 'icon' | 'orderKey'>>
 
 @Injectable()
@@ -33,6 +33,10 @@ export class PageRepository {
     return doc ? this.toRecord(doc) : null
   }
 
+  async markDatabaseRecordRole(workspaceId: string, id: string, session: ClientSession): Promise<boolean> {
+    return (await this.model.updateOne({ workspaceId, id }, { $set: { role: 'database-record' } }, { session, timestamps: false }).exec()).matchedCount === 1
+  }
+
   async touchStructure(workspaceId: string, id: string, session?: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndUpdate(
       { workspaceId, id }, [{ $set: { structureFence: { $add: ['$structureFence', 1] }, updatedAt: this.nextUpdatedAt() } }],
@@ -49,6 +53,35 @@ export class PageRepository {
     if (input.cursor !== undefined) filter.id = { $gt: input.cursor }
     if (input.query !== undefined) filter.title = new RegExp(input.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
     return (await this.model.find(filter).sort({ id: 1 }).limit(input.limit + 1).session(session ?? null).exec()).map((doc) => this.toRecord(doc))
+  }
+
+  /** Excludes both marked and pre-P8.7 record pages before pagination. */
+  async listNavigationWindow(workspaceId: string, input: { cursor?: string; limit: number; query?: string }, session?: ClientSession): Promise<PageRecord[]> {
+    const match: Record<string, unknown> = { workspaceId, role: { $ne: 'database-record' } }
+    if (input.cursor !== undefined) match.id = { $gt: input.cursor }
+    if (input.query !== undefined) match.title = new RegExp(input.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+    const rows = await this.model.aggregate<PageDocument>([
+      { $match: match },
+      { $sort: { id: 1 } },
+      { $lookup: { from: 'database_records', let: { pageId: '$id' }, pipeline: [
+        { $match: { workspaceId, $expr: { $eq: ['$pageId', '$$pageId'] } } },
+        { $limit: 1 }, { $project: { _id: 1 } },
+      ], as: '_recordReference' } },
+      { $match: { _recordReference: { $eq: [] } } },
+      { $limit: input.limit + 1 },
+    ]).session(session ?? null).exec()
+    return rows.map(row => this.toRecord(row))
+  }
+
+  async listNavigationByWorkspace(workspaceId: string, session?: ClientSession): Promise<PageRecord[]> {
+    const result: PageRecord[] = []
+    let cursor: string | undefined
+    for (;;) {
+      const rows = await this.listNavigationWindow(workspaceId, { cursor, limit: 100 }, session)
+      result.push(...rows.slice(0, 100))
+      if (rows.length <= 100) return result.sort((a, b) => a.parentPageId === b.parentPageId ? a.orderKey.localeCompare(b.orderKey) || a.id.localeCompare(b.id) : (a.parentPageId ?? '').localeCompare(b.parentPageId ?? ''))
+      cursor = rows[99]!.id
+    }
   }
 
   async updateInWorkspace(workspaceId: string, id: string, patch: PagePatch, session?: ClientSession, expectedUpdatedAt?: string): Promise<PageRecord | null> {
@@ -138,6 +171,6 @@ export class PageRepository {
   }
 
   private toRecord(doc: PageDocument): PageRecord {
-    return { id: doc.id, workspaceId: doc.workspaceId, parentPageId: doc.parentPageId, title: doc.title, ...(doc.icon === undefined ? {} : { icon: doc.icon }), orderKey: doc.orderKey, createdAt: doc.createdAt.toISOString(), updatedAt: doc.updatedAt.toISOString() }
+    return { id: doc.id, workspaceId: doc.workspaceId, parentPageId: doc.parentPageId, title: doc.title, ...(doc.icon === undefined ? {} : { icon: doc.icon }), ...(doc.role === undefined ? {} : { role: doc.role }), orderKey: doc.orderKey, createdAt: doc.createdAt.toISOString(), updatedAt: doc.updatedAt.toISOString() }
   }
 }

@@ -21,6 +21,7 @@ import type {
   DatabaseTableResponse,
   DatabaseViewResponse,
   DatabaseWindowResponse,
+  DatabaseNavigationWindowResponse,
   DatabaseResponse,
   DatabasePropertyResponse,
   DatabaseRelationCandidatesQuery,
@@ -114,6 +115,7 @@ export class EotionApiClient {
   }
   readonly databases: {
     listDatabases: (workspaceId: string, window?: Partial<Pick<DatabaseTableQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseWindowResponse>
+    listNavigation: (workspaceId: string, window?: Partial<Pick<DatabaseTableQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseNavigationWindowResponse>
     listDatabaseViews: (workspaceId: string, databaseId: string, signal?: AbortSignal) => Promise<DatabaseViewResponse[]>
     getDatabaseTable: (workspaceId: string, databaseId: string, viewId: string, window?: Partial<Pick<DatabaseTableQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseTableResponse>
     listRelationCandidates: (workspaceId: string, databaseId: string, input?: Partial<DatabaseRelationCandidatesQuery>, signal?: AbortSignal) => Promise<DatabaseRelationCandidatesResponse>
@@ -198,6 +200,7 @@ export class EotionApiClient {
     }
     this.databases = {
       listDatabases: (workspaceId, window = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases${query(window)}`, { method: 'GET', signal }),
+      listNavigation: (workspaceId, window = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/database-navigation${query(window)}`, { method: 'GET', signal }),
       listDatabaseViews: (workspaceId, databaseId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views`, { method: 'GET', signal }),
       getDatabaseTable: (workspaceId, databaseId, viewId, window = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}/table${query(window)}`, { method: 'GET', signal }),
       listRelationCandidates: (workspaceId, databaseId, input = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/record-options${query(input)}`, { method: 'GET', signal }),

@@ -9,6 +9,7 @@ import type { Connection, Model } from 'mongoose'
 import { DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter } from '@eotion/domain'
 import { ServerDomainModule } from './server-domain.module'
 import { DatabaseEntity } from './schemas/database.schema'
+import { PageEntity } from './schemas/page.schema'
 import { DatabasePropertyEntity } from './schemas/database-property.schema'
 import { DatabaseRecordEntity } from './schemas/database-record.schema'
 import { DatabaseViewEntity } from './schemas/database-view.schema'
@@ -17,6 +18,7 @@ import { BlockService } from './services/block.service'
 import { DatabaseService } from './services/database.service'
 import { supportsTransactions } from './services/mongo-transactions'
 import { PageService } from './services/page.service'
+import { SyncService } from './services/sync.service'
 import { AuthService } from './services/auth.service'
 import { WorkspaceService } from './services/workspace.service'
 
@@ -38,6 +40,7 @@ test('database service keeps references scoped and writes initial data atomicall
   const propertyModel = app.get<Model<unknown>>(getModelToken(DatabasePropertyEntity.name))
   const recordModel = app.get<Model<unknown>>(getModelToken(DatabaseRecordEntity.name))
   const viewModel = app.get<Model<unknown>>(getModelToken(DatabaseViewEntity.name))
+  const pageModel = app.get<Model<unknown>>(getModelToken(PageEntity.name))
   await Promise.all([databaseModel.init(), propertyModel.init(), recordModel.init(), viewModel.init()])
   const storedProperties = async (id: string) => ((await recordModel.findOne({ id }).lean()) as { properties?: Record<string, unknown> } | null)?.properties ?? {}
   assert.deepEqual([databaseModel.collection.name, propertyModel.collection.name, recordModel.collection.name, viewModel.collection.name], ['databases', 'database_properties', 'database_records', 'database_views'])
@@ -64,9 +67,19 @@ test('database service keeps references scoped and writes initial data atomicall
   }
 
   const initial = await create('database-a', 'block-a')
+  assert.deepEqual((await databases.listNavigationWindow(owner.id, 'workspace-a', { limit: 10 })).items.find(item => item.id === 'database-a'), {
+    id: 'database-a', workspaceId: 'workspace-a', name: 'Tasks', parentPageId: 'page-a', orderKey: 'a', viewId: 'database-a-view',
+  })
+  await databaseModel.updateOne({ id: 'database-a' }, { $unset: { parentPageId: '', orderKey: '' } })
+  assert.deepEqual((await databases.listNavigationWindow(owner.id, 'workspace-a', { limit: 10 })).items.find(item => item.id === 'database-a'), {
+    id: 'database-a', workspaceId: 'workspace-a', name: 'Tasks', parentPageId: 'page-a', orderKey: 'a', viewId: 'database-a-view',
+  }, 'existing P8 databases derive navigation from the earliest persisted reference')
+  await assert.rejects(databases.listNavigationWindow(outsider.id, 'workspace-a', { limit: 10 }), /Workspace not found/)
   assert.equal(initial.database.version, 1)
   assert.equal(initial.titleProperty.type, 'title')
+  assert.equal(initial.titleProperty.name, '名称')
   assert.equal(initial.view.type, 'table')
+  assert.equal(initial.view.name, '表格视图')
   assert.deepEqual((await blocks.find(owner.id, 'workspace-a', 'page-a', 'block-a'))?.props, { node: { type: 'eotionDatabase', attrs: { databaseId: 'database-a', viewId: 'database-a-view' } } })
   assert.equal((await databases.find(owner.id, 'workspace-a', 'database-a'))?.name, 'Tasks')
   assert.equal(await databases.find(owner.id, 'workspace-a', 'missing'), null)
@@ -140,6 +153,13 @@ test('database service keeps references scoped and writes initial data atomicall
   await assert.rejects(databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 101 }), /Limit/)
   await assert.rejects(databases.getTable(owner.id, 'workspace-a', 'database-a', 'database-a-view', { limit: 25, cursor: ' bad ' }), /cursor/)
   const newRow = await databases.createRecordPage(owner.id, 'workspace-a', 'database-a', { id: 'row-z', pageId: 'page-new-row', title: 'New row', orderKey: 'c' })
+  assert.equal(newRow.page.role, 'database-record')
+  assert.equal((await pages.find(owner.id, 'workspace-a', newRow.page.id))?.role, 'database-record')
+  assert.equal((await app.get(SyncService).snapshot(owner.id, 'workspace-a')).pages.find(page => page.id === newRow.page.id)?.role, 'database-record')
+  assert.equal((await pages.listNavigation(owner.id, 'workspace-a')).some(page => page.id === newRow.page.id || page.id === 'page-row'), false)
+  await pageModel.updateOne({ id: newRow.page.id }, { $unset: { role: '' } })
+  assert.equal((await app.get(SyncService).snapshot(owner.id, 'workspace-a')).pages.find(page => page.id === newRow.page.id)?.role, 'database-record', 'legacy record pages are projected without migration')
+  assert.equal((await pages.listNavigation(owner.id, 'workspace-a')).some(page => page.id === newRow.page.id), false)
   assert.equal(newRow.record.pageId, newRow.page.id)
   assert.deepEqual(newRow.record.properties, { 'database-a-title': 'New row' })
   assert.deepEqual(await storedProperties('row-z'), {}, 'the projected title must not be stored on the record')
@@ -625,7 +645,7 @@ test('database writes reject unsupported transactions before any write', async (
   const repository = new Proxy({}, { get: () => () => { writes += 1; throw new Error('unexpected write') } })
   const connection = { db: { admin: () => ({ command: async () => ({}) }) }, startSession: () => { sessions += 1; throw new Error('unexpected session') } }
   const permissions = { assertCanWrite: async () => {} }
-  const service = new DatabaseService(repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, permissions as never, connection as never)
+  const service = new DatabaseService(repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, permissions as never, connection as never)
   await assert.rejects(service.createInPage('user', 'workspace', 'page', { id: 'db', name: 'Tasks', titlePropertyId: 'title', viewId: 'view', blockId: 'block', orderKey: 'a', parentBlockId: null }), error => (error as { status?: number }).status === 503)
   assert.equal(writes, 0)
   assert.equal(sessions, 0)

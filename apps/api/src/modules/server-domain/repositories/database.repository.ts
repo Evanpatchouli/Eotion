@@ -14,7 +14,7 @@ const dates = (doc: { createdAt: Date; updatedAt: Date }) => ({ createdAt: doc.c
 @Injectable()
 export class DatabaseRepository {
   constructor(@InjectModel(DatabaseEntity.name) private readonly model: Model<DatabaseDocument>) {}
-  async create(input: Stored<Database>, session: ClientSession): Promise<Database> {
+  async create(input: Stored<Database> & { parentPageId?: string; orderKey?: string }, session: ClientSession): Promise<Database> {
     const [doc] = await this.model.create([input], { session })
     return { id: doc!.id, workspaceId: doc!.workspaceId, name: doc!.name, version: doc!.version, ...dates(doc!) }
   }
@@ -34,6 +34,13 @@ export class DatabaseRepository {
     if (input.cursor !== undefined) filter.id = { $gt: input.cursor }
     const docs = await this.model.find(filter).sort({ id: 1 }).limit(input.limit + 1).session(session ?? null).exec()
     return docs.map(doc => ({ id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) }))
+  }
+  async listNavigationWindow(workspaceId: string, input: { cursor?: string; limit: number }): Promise<Array<Database & { parentPageId?: string; orderKey?: string }>> {
+    const filter: Record<string, unknown> = { workspaceId }
+    if (input.cursor !== undefined) filter.id = { $gt: input.cursor }
+    const docs = await this.model.find(filter).sort({ id: 1 }).limit(input.limit + 1).exec()
+    return docs.map(doc => ({ id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc),
+      ...(doc.parentPageId === undefined ? {} : { parentPageId: doc.parentPageId }), ...(doc.orderKey === undefined ? {} : { orderKey: doc.orderKey }) }))
   }
 }
 
@@ -78,6 +85,10 @@ export class DatabasePropertyRepository {
 @Injectable()
 export class DatabaseRecordRepository {
   constructor(@InjectModel(DatabaseRecordEntity.name) private readonly model: Model<DatabaseRecordDocument>) {}
+  async listPageIdsInWorkspace(workspaceId: string, session?: ClientSession): Promise<string[]> {
+    const rows = await this.model.find({ workspaceId }, { pageId: 1, _id: 0 }).session(session ?? null).lean().exec()
+    return rows.map(row => row.pageId)
+  }
   async create(input: Stored<DatabaseRecord>, session: ClientSession): Promise<DatabaseRecord> {
     const [doc] = await this.model.create([input], { session })
     return this.toRecord(doc!)

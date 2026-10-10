@@ -17,6 +17,10 @@ const {
   DatabaseTableQuerySchema,
   DatabaseTableResponseSchema,
   DatabaseSchema,
+  DatabaseNavigationItemSchema,
+  DatabaseNavigationWindowResponseSchema,
+  PageCreateRequestSchema,
+  PageRecordSchema,
   DatabasePropertySchema,
   DatabaseViewSchema,
   databaseRecordSchema,
@@ -31,6 +35,16 @@ const timestamp = '2026-01-02T03:04:05.000Z'
 const property = { id: 'title-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'Name', type: 'title', version: 1, createdAt: timestamp, updatedAt: timestamp }
 const database = { id: 'db-1', workspaceId: 'ws-1', name: 'Tasks', version: 1, createdAt: timestamp, updatedAt: timestamp }
 const view = { id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All tasks', type: 'table', config: { filters: [], sorts: [], visibleProperties: null, propertyOrder: null }, version: 1, createdAt: timestamp, updatedAt: timestamp }
+
+test('database navigation and page role have separate strict read and write contracts', () => {
+  const item = { id: 'db-1', workspaceId: 'ws-1', name: 'Tasks', parentPageId: 'page-1', orderKey: 'a', viewId: 'view-1' }
+  assert.deepEqual(DatabaseNavigationItemSchema.parse(item), item)
+  assert.deepEqual(DatabaseNavigationWindowResponseSchema.parse({ items: [item], nextCursor: null }).items, [item])
+  assert.equal(DatabaseNavigationItemSchema.safeParse({ ...item, version: 1 }).success, false)
+  const page = { id: 'record-page', workspaceId: 'ws-1', parentPageId: null, title: 'Record', orderKey: 'a', role: 'database-record', createdAt: timestamp, updatedAt: timestamp }
+  assert.deepEqual(PageRecordSchema.parse(page), page)
+  assert.equal(PageCreateRequestSchema.safeParse({ id: page.id, parentPageId: null, title: page.title, orderKey: page.orderKey, role: page.role }).success, false)
+})
 
 test('database entity schemas reuse the strict domain validators', () => {
   assert.deepEqual(DatabaseSchema.parse(database), database)

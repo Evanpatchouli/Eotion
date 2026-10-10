@@ -115,6 +115,10 @@ export class IndexedDbLocalStore implements LocalStore {
     return (await this.listPages()).filter((page) => page.workspaceId === workspaceId)
   }
 
+  async listNavigationPagesByWorkspace(workspaceId: string): Promise<LocalPageRecord[]> {
+    return (await this.listPagesByWorkspace(workspaceId)).filter(page => page.role !== 'database-record')
+  }
+
   async hasWorkspaceSnapshot(workspaceId: string): Promise<boolean> {
     if (await this.read<boolean>('meta', `snapshot:${workspaceId}`)) return true
     return (await this.listPagesByWorkspace(workspaceId)).length > 0

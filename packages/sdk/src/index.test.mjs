@@ -74,6 +74,17 @@ test('database APIs encode scoped routes, query windows, and strict write payloa
   assert.deepEqual(requests.slice(6).map(request => request.method), ['POST', 'PATCH', 'DELETE', 'PATCH'])
 })
 
+test('database navigation uses its separate scoped read endpoint', async () => {
+  let request
+  const client = new EotionApiClient({ baseUrl: 'https://eotion.test/', fetch: async (input, init) => {
+    request = new Request(input, init)
+    return Response.json({ items: [], nextCursor: null })
+  } })
+  assert.deepEqual(await client.databases.listNavigation('workspace/1', { limit: 3, cursor: 'db 1' }), { items: [], nextCursor: null })
+  assert.equal(request.url, 'https://eotion.test/api/workspaces/workspace%2F1/database-navigation?limit=3&cursor=db+1')
+  assert.equal(request.credentials, 'include')
+})
+
 test('database view mutations use scoped endpoints and typed versioned payloads', async () => {
   const requests = []
   const client = new EotionApiClient({ baseUrl: 'https://eotion.test', fetch: async (input, init) => { requests.push(new Request(input, init)); return Response.json({}) } })

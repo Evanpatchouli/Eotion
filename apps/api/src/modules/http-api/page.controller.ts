@@ -18,7 +18,7 @@ export class PageController {
 
   @Get()
   list(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string) {
-    return this.pages.list(user.id, parseId(workspaceId))
+    return this.pages.listNavigation(user.id, parseId(workspaceId))
   }
 
   @Get(':pageId')

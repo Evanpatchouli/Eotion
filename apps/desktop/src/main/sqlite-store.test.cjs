@@ -19,7 +19,7 @@ test('SQLite persists content and ordered operations across reopening', async ()
   const page = { id: 'page-1', workspaceId: 'workspace-1', parentPageId: null, orderKey: 'a', title: 'First', updatedAt: '2026-01-01T00:00:00.000Z' }
   const block = {
     id: 'block-1', workspaceId: page.workspaceId, pageId: page.id, parentBlockId: null, type: 'paragraph', orderKey: 'a',
-    props: { text: 'offline' }, createdAt: page.updatedAt, updatedAt: page.updatedAt,
+    props: { node: { type: 'paragraph', content: [{ type: 'text', text: 'offline' }] } }, createdAt: page.updatedAt, updatedAt: page.updatedAt,
   }
 
   try {
@@ -59,7 +59,7 @@ test('failed content write rolls back its operation and sequence', async () => {
   const store = new SqliteLocalStore(':memory:')
   try {
     await assert.rejects(store.upsertBlock({
-      id: 'orphan', pageId: 'missing', type: 'paragraph', orderKey: 'a', props: {},
+      id: 'orphan', pageId: 'missing', type: 'paragraph', orderKey: 'a', props: { node: { type: 'paragraph' } },
       createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
     }))
     assert.deepEqual(await store.getPendingOperations(), [])
@@ -75,7 +75,7 @@ test('clearAllData resets SQLite content, operations, and identity', async () =>
   try {
     const page = { id: 'p', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Demo', updatedAt: '2026-01-01T00:00:00.000Z' }
     await store.upsertPage(page)
-    await store.upsertBlock({ id: 'b', workspaceId: 'ws', pageId: 'p', parentBlockId: null, type: 'paragraph', orderKey: 'a', props: {}, createdAt: page.updatedAt, updatedAt: page.updatedAt })
+    await store.upsertBlock({ id: 'b', workspaceId: 'ws', pageId: 'p', parentBlockId: null, type: 'paragraph', orderKey: 'a', props: { node: { type: 'paragraph' } }, createdAt: page.updatedAt, updatedAt: page.updatedAt })
     const previousClientId = (await store.getPendingOperations())[0].clientId
     await store.clearAllData()
     assert.deepEqual(await store.listPages(), [])
@@ -158,7 +158,7 @@ test('SQLite block.move preserves nested trees and rejects invalid moves atomica
   const page = { id: 'page', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Page', updatedAt: now }
   const block = (id, type, parentBlockId, orderKey) => ({
     id, workspaceId: 'ws', pageId: page.id, parentBlockId, type, orderKey,
-    props: type === 'callout' ? { node: { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [] } } : {},
+    props: { node: type === 'callout' ? { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: [] } : { type: type === 'toggle' ? 'eotionToggle' : 'paragraph' } },
     createdAt: now, updatedAt: now,
   })
   let store
@@ -236,7 +236,7 @@ test('SQLite snapshot replacement is workspace scoped, atomic, and preserves ope
   const store = new SqliteLocalStore(':memory:')
   const now = '2026-01-01T00:00:00.000Z'
   const page = (id, workspaceId) => ({ id, workspaceId, parentPageId: null, orderKey: 'a', title: id, updatedAt: now })
-  const block = (id, workspaceId, pageId) => ({ id, workspaceId, pageId, parentBlockId: null, type: 'paragraph', orderKey: 'a', props: {}, createdAt: now, updatedAt: now })
+  const block = (id, workspaceId, pageId) => ({ id, workspaceId, pageId, parentBlockId: null, type: 'paragraph', orderKey: 'a', props: { node: { type: 'paragraph' } }, createdAt: now, updatedAt: now })
   try {
     await store.upsertPage(page('old', 'ws'))
     await store.upsertBlock(block('old-block', 'ws', 'old'))
@@ -273,6 +273,19 @@ test('SQLite snapshot replacement is workspace scoped, atomic, and preserves ope
   }
 })
 
+test('SQLite navigation excludes record pages without changing direct reads or snapshots', async () => {
+  const store = new SqliteLocalStore(':memory:')
+  const now = '2026-01-01T00:00:00.000Z'
+  const ordinary = { id: 'page', workspaceId: 'ws', parentPageId: null, orderKey: 'a', title: 'Page', updatedAt: now }
+  const record = { id: 'record-page', workspaceId: 'ws', parentPageId: null, orderKey: 'b', title: 'Record', role: 'database-record', updatedAt: now }
+  try {
+    await store.replaceWorkspaceSnapshot('ws', [ordinary, record], [])
+    assert.deepEqual(await store.listNavigationPagesByWorkspace('ws'), [ordinary])
+    assert.deepEqual(await store.listPagesByWorkspace('ws'), [ordinary, record])
+    assert.deepEqual(await store.getPage(record.id), record)
+  } finally { store.close() }
+})
+
 test('SQLite keeps a locally created workspace cached after its last page is deleted', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'eotion-sqlite-empty-'))
   const path = join(directory, 'local.sqlite')
@@ -295,7 +308,7 @@ test('SQLite file cleanup gates follow local mutations and preserve failure stat
   const page = (id, workspaceId = 'ws') => ({ id, workspaceId, parentPageId: null, orderKey: 'a', title: id, updatedAt: now })
   const block = (id, fileId, pageId = 'p', workspaceId = 'ws') => ({
     id, workspaceId, pageId, parentBlockId: null, type: 'image', orderKey: 'a',
-    props: { node: { attrs: fileId ? { fileId } : {} } }, createdAt: now, updatedAt: now,
+    props: { node: { type: 'eotionImage', attrs: { fileId: fileId ?? 'unused', name: `${id}.png`, mimeType: 'image/png', size: 1, url: 'https://example.test/image.png' } } }, createdAt: now, updatedAt: now,
   })
   const directory = mkdtempSync(join(tmpdir(), 'eotion-sqlite-cleanup-'))
   const path = join(directory, 'local.sqlite')
@@ -303,7 +316,7 @@ test('SQLite file cleanup gates follow local mutations and preserve failure stat
   try {
       persistent = new SqliteLocalStore(path)
       await persistent.upsertPage(page('p'))
-      await persistent.upsertBlock({ ...block('paragraph', 'ignored-file-id'), type: 'paragraph' })
+      await persistent.upsertBlock({ ...block('paragraph', 'ignored-file-id'), type: 'paragraph', props: { node: { type: 'paragraph' } } })
       await persistent.deleteBlock('ws', 'paragraph')
       assert.deepEqual(await persistent.listFileCleanups(), [])
       await persistent.upsertBlock(block('one', 'file-one'))
@@ -329,7 +342,7 @@ test('SQLite file cleanup gates follow local mutations and preserve failure stat
 
       await persistent.upsertBlock(block('two', 'replace-me'))
       const upsert = (await persistent.getPendingOperations()).at(-1)
-      await persistent.upsertBlock({ ...block('two', undefined), type: 'paragraph', props: { text: 'replaced' } })
+      await persistent.upsertBlock({ ...block('two', undefined), type: 'paragraph', props: { node: { type: 'paragraph', content: [{ type: 'text', text: 'replaced' }] } } })
       const replacement = (await persistent.getPendingOperations()).at(-1)
       assert.equal((await persistent.listFileCleanups()).find((item) => item.fileId === 'replace-me').sourceOperationId, replacement.id)
       assert.equal((await persistent.listReadyFileCleanups()).some((item) => item.fileId === 'replace-me'), false)

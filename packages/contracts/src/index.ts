@@ -174,6 +174,20 @@ export type DatabaseRecordPageCreateRequest = z.infer<typeof DatabaseRecordPageC
 
 export const DatabaseWindowResponseSchema = z.object({ items: z.array(DatabaseSchema), nextCursor: databaseStableIdSchema.nullable() }).strict()
 export type DatabaseWindowResponse = z.infer<typeof DatabaseWindowResponseSchema>
+export const DatabaseNavigationItemSchema = z.object({
+  id: databaseStableIdSchema,
+  workspaceId: idSchema,
+  name: databaseNameSchema,
+  parentPageId: idSchema.nullable(),
+  orderKey: idSchema,
+  viewId: databaseStableIdSchema.nullable(),
+}).strict()
+export type DatabaseNavigationItem = z.infer<typeof DatabaseNavigationItemSchema>
+export const DatabaseNavigationWindowResponseSchema = z.object({
+  items: z.array(DatabaseNavigationItemSchema),
+  nextCursor: databaseStableIdSchema.nullable(),
+}).strict()
+export type DatabaseNavigationWindowResponse = z.infer<typeof DatabaseNavigationWindowResponseSchema>
 export type DatabaseTableResponse = {
   database: Database
   view: DatabaseView
@@ -460,6 +474,7 @@ const pageRecordSchema = z.object({
   parentPageId: idSchema.nullable(),
   title: nameSchema,
   icon: z.string().optional(),
+  role: z.literal('database-record').optional(),
   orderKey: idSchema,
   createdAt: dateSchema,
   updatedAt: dateSchema,

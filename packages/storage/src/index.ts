@@ -46,6 +46,8 @@ export interface LocalStore {
   getPage(id: string): Promise<LocalPageRecord | undefined>
   listPages(): Promise<LocalPageRecord[]>
   listPagesByWorkspace(workspaceId: string): Promise<LocalPageRecord[]>
+  /** Sidebar projection; direct page reads and snapshots retain record pages. */
+  listNavigationPagesByWorkspace(workspaceId: string): Promise<LocalPageRecord[]>
   hasWorkspaceSnapshot(workspaceId: string): Promise<boolean>
   upsertPage(page: LocalPageRecord): Promise<void>
   /** Moves an existing page and records exactly one page.move operation. */

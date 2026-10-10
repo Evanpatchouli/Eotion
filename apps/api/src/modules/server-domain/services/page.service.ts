@@ -44,7 +44,14 @@ export class PageService {
 
   async list(userId: string, workspaceId: string, session?: ClientSession) {
     await this.permissions.assertCanRead(userId, workspaceId)
-    return this.pages.listByWorkspace(workspaceId, session)
+    const [pages, recordPageIds] = await Promise.all([this.pages.listByWorkspace(workspaceId, session), this.records.listPageIdsInWorkspace(workspaceId, session)])
+    const legacyRecordPages = new Set(recordPageIds)
+    return pages.map(page => page.role === 'database-record' || !legacyRecordPages.has(page.id) ? page : { ...page, role: 'database-record' as const })
+  }
+
+  async listNavigation(userId: string, workspaceId: string, session?: ClientSession) {
+    await this.permissions.assertCanRead(userId, workspaceId)
+    return this.pages.listNavigationByWorkspace(workspaceId, session)
   }
 
   async listWindow(userId: string, workspaceId: string, input: { cursor?: string; limit: number; query?: string }, session?: ClientSession): Promise<{ items: PageRecord[]; nextCursor: string | null }> {

@@ -102,6 +102,16 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
       body: { id: recordId, pageId, title: 'Initial title', orderKey: 'a' },
     })
     assert.equal(createdRecord.status, 201)
+    assert.equal(createdRecord.body.page.role, 'database-record')
+    const navigationRoute = `/api/workspaces/${workspace}/database-navigation`
+    const navigation = await request(baseUrl, navigationRoute, 'GET', { cookie })
+    assert.equal(navigation.status, 200)
+    assert.deepEqual(navigation.body.items, [{ id: databaseId, workspaceId: workspace, name: 'Tasks', parentPageId: 'db-http-home', orderKey: 'b', viewId }])
+    assert.equal((await request(baseUrl, navigationRoute)).status, 401)
+    const pageTree = await request(baseUrl, `/api/workspaces/${workspace}/pages`, 'GET', { cookie })
+    assert.deepEqual(pageTree.body.map((page: { id: string }) => page.id), ['db-http-home'])
+    assert.equal((await request(baseUrl, `/api/workspaces/${workspace}/pages/${pageId}`, 'GET', { cookie })).body.role, 'database-record')
+    assert.equal((await request(baseUrl, `/api/workspaces/${workspace}/pages`, 'POST', { cookie, body: { id: 'forged-record', parentPageId: null, title: 'Forged', orderKey: 'z', role: 'database-record' } })).status, 400)
 
     const table = async () => {
       const response = await request(baseUrl, tableRoute, 'GET', { cookie })

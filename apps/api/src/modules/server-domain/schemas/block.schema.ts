@@ -35,3 +35,4 @@ export class BlockEntity {
 export type BlockDocument = HydratedDocument<BlockEntity>
 export const BlockSchema = SchemaFactory.createForClass(BlockEntity)
 BlockSchema.index({ workspaceId: 1, pageId: 1, parentBlockId: 1, orderKey: 1, id: 1 })
+BlockSchema.index({ workspaceId: 1, type: 1, 'props.node.attrs.databaseId': 1, createdAt: 1, id: 1 })

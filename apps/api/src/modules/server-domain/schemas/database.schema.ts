@@ -8,6 +8,8 @@ export class DatabaseEntity {
   @Prop({ type: String, required: true }) name!: string
   @Prop({ type: Number, required: true, default: 1 }) version!: number
   @Prop({ type: Number, required: true, default: 0 }) advancedReferenceFence!: number
+  @Prop({ type: String }) parentPageId?: string
+  @Prop({ type: String }) orderKey?: string
   createdAt!: Date
   updatedAt!: Date
 }

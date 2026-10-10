@@ -22,6 +22,7 @@ export class SqliteLocalStore implements LocalStore {
     this.database.exec(`
       CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS pages (id TEXT PRIMARY KEY, document TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS navigation_pages_by_workspace ON pages(json_extract(document, '$.workspaceId'), json_extract(document, '$.role'));
       CREATE TABLE IF NOT EXISTS blocks (
         id TEXT PRIMARY KEY,
         page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
@@ -141,6 +142,11 @@ export class SqliteLocalStore implements LocalStore {
 
   async listPagesByWorkspace(workspaceId: string): Promise<LocalPageRecord[]> {
     return (await this.listPages()).filter((page) => page.workspaceId === workspaceId)
+  }
+
+  async listNavigationPagesByWorkspace(workspaceId: string): Promise<LocalPageRecord[]> {
+    const rows = this.database.prepare("SELECT document FROM pages WHERE json_extract(document, '$.workspaceId') = ? AND (json_extract(document, '$.role') IS NULL OR json_extract(document, '$.role') <> 'database-record') ORDER BY id").all(workspaceId) as { document: string }[]
+    return rows.map(row => JSON.parse(row.document) as LocalPageRecord)
   }
 
   async hasWorkspaceSnapshot(workspaceId: string): Promise<boolean> {

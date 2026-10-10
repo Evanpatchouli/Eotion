@@ -18,6 +18,9 @@ export class PageEntity {
   @Prop({ type: String })
   icon?: string
 
+  @Prop({ type: String, enum: ['database-record'] })
+  role?: 'database-record'
+
   @Prop({ type: String, required: true })
   orderKey!: string
 
