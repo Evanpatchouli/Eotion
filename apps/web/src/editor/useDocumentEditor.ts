@@ -13,6 +13,7 @@ type DocumentEditorOptions = EditorCallbacks & {
   editable?: MaybeRefOrGetter<boolean>
   ariaLabel: string
   attributes?: Record<string, string>
+  editorProps?: EditorOptions['editorProps']
   extensions?: AnyExtension[]
   onUpdate: (document: EditorDocument) => void
 }
@@ -42,6 +43,7 @@ export function useDocumentEditor(options: DocumentEditorOptions) {
         'aria-label': options.ariaLabel,
         ...options.attributes,
       },
+      ...options.editorProps,
     },
     ...(options.onCreate ? { onCreate: options.onCreate } : {}),
     ...(options.onSelectionUpdate ? { onSelectionUpdate: options.onSelectionUpdate } : {}),

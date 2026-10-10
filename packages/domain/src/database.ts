@@ -13,6 +13,11 @@ export type DatabasePropertyConfig =
   | { targetDatabaseId: string }
   | { relationPropertyId: string; targetPropertyId: string; aggregation: DatabaseRollupAggregation }
   | { expression: FormulaExpression; resultType: DatabaseFormulaResultType }
+export const DATABASE_MAX_PROPERTIES = 100
+export const DATABASE_MAX_VIEWS = 100
+export const DATABASE_MAX_TABLE_ROWS = 100
+export const DATABASE_VIEW_MAX_FILTERS = 20
+export const DATABASE_VIEW_MAX_SORTS = 10
 export const DATABASE_RELATION_MAX_LINKS = 50
 export const DATABASE_RELATION_SEARCH_MAX_RECORDS = 5_000
 export const DATABASE_DERIVED_MAX_RECORDS = 100
@@ -137,7 +142,7 @@ const FILTERS_BY_TYPE: Record<DatabasePropertyType, readonly string[]> = {
 /** Checks the strict wire shape without needing the referenced database properties. */
 export function isValidDatabaseViewConfigShape(value: unknown): value is DatabaseViewConfig {
   if (!isObject(value) || !hasExactFields(value, ['filters', 'sorts', 'visibleProperties', 'propertyOrder'])) return false
-  if (!Array.isArray(value.filters) || value.filters.length > 20 || !Array.isArray(value.sorts) || value.sorts.length > 10) return false
+  if (!Array.isArray(value.filters) || value.filters.length > DATABASE_VIEW_MAX_FILTERS || !Array.isArray(value.sorts) || value.sorts.length > DATABASE_VIEW_MAX_SORTS) return false
   for (const filter of value.filters) {
     if (!isObject(filter) || !hasExactFields(filter, ['propertyId', 'operator'], ['value'])
       || !isStableId(filter.propertyId) || typeof filter.operator !== 'string' || !FILTER_OPERATORS.includes(filter.operator)) return false
@@ -152,7 +157,7 @@ export function isValidDatabaseViewConfigShape(value: unknown): value is Databas
     sortIds.add(sort.propertyId)
   }
   for (const ids of [value.visibleProperties, value.propertyOrder]) {
-    if (ids !== null && (!Array.isArray(ids) || ids.length > 100 || !ids.every(isStableId) || new Set(ids).size !== ids.length)) return false
+    if (ids !== null && (!Array.isArray(ids) || ids.length > DATABASE_MAX_PROPERTIES || !ids.every(isStableId) || new Set(ids).size !== ids.length)) return false
   }
   return true
 }
@@ -405,7 +410,7 @@ export function validateDatabasePropertyDependencies(
   properties: readonly DatabaseProperty[],
   resolveTargetProperties?: (databaseId: string) => readonly DatabaseProperty[] | undefined,
 ): boolean {
-  if (!Array.isArray(properties) || properties.length > 100 || !properties.every(isValidDatabaseProperty)) return false
+  if (!Array.isArray(properties) || properties.length > DATABASE_MAX_PROPERTIES || !properties.every(isValidDatabaseProperty)) return false
   const byId = new Map(properties.map(property => [property.id, property]))
   if (byId.size !== properties.length || properties.some(property => property.databaseId !== properties[0]?.databaseId || property.workspaceId !== properties[0]?.workspaceId)) return false
   const edges = new Map<string, string[]>()

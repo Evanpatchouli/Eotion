@@ -113,6 +113,10 @@ test('database HTTP contracts strictly validate page creation, links, and bounde
   assert.equal(DatabaseListQuerySchema.safeParse({ limit: '101' }).success, false)
   assert.equal(DatabaseListQuerySchema.safeParse({ cursor: ' db-1' }).success, false)
   assert.deepEqual(DatabaseViewListQuerySchema.parse({}), { limit: 100 })
+  assert.equal(DatabaseViewListQuerySchema.safeParse({ limit: 100 }).success, true)
+  assert.equal(DatabaseViewListQuerySchema.safeParse({ limit: 101 }).success, false)
+  assert.equal(DatabaseTableQuerySchema.safeParse({ limit: 100 }).success, true)
+  assert.equal(DatabaseTableQuerySchema.safeParse({ limit: 101 }).success, false)
   assert.equal(DatabaseTableQuerySchema.safeParse({ cursor: 'x'.repeat(256) }).success, true)
   assert.equal(DatabaseTableQuerySchema.safeParse({ cursor: 'x'.repeat(16_385) }).success, false)
 })
@@ -128,6 +132,31 @@ test('database table response validates scope, property values, and the property
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, properties: Array(101).fill(property) }).success, false)
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, extra: true }).success, false)
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: Array(101).fill(record) }).success, false)
+})
+
+test('database contracts accept exact property, row, filter, sort, and column-order limits', () => {
+  const boundedProperties = [property, ...Array.from({ length: 99 }, (_, index) => ({
+    ...property, id: `bounded-${index}`, name: `Bounded ${index}`, type: 'text',
+  }))]
+  const boundedRecord = { id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task' }, version: 1, createdAt: timestamp, updatedAt: timestamp, pageVersion: timestamp }
+  const records = Array.from({ length: 100 }, (_, index) => ({ ...boundedRecord, id: `record-${index}`, pageId: `page-${index}` }))
+  const table = { database, view, properties: boundedProperties, records, nextCursor: null }
+  assert.equal(DatabaseTableResponseSchema.safeParse(table).success, true)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, properties: [...boundedProperties, { ...property, id: 'property-101', type: 'text' }] }).success, false)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: [...records, { ...boundedRecord, id: 'record-101', pageId: 'page-101' }] }).success, false)
+
+  const ids = Array.from({ length: 100 }, (_, index) => `property-${index}`)
+  const config = {
+    filters: Array.from({ length: 20 }, () => ({ propertyId: 'property-1', operator: 'is_empty' })),
+    sorts: Array.from({ length: 10 }, (_, index) => ({ propertyId: `property-${index}`, direction: 'asc' })),
+    visibleProperties: ids,
+    propertyOrder: ids,
+  }
+  assert.equal(DatabaseViewConfigSchema.safeParse(config).success, true)
+  assert.equal(DatabaseViewConfigSchema.safeParse({ ...config, filters: [...config.filters, config.filters[0]] }).success, false)
+  assert.equal(DatabaseViewConfigSchema.safeParse({ ...config, sorts: [...config.sorts, { propertyId: 'extra-sort', direction: 'asc' }] }).success, false)
+  assert.equal(DatabaseViewConfigSchema.safeParse({ ...config, visibleProperties: [...ids, 'extra-visible'] }).success, false)
+  assert.equal(DatabaseViewConfigSchema.safeParse({ ...config, propertyOrder: [...ids, 'extra-order'] }).success, false)
 })
 
 test('advanced requests and projected values keep derived fields read-only', () => {

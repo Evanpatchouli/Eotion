@@ -410,7 +410,7 @@ async function screenshot(page: Page, name: string) {
 }
 
 async function submitNewRecord(table: ReturnType<Page['locator']>, title: string) {
-  await table.getByRole('button', { name: '+ 新建记录' }).click()
+  await table.getByRole('button', { name: '新建记录', exact: true }).click()
   await table.getByRole('textbox', { name: '记录标题' }).fill(title)
   await table.getByRole('button', { name: '创建', exact: true }).click()
 }
@@ -452,6 +452,23 @@ const rootProperties = [
 const basicRecord = record('root-record', rootDatabase.id, 'root-record-page', {
   'root-title': 'Launch plan', 'root-text': 'Draft ready', 'root-number': 42,
   'root-checkbox': true, 'root-select': 'status-open', 'root-date': '2026-10-04',
+})
+
+test('first pointer focus beside a trailing Database block keeps ProseMirror selection current', async ({ page }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', error => pageErrors.push(error.message))
+  await installApi(page, [
+    block('trailing-database-text', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Before the database' }] }, 50),
+    block('trailing-database-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [rootProperties[0]!], records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const paragraph = page.locator('.eotion-editor-content .tiptap p').filter({ hasText: 'Before the database' })
+  await paragraph.click({ position: { x: 400, y: 12 } })
+  await page.keyboard.press('End')
+  await page.keyboard.type(' stays editable')
+  await expect(paragraph).toContainText('stays editable')
+  expect(pageErrors).toEqual([])
 })
 
 test('database views create, rename, switch, delete and persist the selected reference', async ({ page }) => {
@@ -587,8 +604,9 @@ test('linked views keep independent server filters, multi-sort order and column 
   await columnsPanel.getByRole('button', { name: '保存列设置' }).click()
   const headers = await tables.nth(1).locator('thead th').allTextContents()
   expect(headers.some(header => header.includes('Notes'))).toBe(false)
-  expect(headers.indexOf('Due⌄')).toBeLessThan(headers.indexOf('Points⌄'))
-  expect(await tables.nth(0).locator('thead th').allTextContents()).toContain('Notes⌄')
+  expect(headers.indexOf('Due')).toBeLessThan(headers.indexOf('Points'))
+  expect(await tables.nth(0).locator('thead th').allTextContents()).toContain('Notes')
+  await expect(tables.nth(0).getByRole('button', { name: 'Notes', exact: true })).toBeVisible()
   expect(configuredView.config.visibleProperties).not.toContain('root-text')
 
   await tables.nth(0).getByRole('button', { name: 'Open', exact: true }).click()
@@ -998,6 +1016,7 @@ test('edits versioned cells and manages property options without losing stable I
   await titleInput.press('Enter')
   await expect(table.getByRole('button', { name: '编辑Name：Planning' })).toBeVisible()
   expect(api.pages.find((item) => item.id === seededRecord.pageId)?.title).toBe('Planning')
+  expect(pageErrors).toEqual([])
 
   await table.getByRole('button', { name: 'Draft ready' }).click()
   const textInput = table.getByRole('textbox', { name: 'Notes 值' })
@@ -1026,20 +1045,23 @@ test('edits versioned cells and manages property options without losing stable I
   await expect(table.getByRole('button', { name: '已完成' })).toHaveAttribute('aria-pressed', 'true')
   await table.getByRole('button', { name: '已完成' }).click()
   await expect(table.getByRole('button', { name: '未完成' })).toHaveAttribute('aria-pressed', 'false')
+  expect(pageErrors).toEqual([])
 
   await table.getByRole('button', { name: 'Open' }).click()
-  await expect(page.locator('body > .eotion-database-popover')).toBeVisible()
-  await page.getByRole('button', { name: 'Done', exact: true }).last().click()
-  await expect(table.getByRole('button', { name: 'Done', exact: true })).toBeVisible()
-  await table.getByRole('button', { name: 'Done', exact: true }).click()
+  const selectPopover = page.locator('body > .eotion-database-popover')
+  await expect(selectPopover).toBeVisible()
+  await selectPopover.getByRole('button', { name: 'Done', exact: true }).click()
+  await expect(table.locator('tbody').getByRole('button', { name: 'Done', exact: true })).toBeVisible()
+  await table.locator('tbody').getByRole('button', { name: 'Done', exact: true }).click()
   await page.getByRole('button', { name: '清除' }).click()
   await expect(table.locator('tbody tr').first().locator('td').nth(4).getByRole('button', { name: '—', exact: true })).toBeVisible()
+  expect(pageErrors).toEqual([])
 
-  await table.getByRole('button', { name: 'Due⌄' }).click()
+  await table.getByRole('button', { name: 'Due', exact: true }).click()
   await page.getByRole('textbox', { name: '属性名称' }).fill('Deadline')
   await screenshot(page, 'p83-desktop-light-property-menu')
   await page.getByRole('button', { name: '重命名', exact: true }).click()
-  await expect(table.getByRole('button', { name: 'Deadline⌄' })).toBeVisible()
+  await expect(table.getByRole('button', { name: 'Deadline', exact: true })).toBeVisible()
   await table.getByRole('button', { name: '2026-10-04' }).click()
   const dateInput = table.getByRole('textbox', { name: 'Deadline 值' })
   await dateInput.fill('2026-11-05')
@@ -1048,47 +1070,48 @@ test('edits versioned cells and manages property options without losing stable I
   await table.getByRole('button', { name: '2026-11-05' }).click()
   await table.getByRole('button', { name: '清除' }).click()
   await expect(table.locator('tbody tr').first().locator('td').nth(5).getByRole('button', { name: '—', exact: true })).toBeVisible()
+  expect(pageErrors).toEqual([])
 
-  await table.getByRole('button', { name: 'Status⌄' }).click()
+  await table.getByRole('button', { name: 'Status', exact: true }).click()
   await screenshot(page, 'p83-desktop-light-select-menu')
   const optionInput = page.getByRole('textbox', { name: '新选项名称' })
   await optionInput.fill('Review')
   await page.getByRole('button', { name: '添加', exact: true }).click()
   const reviewOption = api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Review')
   expect(reviewOption?.id).toBeTruthy()
-  await table.getByRole('button', { name: 'Status⌄' }).click()
+  await table.getByRole('button', { name: 'Status', exact: true }).click()
   await expect(page.locator('.eotion-database-option-edit').filter({ hasText: 'Review' })).toBeVisible()
   const openOption = api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Open')
   await page.locator('.eotion-database-option-edit').filter({ hasText: 'Open' }).getByRole('button', { name: '重命名' }).click()
   await page.getByRole('textbox', { name: '重命名选项 Open' }).fill('Opened')
   await page.locator('.eotion-database-option-edit').filter({ has: page.getByRole('textbox', { name: '重命名选项 Open' }) }).getByRole('button', { name: '保存' }).click()
   expect(api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Opened')?.id).toBe(openOption?.id)
-  await table.getByRole('button', { name: 'Status⌄' }).click()
+  await table.getByRole('button', { name: 'Status', exact: true }).click()
   await expect(page.locator('.eotion-database-option-edit').filter({ hasText: 'Opened' })).toBeVisible()
   await page.locator('.eotion-database-option-edit').filter({ hasText: 'Review' }).getByRole('button', { name: '删除' }).click()
   expect(api.properties.find((item) => item.id === 'root-select')?.options?.some((item) => item.id === reviewOption?.id)).toBe(false)
 
-  await table.getByRole('button', { name: 'Points⌄' }).click()
+  await table.getByRole('button', { name: 'Points', exact: true }).click()
   await page.getByRole('button', { name: '删除属性' }).click()
-  await expect(table.getByRole('button', { name: 'Points⌄' })).toHaveCount(0)
+  await expect(table.getByRole('button', { name: 'Points', exact: true })).toHaveCount(0)
   expect(api.records[0]?.properties['root-number']).toBeUndefined()
   expect(api.requests.some(({ method, path }) => method === 'DELETE' && path.endsWith('/properties/root-number'))).toBe(true)
   await table.getByRole('button', { name: '属性' }).click()
   await page.getByRole('button', { name: '文本', exact: true }).click()
-  await expect(table.getByRole('button', { name: '文本⌄' })).toBeVisible()
-  await table.getByRole('button', { name: '文本⌄' }).click()
+  await expect(table.getByRole('button', { name: '文本', exact: true })).toBeVisible()
+  await table.getByRole('button', { name: '文本', exact: true }).click()
   await page.getByRole('textbox', { name: '属性名称' }).fill('Context')
   await page.getByRole('button', { name: '重命名', exact: true }).click()
-  await expect(table.getByRole('button', { name: 'Context⌄' })).toBeVisible()
-  await table.getByRole('button', { name: 'Context⌄' }).click()
+  await expect(table.getByRole('button', { name: 'Context', exact: true })).toBeVisible()
+  await table.getByRole('button', { name: 'Context', exact: true }).click()
   await page.getByRole('button', { name: '删除属性' }).click()
-  await expect(table.getByRole('button', { name: 'Context⌄' })).toHaveCount(0)
+  await expect(table.getByRole('button', { name: 'Context', exact: true })).toHaveCount(0)
   await page.reload()
   await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('Planning')
   await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('Revised notes')
   await installLocalBlockReader(page)
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
-  await table.getByRole('button', { name: 'Deadline⌄' }).click()
+  await table.getByRole('button', { name: 'Deadline', exact: true }).click()
   await screenshot(page, 'p83-desktop-dark-property-menu')
   api.offline = true
   const writesBeforeOffline = api.requests.filter(({ method, path }) => path.includes('/databases/') && (method === 'POST' || method === 'PATCH' || method === 'DELETE')).length
@@ -1163,7 +1186,7 @@ test('empty new-record titles send no request and Escape cancels title entry', a
   ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
   await page.goto('/#/app/database-workspace/page/database-page')
   const table = page.locator('.eotion-editor-content .eotion-database')
-  await table.getByRole('button', { name: '+ 新建记录' }).click()
+  await table.getByRole('button', { name: '新建记录', exact: true }).click()
   const titleInput = table.getByRole('textbox', { name: '记录标题' })
   await titleInput.fill('   ')
   await expect(table.getByRole('button', { name: '创建', exact: true })).toBeDisabled()
@@ -1172,7 +1195,7 @@ test('empty new-record titles send no request and Escape cancels title entry', a
   await titleInput.press('Enter')
   expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/records`))).toHaveLength(0)
   await titleInput.press('Escape')
-  await expect(table.getByRole('button', { name: '+ 新建记录' })).toBeVisible()
+  await expect(table.getByRole('button', { name: '新建记录', exact: true })).toBeVisible()
 })
 
 test('missing constructor-like property IDs render as empty values', async ({ page }) => {
@@ -1202,8 +1225,8 @@ test('uncertain record creation fences all references until page refresh', async
   await submitNewRecord(tables.nth(0), 'Uncertain title')
   const message = '上次记录创建结果尚未确认，请联网并刷新页面后确认。'
   await expect(tables.nth(0).getByRole('alert')).toContainText(message)
-  await expect(tables.nth(0).getByRole('button', { name: '+ 新建记录' })).toBeDisabled()
-  await expect(tables.nth(1).getByRole('button', { name: '+ 新建记录' })).toBeDisabled()
+  await expect(tables.nth(0).getByRole('button', { name: '新建记录', exact: true })).toBeDisabled()
+  await expect(tables.nth(1).getByRole('button', { name: '新建记录', exact: true })).toBeDisabled()
   expect(api.records).toHaveLength(2)
   expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/records`))).toHaveLength(1)
 })
@@ -1232,7 +1255,7 @@ test('record POST success during auth switch fences the original user and databa
     const auth = useAuthStore()
     auth.user = { id: 'database-user', email: 'database@example.com', displayName: 'Database user', createdAt: '2026-09-30T00:00:00.000Z', updatedAt: '2026-09-30T00:00:00.000Z' }
   })
-  await expect(table.getByRole('button', { name: '+ 新建记录' })).toBeDisabled()
+  await expect(table.getByRole('button', { name: '新建记录', exact: true })).toBeDisabled()
   expect(await page.evaluate(async () => {
     const { isProductDatabaseRecordCreationUncertain } = await import('/src/services/productDatabases.ts')
     return isProductDatabaseRecordCreationUncertain('database-user', 'database-workspace', 'database-root-id')
@@ -1540,7 +1563,7 @@ test('advanced properties configure relation and formula, keep linked views in s
   await formula.getByLabel('结果类型').selectOption('number')
   await screenshot(page, 'p85-formula-config-desktop')
   await formula.getByRole('button', { name: '保存属性' }).click()
-  await expect(table.getByRole('button', { name: /公式⌄/u })).toBeVisible()
+  await expect(table.getByRole('button', { name: '公式', exact: true })).toBeVisible()
   const formulaProperty = api.properties.find(item => item.type === 'formula')!
   expect(formulaProperty).toBeDefined()
   await table.getByRole('button', { name: '添加属性' }).click()
@@ -1664,7 +1687,7 @@ test('existing cross-database rollup allows a new formula and a second target ro
   await formula.getByRole('button', { name: '数字相加模板' }).click()
   await formula.getByLabel('结果类型').selectOption('number')
   await formula.getByRole('button', { name: '保存属性' }).click()
-  await expect(table.getByRole('button', { name: /公式⌄/u })).toBeVisible()
+  await expect(table.getByRole('button', { name: '公式', exact: true })).toBeVisible()
   await table.getByRole('button', { name: '添加属性' }).click()
   await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '关联' }).click()
   const relationPanel = table.getByRole('group', { name: '配置关联属性' })

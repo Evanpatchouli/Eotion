@@ -1,4 +1,18 @@
 # Handoff
+## 2026-10-11 P8.6 Database Final Acceptance（P8 Database COMPLETE）
+
+P8.1–P8.6 全部 PASS；P8 Database COMPLETE。基线 `ed87dfe2838279d84cac838720af252ee985e37c`。本轮只做 Final Acceptance 与真实 blocker hardening，无新增 Database 产品功能；聚焦提交包含本交接记录，当前 HEAD 即验收提交。
+
+Page.title 是 title Sort 的唯一来源。Page title 修改现在在事务中推进关联 Database version 并使用 CAS；第一页加载后若非 anchor Record title 使排序变化，旧 cursor 明确冲突并刷新，不继续沿变动序列制造 duplicate / missing。没有跨分页请求的全局 snapshot，旧 cursor 需要重读。
+
+Relation → Rollup → Formula 读取投影、Formula chain / Relation cycle、两个 linked Views 的共享数据与独立配置、target 删除 incoming link cleanup / derived refresh / reload、dependency rejection、retarget、自关联、stale CAS / reference fence / transaction rollback 均通过。派生值不落库。Workspace scope 与 owner permission 未改变；Formula 使用严格 AST 和 fail-safe evaluator。
+
+最终 bounds、Property/View/filter/sort、Relation/Rollup/Formula、Local-first/MCP、兼容性及 5k/10k Mongo profiler/explain 测量在 `docs/p8-database.md` 的 P8.6 章节。主要性能观察：默认首屏 41–50ms，next page 29–31ms；Filter 326/606ms，2-level Sort 614/1,213ms；derived 100 rows / 5,000 targets 589–593ms；10k cleanup overflow 在 263–292ms fail-closed，10,001 scanned / transaction rollback；被测 profiler 请求 usedDisk spills 为0。数据为本机隔离 Mongo 单次 fresh 观测，不是 SLA。
+
+验证：Domain 31、Contracts 16、SDK 21、API domain 12、HTTP 24、MCP 30、完整 Product 244、Storage 7+11、Visual 7、Desktop titlebar 2、5k/10k performance 1；root typecheck 与 Web/API/Desktop builds 全通过。独立只读 reviewer **0 merge blocker**；diff check 与 UTF-8 无 BOM 通过。旧 View 无 config、旧基础 Record 和旧基础 Property Database 可读取，不需要手工 migration。
+
+已接受限制：Database online-only / 离线 read-only，无 Database oplog、MCP tools 或跨客户端实时 push；无全局分页 snapshot；derived filter/sort 不支持；Rollup/Formula 读取时计算并受 100 rows / 5,000 target bound 限制；search/cleanup 超限 fail-closed；Formula 为轻量 JSON AST editor；date rollup min/max、People/Files、非 Table View、双向 Relation 不在 P8；390px 是 responsive Web，不代替 native 设备验收。到此停止，不开始下一阶段。
+
 ## 2026-10-10 P8.5 Advanced Properties 完成
 
 P8.1–P8.5 PASS，P8.5 current；基线5179c584b335484268e9b9be995d529ef5b2f5d6。仅本阶段，一个聚焦commit；P8.6 not started，到此停止。

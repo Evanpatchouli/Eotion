@@ -457,6 +457,23 @@ test('seeded mixed document keeps local-first identity, nesting, callout attrs a
     await page.keyboard.type('+offline')
     await expect.poll(() => pendingCount(page), { timeout: 10000 }).toBeGreaterThan(0)
 
+    // A pending operation can represent only the first edit in the debounce drain.
+    // Wait for every edit to reach LocalStore before using reload as a durability check.
+    await expect.poll(async () => {
+      const blocks = await localBlocks(page)
+      const byId = new Map(blocks.map((block) => [block.id, block]))
+      const intro = byId.get('m-intro')
+      const sibling = blocks.find((block) => block.type === 'paragraph' && blockContent(block) === 'Offline sibling')
+      const callout = byId.get('m-callout')
+      const outerTable = byId.get('m-table')
+      return Boolean(
+        intro && blockContent(intro) === 'Intro paragraph. offline'
+        && sibling?.parentBlockId === 'm-inner'
+        && callout && blockAttrs(callout).tone === 'info'
+        && outerTable && (blockContent(outerTable) as string[][])[0]?.[0] === 'H1+offline',
+      )
+    }, { timeout: 15000 }).toBe(true)
+
     // Local content is durable: reload keeps every edit and every identity.
     await page.reload()
     await expect(editor(page).getByText('Intro paragraph. offline', { exact: true })).toBeVisible()

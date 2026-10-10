@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
 import { createHash } from 'node:crypto'
-import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression } from '@eotion/domain'
+import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression } from '@eotion/domain'
 import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
@@ -55,10 +55,10 @@ export class DatabaseService {
   }
 
   async listViewsWindow(userId: string, workspaceId: string, databaseId: string, limit: number): Promise<DatabaseView[]> {
-    if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new BadRequestException('Limit must be an integer between 1 and 100')
+    if (!Number.isInteger(limit) || limit < 1 || limit > DATABASE_MAX_VIEWS) throw new BadRequestException(`Limit must be an integer between 1 and ${DATABASE_MAX_VIEWS}`)
     await this.requireDatabase(userId, workspaceId, databaseId, false)
     const rows = await this.views.listWindow(workspaceId, databaseId, limit)
-    if (rows.length > limit) throw new BadRequestException('Database exceeds the maximum of 100 views')
+    if (rows.length > limit) throw new BadRequestException(`Database exceeds the maximum of ${DATABASE_MAX_VIEWS} views`)
     return rows
   }
 
@@ -92,8 +92,8 @@ export class DatabaseService {
     const database = await this.requireDatabase(userId, workspaceId, databaseId, false, session)
     const view = await this.views.findInWorkspace(workspaceId, viewId, session)
     if (!view || view.databaseId !== database.id || view.type !== 'table') throw new NotFoundException('Database view not found')
-    const properties = await this.properties.listLimited(workspaceId, databaseId, 101, session)
-    if (properties.length > 100) throw new BadRequestException('Database exceeds the maximum of 100 properties')
+    const properties = await this.properties.listLimited(workspaceId, databaseId, DATABASE_MAX_PROPERTIES + 1, session)
+    if (properties.length > DATABASE_MAX_PROPERTIES) throw new BadRequestException(`Database exceeds the maximum of ${DATABASE_MAX_PROPERTIES} properties`)
     if (!session && properties.some(property => property.type === 'rollup' || property.type === 'formula')) {
       return this.transact(readSession => this.getTable(userId, workspaceId, databaseId, viewId, input, readSession))
     }
@@ -220,8 +220,8 @@ export class DatabaseService {
     const targetTitles = new Map<string, Map<string, string>>()
     if ([...targetIds.values()].reduce((count, ids) => count + ids.size, 0) > DATABASE_DERIVED_MAX_LINKED_RECORDS) throw new BadRequestException('Derived read exceeds the maximum of 5000 linked records')
     for (const [targetDatabaseId, ids] of targetIds) {
-      const props = targetDatabaseId === rows[0]!.databaseId ? properties : await this.properties.listLimited(workspaceId, targetDatabaseId, 101, session)
-      if (props.length > 100) throw new BadRequestException('Linked database exceeds the maximum of 100 properties')
+      const props = targetDatabaseId === rows[0]!.databaseId ? properties : await this.properties.listLimited(workspaceId, targetDatabaseId, DATABASE_MAX_PROPERTIES + 1, session)
+      if (props.length > DATABASE_MAX_PROPERTIES) throw new BadRequestException(`Linked database exceeds the maximum of ${DATABASE_MAX_PROPERTIES} properties`)
       targetProperties.set(targetDatabaseId, props)
       const found = await this.records.findManyInDatabase(workspaceId, targetDatabaseId, [...ids], session)
       if (found.length !== ids.size || found.some(record => !validateStoredDatabaseRecordValues(record.properties, props))) throw new ConflictException('Linked records are missing or invalid')
@@ -279,7 +279,7 @@ export class DatabaseService {
       const candidate = { id: input.id, name: input.name, type: input.type, ...(input.options === undefined ? {} : { options: input.options }), ...(input.config === undefined ? {} : { config: input.config }), workspaceId, databaseId, version: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
       if (!isValidDatabaseProperty(candidate)) throw new BadRequestException('Invalid database property')
       if (input.type === 'title' && (await this.properties.list(workspaceId, databaseId, session)).some(property => property.type === 'title')) throw new BadRequestException('Database already has a title property')
-      if ((await this.properties.listLimited(workspaceId, databaseId, 101, session)).length >= 100) throw new BadRequestException('Database exceeds the maximum of 100 properties')
+      if ((await this.properties.listLimited(workspaceId, databaseId, DATABASE_MAX_PROPERTIES + 1, session)).length >= DATABASE_MAX_PROPERTIES) throw new BadRequestException(`Database exceeds the maximum of ${DATABASE_MAX_PROPERTIES} properties`)
       await this.assertDependencies(workspaceId, databaseId, [...await this.properties.list(workspaceId, databaseId, session), candidate], session)
       const property = await this.properties.create({ id: input.id, workspaceId, databaseId, name: input.name, type: input.type, ...(input.options === undefined ? {} : { options: input.options }), ...(input.config === undefined ? {} : { config: input.config }), version: 1 }, session)
       return { database, property }
@@ -524,7 +524,7 @@ export class DatabaseService {
       const expectedVersion = input.expectedDatabaseVersion ?? database.version
       const bumped = await this.databases.compareAndBump(workspaceId, databaseId, expectedVersion, session)
       if (!bumped) throw new ConflictException('Database version is stale')
-      if ((await this.views.listWindow(workspaceId, databaseId, 101, session)).length >= 100) throw new ConflictException('Database already has the maximum of 100 views')
+      if ((await this.views.listWindow(workspaceId, databaseId, DATABASE_MAX_VIEWS + 1, session)).length >= DATABASE_MAX_VIEWS) throw new ConflictException(`Database already has the maximum of ${DATABASE_MAX_VIEWS} views`)
       const properties = await this.properties.list(workspaceId, databaseId, session)
       const config = input.config ?? DEFAULT_DATABASE_VIEW_CONFIG
       if (!validateDatabaseViewConfig(config, properties)) throw new BadRequestException('Invalid database view configuration for this database')
@@ -581,8 +581,8 @@ export class DatabaseService {
       if (targetId === databaseId) continue
       const database = await this.databases.findInWorkspace(workspaceId, targetId, session)
       if (!database) throw new BadRequestException('Relation target database must belong to the workspace')
-      const rows = await this.properties.listLimited(workspaceId, targetId, 101, session)
-      if (rows.length > 100) throw new ConflictException('Relation target exceeds the maximum of 100 properties')
+      const rows = await this.properties.listLimited(workspaceId, targetId, DATABASE_MAX_PROPERTIES + 1, session)
+      if (rows.length > DATABASE_MAX_PROPERTIES) throw new ConflictException(`Relation target exceeds the maximum of ${DATABASE_MAX_PROPERTIES} properties`)
       targetProperties.set(targetId, rows)
     }
     if (!validateDatabasePropertyDependencies(properties, targetId => targetId === databaseId ? properties : targetProperties.get(targetId))) {
@@ -637,7 +637,7 @@ export class DatabaseService {
   }
 
   private validateTableWindow(input: WindowInput): void {
-    if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > 100) throw new BadRequestException('Limit must be an integer between 1 and 100')
+    if (!Number.isInteger(input.limit) || input.limit < 1 || input.limit > DATABASE_MAX_TABLE_ROWS) throw new BadRequestException(`Limit must be an integer between 1 and ${DATABASE_MAX_TABLE_ROWS}`)
     if (input.cursor !== undefined && (input.cursor.length < 1 || input.cursor.length > 16_384 || input.cursor.trim() !== input.cursor)) throw new BadRequestException('Invalid table cursor')
   }
 

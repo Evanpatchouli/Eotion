@@ -6,13 +6,13 @@ import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { getConnectionToken, getModelToken, MongooseModule } from '@nestjs/mongoose'
 import type { Connection, Model } from 'mongoose'
-import type { DatabaseFilter } from '@eotion/domain'
+import { DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter } from '@eotion/domain'
 import { ServerDomainModule } from './server-domain.module'
 import { DatabaseEntity } from './schemas/database.schema'
 import { DatabasePropertyEntity } from './schemas/database-property.schema'
 import { DatabaseRecordEntity } from './schemas/database-record.schema'
 import { DatabaseViewEntity } from './schemas/database-view.schema'
-import { DatabaseRecordRepository, DatabaseViewRepository } from './repositories/database.repository'
+import { DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from './repositories/database.repository'
 import { BlockService } from './services/block.service'
 import { DatabaseService } from './services/database.service'
 import { supportsTransactions } from './services/mongo-transactions'
@@ -263,7 +263,7 @@ test('database service keeps references scoped and writes initial data atomicall
   const titlePageWindow = await databases.getTable(owner.id, 'workspace-a', 'database-a', pageSortView.id, { limit: 1 })
   assert.equal(titlePageWindow.records[0]?.id, 'row-z')
   await pages.update(owner.id, 'workspace-a', 'page-new-row', { title: 'Renamed via Page API' })
-  await assert.rejects(databases.getTable(owner.id, 'workspace-a', 'database-a', pageSortView.id, { limit: 1, cursor: titlePageWindow.nextCursor! }), /anchor changed/)
+  await assert.rejects(databases.getTable(owner.id, 'workspace-a', 'database-a', pageSortView.id, { limit: 1, cursor: titlePageWindow.nextCursor! }), /Database or view changed/)
   assert.deepEqual(await applyViewFilter({ propertyId: 'database-a-title', operator: 'contains', value: 'Page API' }), ['row-z'])
   const tieRecord = await databases.createRecordPage(owner.id, 'workspace-a', 'database-a', { id: 'row-tie', pageId: 'page-tie', title: 'Z title', orderKey: 'e' })
   const tieDb = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
@@ -390,6 +390,177 @@ test('database service keeps references scoped and writes initial data atomicall
   assert.equal(await pages.delete(owner.id, 'workspace-a', 'page-a'), true)
   assert.ok(await databases.find(owner.id, 'workspace-a', 'database-a'))
   assert.equal((await databases.listProperties(owner.id, 'workspace-a', 'database-a')).length, 6)
+})
+
+test('record Page title changes invalidate all linked table cursors and roll back with the Database version', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  const databases = app.get(DatabaseService)
+  const pages = app.get(PageService)
+  const auth = app.get(AuthService)
+  const workspaces = app.get(WorkspaceService)
+  await Promise.all([DatabaseEntity, DatabasePropertyEntity, DatabaseRecordEntity, DatabaseViewEntity].map(entity => app.get<Model<unknown>>(getModelToken(entity.name)).init()))
+
+  const owner = await auth.register(`database-title-cursor-${randomUUID()}@example.com`, 'correct horse battery staple')
+  await workspaces.create(owner.id, { id: 'title-cursor-workspace', name: 'Title cursor' })
+  await pages.create(owner.id, 'title-cursor-workspace', { id: 'title-cursor-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  await databases.createInPage(owner.id, 'title-cursor-workspace', 'title-cursor-home', { id: 'title-cursor-database', name: 'Titles', titlePropertyId: 'title-cursor-title', viewId: 'title-cursor-ascending', blockId: 'title-cursor-block', orderKey: 'a', parentBlockId: null })
+
+  for (const [id, title] of [['a', 'Alpha'], ['b', 'Beta'], ['c', 'Charlie'], ['d', 'Delta']] as const) {
+    await databases.createRecordPage(owner.id, 'title-cursor-workspace', 'title-cursor-database', { id: `title-row-${id}`, pageId: `title-page-${id}`, title, orderKey: id })
+  }
+
+  let database = (await databases.find(owner.id, 'title-cursor-workspace', 'title-cursor-database'))!
+  let ascending = (await databases.listViews(owner.id, 'title-cursor-workspace', 'title-cursor-database'))[0]!
+  await databases.updateView(owner.id, 'title-cursor-workspace', database.id, ascending.id, { config: { filters: [], sorts: [{ propertyId: 'title-cursor-title', direction: 'asc' }], visibleProperties: null, propertyOrder: null }, expectedDatabaseVersion: database.version, expectedViewVersion: ascending.version })
+  database = (await databases.find(owner.id, 'title-cursor-workspace', 'title-cursor-database'))!
+  const descendingCreated = await databases.createView(owner.id, 'title-cursor-workspace', database.id, { id: 'title-cursor-descending', name: 'Descending', type: 'table' })
+  await databases.updateView(owner.id, 'title-cursor-workspace', database.id, descendingCreated.view.id, { config: { filters: [], sorts: [{ propertyId: 'title-cursor-title', direction: 'desc' }], visibleProperties: null, propertyOrder: null }, expectedDatabaseVersion: descendingCreated.database.version, expectedViewVersion: descendingCreated.view.version })
+
+  const ascendingFirst = await databases.getTable(owner.id, 'title-cursor-workspace', database.id, ascending.id, { limit: 2 })
+  const descendingFirst = await databases.getTable(owner.id, 'title-cursor-workspace', database.id, 'title-cursor-descending', { limit: 2 })
+  assert.deepEqual(ascendingFirst.records.map(record => record.id), ['title-row-a', 'title-row-b'])
+  assert.ok(ascendingFirst.nextCursor)
+  assert.ok(descendingFirst.nextCursor)
+
+  const beforeRename = (await databases.find(owner.id, 'title-cursor-workspace', database.id))!
+  await pages.update(owner.id, 'title-cursor-workspace', 'title-page-a', { title: 'Zulu' })
+  const afterRename = (await databases.find(owner.id, 'title-cursor-workspace', database.id))!
+  assert.equal(afterRename.version, beforeRename.version + 1)
+  await assert.rejects(databases.getTable(owner.id, 'title-cursor-workspace', database.id, ascending.id, { limit: 2, cursor: ascendingFirst.nextCursor! }), /Database or view changed/)
+  await assert.rejects(databases.getTable(owner.id, 'title-cursor-workspace', database.id, 'title-cursor-descending', { limit: 2, cursor: descendingFirst.nextCursor! }), /Database or view changed/)
+
+  const restartedFirst = await databases.getTable(owner.id, 'title-cursor-workspace', database.id, ascending.id, { limit: 2 })
+  const restartedSecond = await databases.getTable(owner.id, 'title-cursor-workspace', database.id, ascending.id, { limit: 2, cursor: restartedFirst.nextCursor! })
+  const restartedIds = [...restartedFirst.records, ...restartedSecond.records].map(record => record.id)
+  assert.deepEqual(restartedIds, ['title-row-b', 'title-row-c', 'title-row-d', 'title-row-a'])
+  assert.equal(new Set(restartedIds).size, 4)
+
+  const documentPage = (await pages.find(owner.id, 'title-cursor-workspace', 'title-page-c'))!
+  database = (await databases.find(owner.id, 'title-cursor-workspace', database.id))!
+  await pages.updateDocumentVersion(owner.id, 'title-cursor-workspace', documentPage.id, documentPage.updatedAt, 'Charlie via document mutation')
+  const afterDocumentRename = (await databases.find(owner.id, 'title-cursor-workspace', database.id))!
+  assert.equal(afterDocumentRename.version, database.version + 1)
+
+  const snapshotPage = (await pages.find(owner.id, 'title-cursor-workspace', 'title-page-d'))!
+  database = (await databases.find(owner.id, 'title-cursor-workspace', database.id))!
+  const session = await connection.startSession()
+  try {
+    await session.withTransaction(async () => {
+      await pages.upsertSnapshot(owner.id, 'title-cursor-workspace', { id: snapshotPage.id, parentPageId: snapshotPage.parentPageId, title: 'Delta via sync snapshot', icon: null, orderKey: snapshotPage.orderKey }, session)
+    })
+  } finally {
+    await session.endSession()
+  }
+  const afterSnapshotRename = (await databases.find(owner.id, 'title-cursor-workspace', database.id))!
+  assert.equal(afterSnapshotRename.version, database.version + 1)
+
+  const rollbackPage = (await pages.find(owner.id, 'title-cursor-workspace', 'title-page-b'))!
+  const versionBeforeRollback = afterSnapshotRename.version
+  const databaseRepository = app.get(DatabaseRepository)
+  const compareAndBump = databaseRepository.compareAndBump.bind(databaseRepository)
+  databaseRepository.compareAndBump = async () => null
+  try {
+    await assert.rejects(pages.update(owner.id, 'title-cursor-workspace', rollbackPage.id, { title: 'Must roll back' }), /rolled back/)
+  } finally {
+    databaseRepository.compareAndBump = compareAndBump
+  }
+  assert.equal((await pages.find(owner.id, 'title-cursor-workspace', rollbackPage.id))?.title, rollbackPage.title)
+  assert.equal((await databases.find(owner.id, 'title-cursor-workspace', database.id))?.version, versionBeforeRollback)
+})
+
+test('legacy Database view config and base-only Records load without migration', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  const databases = app.get(DatabaseService)
+  const pages = app.get(PageService)
+  const auth = app.get(AuthService)
+  const workspaces = app.get(WorkspaceService)
+  const records = app.get<Model<unknown>>(getModelToken(DatabaseRecordEntity.name))
+  const views = app.get<Model<unknown>>(getModelToken(DatabaseViewEntity.name))
+  await Promise.all([DatabaseEntity, DatabasePropertyEntity, DatabaseRecordEntity, DatabaseViewEntity].map(entity => app.get<Model<unknown>>(getModelToken(entity.name)).init()))
+
+  const owner = await auth.register(`database-legacy-${randomUUID()}@example.com`, 'correct horse battery staple')
+  await workspaces.create(owner.id, { id: 'legacy-database-workspace', name: 'Legacy Database' })
+  await pages.create(owner.id, 'legacy-database-workspace', { id: 'legacy-database-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  await databases.createInPage(owner.id, 'legacy-database-workspace', 'legacy-database-home', { id: 'legacy-database', name: 'Legacy', titlePropertyId: 'legacy-title', viewId: 'legacy-view', blockId: 'legacy-block', orderKey: 'a', parentBlockId: null })
+  const text = await databases.createProperty(owner.id, 'legacy-database-workspace', 'legacy-database', { id: 'legacy-text', name: 'Notes', type: 'text', expectedDatabaseVersion: 1 })
+  const row = await databases.createRecordPage(owner.id, 'legacy-database-workspace', 'legacy-database', { id: 'legacy-row', pageId: 'legacy-page', title: 'Existing base row', orderKey: 'b' })
+  const currentDatabase = (await databases.find(owner.id, 'legacy-database-workspace', 'legacy-database'))!
+  await databases.updateRecordCell(owner.id, 'legacy-database-workspace', 'legacy-database', row.record.id, text.property.id, { value: 'Kept without advanced fields', expectedDatabaseVersion: currentDatabase.version, expectedRecordVersion: row.record.version })
+  await views.collection.updateOne({ id: 'legacy-view' }, { $unset: { config: '' } })
+  const storedRecord = await records.collection.findOne({ id: 'legacy-row' })
+  assert.deepEqual(storedRecord?.properties, { 'legacy-text': 'Kept without advanced fields' })
+
+  const table = await databases.getTable(owner.id, 'legacy-database-workspace', 'legacy-database', 'legacy-view', { limit: 100 })
+  assert.deepEqual(table.view.config, DEFAULT_DATABASE_VIEW_CONFIG)
+  assert.equal(table.records[0]?.id, 'legacy-row')
+  assert.equal(table.records[0]?.properties['legacy-title'], 'Existing base row')
+  assert.equal(table.records[0]?.properties['legacy-text'], 'Kept without advanced fields')
+  assert.equal((await views.findOne({ id: 'legacy-view' }).lean() as { config?: unknown } | null)?.config, undefined)
+})
+
+test('Database property and view service caps accept 100 and roll back limit plus one', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  const databases = app.get(DatabaseService)
+  const pages = app.get(PageService)
+  const auth = app.get(AuthService)
+  const workspaces = app.get(WorkspaceService)
+  const propertyModel = app.get<Model<unknown>>(getModelToken(DatabasePropertyEntity.name))
+  const viewModel = app.get<Model<unknown>>(getModelToken(DatabaseViewEntity.name))
+  await Promise.all([DatabaseEntity, DatabasePropertyEntity, DatabaseRecordEntity, DatabaseViewEntity].map(entity => app.get<Model<unknown>>(getModelToken(entity.name)).init()))
+
+  const owner = await auth.register(`database-cap-${randomUUID()}@example.com`, 'correct horse battery staple')
+  const workspaceId = `database-cap-ws-${randomUUID()}`
+  const databaseId = `database-cap-${randomUUID()}`
+  const homePageId = `database-cap-home-${randomUUID()}`
+  await workspaces.create(owner.id, { id: workspaceId, name: 'Database bounds' })
+  await pages.create(owner.id, workspaceId, { id: homePageId, parentPageId: null, title: 'Home', orderKey: 'a' })
+  const created = await databases.createInPage(owner.id, workspaceId, homePageId, {
+    id: databaseId, name: 'Bounded', titlePropertyId: `title-${randomUUID()}`, viewId: `view-${randomUUID()}`, blockId: `block-${randomUUID()}`, orderKey: 'b', parentBlockId: null,
+  })
+  const timestamp = new Date()
+  await propertyModel.insertMany(Array.from({ length: DATABASE_MAX_PROPERTIES - 2 }, (_, index) => ({
+    id: `seed-property-${index}-${randomUUID()}`, workspaceId, databaseId, name: `Seed ${index}`, type: 'text', version: 1, createdAt: timestamp, updatedAt: timestamp,
+  })))
+  const beforePropertyLimit = (await databases.find(owner.id, workspaceId, databaseId))!
+  assert.equal((await databases.listProperties(owner.id, workspaceId, databaseId)).length, DATABASE_MAX_PROPERTIES - 1)
+  const lastProperty = await databases.createProperty(owner.id, workspaceId, databaseId, {
+    id: `last-property-${randomUUID()}`, name: 'Property 100', type: 'text', expectedDatabaseVersion: beforePropertyLimit.version,
+  })
+  assert.equal((await databases.listProperties(owner.id, workspaceId, databaseId)).length, DATABASE_MAX_PROPERTIES)
+  const tableAtPropertyLimit = await databases.getTable(owner.id, workspaceId, databaseId, created.view.id, { limit: 10 })
+  assert.equal(tableAtPropertyLimit.properties.length, DATABASE_MAX_PROPERTIES)
+  const beforePropertyOverflow = (await databases.find(owner.id, workspaceId, databaseId))!
+  await assert.rejects(databases.createProperty(owner.id, workspaceId, databaseId, {
+    id: `overflow-property-${randomUUID()}`, name: 'Property 101', type: 'text', expectedDatabaseVersion: beforePropertyOverflow.version,
+  }), /maximum of 100 properties/)
+  assert.equal((await databases.find(owner.id, workspaceId, databaseId))?.version, beforePropertyOverflow.version, 'property limit rejection rolls back the Database version bump')
+  const overflowPropertyId = `seed-property-overflow-${randomUUID()}`
+  await propertyModel.insertMany([{ id: overflowPropertyId, workspaceId, databaseId, name: 'Corrupt overflow', type: 'text', version: 1, createdAt: timestamp, updatedAt: timestamp }])
+  await assert.rejects(databases.getTable(owner.id, workspaceId, databaseId, created.view.id, { limit: 10 }), /maximum of 100 properties/)
+  await propertyModel.deleteOne({ id: overflowPropertyId })
+
+  await viewModel.insertMany(Array.from({ length: DATABASE_MAX_VIEWS - 2 }, (_, index) => ({
+    id: `seed-view-${index}-${randomUUID()}`, workspaceId, databaseId, name: `Seed ${index}`, type: 'table', config: DEFAULT_DATABASE_VIEW_CONFIG, version: 1, referenceFence: 0, createdAt: timestamp, updatedAt: timestamp,
+  })))
+  assert.equal((await databases.listViewsWindow(owner.id, workspaceId, databaseId, DATABASE_MAX_VIEWS)).length, DATABASE_MAX_VIEWS - 1)
+  const beforeLastView = (await databases.find(owner.id, workspaceId, databaseId))!
+  await databases.createView(owner.id, workspaceId, databaseId, { id: `last-view-${randomUUID()}`, name: 'View 100', type: 'table', expectedDatabaseVersion: beforeLastView.version })
+  assert.equal((await databases.listViewsWindow(owner.id, workspaceId, databaseId, DATABASE_MAX_VIEWS)).length, DATABASE_MAX_VIEWS)
+  const beforeViewOverflow = (await databases.find(owner.id, workspaceId, databaseId))!
+  await assert.rejects(databases.createView(owner.id, workspaceId, databaseId, {
+    id: `overflow-view-${randomUUID()}`, name: 'View 101', type: 'table', expectedDatabaseVersion: beforeViewOverflow.version,
+  }), /maximum of 100 views/)
+  assert.equal((await databases.find(owner.id, workspaceId, databaseId))?.version, beforeViewOverflow.version, 'view limit rejection rolls back the Database version bump')
+  await viewModel.insertMany([{ id: `seed-view-overflow-${randomUUID()}`, workspaceId, databaseId, name: 'Corrupt overflow', type: 'table', config: DEFAULT_DATABASE_VIEW_CONFIG, version: 1, referenceFence: 0, createdAt: timestamp, updatedAt: timestamp }])
+  await assert.rejects(databases.listViewsWindow(owner.id, workspaceId, databaseId, DATABASE_MAX_VIEWS), /maximum of 100 views/)
+  assert.equal(lastProperty.property.type, 'text')
+  assert.ok(await databases.find(owner.id, workspaceId, databaseId))
 })
 
 test('default table windows read only limit plus one records and Pages', async t => {

@@ -93,6 +93,9 @@ export class DatabaseRecordRepository {
     if (ids.length === 0) return []
     return (await this.model.find({ workspaceId, databaseId, id: { $in: [...new Set(ids)] } }).session(session ?? null).exec()).map(doc => this.toRecord(doc))
   }
+  async findForPage(workspaceId: string, pageId: string, session?: ClientSession): Promise<DatabaseRecord[]> {
+    return (await this.model.find({ workspaceId, pageId }).sort({ id: 1 }).limit(2).session(session ?? null).exec()).map(doc => this.toRecord(doc))
+  }
   async delete(workspaceId: string, databaseId: string, id: string, expectedVersion: number, session: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndDelete({ workspaceId, databaseId, id, version: expectedVersion }, { session }).exec())
   }

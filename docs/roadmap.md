@@ -156,7 +156,11 @@ P8.2 Inline Database + Table View：✅ **PASS（2026-10-09）**。Slash 原子�
 
 P8.3 Properties + Record Editing：✅ **PASS（2026-10-09）**。六种基础属性、schema 管理、在线行内编辑、Page.title 唯一标题来源、Record/Page 原子写入与版本条件更新。完整产品回归 237/237、visual 7/7、领域/API/MCP/storage、typecheck/build 与独立 review 均通过。验收证据与已知限制见 [P8 Database](p8-database.md)。
 
-P8.4 Views + Filter + Sort：✅ **PASS / current（2026-10-09）**。同一 Database 多 Table View、独立筛选/排序/列配置、服务端有界查询、安全生命周期与事务清理已交付。完整产品回归 239/239、visual 7/7、领域/API/MCP/storage、typecheck/build 与独立 review 0 blocker 均通过。P8.5–P8.6 not started；语义、验收和规模限制见 [P8 Database](p8-database.md)。
+P8.4 Views + Filter + Sort：✅ **PASS（2026-10-09）**。同一 Database 多 Table View、独立筛选/排序/列配置、服务端有界查询、安全生命周期与事务清理已交付，阶段证据见 [P8 Database](p8-database.md)。
+
+P8.5 Advanced Properties：✅ **PASS（2026-10-10）**。单向 Relation、只读 Rollup、受限 JSON Formula、dependency validation 与 bounded cleanup 已交付；阶段行为矩阵和历史验收见 [P8 Database](p8-database.md)。
+
+P8.6 Database Final Acceptance：✅ **PASS（2026-10-11）**。P8.1–P8.5 组合验收通过；Page.title 分页游标已通过事务 version fence fail-closed；5k/10k Mongo profiler/explain、scope/security、删除回滚、legacy compatibility、UI/Local-first/MCP、fresh 完整回归与独立 review 0 blocker 均完成。**P8 Database COMPLETE**。规模测量和 accepted limitations 见 [P8 Database](p8-database.md)。
 
 ## 后续 - 异步基础设施
 

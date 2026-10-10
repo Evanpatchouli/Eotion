@@ -1,11 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
 import type { ClientSession, Connection } from 'mongoose'
 import type { PageRecord } from '../types'
 
 import { PagePatch, PageRepository } from '../repositories/page.repository'
 import { BlockRepository } from '../repositories/block.repository'
-import { DatabaseRecordRepository } from '../repositories/database.repository'
+import { DatabaseRecordRepository, DatabaseRepository } from '../repositories/database.repository'
 import { WorkspacePermissionService } from './workspace-permission.service'
 import { supportsTransactions } from './mongo-transactions'
 
@@ -13,7 +13,7 @@ type PageCreate = Pick<PageRecord, 'id' | 'parentPageId' | 'title' | 'orderKey'>
 
 @Injectable()
 export class PageService {
-  constructor(private readonly pages: PageRepository, private readonly permissions: WorkspacePermissionService, private readonly blocks: BlockRepository, private readonly records: DatabaseRecordRepository, @InjectConnection() private readonly connection: Connection) {}
+  constructor(private readonly pages: PageRepository, private readonly permissions: WorkspacePermissionService, private readonly blocks: BlockRepository, private readonly records: DatabaseRecordRepository, private readonly databases: DatabaseRepository, @InjectConnection() private readonly connection: Connection) {}
 
   async create(userId: string, workspaceId: string, input: PageCreate, session?: ClientSession): Promise<PageRecord> {
     await this.permissions.assertCanWrite(userId, workspaceId)
@@ -75,12 +75,16 @@ export class PageService {
   async update(userId: string, workspaceId: string, id: string, patch: PagePatch, session?: ClientSession): Promise<PageRecord | null> {
     await this.permissions.assertCanWrite(userId, workspaceId)
     if ('parentPageId' in patch) throw new BadRequestException('Moving a page is not supported here; use the move endpoint')
+    if (patch.title !== undefined) {
+      return this.updateTitleWithDatabaseFence(workspaceId, id, session, (activeSession, expectedUpdatedAt) => this.pages.updateInWorkspace(workspaceId, id, patch, activeSession, expectedUpdatedAt))
+    }
     return this.pages.updateInWorkspace(workspaceId, id, patch, session)
   }
 
   async updateDocumentVersion(userId: string, workspaceId: string, pageId: string, expectedUpdatedAt: string, title?: string, session?: ClientSession): Promise<PageRecord> {
     await this.permissions.assertCanWrite(userId, workspaceId)
-    const updated = await this.pages.compareAndUpdate(workspaceId, pageId, expectedUpdatedAt, title === undefined ? {} : { title }, session)
+    const update = (activeSession?: ClientSession) => this.pages.compareAndUpdate(workspaceId, pageId, expectedUpdatedAt, title === undefined ? {} : { title }, activeSession)
+    const updated = title === undefined ? await update(session) : await this.updateTitleWithDatabaseFence(workspaceId, pageId, session, update)
     if (!updated) throw new ConflictException('Page has changed since it was read. Read the page again before updating.')
     return updated
   }
@@ -110,7 +114,7 @@ export class PageService {
     const existing = await this.pages.findInWorkspace(workspaceId, input.id, session)
     if (existing) {
       if (existing.parentPageId !== input.parentPageId) throw new BadRequestException('Move the page through the move endpoint to change its parent')
-      await this.pages.updateSnapshot(workspaceId, input.id, input, session)
+      await this.updateTitleWithDatabaseFence(workspaceId, input.id, session, activeSession => this.pages.updateSnapshot(workspaceId, input.id, input, activeSession!))
       return
     }
     await this.create(userId, workspaceId, { ...input, ...(input.icon === null ? { icon: undefined } : { icon: input.icon }) }, session)
@@ -173,5 +177,63 @@ export class PageService {
       }
     }
     return this.pages.create(workspaceId, input, session)
+  }
+
+  /**
+   * Page.title is the Database title sort key. When a Record Page title changes,
+   * advance its Database version in the same transaction so existing table
+   * cursors fail closed instead of continuing against a reordered result set.
+   */
+  private async updateTitleWithDatabaseFence<T extends PageRecord | null>(
+    workspaceId: string,
+    pageId: string,
+    session: ClientSession | undefined,
+    update: (session?: ClientSession, expectedUpdatedAt?: string) => Promise<T>,
+  ): Promise<T> {
+    const apply = async (activeSession?: ClientSession): Promise<T> => {
+      const before = await this.pages.findInWorkspace(workspaceId, pageId, activeSession)
+      const linkedRecords = await this.records.findForPage(workspaceId, pageId, activeSession)
+      if (linkedRecords.length > 1) throw new ConflictException('Page is linked to multiple Database records')
+
+      const updated = await update(activeSession)
+      if (!updated || !before || before.title === updated.title || linkedRecords.length === 0) return updated
+
+      const database = await this.databases.findInWorkspace(workspaceId, linkedRecords[0]!.databaseId, activeSession)
+      if (!database) throw new ConflictException('Record Database is missing; Page title update was rolled back')
+      if (!await this.databases.compareAndBump(workspaceId, database.id, database.version, activeSession!)) {
+        throw new ConflictException('Database version is stale; Page title update was rolled back')
+      }
+      return updated
+    }
+
+    if (session) return apply(session)
+
+    // Keep ordinary Page renames on their existing non-transactional path.
+    // Read the Page before its Record link, then condition the unlinked update
+    // on updatedAt: creating a Record touches that Page in its transaction, so
+    // a concurrent link either becomes visible or makes this CAS fail.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const before = await this.pages.findInWorkspace(workspaceId, pageId)
+      const linkedRecords = await this.records.findForPage(workspaceId, pageId)
+      if (linkedRecords.length > 1) throw new ConflictException('Page is linked to multiple Database records')
+      if (linkedRecords.length > 0) {
+        if (!(await supportsTransactions(this.connection))) {
+          throw new ServiceUnavailableException('Record Page title updates require MongoDB replica set transactions')
+        }
+        const ownSession = await this.connection.startSession()
+        try {
+          let result!: T
+          await ownSession.withTransaction(async () => { result = await apply(ownSession) }, { readConcern: { level: 'snapshot' } })
+          return result
+        } finally {
+          await ownSession.endSession()
+        }
+      }
+      if (!before) return update()
+      const updated = await update(undefined, before.updatedAt)
+      if (updated) return updated
+    }
+
+    throw new ConflictException('Page changed while updating its title; read it again before retrying')
   }
 }

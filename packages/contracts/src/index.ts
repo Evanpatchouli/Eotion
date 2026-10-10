@@ -6,6 +6,9 @@ import {
   isValidDatabasePropertyDefinition,
   isValidFormulaExpression,
   DATABASE_RELATION_MAX_LINKS,
+  DATABASE_MAX_PROPERTIES,
+  DATABASE_MAX_VIEWS,
+  DATABASE_MAX_TABLE_ROWS,
   isValidDatabaseRecord,
   isValidDatabaseView,
   isValidDatabaseViewConfigShape,
@@ -124,9 +127,9 @@ const databaseWindowQuerySchema = z.object({
   cursor: databaseStableIdSchema.optional(),
 }).strict()
 export const DatabaseListQuerySchema = databaseWindowQuerySchema
-export const DatabaseViewListQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(100).default(100) }).strict()
+export const DatabaseViewListQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(DATABASE_MAX_VIEWS).default(DATABASE_MAX_VIEWS) }).strict()
 export const DatabaseTableQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(DATABASE_MAX_TABLE_ROWS).default(50),
   cursor: z.string().min(1).max(16_384).refine(value => value.trim() === value).optional(),
 }).strict()
 export type DatabaseListQuery = z.infer<typeof DatabaseListQuerySchema>
@@ -168,12 +171,12 @@ function isValidDatabaseTableResponse(value: unknown): value is DatabaseTableRes
   const database = table.database as Database
   const view = table.view as DatabaseView
   if (!isValidDatabase(database) || !isValidDatabaseView(view) || view.databaseId !== database.id || view.workspaceId !== database.workspaceId) return false
-  if (!Array.isArray(table.properties) || table.properties.length > 100 || !table.properties.every(isValidDatabaseProperty)) return false
+  if (!Array.isArray(table.properties) || table.properties.length > DATABASE_MAX_PROPERTIES || !table.properties.every(isValidDatabaseProperty)) return false
   const properties = table.properties as DatabaseProperty[]
   if (!properties.every(property => property.databaseId === database.id && property.workspaceId === database.workspaceId)) return false
   if (properties.filter(property => property.type === 'title').length !== 1 || new Set(properties.map(property => property.id)).size !== properties.length) return false
   if (!validateDatabaseViewConfig(view.config, properties)) return false
-  if (!Array.isArray(table.records) || table.records.length > 100 || !table.records.every(record => isValidDatabaseTableRecord(record, properties))) return false
+  if (!Array.isArray(table.records) || table.records.length > DATABASE_MAX_TABLE_ROWS || !table.records.every(record => isValidDatabaseTableRecord(record, properties))) return false
   if (!table.records.every(record => (record as DatabaseTableRecord).databaseId === database.id && (record as DatabaseTableRecord).workspaceId === database.workspaceId)) return false
   return table.nextCursor === null || (typeof table.nextCursor === 'string' && table.nextCursor.length > 0 && table.nextCursor.length <= 16_384 && table.nextCursor.trim() === table.nextCursor)
 }

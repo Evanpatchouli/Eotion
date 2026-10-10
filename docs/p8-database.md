@@ -1,6 +1,6 @@
 # P8 Database
 
-P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1 Database Domain Foundation 于 2026-10-08 验收 PASS；P8.2 Inline Database + Table View、P8.3 Properties + Record Editing 与 P8.4 Views + Filter + Sort 于 2026-10-09 验收 PASS。P8.5 Advanced Properties 于 2026-10-10 验收 PASS / current；本轮不进入 P8.6。
+P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1–P8.5 分别完成 Domain、Table、Properties、Views 与 Advanced Properties；P8.6 Database Final Acceptance 于 2026-10-11 完成，P8.1–P8.6 全部 PASS，P8 Database COMPLETE。最终组合验收、规模测量与已接受限制见本页末尾。
 
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
@@ -8,8 +8,8 @@ P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1 Databas
 | P8.2 | Inline Database + Table View | PASS |
 | P8.3 | Properties + Record Editing | PASS |
 | P8.4 | Views / Filter / Sort | PASS |
-| P8.5 | Advanced Properties | PASS / current |
-| P8.6 | Database Acceptance | not started |
+| P8.5 | Advanced Properties | PASS |
+| P8.6 | Database Final Acceptance | PASS |
 
 ## 核心模型
 
@@ -37,7 +37,7 @@ Property 支持 title、text、number、checkbox、select、date，以及 P8.5 �
 
 ## Record 与 Page
 
-Record 的结构化值保存在 `properties`，正文保存在 `pageId` 指向的既有 Eotion Page 中。Page 必须已存在且属于同一个 Workspace，不再造正文 Block 系统。正文编辑继续使用现有 Page/Block 能力。Record 创建同时创建对应 Page，事务失败全部回滚；P8.3 新建流程先输入非空标题，再一致创建两者。有关联 Record 的 Page 禁止删除，避免产生失效正文引用；解除关联/Record 删除业务操作留到后续阶段。
+Record 的结构化值保存在 `properties`，正文保存在 `pageId` 指向的既有 Eotion Page 中。Page 必须已存在且属于同一个 Workspace，不再造正文 Block 系统。正文编辑继续使用现有 Page/Block 能力。Record 创建同时创建对应 Page，事务失败全部回滚；P8.3 新建流程先输入非空标题，再一致创建两者。有关联 Record 的 Page 禁止直接删除，避免产生失效正文引用；Record 删除会保留对应 Page，并在事务中清理 incoming Relation。P8 没有 Record 删除 UI。
 
 ## 权限、生命周期与一致性
 
@@ -357,4 +357,104 @@ Page/Block 继续 Local-first；Database 及高级属性仍 online-only，离线
 
 Desktop node 单测 12/17：4 项既有 SQLite legacy block props fixture 不符合当前 validator，1 项 Windows 临时目录清理 EPERM；相关实现、测试、Block validator 与本轮基线 HEAD 的文件 hash 一致，EPERM 单项隔离仍复现，没有修无关基线。产品早期两项附件夹具各一次超时，均隔离 3/3 通过，相关附件源码/测试与 HEAD 一致，未修改断言；一次源码热更新期间的整轮回归出现服务模块状态分离，4 项既有创建防重复测试失败，采用无源码变化的全新 Vite 完整复跑确认，不将它们当作基线忽略。
 
-P8.1–P8.5 PASS，P8.5 为 current；P8.6 not started。日志保存系统 Temp 的 p85-validation，人工截图保存本任务仓库外的 p85-ui 目录。本轮到此停止。
+P8.1–P8.6 PASS，P8 Database COMPLETE。P8.5 阶段记录的日志与截图仍为历史验收证据；最终组合验收见下文。
+
+## P8.6 Database Final Acceptance（2026-10-11）
+
+本阶段只做组合验收与 blocker hardening，没有新增 Database 产品功能。基线为 `ed87dfe2838279d84cac838720af252ee985e37c`。最终提交 hash 记录在 `.agents/handoff.md`。
+
+### 最终行为矩阵
+
+| 区域 | 最终契约 |
+| --- | --- |
+| Property | title、text、number、checkbox、select、date、relation、rollup、formula。title 唯一持久来源为关联 `Page.title`；Rollup / Formula 仅持久化配置，结果读取时计算，不能写入 Record。 |
+| View | 仅 Table。每个 View 独立持有 Filter、Sort、可见列和列顺序；多个 Linked View 共享同一 Database 数据，但不共享配置。 |
+| Filter / Sort | 基础六类 Property 按服务端 filter → sort → paginate；AND Filter，最多 20 条，最多 10 级 Sort；Record ID 为稳定 tie-break。Relation 只支持 empty / non-empty，不支持 Sort；Rollup / Formula 不支持 Filter / Sort，非法配置 fail-closed。 |
+| Relation | 单向、多值 Record ID[]，同 Workspace 且目标 Database 必须一致；每个值最多 50 个唯一 ID。允许 self relation 和纯 Relation 图环。改 target 前须清空现有值。 |
+| Rollup | target 只允许基础 Property。count / count_values 可用于全部基础类型；number 支持 sum / avg / min / max。date min / max 延期。派生值只读，不会 materialize。 |
+| Formula | 严格 JSON AST 与静态类型，不执行 JavaScript；128 节点、16 层 AST、16 层 Property dependency、字符串 20,000 字符。环、超限、类型错误、除零和非有限值 fail-safe。 |
+| Local-first | Page / Block 继续经 IndexedDB 或 Electron SQLite 本地保存并使用既有 oplog；Database、View 与 cell mutation online-only。离线 Table 为只读，重连后明确刷新/重试，没有 Database oplog 或离线写入成功假象。 |
+| MCP | 不增加 Database tools。`get_page` 中 Database Block 只暴露 `databaseId` 与 `viewId` 稳定引用，不包含 schema、records、Relation、Rollup 或 Formula 值。 |
+
+### Query bounds 与 fail-closed
+
+Domain 定义共享限制；contracts 用相同 domain 常量校验外部形状；service 做作用域、依赖、计数和事务前校验；repository 在 Mongo query 层应用 `limit + 1` 或有界输入，识别 overflow 后中止操作。创建、更新与 cleanup 在同一 Mongo transaction 内完成，过期 version / CAS 或清理超限不会提交部分结果。
+
+| 上限 | 值 | 主要 enforcement |
+| --- | ---: | --- |
+| Property / Database | 100 | domain、contracts、service；repo 有界读取并以 `limit + 1` 拒绝 overflow |
+| View / Database | 100 | domain config、contracts、service 与 repo 有界读取 |
+| Filter / View | 20 | domain config validator、contracts、service |
+| Sort / View | 10 | domain config validator、contracts、service |
+| Relation links / Record cell | 50 | domain、contracts、service |
+| Formula AST | 128 nodes / 16 depth | domain AST validator 与 evaluator guard；dependency depth 另限 16 |
+| Formula string | 20,000 chars | domain validator 与 evaluator 输出 guard |
+| Relation title-search candidates | 5,000 | repository candidate ID limit+1、service fail-closed；不搜索部分结果 |
+| Table rows / request | 100 | domain、contract、service、repository cursor window |
+| Derived source rows | 100 | service 限定 Table 投影；legacy whole-Database derived read 超限拒绝 |
+| Distinct linked derived Records | 5,000 | service 汇总目标 ID 后、批量 target lookup 前拒绝超限 |
+| Property / option / retarget cleanup Records | 10,000 | repository 有界扫描、service transaction 内 fail-closed |
+| Record incoming Relation cleanup | 10,000 source Records | repository 分 Database 有界扫描、service 总预算累计后事务清理 |
+| Workspace advanced references | 1,000 Properties | repository limit+1 与 service 依赖/清理 fence |
+
+精确值与超限行为由 domain/contracts/API 测试覆盖：100 个 Property / View 可成功，101 个拒绝且事务回滚；cleanup 扫到 10,001 时完整拒绝，原 target Record 与 incoming Relation 保持未改状态。50 个 Relation link 成功、51 个及重复 ID 拒绝；Formula 节点 / 深度边界、search candidate 5,000 上限和派生 100 行 / 5,000 target 上限也有回归覆盖。
+
+### 组合正确性与并发结论
+
+- P8.1–P8.5 的组合真实流程覆盖建库、基础 Property、Record / cell、多个 View、Filter / Sort / 列配置、Linked View、Relation、Rollup、Formula、Record Page 标题编辑、Property 重命名/删除、目标 Record 删除、reload 与 linked references。
+- Relation → target Record 更新 → Rollup → 依赖 Formula 的读取刷新通过；两个 linked Views 在 Relation 改动后读取同一 underlying data、保留独立配置。self Relation、纯 Relation cycle 与 Formula chain 可用；Formula → Rollup、dependency Property 删除拒绝、target Property 删除拒绝、Relation retarget 有值拒绝均有覆盖。
+- 删除 target Record 时 incoming Relation 清理、Rollup / Formula 变化与 reload 一致；Relation 清理失败、CAS 过期和引用 fence 竞争均回滚，不会留下 dangling link、Record/Page split 或派生值落库。
+- Page.title 是 title Sort 的唯一来源。最终验收发现：游标加载第一页后，另一个客户端修改非 anchor Record 的 Page.title，如果 Database version 不变，后续游标可能继续沿已重排结果翻页。修复在关联 Page.title 变更路径内以事务 CAS 推进 Database version；已有 View cursor 随即失效，客户端刷新后从新排序重读。跨页并发时不会继续旧游标而制造 duplicate / missing；不承诺多个分页请求共享全局 snapshot，title 更新后的旧 cursor 明确冲突并需要 refresh。
+- Page/Page Record 创建竞争用 Page `updatedAt` CAS 防止 title mutation 越过新建 Relation；Database、Record、Property 与 reference fences 检查失败时整笔事务失败。网络错误不被伪装成成功；读取/刷新可重试，写请求以最新 version 重读后重试，不盲目覆盖。
+
+### 权限、安全与兼容性
+
+Workspace owner permission 始终在 service 层检查；所有可传入的 database/view/property/record/target IDs 按 Workspace 与 Database 作用域重新解析。跨 Workspace Relation、跨 Database Property 注入、无权 record resolve/search 与借 Rollup 读取其他 Workspace 数据都被拒绝。target property 必须属于已验证的 target Database。
+
+Formula AST 使用严格自有解释器；源码与测试确认没有 `eval`、`Function`、arbitrary JS 或 Mongo `$where`。特殊 ID（如 `__proto__` / `constructor`）、enum array/object 与 coercion hook、过深/过宽 AST、超长字符串、Infinity / NaN、除零和 numeric overflow 都 deterministic fail-safe，无原型污染、对象强制转换或 derived value persistence。
+
+兼容测试确认 legacy View 缺少 config、legacy Record 缺少 advanced fields、旧基础 Property Database 均可读取，无需手工 migration。P5 文档、P6 MCP、P7 Advanced Blocks 与 P8.1–P8.4 数据的页面/Block 兼容路径通过现有产品、MCP、storage 回归；Page / Block snapshot 仍只承载稳定 Database 引用。
+
+### 5k / 10k Mongo measurements
+
+测量由新增 `pnpm --filter @eotion/api test:database:performance` 在隔离本机 MongoDB 8.0.32 单节点 replica set 和每轮独立数据库执行；测试开启 profiler，记录请求耗时、namespace 的 docs / keys examined、aggregation stages、`usedDisk`，并对默认窗口跑 `executionStats` explain。以下为一次 fresh run 的观察值，不是 SLA；fixture 每个 Database 包含 5,000 或 10,000 Records 与对应 Pages、基础 Property、Relation、Rollup / Formula。
+
+| 操作 | 5k | 10k |
+| --- | ---: | ---: |
+| 默认 Table 首屏 | 40.58 ms；Records / Pages 各约 101 examined | 49.64 ms；各约 101 examined |
+| 下一页 | 28.90 ms；Records / Pages 各约 102 examined | 31.47 ms；各约 102 examined |
+| 默认 query explain | 4.61 ms；LIMIT / FETCH / IXSCAN / SORT，101 docs examined | 5.22 ms；同类索引计划，101 docs examined |
+| Filter | 326.03 ms；Records 7,500 docs / keys examined | 605.89 ms；15,000 docs / keys examined |
+| 2-level Sort | 613.72 ms；10,000 docs / keys examined | 1,213.35 ms；20,000 docs / keys examined |
+| Filter + Sort | 312.63 ms；7,500 docs / keys examined | 623.37 ms；15,000 docs / keys examined |
+| Relation candidate search | 712.37 ms；Records 10,000 docs / 15,000 keys examined | 24.13 ms；第 5,001 candidate 超限，5,001 keys、0 docs fetch 后 fail-closed |
+| Relation title resolve（50 IDs） | 11.31 ms；Records / Pages 各约 50 docs | 11.62 ms；Records 50 docs / 51 keys，Pages 50 docs |
+| Derived Table（100 rows / 5,000 links） | 592.73 ms；Pages cursor `getMore` 观测到 4,899 docs examined | 588.57 ms；同一 5,000 distinct-target bound，`getMore` 观测值 4,899 |
+| Property cleanup | 197.56 ms；5,000 docs / keys | 340.71 ms；10,000 docs / keys |
+| Relation target cleanup | 165.08 ms；5,001 docs / keys | 327.16 ms；10,001 docs / keys |
+| Property cleanup overflow | 未单独计时 | 292.06 ms；10,001 docs / keys，事务回滚 |
+| Relation cleanup overflow | 未单独计时 | 262.95 ms；10,001 docs / keys，fail-closed，target 和 link 保留 |
+
+所有被测请求的 Mongo profiler `usedDisk=true` 计数为 0。默认分页 explain 走有界索引窗口；Filter/Sort 聚合随 Record 数量线性增加 examined rows（本 fixture 约 1.5N / 2N），没有无界 Workspace Page 扫描。Derived Pages 查询输入的 distinct ID 不超过 5,000；`getMore` 的 4,899 是 profiler 中观测到的批次值，不代表 query 的总数或精确总成本。动态查询和清理在 10k 的成本可见并随数据量增长；本轮没有引入 materialized cache、额外索引或复杂 snapshot 架构。
+
+### UI、同步与最终回归
+
+Web、Electron renderer 共用 Database UI。Fresh Playwright 验收覆盖 Desktop Light / Dark、普通与窄窗口、390px responsive Web、header/icon、View switch、Filter / Sort / columns、Property/cell edit、Relation picker、Rollup / Formula、横向滚动、error/retry、offline read-only 和 reconnect；最新 icon 修复无 toolbar / aria / overflow regression。390px 是 Chromium responsive Web 证据，不表示 Lynx/native 真机等价验收。
+
+fresh 验证清单：
+
+| 验证 | 结果 |
+| --- | --- |
+| Domain / Contracts / SDK | 31/31、16/16、21/21 |
+| API domain / HTTP / MCP | 12/12、24/24、30/30 |
+| Product Playwright（单 worker） | 244/244；含 P5/P6/P7 compatibility 与 Database 组合流程 |
+| Storage package / IndexedDB + SQLite storage UI | 7/7、11/11 |
+| Visual / Desktop titlebar | 7/7、2/2；未更新 visual baseline |
+| Database 5k / 10k Mongo harness | 1/1，fresh isolated DB |
+| Root typecheck / Web / API / Desktop builds | 全部通过 |
+| `git diff --check` / UTF-8 no BOM | 通过 |
+| Independent review | 0 merge blocker |
+
+已接受限制：Database 全部在线读写、离线只读；没有 Database MCP / oplog / 实时跨客户端推送；分页不提供跨请求 snapshot，title mutation 后旧 cursor 需要刷新；Rollup/Formula 为读取时计算且有 100 rows / 5,000 target 限制，Filter/Sort 不支持 derived property；relation search/cleanup 在预算外拒绝整个操作；Formula 是轻量 JSON AST editor；date rollup min/max、People/Files、其他 Views 与双向 Relation 不在 P8。Web bundle 仍有既有大 chunk 提示；390px 为响应式 Web 验收，不替代 native 设备验收。
+
+P8.1–P8.6 全部 PASS；**P8 Database COMPLETE**。本轮到此停止，不进入下一阶段。

@@ -148,6 +148,15 @@ const { editor, getDocument } = useDocumentEditor({
   content: props.content,
   ariaLabel: props.ariaLabel ?? 'Tiptap 编辑区域',
   attributes: { spellcheck: 'false' },
+  editorProps: {
+    handleClick: view => {
+      if (view.hasFocus() || view.state.doc.lastChild?.type.name !== 'eotionDatabase') return false
+      // StarterKit appends a trailing paragraph on first focus. Do it before ProseMirror
+      // creates a pointer selection so the selection belongs to the current document.
+      view.focus()
+      return false
+    },
+  },
   onCreate: updateSelection,
   onSelectionUpdate: updateSelection,
   onUpdate: document => {

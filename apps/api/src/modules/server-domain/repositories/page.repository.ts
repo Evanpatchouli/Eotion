@@ -51,10 +51,16 @@ export class PageRepository {
     return (await this.model.find(filter).sort({ id: 1 }).limit(input.limit + 1).session(session ?? null).exec()).map((doc) => this.toRecord(doc))
   }
 
-  async updateInWorkspace(workspaceId: string, id: string, patch: PagePatch, session?: ClientSession): Promise<PageRecord | null> {
+  async updateInWorkspace(workspaceId: string, id: string, patch: PagePatch, session?: ClientSession, expectedUpdatedAt?: string): Promise<PageRecord | null> {
     assertUpdateFields(patch, ['title', 'icon', 'orderKey'])
     this.assertPatchValues(patch)
-    const doc = await this.model.findOneAndUpdate({ workspaceId, id }, [{ $set: this.setPatch(patch) }], { returnDocument: 'after', runValidators: true, session, timestamps: false, updatePipeline: true }).exec()
+    const filter: Record<string, unknown> = { workspaceId, id }
+    if (expectedUpdatedAt !== undefined) {
+      const expectedDate = new Date(expectedUpdatedAt)
+      if (!Number.isFinite(expectedDate.getTime())) return null
+      filter.updatedAt = expectedDate
+    }
+    const doc = await this.model.findOneAndUpdate(filter, [{ $set: this.setPatch(patch) }], { returnDocument: 'after', runValidators: true, session, timestamps: false, updatePipeline: true }).exec()
     return doc ? this.toRecord(doc) : null
   }
 

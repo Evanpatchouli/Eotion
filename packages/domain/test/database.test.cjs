@@ -17,6 +17,11 @@ const {
   DATABASE_FORMULA_MAX_DEPTH,
   DATABASE_FORMULA_MAX_NODES,
   DATABASE_FORMULA_MAX_STRING_LENGTH,
+  DATABASE_MAX_PROPERTIES,
+  DATABASE_MAX_VIEWS,
+  DATABASE_MAX_TABLE_ROWS,
+  DATABASE_VIEW_MAX_FILTERS,
+  DATABASE_VIEW_MAX_SORTS,
 } = require('../dist/database.js')
 
 const timestamp = '2026-01-02T03:04:05.000Z'
@@ -100,6 +105,31 @@ test('view config shape and property-aware validation enforce strict operators a
   assert.equal(validateDatabaseViewConfig({ ...base, propertyOrder: ['prop-text'] }, properties), true)
   assert.equal(validateDatabaseViewConfig({ ...base, sorts: [{ propertyId: 'prop-text', direction: 'asc' }, { propertyId: 'prop-text', direction: 'desc' }] }, properties), false)
   assert.equal(validateDatabaseViewConfig({ ...base, filters: Array(21).fill({ propertyId: 'prop-text', operator: 'is_empty' }) }, properties), false)
+})
+
+test('database hard bounds accept exact limits and reject limit plus one', () => {
+  assert.equal(DATABASE_MAX_PROPERTIES, 100)
+  assert.equal(DATABASE_MAX_VIEWS, 100)
+  assert.equal(DATABASE_MAX_TABLE_ROWS, 100)
+  assert.equal(DATABASE_VIEW_MAX_FILTERS, 20)
+  assert.equal(DATABASE_VIEW_MAX_SORTS, 10)
+
+  const boundedProperties = [title, ...Array.from({ length: DATABASE_MAX_PROPERTIES - 1 }, (_, index) => ({
+    ...properties[1], id: `bounded-${index}`, name: `Bounded ${index}`,
+  }))]
+  const visibleIds = boundedProperties.map(property => property.id)
+  const base = { filters: [], sorts: [], visibleProperties: visibleIds, propertyOrder: visibleIds }
+  assert.equal(validateDatabaseViewConfig(base, boundedProperties), true)
+  assert.equal(validateDatabaseViewConfig({ ...base, visibleProperties: [...visibleIds, 'extra'] }, boundedProperties), false)
+  assert.equal(validateDatabaseViewConfig({ ...base, propertyOrder: [...visibleIds, 'extra'] }, boundedProperties), false)
+  assert.equal(validateDatabasePropertyDependencies(boundedProperties), true)
+  assert.equal(validateDatabasePropertyDependencies([...boundedProperties, { ...properties[1], id: 'property-101' }]), false)
+
+  const maxFilters = Array.from({ length: DATABASE_VIEW_MAX_FILTERS }, () => ({ propertyId: 'prop-text', operator: 'is_empty' }))
+  const maxSorts = boundedProperties.slice(1, DATABASE_VIEW_MAX_SORTS + 1).map(property => ({ propertyId: property.id, direction: 'asc' }))
+  assert.equal(isValidDatabaseViewConfigShape({ ...base, filters: maxFilters, sorts: maxSorts }), true)
+  assert.equal(isValidDatabaseViewConfigShape({ ...base, filters: [...maxFilters, maxFilters[0]] }), false)
+  assert.equal(isValidDatabaseViewConfigShape({ ...base, sorts: [...maxSorts, { propertyId: 'one-more-sort', direction: 'asc' }] }), false)
 })
 
 test('advanced property configs, relation bounds and read-only projections', () => {
