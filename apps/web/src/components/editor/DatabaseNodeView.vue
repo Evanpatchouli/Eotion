@@ -7,8 +7,9 @@ import { RouterLink } from 'vue-router'
 import { useRuntimeContext } from '../../composables/useRuntimeContext'
 import { usePreferencesStore } from '../../stores/preferences'
 import { useDatabaseContentStore } from '../../stores/databaseContent'
-import { openingOptions, resolveOpeningMode, type ProductOverlayMode } from '../ui/productOverlay'
+import { resolveOpeningMode, type ProductLayoutMode, type ProductOverlayMode } from '../ui/productOverlay'
 import EotionProductOverlay from '../ui/EotionProductOverlay.vue'
+import DatabaseOpeningChoices from './DatabaseOpeningChoices.vue'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -59,8 +60,7 @@ const userId = computed(() => auth.user?.id ?? '')
 const propertyOpeningConfig = computed(() => preferences.databaseOpening(userId.value, workspaceId.value, databaseId.value, 'property'))
 const recordOpeningConfig = computed(() => preferences.databaseOpening(userId.value, workspaceId.value, databaseId.value, 'record'))
 const propertyOpeningMode = computed(() => resolveOpeningMode(propertyOpeningConfig.value, layoutMode.value))
-const settingOverlayMode = computed(() => viewControlsOpen.value === 'columns' ? propertyOpeningMode.value : layoutMode.value === 'mobile' ? 'bottom-drawer' : 'drawer')
-const openingLabels: Record<ProductOverlayMode, string> = { drawer: '抽屉', 'right-drawer': '右侧抽屉', 'bottom-drawer': '下方抽屉', modal: '弹窗', page: '页面' }
+const settingOverlayMode = computed(() => viewControlsOpen.value === 'columns' ? propertyOpeningMode.value : layoutMode.value === 'mobile' ? 'bottom-drawer' : 'modal')
 const orderedProperties = computed(() => {
   const ids = viewConfig.value.propertyOrder ?? []
   return [...ids.map(id => properties.value.find(item => item.id === id)).filter((item): item is DatabasePropertyResponse => Boolean(item)), ...properties.value.filter(item => !ids.includes(item.id))]
@@ -141,8 +141,6 @@ const online = ref(navigator.onLine)
 const staleReadonly = ref(false)
 const creationUncertain = computed(() => isProductDatabaseRecordCreationUncertain(auth.user?.id ?? '', workspaceId.value, databaseId.value))
 const writable = computed(() => online.value && !staleReadonly.value && !loading.value && !savingCell.value && !viewSubmitting.value)
-const addTitleMode = ref(false)
-const addTitleDraft = ref('')
 const propertyMenuId = ref('')
 const menuProperty = computed(() => properties.value.find(property => property.id === propertyMenuId.value))
 const propertyMenuStyle = ref<Record<string, string>>({})
@@ -339,14 +337,10 @@ async function refreshSchemaMutation(): Promise<void> {
 
 async function createRecord(): Promise<void> {
   if (creating.value || creationUncertain.value || !writable.value) return
-  const cleanTitle = addTitleDraft.value.trim()
-  if (!cleanTitle || cleanTitle.length > 200) return
   creating.value = true
   mutationError.value = ''
   try {
-    const result = await createProductDatabaseRecord(workspaceId.value, databaseId.value, cleanTitle)
-    addTitleMode.value = false
-    addTitleDraft.value = ''
+    const result = await createProductDatabaseRecord(workspaceId.value, databaseId.value, '无标题')
     if (result.refreshWarning) mutationError.value = result.refreshWarning
     try {
       await prepareProductDatabaseRecordPage(workspaceId.value, result.pageId)
@@ -356,16 +350,8 @@ async function createRecord(): Promise<void> {
     }
   } catch (cause) {
     mutationError.value = errorMessage(cause, '无法新建记录，请重试。')
-    if (creationUncertain.value || (cause instanceof Error && cause.message.includes('登录状态或工作区已切换'))) addTitleMode.value = false
   } finally { creating.value = false }
 }
-function onNewRecordEnter(event: KeyboardEvent): void {
-  event.preventDefault()
-  if (event.isComposing || event.keyCode === 229) return
-  void createRecord()
-}
-
-function cancelNewRecord(): void { addTitleMode.value = false; addTitleDraft.value = '' }
 
 function openPropertyMenu(property: DatabasePropertyResponse, event: MouseEvent): void {
   if (!writable.value) return
@@ -433,8 +419,8 @@ function openSettings(kind: 'filters' | 'sorts' | 'columns' | 'record-opening'):
   }
   viewControlsOpen.value = kind
 }
-function setOpening(target: 'record' | 'property', raw: string): void {
-  preferences.setDatabaseOpening(userId.value, workspaceId.value, databaseId.value, target, layoutMode.value, raw as ProductOverlayMode)
+function setOpening(target: 'record' | 'property', layout: ProductLayoutMode, mode: ProductOverlayMode): void {
+  preferences.setDatabaseOpening(userId.value, workspaceId.value, databaseId.value, target, layout, mode)
 }
 function onSettingsOverlayChange(open: boolean): void {
   if (open) return
@@ -1090,7 +1076,6 @@ function onEscape(event: KeyboardEvent): void {
   settingsMenuOpen.value = false
   viewControlsOpen.value = ''
   if (hadPopover) void nextTick(() => returnFocusTo.value?.focus())
-  if (addTitleMode.value) cancelNewRecord()
   runDeferredRefresh()
 }
 function onOutsidePointer(event: PointerEvent): void {
@@ -1155,8 +1140,6 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
   settingsMenuOpen.value = false
   viewControlsOpen.value = ''
   if (current[0] !== previous[0] || current[1] !== previous[1] || current[3] !== previous[3]) viewError.value = ''
-  addTitleMode.value = false
-  addTitleDraft.value = ''
   mutationError.value = ''
   refreshError.value = ''
   staleReadonly.value = false
@@ -1223,10 +1206,11 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
         </section></EotionProductOverlay>
         <EotionProductOverlay :open="viewControlsOpen === 'record-opening'" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'drawer'" label="记录打开方式" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="记录打开方式">
           <h2>记录打开方式</h2>
-          <label>当前设备<select aria-label="记录打开方式选择" :value="recordOpeningConfig[layoutMode]" @change="setOpening('record', ($event.target as HTMLSelectElement).value)"><option v-for="mode in openingOptions[layoutMode]" :key="mode" :value="mode">{{ openingLabels[mode] }}</option></select></label>
+          <DatabaseOpeningChoices target="record" :config="recordOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('record', layout, mode)" />
         </section></EotionProductOverlay>
         <EotionProductOverlay :open="viewControlsOpen === 'columns'" :mode="settingOverlayMode" label="属性" @update:open="onSettingsOverlayChange"><section :id="`database-property-settings-${blockId}`" class="eotion-database-settings eotion-database-property-settings" role="group" aria-label="属性管理">
-          <div class="eotion-database-settings-heading"><h2>属性</h2><label>属性打开方式 <select aria-label="属性打开方式" :value="propertyOpeningConfig[layoutMode]" @change="setOpening('property', ($event.target as HTMLSelectElement).value)"><option v-for="mode in openingOptions[layoutMode]" :key="mode" :value="mode">{{ openingLabels[mode] }}</option></select></label></div>
+          <div class="eotion-database-settings-heading"><h2>属性</h2></div>
+          <DatabaseOpeningChoices target="property" :config="propertyOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('property', layout, mode)" />
           <div v-for="(property, index) in columnDraftProperties" :key="property.id" class="eotion-database-property-row" @dragover.prevent @drop.prevent="dropProperty(property.id)">
             <span class="eotion-database-property-grip" draggable="true" :title="`拖动属性 ${property.name}`" @dragstart="draggingPropertyId = property.id" @dragend="draggingPropertyId = ''">⋮⋮</span>
             <EotionIcon :name="propertyTypeIcon(property.type)" :size="16" />
@@ -1241,12 +1225,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
           <button type="button" :disabled="!writable" @click.stop="togglePropertyCreator($event)">＋ 新增属性</button>
         </section></EotionProductOverlay>
       </div>
-      <form v-if="addTitleMode" class="eotion-database-new" @submit.prevent="createRecord">
-        <input v-model="addTitleDraft" autofocus maxlength="200" aria-label="记录标题" placeholder="记录标题" :disabled="creating || !writable" @keydown.enter="onNewRecordEnter" @keydown.esc.prevent="cancelNewRecord">
-        <button type="submit" :disabled="creating || !writable || !addTitleDraft.trim()">{{ creating ? '正在新建…' : '创建' }}</button>
-        <button type="button" :disabled="creating" @click="cancelNewRecord">取消</button>
-      </form>
-      <button v-else class="eotion-database-add" type="button" :disabled="creating || creationUncertain || !writable" @pointerdown.stop @mousedown.stop @click.stop="addTitleMode = true; addTitleDraft = ''"><EotionIcon :name="IconName.Plus" :size="16" />新建记录</button>
+      <button class="eotion-database-add" type="button" :disabled="creating || creationUncertain || !writable" @pointerdown.stop @mousedown.stop @click.stop="createRecord"><EotionIcon :name="IconName.Plus" :size="16" />{{ creating ? '正在新建…' : '新建记录' }}</button>
       <div class="eotion-database-properties-menu">
         <Teleport defer :to="viewControlsOpen === 'columns' ? `#database-property-settings-${blockId}` : 'body'"><div v-if="propertyMenuId === '__add'" class="eotion-database-popover eotion-database-teleport" :style="propertyMenuStyle" role="group" aria-label="添加属性类型">
           <button v-for="item in addableProperties" :key="item.type" type="button" @click.stop="['relation', 'rollup', 'formula'].includes(item.type) ? openAdvancedProperty(item.type as AdvancedType) : addProperty(item.type as 'text' | 'number' | 'checkbox' | 'select' | 'date')">{{ item.label }}</button>

@@ -1,4 +1,16 @@
 # Handoff
+## 2026-10-11 Database Opening / Record Creation / Overlay 聚焦修复
+
+本轮聚焦修复 **PASS**，但 Database UX Refinement **尚未 Final PASS**。基线 `7419e7043790085f855963f7a2d5a2b8a2fba73b`；本节随最终聚焦提交落库，提交哈希以当前 HEAD 为准。没有开始 P9。
+
+Opening Settings 现于同一 Quiet Studio Popover/Menu 界面展示 Desktop、Tablet、Mobile 三组合法选项；Record/Property 交互一致、配置独立，沿用原 localStorage key/对象且即时保存。新建记录删除 Header inline title form，直接用“无标题”原子创建 Record + Page，prepare 后复用 Existing Record 的统一 Host；正式 Record Page 可编辑 Page.title/正文，标题与正文共同参与 close/switch/route flush，多数据库连续标题保存按固定来源目标等待成功同步后刷新 Table。
+
+Overlay 已收敛：Desktop/Tablet Drawer 无 backdrop、背景可交互；Modal 与 Phone Right/Bottom Drawer 使用 native modal/focus trap/backdrop；Right Drawer 与 Mobile Sidebar 共用 `--mobile-sidebar-width: min(86vw, 320px)`，Bottom Drawer 保留 safe area。Filter/Sort 在 Desktop/Tablet 固定 Modal、Phone 固定 Bottom Drawer，不进入 preference；Property 继续按 Property preference。
+
+验证：root typecheck、独立 Web typecheck、build:web PASS；最终 Database 49/49；Overlay/Settings/Pages/Editor 99/100，唯一旧 Editor 同步重试按钮 DOM 状态竞态隔离连续 3/3 PASS；完整 product 在 review 修复前 270/270。Database 设置/Linked View 的 remount 点击竞态均隔离定位并以真实 Escape/最终 UI 结果验证，相关重复 3/3、5/5。Desktop light/dark 与 390px Mobile 截图已人工检查。独立 review 首轮发现 2 个 title flush/refresh race，修复后二次 review 0 blocker。
+
+下一轮仍需：Drag Handle visibility、Database Header icon consistency、Page Tree / 10k projection 性能审查、最终 Database UX Acceptance。本轮到此停止。
+
 ## 2026-10-11 Database UX 收敛完成收口
 
 先前“暂停交接”已失效，用户恢复后任务继续完成。实现、验证、独立 review 与聚焦提交均已完成；详情见 `.agents/current-task.md`。导航语义提交为 `e8ed579`，UI/测试/文档由紧随其后的最终聚焦提交承载。完整 product 254/255，唯一旧 Toggle reload 用例随后完整 blocks 14/14 通过；Database 41/41、Overlay 8/8、Domain/Contracts/SDK/API domain/HTTP/MCP/storage/visual/desktop/performance、typecheck 与 Web/API/Desktop build 全通过。独立 review 0 merge blocker；不得开始 P9。

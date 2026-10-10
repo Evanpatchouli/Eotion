@@ -33,12 +33,15 @@ type DatabaseChoice = { kind: 'create'; name: string } | { kind: 'link'; databas
 const surfaceProps = withDefaults(defineProps<{
   embeddedWorkspaceId?: string
   embeddedPageId?: string
+  embeddedDatabaseId?: string
   embedded?: boolean
 }>(), {
   embeddedWorkspaceId: '',
   embeddedPageId: '',
+  embeddedDatabaseId: '',
   embedded: false,
 })
+const emit = defineEmits<{ recordTitleSaved: [target: { workspaceId: string; databaseId: string; pageId: string }] }>()
 
 const route = useRoute()
 const pages = useProductPagesStore()
@@ -51,6 +54,12 @@ const { layoutMode, inputMode } = useRuntimeContext()
 const workspaceId = computed(() => surfaceProps.embeddedWorkspaceId || (typeof route.params.workspaceId === 'string' ? route.params.workspaceId : ''))
 const pageId = computed(() => surfaceProps.embeddedPageId || (typeof route.params.pageId === 'string' ? route.params.pageId : ''))
 const page = computed(() => pages.items.find((item) => item.id === pageId.value) ?? null)
+const recordPage = computed(() => surfaceProps.embedded || route.query.edit === 'record' || page.value?.role === 'database-record')
+const titleDraft = ref('')
+const titleError = ref('')
+const titleSaving = ref(false)
+const recordTitleDirty = computed(() => recordPage.value && !!page.value && titleDraft.value.trim() !== page.value.title)
+let recordTitleSaveRequest: Promise<boolean> | null = null
 const currentWorkspace = computed(() => workspaces.items.find((item) => item.id === workspaceId.value) ?? null)
 const settled = computed(() => pages.loaded && pages.forWorkspaceId === workspaceId.value)
 const loadError = computed(() => pages.forWorkspaceId === workspaceId.value ? pages.error : '')
@@ -82,6 +91,50 @@ let databaseRequest: DatabaseInsertionRequest | null = null
 let databaseEpoch = 0
 
 const databaseCreationUncertain = computed(() => isProductDatabaseInsertionUncertain(auth.user?.id ?? '', workspaceId.value, pageId.value))
+
+watch(() => [page.value?.id, page.value?.title], () => {
+  if (!titleSaving.value) titleDraft.value = page.value?.title ?? ''
+}, { immediate: true })
+
+function saveRecordTitle(): Promise<boolean> {
+  if (recordTitleSaveRequest) return recordTitleSaveRequest
+  if (!recordPage.value || !page.value) return Promise.resolve(true)
+  const savedPage = page.value
+  const savedWorkspaceId = workspaceId.value
+  const savedPageId = pageId.value
+  const savedDatabaseId = surfaceProps.embeddedDatabaseId
+  const title = titleDraft.value.trim()
+  if (title === savedPage.title) return Promise.resolve(true)
+  titleSaving.value = true
+  titleError.value = ''
+  let request!: Promise<boolean>
+  request = (async () => {
+    const updated = await pages.rename(savedWorkspaceId, savedPageId, title)
+    if (!updated) {
+      titleError.value = pages.renameError || '标题保存失败，请重试。'
+      return false
+    }
+    titleDraft.value = updated.title
+    if (savedDatabaseId) emit('recordTitleSaved', { workspaceId: savedWorkspaceId, databaseId: savedDatabaseId, pageId: savedPageId })
+    return true
+  })().finally(() => {
+    titleSaving.value = false
+    if (recordTitleSaveRequest === request) recordTitleSaveRequest = null
+  })
+  recordTitleSaveRequest = request
+  return request
+}
+
+function onRecordTitleKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    if (!event.isComposing) (event.currentTarget as HTMLInputElement).blur()
+  } else if (event.key === 'Escape') {
+    titleDraft.value = page.value?.title ?? ''
+    titleError.value = ''
+    ;(event.currentTarget as HTMLInputElement).blur()
+  }
+}
 
 function mayHaveCommitted(error: unknown): boolean {
   return !(error instanceof ApiError && error.statusCode >= 400 && error.statusCode < 500)
@@ -129,7 +182,14 @@ async function loadBlocks(): Promise<void> {
     saveError.value = error
   })
   persistence.value = current
-  removeActive = registerActivePageEditor({ workspaceId: workspaceId.value, pageId: pageId.value, flush: () => current.flush(), preserve: () => current.preserveDraft() })
+  const currentWorkspaceId = workspaceId.value
+  const currentPageId = pageId.value
+  removeActive = registerActivePageEditor({
+    workspaceId: currentWorkspaceId,
+    pageId: currentPageId,
+    flush: async () => await saveRecordTitle() && await current.flush(),
+    preserve: () => current.preserveDraft(),
+  })
   blockLoading.value = true
   try {
     const loaded = await current.load(controller.signal)
@@ -377,13 +437,14 @@ function onCreateDatabaseChoice(): void {
 }
 
 function beforeUnload(event: BeforeUnloadEvent): void {
-  if (!databaseBusy.value && !persistence.value?.hasPendingWork && pendingAttachmentCleanups.value.length === 0) return
+  if (!databaseBusy.value && !recordTitleDirty.value && !titleSaving.value && !persistence.value?.hasPendingWork && pendingAttachmentCleanups.value.length === 0) return
   event.preventDefault()
   event.returnValue = ''
 }
 
 async function guardNavigation(): Promise<boolean> {
   if (databaseBusy.value) return false
+  if (!(await saveRecordTitle())) return false
   if (!auth.user) return true
   if (!(await flushAttachmentCleanups())) return false
   if (!persistence.value?.hasPendingWork) return true
@@ -434,7 +495,11 @@ onBeforeUnmount(() => {
   </section>
   <div v-else class="document product-editor-page" :class="{ 'product-editor-page--embedded': embedded }">
     <p class="product-section-label">{{ currentWorkspace?.name ?? '工作区' }}</p>
-    <div class="product-editor-heading"><h1>{{ page.title }}</h1></div>
+    <div class="product-editor-heading">
+      <input v-if="recordPage" v-model="titleDraft" class="product-record-title" aria-label="记录标题" maxlength="200" :disabled="titleSaving" :autofocus="page.title === '无标题'" @blur="saveRecordTitle" @keydown="onRecordTitleKeydown">
+      <h1 v-else>{{ page.title }}</h1>
+    </div>
+    <p v-if="titleError" class="product-message product-message--error" role="alert">{{ titleError }}</p>
     <p v-if="blockError" class="product-message product-message--error" role="alert">{{ blockError }}</p>
     <button v-if="blockError" class="product-button" type="button" :disabled="blockLoading" @click="loadBlocks">{{ blockLoading ? '正在重试…' : '重试加载' }}</button>
     <p v-else-if="blockLoading || !document" class="product-loading" role="status">正在加载正文…</p>
@@ -452,7 +517,7 @@ onBeforeUnmount(() => {
         :create-database-reference="createDatabaseReference"
         :commit-database-reference="commitDatabaseReference"
         :touch-toolbar="layoutMode === 'mobile' || inputMode !== 'mouse'"
-        :autofocus="embedded || route.query.edit === 'record'"
+        :autofocus="recordPage && page.title !== '无标题'"
         aria-label="页面正文编辑区域"
         @update="onEditorUpdate"
         @composition="(active) => persistence?.setComposing(active)"
@@ -504,6 +569,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.product-record-title { box-sizing: border-box; width: 100%; min-width: 0; border: 0; border-bottom: 1px solid transparent; padding: 0 0 4px; outline: 0; background: transparent; color: var(--e-color-text-primary); font: var(--e-type-page-title-weight) var(--e-type-page-title-size) / var(--e-type-page-title-line) var(--e-type-family); letter-spacing: var(--e-type-page-title-tracking); }
+.product-record-title:hover, .product-record-title:focus { border-bottom-color: var(--e-color-border); }
 .database-command { display: grid; gap: 10px; }
 .database-command h2 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
 .database-command-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

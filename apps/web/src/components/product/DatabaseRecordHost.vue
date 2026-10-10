@@ -4,10 +4,12 @@ import { useRouter } from 'vue-router'
 
 import { useRuntimeContext } from '../../composables/useRuntimeContext'
 import { flushActivePageEditor } from '../../editor/activePageEditor'
+import { notifyDatabaseUpdated } from '../../editor/databaseEvents'
 import { prepareProductDatabaseRecordPage } from '../../services/productDatabases'
 import { useAuthStore } from '../../stores/auth'
 import { useDatabaseContentStore } from '../../stores/databaseContent'
 import { usePreferencesStore } from '../../stores/preferences'
+import { useProductSyncStore } from '../../stores/productSync'
 import EotionProductOverlay from '../ui/EotionProductOverlay.vue'
 import { resolveOpeningMode } from '../ui/productOverlay'
 
@@ -16,9 +18,49 @@ const content = useDatabaseContentStore()
 const preferences = usePreferencesStore()
 const auth = useAuthStore()
 const router = useRouter()
+const sync = useProductSyncStore()
 const { layoutMode } = useRuntimeContext()
 const closeError = ref('')
 let routedRequestId = 0
+type TitleRefreshTarget = { workspaceId: string; databaseId: string; pageId: string }
+const pendingTitleRefreshes = new Map<string, TitleRefreshTarget>()
+let titleRefreshRequest: Promise<void> | null = null
+
+function titleRefreshKey(target: TitleRefreshTarget): string {
+  return `${target.workspaceId}\u0000${target.databaseId}`
+}
+
+function requestTitleRefresh(): void {
+  if (titleRefreshRequest || pendingTitleRefreshes.size === 0) return
+  titleRefreshRequest = (async () => {
+    while (pendingTitleRefreshes.size > 0) {
+      const batch = [...pendingTitleRefreshes.entries()]
+      for (const [key, target] of batch) {
+        if (pendingTitleRefreshes.get(key) === target) pendingTitleRefreshes.delete(key)
+      }
+      await sync.runSync()
+      if (sync.state !== 'synced') {
+        for (const [key, target] of batch) pendingTitleRefreshes.set(key, target)
+        return
+      }
+      for (const [, target] of batch) {
+        notifyDatabaseUpdated({ workspaceId: target.workspaceId, databaseId: target.databaseId })
+      }
+    }
+  })().finally(() => {
+    titleRefreshRequest = null
+    if (pendingTitleRefreshes.size > 0 && sync.state === 'synced') requestTitleRefresh()
+  })
+}
+
+function onRecordTitleSaved(target: TitleRefreshTarget): void {
+  pendingTitleRefreshes.set(titleRefreshKey(target), target)
+  requestTitleRefresh()
+}
+
+watch(() => sync.state, (state) => {
+  if (state === 'synced') requestTitleRefresh()
+})
 
 const openingMode = computed(() => {
   const target = content.record
@@ -38,7 +80,7 @@ async function closeRecord(): Promise<void> {
   if (!target) return
   closeError.value = ''
   if (!(await flushActivePageEditor(target.workspaceId, target.pageId))) {
-    closeError.value = '正文尚未保存，请在记录中重试后再关闭。'
+    closeError.value = '标题或正文尚未保存，请在记录中重试后再关闭。'
     return
   }
   content.closeRecord(target.requestId)
@@ -69,6 +111,8 @@ watch([() => content.record, openingMode], ([target, mode]) => {
       embedded
       :embedded-workspace-id="content.record.workspaceId"
       :embedded-page-id="content.record.pageId"
+      :embedded-database-id="content.record.databaseId"
+      @record-title-saved="onRecordTitleSaved"
     />
   </EotionProductOverlay>
 </template>

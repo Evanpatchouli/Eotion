@@ -38,6 +38,7 @@
   --shadow-switcher: 0 8px 24px rgba(30, 30, 26, .06);
   --shadow-menu: 0 8px 24px rgba(30, 30, 26, .12);
   --shadow-sidebar: 18px 0 55px rgba(0, 0, 0, .12);
+  --mobile-sidebar-width: min(86vw, 320px);
   --shadow-toolbar: 0 -5px 20px rgba(0, 0, 0, .07);
   --topbar-background: rgba(255, 255, 255, .92);
   --topbar-border: rgba(236, 235, 232, .7);
@@ -211,7 +212,7 @@ h1 { margin: 0 0 10px; outline: 0; font-size: clamp(34px, 5vw, 44px); line-heigh
 .workspace-shell[data-layout="mobile"] .main-pane { height: 100%; }
 .workspace-shell[data-layout="mobile"] .sidebar {
   position: fixed; top: var(--safe-top); bottom: var(--safe-bottom); left: var(--safe-left);
-  width: min(86vw, 320px); transform: translateX(-105%);
+  width: var(--mobile-sidebar-width); transform: translateX(-105%);
   box-shadow: var(--shadow-sidebar); transition: transform 160ms ease;
 }
 .workspace-shell[data-layout="mobile"] .sidebar--open { transform: translateX(0); }

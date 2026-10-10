@@ -19,11 +19,13 @@ Database Block 使用统一的 `[+] [drag]` Block controls；加号在当前 Dat
 
 Slash 创建器首层将“创建新数据库 / 链接现有数据库”并排展示。创建层明确区分左侧带箭头的“返回”和右侧“取消”，创建按钮使用正式 Primary action。Database 顶部不再提供独立属性按钮；`…` 是唯一设置入口，顺序为筛选、排序、属性、记录打开方式、自动化。自动化明确 disabled/未开放，其他入口先关闭轻量菜单，再进入完整设置容器。
 
-通用 `EotionProductOverlay` 负责 Drawer、Modal 与 Page 三种产品级容器。Desktop/Tablet 合法模式为 drawer/modal/page，默认 drawer；Drawer 固定在右侧、不改变文档宽度、无遮罩、不锁背景滚动且允许背景交互。Phone 合法模式为 right-drawer/bottom-drawer/modal/page，默认 bottom-drawer；两种 Drawer 均使用遮罩、focus trap 与 scroll lock，Bottom Drawer 包含 safe-area padding。Escape、backdrop、关闭按钮与 focus return 由同一容器实现。Record 与 Property 使用相同的 device-aware 配置模型，但按 user/workspace/database/target 分开持久化。
+通用 `EotionProductOverlay` 负责 Drawer、Modal 与 Page 三种产品级容器。Desktop/Tablet 合法模式为 drawer/modal/page，默认 drawer；Drawer 固定在右侧、不改变文档宽度、无遮罩、不锁背景滚动且允许背景交互。Phone 合法模式为 right-drawer/bottom-drawer/modal/page，默认 bottom-drawer；两种 Drawer 均使用遮罩、focus trap 与 scroll lock，Bottom Drawer 包含 safe-area padding，Right Drawer 与 Mobile Sidebar 共用 `min(86vw, 320px)` 宽度 token。Escape、backdrop、关闭按钮与 focus return 由同一容器实现。Record 与 Property 使用相同的 device-aware 配置模型，但按 user/workspace/database/target 分开持久化；同一个设置面板始终展示并允许修改 Desktop、Tablet、Mobile 三组配置，当前设备只作提示，不改变可编辑范围。现有 localStorage key 与配置对象直接沿用，无 migration。
+
+Filter 与 Sort 不进入 opening preference：Desktop/Tablet 固定使用 Modal，Phone 固定使用 Bottom Drawer。Property 继续按独立 Property opening preference 打开。
 
 属性设置继续把 visibleProperties/propertyOrder 写入当前 View config，不提升为 Database 全局 schema 状态；schema CRUD 仍使用既有 Property service/CAS。完整面板支持新增、删除、重命名、拖放/按钮排序、显示/隐藏、Select options，以及 Relation、Rollup、Formula 原配置编辑。高级属性配置复用同一 Property opening mode，不创建第二套临时面板。
 
-Record 创建仍由服务端同一事务原子创建 Record + Page；创建成功后与已有 Record title 点击共用同一 opening mode，并复用正式 `PageView` 进入可编辑状态。Page mode 使用正常 Page route；overlay mode 只改变呈现容器，不复制 Record body 或编辑器。多 Page editor session 按 workspace/page 独立注册和 flush，关闭 overlay 或路由前只提交对应 Record editor。
+Record 创建仍由服务端同一事务原子创建 Record + Page；“新建记录”点击后直接以系统标题“无标题”创建，不再先显示 Database Header inline title 表单。创建成功后先准备本地 Record Page，再与已有 Record title 点击共用同一 opening mode，并复用正式 `PageView` 立即进入标题和正文可编辑状态。Page mode 使用正常 Page route；overlay mode 只改变呈现容器，不复制 Record body 或编辑器。多 Page editor session 按 workspace/page 独立注册和 flush，关闭 overlay 或路由前只提交对应 Record editor。
 
 Page 新增只读 `role: 'database-record'` 投影。该字段由 Record 创建事务写入；已有 P8 Record 不需要 migration，服务端在 snapshot/navigation 读取时按 DatabaseRecord.pageId 投影 legacy role。完整 snapshot 与按 ID Page 读取仍包含 Record Page，保证正常 Page route、Record body 和旧数据可访问；普通 Sidebar navigation 在 repository/local adapter 的分页前查询中排除该 role，因此 10,000 Records 不会扩大 Page Tree 返回结果。
 
@@ -181,7 +183,7 @@ Page.title 是唯一持久化标题来源。Record.properties 不保存 title �
 
 Table 修改 title 通过同一 Mongo transaction 条件更新 Page 和 Record；任一步失败全部回滚。Page 编辑器沿用既有本地优先改名与同步，Table 刷新后读取已同步的 Page.title。标题单元格编辑与打开 Record Page 的入口分开。Table 标题写入前同步当前待提交 Page 操作，写入后读取服务端 snapshot 更新本地 Page 展示，不能通过 LocalStore.upsertPage 重新制造一份标题 mutation。
 
-新建记录先输入非空标题，确认后才创建 Record + Page；空输入或取消不发送创建请求，不默认生成“无标题”。未知提交结果继续沿用 P8.2 的会话内确认与防重复机制。
+新建记录点击后直接以非空系统标题“无标题”创建 Record + Page，不经过 Database Header inline title 表单；打开正式 Record Page 后再编辑 Page.title。未知提交结果继续沿用 P8.2 的会话内确认与防重复机制。
 
 ### HTTP、权限与并发
 

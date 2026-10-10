@@ -12,6 +12,7 @@ const props = withDefaults(defineProps<{
   panelWidth?: string
   mode?: 'menu' | 'dialog'
   context?: boolean
+  teleportTo?: string | HTMLElement
 }>(), {
   disabled: false,
   label: '菜单',
@@ -35,7 +36,7 @@ function setTriggerElement(element: Element | ComponentPublicInstance | null) {
 
 const triggerProps = computed(() => ({
   ref: setTriggerElement,
-  type: 'button',
+  type: 'button' as const,
   'aria-haspopup': props.mode,
   'aria-expanded': open.value,
   'aria-controls': panelId,
@@ -186,7 +187,14 @@ function updatePosition() {
     ? Math.min(rect.bottom + gap, window.innerHeight - margin)
     : Math.max(margin, rect.top - gap - Math.min(naturalHeight, maxHeight))
   const left = Math.max(margin, Math.min(rect.left, window.innerWidth - panelRect.width - margin))
-  position.value = { left: left + window.scrollX, top: viewportTop + window.scrollY, maxHeight, placement }
+  const destination = props.teleportTo instanceof HTMLElement ? props.teleportTo : null
+  const destinationRect = destination?.getBoundingClientRect()
+  position.value = {
+    left: destinationRect ? left - destinationRect.left + destination!.scrollLeft : left + window.scrollX,
+    top: destinationRect ? viewportTop - destinationRect.top + destination!.scrollTop : viewportTop + window.scrollY,
+    maxHeight,
+    placement,
+  }
 }
 
 function onOutsideClick(event: MouseEvent) {
@@ -268,9 +276,8 @@ onBeforeUnmount(() => {
   <span class="eotion-popover-anchor">
     <slot name="trigger" :toggle="toggle" :open="open" :open-at="openAt" :trigger-props="triggerProps" />
   </span>
-  <Teleport to="body">
+  <Teleport v-if="open" :to="teleportTo ?? 'body'">
     <div
-      v-if="open"
       ref="panelElement"
       :id="panelId"
       class="eotion-popover-panel"

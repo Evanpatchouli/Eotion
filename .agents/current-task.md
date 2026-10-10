@@ -1,37 +1,42 @@
-# 当前任务：Database UX 收敛
+# 当前任务：Database Opening / Record Creation / Overlay Semantics
 
-状态：**完成**。基线 `3f93222`；导航语义提交 `e8ed579`，其余 UI/测试/文档随本任务最终聚焦提交落盘。本轮仅重构既有 Table View，没有开始 P9，也没有扩展 Database MCP、Database offline sync、真实 Automation、People/Files 或新 View。
+状态：**本轮聚焦修复 PASS，Database UX Refinement 尚未 Final PASS**。基线 `7419e7043790085f855963f7a2d5a2b8a2fba73b`；本轮只完成 Opening / Record Creation / Overlay 语义修复，没有开始 P9，也没有扩展 Database domain / navigation architecture。
 
-| Work Unit | 状态 |
-| --- | --- |
-| Record / Page / Database 导航语义 | DONE + committed：`e8ed579 feat(database): 收敛数据库与记录导航语义` |
-| Database Block / Header / Create-Link / Settings | DONE |
-| device-aware Overlay / Record 与 Property 独立偏好 | DONE |
-| 属性完整管理 / Relation / Rollup / Formula | DONE |
-| Record create/open / Database route / Page Tree | DONE |
-| responsive / light-dark / 390px visual QA | DONE |
-| 全量验证 | DONE |
-| independent review | DONE：0 merge blocker |
-| focused UI commit / clean workspace | DONE |
+| Work Unit | 难度 / 角色 | 状态 | 结果 |
+| --- | --- | --- | --- |
+| 当前实现与测试证据包 | S0 / scout | DONE | 查清 preference、new record、overlay、filter/sort 调用链与测试缺口 |
+| 实现边界与 invariant | S2 / 主 Agent | DONE | 保留 DeviceOpeningConfig、原子创建/uncertainty、统一 Record Host、Page route flush |
+| Opening Settings + tests | S1 / fast_worker | DONE | 三端同屏 Popover/Menu、合法模式、Record/Property 独立、旧 key 兼容与即时持久化 |
+| New Record pipeline + tests | S2→S1 | DONE | 删除 inline form，默认“无标题”，prepare + open，Existing/New 共用 pipeline |
+| Overlay + Filter/Sort semantics + tests | S1 / fast_worker | DONE | Drawer/Modal/mobile semantics、共享 sidebar width、Filter/Sort 固定形态 |
+| 定向与完整验证、视觉检查 | S0 / 主 Agent | DONE | Database 49/49；Overlay/Settings/Pages/Editor 99/100，唯一旧 Editor 状态按钮竞态隔离 3/3；完整 product 270/270（review 修复前） |
+| 独立只读 review | Review / reviewer | DONE | 首轮发现 2 个 Record title flush/refresh race blocker；修复后二次 review 0 blocker |
+| 聚焦提交与交接 | 主 Agent | DONE | 一个聚焦 commit；正式行为已写回 `docs/p8-database.md` 与 handoff |
 
-## 最终行为
+## 本轮交付边界
 
-- Database 左侧提供 `[+] [drag]`，拖拽仅 hover/focus 强调；Plus 在当前区块下方插入 paragraph；drop indicator 使用语义 accent token；Slash Database 使用统一图标。
-- Header 使用“表格视图/名称”，无重复类型标签，空 Cell 留空；Create/Link 首层同行，Create 页明确区分返回、取消与 Primary 创建。
-- `...` 是筛选、排序、属性、记录打开方式、自动化五入口；自动化 disabled。复杂配置使用正式 Overlay，不塞入小 Popover。
-- 通用 Overlay 支持 desktop/tablet drawer/modal/page 与 phone right-drawer/bottom-drawer/modal/page；Desktop Drawer 无蒙层、不锁滚动、不阻止背景交互；有遮罩容器 focus trap/scroll lock/backdrop/Escape 正确。
-- Record 与 Property 使用相同 device-aware 模型但独立持久化。属性支持新增、删除、重命名、顺序、显隐、Select options、Relation/Rollup/Formula 配置；visible/order 仍属于 View config。
-- 新建 Record 保持 Record + Page 原子创建，随后按设备偏好打开并 autofocus；已有 Record 标题走同一机制；Page mode 使用正常 Page route。
-- Database 通过 navigation projection 作为宿主 Page 子项并有独立 route；新旧 Record Page 在 Sidebar 查询分页前过滤，仍可由 Database 打开；旧 P8 数据无 migration。
+- DeviceOpeningConfig 继续使用 `desktop` / `tablet` / `mobile`；现有 localStorage key/对象直接读取，无 migration。
+- Record 与 Property 使用同一三端设置交互、两套独立持久化配置；当前设备只显示提示。
+- Record + Page 继续原子创建，保留 transaction / CAS / uncertainty/auth/workspace fence；Page.title 是唯一标题来源。
+- “新建记录”直接用“无标题”创建，随后 `prepareProductDatabaseRecordPage` + `databaseContent.openRecord`，Existing/New 共用统一 Host。
+- Record 标题与正文共同进入 active page flush；关闭、切换和路由离开会等待标题保存。刷新通知携带保存时固定身份并支持多数据库并发目标。
+- Desktop/Tablet Drawer 无 backdrop、背景可交互；Modal 与 Mobile Drawers 使用 native modal/focus trap/backdrop；Right Drawer 与 Mobile Sidebar 共用 `--mobile-sidebar-width`；Bottom Drawer 保留 safe area。
+- Desktop/Tablet Filter、Sort 固定 Modal；Phone 固定 Bottom Drawer；Property 继续使用独立 preference。
 
-## 验证证据
+## 验证摘要
 
-- Domain 31、Contracts 17、SDK 22、API domain 12、HTTP 全套、MCP 30、Storage package 7、Web IndexedDB/Electron storage 12、Desktop 18、Visual baseline 7、Database 5k/10k performance 全通过，无 skip。
-- Product 完整命令 254/255；唯一旧 Toggle reload 用例随后完整 blocks 文件 14/14 通过，所有 255 项均有通过结果；Database 41/41、Overlay matrix 8/8。
-- 根 typecheck、Web/API/Desktop build、`git diff --check` 通过。Web 仅有既有大 chunk warning。
-- 视觉 QA 已人工检查 desktop light/dark、无蒙层属性 Drawer、Formula 配置、390px bottom drawer 与表格；截图位于系统 Temp，不入仓库。
-- 独立 reviewer 定向复核 Record Page tree filtering、旧 P8 compatibility、Overlay focus/backdrop、device config、Record transaction、Linked View、hidden property 与 Local-first，最终 0 merge blocker。
+- `pnpm typecheck`：PASS（Web/Desktop/API）；独立 Web typecheck：PASS。
+- `pnpm build:web`：PASS，仅既有大 chunk warning。
+- 完整 product：270/270（review 修复前）；最终 Database：49/49；Overlay/Settings/Pages/Editor：99/100，旧 Editor 同步重试按钮 DOM 状态竞态隔离连续 3/3 PASS。
+- Opening 设置关闭按钮与 Linked View 列保存曾出现 DOM remount 竞态；改为验证真实 Escape/最终表格结果，相关隔离分别 3/3、5/5，未增加无意义 timeout 或削弱产品断言。
+- Desktop light/dark 与 390×844 Mobile 截图已检查：三端设置无溢出，Desktop Drawer/Modal/Page，Phone Right/Bottom/Modal，Filter/Sort，safe area 均符合本轮要求。
+- `git diff --check`：PASS；独立二次 review：0 blocker。
 
-## 剩余收口
+## 下一轮（本轮不处理）
 
-无。确认 workspace clean 后按用户指定 12 项汇报并停止；不得开始 P9。
+- Drag Handle visibility
+- Database Header icon consistency
+- Page Tree / 10k projection 性能审查
+- 最终 Database UX Acceptance
+
+Database UX Refinement **不得**因本轮聚焦 PASS 被声明为 Final PASS。

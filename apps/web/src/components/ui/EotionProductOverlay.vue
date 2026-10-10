@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
 .eotion-product-overlay--right-drawer {
   position: fixed;
   inset: 0 0 0 auto;
-  width: min(85vw, 390px);
+  width: var(--mobile-sidebar-width);
   height: 100dvh;
   margin: 0;
 }
@@ -201,6 +201,5 @@ onBeforeUnmount(() => {
 .eotion-product-overlay__close:focus-visible, .eotion-product-overlay:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); }
 @media (max-width: 767px) {
   .eotion-product-overlay--modal { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); }
-  .eotion-product-overlay--drawer { width: min(85vw, 390px); }
 }
 </style>
