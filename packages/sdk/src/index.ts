@@ -23,6 +23,10 @@ import type {
   DatabaseWindowResponse,
   DatabaseResponse,
   DatabasePropertyResponse,
+  DatabaseRelationCandidatesQuery,
+  DatabaseRelationCandidatesResponse,
+  DatabaseRelationTitlesRequest,
+  DatabaseRelationTitlesResponse,
   FileResponse,
   FileUpdateRequest,
   HealthResponse,
@@ -104,6 +108,8 @@ export class EotionApiClient {
     listDatabases: (workspaceId: string, window?: Partial<Pick<DatabaseTableQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseWindowResponse>
     listDatabaseViews: (workspaceId: string, databaseId: string, signal?: AbortSignal) => Promise<DatabaseViewResponse[]>
     getDatabaseTable: (workspaceId: string, databaseId: string, viewId: string, window?: Partial<Pick<DatabaseTableQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseTableResponse>
+    listRelationCandidates: (workspaceId: string, databaseId: string, input?: Partial<DatabaseRelationCandidatesQuery>, signal?: AbortSignal) => Promise<DatabaseRelationCandidatesResponse>
+    resolveRelationTitles: (workspaceId: string, databaseId: string, input: DatabaseRelationTitlesRequest, signal?: AbortSignal) => Promise<DatabaseRelationTitlesResponse>
     createDatabaseInPage: (workspaceId: string, pageId: string, input: DatabaseCreateInPageRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; titleProperty: DatabasePropertyResponse; view: DatabaseViewResponse; block: BlockResponse }>
     linkDatabaseInPage: (workspaceId: string, pageId: string, input: DatabaseLinkInPageRequest, signal?: AbortSignal) => Promise<{ block: BlockResponse }>
     createDatabaseRecord: (workspaceId: string, databaseId: string, input: DatabaseRecordPageCreateRequest, signal?: AbortSignal) => Promise<{ record: DatabaseTableRecordResponse; page: PageResponse }>
@@ -181,6 +187,8 @@ export class EotionApiClient {
       listDatabases: (workspaceId, window = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases${query(window)}`, { method: 'GET', signal }),
       listDatabaseViews: (workspaceId, databaseId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views`, { method: 'GET', signal }),
       getDatabaseTable: (workspaceId, databaseId, viewId, window = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}/table${query(window)}`, { method: 'GET', signal }),
+      listRelationCandidates: (workspaceId, databaseId, input = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/record-options${query(input)}`, { method: 'GET', signal }),
+      resolveRelationTitles: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/record-options/resolve`, { method: 'POST', body: input, signal }),
       createDatabaseInPage: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/databases`, { method: 'POST', body: input, signal }),
       linkDatabaseInPage: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/database-links`, { method: 'POST', body: input, signal }),
       createDatabaseRecord: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/records`, { method: 'POST', body: input, signal }),
@@ -264,8 +272,9 @@ function segment(value: string): string {
   return encodeURIComponent(value)
 }
 
-function query(value: { limit?: number; cursor?: string }): string {
+function query(value: { limit?: number; cursor?: string; search?: string }): string {
   const params = new URLSearchParams()
+  if (value.search !== undefined) params.set('search', value.search)
   if (value.limit !== undefined) params.set('limit', String(value.limit))
   if (value.cursor !== undefined) params.set('cursor', value.cursor)
   const encoded = params.toString()

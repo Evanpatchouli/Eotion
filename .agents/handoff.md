@@ -1,4 +1,15 @@
 # Handoff
+## 2026-10-10 P8.5 Advanced Properties 完成
+
+P8.1–P8.5 PASS，P8.5 current；基线5179c584b335484268e9b9be995d529ef5b2f5d6。仅本阶段，一个聚焦commit；P8.6 not started，到此停止。
+
+单向 multi Relation 使用稳定 Record ID[]（最多50、重复拒绝、保留顺序），允许self/纯关系图环；同Workspace target校验、source/target事务fence；Record删除按sourceDB总10000行有界清理incoming relation，不删Page/targetDB；依赖属性拒删。Rollup支持count/count_values和number sum/avg/min/max，只读、读取时计算，target限base属性。Formula严格AST+静态类型+同库cycle/depth验证，不执行任意代码；array/object enum拒绝且不调用转换hook。派生Filter/Sort明确拒绝，Relation仅empty/nonempty，保持P8.4分页语义。Page.title、online-only/MCP边界不扩大。
+
+Quiet Studio Table配置/picker/Formula模板编辑、linked及目标变更派生刷新、动态标题、390px/离线/error/retry完成。Bounds与删除/类型/图规则详见docs/p8-database.md，检索入口docs/context/README.md。
+
+验收：Domain30、Contracts15、SDK21、API domain9、HTTP27、MCP30、fresh完整Product243、Database32、Storage7+11、Visual7、titlebar2；typecheck及Web/API/Desktop build、diff与UTF-8无BOM通过，零新blocker，独立review0。Desktop node12/17的4个legacyprops及1个EPERM为已确认基线；附件两项早期fixture超时各隔离3/3，fresh全集通过；HMR模块状态分离由无源码修改的fresh服务复跑确认，未削弱断言或更新visual baseline。日志在系统Temp/p85-validation，截图在本任务仓库外p85-ui。
+
+已知限制：date min/max延期；Rollup不可target relation/derived；derived query不支持；Formula轻量JSON AST editor；有界大库search/cleanup会fail-closed；没有跨客户端Database实时推送/离线复制/MCP扩展。390px为Chromium响应式，非原生宿主真机新增验收。
 
 ## 2026-10-09 Desktop Custom Title Bar 独立修复
 

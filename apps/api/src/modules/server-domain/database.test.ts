@@ -459,3 +459,237 @@ test('database writes reject unsupported transactions before any write', async (
   assert.equal(writes, 0)
   assert.equal(sessions, 0)
 })
+
+test('advanced properties keep links scoped, project values, and clean incoming relations on record deletion', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  const databases = app.get(DatabaseService)
+  const pages = app.get(PageService)
+  const auth = app.get(AuthService)
+  const workspaces = app.get(WorkspaceService)
+  await Promise.all([DatabaseEntity, DatabasePropertyEntity, DatabaseRecordEntity, DatabaseViewEntity].map(entity => app.get<Model<unknown>>(getModelToken(entity.name)).init()))
+  const owner = await auth.register(`advanced-${randomUUID()}@example.com`, 'correct horse battery staple')
+  await workspaces.create(owner.id, { id: 'advanced-ws', name: 'Advanced' })
+  await pages.create(owner.id, 'advanced-ws', { id: 'advanced-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  const createDatabase = (id: string) => databases.createInPage(owner.id, 'advanced-ws', 'advanced-home', { id, name: id, titlePropertyId: `${id}-title`, viewId: `${id}-view`, blockId: `${id}-block`, orderKey: id, parentBlockId: null })
+  await createDatabase('advanced-source')
+  await createDatabase('advanced-target')
+  const number = await databases.createProperty(owner.id, 'advanced-ws', 'advanced-target', { id: 'target-number', name: 'Number', type: 'number', expectedDatabaseVersion: 1 })
+  const target = await databases.createRecordPage(owner.id, 'advanced-ws', 'advanced-target', { id: 'target-row', pageId: 'target-page', title: 'Target title', orderKey: 'b' })
+  await databases.updateRecordCell(owner.id, 'advanced-ws', 'advanced-target', 'target-row', 'target-number', { value: 8, expectedDatabaseVersion: 3, expectedRecordVersion: 1 })
+  const relation = await databases.createProperty(owner.id, 'advanced-ws', 'advanced-source', { id: 'links.alt', name: 'Links', type: 'relation', config: { targetDatabaseId: 'advanced-target' }, expectedDatabaseVersion: 1 })
+  const rollup = await databases.createProperty(owner.id, 'advanced-ws', 'advanced-source', { id: 'source-total', name: 'Total', type: 'rollup', config: { relationPropertyId: 'links.alt', targetPropertyId: number.property.id, aggregation: 'sum' }, expectedDatabaseVersion: relation.database.version })
+  const formula = await databases.createProperty(owner.id, 'advanced-ws', 'advanced-source', { id: 'source-double', name: 'Double', type: 'formula', config: { expression: { kind: 'binary', operator: '*', left: { kind: 'property', propertyId: 'source-total' }, right: { kind: 'literal', value: 2 } }, resultType: 'number' }, expectedDatabaseVersion: rollup.database.version })
+  const source = await databases.createRecordPage(owner.id, 'advanced-ws', 'advanced-source', { id: 'source-row', pageId: 'source-page', title: 'Source title', orderKey: 'c' })
+  await assert.rejects(databases.updateRecordCell(owner.id, 'advanced-ws', 'advanced-source', 'source-row', 'source-total', { value: 5, expectedDatabaseVersion: formula.database.version + 1, expectedRecordVersion: 1 }), /read only/)
+  await assert.rejects(databases.updateRecordCell(owner.id, 'advanced-ws', 'advanced-source', 'source-row', 'links.alt', { value: ['missing'], expectedDatabaseVersion: formula.database.version + 1, expectedRecordVersion: 1 }), /existing records/)
+  const linked = await databases.updateRecordCell(owner.id, 'advanced-ws', 'advanced-source', 'source-row', 'links.alt', { value: [target.record.id], expectedDatabaseVersion: formula.database.version + 1, expectedRecordVersion: 1 })
+  assert.deepEqual(linked.record.properties['links.alt'], ['target-row'])
+  assert.equal(linked.record.properties['source-total'], 8)
+  assert.equal(linked.record.properties['source-double'], 16)
+  const table = await databases.getTable(owner.id, 'advanced-ws', 'advanced-source', 'advanced-source-view', { limit: 10 })
+  assert.equal(table.records[0]?.properties['source-double'], 16)
+  assert.deepEqual(await databases.resolveRecordOptions(owner.id, 'advanced-ws', 'advanced-target', { recordIds: ['target-row', 'missing'] }), { items: [{ recordId: 'target-row', pageId: 'target-page', title: 'Target title' }] })
+  assert.deepEqual((await databases.listRecordOptions(owner.id, 'advanced-ws', 'advanced-target', { search: 'Target', limit: 50 })).items, [{ recordId: 'target-row', pageId: 'target-page', title: 'Target title' }])
+  await assert.rejects(databases.deleteProperty(owner.id, 'advanced-ws', 'advanced-target', 'target-number', { expectedDatabaseVersion: 4, expectedPropertyVersion: 1 }), /rollup/)
+  await assert.rejects(databases.updateProperty(owner.id, 'advanced-ws', 'advanced-source', 'links.alt', { config: { targetDatabaseId: 'advanced-source' }, expectedDatabaseVersion: linked.database.version, expectedPropertyVersion: 1 }), /Clear relation values/)
+  await assert.rejects(databases.deleteRecord(owner.id, 'advanced-ws', 'advanced-target', 'target-row', { expectedDatabaseVersion: 4, expectedRecordVersion: 1 }), /version is stale/)
+  const deleted = await databases.deleteRecord(owner.id, 'advanced-ws', 'advanced-target', 'target-row', { expectedDatabaseVersion: 4, expectedRecordVersion: 2 })
+  assert.equal(deleted.database.version, 5)
+  assert.ok(await pages.find(owner.id, 'advanced-ws', target.page.id), 'record deletion preserves its Page')
+  const after = await databases.getTable(owner.id, 'advanced-ws', 'advanced-source', 'advanced-source-view', { limit: 10 })
+  assert.deepEqual(after.records[0]?.properties['links.alt'], [])
+  assert.equal(after.records[0]?.properties['source-total'], null)
+  assert.equal(after.records[0]?.properties['source-double'], null)
+  const proto = await databases.createProperty(owner.id, 'advanced-ws', 'advanced-source', { id: '__proto__', name: 'Safe formula', type: 'formula', config: { expression: { kind: 'property', propertyId: 'source-total' }, resultType: 'number' }, expectedDatabaseVersion: after.database.version })
+  const protoRow = (await databases.getTable(owner.id, 'advanced-ws', 'advanced-source', 'advanced-source-view', { limit: 10 })).records[0]!
+  assert.equal(Object.hasOwn(protoRow.properties, '__proto__'), true)
+  assert.equal(protoRow.properties['__proto__'], null)
+  const self = await databases.createProperty(owner.id, 'advanced-ws', 'advanced-source', { id: 'source-self', name: 'Self', type: 'relation', config: { targetDatabaseId: 'advanced-source' }, expectedDatabaseVersion: proto.database.version })
+  const selfLinked = await databases.updateRecordCell(owner.id, 'advanced-ws', 'advanced-source', 'source-row', 'source-self', { value: ['source-row'], expectedDatabaseVersion: self.database.version, expectedRecordVersion: after.records[0]!.version })
+  await databases.deleteRecord(owner.id, 'advanced-ws', 'advanced-source', 'source-row', { expectedDatabaseVersion: selfLinked.database.version, expectedRecordVersion: selfLinked.record.version })
+  assert.ok(await pages.find(owner.id, 'advanced-ws', source.page.id), 'self-linked record deletion preserves its Page')
+  assert.deepEqual((await databases.getTable(owner.id, 'advanced-ws', 'advanced-source', 'advanced-source-view', { limit: 10 })).records, [])
+  const recordModel = app.get<Model<unknown>>(getModelToken(DatabaseRecordEntity.name))
+  await recordModel.insertMany(Array.from({ length: 101 }, (_, index) => ({ id: `advanced-bounded-${index}`, workspaceId: 'advanced-ws', databaseId: 'advanced-source', pageId: `advanced-page-${index}`, properties: {}, version: 1 })))
+  await assert.rejects(databases.listRecords(owner.id, 'advanced-ws', 'advanced-source'), /maximum of 100 records/)
+  await recordModel.insertMany(Array.from({ length: 9900 }, (_, index) => ({ id: `advanced-large-${index}`, workspaceId: 'advanced-ws', databaseId: 'advanced-source', pageId: `advanced-large-page-${index}`, properties: {}, version: 1 })))
+  await assert.rejects(databases.listRecordOptions(owner.id, 'advanced-ws', 'advanced-source', { search: 'anything', limit: 50 }), /maximum of 5000 candidate records/)
+  const boundedTarget = await databases.createRecordPage(owner.id, 'advanced-ws', 'advanced-target', { id: 'bounded-target', pageId: 'bounded-target-page', title: 'Bounded', orderKey: 'd' })
+  await assert.rejects(databases.deleteRecord(owner.id, 'advanced-ws', 'advanced-target', boundedTarget.record.id, { expectedDatabaseVersion: (await databases.find(owner.id, 'advanced-ws', 'advanced-target'))!.version, expectedRecordVersion: boundedTarget.record.version }), /maximum of 10000 scanned records/)
+  assert.ok(await recordModel.findOne({ id: boundedTarget.record.id }), 'failed bounded cleanup rolls back target deletion')
+  assert.equal(source.record.id, 'source-row')
+})
+
+test('relation properties reject cross-workspace and invalid links, filter empty values, and clean up without deleting targets', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  const databases = app.get(DatabaseService)
+  const pages = app.get(PageService)
+  const auth = app.get(AuthService)
+  const workspaces = app.get(WorkspaceService)
+  const records = app.get<Model<unknown>>(getModelToken(DatabaseRecordEntity.name))
+  await Promise.all([DatabaseEntity, DatabasePropertyEntity, DatabaseRecordEntity, DatabaseViewEntity].map(entity => app.get<Model<unknown>>(getModelToken(entity.name)).init()))
+
+  const owner = await auth.register(`relation-lifecycle-${randomUUID()}@example.com`, 'correct horse battery staple')
+  const outsider = await auth.register(`relation-outsider-${randomUUID()}@example.com`, 'correct horse battery staple')
+  await workspaces.create(owner.id, { id: 'relation-ws-a', name: 'A' })
+  await workspaces.create(owner.id, { id: 'relation-ws-b', name: 'B' })
+  await workspaces.create(outsider.id, { id: 'relation-ws-foreign', name: 'Foreign' })
+  await pages.create(owner.id, 'relation-ws-a', { id: 'relation-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  await pages.create(owner.id, 'relation-ws-b', { id: 'relation-home-b', parentPageId: null, title: 'Home B', orderKey: 'a' })
+  await pages.create(outsider.id, 'relation-ws-foreign', { id: 'relation-home-foreign', parentPageId: null, title: 'Foreign', orderKey: 'a' })
+  const createDatabase = (workspaceId: string, id: string) => databases.createInPage(owner.id, workspaceId, workspaceId === 'relation-ws-a' ? 'relation-home' : 'relation-home-b', { id, name: id, titlePropertyId: `${id}-title`, viewId: `${id}-view`, blockId: `${id}-block`, orderKey: id, parentBlockId: null })
+  await createDatabase('relation-ws-a', 'relation-source')
+  await createDatabase('relation-ws-a', 'relation-target')
+  await createDatabase('relation-ws-b', 'relation-other-workspace')
+  // Use the foreign owner directly for the foreign Database fixture.
+  await databases.createInPage(outsider.id, 'relation-ws-foreign', 'relation-home-foreign', { id: 'relation-foreign', name: 'Foreign', titlePropertyId: 'relation-foreign-title', viewId: 'relation-foreign-view', blockId: 'relation-foreign-block', orderKey: 'a', parentBlockId: null })
+
+  const sourceDatabase = async () => (await databases.find(owner.id, 'relation-ws-a', 'relation-source'))!
+  const targetDatabase = async () => (await databases.find(owner.id, 'relation-ws-a', 'relation-target'))!
+  const targetNumber = await databases.createProperty(owner.id, 'relation-ws-a', 'relation-target', { id: 'relation-target-number', name: 'Number', type: 'number', expectedDatabaseVersion: (await targetDatabase()).version })
+  const target = await databases.createRecordPage(owner.id, 'relation-ws-a', 'relation-target', { id: 'relation-target-row', pageId: 'relation-target-page', title: 'Target', orderKey: 'a' })
+  const source = await databases.createRecordPage(owner.id, 'relation-ws-a', 'relation-source', { id: 'relation-source-row', pageId: 'relation-source-page', title: 'Source', orderKey: 'a' })
+  const emptySource = await databases.createRecordPage(owner.id, 'relation-ws-a', 'relation-source', { id: 'relation-empty-row', pageId: 'relation-empty-page', title: 'Empty', orderKey: 'b' })
+  const otherTarget = await databases.createRecordPage(owner.id, 'relation-ws-b', 'relation-other-workspace', { id: 'relation-other-row', pageId: 'relation-other-page', title: 'Other workspace', orderKey: 'a' })
+  const foreignTarget = await databases.createRecordPage(outsider.id, 'relation-ws-foreign', 'relation-foreign', { id: 'relation-foreign-row', pageId: 'relation-foreign-page', title: 'Foreign target', orderKey: 'a' })
+
+  const rejectUnscopedTarget = async (propertyId: string, targetDatabaseId: string) => {
+    const before = await sourceDatabase()
+    await assert.rejects(databases.createProperty(owner.id, 'relation-ws-a', 'relation-source', { id: propertyId, name: propertyId, type: 'relation', config: { targetDatabaseId }, expectedDatabaseVersion: before.version }), error => {
+      assert.equal((error as { status?: number }).status, 409)
+      assert.match((error as Error).message, /Referenced database changed; refresh and retry/)
+      return true
+    })
+    assert.equal((await sourceDatabase()).version, before.version, 'failed cross-workspace Relation creation rolls back the Database version bump')
+    assert.equal((await databases.listProperties(owner.id, 'relation-ws-a', 'relation-source')).some(property => property.id === propertyId), false, 'failed cross-workspace Relation creation writes no Property')
+  }
+  await rejectUnscopedTarget('relation-cross-workspace', 'relation-other-workspace')
+  await rejectUnscopedTarget('relation-foreign-target', 'relation-foreign')
+
+  const relation = await databases.createProperty(owner.id, 'relation-ws-a', 'relation-source', { id: 'relation-links', name: 'Links', type: 'relation', config: { targetDatabaseId: 'relation-target' }, expectedDatabaseVersion: (await sourceDatabase()).version })
+  const backRelation = await databases.createProperty(owner.id, 'relation-ws-a', 'relation-target', { id: 'relation-back-links', name: 'Back links', type: 'relation', config: { targetDatabaseId: 'relation-source' }, expectedDatabaseVersion: (await targetDatabase()).version })
+  await assert.rejects(databases.updateRecordCell(owner.id, 'relation-ws-a', 'relation-source', source.record.id, relation.property.id, { value: [otherTarget.record.id], expectedDatabaseVersion: (await sourceDatabase()).version, expectedRecordVersion: source.record.version }), /existing records|target|workspace/i)
+  await assert.rejects(databases.updateRecordCell(owner.id, 'relation-ws-a', 'relation-source', source.record.id, relation.property.id, { value: [target.record.id, target.record.id], expectedDatabaseVersion: (await sourceDatabase()).version, expectedRecordVersion: source.record.version }), /invalid database input|duplicate|relation|value/i)
+  await assert.rejects(databases.updateRecordCell(owner.id, 'relation-ws-a', 'relation-source', source.record.id, relation.property.id, { value: Array.from({ length: 51 }, (_, index) => `target-${index}`), expectedDatabaseVersion: (await sourceDatabase()).version, expectedRecordVersion: source.record.version }), /invalid database input|50|maximum|relation|value/i)
+  await assert.rejects(databases.updateRecordCell(owner.id, 'relation-ws-a', 'relation-source', source.record.id, relation.property.id, { value: [foreignTarget.record.id], expectedDatabaseVersion: (await sourceDatabase()).version, expectedRecordVersion: source.record.version }), /existing records|target|workspace/i)
+  const linked = await databases.updateRecordCell(owner.id, 'relation-ws-a', 'relation-source', source.record.id, relation.property.id, { value: [target.record.id], expectedDatabaseVersion: (await sourceDatabase()).version, expectedRecordVersion: source.record.version })
+  const backLinked = await databases.updateRecordCell(owner.id, 'relation-ws-a', 'relation-target', target.record.id, backRelation.property.id, { value: [source.record.id], expectedDatabaseVersion: (await targetDatabase()).version, expectedRecordVersion: target.record.version })
+  assert.deepEqual(linked.record.properties[relation.property.id], [target.record.id])
+  assert.deepEqual(backLinked.record.properties[backRelation.property.id], [source.record.id], 'opposite one-way Relations may form a cycle')
+
+  const rollup = await databases.createProperty(owner.id, 'relation-ws-a', 'relation-source', { id: 'relation-rollup', name: 'Target total', type: 'rollup', config: { relationPropertyId: relation.property.id, targetPropertyId: targetNumber.property.id, aggregation: 'sum' }, expectedDatabaseVersion: (await sourceDatabase()).version })
+  const formula = await databases.createProperty(owner.id, 'relation-ws-a', 'relation-source', { id: 'relation-formula', name: 'Double total', type: 'formula', config: { expression: { kind: 'binary', operator: '*', left: { kind: 'property', propertyId: rollup.property.id }, right: { kind: 'literal', value: 2 } }, resultType: 'number' }, expectedDatabaseVersion: (await sourceDatabase()).version })
+  const currentView = (await databases.listViews(owner.id, 'relation-ws-a', 'relation-source')).find(view => view.id === 'relation-source-view')!
+  const filterConfig = { filters: [{ propertyId: relation.property.id, operator: 'is_empty' as const }], sorts: [], visibleProperties: null, propertyOrder: null }
+  await databases.updateView(owner.id, 'relation-ws-a', 'relation-source', currentView.id, { config: filterConfig, expectedDatabaseVersion: (await sourceDatabase()).version, expectedViewVersion: currentView.version })
+  const emptyFiltered = await databases.getTable(owner.id, 'relation-ws-a', 'relation-source', currentView.id, { limit: 10 })
+  assert.deepEqual(emptyFiltered.records.map(row => row.id), [emptySource.record.id])
+  const filteredView = (await databases.listViews(owner.id, 'relation-ws-a', 'relation-source')).find(view => view.id === currentView.id)!
+  await databases.updateView(owner.id, 'relation-ws-a', 'relation-source', filteredView.id, { config: { ...filterConfig, filters: [{ propertyId: relation.property.id, operator: 'is_not_empty' as const }] }, expectedDatabaseVersion: (await sourceDatabase()).version, expectedViewVersion: filteredView.version })
+  assert.deepEqual((await databases.getTable(owner.id, 'relation-ws-a', 'relation-source', currentView.id, { limit: 10 })).records.map(row => row.id), [source.record.id])
+
+  await assert.rejects(databases.deleteProperty(owner.id, 'relation-ws-a', 'relation-source', relation.property.id, { expectedDatabaseVersion: (await sourceDatabase()).version, expectedPropertyVersion: relation.property.version }), /referenced|rollup|formula/i)
+  await assert.rejects(databases.deleteProperty(owner.id, 'relation-ws-a', 'relation-source', rollup.property.id, { expectedDatabaseVersion: (await sourceDatabase()).version, expectedPropertyVersion: rollup.property.version }), /referenced|formula/i)
+  await databases.deleteProperty(owner.id, 'relation-ws-a', 'relation-source', formula.property.id, { expectedDatabaseVersion: (await sourceDatabase()).version, expectedPropertyVersion: formula.property.version })
+  await databases.deleteProperty(owner.id, 'relation-ws-a', 'relation-source', rollup.property.id, { expectedDatabaseVersion: (await sourceDatabase()).version, expectedPropertyVersion: rollup.property.version })
+  const renamed = await databases.updateProperty(owner.id, 'relation-ws-a', 'relation-source', relation.property.id, { name: 'Renamed links', expectedDatabaseVersion: (await sourceDatabase()).version, expectedPropertyVersion: relation.property.version })
+  assert.equal(renamed.property.name, 'Renamed links')
+  await databases.deleteProperty(owner.id, 'relation-ws-a', 'relation-source', relation.property.id, { expectedDatabaseVersion: (await sourceDatabase()).version, expectedPropertyVersion: renamed.property.version })
+  const deletedRelationView = (await databases.listViews(owner.id, 'relation-ws-a', 'relation-source')).find(view => view.id === currentView.id)!
+  assert.deepEqual(deletedRelationView.config?.filters, [])
+  const persistedSource = await records.findOne({ id: source.record.id }).lean() as { properties: Record<string, unknown> } | null
+  assert.ok(persistedSource)
+  assert.equal(Object.hasOwn(persistedSource.properties, relation.property.id), false)
+  assert.ok(await databases.find(owner.id, 'relation-ws-a', 'relation-target'), 'deleting a Relation preserves its target Database')
+  assert.ok(await records.findOne({ id: target.record.id }), 'deleting a Relation preserves its target Record')
+  assert.ok(await pages.find(owner.id, 'relation-ws-a', target.page.id), 'deleting a Relation preserves the target Page')
+  assert.deepEqual((await databases.getTable(owner.id, 'relation-ws-a', 'relation-target', 'relation-target-view', { limit: 10 })).records[0]?.properties[backRelation.property.id], [source.record.id], 'deleting one Relation preserves the independent back Relation')
+})
+
+test('derived reads reject more than 5000 distinct linked records before fetching targets', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  const databases = app.get(DatabaseService)
+  const auth = app.get(AuthService)
+  const workspaces = app.get(WorkspaceService)
+  const pages = app.get(PageService)
+  const recordModel = app.get<Model<unknown>>(getModelToken(DatabaseRecordEntity.name))
+  await Promise.all([DatabaseEntity, DatabasePropertyEntity, DatabaseRecordEntity, DatabaseViewEntity].map(entity => app.get<Model<unknown>>(getModelToken(entity.name)).init()))
+  const owner = await auth.register(`derived-link-bound-${randomUUID()}@example.com`, 'correct horse battery staple')
+  await workspaces.create(owner.id, { id: 'derived-bound-ws', name: 'Bounds' })
+  await pages.create(owner.id, 'derived-bound-ws', { id: 'derived-bound-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  for (const id of ['derived-bound-source', 'derived-bound-target']) await databases.createInPage(owner.id, 'derived-bound-ws', 'derived-bound-home', { id, name: id, titlePropertyId: `${id}-title`, viewId: `${id}-view`, blockId: `${id}-block`, orderKey: id, parentBlockId: null })
+  const currentDatabase = async (id: string) => (await databases.find(owner.id, 'derived-bound-ws', id))!
+  const targetProperty = await databases.createProperty(owner.id, 'derived-bound-ws', 'derived-bound-target', { id: 'derived-bound-number', name: 'Number', type: 'number', expectedDatabaseVersion: (await currentDatabase('derived-bound-target')).version })
+  const relationA = await databases.createProperty(owner.id, 'derived-bound-ws', 'derived-bound-source', { id: 'derived-bound-links-a', name: 'Links A', type: 'relation', config: { targetDatabaseId: 'derived-bound-target' }, expectedDatabaseVersion: (await currentDatabase('derived-bound-source')).version })
+  const rollupA = await databases.createProperty(owner.id, 'derived-bound-ws', 'derived-bound-source', { id: 'derived-bound-rollup-a', name: 'Count A', type: 'rollup', config: { relationPropertyId: relationA.property.id, targetPropertyId: targetProperty.property.id, aggregation: 'count' }, expectedDatabaseVersion: relationA.database.version })
+  const relationB = await databases.createProperty(owner.id, 'derived-bound-ws', 'derived-bound-source', { id: 'derived-bound-links-b', name: 'Links B', type: 'relation', config: { targetDatabaseId: 'derived-bound-target' }, expectedDatabaseVersion: rollupA.database.version })
+  await databases.createProperty(owner.id, 'derived-bound-ws', 'derived-bound-source', { id: 'derived-bound-rollup-b', name: 'Count B', type: 'rollup', config: { relationPropertyId: relationB.property.id, targetPropertyId: targetProperty.property.id, aggregation: 'count' }, expectedDatabaseVersion: relationB.database.version })
+
+  const now = new Date()
+  const sourceRows = Array.from({ length: 100 }, (_, index) => {
+    const linksA = Array.from({ length: 50 }, (__, link) => `derived-bound-target-${String(index * 50 + link).padStart(4, '0')}`)
+    const linksB = index === 0 ? ['derived-bound-target-5000'] : []
+    return {
+      id: `derived-bound-row-${String(index).padStart(3, '0')}`, workspaceId: 'derived-bound-ws', databaseId: 'derived-bound-source',
+      pageId: `derived-bound-page-${String(index).padStart(3, '0')}`, properties: { [relationA.property.id]: linksA, ...(linksB.length ? { [relationB.property.id]: linksB } : {}) }, version: 1, createdAt: now, updatedAt: now,
+    }
+  })
+  const sourcePages = sourceRows.map((row, index) => ({ id: row.pageId, workspaceId: 'derived-bound-ws', parentPageId: null, title: `Row ${index}`, orderKey: String(index).padStart(3, '0'), structureFence: 0, createdAt: now, updatedAt: now }))
+  await connection.db!.collection('pages').insertMany(sourcePages)
+  await recordModel.insertMany(sourceRows)
+
+  const databaseName = connection.db!.databaseName
+  await connection.db!.command({ profile: 2, slowms: 0 })
+  try {
+    await assert.rejects(databases.getTable(owner.id, 'derived-bound-ws', 'derived-bound-source', 'derived-bound-source-view', { limit: 100 }), /maximum of 5000 linked records/)
+    const targetQueries = await connection.db!.collection('system.profile').find({ ns: `${databaseName}.database_records`, 'command.filter.databaseId': 'derived-bound-target' }).toArray()
+    assert.equal(targetQueries.length, 0, 'the bound is checked before any target Record fetch')
+  } finally {
+    await connection.db!.command({ profile: 0 })
+  }
+})
+
+test('advanced reference fences resolve relation and rollup races without dangling references', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  const databases = app.get(DatabaseService)
+  const pages = app.get(PageService)
+  const auth = app.get(AuthService)
+  const workspaces = app.get(WorkspaceService)
+  const recordRepository = app.get(DatabaseRecordRepository)
+  await Promise.all([DatabaseEntity, DatabasePropertyEntity, DatabaseRecordEntity, DatabaseViewEntity].map(entity => app.get<Model<unknown>>(getModelToken(entity.name)).init()))
+  const owner = await auth.register(`advanced-race-${randomUUID()}@example.com`, 'correct horse battery staple')
+  await workspaces.create(owner.id, { id: 'race-ws', name: 'Races' })
+  await pages.create(owner.id, 'race-ws', { id: 'race-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  for (const id of ['race-source', 'race-target']) await databases.createInPage(owner.id, 'race-ws', 'race-home', { id, name: id, titlePropertyId: `${id}-title`, viewId: `${id}-view`, blockId: `${id}-block`, orderKey: id, parentBlockId: null })
+  const targetProperty = await databases.createProperty(owner.id, 'race-ws', 'race-target', { id: 'race-number', name: 'Number', type: 'number', expectedDatabaseVersion: 1 })
+  const relation = await databases.createProperty(owner.id, 'race-ws', 'race-source', { id: 'race-links', name: 'Links', type: 'relation', config: { targetDatabaseId: 'race-target' }, expectedDatabaseVersion: 1 })
+  const target = await databases.createRecordPage(owner.id, 'race-ws', 'race-target', { id: 'race-target-row', pageId: 'race-target-page', title: 'Target', orderKey: 'b' })
+  const source = await databases.createRecordPage(owner.id, 'race-ws', 'race-source', { id: 'race-source-row', pageId: 'race-source-page', title: 'Source', orderKey: 'c' })
+  const concurrent = await Promise.allSettled([
+    databases.updateRecordCell(owner.id, 'race-ws', 'race-source', source.record.id, relation.property.id, { value: [target.record.id], expectedDatabaseVersion: source.record.version + 2, expectedRecordVersion: source.record.version }),
+    databases.deleteRecord(owner.id, 'race-ws', 'race-target', target.record.id, { expectedDatabaseVersion: target.record.version + 2, expectedRecordVersion: target.record.version }),
+  ])
+  assert.ok(concurrent.some(result => result.status === 'fulfilled'))
+  const targetAfter = await recordRepository.findInDatabase('race-ws', 'race-target', target.record.id)
+  const sourceAfter = await recordRepository.findInDatabase('race-ws', 'race-source', source.record.id)
+  assert.ok(sourceAfter)
+  if (!targetAfter) assert.deepEqual(sourceAfter.properties[relation.property.id] ?? [], [], 'deleted target cannot leave a dangling link')
+  else assert.ok(sourceAfter.properties[relation.property.id] === undefined || (sourceAfter.properties[relation.property.id] as string[]).every(id => id === targetAfter.id))
+
+  const rollupRace = await Promise.allSettled([
+    databases.createProperty(owner.id, 'race-ws', 'race-source', { id: 'race-rollup', name: 'Rollup', type: 'rollup', config: { relationPropertyId: relation.property.id, targetPropertyId: targetProperty.property.id, aggregation: 'sum' }, expectedDatabaseVersion: (await databases.find(owner.id, 'race-ws', 'race-source'))!.version }),
+    databases.deleteProperty(owner.id, 'race-ws', 'race-target', targetProperty.property.id, { expectedDatabaseVersion: (await databases.find(owner.id, 'race-ws', 'race-target'))!.version, expectedPropertyVersion: targetProperty.property.version }),
+  ])
+  assert.equal(rollupRace.filter(result => result.status === 'fulfilled').length, 1, 'target property deletion and rollup creation cannot both commit')
+  const sourceProperties = await databases.listProperties(owner.id, 'race-ws', 'race-source')
+  const targetProperties = await databases.listProperties(owner.id, 'race-ws', 'race-target')
+  assert.equal(sourceProperties.some(property => property.id === 'race-rollup'), targetProperties.some(property => property.id === 'race-number'))
+})

@@ -4,13 +4,15 @@ import {
   isValidDatabase,
   isValidDatabaseProperty,
   isValidDatabasePropertyDefinition,
+  isValidFormulaExpression,
+  DATABASE_RELATION_MAX_LINKS,
   isValidDatabaseRecord,
   isValidDatabaseView,
   isValidDatabaseViewConfigShape,
   validateDatabaseRecordValues,
   validateDatabaseViewConfig,
 } from '@eotion/domain/database'
-import type { Database, DatabaseProperty, DatabaseRecord, DatabaseTableRecord, DatabaseView, DatabaseViewConfig } from '@eotion/domain/database'
+import type { Database, DatabaseProperty, DatabasePropertyConfig, DatabaseRecord, DatabaseTableRecord, DatabaseView, DatabaseViewConfig } from '@eotion/domain/database'
 export { BLOCK_TYPES }
 
 export interface HealthResponse {
@@ -187,6 +189,7 @@ function isValidDatabaseTableRecord(value: unknown, properties: readonly Databas
   if (!title || typeof projected !== 'object' || projected === null || Array.isArray(projected)) return false
   const storedValues = { ...(projected as Record<string, unknown>) }
   delete storedValues[title.id]
+  for (const property of properties) if (property.type === 'rollup' || property.type === 'formula') delete storedValues[property.id]
   return validateDatabaseRecordValues(projected, properties)
     && isValidDatabaseRecord({ ...persistedShape, properties: storedValues }, properties)
 }
@@ -205,8 +208,9 @@ export type DatabaseCreateInPageRequest = z.infer<typeof DatabaseCreateInPageReq
 export const DatabasePropertyCreateRequestSchema = z.object({
   id: databaseStableIdSchema,
   name: databaseNameSchema,
-  type: z.enum(['title', 'text', 'number', 'checkbox', 'select', 'date']),
+  type: z.enum(['title', 'text', 'number', 'checkbox', 'select', 'date', 'relation', 'rollup', 'formula']),
   options: z.array(z.object({ id: databaseStableIdSchema, name: databaseNameSchema }).strict()).optional(),
+  config: z.custom<DatabasePropertyConfig>((value) => isDatabasePropertyConfig(value)).optional(),
   expectedDatabaseVersion: z.number().int().positive().safe(),
 }).strict().refine(value => {
   const { expectedDatabaseVersion: _version, ...definition } = value
@@ -217,9 +221,10 @@ export type DatabasePropertyCreateRequest = z.infer<typeof DatabasePropertyCreat
 export const DatabasePropertyUpdateRequestSchema = z.object({
   name: databaseNameSchema.optional(),
   options: z.array(z.object({ id: databaseStableIdSchema, name: databaseNameSchema }).strict()).optional(),
+  config: z.custom<DatabasePropertyConfig>((value) => isDatabasePropertyConfig(value)).optional(),
   expectedDatabaseVersion: z.number().int().positive().safe(),
   expectedPropertyVersion: z.number().int().positive().safe(),
-}).strict().refine(value => value.name !== undefined || value.options !== undefined, { message: 'At least one field must be provided' })
+}).strict().refine(value => value.name !== undefined || value.options !== undefined || value.config !== undefined, { message: 'At least one field must be provided' })
 export type DatabasePropertyUpdateRequest = z.infer<typeof DatabasePropertyUpdateRequestSchema>
 
 export const DatabasePropertyDeleteRequestSchema = z.object({
@@ -229,7 +234,7 @@ export const DatabasePropertyDeleteRequestSchema = z.object({
 export type DatabasePropertyDeleteRequest = z.infer<typeof DatabasePropertyDeleteRequestSchema>
 
 export const DatabaseRecordCellUpdateRequestSchema = z.object({
-  value: z.string().or(z.number().finite()).or(z.boolean()).nullable(),
+  value: z.string().or(z.number().finite()).or(z.boolean()).or(z.array(databaseStableIdSchema).max(DATABASE_RELATION_MAX_LINKS).refine(value => new Set(value).size === value.length)).nullable(),
   expectedDatabaseVersion: z.number().int().positive().safe(),
   expectedRecordVersion: z.number().int().positive().safe(),
   expectedPageUpdatedAt: dateSchema.optional(),
@@ -239,9 +244,39 @@ export type DatabaseRecordCellUpdateRequest = z.infer<typeof DatabaseRecordCellU
 export const DatabaseRecordCreateRequestSchema = z.object({
   id: databaseStableIdSchema,
   pageId: databaseStableIdSchema,
-  properties: z.record(databaseStableIdSchema, z.union([z.string(), z.number().finite(), z.boolean(), z.null()])),
+  properties: z.record(databaseStableIdSchema, z.union([z.string(), z.number().finite(), z.boolean(), z.null(), z.array(databaseStableIdSchema).max(DATABASE_RELATION_MAX_LINKS).refine(value => new Set(value).size === value.length)])),
 }).strict()
 export type DatabaseRecordCreateRequest = z.infer<typeof DatabaseRecordCreateRequestSchema>
+
+function isDatabasePropertyConfig(value: unknown): value is DatabasePropertyConfig {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const config = value as Record<string, unknown>
+  if (Object.hasOwn(config, 'targetDatabaseId')) return Object.keys(config).length === 1 && databaseStableIdSchema.safeParse(config.targetDatabaseId).success
+  if (Object.hasOwn(config, 'relationPropertyId')) return Object.keys(config).length === 3
+    && databaseStableIdSchema.safeParse(config.relationPropertyId).success && databaseStableIdSchema.safeParse(config.targetPropertyId).success
+    && typeof config.aggregation === 'string' && ['count', 'count_values', 'sum', 'avg', 'min', 'max'].includes(config.aggregation)
+  return Object.keys(config).length === 2 && isValidFormulaExpression(config.expression)
+    && typeof config.resultType === 'string' && ['string', 'number', 'boolean', 'date', 'null'].includes(config.resultType)
+}
+
+export const DatabaseRelationCandidatesQuerySchema = z.object({
+  search: z.string().max(200).optional(),
+  cursor: z.string().min(1).max(16_384).refine(value => value.trim() === value).optional(),
+  limit: z.coerce.number().int().min(1).max(DATABASE_RELATION_MAX_LINKS).default(DATABASE_RELATION_MAX_LINKS),
+}).strict()
+export type DatabaseRelationCandidatesQuery = z.infer<typeof DatabaseRelationCandidatesQuerySchema>
+const databaseRelationOptionSchema = z.object({ recordId: databaseStableIdSchema, pageId: databaseStableIdSchema, title: z.string() }).strict()
+export const DatabaseRelationCandidatesResponseSchema = z.object({
+  items: z.array(databaseRelationOptionSchema).max(DATABASE_RELATION_MAX_LINKS),
+  nextCursor: z.string().min(1).max(16_384).nullable(),
+}).strict()
+export type DatabaseRelationCandidatesResponse = z.infer<typeof DatabaseRelationCandidatesResponseSchema>
+export const DatabaseRelationTitlesRequestSchema = z.object({
+  recordIds: z.array(databaseStableIdSchema).max(DATABASE_RELATION_MAX_LINKS).refine(value => new Set(value).size === value.length),
+}).strict()
+export type DatabaseRelationTitlesRequest = z.infer<typeof DatabaseRelationTitlesRequestSchema>
+export const DatabaseRelationTitlesResponseSchema = z.object({ items: z.array(databaseRelationOptionSchema).max(DATABASE_RELATION_MAX_LINKS) }).strict()
+export type DatabaseRelationTitlesResponse = z.infer<typeof DatabaseRelationTitlesResponseSchema>
 
 export const DatabaseViewCreateRequestSchema = z.object({
   id: databaseStableIdSchema,

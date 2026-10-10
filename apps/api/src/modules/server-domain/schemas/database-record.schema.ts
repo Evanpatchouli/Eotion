@@ -7,7 +7,7 @@ export class DatabaseRecordEntity {
   @Prop({ type: String, required: true }) workspaceId!: string
   @Prop({ type: String, required: true }) databaseId!: string
   @Prop({ type: String, required: true }) pageId!: string
-  @Prop({ type: Object, required: true, default: {} }) properties!: Record<string, string | number | boolean | null>
+  @Prop({ type: Object, required: true, default: {} }) properties!: Record<string, string | number | boolean | null | string[]>
   @Prop({ type: Number, required: true, default: 1 }) version!: number
   createdAt!: Date
   updatedAt!: Date

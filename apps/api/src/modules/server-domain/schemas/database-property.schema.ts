@@ -7,8 +7,9 @@ export class DatabasePropertyEntity {
   @Prop({ type: String, required: true }) workspaceId!: string
   @Prop({ type: String, required: true }) databaseId!: string
   @Prop({ type: String, required: true }) name!: string
-  @Prop({ type: String, required: true, enum: ['title', 'text', 'number', 'checkbox', 'select', 'date'] }) type!: string
+  @Prop({ type: String, required: true, enum: ['title', 'text', 'number', 'checkbox', 'select', 'date', 'relation', 'rollup', 'formula'] }) type!: string
   @Prop({ type: [{ id: String, name: String }], default: undefined }) options?: { id: string; name: string }[]
+  @Prop({ type: Object, default: undefined }) config?: Record<string, unknown>
   @Prop({ type: Number, required: true, default: 1 }) version!: number
   createdAt!: Date
   updatedAt!: Date

@@ -2,7 +2,7 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
-import { DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig } from '@eotion/domain/database'
+import { DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig } from '@eotion/domain/database'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -11,9 +11,9 @@ const workspace: WorkspaceResponse = { id: 'database-workspace', name: 'Database
 const pageRecord: PageResponse = { id: 'database-page', workspaceId: workspace.id, parentPageId: null, title: 'Database references', orderKey: '0000000000000001', createdAt: now, updatedAt: now }
 
 type TestDatabase = { id: string; workspaceId: string; name: string; version: number; createdAt: string; updatedAt: string }
-type TestProperty = { id: string; databaseId: string; workspaceId: string; name: string; type: 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date'; version: number; createdAt: string; updatedAt: string; options?: Array<{ id: string; name: string }> }
+type TestProperty = { id: string; databaseId: string; workspaceId: string; name: string; type: 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'relation' | 'rollup' | 'formula'; version: number; createdAt: string; updatedAt: string; options?: Array<{ id: string; name: string }>; config?: DatabasePropertyConfig }
 type TestView = { id: string; databaseId: string; workspaceId: string; name: string; type: 'table'; config: DatabaseViewConfig; version: number; createdAt: string; updatedAt: string }
-type TestRecord = { id: string; databaseId: string; workspaceId: string; pageId: string; properties: Record<string, string | number | boolean | null>; version: number; pageVersion: string; createdAt: string; updatedAt: string }
+type TestRecord = { id: string; databaseId: string; workspaceId: string; pageId: string; properties: Record<string, string | number | boolean | null | string[]>; version: number; pageVersion: string; createdAt: string; updatedAt: string }
 
 function database(id: string, name = 'Projects'): TestDatabase { return { id, workspaceId: workspace.id, name, version: 1, createdAt: now, updatedAt: now } }
 function property(id: string, databaseId: string, name: string, type: TestProperty['type'], options?: TestProperty['options']): TestProperty {
@@ -118,9 +118,10 @@ type DatabaseApi = {
   signalDatabaseCreateResponseStarted: () => void
   releaseDatabaseCreateResponse: () => void
   offline: boolean
+  failRelationCandidates: number
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
@@ -152,7 +153,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     databaseCreateResponseStarted, databaseCreateResponseGate,
     signalDatabaseCreateResponseStarted: () => signalDatabaseCreateResponseStarted(),
     releaseDatabaseCreateResponse: () => releaseDatabaseCreateResponse(),
-    offline: options.offline ?? false,
+    offline: options.offline ?? false, failRelationCandidates: options.failRelationCandidates ?? 0,
   }
   const initialRecordCount = api.records.length
   const json = (route: Route, status: number, body: unknown) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
@@ -184,6 +185,20 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     }
     const databaseList = new RegExp(`^/api/workspaces/${workspace.id}/databases$`, 'u')
     if (databaseList.test(pathname) && request.method() === 'GET') return json(route, 200, { items: api.databases, nextCursor: null })
+    const relationOptions = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/record-options$`, 'u').exec(pathname)
+    if (relationOptions && request.method() === 'GET') {
+      if (api.failRelationCandidates > 0) { api.failRelationCandidates -= 1; return json(route, 503, { statusCode: 503, message: 'Options unavailable' }) }
+      const search = url.searchParams.get('search')?.toLowerCase() ?? ''
+      const items = api.records.filter(item => item.databaseId === relationOptions[1]).map(item => ({ recordId: item.id, pageId: item.pageId, title: api.pages.find(page => page.id === item.pageId)?.title ?? String(item.properties[api.properties.find(property => property.databaseId === item.databaseId && property.type === 'title')?.id ?? ''] ?? '') })).filter(item => item.title.toLowerCase().includes(search))
+      const offset = Number(url.searchParams.get('cursor') ?? '0')
+      const limit = Number(url.searchParams.get('limit') ?? '25')
+      return json(route, 200, { items: items.slice(offset, offset + limit), nextCursor: offset + limit < items.length ? String(offset + limit) : null })
+    }
+    const resolveOptions = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/record-options/resolve$`, 'u').exec(pathname)
+    if (resolveOptions && request.method() === 'POST') {
+      const items = api.records.filter(item => item.databaseId === resolveOptions[1] && payload.recordIds.includes(item.id)).map(item => ({ recordId: item.id, pageId: item.pageId, title: api.pages.find(page => page.id === item.pageId)?.title ?? '' }))
+      return json(route, 200, { items })
+    }
     const viewsPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views$`, 'u').exec(pathname)
     if (viewsPath && request.method() === 'GET') return json(route, 200, api.views.filter((item) => item.databaseId === viewsPath[1]))
     if (viewsPath && request.method() === 'POST') {
@@ -291,7 +306,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       const input = payload as Omit<TestProperty, 'databaseId' | 'workspaceId' | 'version' | 'createdAt' | 'updatedAt'> & { expectedDatabaseVersion: number }
       if (input.expectedDatabaseVersion !== databaseItem.version) return json(route, 409, { statusCode: 409, message: 'Database version conflict' })
       databaseItem.version += 1
-      const created = property(input.id, databaseItem.id, input.name, input.type, input.options)
+      const created = { ...property(input.id, databaseItem.id, input.name, input.type, input.options), ...(input.config ? { config: input.config } : {}) }
       api.properties.push(created)
       return json(route, 201, { database: databaseItem, property: created })
     }
@@ -299,10 +314,11 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     if (propertyPath && request.method() === 'PATCH') {
       const databaseItem = api.databases.find((item) => item.id === propertyPath[1])!
       const propertyItem = api.properties.find((item) => item.id === propertyPath[2])!
-      const input = payload as { name?: string; options?: TestProperty['options']; expectedDatabaseVersion: number; expectedPropertyVersion: number }
+      const input = payload as { name?: string; options?: TestProperty['options']; config?: DatabasePropertyConfig; expectedDatabaseVersion: number; expectedPropertyVersion: number }
       if (input.expectedDatabaseVersion !== databaseItem.version || input.expectedPropertyVersion !== propertyItem.version) return json(route, 409, { statusCode: 409, message: 'Property version conflict' })
       if (input.name !== undefined) propertyItem.name = input.name
       if (input.options !== undefined) propertyItem.options = input.options
+      if (input.config !== undefined) propertyItem.config = input.config
       propertyItem.version += 1; databaseItem.version += 1
       return json(route, 200, { database: databaseItem, property: propertyItem })
     }
@@ -322,7 +338,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       const databaseItem = api.databases.find((item) => item.id === cellPath[1])!
       const recordItem = api.records.find((item) => item.id === cellPath[2])!
       const prop = api.properties.find((item) => item.id === cellPath[3])!
-      const input = payload as { value: string | number | boolean | null; expectedDatabaseVersion: number; expectedRecordVersion: number; expectedPageUpdatedAt?: string }
+      const input = payload as { value: string | number | boolean | string[] | null; expectedDatabaseVersion: number; expectedRecordVersion: number; expectedPageUpdatedAt?: string }
       if (api.conflictCellUpdates > 0) {
         api.conflictCellUpdates -= 1
         recordItem.properties[prop.id] = 'Concurrent edit'
@@ -333,6 +349,17 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       if (input.expectedDatabaseVersion !== databaseItem.version || input.expectedRecordVersion !== recordItem.version || (input.expectedPageUpdatedAt && input.expectedPageUpdatedAt !== pageItem.updatedAt)) return json(route, 409, { statusCode: 409, message: 'Record version conflict' })
       recordItem.properties[prop.id] = input.value
       recordItem.version += 1; recordItem.updatedAt = later; databaseItem.version += 1; databaseItem.updatedAt = later
+      for (const sourceRollup of api.properties.filter(item => item.type === 'rollup')) {
+        const rollupConfig = sourceRollup.config as { relationPropertyId: string; targetPropertyId: string; aggregation: string }
+        const relation = api.properties.find(item => item.id === rollupConfig.relationPropertyId)
+        if (relation?.type !== 'relation' || (relation.config as { targetDatabaseId: string }).targetDatabaseId !== databaseItem.id || rollupConfig.targetPropertyId !== prop.id || rollupConfig.aggregation !== 'sum') continue
+        for (const sourceRecord of api.records.filter(item => item.databaseId === sourceRollup.databaseId)) {
+          const ids = sourceRecord.properties[relation.id]
+          if (!Array.isArray(ids) || !ids.includes(recordItem.id)) continue
+          sourceRecord.properties[sourceRollup.id] = ids.reduce<number>((total, id) => total + Number(api.records.find(item => item.id === id)?.properties[prop.id] ?? 0), 0)
+          for (const formula of api.properties.filter(item => item.databaseId === sourceRollup.databaseId && item.type === 'formula')) sourceRecord.properties[formula.id] = Number(sourceRecord.properties[sourceRollup.id]) + 1
+        }
+      }
       let updatedPage: PageResponse | undefined
       if (prop.type === 'title' && input.value !== null) {
         updatedPage = { ...pageItem, title: String(input.value), updatedAt: later }
@@ -1468,4 +1495,190 @@ test('database table scrolls horizontally on mobile without document overflow', 
   await screenshot(page, 'p83-mobile-390-saved-cells')
   expect(errors).toEqual([])
   await screenshot(page, 'product-database-mobile-390x844')
+})
+
+test('advanced properties configure relation and formula, keep linked views in sync, and retry picker reads', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  const another = record('related-record', rootDatabase.id, 'related-page', { 'root-title': 'Related plan', 'root-number': 7 })
+  const api = await installApi(page, [
+    block('advanced-main', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+    block('advanced-linked', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 200),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord, another], failRelationCandidates: 1 })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan' }, { ...pageRecord, id: another.pageId, title: 'Related plan' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const tables = page.locator('.eotion-editor-content .eotion-database')
+  const table = tables.first()
+  await table.getByRole('button', { name: '添加属性' }).click()
+  await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '关联' }).click()
+  const config = table.getByRole('group', { name: '配置关联属性' })
+  await expect(config.getByLabel('目标数据库')).toHaveValue(rootDatabase.id)
+  await config.getByRole('button', { name: '保存属性' }).click()
+  await expect(tables.nth(1).getByRole('button', { name: '编辑关联 关联' }).first()).toBeVisible()
+  await table.locator('tbody tr').filter({ hasText: 'Launch plan' }).getByRole('button', { name: '编辑关联 关联' }).click()
+  const picker = page.getByRole('group', { name: '关联记录：关联' })
+  await expect(picker.getByRole('alert')).toContainText('Options unavailable')
+  await picker.getByRole('button', { name: '重试' }).click()
+  await picker.getByRole('button', { name: 'Related plan' }).click()
+  await expect(table.locator('tbody tr').filter({ hasText: 'Launch plan' })).toContainText('Related plan')
+  await expect(tables.nth(1).locator('tbody tr').filter({ hasText: 'Launch plan' })).toContainText('Related plan')
+  const relation = api.properties.find(item => item.type === 'relation')!
+  expect(api.records.find(item => item.id === basicRecord.id)?.properties[relation.id]).toEqual(['related-record'])
+  await page.reload()
+  await expect(table.locator('tbody tr').filter({ hasText: 'Launch plan' })).toContainText('Related plan')
+  await table.locator('tbody tr').filter({ hasText: 'Launch plan' }).getByRole('button', { name: '编辑关联 关联' }).click()
+  await page.getByRole('group', { name: '关联记录：关联' }).getByRole('button', { name: '移除关联 Related plan' }).click()
+  await expect.poll(() => api.records.find(item => item.id === basicRecord.id)?.properties[relation.id]).toEqual([])
+  await table.getByRole('button', { name: '添加属性' }).click()
+  await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '公式' }).click()
+  const formula = table.getByRole('group', { name: '配置公式属性' })
+  await formula.getByLabel('表达式').fill('{bad json')
+  await formula.getByRole('button', { name: '保存属性' }).click()
+  await expect(formula.getByRole('alert')).toContainText('有效名称和配置')
+  expect(api.properties.filter(item => item.type === 'formula')).toHaveLength(0)
+  await formula.getByRole('button', { name: '数字相加模板' }).click()
+  await formula.getByLabel('结果类型').selectOption('number')
+  await screenshot(page, 'p85-formula-config-desktop')
+  await formula.getByRole('button', { name: '保存属性' }).click()
+  await expect(table.getByRole('button', { name: /公式⌄/u })).toBeVisible()
+  const formulaProperty = api.properties.find(item => item.type === 'formula')!
+  expect(formulaProperty).toBeDefined()
+  await table.getByRole('button', { name: '添加属性' }).click()
+  await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '汇总' }).click()
+  const rollup = table.getByRole('group', { name: '配置汇总属性' })
+  await rollup.getByLabel('关联属性').selectOption(relation.id)
+  await rollup.getByLabel('目标属性').selectOption('root-number')
+  await rollup.getByLabel('汇总方式').selectOption('sum')
+  await rollup.getByRole('button', { name: '保存属性' }).click()
+  const rollupProperty = api.properties.find(item => item.type === 'rollup')!
+  expect(rollupProperty.config).toEqual({ relationPropertyId: relation.id, targetPropertyId: 'root-number', aggregation: 'sum' })
+  api.records.find(item => item.id === basicRecord.id)!.properties[formulaProperty.id] = 43
+  api.records.find(item => item.id === basicRecord.id)!.properties[rollupProperty.id] = 7
+  await page.reload()
+  const row = table.locator('tbody tr').filter({ hasText: 'Launch plan' })
+  await expect(row).toContainText('43')
+  await expect(row).toContainText('7')
+  await expect(row.getByRole('button', { name: '编辑公式：43' })).toHaveCount(0)
+  await expect(row.getByRole('button', { name: '编辑汇总：7' })).toHaveCount(0)
+  expect(errors).toEqual([])
+  await tables.first().getByTestId('database-table-scroll').evaluate(element => { (element as HTMLElement).scrollLeft = (element as HTMLElement).scrollWidth })
+  await screenshot(page, 'p85-advanced-properties-desktop')
+  await tables.nth(1).getByTestId('database-table-scroll').evaluate(element => { (element as HTMLElement).scrollLeft = (element as HTMLElement).scrollWidth })
+  await screenshot(page, 'p85-advanced-linked-desktop')
+})
+
+test('mobile relation picker searches paged results and stays read-only offline', async ({ page, context }) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  const relationProperty: TestProperty = { ...property('mobile-relation', rootDatabase.id, 'Linked', 'relation'), config: { targetDatabaseId: rootDatabase.id } }
+  const related = Array.from({ length: 27 }, (_, index) => record(`related-${String(index).padStart(2, '0')}`, rootDatabase.id, `related-page-${index}`, { 'root-title': `Item ${index}` }))
+  const special = record('constructor', rootDatabase.id, 'special-page', { 'root-title': 'Special item' })
+  const api = await installApi(page, [block('mobile-advanced', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100)], {
+    databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties, relationProperty],
+    records: [{ ...basicRecord, id: 'a-mobile-source', properties: { ...basicRecord.properties, 'mobile-relation': ['constructor', 'related-26'] } }, ...related, special],
+  })
+  for (let index = 0; index < related.length; index += 1) api.pages.push({ ...pageRecord, id: `related-page-${index}`, title: `Item ${index}` })
+  api.pages.push({ ...pageRecord, id: special.pageId, title: 'Special item' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const row = table.locator('tbody tr').filter({ hasText: 'Launch plan' })
+  await expect(row).toContainText('Item 26')
+  await expect(row).toContainText('Special item')
+  await row.getByRole('button', { name: '编辑关联 Linked' }).click()
+  const picker = page.getByRole('group', { name: '关联记录：Linked' })
+  await expect(picker.getByRole('button', { name: '加载更多' })).toBeVisible()
+  await picker.getByRole('button', { name: '加载更多' }).click()
+  await expect(picker.getByRole('button', { name: 'Item 25' })).toBeVisible()
+  await picker.getByLabel('搜索记录').fill('Item 25')
+  await picker.getByRole('button', { name: '搜索' }).click()
+  await expect(picker.getByRole('button', { name: 'Item 25' })).toBeVisible()
+  await screenshot(page, 'p85-mobile-relation-picker-390x844')
+  const width = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth])
+  expect(width[0]).toBeLessThanOrEqual(width[1]!)
+  await picker.getByRole('button', { name: '完成' }).click()
+  await table.getByRole('button', { name: '添加属性' }).click()
+  await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '公式' }).click()
+  await screenshot(page, 'p85-mobile-formula-config-390x844')
+  await table.getByRole('group', { name: '配置公式属性' }).getByRole('button', { name: '保存属性' }).scrollIntoViewIfNeeded()
+  await screenshot(page, 'p85-mobile-formula-save-390x844')
+  await context.setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+  await expect(table.getByRole('group', { name: '配置公式属性' }).getByRole('button', { name: '保存属性' })).toBeDisabled()
+  await expect(row.getByRole('button', { name: '编辑关联 Linked' })).toBeDisabled()
+  expect(errors).toEqual([])
+})
+
+test('linked target edits refresh source rollup and formula, and self relation titles follow page rename', async ({ page }) => {
+  const bTitle = property('b-title', nestedDatabase.id, 'Name', 'title')
+  const bNumber = property('b-number', nestedDatabase.id, 'Amount', 'number')
+  const relation = { ...property('a-relation', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: nestedDatabase.id } } as TestProperty
+  const rollup = { ...property('a-rollup', rootDatabase.id, 'Total', 'rollup'), config: { relationPropertyId: relation.id, targetPropertyId: bNumber.id, aggregation: 'sum' } } as TestProperty
+  const formula = { ...property('a-formula', rootDatabase.id, 'Plus one', 'formula'), config: { expression: { kind: 'binary', operator: '+', left: { kind: 'property', propertyId: rollup.id }, right: { kind: 'literal', value: 1 } }, resultType: 'number' } } as TestProperty
+  const selfRelation = { ...property('a-self', rootDatabase.id, 'Peer', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const source = record('a-source', rootDatabase.id, 'a-page', { 'root-title': 'Source', 'a-relation': ['b-record'], 'a-rollup': 5, 'a-formula': 6, 'a-self': ['a-peer'] })
+  const peer = record('a-peer', rootDatabase.id, 'peer-page', { 'root-title': 'Peer original' })
+  const target = record('b-record', nestedDatabase.id, 'b-page', { 'b-title': 'Target', 'b-number': 5 })
+  const api = await installApi(page, [
+    block('source-db-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+    block('target-db-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: nestedDatabase.id, viewId: 'view-target-id' } }, 200),
+  ], { databases: [rootDatabase, nestedDatabase], views: [view('view-root-id', rootDatabase.id), view('view-target-id', nestedDatabase.id)], properties: [...rootProperties, relation, rollup, formula, selfRelation, bTitle, bNumber], records: [source, peer, target] })
+  api.pages.push({ ...pageRecord, id: source.pageId, title: 'Source' }, { ...pageRecord, id: peer.pageId, title: 'Peer original' }, { ...pageRecord, id: target.pageId, title: 'Target' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const tables = page.locator('.eotion-editor-content .eotion-database')
+  const sourceRow = tables.first().locator('tbody tr').filter({ hasText: 'Source' })
+  await expect(sourceRow).toContainText('Peer original')
+  await expect(sourceRow).toContainText('5')
+  await tables.nth(1).getByRole('button', { name: '5' }).click()
+  const input = tables.nth(1).getByRole('textbox', { name: 'Amount 值' })
+  await input.fill('9')
+  await input.press('Enter')
+  await expect(sourceRow.locator('td').filter({ hasText: '9' })).toHaveCount(1)
+  await expect(sourceRow.locator('td').filter({ hasText: '10' })).toHaveCount(1)
+  const peerRow = tables.first().locator('tbody tr').filter({ hasText: 'Peer original' })
+  await peerRow.getByRole('button', { name: '编辑Name：Peer original' }).click()
+  const titleInput = tables.first().getByRole('textbox', { name: 'Name 值' })
+  await titleInput.fill('Peer renamed')
+  await titleInput.press('Enter')
+  await expect(sourceRow).toContainText('Peer renamed')
+})
+
+test('existing cross-database rollup allows a new formula and a second target rollup', async ({ page }) => {
+  const third = database('database-third-id', 'Third projects')
+  const bTitle = property('b-title', nestedDatabase.id, 'Name', 'title')
+  const bNumber = property('b-number', nestedDatabase.id, 'Amount', 'number')
+  const cTitle = property('c-title', third.id, 'Name', 'title')
+  const cNumber = property('c-number', third.id, 'Value', 'number')
+  const bRelation = { ...property('a-b-relation', rootDatabase.id, 'B relation', 'relation'), config: { targetDatabaseId: nestedDatabase.id } } as TestProperty
+  const bRollup = { ...property('a-b-rollup', rootDatabase.id, 'B total', 'rollup'), config: { relationPropertyId: bRelation.id, targetPropertyId: bNumber.id, aggregation: 'sum' } } as TestProperty
+  const api = await installApi(page, [block('multi-target-db-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100)], {
+    databases: [rootDatabase, nestedDatabase, third],
+    views: [view('view-root-id', rootDatabase.id), view('view-b-id', nestedDatabase.id), view('view-c-id', third.id)],
+    properties: [...rootProperties, bRelation, bRollup, bTitle, bNumber, cTitle, cNumber], records: [basicRecord],
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  await table.getByRole('button', { name: '添加属性' }).click()
+  await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '公式' }).click()
+  const formula = table.getByRole('group', { name: '配置公式属性' })
+  await formula.getByRole('button', { name: '数字相加模板' }).click()
+  await formula.getByLabel('结果类型').selectOption('number')
+  await formula.getByRole('button', { name: '保存属性' }).click()
+  await expect(table.getByRole('button', { name: /公式⌄/u })).toBeVisible()
+  await table.getByRole('button', { name: '添加属性' }).click()
+  await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '关联' }).click()
+  const relationPanel = table.getByRole('group', { name: '配置关联属性' })
+  await relationPanel.getByLabel('目标数据库').selectOption(third.id)
+  await relationPanel.getByRole('button', { name: '保存属性' }).click()
+  await expect(relationPanel).toHaveCount(0)
+  const cRelation = api.properties.find(item => item.type === 'relation' && (item.config as { targetDatabaseId: string }).targetDatabaseId === third.id)!
+  await table.getByRole('button', { name: '添加属性' }).click()
+  await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '汇总' }).click()
+  const rollup = table.getByRole('group', { name: '配置汇总属性' })
+  await rollup.getByLabel('关联属性').selectOption(cRelation.id)
+  await rollup.getByLabel('目标属性').selectOption(cNumber.id)
+  await rollup.getByLabel('汇总方式').selectOption('sum')
+  await rollup.getByRole('button', { name: '保存属性' }).click()
+  await expect(rollup).toHaveCount(0)
+  expect(api.properties.filter(item => item.type === 'rollup')).toHaveLength(2)
 })

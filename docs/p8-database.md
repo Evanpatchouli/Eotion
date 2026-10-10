@@ -1,14 +1,14 @@
 # P8 Database
 
-P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1 Database Domain Foundation 于 2026-10-08 验收 PASS；P8.2 Inline Database + Table View、P8.3 Properties + Record Editing 与 P8.4 Views + Filter + Sort 于 2026-10-09 验收 PASS。P8.4 为 current，本轮不进入 P8.5。
+P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1 Database Domain Foundation 于 2026-10-08 验收 PASS；P8.2 Inline Database + Table View、P8.3 Properties + Record Editing 与 P8.4 Views + Filter + Sort 于 2026-10-09 验收 PASS。P8.5 Advanced Properties 于 2026-10-10 验收 PASS / current；本轮不进入 P8.6。
 
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
 | P8.1 | Database / Property / Record / View、稳定 Block 引用、权限与原子创建 | PASS |
 | P8.2 | Inline Database + Table View | PASS |
 | P8.3 | Properties + Record Editing | PASS |
-| P8.4 | Views / Filter / Sort | PASS / current |
-| P8.5 | Advanced Properties | not started |
+| P8.4 | Views / Filter / Sort | PASS |
+| P8.5 | Advanced Properties | PASS / current |
 | P8.6 | Database Acceptance | not started |
 
 ## 核心模型
@@ -33,7 +33,7 @@ Database Block 沿用既有 Block props wrapper，只保存引用：
 
 Block 的 ID/pageId/parentBlockId/orderKey 继续由现有模型维护。properties、records、views 不进入 `props.node`。同一 Database 可以有多个引用，每个引用选择属于该 Database 的 View。
 
-Property 第一版支持 title、text、number、checkbox、select、date。Property ID 是 Record properties 的键；select 值是稳定 option ID，date 是有效的 YYYY-MM-DD。每个 Database 恰好一个 title Property。P8.3 中 title 由关联 Page.title 投影，Record 持久化 properties 不再保存 title 副本；其他字段可以缺失，显式清空删除键。没有 relation、rollup、formula、people、files 或 property 插件系统。View 只有 table；P8.4 增加独立 AND 筛选、多级排序和列配置。
+Property 支持 title、text、number、checkbox、select、date，以及 P8.5 的 relation、rollup、formula。Property ID 是 Record properties 的键；select 值是稳定 option ID，date 是有效的 YYYY-MM-DD。每个 Database 恰好一个 title Property。P8.3 中 title 由关联 Page.title 投影，Record 持久化 properties 不再保存 title 副本；其他可写字段可以缺失，显式清空删除键。Rollup/Formula 只保存配置，读取时计算。没有 people、files 或 property 插件系统。View 只有 table；P8.4 增加独立 AND 筛选、多级排序和列配置。
 
 ## Record 与 Page
 
@@ -254,3 +254,107 @@ Page/Block 继续 Local-first；Database/View/Filter/Sort online-only，离线 T
 Web 产品测试使用 mock transport，真实 operator、权限、版本、游标、引用竞争与事务清理由 HTTP/Mongo 集成测试覆盖。Database 离线测试维护为断网前加载真实 IndexedDB 读取 helper，避免断网后动态加载开发模块；仍验证本地引用、正文和 oplog，不模拟离线写入成功。首轮旧编辑器 retry / Electron restart 用例各出现一次超时，两类定向重复各 6/6 通过；没有修改对应产品代码或削弱断言。完整 Storage 复跑 11/11、产品最终完整复跑 239/239 通过。日志与人工视觉截图保留在 ignored `test-results/p84-validation/`、`test-results/p84-visual/`。
 
 P8.1–P8.4 PASS，P8.4 为 current；P8.5–P8.6 not started。本轮到此停止。
+
+## P8.5 Advanced Properties
+
+P8.5 在相同 Database Domain 上增加单向 Relation、Rollup 与 Formula；沿用唯一 Web UI、Workspace 权限、typed HTTP/SDK 和 Mongo transaction。没有新增 People/Files、双向或自动 reciprocal Property、其它 View、分组、aggregation footer、Database MCP、导入或 Database offline sync。P8.6 不开始。
+
+### Relation schema、identity 与删除
+
+```ts
+{ type: 'relation', config: { targetDatabaseId: 'database-id' } }
+// Record.properties[propertyId]
+['target-record-id-1', 'target-record-id-2']
+```
+
+所有 Relation 统一为 multi relation，持久化值只有 Record ID 数组；不保存标题、label、Page 内容或 Record snapshot。最多 50 个稳定 ID，重复拒绝，保留输入顺序；空关系为缺失值或 `[]`。每个 target Record 必须真实存在、属于指定目标 Database 和当前 Workspace。允许自数据库关联、Record 指向自身以及纯 Relation 图环；关系图本身不参与计算环限制。
+
+删除 Record 的 domain 操作携带 Database/Record 预期版本，在同一 Mongo transaction 删除该 Record 并清理当前 Workspace 所有 incoming Relation 中的对应 ID，递增受影响 Record 版本。不会删除 Record 对应的 Page、其它 Record 或 target Database。清理无法在成本上限内安全完成时整体失败，不留永久 dangling relation；本阶段不新增 Record 删除产品入口。
+
+删除 Relation Property 只删除配置及 source Records 中该属性的值，不删除目标数据。若被 Rollup/Formula 引用则拒绝，先修改依赖。修改目标 Database 前必须清空已有关系，不能偷偷删除关系值。Database 删除仍无产品/业务入口；未来必须先解除所有 Relation Property 引用，禁止隐式 cascade 整个关联数据库。
+
+Relation picker 通过有界 `record-options` 查询搜索、分页选择目标 Records；`record-options/resolve` 有界批量解析已选标题。展示动态读取的 `Page.title`，写入仍只提交 Record ID；不会引入标题双写。
+
+### Rollup aggregation matrix
+
+```ts
+{
+  type: 'rollup',
+  config: { relationPropertyId: 'relation-id', targetPropertyId: 'target-property-id', aggregation: 'sum' }
+}
+```
+
+| 目标类型 | aggregation |
+| --- | --- |
+| title/text/number/checkbox/select/date | count、count_values |
+| number | sum、avg、min、max |
+| relation/rollup/formula | 全部拒绝 |
+
+`count` 是关联 Record 数；`count_values` 统计非空目标值（null/缺失/空字符串不计，0/false 计入）。数值聚合忽略空目标值，全空/空关系返回 null；count/count_values 返回 0。除法溢出、非有限数值不生成 Infinity/NaN。date 的 min/max 本阶段延期；不提供 show_original/show_unique/percent_checked/median/range。
+
+Rollup 必须依赖本数据库的 Relation Property，target Property 必须属于 Relation 声明的同 Workspace 目标 Database。只允许基础目标属性，不能继续跨数据库派生链，采用 fail-closed 保证无计算环。只持久化 config，读取时计算，不向 Record.properties 回写结果。
+
+### Formula AST 与类型
+
+Formula config 为 `{ expression, resultType }`，resultType 为 string/number/boolean/date/null。表达式是严格 shape 的小型 AST，未知字段、未知操作或任意代码均拒绝：
+
+| kind | 字段/语义 |
+| --- | --- |
+| literal | value；date literal 额外 `valueType: 'date'`，日期必须 YYYY-MM-DD |
+| property | propertyId，本数据库稳定 ID |
+| binary | operator、left、right；+ - * / == != > >= < <= and or |
+| unary | operator: not、operand |
+| if | condition、then、else |
+| call | name: empty/concat、args |
+
+算术只接受 number；and/or/not 与 if condition 只接受 boolean；比较支持同类型 number/string/date，==/!= 允许与 null 比较。if 分支必须同类型或一个为 null。text/title/select reference 为 string，date 为 date，checkbox 为 boolean，number/rollup 为 number；其它 Formula 引用其声明且验证过的 resultType。Relation 仅允许用于 empty，不可作算术/比较值或直接 Formula 结果。concat 只接受 string/null，null 视为空字符串；不做隐式数字、布尔或日期转换。
+
+空 property 值传播为 null；算术/顺序比较遇 null 返回 null；==/!= 对 null 使用显式相等语义。boolean and/or 遵守确定性短路；if condition 为 null 时结果为 null。empty 判断 null/空字符串/空 Relation 数组，0/false 不为空。除零、非有限计算和超限输出返回 null。Formula 无时钟、随机、网络、JS eval、Function、vm 或 Mongo $where。
+
+### Dependency graph 与只读
+
+Schema 创建/修改时验证整个本数据库 Property dependency graph 与 Formula 结果类型：Formula 边来自全部 property references，Rollup 边指向 Relation。完整拒绝自引用、多属性环及超过依赖深度的 DAG，不因属性列表顺序改变结果。Rollup 的跨库目标限定基础属性，无法安全证明的派生链直接拒绝。删除被 Formula/Rollup 使用的 Property 返回依赖错误，不重写 AST；schema/option/config 变更也不能破坏已有 graph。
+
+Rollup/Formula 的 Record cells 只读：UI 展示计算结果，HTTP/domain 拒绝 PATCH 派生值；创建 Record 也不允许提交派生结果，stored-value validator 拒绝任何派生键。编辑入口只修改 schema/config。Page.title 继续为唯一标题持久化来源，Formula/Rollup 的 title 输入从 Page 投影读取。
+
+### Filter/Sort、权限与一致性
+
+Relation 支持 is_empty/is_not_empty，依据 ID 数组为空与否；不按 title 筛选，不支持 contains/does_not_contain。Relation 不支持 Sort。Rollup/Formula 本阶段只展示结果，不支持 Filter/Sort；非法 View config 明确拒绝，不 silently ignore，也不先分页后进行派生筛选。六种基础属性保持 P8.4 的服务端 filter → sort → paginate、empty 与 Record ID tie-break 契约。
+
+所有跨库目标按当前 Workspace 查询，复用现有 WorkspacePermissionService；无法借 targetDatabaseId/targetRecordId/targetPropertyId 读取外部 Workspace。Schema/cell 保持 Database/Property/Record version CAS，写入仍要求 Mongo transaction。内部 Advanced Reference fence 让 source/target schema 变化、Relation 编辑与 target 删除竞争同一目标 Database 文档，防止检查后新建引用或删除目标的竞态。计算读取使用一致的事务快照；结果不 materialize，也无需缓存 invalidation。
+
+### Query bounds、产品与边界
+
+Domain 常量约束 Relation 最多 50、AST 最多 128 节点/16 深度、Property 依赖最多 16 深度、Formula 字符串最多 20000 字符。递归 evaluator 有 guard，concat 在分配结果前检查长度；不会允许受控 AST 的组合仍造成无限输出增长。候选和标题解析每次最多 50，候选 search 最多 200 字符，Table window 沿用最多 100。派生读取最多 100 个 source Records、所有 Rollup 合计最多 5000 个 distinct target Database/Record 对；legacy listRecords 读取派生值超出 100 行时明确拒绝，使用 Table 分页入口。
+
+Workspace 的 relation/rollup 依赖扫描最多 1000 个 Property（查询 limit+1 检测超限）；Record 删除按来源 Database 分组读取，总共最多扫描 10000 个 source Records，逐行合并所有 incoming Relation 清理并只更新一次。Property/option 删除、Relation retarget 和 legacy listRecords 的 Record 扫描最多 10000。查询在 Mongo 层限制返回数量，超限整体 fail-closed，不截断清理结果后继续删除；没有无限量无命中反向关系扫描。所有上限由 domain 共享常量定义，contracts/server 使用相同 Relation 上限。
+
+Relation 候选无 search 时先做 ID 索引 limit+1，再关联 Page；search 时只在游标后的最多 5000 个候选 Record 内执行 title 查询，候选超限明确拒绝，不能只查一个不完整子集假装搜索全库。候选 search 为转义的字面文本，不执行用户正则。
+
+Table 保留 Quiet Studio 视觉，新增 Relation 目标配置、Rollup 顺序配置（Relation → target → aggregation）与轻量 Formula 编辑、属性插入、类型/错误反馈。已选 Relation 可添加/移除、搜索、加载更多及错误重试；Table cell 预览前三个标题和 +N，picker 有界展示全部已关联 Records。每次表格标题解析只处理可见列，最多 500 个 ID / 10 个请求、并发 3，剩余关联通过 picker 查看，不显示永久 loading。刷新重读标题；当前客户端的目标 Database mutation 同时刷新依赖它的 Table 派生值。派生 cells 只读，相同数据库的 linked Views 继续共享服务端数据。
+
+Page/Block 继续 Local-first；Database 及高级属性仍 online-only，离线只读，无 Relation offline queue、Database oplog 或 Formula replication。现有 Page MCP 仍只携带 databaseId/viewId；没有新增 Database MCP Tool，也不向 eotion_get_page 自动加入 schema、records、relations 或派生结果。
+
+已知性能边界：读取时计算优先 correctness，尚无 materialized cache、target 索引规划或跨客户端实时 Database 推送；跨库写入可能因共享 fence 冲突并需要重读/重试。390px Web 响应式验收不代替原生宿主真机测试。
+
+### P8.5 验证
+
+测试使用隔离本机 MongoDB 8.0.32 单节点 replica set，不使用生产数据；真实权限、CAS、scope、引用竞争、清理与读取投影由 Mongo/API 集成测试验证。Web 产品测试使用 mock transport；Browser 插件未提供，沿用仓库 Playwright。
+
+| 验证 | 结果 |
+| --- | --- |
+| Domain / Contracts / SDK | 30/30、15/15、21/21，通过，零 skip；含 enum 数组/对象拒绝与禁止转换 hook 执行 |
+| API domain | 9/9，通过，零 skip；含跨 Workspace、Relation 生命周期、自关联/特殊 ID、5001 目标预算与两组引用删除竞争 |
+| HTTP / MCP | 27/27、30/30，通过，零 skip；HTTP 含真实 sync SQLite transport 与 File lifecycle |
+| Database 产品定向 | 32/32，通过；含 relation picker、跨库组合、linked 派生刷新、Page.title 改名、reload、390px、offline、error/retry |
+| 完整产品回归 | 全新 Vite 243/243，通过，零 skip；严格 enum 最后修复后 Database 32/32 再次通过 |
+| Storage | package 7/7、IndexedDB / Electron SQLite / Desktop sync 11/11，通过 |
+| Desktop 相关 UI | Browser / Electron titlebar 2/2，通过 |
+| typecheck / Web / API / Desktop build | 最终源码通过；Web 保留既有大 chunk 提示 |
+| Visual | 7/7，通过，没有更新 baseline；Desktop 高级列/linked 计算数据、390px picker 与 Formula 配置/保存截图已人工检查 |
+| 独立 review | 0 merge blocker；最后常量/严格 enum 校验与测试增量再次复核通过 |
+| diff / 编码 | git diff --check 通过，UTF-8 无 BOM |
+
+Desktop node 单测 12/17：4 项既有 SQLite legacy block props fixture 不符合当前 validator，1 项 Windows 临时目录清理 EPERM；相关实现、测试、Block validator 与本轮基线 HEAD 的文件 hash 一致，EPERM 单项隔离仍复现，没有修无关基线。产品早期两项附件夹具各一次超时，均隔离 3/3 通过，相关附件源码/测试与 HEAD 一致，未修改断言；一次源码热更新期间的整轮回归出现服务模块状态分离，4 项既有创建防重复测试失败，采用无源码变化的全新 Vite 完整复跑确认，不将它们当作基线忽略。
+
+P8.1–P8.5 PASS，P8.5 为 current；P8.6 not started。日志保存系统 Temp 的 p85-validation，人工截图保存本任务仓库外的 p85-ui 目录。本轮到此停止。

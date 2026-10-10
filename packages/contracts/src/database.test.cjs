@@ -20,6 +20,11 @@ const {
   DatabasePropertySchema,
   DatabaseViewSchema,
   databaseRecordSchema,
+  DatabaseRecordCellUpdateRequestSchema,
+  DatabaseRelationCandidatesQuerySchema,
+  DatabaseRelationCandidatesResponseSchema,
+  DatabaseRelationTitlesRequestSchema,
+  DatabaseRelationTitlesResponseSchema,
 } = require('../dist/index.js')
 
 const timestamp = '2026-01-02T03:04:05.000Z'
@@ -123,4 +128,47 @@ test('database table response validates scope, property values, and the property
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, properties: Array(101).fill(property) }).success, false)
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, extra: true }).success, false)
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: Array(101).fill(record) }).success, false)
+})
+
+test('advanced requests and projected values keep derived fields read-only', () => {
+  const relation = { ...property, id: 'rel', name: 'Links', type: 'relation', config: { targetDatabaseId: 'db-2' } }
+  const formula = { ...property, id: 'calc', name: 'Score', type: 'formula', config: { expression: { kind: 'literal', value: 2 }, resultType: 'number' } }
+  assert.equal(DatabasePropertyCreateRequestSchema.safeParse({ id: 'rel', name: 'Links', type: 'relation', config: relation.config, expectedDatabaseVersion: 1 }).success, true)
+  assert.equal(DatabasePropertyCreateRequestSchema.safeParse({ id: 'rel', name: 'Links', type: 'relation', expectedDatabaseVersion: 1 }).success, false)
+  assert.equal(DatabaseRecordCellUpdateRequestSchema.safeParse({ value: ['r1', 'r2'], expectedDatabaseVersion: 1, expectedRecordVersion: 1 }).success, true)
+  assert.equal(DatabaseRecordCellUpdateRequestSchema.safeParse({ value: ['r1', 'r1'], expectedDatabaseVersion: 1, expectedRecordVersion: 1 }).success, false)
+  assert.equal(DatabaseRecordCreateRequestSchema.safeParse({ id: 'r1', pageId: 'p1', properties: { rel: Array.from({ length: 51 }, (_, i) => `r${i}`) } }).success, false)
+  const table = { database, view, properties: [property, relation, formula], records: [{ id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task', rel: ['r1'], calc: 2 }, version: 1, createdAt: timestamp, updatedAt: timestamp, pageVersion: timestamp }], nextCursor: null }
+  assert.equal(DatabaseTableResponseSchema.safeParse(table).success, true)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: [{ ...table.records[0], properties: { ...table.records[0].properties, calc: '2' } }] }).success, false)
+  const { pageVersion: _pageVersion, ...storedShape } = table.records[0]
+  assert.equal(databaseRecordSchema(table.properties).safeParse({ ...storedShape, properties: { rel: ['r1'], calc: 2 } }).success, false)
+})
+
+test('relation picker contracts bound searches and title resolution', () => {
+  assert.deepEqual(DatabaseRelationCandidatesQuerySchema.parse({ search: 'task' }), { search: 'task', limit: 50 })
+  assert.equal(DatabaseRelationCandidatesQuerySchema.safeParse({ search: 'x'.repeat(201) }).success, false)
+  assert.equal(DatabaseRelationCandidatesQuerySchema.safeParse({ limit: 51 }).success, false)
+  const item = { recordId: 'r1', pageId: 'p1', title: 'Task' }
+  assert.equal(DatabaseRelationCandidatesResponseSchema.safeParse({ items: [item], nextCursor: null }).success, true)
+  assert.equal(DatabaseRelationTitlesRequestSchema.safeParse({ recordIds: ['r1', 'r1'] }).success, false)
+  assert.equal(DatabaseRelationTitlesRequestSchema.safeParse({ recordIds: Array.from({ length: 51 }, (_, i) => `r${i}`) }).success, false)
+  assert.equal(DatabaseRelationTitlesResponseSchema.safeParse({ items: [item] }).success, true)
+})
+
+test('advanced configs reject array or object enum values without coercion', () => {
+  const { DatabasePropertyUpdateRequestSchema } = require('../dist/index.js')
+  const version = { expectedDatabaseVersion: 1, expectedPropertyVersion: 1 }
+  const configs = [
+    { relationPropertyId: 'r', targetPropertyId: 'p', aggregation: ['sum'] },
+    { relationPropertyId: 'r', targetPropertyId: 'p', aggregation: { toString: 'sum' } },
+    { expression: { kind: 'literal', value: 2 }, resultType: ['number'] },
+    { expression: { kind: 'binary', operator: ['+'], left: { kind: 'literal', value: 2 }, right: { kind: 'literal', value: 3 } }, resultType: 'boolean' },
+    { expression: { kind: 'binary', operator: { toString: '+' }, left: { kind: 'literal', value: 2 }, right: { kind: 'literal', value: 3 } }, resultType: 'boolean' },
+  ]
+  for (const config of configs) {
+    const result = DatabasePropertyUpdateRequestSchema.safeParse({ ...version, config })
+    assert.equal(result.success, false)
+    assert.equal(DatabasePropertyCreateRequestSchema.safeParse({ id: 'bad', name: 'Bad', type: Object.hasOwn(config, 'aggregation') ? 'rollup' : 'formula', config, expectedDatabaseVersion: 1 }).success, false)
+  }
 })

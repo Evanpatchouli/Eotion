@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
-import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseTableQuerySchema, DatabaseViewListQuerySchema, DatabaseViewHttpCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema } from '@eotion/contracts'
+import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseTableQuerySchema, DatabaseViewListQuerySchema, DatabaseViewHttpCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
 import { DatabaseService } from '../server-domain/services/database.service'
 import type { UserRecord } from '../server-domain/types'
 import { CurrentUser, SessionAuthGuard } from './auth.transport'
@@ -50,6 +50,16 @@ export class DatabaseController {
   @Get('databases/:databaseId/views/:viewId/table')
   table(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('viewId') viewId: string, @Query() query: unknown) {
     return this.databases.getTable(user.id, parseId(workspaceId), parseId(databaseId), parseId(viewId), parseBody(DatabaseTableQuerySchema, query))
+  }
+
+  @Get('databases/:databaseId/record-options')
+  recordOptions(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Query() query: unknown) {
+    return this.databases.listRecordOptions(user.id, parseId(workspaceId), parseId(databaseId), parseBody(DatabaseRelationCandidatesQuerySchema, query))
+  }
+
+  @Post('databases/:databaseId/record-options/resolve')
+  resolveRecordOptions(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Body() body: unknown) {
+    return this.databases.resolveRecordOptions(user.id, parseId(workspaceId), parseId(databaseId), parseBody(DatabaseRelationTitlesRequestSchema, body))
   }
 
   @Post('databases/:databaseId/records')

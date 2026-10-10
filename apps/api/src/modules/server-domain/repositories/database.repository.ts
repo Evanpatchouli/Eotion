@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { DEFAULT_DATABASE_VIEW_CONFIG } from '@eotion/domain'
+import { DATABASE_RECORD_SCAN_MAX_RECORDS, DEFAULT_DATABASE_VIEW_CONFIG } from '@eotion/domain'
 import type { Database, DatabaseProperty, DatabaseRecord, DatabaseTableRecord, DatabaseView, DatabaseViewConfig } from '@eotion/domain'
 import type { ClientSession, Model, PipelineStage } from 'mongoose'
 import { DatabaseDocument, DatabaseEntity } from '../schemas/database.schema'
@@ -25,6 +25,9 @@ export class DatabaseRepository {
   async compareAndBump(workspaceId: string, id: string, expectedVersion: number, session: ClientSession): Promise<Database | null> {
     const doc = await this.model.findOneAndUpdate({ workspaceId, id, version: expectedVersion }, [{ $set: { version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
     return doc ? { id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) } : null
+  }
+  async touchAdvancedReferenceFence(workspaceId: string, id: string, session: ClientSession): Promise<boolean> {
+    return !!(await this.model.findOneAndUpdate({ workspaceId, id }, { $inc: { advancedReferenceFence: 1 } }, { session, returnDocument: 'after' }).exec())
   }
   async listWindow(workspaceId: string, input: { cursor?: string; limit: number }, session?: ClientSession): Promise<Database[]> {
     const filter: Record<string, unknown> = { workspaceId }
@@ -52,18 +55,23 @@ export class DatabasePropertyRepository {
     const doc = await this.model.findOne({ workspaceId, databaseId, id }).session(session ?? null).exec()
     return doc ? this.toRecord(doc) : null
   }
-  async update(workspaceId: string, databaseId: string, id: string, expectedVersion: number, patch: { name?: string; options?: DatabaseProperty['options'] }, session: ClientSession): Promise<DatabaseProperty | null> {
+  async update(workspaceId: string, databaseId: string, id: string, expectedVersion: number, patch: { name?: string; options?: DatabaseProperty['options']; config?: DatabaseProperty['config'] }, session: ClientSession): Promise<DatabaseProperty | null> {
     const set: Record<string, unknown> = { version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } }
     if (patch.name !== undefined) set.name = { $literal: patch.name }
     if (patch.options !== undefined) set.options = { $literal: patch.options }
+    if (patch.config !== undefined) set.config = { $literal: patch.config }
     const doc = await this.model.findOneAndUpdate({ workspaceId, databaseId, id, version: expectedVersion }, [{ $set: set }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
     return doc ? this.toRecord(doc) : null
   }
   async delete(workspaceId: string, databaseId: string, id: string, expectedVersion: number, session: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndDelete({ workspaceId, databaseId, id, version: expectedVersion }, { session }).exec())
   }
+  async listRelationsInWorkspace(workspaceId: string, limit: number, session: ClientSession): Promise<DatabaseProperty[]> {
+    const docs = await this.model.find({ workspaceId, type: { $in: ['relation', 'rollup'] } }).sort({ id: 1 }).limit(limit + 1).session(session).exec()
+    return docs.map(doc => this.toRecord(doc))
+  }
   private toRecord(doc: DatabasePropertyDocument): DatabaseProperty {
-    return { id: doc.id, workspaceId: doc.workspaceId, databaseId: doc.databaseId, name: doc.name, type: doc.type as DatabaseProperty['type'], ...(doc.options === undefined ? {} : { options: doc.options.map(option => ({ id: option.id, name: option.name })) }), version: doc.version, ...dates(doc) }
+    return { id: doc.id, workspaceId: doc.workspaceId, databaseId: doc.databaseId, name: doc.name, type: doc.type as DatabaseProperty['type'], ...(doc.options === undefined ? {} : { options: doc.options.map(option => ({ id: option.id, name: option.name })) }), ...(doc.config === undefined ? {} : { config: doc.config as DatabaseProperty['config'] }), version: doc.version, ...dates(doc) }
   }
 }
 
@@ -75,17 +83,51 @@ export class DatabaseRecordRepository {
     return this.toRecord(doc!)
   }
   async list(workspaceId: string, databaseId: string, session?: ClientSession): Promise<DatabaseRecord[]> {
-    return (await this.model.find({ workspaceId, databaseId }).sort({ createdAt: 1, id: 1 }).session(session ?? null).exec()).map(doc => this.toRecord(doc))
+    return (await this.model.find({ workspaceId, databaseId }).sort({ createdAt: 1, id: 1 }).limit(DATABASE_RECORD_SCAN_MAX_RECORDS + 1).session(session ?? null).exec()).map(doc => this.toRecord(doc))
   }
   async findInDatabase(workspaceId: string, databaseId: string, id: string, session?: ClientSession): Promise<DatabaseRecord | null> {
     const doc = await this.model.findOne({ workspaceId, databaseId, id }).session(session ?? null).exec()
     return doc ? this.toRecord(doc) : null
+  }
+  async findManyInDatabase(workspaceId: string, databaseId: string, ids: readonly string[], session?: ClientSession): Promise<DatabaseRecord[]> {
+    if (ids.length === 0) return []
+    return (await this.model.find({ workspaceId, databaseId, id: { $in: [...new Set(ids)] } }).session(session ?? null).exec()).map(doc => this.toRecord(doc))
+  }
+  async delete(workspaceId: string, databaseId: string, id: string, expectedVersion: number, session: ClientSession): Promise<boolean> {
+    return !!(await this.model.findOneAndDelete({ workspaceId, databaseId, id, version: expectedVersion }, { session }).exec())
   }
   async listWindow(workspaceId: string, databaseId: string, input: { cursor?: string; limit: number }, session?: ClientSession): Promise<DatabaseRecord[]> {
     const filter: Record<string, unknown> = { workspaceId, databaseId }
     if (input.cursor !== undefined) filter.id = { $gt: input.cursor }
     const docs = await this.model.find(filter).sort({ id: 1 }).limit(input.limit + 1).session(session ?? null).exec()
     return docs.map(doc => this.toRecord(doc))
+  }
+  async listRecordOptionCandidateIds(workspaceId: string, databaseId: string, cursor: string | undefined, limit: number): Promise<string[]> {
+    const filter: Record<string, unknown> = { workspaceId, databaseId }
+    if (cursor !== undefined) filter.id = { $gt: cursor }
+    const docs = await this.model.find(filter).sort({ id: 1 }).select({ id: 1, _id: 0 }).limit(limit + 1).lean().exec()
+    return docs.map(doc => doc.id)
+  }
+  async listRecordOptions(workspaceId: string, databaseId: string, input: { cursor?: string; limit: number; search?: string; candidateIds?: string[] }): Promise<{ recordId: string; pageId: string; title: string }[]> {
+    const escaped = input.search?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const match: Record<string, unknown> = { workspaceId, databaseId }
+    if (input.candidateIds !== undefined) match.id = { $in: input.candidateIds }
+    else if (input.cursor !== undefined) match.id = { $gt: input.cursor }
+    const pipeline: PipelineStage[] = [
+      { $match: match },
+      { $sort: { id: 1 } },
+      ...(!escaped ? [{ $limit: input.limit + 1 } as PipelineStage] : []),
+      { $lookup: { from: 'pages', let: { pageId: '$pageId' }, pipeline: [
+        { $match: { $expr: { $and: [{ $eq: ['$id', '$$pageId'] }, { $eq: ['$workspaceId', { $literal: workspaceId }] }] } } },
+        { $project: { _id: 0, title: 1 } },
+      ], as: 'page' } },
+      { $unwind: '$page' },
+      ...(escaped ? [{ $match: { 'page.title': { $regex: escaped, $options: 'i' } } } as PipelineStage] : []),
+      { $sort: { id: 1 } },
+      { $limit: input.limit + 1 },
+      { $project: { _id: 0, recordId: '$id', pageId: 1, title: '$page.title' } },
+    ]
+    return this.model.aggregate<{ recordId: string; pageId: string; title: string }>(pipeline).collation({ locale: 'simple' }).exec()
   }
   async queryTableWindow(input: {
     workspaceId: string; databaseId: string; properties: readonly DatabaseProperty[]; config: DatabaseViewConfig;
@@ -109,6 +151,11 @@ export class DatabaseRecordRepository {
     const filterExpr = input.config.filters.map(filter => {
       const expression = propertyExpression(filter.propertyId)
       const operator = filter.operator
+      const property = input.properties.find(item => item.id === filter.propertyId)
+      if (property?.type === 'relation') {
+        const size = { $size: { $ifNull: [expression, []] } }
+        return operator === 'is_empty' ? { $eq: [size, 0] } : { $gt: [size, 0] }
+      }
       if (operator === 'is_empty') return emptyExpression(expression)
       if (operator === 'is_not_empty') return { $not: [emptyExpression(expression)] }
       if (operator === 'checked') return { $eq: [expression, true] }
@@ -181,8 +228,8 @@ export class DatabaseRecordRepository {
     const doc = await this.model.findOneAndUpdate({ workspaceId, databaseId, id, version: expectedVersion }, [{ $set: { properties: { $literal: properties }, version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
     return doc ? this.toRecord(doc) : null
   }
-  async listForCleanup(workspaceId: string, databaseId: string, session: ClientSession): Promise<DatabaseRecord[]> {
-    return (await this.model.find({ workspaceId, databaseId }).session(session).exec()).map(doc => this.toRecord(doc))
+  async listForCleanup(workspaceId: string, databaseId: string, session: ClientSession, limit = DATABASE_RECORD_SCAN_MAX_RECORDS): Promise<DatabaseRecord[]> {
+    return (await this.model.find({ workspaceId, databaseId }).sort({ id: 1 }).limit(limit + 1).session(session).exec()).map(doc => this.toRecord(doc))
   }
   private toRecord(doc: DatabaseRecordDocument): DatabaseRecord {
     return { id: doc.id, workspaceId: doc.workspaceId, databaseId: doc.databaseId, pageId: doc.pageId, properties: doc.properties, version: doc.version, ...dates(doc) }

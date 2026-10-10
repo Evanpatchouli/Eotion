@@ -122,6 +122,29 @@ export async function listProductDatabaseViews(workspaceId: string, databaseId: 
   return result
 }
 
+export async function listProductDatabases(workspaceId: string, cursor?: string) {
+  const userId = useAuthStore().user?.id
+  const result = await api.databases.listDatabases(workspaceId, { limit: 50, ...(cursor ? { cursor } : {}) })
+  if (!userId || useAuthStore().user?.id !== userId || useProductPagesStore().forWorkspaceId !== workspaceId) throw new Error('登录状态或工作区已切换，请重新加载数据库。')
+  return result
+}
+
+export async function listProductRelationCandidates(workspaceId: string, databaseId: string, search: string, cursor?: string) {
+  const userId = useAuthStore().user?.id
+  if (!userId || !navigator.onLine) throw new Error('请联网后查看关联记录。')
+  const result = await api.databases.listRelationCandidates(workspaceId, databaseId, { search, limit: 25, ...(cursor ? { cursor } : {}) })
+  if (useAuthStore().user?.id !== userId || useProductPagesStore().forWorkspaceId !== workspaceId) throw new Error('登录状态或工作区已切换，请重新加载关联记录。')
+  return result
+}
+
+export async function resolveProductRelationTitles(workspaceId: string, databaseId: string, recordIds: string[]) {
+  const userId = useAuthStore().user?.id
+  if (!userId || !navigator.onLine) throw new Error('请联网后查看关联记录。')
+  const result = await api.databases.resolveRelationTitles(workspaceId, databaseId, { recordIds })
+  if (useAuthStore().user?.id !== userId || useProductPagesStore().forWorkspaceId !== workspaceId) throw new Error('登录状态或工作区已切换，请重新加载关联记录。')
+  return result
+}
+
 export async function createProductDatabaseView(workspaceId: string, databaseId: string, input: DatabaseViewHttpCreateRequest) {
   const auth = useAuthStore()
   const userId = auth.user?.id

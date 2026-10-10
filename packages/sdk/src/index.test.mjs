@@ -94,6 +94,19 @@ test('database view mutations use scoped endpoints and typed versioned payloads'
   assert.deepEqual(await requests[2].json(), remove)
 })
 
+test('relation option endpoints encode bounded search and resolve selected titles', async () => {
+  const requests = []
+  const client = new EotionApiClient({ baseUrl: 'https://eotion.test', fetch: async (input, init) => { requests.push(new Request(input, init)); return Response.json({ items: [], nextCursor: null }) } })
+  await client.databases.listRelationCandidates('ws/1', 'db/1', { search: '计划 A', cursor: 'next/1', limit: 25 })
+  await client.databases.resolveRelationTitles('ws/1', 'db/1', { recordIds: ['record/1', 'record/2'] })
+  assert.equal(requests[0].url, 'https://eotion.test/api/workspaces/ws%2F1/databases/db%2F1/record-options?search=%E8%AE%A1%E5%88%92+A&limit=25&cursor=next%2F1')
+  assert.equal(requests[0].method, 'GET')
+  assert.equal(requests[1].url, 'https://eotion.test/api/workspaces/ws%2F1/databases/db%2F1/record-options/resolve')
+  assert.equal(requests[1].method, 'POST')
+  assert.deepEqual(await requests[1].json(), { recordIds: ['record/1', 'record/2'] })
+  assert.ok(requests.every(request => request.credentials === 'include'))
+})
+
 test('API error responses become ApiError values carrying the server status', async () => {
   const client = new EotionApiClient({
     baseUrl: 'https://eotion.test',

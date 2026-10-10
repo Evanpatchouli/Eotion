@@ -7,6 +7,7 @@ export class DatabaseEntity {
   @Prop({ type: String, required: true }) workspaceId!: string
   @Prop({ type: String, required: true }) name!: string
   @Prop({ type: Number, required: true, default: 1 }) version!: number
+  @Prop({ type: Number, required: true, default: 0 }) advancedReferenceFence!: number
   createdAt!: Date
   updatedAt!: Date
 }

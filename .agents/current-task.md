@@ -1,19 +1,20 @@
-# 当前任务：Desktop Custom Title Bar 独立修复
+# 当前任务：P8.5 Advanced Properties — PASS
 
-基线：50a914d15c716576926098672b9dde53960ffd9f。实现完成；Windows 真实鼠标拖动仍待真人确认。仅修复重复标题栏，不开始 P8.5。
+基线：5179c584b335484268e9b9be995d529ef5b2f5d6。仅 P8.5，不开始 P8.6；一个聚焦 commit。
 
 | Work Unit | 模式/评级 | 负责 | 验收 |
 | --- | --- | --- | --- |
-| Shell/runtime/theme 精确调查 | investigate/S0 | shell_scout | COMPLETE：默认 BrowserWindow chrome 与 44px Topbar 重复 |
-| 官方 WCO 与安全边界决策 | decide/S2 | 主 Agent | COMPLETE：hidden + native overlay；44px、env safe area、外观 IPC |
-| 窗口与拖拽样式实现 | execute/S1 | titlebar_impl、主 Agent | COMPLETE：ProductShell 与非工作区 fallback；no-drag、窄窗避让 |
-| Electron/Web 回归测试 | execute/S1 | titlebar_test、主 Agent | COMPLETE：最新 titlebar 2/2 |
-| tests/typecheck/build | verify/S0 | shell_scout | COMPLETE：结果如下，未隐藏失败 |
-| Windows 原生 UI 检查 | verify/S0 | 主 Agent、用户 | PARTIAL：鼠标拖动待真人确认 |
-| 最终独立复核与聚焦提交 | review | titlebar_review、主 Agent | 0 blocker；单一聚焦 commit |
+| API 事务、CAS、查询扩展点调查 | investigate/S0 | investigate_api | COMPLETE：Evidence Pack 交接 |
+| 高级属性 contract、AST、图与类型边界 | decide/execute S2→S1 | domain_contract、主 Agent | COMPLETE：Domain30/Contracts15；严格 enum、cycle/depth/string guards |
+| scope、引用 fence、删除清理与读取计算 | decide/execute S2→S1 | api_impl、api_acceptance_tests | COMPLETE：API domain9/HTTP27/MCP30；scope、生命周期、5001预算与竞争 |
+| 现有 Inline Table 配置与 relation picker | decide/execute S2→S1 | ui_impl | COMPLETE：SDK21、Database32；跨库组合/刷新、390px/离线/重试 |
+| 全范围回归、正式文档与聚焦提交 | execute/verify S1/S0 | 主 Agent、final_verify | COMPLETE：fresh product243、storage7+11、visual7、titlebar2；typecheck/build/diff |
+| 最终独立 review | review | final_review | COMPLETE：最终0 merge blocker |
 
-Desktop/Web typecheck 与 build 通过。相关 desktop-storage/product-sync、product-shell、interaction、theme 回归通过。完整 Product 首轮234/239；最终2-worker238/239，linked-view列上移存在DOM detached/30s超时，隔离单worker通过；未改断言或超时阈值。Desktop node tests12/17，5项SQLite测试失败（Invalid block attributes及EPERM）；SQLite实现/测试与基线HEAD逐文件hash一致，未修改无关内容。git diff --check通过。
+单向 multi Relation（Record ID[]<=50，重复拒绝，稳定顺序），self/纯 Relation 图环允许。Rollup 仅基础目标属性、读取计算；Formula 小型严格 AST、同库依赖图验证、允许 Rollup 输入；派生拒写/拒 Filter/Sort，不持久化。目标同 Workspace，CAS + Mongo snapshot transaction + source/target 内部 fence；删除 Record 同事务清理 incoming relations，不删除 Page；依赖 Property 拒删。Page/Block Local-first、Database online-only、MCP 均保持边界。
 
-真实Windows Electron已检查：完整原生标题栏消失、顶部内容、普通/最大化无重叠、原生最小化/最大化/还原/关闭、顶栏双击、顶栏/侧栏按钮与SyncStatus真实DOM点击、Light/Dark。Sky拖动在本窗口及默认原生标题栏对照窗口均不移动，不能宣称真人拖动验收通过；已向用户请求真实鼠标确认。macOS/Linux未作原生验收。
+Bounds：AST128/深度16/依赖16/字符串20000；候选50、search候选5000；派生100行/总5000目标；workspace advanced properties1000；清理总10000源记录，超限fail-closed。
 
-禁止 frame:false、窗口按钮 IPC、第二套 UI、P8.5 功能、无关依赖/重构。正式运行契约见 docs/runbooks/desktop-production.md。
+最终验证已通过。Desktop node12/17：4项 legacy block props fixture与1项Temp清理EPERM属于已确认基线，相关文件hash与HEAD一致，EPERM隔离复现；未修无关问题。两项附件fixture早期超时各隔离3/3通过；HMR导致的模块状态分离在fresh全产品243/243解决，未改断言。最后strict enum修复后domain/contracts/API/Database/typecheck/build再次通过，独立review复核0 blocker。
+
+正式契约与限制见 docs/p8-database.md；后续只在用户明确要求时进入P8.6。
