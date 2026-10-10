@@ -11,14 +11,15 @@ export interface ReleaseNote {
 export const RELEASE_NOTES: readonly ReleaseNote[] = Object.freeze([
   Object.freeze({
     version: '0.0.1-beta',
-    releasedAt: '2026-10-04',
+    releasedAt: '2026-10-11',
     highlights: Object.freeze([
-      'Quiet Studio 产品界面',
-      'Workspace / Page Tree',
-      'Local-first 文档编辑与同步',
-      '图片与文件附件',
-      '设置、主题与跨端基础',
-      'Desktop / Mobile 原生宿主基础',
+      'Quiet Studio 产品界面与 Local-first 文档编辑',
+      'Workspace / Page Tree、图片与文件附件',
+      '高级文档区块：Callout、嵌套内容与 Table',
+      'Database：多表格视图、筛选、排序与列配置',
+      'Database 高级属性：Relation、Rollup 与 Formula',
+      '原生 MCP：搜索、阅读、创建与更新文档',
+      'Windows Desktop 与 Android / HarmonyOS 移动宿主基础',
     ]),
   }),
 ])

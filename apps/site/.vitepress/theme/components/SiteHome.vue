@@ -71,6 +71,36 @@ const href = computed(() => `/download${platform.value ? `#${platform.value}` : 
       </div>
     </section>
 
+    <section class="database-section site-wrap site-section" aria-labelledby="database-title">
+      <div class="section-heading">
+        <h2 id="database-title">结构化资料，<br>仍然住在文档里。</h2>
+        <p>在页面中插入数据库，用属性、筛选和排序整理信息。<br>每条记录仍然是一篇可以继续书写的 Eotion 页面。</p>
+      </div>
+      <div class="database-grid">
+        <div class="database-copy">
+          <p>同一份数据可以拥有多个独立的表格视图，也可以在不同页面中以 Linked View 再次呈现。</p>
+          <ul class="database-points" aria-label="数据库能力">
+            <li>文本、数字、复选框、选择与日期属性</li>
+            <li>筛选、排序、显示列与列顺序</li>
+            <li>Relation、Rollup 与受控 Formula</li>
+            <li>记录页面与数据库数据保持同一份标题来源</li>
+          </ul>
+          <a class="text-link" href="/guide/database">了解数据库 <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="database-flow" role="img" aria-label="同一个数据库的数据由多个表格视图共享，每条记录连接到一篇 Eotion 页面">
+          <div class="database-flow-source">Database</div>
+          <div class="database-flow-views">
+            <span>表格 · 全部</span>
+            <span>表格 · 本周</span>
+            <span>表格 · 已完成</span>
+          </div>
+          <div class="database-flow-arrow" aria-hidden="true">↓</div>
+          <div class="database-flow-record">Record <span>→</span> Page</div>
+        </div>
+      </div>
+      <p class="database-note">当前公开版本提供 Table View；更多展示形态不在本阶段能力范围内。</p>
+    </section>
+
     <section class="mcp-section site-wrap site-section" aria-labelledby="mcp-title">
       <div class="section-heading">
         <h2 id="mcp-title">为 AI 而生的 MCP</h2>

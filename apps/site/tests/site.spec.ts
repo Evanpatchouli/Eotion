@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import rootManifest from '../../../package.json' with { type: 'json' }
 
-const pages = ['/', '/download', '/guide/', '/guide/editor', '/guide/mcp', '/changelog']
+const pages = ['/', '/download', '/guide/', '/guide/editor', '/guide/database', '/guide/mcp', '/changelog']
 test('static pages, navigation, release and safe download state', async ({ page, request }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
@@ -16,7 +16,10 @@ test('static pages, navigation, release and safe download state', async ({ page,
     await expect(page.locator('vite-error-overlay')).toHaveCount(0)
   }
   await page.goto('/')
-  await expect(page.locator('.site-home section')).toHaveCount(7)
+  await expect(page.locator('.site-home section')).toHaveCount(8)
+  await expect(page.locator('.database-section').getByRole('heading', { name: /结构化资料/ })).toBeVisible()
+  await expect(page.locator('.database-section').getByRole('link', { name: /了解数据库/ })).toHaveAttribute('href', '/guide/database')
+  await expect(page.locator('.database-section')).toContainText('当前公开版本提供 Table View')
   await expect(page.locator('.mcp-section').getByRole('heading', { name: '为 AI 而生的 MCP' })).toBeVisible()
   await expect(page.locator('.mcp-section').getByRole('link', { name: /连接你的 AI 客户端/ })).toHaveAttribute('href', '/guide/mcp')
   await page.locator('.site-hero').getByRole('link', { name: /下载|免费下载/ }).click()
@@ -39,6 +42,8 @@ test('static pages, navigation, release and safe download state', async ({ page,
   }
   const raw = await request.get('/guide/editor')
   expect(await raw.text()).toContain('可用内容格式')
+  const databaseGuide = await request.get('/guide/database')
+  expect(await databaseGuide.text()).toContain('当前只提供 Table View')
   expect(errors).toEqual([])
 })
 

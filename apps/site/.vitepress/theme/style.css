@@ -121,6 +121,19 @@ body { -webkit-font-smoothing: antialiased; }
 .rich-layout { display: grid; grid-template-columns: 2fr .8fr; gap: 54px; align-items: center; }
 .rich-copy p + p { margin-top: 22px; }
 .rich-copy .text-link { margin-top: 22px; }
+.database-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 68px; align-items: center; }
+.database-copy p { max-width: 460px; }
+.database-points { display: grid; gap: 11px; margin-block: 28px; padding: 0; list-style: none; color: var(--studio-text); font-size: 14px; }
+.database-points li { display: flex; align-items: baseline; gap: 11px; }
+.database-points li::before { content: ""; flex: 0 0 5px; width: 5px; height: 5px; border-radius: 50%; background: var(--studio-muted); transform: translateY(-2px); }
+.database-flow { display: grid; gap: 13px; padding: 38px 30px; border: 1px solid var(--studio-border); border-radius: 7px; background: var(--studio-surface); }
+.database-flow-source { justify-self: center; padding: 10px 24px; border: 1px solid var(--studio-border); border-radius: 5px; background: var(--studio-subtle); color: var(--studio-text); font-size: 14px; font-weight: 500; }
+.database-flow-views { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.database-flow-views span { min-width: 0; padding: 9px 7px; border: 1px solid var(--studio-border); border-radius: 5px; color: var(--studio-secondary); font-size: 12px; text-align: center; }
+.database-flow-arrow { color: var(--studio-muted); font-size: 13px; line-height: 1; text-align: center; }
+.database-flow-record { justify-self: center; color: var(--studio-text); font-size: 13px; }
+.database-flow-record span { margin-inline: 8px; color: var(--studio-muted); }
+.database-note { margin-top: 22px; font-size: 12px !important; color: var(--studio-muted) !important; }
 .mcp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 68px; align-items: center; }
 .mcp-copy p { max-width: 440px; }
 .mcp-points { display: grid; gap: 11px; margin-block: 28px; padding: 0; list-style: none; color: var(--studio-text); font-size: 14px; }
@@ -196,6 +209,10 @@ body { -webkit-font-smoothing: antialiased; }
   .rich-copy p br { display: none; }
   .rich-copy p + p { margin-left: 5px; }
   .rich-copy .text-link { display: flex; margin-top: 14px; }
+  .database-grid { grid-template-columns: 1fr; gap: 34px; }
+  .database-flow { padding: 30px 20px; }
+  .database-flow-views { grid-template-columns: 1fr; }
+  .database-note { margin-top: 16px; }
   .mcp-grid { grid-template-columns: 1fr; gap: 34px; }
   .mcp-copy p { max-width: none; }
   .mcp-points { margin-block: 22px; }
