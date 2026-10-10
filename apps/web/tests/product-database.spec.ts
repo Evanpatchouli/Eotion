@@ -472,16 +472,29 @@ function openingTrigger(page: Page, target: '记录' | '属性', layout: '桌面
   return openingGroup(page, target, layout).getByRole('button', { name: `${target}${layout}打开方式` })
 }
 
-async function chooseOpening(page: Page, target: '记录' | '属性', layout: '桌面' | '平板' | '手机', mode: string) {
-  await openingTrigger(page, target, layout).click()
-  await page.getByRole('menu', { name: `${target}${layout}打开方式` }).getByRole('menuitem', { name: mode, exact: true }).click()
+async function chooseOpening(page: Page, table: Locator, target: '记录' | '属性', layout: '桌面' | '平板' | '手机', mode: string) {
+  const menu = page.getByRole('menu', { name: `${target}${layout}打开方式` })
+  await expect(async () => {
+    if (!await openingGroup(page, target, layout).isVisible()) await openDatabaseSetting(page, table, target === '记录' ? '记录打开方式' : '属性')
+    if (!await menu.isVisible()) await openingTrigger(page, target, layout).click({ timeout: 1_000 })
+    await expect(menu).toBeVisible({ timeout: 1_000 })
+    await menu.getByRole('menuitem', { name: mode, exact: true }).click({ timeout: 1_000 })
+    if (!await openingGroup(page, target, layout).isVisible()) await openDatabaseSetting(page, table, target === '记录' ? '记录打开方式' : '属性')
+    await expect(openingTrigger(page, target, layout)).toContainText(mode, { timeout: 1_000 })
+  }).toPass({ timeout: 8_000 })
 }
 
-async function expectOpeningOptions(page: Page, target: '记录' | '属性', layout: '桌面' | '平板' | '手机', options: string[]) {
-  await openingTrigger(page, target, layout).click()
+async function expectOpeningOptions(page: Page, table: Locator, target: '记录' | '属性', layout: '桌面' | '平板' | '手机', options: string[]) {
   const menu = page.getByRole('menu', { name: `${target}${layout}打开方式` })
-  expect((await menu.getByRole('menuitem').allTextContents()).map(text => text.replace('✓', '').trim())).toEqual(options)
-  await openingTrigger(page, target, layout).click()
+  await expect(async () => {
+    if (!await openingGroup(page, target, layout).isVisible()) await openDatabaseSetting(page, table, target === '记录' ? '记录打开方式' : '属性')
+    if (!await menu.isVisible()) await openingTrigger(page, target, layout).click({ timeout: 1_000 })
+    await expect(menu).toBeVisible({ timeout: 1_000 })
+    expect((await menu.getByRole('menuitem').allTextContents()).map(text => text.replace('✓', '').trim())).toEqual(options)
+    await menu.getByRole('menuitem').filter({ has: page.locator('[aria-hidden="true"]') }).click({ timeout: 1_000 })
+    if (!await openingGroup(page, target, layout).isVisible()) await openDatabaseSetting(page, table, target === '记录' ? '记录打开方式' : '属性')
+    await expect(openingGroup(page, target, layout)).toBeVisible({ timeout: 1_000 })
+  }).toPass({ timeout: 8_000 })
 }
 
 async function closeRecordSurface(page: Page) {
@@ -556,11 +569,14 @@ test('database block controls reveal on hover or focus and insert a sibling para
   const handle = anchor.locator('[data-eotion-drag-handle="control-database"]')
   const insert = anchor.getByRole('button', { name: '在数据库区块下方插入区块' })
   await expect(anchor).toBeAttached()
-  expect(await handle.evaluate(element => getComputedStyle(element).opacity)).toBe('0.12')
+  expect(await handle.evaluate(element => getComputedStyle(element).opacity)).toBe('0')
   await databaseBlock.hover()
   await expect.poll(() => handle.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+  await page.locator('body').hover({ position: { x: 1, y: 1 } })
+  await expect.poll(() => handle.evaluate(element => getComputedStyle(element).opacity)).toBe('0')
   await handle.focus()
   await expect(handle).toBeFocused()
+  await expect.poll(() => handle.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
   expect(await handle.locator('svg').count()).toBe(1)
 
   await insert.click()
@@ -568,6 +584,53 @@ test('database block controls reveal on hover or focus and insert a sibling para
   const insertedSibling = databaseBlock.locator('xpath=following-sibling::*[not(contains(@class,"eotion-block-drag-anchor"))][1]')
   await expect(insertedSibling).toBeVisible()
   expect(await insertedSibling.evaluate(element => element.tagName)).toBe('P')
+})
+
+test.describe('touch database block controls', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+  test('keeps drag and insert controls visible without hover and preserves insert behavior', async ({ page }) => {
+    const api = await installApi(page, [
+      block('touch-control-before', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Before touch database' }] }, 50),
+      block('touch-control-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+      block('touch-control-toggle', 'toggle', { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Nested controls' }] }] }, 200),
+      block('touch-control-nested-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: nestedDatabase.id, viewId: 'view-nested-id' } }, 100, 'touch-control-toggle'),
+      block('touch-control-after', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'After touch database' }] }, 300),
+    ], {
+      databases: [rootDatabase, nestedDatabase],
+      views: [view('view-root-id', rootDatabase.id), view('view-nested-id', nestedDatabase.id)],
+      properties: [rootProperties[0]!, property('nested-title', nestedDatabase.id, 'Name', 'title')],
+      records: [],
+    })
+    await page.goto('/#/app/database-workspace/page/database-page')
+
+    const anchor = page.locator('.eotion-block-drag-anchor--database').filter({ has: page.locator('[data-eotion-drag-handle="touch-control-database"]') })
+    const handle = anchor.locator('[data-eotion-drag-handle="touch-control-database"]')
+    const insert = anchor.getByRole('button', { name: '在数据库区块下方插入区块' })
+    await expect.poll(() => anchor.evaluate(element => getComputedStyle(element).display)).not.toBe('none')
+    await expect(handle).toBeVisible()
+    await expect(insert).toBeVisible()
+    expect(await handle.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+    const [insertBox, handleBox] = await Promise.all([insert.boundingBox(), handle.boundingBox()])
+    expect(insertBox).not.toBeNull()
+    expect(handleBox).not.toBeNull()
+    expect(insertBox!.x).toBeGreaterThanOrEqual(0)
+    expect(insertBox!.x + insertBox!.width).toBeLessThanOrEqual(390)
+    expect(insertBox!.x).toBeLessThan(handleBox!.x)
+
+    const nestedAnchor = page.locator('.eotion-block-drag-anchor--database').filter({ has: page.locator('[data-eotion-drag-handle="touch-control-nested-database"]') })
+    const nestedHandle = nestedAnchor.locator('[data-eotion-drag-handle="touch-control-nested-database"]')
+    const nestedHeader = page.locator('.eotion-toggle-body .eotion-database-header')
+    const [nestedHandleBox, nestedHeaderBox] = await Promise.all([nestedHandle.boundingBox(), nestedHeader.boundingBox()])
+    expect(nestedHandleBox).not.toBeNull()
+    expect(nestedHeaderBox).not.toBeNull()
+    expect(nestedHandleBox!.x).toBeGreaterThanOrEqual(0)
+    expect(nestedHandleBox!.x + nestedHandleBox!.width).toBeLessThanOrEqual(390)
+    expect(Math.abs(nestedHandleBox!.y - nestedHeaderBox!.y)).toBeLessThanOrEqual(1)
+    const paragraphCount = api.blocks.filter(item => item.type === 'paragraph').length
+    await insert.tap()
+    await expect.poll(() => api.blocks.filter(item => item.type === 'paragraph')).toHaveLength(paragraphCount + 1)
+  })
 })
 
 test('database command separates back from cancel and keeps create and link choices on one row', async ({ page }) => {
@@ -609,6 +672,7 @@ test('database settings exposes five entries and record and property opening mod
   const table = page.locator('.eotion-editor-content .eotion-database')
   await expect(table.getByRole('button', { name: '切换视图' })).toHaveText(/表格视图/u)
   await expect(table.locator('.eotion-database-copy')).not.toContainText('Table')
+  await expect(table.locator('.eotion-database-mark[data-icon-name="database"] svg')).toHaveCount(1)
 
   await table.getByRole('button', { name: '数据库设置' }).click()
   const menu = page.getByRole('menu', { name: '数据库设置' })
@@ -617,15 +681,15 @@ test('database settings exposes five entries and record and property opening mod
   await menu.getByRole('menuitem', { name: '属性' }).click()
   await expect(menu).toHaveCount(0)
   const propertiesPanel = page.getByRole('group', { name: '属性管理' })
-  await expectOpeningOptions(page, '属性', '桌面', ['抽屉', '弹窗', '页面'])
-  await expectOpeningOptions(page, '属性', '平板', ['抽屉', '弹窗', '页面'])
-  await expectOpeningOptions(page, '属性', '手机', ['右侧抽屉', '下方抽屉', '弹窗', '页面'])
-  await chooseOpening(page, '属性', '桌面', '弹窗')
+  await expectOpeningOptions(page, table, '属性', '桌面', ['抽屉', '弹窗', '页面'])
+  await expectOpeningOptions(page, table, '属性', '平板', ['抽屉', '弹窗', '页面'])
+  await expectOpeningOptions(page, table, '属性', '手机', ['右侧抽屉', '下方抽屉', '弹窗', '页面'])
+  await chooseOpening(page, table, '属性', '桌面', '弹窗')
   await expect(page.locator('dialog[aria-label="属性"][open]')).toBeVisible()
   await closeDatabaseSetting(page, '属性管理')
 
   await openDatabaseSetting(page, table, '属性')
-  await chooseOpening(page, '属性', '桌面', '页面')
+  await chooseOpening(page, table, '属性', '桌面', '页面')
   const propertyPage = page.locator('#eotion-product-page-layer [data-overlay-mode="page"]')
   await expect(propertyPage).toBeVisible()
   const [layerBox, propertyPageBox] = await Promise.all([page.locator('#eotion-product-page-layer').boundingBox(), propertyPage.boundingBox()])
@@ -638,10 +702,10 @@ test('database settings exposes five entries and record and property opening mod
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
   await screenshot(page, 'database-opening-settings-desktop-dark')
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'))
-  await expectOpeningOptions(page, '记录', '桌面', ['抽屉', '弹窗', '页面'])
-  await expectOpeningOptions(page, '记录', '平板', ['抽屉', '弹窗', '页面'])
-  await expectOpeningOptions(page, '记录', '手机', ['右侧抽屉', '下方抽屉', '弹窗', '页面'])
-  await chooseOpening(page, '记录', '桌面', '弹窗')
+  await expectOpeningOptions(page, table, '记录', '桌面', ['抽屉', '弹窗', '页面'])
+  await expectOpeningOptions(page, table, '记录', '平板', ['抽屉', '弹窗', '页面'])
+  await expectOpeningOptions(page, table, '记录', '手机', ['右侧抽屉', '下方抽屉', '弹窗', '页面'])
+  await chooseOpening(page, table, '记录', '桌面', '弹窗')
   await closeDatabaseSetting(page, '记录打开方式')
   await table.getByRole('link', { name: '打开记录：Launch plan' }).click()
   const recordModal = page.locator('dialog[aria-label="记录"][open]')
@@ -650,11 +714,33 @@ test('database settings exposes five entries and record and property opening mod
   await recordModal.getByRole('button', { name: '关闭记录' }).click()
 
   await openDatabaseSetting(page, table, '记录打开方式')
-  await chooseOpening(page, '记录', '桌面', '页面')
+  await chooseOpening(page, table, '记录', '桌面', '页面')
   await closeDatabaseSetting(page, '记录打开方式')
   await table.getByRole('link', { name: '打开记录：Launch plan' }).click()
   await expect(page).toHaveURL(/\/page\/root-record-page\?edit=record$/u)
   await expect(page.locator('.eotion-editor-content .tiptap')).toHaveAttribute('contenteditable', 'true')
+})
+
+test('record opening settings use modal on desktop and tablet and bottom drawer on phone', async ({ page }) => {
+  await installApi(page, [
+    block('settings-container-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+
+  for (const target of [
+    { width: 1440, mode: 'modal' },
+    { width: 900, mode: 'modal' },
+    { width: 390, mode: 'bottom-drawer' },
+  ] as const) {
+    await page.setViewportSize({ width: target.width, height: 844 })
+    await openDatabaseSetting(page, table, '记录打开方式')
+    await expect(page.locator(`dialog.eotion-product-overlay--${target.mode}[open][aria-label="记录打开方式"]`)).toBeVisible()
+    await expect(openingTrigger(page, '记录', '桌面')).toBeVisible()
+    await expect(openingTrigger(page, '记录', '平板')).toBeVisible()
+    await expect(openingTrigger(page, '记录', '手机')).toBeVisible()
+    await closeDatabaseSetting(page, '记录打开方式')
+  }
 })
 
 test('property schema mutations refresh inside the open panel and preserve unsaved view drafts', async ({ page }) => {
@@ -706,14 +792,14 @@ test('phone record settings offer right and bottom drawers and apply both modes'
   await page.goto('/#/app/database-workspace/page/database-page')
   const table = page.locator('.eotion-editor-content .eotion-database')
   await openDatabaseSetting(page, table, '属性')
-  await expectOpeningOptions(page, '属性', '手机', ['右侧抽屉', '下方抽屉', '弹窗', '页面'])
+  await expectOpeningOptions(page, table, '属性', '手机', ['右侧抽屉', '下方抽屉', '弹窗', '页面'])
   await expect(openingTrigger(page, '属性', '手机')).toContainText('下方抽屉')
   await closeDatabaseSetting(page, '属性管理')
   await openDatabaseSetting(page, table, '记录打开方式')
   await screenshot(page, 'database-opening-settings-mobile-390')
   const openingOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(openingOverflow).toBeLessThanOrEqual(0)
-  await expectOpeningOptions(page, '记录', '手机', ['右侧抽屉', '下方抽屉', '弹窗', '页面'])
+  await expectOpeningOptions(page, table, '记录', '手机', ['右侧抽屉', '下方抽屉', '弹窗', '页面'])
   await expect(openingTrigger(page, '记录', '手机')).toContainText('下方抽屉')
   await closeDatabaseSetting(page, '记录打开方式')
   await table.getByRole('link', { name: '打开记录：Launch plan' }).click()
@@ -721,7 +807,7 @@ test('phone record settings offer right and bottom drawers and apply both modes'
   await closeRecordSurface(page)
 
   await openDatabaseSetting(page, table, '记录打开方式')
-  await chooseOpening(page, '记录', '手机', '右侧抽屉')
+  await chooseOpening(page, table, '记录', '手机', '右侧抽屉')
   await closeDatabaseSetting(page, '记录打开方式')
   await table.getByRole('link', { name: '打开记录：Launch plan' }).click()
   await expect(page.locator('dialog.eotion-product-overlay--right-drawer[open]')).toBeVisible()
@@ -744,7 +830,7 @@ test('opening choices persist independently across layouts and targets, includin
   await expect(openingTrigger(page, '记录', '桌面')).toContainText('弹窗')
   await expect(openingTrigger(page, '记录', '平板')).toContainText('页面')
   await expect(openingTrigger(page, '记录', '手机')).toContainText('右侧抽屉')
-  await chooseOpening(page, '记录', '手机', '下方抽屉')
+  await chooseOpening(page, table, '记录', '手机', '下方抽屉')
   await expect(openingTrigger(page, '记录', '桌面')).toContainText('弹窗')
   await expect(openingTrigger(page, '记录', '平板')).toContainText('页面')
   await closeDatabaseSetting(page, '记录打开方式')
@@ -752,7 +838,7 @@ test('opening choices persist independently across layouts and targets, includin
   await expect(openingTrigger(page, '属性', '桌面')).toContainText('抽屉')
   await expect(openingTrigger(page, '属性', '平板')).toContainText('弹窗')
   await expect(openingTrigger(page, '属性', '手机')).toContainText('下方抽屉')
-  await chooseOpening(page, '属性', '平板', '页面')
+  await chooseOpening(page, table, '属性', '平板', '页面')
   await page.reload()
   await openDatabaseSetting(page, table, '记录打开方式')
   await expect(openingTrigger(page, '记录', '桌面')).toContainText('弹窗')

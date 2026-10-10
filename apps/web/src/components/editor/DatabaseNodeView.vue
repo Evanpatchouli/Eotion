@@ -1154,7 +1154,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 <template>
   <NodeViewWrapper :id="`database-block-${blockId}`" class="eotion-database" :data-cell-popover="cellPopover?.propertyId ?? ''" contenteditable="false" aria-label="数据库视图">
     <header class="eotion-database-header">
-      <span class="eotion-database-mark" aria-hidden="true" @click.stop="selectBlock"><EotionIcon :name="IconName.Table" :size="20" /></span>
+      <span class="eotion-database-mark" data-icon-name="database" aria-hidden="true" @click.stop="selectBlock"><EotionIcon :name="IconName.Database" :size="20" /></span>
       <span class="eotion-database-copy" @click.stop="selectBlock"><strong>{{ title }}</strong></span>
       <div class="eotion-database-view-controls">
         <button type="button" class="eotion-database-control-trigger" aria-label="切换视图" :disabled="viewBusy" @click.stop="openViewMenu($event)"><span>{{ displayViewName }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button>
@@ -1204,7 +1204,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
           <button type="button" :disabled="sortDrafts.length >= 10 || sortDrafts.length >= properties.filter(property => !['relation', 'rollup', 'formula'].includes(property.type)).length" @click.stop="addSort">＋ 添加排序</button>
           <button type="button" :disabled="viewBusy || !writable" @click.stop="saveSorts">保存排序</button>
         </section></EotionProductOverlay>
-        <EotionProductOverlay :open="viewControlsOpen === 'record-opening'" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'drawer'" label="记录打开方式" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="记录打开方式">
+        <EotionProductOverlay :open="viewControlsOpen === 'record-opening'" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'modal'" label="记录打开方式" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="记录打开方式">
           <h2>记录打开方式</h2>
           <DatabaseOpeningChoices target="record" :config="recordOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('record', layout, mode)" />
         </section></EotionProductOverlay>

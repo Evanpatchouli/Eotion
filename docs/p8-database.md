@@ -15,13 +15,13 @@ P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1–P8.5 
 
 本轮是 P8 完成后的既有 Table View 产品体验重构，不增加新 View 类型，也不引入 Database MCP、Database offline sync、真实 Automation、People 或 Files。
 
-Database Block 使用统一的 `[+] [drag]` Block controls；加号在当前 Database Block 下方插入普通 Block，drag handle 只在当前 Block hover/focus 时增强显示，拖放指示器使用 Quiet Studio 的语义强调色。Slash Menu 使用统一 Database icon。用户可见的默认标题与 View 名称显示为“名称 / 表格视图”，空 Cell 留空，不再使用破折号占位。
+Database Block 使用统一的 `[+] [drag]` Block controls；加号在当前 Database Block 下方插入普通 Block，desktop mouse 下 drag handle 默认不可见，只在当前 Block hover/focus 时显示；touch/coarse pointer 下两个控件保持可见、可触达，且不会因显示状态改变文档布局。拖放指示器使用 Quiet Studio 的语义强调色。Slash Menu、Sidebar 与 Database Block Header 统一使用 Database icon。用户可见的默认标题与 View 名称显示为“名称 / 表格视图”，空 Cell 留空，不再使用破折号占位。
 
 Slash 创建器首层将“创建新数据库 / 链接现有数据库”并排展示。创建层明确区分左侧带箭头的“返回”和右侧“取消”，创建按钮使用正式 Primary action。Database 顶部不再提供独立属性按钮；`…` 是唯一设置入口，顺序为筛选、排序、属性、记录打开方式、自动化。自动化明确 disabled/未开放，其他入口先关闭轻量菜单，再进入完整设置容器。
 
 通用 `EotionProductOverlay` 负责 Drawer、Modal 与 Page 三种产品级容器。Desktop/Tablet 合法模式为 drawer/modal/page，默认 drawer；Drawer 固定在右侧、不改变文档宽度、无遮罩、不锁背景滚动且允许背景交互。Phone 合法模式为 right-drawer/bottom-drawer/modal/page，默认 bottom-drawer；两种 Drawer 均使用遮罩、focus trap 与 scroll lock，Bottom Drawer 包含 safe-area padding，Right Drawer 与 Mobile Sidebar 共用 `min(86vw, 320px)` 宽度 token。Escape、backdrop、关闭按钮与 focus return 由同一容器实现。Record 与 Property 使用相同的 device-aware 配置模型，但按 user/workspace/database/target 分开持久化；同一个设置面板始终展示并允许修改 Desktop、Tablet、Mobile 三组配置，当前设备只作提示，不改变可编辑范围。现有 localStorage key 与配置对象直接沿用，无 migration。
 
-Filter 与 Sort 不进入 opening preference：Desktop/Tablet 固定使用 Modal，Phone 固定使用 Bottom Drawer。Property 继续按独立 Property opening preference 打开。
+Filter、Sort 与“记录打开方式”设置页本身不进入 opening preference：Desktop/Tablet 固定使用 Modal，Phone 固定使用 Bottom Drawer。Record 实际打开方式仍按独立 Record opening preference；Property 设置容器继续按独立 Property opening preference 打开。
 
 属性设置继续把 visibleProperties/propertyOrder 写入当前 View config，不提升为 Database 全局 schema 状态；schema CRUD 仍使用既有 Property service/CAS。完整面板支持新增、删除、重命名、拖放/按钮排序、显示/隐藏、Select options，以及 Relation、Rollup、Formula 原配置编辑。高级属性配置复用同一 Property opening mode，不创建第二套临时面板。
 

@@ -174,6 +174,7 @@ function addHandleDecorations(doc: ProseMirrorNode): DecorationSet {
     handle.setAttribute('data-eotion-drag-handle', entry.id)
     handle.append(createIconElement(IconName.DragHandle))
     if (entry.node.type.name === 'eotionDatabase') {
+      anchor.classList.add('eotion-block-drag-anchor--database')
       const insert = document.createElement('button')
       insert.type = 'button'
       insert.className = 'eotion-block-insert-button'

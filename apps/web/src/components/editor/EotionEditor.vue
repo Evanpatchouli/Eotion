@@ -711,6 +711,7 @@ defineExpose({ editor })
 .eotion-editor-content .tiptap { position: relative; }
 .eotion-block-drag-anchor { position: absolute; top: 0; left: 0; display: inline-block; width: 0; height: 0; overflow: visible; line-height: 0; pointer-events: none; }
 .eotion-block-drag-handle, .eotion-block-insert-button { position: absolute; top: 0; z-index: 1; display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 0; border-radius: var(--e-radius-control); padding: 0; background: transparent; color: var(--e-color-text-muted); cursor: pointer; opacity: .12; pointer-events: auto; transition: opacity var(--e-motion-fast), background var(--e-motion-fast), color var(--e-motion-fast); }
+.eotion-block-drag-anchor--database .eotion-block-drag-handle { opacity: 0; }
 .eotion-block-drag-handle { left: -28px; cursor: grab; }
 .eotion-block-insert-button { left: -56px; }
 .eotion-block-drag-anchor:has(+ :hover, + :focus-within) .eotion-block-drag-handle, .eotion-block-drag-anchor:has(+ :hover, + :focus-within) .eotion-block-insert-button, .eotion-block-drag-anchor:focus-within .eotion-block-drag-handle, .eotion-block-drag-anchor:focus-within .eotion-block-insert-button { opacity: 1; }
@@ -732,5 +733,12 @@ defineExpose({ editor })
 @keyframes eotion-upload-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .eotion-upload-spinner { animation: none; } }
 @media (max-width: 767px), (pointer: coarse) { .eotion-upload-item button { min-width: 44px; min-height: 44px; } }
-@media (max-width: 767px), (pointer: coarse) { .eotion-block-drag-anchor { display: none !important; } }
+@media (max-width: 767px), (pointer: coarse) {
+  .eotion-block-drag-anchor { display: none !important; }
+  .eotion-block-drag-anchor--database { top: auto !important; display: inline-block !important; }
+  .eotion-block-drag-anchor--database .eotion-block-drag-handle, .eotion-block-drag-anchor--database .eotion-block-insert-button { width: 44px; height: 44px; opacity: 1; }
+  .eotion-block-drag-anchor--database .eotion-block-insert-button { left: 0; }
+  .eotion-block-drag-anchor--database .eotion-block-drag-handle { left: 44px; }
+  .eotion-block-drag-anchor--database + .eotion-database .eotion-database-header { padding-left: 100px; }
+}
 </style>

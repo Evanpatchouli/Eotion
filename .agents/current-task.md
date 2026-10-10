@@ -1,42 +1,31 @@
-# 当前任务：Database Opening / Record Creation / Overlay Semantics
+# 当前任务：Database UX UI Consistency 小修
 
-状态：**本轮聚焦修复 PASS，Database UX Refinement 尚未 Final PASS**。基线 `7419e7043790085f855963f7a2d5a2b8a2fba73b`；本轮只完成 Opening / Record Creation / Overlay 语义修复，没有开始 P9，也没有扩展 Database domain / navigation architecture。
+状态：**本轮 UI Consistency 小修 PASS，Database UX Refinement 尚未 Final PASS**。基线 `a2a50aee0615e2a9da7cbe4cdf9c4e93b486bf5d`；未开始 P9，也未处理 Page Tree / 10k projection。
 
-| Work Unit | 难度 / 角色 | 状态 | 结果 |
+| Work Unit | 难度 / 角色 | 状态 | 验收 |
 | --- | --- | --- | --- |
-| 当前实现与测试证据包 | S0 / scout | DONE | 查清 preference、new record、overlay、filter/sort 调用链与测试缺口 |
-| 实现边界与 invariant | S2 / 主 Agent | DONE | 保留 DeviceOpeningConfig、原子创建/uncertainty、统一 Record Host、Page route flush |
-| Opening Settings + tests | S1 / fast_worker | DONE | 三端同屏 Popover/Menu、合法模式、Record/Property 独立、旧 key 兼容与即时持久化 |
-| New Record pipeline + tests | S2→S1 | DONE | 删除 inline form，默认“无标题”，prepare + open，Existing/New 共用 pipeline |
-| Overlay + Filter/Sort semantics + tests | S1 / fast_worker | DONE | Drawer/Modal/mobile semantics、共享 sidebar width、Filter/Sort 固定形态 |
-| 定向与完整验证、视觉检查 | S0 / 主 Agent | DONE | Database 49/49；Overlay/Settings/Pages/Editor 99/100，唯一旧 Editor 状态按钮竞态隔离 3/3；完整 product 270/270（review 修复前） |
-| 独立只读 review | Review / reviewer | DONE | 首轮发现 2 个 Record title flush/refresh race blocker；修复后二次 review 0 blocker |
-| 聚焦提交与交接 | 主 Agent | DONE | 一个聚焦 commit；正式行为已写回 `docs/p8-database.md` 与 handoff |
+| Drag Handle visibility 调查 | S0 / scout | DONE | 定位共享控件样式、touch 隐藏策略与嵌套定位边界 |
+| Database Header icon 调查 | S0 / scout | DONE | Header 是唯一不一致点；Slash / Sidebar 已使用 Database icon |
+| Record Opening Settings 容器调查 | S0 / scout | DONE | 设置页容器与实际 Record / Property preference 边界已查清 |
+| 聚焦实现与定向测试 | S1 / 主 Agent | DONE | 三项偏差已修复；未改 DnD、preference 模型或 Property 行为 |
+| 定向验证与构建 | S0 / scout + 主 Agent | DONE | Database 51/51、Overlay/Settings 30/30、Web typecheck/build、diff check PASS |
+| 独立 review | Review / reviewer | DONE | 首轮触屏嵌套定位 blocker 已修复；最终复核 0 blocker |
+| 单一聚焦提交 | 主 Agent | DONE | 一个聚焦 commit；提交后 workspace clean |
 
-## 本轮交付边界
+## 边界
 
-- DeviceOpeningConfig 继续使用 `desktop` / `tablet` / `mobile`；现有 localStorage key/对象直接读取，无 migration。
-- Record 与 Property 使用同一三端设置交互、两套独立持久化配置；当前设备只显示提示。
-- Record + Page 继续原子创建，保留 transaction / CAS / uncertainty/auth/workspace fence；Page.title 是唯一标题来源。
-- “新建记录”直接用“无标题”创建，随后 `prepareProductDatabaseRecordPage` + `databaseContent.openRecord`，Existing/New 共用统一 Host。
-- Record 标题与正文共同进入 active page flush；关闭、切换和路由离开会等待标题保存。刷新通知携带保存时固定身份并支持多数据库并发目标。
-- Desktop/Tablet Drawer 无 backdrop、背景可交互；Modal 与 Mobile Drawers 使用 native modal/focus trap/backdrop；Right Drawer 与 Mobile Sidebar 共用 `--mobile-sidebar-width`；Bottom Drawer 保留 safe area。
-- Desktop/Tablet Filter、Sort 固定 Modal；Phone 固定 Bottom Drawer；Property 继续使用独立 preference。
+- 不处理 Page Tree / 10k projection、Database navigation、Record 创建、Opening preference 数据模型、Page / Record domain、Overlay 基础架构、Filter / Sort、P9、MCP、Automation。
+- Property 设置继续服从独立 Property Opening preference。
+- Record Opening Settings 的设置页容器仅统一为 Desktop/Tablet Modal、Phone Bottom Drawer；三端可配置项与持久化行为不变。
 
 ## 验证摘要
 
-- `pnpm typecheck`：PASS（Web/Desktop/API）；独立 Web typecheck：PASS。
-- `pnpm build:web`：PASS，仅既有大 chunk warning。
-- 完整 product：270/270（review 修复前）；最终 Database：49/49；Overlay/Settings/Pages/Editor：99/100，旧 Editor 同步重试按钮 DOM 状态竞态隔离连续 3/3 PASS。
-- Opening 设置关闭按钮与 Linked View 列保存曾出现 DOM remount 竞态；改为验证真实 Escape/最终表格结果，相关隔离分别 3/3、5/5，未增加无意义 timeout 或削弱产品断言。
-- Desktop light/dark 与 390×844 Mobile 截图已检查：三端设置无溢出，Desktop Drawer/Modal/Page，Phone Right/Bottom/Modal，Filter/Sort，safe area 均符合本轮要求。
-- `git diff --check`：PASS；独立二次 review：0 blocker。
+- Database product：51/51 PASS；Opening remount 相关 helper 保留真实菜单与最终 preference 断言。
+- Overlay / Settings：30/30 PASS。
+- Web typecheck、`build:web`、`git diff --check` PASS；build 仅有既有 EotionEditor 大 chunk warning。
+- 独立最终 review：0 blocker。
 
-## 下一轮（本轮不处理）
+## 后续仍需处理
 
-- Drag Handle visibility
-- Database Header icon consistency
 - Page Tree / 10k projection 性能审查
-- 最终 Database UX Acceptance
-
-Database UX Refinement **不得**因本轮聚焦 PASS 被声明为 Final PASS。
+- Database UX Final Acceptance
