@@ -70,6 +70,25 @@ export const ChangePasswordRequestSchema = z.object({
 }).strict()
 export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>
 
+export const McpTokenCreateRequestSchema = z.object({
+  name: z.string().trim().min(1).max(64),
+}).strict()
+export type McpTokenCreateRequest = z.infer<typeof McpTokenCreateRequestSchema>
+
+export const McpTokenMetadataSchema = z.object({
+  id: idSchema,
+  name: z.string().trim().min(1).max(64),
+  createdAt: dateSchema,
+  lastUsedAt: dateSchema.nullable(),
+}).strict()
+export type McpTokenMetadataResponse = z.infer<typeof McpTokenMetadataSchema>
+
+export const CreatedMcpTokenResponseSchema = z.object({
+  token: z.string().regex(/^eotion_mcp_[A-Za-z0-9_-]{43}$/),
+  credential: McpTokenMetadataSchema,
+}).strict()
+export type CreatedMcpTokenResponse = z.infer<typeof CreatedMcpTokenResponseSchema>
+
 export const WorkspaceCreateRequestSchema = z.object({
   id: idSchema,
   name: nameSchema,

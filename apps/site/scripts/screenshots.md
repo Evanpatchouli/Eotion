@@ -11,3 +11,6 @@ node apps/site/scripts/capture-product.mjs
 ```
 
 The script starts the existing Web development server on `127.0.0.1:7173` only when one is not already available, then writes the desktop and mobile light/dark PNGs in this directory. When `ffmpeg` with its `libwebp` encoder is available, it also creates matching WebP files; the PNG captures remain available as the source images.
+
+
+`database-table.webp` 是从真实 Eotion Database 验收界面裁切出的公开产品截图，只保留表格记录与筛选面板，不包含账号、域名或生产数据。首页 Database 区块直接展示这张真实截图，不使用手绘数据库示意图。

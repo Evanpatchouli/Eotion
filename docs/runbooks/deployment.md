@@ -13,7 +13,8 @@ nginx container :443
   ↓ eotion-app
 eotion-web:80
   ├─ static web
-  └─ /api/* → eotion-api:7137
+  ├─ /api/* → eotion-api:7137
+  └─ /mcp → eotion-api:7137
                    ├─ mongo network → mongodb:27017
                    └─ ali-oss network → ali-oss-server:9512
 ```
@@ -147,6 +148,7 @@ bash deploy-eotion.sh
 
 - `client_max_body_size 25m` 为附件上传保留余量。
 - `X-Forwarded-Proto` / `X-Forwarded-Host` 会继续传给 Eotion 内层 Nginx 和 API。
+- Eotion 内层 Nginx 同源代理 `/mcp` 到 API，并关闭 proxy buffering；正式 MCP 地址因此为 `https://eotion.evanpatchouli.space/mcp`。
 - upstream 使用 `http://eotion-web:80`，不经过宿主机 `127.0.0.1:8001`。
 - `proxy_read_timeout` / `proxy_send_timeout` 均为 120 秒。
 
@@ -166,12 +168,13 @@ bash deploy-eotion.sh
 部署完成后至少验证：
 
 1. `https://<domain>/api/health` 可访问。
-2. 注册、登录和 Session 恢复正常。
-3. 创建 Workspace / Page 后刷新或重新打开浏览器，服务端数据仍存在。
-4. 两个独立浏览器上下文登录同一账户，页面变更可以同步。
-5. 离线编辑、重新打开、恢复网络后能够继续同步。
-6. Eotion API 能解析 `mongodb` 与 `ali-oss-server` Docker DNS。
-7. 文件接口启用后，上传/删除链路可到达 ali-oss-server。
+2. 登录后的“设置 → MCP”显示 `https://<domain>/mcp`，可以创建 Token；用该地址与 Bearer Token 完成 MCP initialize / tools list。
+3. 注册、登录和 Session 恢复正常。
+4. 创建 Workspace / Page 后刷新或重新打开浏览器，服务端数据仍存在。
+5. 两个独立浏览器上下文登录同一账户，页面变更可以同步。
+6. 离线编辑、重新打开、恢复网络后能够继续同步。
+7. Eotion API 能解析 `mongodb` 与 `ali-oss-server` Docker DNS。
+8. 文件接口启用后，上传/删除链路可到达 ali-oss-server。
 
 Mongo replica set 可独立检查：
 

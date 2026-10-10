@@ -20,6 +20,7 @@ test('static pages, navigation, release and safe download state', async ({ page,
   await expect(page.locator('.database-section').getByRole('heading', { name: /结构化资料/ })).toBeVisible()
   await expect(page.locator('.database-section').getByRole('link', { name: /了解数据库/ })).toHaveAttribute('href', '/guide/database')
   await expect(page.locator('.database-section')).toContainText('当前公开版本提供 Table View')
+  await expect(page.locator('.database-section img[alt*="Database"]')).toHaveAttribute('src', '/screenshots/database-table.webp')
   await expect(page.locator('.mcp-section').getByRole('heading', { name: '为 AI 而生的 MCP' })).toBeVisible()
   await expect(page.locator('.mcp-section').getByRole('link', { name: /连接你的 AI 客户端/ })).toHaveAttribute('href', '/guide/mcp')
   await page.locator('.site-hero').getByRole('link', { name: /下载|免费下载/ }).click()

@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { McpCredentialRepository } from '../repositories/mcp-credential.repository'
 import { UserRepository } from '../repositories/user.repository'
-import type { CreatedMcpToken, McpTokenContext } from '../types/mcp-token.types'
+import type { CreatedMcpToken, McpTokenContext, McpTokenMetadata } from '../types/mcp-token.types'
 
 const TOKEN_PREFIX = 'eotion_mcp_'
 const TOKEN_PATTERN = /^eotion_mcp_[A-Za-z0-9_-]{43}$/
@@ -43,8 +43,18 @@ export class McpTokenService {
 
     return {
       token,
-      credential: { id, name: normalizedName, createdAt: createdAt.toISOString() },
+      credential: { id, name: normalizedName, createdAt: createdAt.toISOString(), lastUsedAt: null },
     }
+  }
+
+  async list(userId: string): Promise<McpTokenMetadata[]> {
+    if (!(await this.users.existsById(userId))) throw new UnauthorizedException('Authentication required')
+    return (await this.credentials.listActiveByUserId(userId)).map((credential) => ({
+      id: credential.id,
+      name: credential.name,
+      createdAt: credential.createdAt.toISOString(),
+      lastUsedAt: credential.lastUsedAt?.toISOString() ?? null,
+    }))
   }
 
   async resolve(token: string): Promise<McpTokenContext | null> {

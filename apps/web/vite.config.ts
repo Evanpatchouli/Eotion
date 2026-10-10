@@ -25,11 +25,19 @@ export default defineConfig(({ mode }) => {
           target: env.EOTION_API_PROXY_TARGET || "http://127.0.0.1:7137",
           changeOrigin: false,
         },
+        "/mcp": {
+          target: env.EOTION_API_PROXY_TARGET || "http://127.0.0.1:7137",
+          changeOrigin: false,
+        },
       },
     },
     preview: {
       proxy: {
         "/api": {
+          target: env.EOTION_API_PROXY_TARGET || "http://127.0.0.1:7137",
+          changeOrigin: false,
+        },
+        "/mcp": {
           target: env.EOTION_API_PROXY_TARGET || "http://127.0.0.1:7137",
           changeOrigin: false,
         },

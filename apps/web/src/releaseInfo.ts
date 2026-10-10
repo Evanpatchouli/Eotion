@@ -18,7 +18,7 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = Object.freeze([
       '高级文档区块：Callout、嵌套内容与 Table',
       'Database：多表格视图、筛选、排序与列配置',
       'Database 高级属性：Relation、Rollup 与 Formula',
-      '原生 MCP：搜索、阅读、创建与更新文档',
+      '原生 MCP：Token 管理、搜索、阅读、创建与更新文档',
       'Windows Desktop 与 Android / HarmonyOS 移动宿主基础',
     ]),
   }),

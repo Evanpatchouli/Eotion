@@ -9,7 +9,9 @@ P6 通过 MCP 让外部客户端使用 Eotion 的已有 application/domain 能�
 | P6.3 Write Tools | 原子页面写入、正文 reconcile、并发保护与持久幂等 | PASS |
 | P6.4 MCP Acceptance | 最终端到端、第二客户端、安全与回归验收 | PASS |
 
-P6.1 不实现 Resources、Prompts、页面读写/删除、Agent/Chat UI、automation 或 Token Settings UI。
+P6.1 当时不实现 Resources、Prompts、页面读写/删除、Agent/Chat UI、automation 或 Token Settings UI。
+
+> 当前产品状态补充（2026-10-11）：P8 封板后已补齐“设置 → MCP”管理界面，可查看当前环境 MCP 地址、创建/列出/撤销独立 Token；这属于后续产品完善，不改变 P6 当时的阶段边界。
 
 ## P6.1 接入契约
 

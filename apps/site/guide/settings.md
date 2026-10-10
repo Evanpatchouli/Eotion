@@ -1,6 +1,6 @@
 ---
 title: 设置
-description: 管理昵称、密码、主题、编辑器工具栏偏好和 Eotion 软件信息。
+description: 管理昵称、密码、主题、MCP Token、编辑器工具栏偏好和 Eotion 软件信息。
 ---
 
 # 设置
@@ -27,8 +27,12 @@ description: 管理昵称、密码、主题、编辑器工具栏偏好和 Eotion
 
 “软件说明”显示版本信息，并提供检查更新和查看更新日志的入口。
 
-## MCP 与 Agent
+## MCP
 
-设置中的 MCP / Agent 入口目前标记为“即将推出”，还不能在这里管理。
+“设置 → MCP”会显示当前运行环境的 MCP 地址，并提供复制按钮。你可以在这里创建独立 Access Token、查看创建时间与最近使用时间，以及单独撤销不再需要的 Token。明文 Token 只在创建时显示一次。
 
-MCP 连接本身已经可用，但 Token 无法在设置页创建或撤销，需要按 [MCP 指南](/guide/mcp) 中的方式通过 API 创建。
+连接方式见 [MCP 指南](/guide/mcp)。
+
+## Agent
+
+Agent 设置仍为预留入口，当前尚未开放。

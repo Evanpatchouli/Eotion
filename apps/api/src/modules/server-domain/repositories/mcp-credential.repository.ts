@@ -21,6 +21,16 @@ export class McpCredentialRepository {
     await this.model.create(record)
   }
 
+  async listActiveByUserId(userId: string): Promise<Array<Omit<McpCredentialRecord, 'tokenHash' | 'userId' | 'revokedAt'>>> {
+    const docs = await this.model.find({ userId, revokedAt: null }).sort({ createdAt: -1, id: 1 }).lean().exec()
+    return docs.map((doc) => ({
+      id: doc.id,
+      name: doc.name,
+      createdAt: doc.createdAt,
+      lastUsedAt: doc.lastUsedAt,
+    }))
+  }
+
   async findByTokenHash(tokenHash: string): Promise<McpCredentialRecord | null> {
     const doc = await this.model.findOne({ tokenHash }).select('+tokenHash').exec()
     return doc

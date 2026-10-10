@@ -12,12 +12,13 @@ const rootManifest = JSON.parse(
 const buildVersion = rootManifest.version;
 const buildNumber = rootManifest.eotion.buildNumber;
 const releaseHighlights = [
-  "Quiet Studio 产品界面",
-  "Workspace / Page Tree",
-  "Local-first 文档编辑与同步",
-  "图片与文件附件",
-  "设置、主题与跨端基础",
-  "Desktop / Mobile 原生宿主基础",
+  "Quiet Studio 产品界面与 Local-first 文档编辑",
+  "Workspace / Page Tree、图片与文件附件",
+  "高级文档区块：Callout、嵌套内容与 Table",
+  "Database：多表格视图、筛选、排序与列配置",
+  "Database 高级属性：Relation、Rollup 与 Formula",
+  "原生 MCP：Token 管理、搜索、阅读、创建与更新文档",
+  "Windows Desktop 与 Android / HarmonyOS 移动宿主基础",
 ];
 
 const now = "2026-09-30T00:00:00.000Z";
@@ -104,6 +105,7 @@ async function installApi(
   ]);
   const workspaces = [wsA, wsB, wsBen];
   const pages = [pageA, pageBen];
+  let mcpTokens = [{ id: "mcp-token-one", name: "Codex desktop", createdAt: now, lastUsedAt: null as string | null }];
   const requests: RequestRecord[] = [];
   const controls: ApiControls = {
     meStatus: options.meStatus ?? 200,
@@ -216,6 +218,21 @@ async function installApi(
           ),
         );
       session = null;
+      return route.fulfill({ status: 204 });
+    }
+    if (path === "/api/mcp/tokens" && method === "GET") {
+      return session ? json(route, 200, mcpTokens) : json(route, 401, failure(401, "Unauthorized"));
+    }
+    if (path === "/api/mcp/tokens" && method === "POST") {
+      if (!session) return json(route, 401, failure(401, "Unauthorized"));
+      const item = { id: "mcp-token-created", name: String(body?.name ?? ""), createdAt: later, lastUsedAt: null };
+      mcpTokens = [item, ...mcpTokens];
+      return json(route, 201, { token: "eotion_mcp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", credential: item });
+    }
+    const mcpTokenDelete = path.match(/^\/api\/mcp\/tokens\/([^/]+)$/);
+    if (mcpTokenDelete && method === "DELETE") {
+      if (!session) return json(route, 401, failure(401, "Unauthorized"));
+      mcpTokens = mcpTokens.filter((item) => item.id !== decodeURIComponent(mcpTokenDelete[1]!));
       return route.fulfill({ status: 204 });
     }
     if (path === "/api/health" && method === "GET") {
@@ -344,7 +361,7 @@ test("390px Settings index returns to the original page", async ({ page }) => {
   await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/);
 });
 
-for (const detail of ["profile", "appearance", "workspace/general", "about"]) {
+for (const detail of ["profile", "appearance", "mcp", "workspace/general", "about"]) {
   test(`390px Settings ${detail} has one back control and preserves navigation state`, async ({
     page,
   }) => {
@@ -437,6 +454,27 @@ test("390px Settings index navigates to detail with a single topbar and no overf
   }));
   expect(widths.content).toBeLessThanOrEqual(widths.viewport);
   expect(pageErrors).toEqual([]);
+});
+
+test("MCP settings shows the environment endpoint and manages one-time tokens", async ({ page }) => {
+  const api = await installApi(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/#/settings/mcp?returnTo=${encodeURIComponent("/app/ws-a")}&workspaceId=ws-a`);
+  await expect(page.getByRole("heading", { name: "MCP", level: 1 })).toBeVisible();
+  const expectedEndpoint = await page.evaluate(() => new URL("/mcp", location.origin).href);
+  await expect(page.getByTestId("mcp-endpoint")).toHaveText(expectedEndpoint);
+  await expect(page.getByText("Codex desktop")).toBeVisible();
+  await page.getByLabel("名称").fill("Codex test");
+  await page.getByRole("button", { name: "创建 Token" }).click();
+  await expect(page.getByTestId("mcp-created-token")).toHaveText(/^eotion_mcp_/);
+  expect(api.requests.filter((request) => request.path === "/api/mcp/tokens" && request.method === "POST").at(-1)?.body).toEqual({ name: "Codex test" });
+  await page.getByRole("listitem").filter({ hasText: "Codex desktop" }).getByRole("button", { name: "撤销" }).click();
+  await expect(page.getByText("Codex desktop")).toHaveCount(0);
+  expect(api.requests.some((request) => request.path === "/api/mcp/tokens/mcp-token-one" && request.method === "DELETE")).toBeTruthy();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  const widths = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
+  expect(widths.content).toBeLessThanOrEqual(widths.viewport);
 });
 
 test("profile trims and caches the saved name; invalid and successful password changes follow the session contract", async ({
@@ -741,7 +779,7 @@ test("settings navigation ends with 软件说明 and /settings/about shows build
   await expect(page.getByTestId("about-version")).toContainText(buildVersion);
   await expect(page.getByTestId("about-version")).toContainText(/[0-9a-f]{6}|unknown/);
   await expect(page.getByTestId("about-version")).not.toContainText("Build ");
-  await expect(page.getByTestId("about-released")).toHaveText("2026-10-04");
+  await expect(page.getByTestId("about-released")).toHaveText("2026-10-11");
   await expect(
     page.getByRole("heading", { name: "当前版本日志" }),
   ).toBeVisible();

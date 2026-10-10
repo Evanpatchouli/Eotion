@@ -87,15 +87,8 @@ const href = computed(() => `/download${platform.value ? `#${platform.value}` : 
           </ul>
           <a class="text-link" href="/guide/database">了解数据库 <span aria-hidden="true">↗</span></a>
         </div>
-        <div class="database-flow" role="img" aria-label="同一个数据库的数据由多个表格视图共享，每条记录连接到一篇 Eotion 页面">
-          <div class="database-flow-source">Database</div>
-          <div class="database-flow-views">
-            <span>表格 · 全部</span>
-            <span>表格 · 本周</span>
-            <span>表格 · 已完成</span>
-          </div>
-          <div class="database-flow-arrow" aria-hidden="true">↓</div>
-          <div class="database-flow-record">Record <span>→</span> Page</div>
+        <div class="product-shot database-shot">
+          <img src="/screenshots/database-table.webp" alt="Eotion Database 表格视图与筛选条件界面" width="585" height="180" loading="lazy" decoding="async">
         </div>
       </div>
       <p class="database-note">当前公开版本提供 Table View；更多展示形态不在本阶段能力范围内。</p>

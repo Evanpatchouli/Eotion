@@ -30,23 +30,19 @@ function csvValues(...values: Array<string | undefined>): string[] {
   return [...new Set(values.flatMap((value) => value?.split(',') ?? []).map((value) => value.trim()).filter(Boolean))]
 }
 
-function configuredOriginHosts(): string[] {
-  const configuredOrigins = csvValues(process.env.WEB_ORIGIN, process.env.API_ORIGIN)
+function configuredProductHosts(): string[] {
+  return csvValues(process.env.WEB_ORIGIN, process.env.API_ORIGIN)
     .flatMap((origin) => {
-      try {
-        return [new URL(origin).hostname]
-      } catch {
-        return []
-      }
+      try { return [new URL(origin).hostname] } catch { return [] }
     })
+}
 
-  return [...new Set([
-    'localhost',
-    '127.0.0.1',
-    '[::1]',
-    ...configuredOrigins,
-    ...csvValues(process.env.MCP_ALLOWED_ORIGINS),
-  ])]
+function configuredOriginHosts(): string[] {
+  return [...new Set(['localhost', '127.0.0.1', '[::1]', ...configuredProductHosts(), ...csvValues(process.env.MCP_ALLOWED_ORIGINS)])]
+}
+
+function configuredRequestHosts(): string[] {
+  return [...new Set(['localhost', '127.0.0.1', '[::1]', ...configuredProductHosts(), ...csvValues(process.env.MCP_ALLOWED_HOSTS)])]
 }
 
 @Injectable()
@@ -86,12 +82,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     }, {
       onerror: () => this.logger.error('MCP request adapter failed'),
     })
-    const validateHost = hostHeaderValidation([
-      'localhost',
-      '127.0.0.1',
-      '[::1]',
-      ...csvValues(process.env.MCP_ALLOWED_HOSTS),
-    ])
+    const validateHost = hostHeaderValidation(configuredRequestHosts())
     const validateOrigin = originValidation(configuredOriginHosts())
 
     fastify.all('/mcp', async (request, reply) => {

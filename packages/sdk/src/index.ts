@@ -32,6 +32,9 @@ import type {
   HealthResponse,
   LoginRequest,
   LoginResponse,
+  McpTokenCreateRequest,
+  McpTokenMetadataResponse,
+  CreatedMcpTokenResponse,
   PageCreateRequest,
   PageMoveRequest,
   PageResponse,
@@ -75,6 +78,11 @@ export class EotionApiClient {
     me: (signal?: AbortSignal) => Promise<AuthUserDto>
     updateProfile: (input: ProfileUpdateRequest, signal?: AbortSignal) => Promise<AuthUserDto>
     changePassword: (input: ChangePasswordRequest, signal?: AbortSignal) => Promise<void>
+  }
+  readonly mcpTokens: {
+    list: (signal?: AbortSignal) => Promise<McpTokenMetadataResponse[]>
+    create: (input: McpTokenCreateRequest, signal?: AbortSignal) => Promise<CreatedMcpTokenResponse>
+    revoke: (id: string, signal?: AbortSignal) => Promise<void>
   }
   readonly workspaces: {
     list: (signal?: AbortSignal) => Promise<WorkspaceResponse[]>
@@ -140,6 +148,11 @@ export class EotionApiClient {
       changePassword: async (input, signal) => {
         await this.request('/api/auth/change-password', { method: 'POST', body: input, signal })
       },
+    }
+    this.mcpTokens = {
+      list: (signal) => this.request('/api/mcp/tokens', { method: 'GET', signal }),
+      create: (input, signal) => this.request('/api/mcp/tokens', { method: 'POST', body: input, signal }),
+      revoke: async (id, signal) => { await this.request(`/api/mcp/tokens/${segment(id)}`, { method: 'DELETE', signal }) },
     }
     this.workspaces = {
       list: (signal) => this.request('/api/workspaces', { method: 'GET', signal }),

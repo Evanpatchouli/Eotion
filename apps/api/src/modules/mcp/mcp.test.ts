@@ -278,6 +278,27 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     });
     assert.equal(issuedB.status, 201);
 
+    const noSessionList = await request(baseUrl, "/api/mcp/tokens", "GET");
+    assert.equal(noSessionList.status, 401);
+    const managedA = await request(baseUrl, "/api/mcp/tokens", "POST", { cookie: cookieA, body: { name: "Managed in settings" } });
+    assert.equal(managedA.status, 201);
+    const listedTokensA = await request(baseUrl, "/api/mcp/tokens", "GET", { cookie: cookieA });
+    assert.equal(listedTokensA.status, 200);
+    assert.ok(Array.isArray(listedTokensA.body));
+    assert.ok((listedTokensA.body as any[]).some((item) => item.id === managedA.body.credential.id && item.name === "Managed in settings" && item.lastUsedAt === null));
+    assert.doesNotMatch(JSON.stringify(listedTokensA.body), /tokenHash|eotion_mcp_/);
+    const listedTokensB = await request(baseUrl, "/api/mcp/tokens", "GET", { cookie: cookieB });
+    assert.equal(listedTokensB.status, 200);
+    assert.ok(!(listedTokensB.body as any[]).some((item) => item.id === managedA.body.credential.id));
+    const crossUserRevoke = await request(baseUrl, `/api/mcp/tokens/${managedA.body.credential.id}`, "DELETE", { cookie: cookieB });
+    assert.equal(crossUserRevoke.status, 204);
+    assert.ok(await tokens.resolve(managedA.body.token));
+    const ownRevoke = await request(baseUrl, `/api/mcp/tokens/${managedA.body.credential.id}`, "DELETE", { cookie: cookieA });
+    assert.equal(ownRevoke.status, 204);
+    assert.equal(await tokens.resolve(managedA.body.token), null);
+    const afterRevokeList = await request(baseUrl, "/api/mcp/tokens", "GET", { cookie: cookieA });
+    assert.ok(!(afterRevokeList.body as any[]).some((item) => item.id === managedA.body.credential.id));
+
     const storedA = await credentialModel
       .findOne({ id: issuedA.body.credential.id })
       .select("+tokenHash")
