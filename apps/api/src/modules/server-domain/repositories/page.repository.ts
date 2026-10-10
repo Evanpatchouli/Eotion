@@ -37,6 +37,10 @@ export class PageRepository {
     return (await this.model.updateOne({ workspaceId, id }, { $set: { role: 'database-record' } }, { session, timestamps: false }).exec()).matchedCount === 1
   }
 
+  async clearDatabaseRecordRole(workspaceId: string, id: string, session: ClientSession): Promise<boolean> {
+    return (await this.model.updateOne({ workspaceId, id }, { $unset: { role: '' } }, { session, timestamps: false }).exec()).matchedCount === 1
+  }
+
   async touchStructure(workspaceId: string, id: string, session?: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndUpdate(
       { workspaceId, id }, [{ $set: { structureFence: { $add: ['$structureFence', 1] }, updatedAt: this.nextUpdatedAt() } }],

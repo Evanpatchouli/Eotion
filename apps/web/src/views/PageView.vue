@@ -7,8 +7,10 @@ import type { DatabaseReferenceAttrs } from '@eotion/domain/database'
 import type { DatabaseViewResponse } from '@eotion/contracts'
 
 import EotionEditor from '../components/editor/EotionEditor.vue'
+import EotionButton from '../components/ui/EotionButton.vue'
 import EotionIcon from '../components/ui/EotionIcon.vue'
 import EotionCommandOverlay from '../components/ui/EotionCommandOverlay.vue'
+import { IconName } from '../components/ui/icons'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
 import { registerActivePageEditor } from '../editor/activePageEditor'
 import { flushAttachmentCleanups, pendingAttachmentCleanups } from '../editor/attachmentCleanup'
@@ -23,9 +25,20 @@ import { useProductSyncStore } from '../stores/productSync'
 import { usePreferencesStore } from '../stores/preferences'
 import { ApiError, api, errorMessage } from '../services/productApi'
 import { isProductDatabaseInsertionUncertain, markProductDatabaseInsertionUncertain } from '../services/productDatabases'
+import { notifyDatabaseUpdated } from '../editor/databaseEvents'
 
 type DatabaseInsertionRequest = { document: EditorDocument; blockId: string }
 type DatabaseChoice = { kind: 'create'; name: string } | { kind: 'link'; databaseId: string; viewId: string } | null
+
+const surfaceProps = withDefaults(defineProps<{
+  embeddedWorkspaceId?: string
+  embeddedPageId?: string
+  embedded?: boolean
+}>(), {
+  embeddedWorkspaceId: '',
+  embeddedPageId: '',
+  embedded: false,
+})
 
 const route = useRoute()
 const pages = useProductPagesStore()
@@ -35,8 +48,8 @@ const sync = useProductSyncStore()
 const preferences = usePreferencesStore()
 const { layoutMode, inputMode } = useRuntimeContext()
 
-const workspaceId = computed(() => typeof route.params.workspaceId === 'string' ? route.params.workspaceId : '')
-const pageId = computed(() => typeof route.params.pageId === 'string' ? route.params.pageId : '')
+const workspaceId = computed(() => surfaceProps.embeddedWorkspaceId || (typeof route.params.workspaceId === 'string' ? route.params.workspaceId : ''))
+const pageId = computed(() => surfaceProps.embeddedPageId || (typeof route.params.pageId === 'string' ? route.params.pageId : ''))
 const page = computed(() => pages.items.find((item) => item.id === pageId.value) ?? null)
 const currentWorkspace = computed(() => workspaces.items.find((item) => item.id === workspaceId.value) ?? null)
 const settled = computed(() => pages.loaded && pages.forWorkspaceId === workspaceId.value)
@@ -274,6 +287,7 @@ async function createDatabaseReference(request: DatabaseInsertionRequest): Promi
               markProductDatabaseInsertionUncertain(operationUserId, operationWorkspaceId, operationPageId)
               throw new Error('登录状态或页面已切换，请刷新页面确认数据库引用。')
             }
+            notifyDatabaseUpdated({ workspaceId: operationWorkspaceId, databaseId })
             return { databaseId, viewId }
           }
         } catch {
@@ -289,6 +303,7 @@ async function createDatabaseReference(request: DatabaseInsertionRequest): Promi
       if (result.block.id !== block.id || result.block.parentBlockId !== block.parentBlockId || result.block.orderKey !== block.orderKey) {
         throw new Error('数据库已创建，但服务端返回的引用位置不一致。请保留页面并重试保存。')
       }
+      notifyDatabaseUpdated({ workspaceId: operationWorkspaceId, databaseId: result.database.id })
       return { databaseId: result.database.id, viewId: result.view.id }
     }
 
@@ -417,7 +432,7 @@ onBeforeUnmount(() => {
       <RouterLink class="product-button product-button--primary" :to="{ name: 'product-workspace', params: { workspaceId } }">返回工作区</RouterLink>
     </div>
   </section>
-  <div v-else class="document product-editor-page">
+  <div v-else class="document product-editor-page" :class="{ 'product-editor-page--embedded': embedded }">
     <p class="product-section-label">{{ currentWorkspace?.name ?? '工作区' }}</p>
     <div class="product-editor-heading"><h1>{{ page.title }}</h1></div>
     <p v-if="blockError" class="product-message product-message--error" role="alert">{{ blockError }}</p>
@@ -437,6 +452,7 @@ onBeforeUnmount(() => {
         :create-database-reference="createDatabaseReference"
         :commit-database-reference="commitDatabaseReference"
         :touch-toolbar="layoutMode === 'mobile' || inputMode !== 'mouse'"
+        :autofocus="embedded || route.query.edit === 'record'"
         aria-label="页面正文编辑区域"
         @update="onEditorUpdate"
         @composition="(active) => persistence?.setComposing(active)"
@@ -447,16 +463,21 @@ onBeforeUnmount(() => {
     <div class="database-command">
       <h2>数据库</h2>
       <template v-if="databaseMode === 'start'">
-        <button class="database-command-option" type="button" @click="databaseMode = 'create'">创建新数据库</button>
-        <button class="database-command-option" type="button" @click="databaseMode = 'databases'; databaseList = []; databaseCursor = null; loadDatabaseChoices()">链接现有数据库</button>
+        <div class="database-command-choices" role="group" aria-label="数据库操作">
+          <button class="database-command-option" type="button" @click="databaseMode = 'create'">创建新数据库</button>
+          <button class="database-command-option" type="button" @click="databaseMode = 'databases'; databaseList = []; databaseCursor = null; loadDatabaseChoices()">链接现有数据库</button>
+        </div>
       </template>
       <form v-else-if="databaseMode === 'create'" class="database-command-form" @submit.prevent="onCreateDatabaseChoice">
+        <div class="database-command-create-header">
+          <EotionButton class="database-command-back" variant="ghost" type="button" @click="databaseMode = 'start'"><EotionIcon :name="IconName.ArrowLeft" :size="16" />返回</EotionButton>
+          <div class="database-command-actions">
+            <EotionButton variant="ghost" type="button" @click="resolveDatabase(null)">取消</EotionButton>
+            <EotionButton variant="primary" type="submit">创建数据库</EotionButton>
+          </div>
+        </div>
         <label for="database-name">数据库名称</label>
         <input id="database-name" v-model="databaseName" aria-label="数据库名称" maxlength="200" autofocus>
-        <div class="database-command-actions">
-          <button type="button" @click="databaseMode = 'start'">返回</button>
-          <button type="submit">创建数据库</button>
-        </div>
       </form>
       <template v-else-if="databaseMode === 'databases'">
         <button class="database-command-back" type="button" @click="databaseMode = 'start'">返回</button>
@@ -473,11 +494,11 @@ onBeforeUnmount(() => {
         <p v-if="databaseError" role="alert">{{ databaseError }} <button type="button" @click="selectDatabase(databaseSelectedId)">重试</button></p>
         <p v-else-if="databaseViewsLoading" role="status">正在加载表格视图…</p>
         <ul class="database-command-list">
-          <li v-for="view in databaseViews" :key="view.id"><button type="button" @click="resolveDatabase({ kind: 'link', databaseId: databaseSelectedId, viewId: view.id })">{{ view.name }}</button></li>
+          <li v-for="view in databaseViews" :key="view.id"><button type="button" @click="resolveDatabase({ kind: 'link', databaseId: databaseSelectedId, viewId: view.id })">{{ view.name === 'Table' ? '表格视图' : view.name }}</button></li>
         </ul>
         <p v-if="!databaseViewsLoading && !databaseViews.length && !databaseError">这个数据库没有可链接的表格视图。</p>
       </template>
-      <button class="database-command-cancel" type="button" @click="resolveDatabase(null)">取消</button>
+      <button v-if="databaseMode !== 'create'" class="database-command-cancel" type="button" @click="resolveDatabase(null)">取消</button>
     </div>
   </EotionCommandOverlay>
 </template>
@@ -485,13 +506,22 @@ onBeforeUnmount(() => {
 <style scoped>
 .database-command { display: grid; gap: 10px; }
 .database-command h2 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
-.database-command-option, .database-command-form input, .database-command-actions button, .database-command-back, .database-command-list button, .database-command-cancel, .database-command > button { min-height: 40px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-control); padding: 8px 11px; background: var(--e-color-surface); color: var(--e-color-text-primary); font: inherit; text-align: left; cursor: pointer; }
+.database-command-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.database-command-option, .database-command-form input, .database-command-list button, .database-command-cancel, .database-command > button { min-height: 40px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-control); padding: 8px 11px; background: var(--e-color-surface); color: var(--e-color-text-primary); font: inherit; text-align: left; cursor: pointer; }
 .database-command-option:hover, .database-command-list button:hover { background: var(--surface-editor-hover); }
 .database-command-form { display: grid; gap: 8px; }
 .database-command-form label { color: var(--e-color-text-muted); font-size: 13px; }
 .database-command-form input { box-sizing: border-box; width: 100%; }
+.database-command-create-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.database-command-back { justify-self: start; }
 .database-command-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .database-command-list { display: grid; max-height: min(45dvh, 360px); overflow: auto; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .database-command-list button { width: 100%; }
 .database-command-cancel { justify-self: end; }
+@media (max-width: 420px) {
+  .database-command-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .database-command-option { padding-inline: 8px; text-align: center; }
+  .database-command-create-header { align-items: flex-start; }
+  .database-command-actions { gap: 4px; }
+}
 </style>

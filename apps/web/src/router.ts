@@ -52,6 +52,7 @@ export const router = createRouter({
       children: [
         { path: '', name: 'product-home', component: () => import('./views/WorkspaceHomeView.vue') },
         { path: ':workspaceId', name: 'product-workspace', component: () => import('./views/WorkspaceHomeView.vue') },
+        { path: ':workspaceId/database/:databaseId', name: 'product-database', component: () => import('./views/DatabasePageView.vue') },
         { path: ':workspaceId/page/:pageId', name: 'product-page', component: () => import('./views/PageView.vue') },
       ],
     },

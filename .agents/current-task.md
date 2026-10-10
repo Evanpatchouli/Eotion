@@ -1,19 +1,37 @@
-# 当前任务：P8.6 Database Final Acceptance
+# 当前任务：Database UX 收敛
 
-基线：`ed87dfe2838279d84cac838720af252ee985e37c`（master）。本轮只做最终组合验收、真实 blocker hardening、fresh 验收、文档与一个 Final Acceptance commit；不开始下一阶段。
+状态：**完成**。基线 `3f93222`；导航语义提交 `e8ed579`，其余 UI/测试/文档随本任务最终聚焦提交落盘。本轮仅重构既有 Table View，没有开始 P9，也没有扩展 Database MCP、Database offline sync、真实 Automation、People/Files 或新 View。
 
-| Work Unit | 模式/评级 | 状态 / 验收 |
-| --- | --- | --- |
-| 服务端组合正确性、Page.title 分页、Relation/Rollup/Formula、删除/CAS/scope | investigate S0 → hardening S2 | COMPLETE：Page title 变更事务性推进 Database version；旧游标 fail-closed；Relation/derived/delete/reference fence 与 legacy 路径回归通过 |
-| Linked View、UI、Local-first/MCP、P5–P8 数据兼容 | investigate/verify S0 | COMPLETE：共享数据与独立 View config、reload、390px responsive、offline read-only、MCP 稳定引用及 legacy 数据读取通过 |
-| 5k/10k 查询性能、Mongo profiler/explain、bounds | verify S0 | COMPLETE：独立 Mongo 5k/10k harness fresh 通过；记录 query latency、docs/keys、stages、usedDisk 与 overflow cleanup |
-| 测试矩阵、hardening、最终文档 | execute/verify S1/S0 | COMPLETE：domain 31、contracts 16、SDK 21、API domain 12、HTTP 24、MCP 30、product 244、storage 7+11、visual 7、titlebar 2 全通过；typecheck 与 Web/API/Desktop build 通过 |
-| 独立最终 review | review | COMPLETE：0 merge blocker；只读审查并发、权限、cleanup、derived、性能 harness、UI 与离线测试屏障 |
+| Work Unit | 状态 |
+| --- | --- |
+| Record / Page / Database 导航语义 | DONE + committed：`e8ed579 feat(database): 收敛数据库与记录导航语义` |
+| Database Block / Header / Create-Link / Settings | DONE |
+| device-aware Overlay / Record 与 Property 独立偏好 | DONE |
+| 属性完整管理 / Relation / Rollup / Formula | DONE |
+| Record create/open / Database route / Page Tree | DONE |
+| responsive / light-dark / 390px visual QA | DONE |
+| 全量验证 | DONE |
+| independent review | DONE：0 merge blocker |
+| focused UI commit / clean workspace | DONE |
 
-实现变更：Page.title 修改关联 Record 页时在同一事务内推进 Database version，并通过 Page `updatedAt` CAS 覆盖关联竞争；增加 exact/limit+1、legacy 读取和 Mongo 性能 acceptance 用例；修复编辑器尾部 Database node 后首次点击不获光标的产品回归；P7.5 offline restart acceptance 采用 LocalStore 数据完整 barrier，不改变产品持久化行为。
+## 最终行为
 
-性能观察（本地 MongoDB 8.0.32）：默认首屏约 41–50 ms、下一页约 29–31 ms，约检查 101/102 Record/Page；Filter 326/606 ms、约 7.5k/15k examined；两级 Sort 614/1,213 ms、约 10k/20k examined；100 行/5,000 linked targets 派生读取约 589–593 ms；10k cleanup overflow 在 263–292 ms 内 fail-closed、10,001 examined 并回滚；所有测量 profiler usedDisk spill 为 0。完整数据见 `docs/p8-database.md`。
+- Database 左侧提供 `[+] [drag]`，拖拽仅 hover/focus 强调；Plus 在当前区块下方插入 paragraph；drop indicator 使用语义 accent token；Slash Database 使用统一图标。
+- Header 使用“表格视图/名称”，无重复类型标签，空 Cell 留空；Create/Link 首层同行，Create 页明确区分返回、取消与 Primary 创建。
+- `...` 是筛选、排序、属性、记录打开方式、自动化五入口；自动化 disabled。复杂配置使用正式 Overlay，不塞入小 Popover。
+- 通用 Overlay 支持 desktop/tablet drawer/modal/page 与 phone right-drawer/bottom-drawer/modal/page；Desktop Drawer 无蒙层、不锁滚动、不阻止背景交互；有遮罩容器 focus trap/scroll lock/backdrop/Escape 正确。
+- Record 与 Property 使用相同 device-aware 模型但独立持久化。属性支持新增、删除、重命名、顺序、显隐、Select options、Relation/Rollup/Formula 配置；visible/order 仍属于 View config。
+- 新建 Record 保持 Record + Page 原子创建，随后按设备偏好打开并 autofocus；已有 Record 标题走同一机制；Page mode 使用正常 Page route。
+- Database 通过 navigation projection 作为宿主 Page 子项并有独立 route；新旧 Record Page 在 Sidebar 查询分页前过滤，仍可由 Database 打开；旧 P8 数据无 migration。
 
-结论：P8.6 PASS，P8 Database COMPLETE。独立 review 0 blocker；`docs/p8-database.md`、`docs/roadmap.md`、本文件与 `.agents/handoff.md` 已同步；fresh 验收矩阵、性能 harness、typecheck/build、`git diff --check` 与 UTF-8 无 BOM 均通过。最终聚焦提交包含本文件与交接记录；完成后工作区应干净。
+## 验证证据
 
-禁止：新增 Database 产品功能、扩大到下一阶段、为修绿削弱 assertion/timeout、把 mock/HMR 残留结果写成 fresh 验收。
+- Domain 31、Contracts 17、SDK 22、API domain 12、HTTP 全套、MCP 30、Storage package 7、Web IndexedDB/Electron storage 12、Desktop 18、Visual baseline 7、Database 5k/10k performance 全通过，无 skip。
+- Product 完整命令 254/255；唯一旧 Toggle reload 用例随后完整 blocks 文件 14/14 通过，所有 255 项均有通过结果；Database 41/41、Overlay matrix 8/8。
+- 根 typecheck、Web/API/Desktop build、`git diff --check` 通过。Web 仅有既有大 chunk warning。
+- 视觉 QA 已人工检查 desktop light/dark、无蒙层属性 Drawer、Formula 配置、390px bottom drawer 与表格；截图位于系统 Temp，不入仓库。
+- 独立 reviewer 定向复核 Record Page tree filtering、旧 P8 compatibility、Overlay focus/backdrop、device config、Record transaction、Linked View、hidden property 与 Local-first，最终 0 merge blocker。
+
+## 剩余收口
+
+无。确认 workspace clean 后按用户指定 12 项汇报并停止；不得开始 P9。

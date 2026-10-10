@@ -71,6 +71,8 @@ async function installApi(page: Page, options: MockOptions = {}) {
 
     if (path === '/api/auth/me' && method === 'GET') return json(route, 200, ava)
     if (path === '/api/workspaces' && method === 'GET') return json(route, 200, workspaces)
+    const databaseNavigationMatch = path.match(/^\/api\/workspaces\/([^/]+)\/database-navigation$/)
+    if (databaseNavigationMatch && method === 'GET') return json(route, 200, { items: [], nextCursor: null })
     const snapshotMatch = path.match(/^\/api\/sync\/workspaces\/([^/]+)\/snapshot$/)
     if (snapshotMatch && method === 'GET') {
       await wait(controls.snapshotDelayMs)

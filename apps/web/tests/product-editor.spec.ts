@@ -51,6 +51,7 @@ async function installApi(page: Page, options: { pages?: PageResponse[]; blocks?
       return json(route, 200, { user, expiresAt: later })
     }
     if (path === '/api/workspaces' && request.method() === 'GET') return json(route, 200, [workspace])
+    if (path === `/api/workspaces/${workspace.id}/database-navigation` && request.method() === 'GET') return json(route, 200, { items: [], nextCursor: null })
     if (path === `/api/sync/workspaces/${workspace.id}/snapshot` && request.method() === 'GET') {
       await wait(controls.snapshotDelayMs)
       if (controls.snapshotGate) await controls.snapshotGate

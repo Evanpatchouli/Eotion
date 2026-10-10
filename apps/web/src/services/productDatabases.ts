@@ -184,7 +184,7 @@ export async function deleteProductDatabaseView(workspaceId: string, databaseId:
   })
 }
 
-export async function createProductDatabaseRecord(workspaceId: string, databaseId: string, title: string): Promise<{ refreshWarning?: string }> {
+export async function createProductDatabaseRecord(workspaceId: string, databaseId: string, title: string): Promise<{ pageId: string; recordId: string; refreshWarning?: string }> {
   if (!navigator.onLine) throw new Error('离线时无法新建记录。')
   const auth = useAuthStore()
   const userId = auth.user?.id
@@ -244,7 +244,7 @@ export async function createProductDatabaseRecord(workspaceId: string, databaseI
   } catch {
     refreshWarning = true
   }
-  return refreshWarning ? { refreshWarning: '记录已创建，页面列表暂未刷新，请稍后刷新。' } : {}
+  return { pageId, recordId, ...(refreshWarning ? { refreshWarning: '记录已创建，页面列表暂未刷新，请稍后刷新。' } : {}) }
 }
 
 export async function createProductDatabaseProperty(workspaceId: string, databaseId: string, input: DatabasePropertyCreateRequest) {

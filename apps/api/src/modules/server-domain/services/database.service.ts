@@ -531,7 +531,8 @@ export class DatabaseService {
       }
       const deletedRecord = await this.records.findInDatabase(workspaceId, databaseId, recordId, session)
       if (!await this.records.delete(workspaceId, databaseId, recordId, input.expectedRecordVersion, session)) throw new ConflictException('Database record version is stale')
-      if (deletedRecord && !await this.pages.markDatabaseRecordRole(workspaceId, deletedRecord.pageId, session)) throw new ConflictException('Record page is missing')
+      if (deletedRecord && (await this.records.findForPage(workspaceId, deletedRecord.pageId, session)).length === 0
+        && !await this.pages.clearDatabaseRecordRole(workspaceId, deletedRecord.pageId, session)) throw new ConflictException('Record page is missing')
       return { database }
     })
   }

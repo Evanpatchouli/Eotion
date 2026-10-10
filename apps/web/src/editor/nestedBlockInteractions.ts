@@ -1,10 +1,11 @@
 import { Extension } from '@tiptap/core'
-import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { Fragment, type Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { NodeSelection, Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import type { Selection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import type { EditorView } from '@tiptap/pm/view'
 import { blockCapability, blockHasInternalContent, blockTypeForNode, isAllowedChildBlockType } from '@eotion/domain/block-types'
+import { createIconElement, IconName } from '../components/ui/icons'
 
 const MAX_BLOCK_DEPTH = 8
 const DRAG_TYPE = 'application/x-eotion-block'
@@ -106,6 +107,22 @@ function movable(entry: BlockEntry | undefined): entry is BlockEntry {
   return type !== undefined && !blockCapability(type).attachment
 }
 
+/** Insert a normal identified paragraph after a database reference in its own sibling list. */
+function insertParagraphAfter(view: EditorView, blockId: string): boolean {
+  const entry = entriesFor(view.state.doc).find((candidate) => candidate.id === blockId)
+  const paragraphType = view.state.schema.nodes.paragraph
+  if (!entry || entry.node.type.name !== 'eotionDatabase' || !paragraphType) return false
+  const position = view.state.doc.resolve(entry.pos)
+  const paragraph = paragraphType.createAndFill()
+  const index = position.index() + 1
+  if (!paragraph || !position.parent.canReplace(index, index, Fragment.from(paragraph))) return false
+  const insertAt = entry.pos + entry.node.nodeSize
+  const transaction = view.state.tr.insert(insertAt, paragraph)
+  transaction.setSelection(TextSelection.near(transaction.doc.resolve(insertAt + 1), 1))
+  view.dispatch(transaction.scrollIntoView())
+  return true
+}
+
 function moveBlock(editor: { state: import('@tiptap/pm/state').EditorState; view: import('@tiptap/pm/view').EditorView }, sourceId: string, parentId: string | null, insertBeforeId?: string, afterId?: string): boolean {
   const state = editor.state
   const entries = entriesFor(state.doc)
@@ -144,7 +161,7 @@ function moveBlock(editor: { state: import('@tiptap/pm/state').EditorState; view
 
 /** Keep one widget per block so ProseMirror can reuse handle DOM across updates. */
 function addHandleDecorations(doc: ProseMirrorNode): DecorationSet {
-  const decorations = entriesFor(doc).filter(movable).map((entry) => Decoration.widget(entry.pos, () => {
+  const decorations = entriesFor(doc).filter(movable).map((entry) => Decoration.widget(entry.pos, (view) => {
     const anchor = document.createElement('span')
     anchor.className = 'eotion-block-drag-anchor'
     anchor.contentEditable = 'false'
@@ -155,6 +172,22 @@ function addHandleDecorations(doc: ProseMirrorNode): DecorationSet {
     handle.draggable = true
     handle.setAttribute('aria-label', '拖动区块')
     handle.setAttribute('data-eotion-drag-handle', entry.id)
+    handle.append(createIconElement(IconName.DragHandle))
+    if (entry.node.type.name === 'eotionDatabase') {
+      const insert = document.createElement('button')
+      insert.type = 'button'
+      insert.className = 'eotion-block-insert-button'
+      insert.contentEditable = 'false'
+      insert.setAttribute('aria-label', '在数据库区块下方插入区块')
+      insert.setAttribute('data-eotion-block-insert', entry.id)
+      insert.append(createIconElement(IconName.Plus))
+      insert.addEventListener('click', (event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        insertParagraphAfter(view, entry.id)
+      })
+      anchor.append(insert)
+    }
     anchor.append(handle)
     return anchor
   }, { key: `eotion-block-handle-${entry.id}`, side: -1, stopEvent: stopHandleEvent }))

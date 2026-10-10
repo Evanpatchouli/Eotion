@@ -12,6 +12,7 @@ export const OFFLINE_WORKSPACE_MESSAGE = '此工作区尚未保存到本机，�
 export const useProductPagesStore = defineStore('product-pages', () => {
   const forWorkspaceId = ref('')
   const items = ref<PageResponse[]>([])
+  const navigationItems = ref<PageResponse[]>([])
   const loaded = ref(false)
   const loading = ref(false)
   const error = ref('')
@@ -26,6 +27,7 @@ export const useProductPagesStore = defineStore('product-pages', () => {
     epoch += 1
     forWorkspaceId.value = ''
     items.value = []
+    navigationItems.value = []
     loaded.value = false
     loading.value = false
     error.value = ''
@@ -43,8 +45,14 @@ export const useProductPagesStore = defineStore('product-pages', () => {
       await load(workspaceId)
       return
     }
-    const pages = await local.listPagesByWorkspace(workspaceId)
-    if (requestEpoch === epoch) items.value = pages as PageResponse[]
+    const [pages, navigationPages] = await Promise.all([
+      local.listPagesByWorkspace(workspaceId),
+      local.listNavigationPagesByWorkspace(workspaceId),
+    ])
+    if (requestEpoch === epoch) {
+      items.value = pages as PageResponse[]
+      navigationItems.value = navigationPages as PageResponse[]
+    }
   }
 
   function load(workspaceId: string, force = false): Promise<void> {
@@ -53,6 +61,7 @@ export const useProductPagesStore = defineStore('product-pages', () => {
     const requestEpoch = ++epoch
     forWorkspaceId.value = workspaceId
     items.value = []
+    navigationItems.value = []
     loaded.value = false
     loading.value = true
     error.value = ''
@@ -65,7 +74,13 @@ export const useProductPagesStore = defineStore('product-pages', () => {
           error.value = sync.state === 'offline' ? OFFLINE_WORKSPACE_MESSAGE : (sync.error || '暂时无法加载工作区快照，请重试。')
           return
         }
-        items.value = await (await sync.store()).listPagesByWorkspace(workspaceId) as PageResponse[]
+        const local = await sync.store()
+        const [pages, navigationPages] = await Promise.all([
+          local.listPagesByWorkspace(workspaceId),
+          local.listNavigationPagesByWorkspace(workspaceId),
+        ])
+        items.value = pages as PageResponse[]
+        navigationItems.value = navigationPages as PageResponse[]
         loaded.value = true
       } catch (cause) {
         if (requestEpoch === epoch) error.value = cause instanceof Error ? cause.message : '无法加载本地页面。'
@@ -86,11 +101,11 @@ export const useProductPagesStore = defineStore('product-pages', () => {
       const now = new Date().toISOString()
       const created: PageResponse = {
         id: createLocalId(), workspaceId, parentPageId, title: DEFAULT_PAGE_TITLE,
-        orderKey: nextOrderKey(items.value.filter((page) => page.parentPageId === parentPageId)),
+        orderKey: nextOrderKey(navigationItems.value.filter((page) => page.parentPageId === parentPageId)),
         createdAt: now, updatedAt: now,
       }
       await (await useProductSyncStore().store()).upsertPage(created)
-      if (requestEpoch === epoch) items.value.push(created)
+      if (requestEpoch === epoch) { items.value.push(created); navigationItems.value.push(created) }
       useProductSyncStore().localMutation()
       return requestEpoch === epoch ? created : null
     } catch (cause) {
@@ -111,7 +126,10 @@ export const useProductPagesStore = defineStore('product-pages', () => {
     try {
       const updated = { ...old, title: trimmed, updatedAt: new Date().toISOString() }
       await (await useProductSyncStore().store()).upsertPage(updated)
-      if (requestEpoch === epoch) items.value = items.value.map((item) => item.id === pageId ? updated : item)
+      if (requestEpoch === epoch) {
+        items.value = items.value.map((item) => item.id === pageId ? updated : item)
+        navigationItems.value = navigationItems.value.map((item) => item.id === pageId ? updated : item)
+      }
       useProductSyncStore().localMutation()
       return requestEpoch === epoch ? updated : null
     } catch (cause) {
@@ -128,10 +146,13 @@ export const useProductPagesStore = defineStore('product-pages', () => {
     moveError.value = ''
     const requestEpoch = epoch
     try {
-      const orderKey = nextOrderKey(items.value.filter((page) => page.parentPageId === parentPageId && page.id !== pageId))
+      const orderKey = nextOrderKey(navigationItems.value.filter((page) => page.parentPageId === parentPageId && page.id !== pageId))
       await (await useProductSyncStore().store()).movePage(workspaceId, pageId, parentPageId, orderKey)
       const updated = { ...old, parentPageId, orderKey, updatedAt: new Date().toISOString() }
-      if (requestEpoch === epoch) items.value = items.value.map((item) => item.id === pageId ? updated : item)
+      if (requestEpoch === epoch) {
+        items.value = items.value.map((item) => item.id === pageId ? updated : item)
+        navigationItems.value = navigationItems.value.map((item) => item.id === pageId ? updated : item)
+      }
       useProductSyncStore().localMutation()
       return requestEpoch === epoch ? updated : null
     } catch (cause) {
@@ -147,7 +168,10 @@ export const useProductPagesStore = defineStore('product-pages', () => {
     const requestEpoch = epoch
     try {
       await (await useProductSyncStore().store()).deletePage(workspaceId, pageId)
-      if (requestEpoch === epoch) items.value = items.value.filter((item) => item.id !== pageId)
+      if (requestEpoch === epoch) {
+        items.value = items.value.filter((item) => item.id !== pageId)
+        navigationItems.value = navigationItems.value.filter((item) => item.id !== pageId)
+      }
       useProductSyncStore().localMutation()
       return requestEpoch === epoch
     } catch (cause) {
@@ -157,5 +181,5 @@ export const useProductPagesStore = defineStore('product-pages', () => {
   }
 
   function pageById(pageId: string): PageResponse | null { return items.value.find((page) => page.id === pageId) ?? null }
-  return { forWorkspaceId, items, loaded, loading, error, createPending, createError, renamePending, renameError, movePending, moveError, deletePending, deleteError, load, refresh, reset, create, rename, move, remove, pageById }
+  return { forWorkspaceId, items, navigationItems, loaded, loading, error, createPending, createError, renamePending, renameError, movePending, moveError, deletePending, deleteError, load, refresh, reset, create, rename, move, remove, pageById }
 })

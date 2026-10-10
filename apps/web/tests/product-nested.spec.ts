@@ -201,6 +201,40 @@ test('dragging outside the editor clears its target marker without moving a bloc
   expect(server.blocks.find((block) => block.id === 'root-a')?.parentBlockId).toBeNull()
 })
 
+test('block drop indicators use the semantic accent color in light and dark themes', async ({ page }) => {
+  const server = { blocks: [paragraph('indicator-source', 'Source', 100), paragraph('indicator-target', 'Target', 200)], offline: false, requests: [] as { path: string; kind?: string }[] }
+  await installApi(page, server)
+  await page.goto(pageUrl())
+  const body = editor(page)
+  const source = body.locator('[data-eotion-drag-handle="indicator-source"]')
+  const target = body.getByText('Target', { exact: true })
+
+  const assertAccentIndicator = async (theme: 'light' | 'dark') => {
+    const indicator = await source.evaluate((element, value) => {
+      document.documentElement.setAttribute('data-theme', value)
+      const data = new DataTransfer()
+      element.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: data }))
+      const target = document.querySelector('.eotion-editor-content .tiptap p:last-of-type')!
+      const rect = target.getBoundingClientRect()
+      target.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: data, clientX: rect.left + 4, clientY: rect.top + 2 }))
+      const colors = {
+        zone: target.getAttribute('data-eotion-drop-zone'),
+        accent: getComputedStyle(document.documentElement).getPropertyValue('--e-color-accent').trim(),
+        shadow: getComputedStyle(target).boxShadow,
+        accentRgb: (() => { const probe = document.createElement('span'); probe.style.color = 'var(--e-color-accent)'; document.body.append(probe); const value = getComputedStyle(probe).color; probe.remove(); return value })(),
+      }
+      element.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer: data }))
+      return colors
+    }, theme)
+    expect(indicator.zone).toBe('before')
+    expect(indicator.shadow).toContain(indicator.accentRgb)
+    await expect(target).not.toHaveAttribute('data-eotion-drop-zone')
+  }
+
+  await assertAccentIndicator('light')
+  await assertAccentIndicator('dark')
+})
+
 test('Tab after a leaf block and native attachment drag do not create children', async ({ page }) => {
   const image: BlockResponse = { id: 'image-a', workspaceId: workspace.id, pageId: pageRecord.id, parentBlockId: null, type: 'image', orderKey: key(300),
     props: { node: { type: 'eotionImage', attrs: { fileId: 'image-file', name: 'photo.png', mimeType: 'image/png', size: 12, url: 'https://objects.example.test/photo.png' } } }, createdAt: stamp, updatedAt: stamp }

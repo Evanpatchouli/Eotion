@@ -4,9 +4,9 @@ import { VueNodeViewRenderer } from '@tiptap/vue-3'
 import DatabaseNodeView from '../components/editor/DatabaseNodeView.vue'
 
 /** Read-only reference to a database view. Database rows are not editor blocks. */
-export const EotionDatabase = Node.create<{ workspaceId: string }>({
+export const EotionDatabase = Node.create<{ workspaceId: string; onViewChange?: (viewId: string) => void }>({
   name: 'eotionDatabase',
-  addOptions() { return { workspaceId: '' } },
+  addOptions() { return { workspaceId: '', onViewChange: undefined } },
   group: 'block',
   atom: true,
   selectable: true,

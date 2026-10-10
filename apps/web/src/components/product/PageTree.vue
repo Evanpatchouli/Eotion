@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { DatabaseNavigationItem } from '@eotion/contracts'
 
 import { useProductPagesStore } from '../../stores/productPages'
 import EotionIcon from '../ui/EotionIcon.vue'
@@ -15,6 +16,8 @@ import { buildPageTree, flattenPageTree } from '../../utils/pageTree'
 import { useRuntimeContext } from '../../composables/useRuntimeContext'
 import PageMoveForm from './PageMoveForm.vue'
 import PageRenameForm from './PageRenameForm.vue'
+import { api } from '../../services/productApi'
+import { DATABASE_UPDATED_EVENT, type DatabaseUpdatedDetail } from '../../editor/databaseEvents'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,11 +32,46 @@ const confirmDeleteFor = ref<string | null>(null)
 const deleteSubmitting = ref(false)
 const hoveredPageId = ref<string | null>(null)
 const focusVisiblePageId = ref<string | null>(null)
+const databases = ref<DatabaseNavigationItem[]>([])
+let databaseLoadEpoch = 0
 
 const workspaceId = computed(() => typeof route.params.workspaceId === 'string' ? route.params.workspaceId : '')
 const currentPageId = computed(() => typeof route.params.pageId === 'string' ? route.params.pageId : '')
-const rows = computed(() => flattenPageTree(buildPageTree(pages.items), expanded.value))
+const currentDatabaseId = computed(() => typeof route.params.databaseId === 'string' ? route.params.databaseId : '')
+const rows = computed(() => flattenPageTree(buildPageTree(pages.navigationItems), expanded.value))
 const canCreate = computed(() => !!workspaceId.value && pages.forWorkspaceId === workspaceId.value && pages.loaded && !pages.loading && !pages.error && !pages.createPending)
+
+function childDatabases(parentPageId: string | null): DatabaseNavigationItem[] {
+  return databases.value.filter(item => item.parentPageId === parentPageId)
+    .sort((left, right) => left.orderKey === right.orderKey ? left.id.localeCompare(right.id) : left.orderKey.localeCompare(right.orderKey))
+}
+
+function hasNavigationChildren(row: (typeof rows.value)[number]): boolean {
+  return row.hasChildren || childDatabases(row.page.id).length > 0
+}
+
+function navigationChildrenLabel(row: (typeof rows.value)[number]): string {
+  return childDatabases(row.page.id).length > 0 ? '子项' : '子页面'
+}
+
+async function loadDatabaseNavigation(workspace: string): Promise<void> {
+  const epoch = ++databaseLoadEpoch
+  databases.value = []
+  if (!workspace || !navigator.onLine) return
+  let cursor: string | undefined
+  const result: DatabaseNavigationItem[] = []
+  try {
+    do {
+      const window = await api.databases.listNavigation(workspace, { limit: 100, ...(cursor ? { cursor } : {}) })
+      if (epoch !== databaseLoadEpoch || workspaceId.value !== workspace) return
+      result.push(...window.items.filter(item => !result.some(existing => existing.id === item.id)))
+      cursor = window.nextCursor ?? undefined
+    } while (cursor)
+    databases.value = result
+  } catch {
+    // Ordinary Page navigation remains available when Database online metadata cannot be read.
+  }
+}
 
 function showDisclosureChevron(pageId: string) {
   return inputMode.value !== 'mouse' || window.matchMedia('(hover: none)').matches
@@ -76,7 +114,7 @@ function closePanels() {
 /** Keeps the selected page reachable even when its ancestors were collapsed. */
 function expandAncestors(pageId: string) {
   if (!pageId) return
-  const byId = new Map(pages.items.map((page) => [page.id, page]))
+  const byId = new Map(pages.navigationItems.map((page) => [page.id, page]))
   const guard = new Set<string>()
   let cursor = byId.get(pageId)?.parentPageId ?? null
   while (cursor !== null && !guard.has(cursor)) {
@@ -84,6 +122,13 @@ function expandAncestors(pageId: string) {
     expanded.value.add(cursor)
     cursor = byId.get(cursor)?.parentPageId ?? null
   }
+}
+
+function expandDatabaseParent(databaseId: string): void {
+  const parentPageId = databases.value.find(item => item.id === databaseId)?.parentPageId
+  if (!parentPageId) return
+  expandAncestors(parentPageId)
+  expanded.value.add(parentPageId)
 }
 
 function toggle(pageId: string) {
@@ -190,6 +235,12 @@ async function openPage(pageId: string) {
   emit('navigate')
 }
 
+async function openDatabase(item: DatabaseNavigationItem) {
+  closePanels()
+  await router.push({ name: 'product-database', params: { workspaceId: workspaceId.value, databaseId: item.id }, ...(item.viewId ? { query: { view: item.viewId } } : {}) })
+  emit('navigate')
+}
+
 async function createRoot() {
   if (!canCreate.value) return
   const created = await pages.create(workspaceId.value, null)
@@ -246,12 +297,21 @@ function retry() {
   void pages.load(workspaceId.value, true)
 }
 
-watch(() => [currentPageId.value, pages.items] as const, () => expandAncestors(currentPageId.value), { immediate: true })
+function onDatabaseUpdated(event: Event): void {
+  const detail = (event as CustomEvent<DatabaseUpdatedDetail>).detail
+  if (detail?.workspaceId === workspaceId.value) void loadDatabaseNavigation(workspaceId.value)
+}
+
+watch(() => [currentPageId.value, pages.navigationItems] as const, () => expandAncestors(currentPageId.value), { immediate: true })
+watch(() => [currentDatabaseId.value, databases.value] as const, () => expandDatabaseParent(currentDatabaseId.value), { immediate: true })
 watch(workspaceId, () => {
   closePanels()
   confirmDeleteFor.value = null
   expanded.value = new Set()
-})
+  void loadDatabaseNavigation(workspaceId.value)
+}, { immediate: true })
+onMounted(() => window.addEventListener(DATABASE_UPDATED_EVENT, onDatabaseUpdated))
+onBeforeUnmount(() => window.removeEventListener(DATABASE_UPDATED_EVENT, onDatabaseUpdated))
 </script>
 
 <template>
@@ -268,9 +328,16 @@ watch(workspaceId, () => {
       <p class="product-message product-message--error" role="alert">{{ pages.error }}</p>
       <button class="product-text-button" type="button" :disabled="pages.loading" @click="retry">{{ pages.loading ? '正在重试…' : '重试' }}</button>
     </template>
-    <p v-else-if="pages.loaded && pages.items.length === 0" class="product-page-placeholder"><EotionIcon :name="IconName.FileText" :size="16" /><span>还没有页面</span></p>
+    <p v-else-if="pages.loaded && pages.navigationItems.length === 0 && databases.length === 0" class="product-page-placeholder"><EotionIcon :name="IconName.FileText" :size="16" /><span>还没有页面</span></p>
     <ul v-else class="product-page-tree" role="tree" aria-label="页面树">
-      <li v-for="row in rows" :key="row.page.id" class="product-page-node" :data-page-id="row.page.id" role="treeitem" :aria-level="row.depth + 1" :aria-selected="row.page.id === currentPageId" :aria-expanded="row.hasChildren ? row.expanded : undefined">
+      <li v-for="database in childDatabases(null)" :key="`database-root-${database.id}`" class="product-page-node product-database-node" :data-database-id="database.id" role="treeitem" :aria-level="1" :aria-selected="database.id === currentDatabaseId">
+        <EotionNavItem :active="database.id === currentDatabaseId" row-class="product-page-row" class="product-page-link" type="button" @click="openDatabase(database)">
+          <template #icon><EotionIcon :name="IconName.Database" :size="16" /></template>
+          <span class="product-page-title">{{ database.name }}</span>
+        </EotionNavItem>
+      </li>
+      <template v-for="row in rows" :key="row.page.id">
+      <li class="product-page-node" :data-page-id="row.page.id" role="treeitem" :aria-level="row.depth + 1" :aria-selected="row.page.id === currentPageId" :aria-expanded="hasNavigationChildren(row) ? expanded.has(row.page.id) : undefined">
         <EotionPopover
           :open="activePopover?.pageId === row.page.id"
           :mode="activePopover?.pageId === row.page.id && activePopover.mode !== 'menu' ? 'dialog' : 'menu'"
@@ -289,13 +356,13 @@ watch(workspaceId, () => {
                 type="button"
                 @click="openPage(row.page.id)"
               >
-                <template v-if="row.hasChildren" #leading>
-                  <button class="product-page-toggle" type="button" :aria-label="`${row.expanded ? '收起' : '展开'}${row.page.title}的子页面`" :aria-expanded="row.expanded" @click.stop="toggle(row.page.id)">
+                <template v-if="hasNavigationChildren(row)" #leading>
+                  <button class="product-page-toggle" type="button" :aria-label="`${expanded.has(row.page.id) ? '收起' : '展开'}${row.page.title}的${navigationChildrenLabel(row)}`" :aria-expanded="expanded.has(row.page.id)" @click.stop="toggle(row.page.id)">
                     <span v-if="row.page.icon && !showDisclosureChevron(row.page.id)" class="product-page-icon" aria-hidden="true">{{ row.page.icon }}</span>
-                    <EotionIcon v-else class="product-page-icon" :name="disclosureIconName(row.page.id, row.expanded)" :size="16" />
+                    <EotionIcon v-else class="product-page-icon" :name="disclosureIconName(row.page.id, expanded.has(row.page.id))" :size="16" />
                   </button>
                 </template>
-                <template v-if="!row.hasChildren" #icon>
+                <template v-if="!hasNavigationChildren(row)" #icon>
                   <span class="product-page-leading-icon" aria-hidden="true">
                     <span v-if="row.page.icon" class="product-page-icon">{{ row.page.icon }}</span>
                     <EotionIcon v-else class="product-page-icon" :name="IconName.FileText" :size="16" />
@@ -321,7 +388,7 @@ watch(workspaceId, () => {
           />
           <PageMoveForm
             v-else-if="activePopover?.pageId === row.page.id && activePopover.mode === 'move'"
-            :pages="pages.items"
+            :pages="pages.navigationItems"
             :page-id="row.page.id"
             :current-parent-id="row.page.parentPageId"
             :pending="pages.movePending"
@@ -331,6 +398,13 @@ watch(workspaceId, () => {
           />
         </EotionPopover>
       </li>
+      <li v-for="database in expanded.has(row.page.id) ? childDatabases(row.page.id) : []" :key="`database-${database.id}`" class="product-page-node product-database-node" :data-database-id="database.id" role="treeitem" :aria-level="row.depth + 2" :aria-selected="database.id === currentDatabaseId">
+        <EotionNavItem :active="database.id === currentDatabaseId" row-class="product-page-row" :row-style="{ paddingLeft: `${8 + (row.depth + 1) * 14}px` }" class="product-page-link" type="button" @click="openDatabase(database)">
+          <template #icon><EotionIcon :name="IconName.Database" :size="16" /></template>
+          <span class="product-page-title">{{ database.name }}</span>
+        </EotionNavItem>
+      </li>
+      </template>
     </ul>
     <EotionCommandOverlay v-model:open="formDialogOpen" :label="formDialog?.mode === 'rename' ? '重命名页面' : '移动页面'" :shortcut="false" :dismissible="!formDialogPending">
       <section v-if="formDialog" class="product-page-action-dialog" :aria-labelledby="`product-page-action-title-${formDialog.pageId}`">
@@ -345,7 +419,7 @@ watch(workspaceId, () => {
         />
         <PageMoveForm
           v-else
-          :pages="pages.items"
+          :pages="pages.navigationItems"
           :page-id="formDialog.pageId"
           :current-parent-id="pages.items.find(page => page.id === formDialog?.pageId)?.parentPageId ?? null"
           :pending="pages.movePending"

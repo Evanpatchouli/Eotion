@@ -1,4 +1,20 @@
 # Handoff
+## 2026-10-11 Database UX 收敛完成收口
+
+先前“暂停交接”已失效，用户恢复后任务继续完成。实现、验证、独立 review 与聚焦提交均已完成；详情见 `.agents/current-task.md`。导航语义提交为 `e8ed579`，UI/测试/文档由紧随其后的最终聚焦提交承载。完整 product 254/255，唯一旧 Toggle reload 用例随后完整 blocks 14/14 通过；Database 41/41、Overlay 8/8、Domain/Contracts/SDK/API domain/HTTP/MCP/storage/visual/desktop/performance、typecheck 与 Web/API/Desktop build 全通过。独立 review 0 merge blocker；不得开始 P9。
+
+## 2026-10-11 Database UX 收敛暂停交接
+
+用户因额度即将用尽要求立即停止，并交给 deepseek-harness 接手。当前 HEAD `e8ed579`，工作区有未提交 UI 集成改动，**任务未 PASS**，不得开始 P9。
+
+已完成并提交：`e8ed579 feat(database): 收敛数据库与记录导航语义`。该提交增加服务端只读 Record Page role、新旧 P8 Record Page 的分页前 Sidebar 过滤、Database navigation DTO/HTTP/SDK、旧 Block 引用推导、LocalStore/IndexedDB/SQLite navigation projection，并保持直接 Record Page 读取与完整 snapshot。Domain 31、Contracts 17、SDK 22、API domain 12、HTTP 全套、MCP 30、Database 5k/10k performance、Desktop 18 均通过，无 skip。
+
+未提交 UI 代码已经覆盖大部分需求：Database `[+] [drag]`、统一 Slash icon、accent drop indicator；中文 Header/空 Cell；Create/Link 同行与 Back/Cancel/Primary；`...` 五入口；shared device-aware Overlay；Property 管理与独立配置；Record create/existing 统一打开；复用 PageView 的 Record host；Database standalone route；PageTree 使用 navigation projection。完整文件和风险清单见 `.agents/current-task.md`。
+
+暂停点：最后一次 Web typecheck 在 autofocus/protected-document/PageTree refresh 最后补丁前通过；最新补丁未重跑。Database product 全跑曾与子 Agent 的 Playwright runner 共用 7173，首个旧断言超时后 dev server 被另一个 runner teardown，余下连接拒绝不可作为产品结论。旧测试已部分迁移但未完成；用户叫停时定向 `linked views keep` 已主动终止。尚未做完整 product/storage/visual/build、三端视觉 QA、正式文档更新和独立 review；UI 未提交，workspace 不 clean。
+
+接手必须先运行 `git status` 并保留未提交改动，然后按 `.agents/current-task.md` 的接手顺序完成。重点复核：Record Page tree filtering 与旧 P8 compatibility、Drawer/Modal focus/backdrop、viewport 配置、Record 原子创建、Linked View、hidden property 仅属于 View、Local-first、多 active editor flush。最终要求 0 blocker、聚焦 UI commit、workspace clean。不要开始 P9。
+
 ## 2026-10-11 P8.6 Database Final Acceptance（P8 Database COMPLETE）
 
 P8.1–P8.6 全部 PASS；P8 Database COMPLETE。基线 `ed87dfe2838279d84cac838720af252ee985e37c`。本轮只做 Final Acceptance 与真实 blocker hardening，无新增 Database 产品功能；聚焦提交包含本交接记录，当前 HEAD 即验收提交。

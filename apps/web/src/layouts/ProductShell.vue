@@ -9,6 +9,7 @@ import EotionPopover from '../components/ui/EotionPopover.vue'
 import EotionContextMenu from '../components/ui/EotionContextMenu.vue'
 import { IconName } from '../components/ui/icons'
 import PageTree from '../components/product/PageTree.vue'
+import DatabaseRecordHost from '../components/product/DatabaseRecordHost.vue'
 import SyncStatus from '../components/product/SyncStatus.vue'
 import WorkspaceCreateForm from '../components/product/WorkspaceCreateForm.vue'
 import WorkspaceRenameForm from '../components/product/WorkspaceRenameForm.vue'
@@ -297,6 +298,7 @@ onUnmounted(() => {
         <SyncStatus />
       </header>
 
+      <div class="product-document-region">
       <article class="document-wrap">
       <p v-if="pendingAttachmentCleanups.length" class="product-message product-cleanup-status" role="alert">
         附件清理尚未写入本机，请重试后再关闭页面。
@@ -331,12 +333,19 @@ onUnmounted(() => {
         </section>
         <RouterView v-else />
       </article>
+      <div id="eotion-product-page-layer" class="product-page-layer" />
+      </div>
     </main>
+    <DatabaseRecordHost />
   </div>
 </template>
 
 <style scoped>
 .brand-row { gap: 8px; }
+.product-document-region { position: relative; display: flex; min-width: 0; min-height: 0; flex: 1; }
+.product-document-region > .document-wrap { min-width: 0; flex: 1; }
+.product-page-layer { position: absolute; z-index: 950; inset: 0; overflow: hidden; pointer-events: none; }
+.product-page-layer:empty { display: none; }
 .brand-row > .brand-mark, .brand-row > strong { flex: none; }
 .product-user-identity { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; margin-left: 3px; }
 .product-user-identity > span { display: block; width: 100%; white-space: nowrap; }

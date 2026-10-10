@@ -78,6 +78,7 @@ export function createSlashCommand(
                 button.setAttribute('aria-selected', String(index === selected))
                 const icon = document.createElement('span')
                 icon.className = 'p2-slash-icon'
+                icon.dataset.iconName = item.icon
                 render(h(EotionIcon, { name: item.icon, size: 18 }), icon)
                 mountedIcons.push(icon)
                 const label = document.createElement('span')

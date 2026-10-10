@@ -162,6 +162,8 @@ P8.5 Advanced Properties：✅ **PASS（2026-10-10）**。单向 Relation、只�
 
 P8.6 Database Final Acceptance：✅ **PASS（2026-10-11）**。P8.1–P8.5 组合验收通过；Page.title 分页游标已通过事务 version fence fail-closed；5k/10k Mongo profiler/explain、scope/security、删除回滚、legacy compatibility、UI/Local-first/MCP、fresh 完整回归与独立 review 0 blocker 均完成。**P8 Database COMPLETE**。规模测量和 accepted limitations 见 [P8 Database](p8-database.md)。
 
+P8 Database UX 收敛：✅ **PASS（2026-10-11）**。仅重构既有 Table View 产品体验：Block controls、中文 Header、Create/Link、统一 Settings、device-aware Drawer/Modal/Page、完整 Property 管理、Record 打开与 Database/Page Tree 导航。Record ↔ Page、Page.title、Filter/Sort、Linked View、Relation/Rollup/Formula、CAS/事务/reference fence、Local-first 与 Database online-only/MCP 边界保持不变；未开始 P9，详情见 [P8 Database](p8-database.md)。
+
 ## 后续 - 异步基础设施
 
 仅在存在具体消费者时引入 Kafka，例如：

@@ -25,6 +25,7 @@ async function installApi(page: Page, seed: BlockResponse[] = []) {
     const path = new URL(request.url()).pathname
     if (path === '/api/auth/me' && request.method() === 'GET') return json(route, 200, user)
     if (path === '/api/workspaces' && request.method() === 'GET') return json(route, 200, [workspace])
+    if (path === `/api/workspaces/${workspace.id}/database-navigation` && request.method() === 'GET') return json(route, 200, { items: [], nextCursor: null })
     if (path === `/api/sync/workspaces/${workspace.id}/snapshot` && request.method() === 'GET') {
       return json(route, 200, { pages, blocks: blocks.map((block) => ({ ...block })) })
     }

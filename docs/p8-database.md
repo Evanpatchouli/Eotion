@@ -11,6 +11,30 @@ P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1–P8.5 
 | P8.5 | Advanced Properties | PASS |
 | P8.6 | Database Final Acceptance | PASS |
 
+## Database UX 收敛（2026-10-11）
+
+本轮是 P8 完成后的既有 Table View 产品体验重构，不增加新 View 类型，也不引入 Database MCP、Database offline sync、真实 Automation、People 或 Files。
+
+Database Block 使用统一的 `[+] [drag]` Block controls；加号在当前 Database Block 下方插入普通 Block，drag handle 只在当前 Block hover/focus 时增强显示，拖放指示器使用 Quiet Studio 的语义强调色。Slash Menu 使用统一 Database icon。用户可见的默认标题与 View 名称显示为“名称 / 表格视图”，空 Cell 留空，不再使用破折号占位。
+
+Slash 创建器首层将“创建新数据库 / 链接现有数据库”并排展示。创建层明确区分左侧带箭头的“返回”和右侧“取消”，创建按钮使用正式 Primary action。Database 顶部不再提供独立属性按钮；`…` 是唯一设置入口，顺序为筛选、排序、属性、记录打开方式、自动化。自动化明确 disabled/未开放，其他入口先关闭轻量菜单，再进入完整设置容器。
+
+通用 `EotionProductOverlay` 负责 Drawer、Modal 与 Page 三种产品级容器。Desktop/Tablet 合法模式为 drawer/modal/page，默认 drawer；Drawer 固定在右侧、不改变文档宽度、无遮罩、不锁背景滚动且允许背景交互。Phone 合法模式为 right-drawer/bottom-drawer/modal/page，默认 bottom-drawer；两种 Drawer 均使用遮罩、focus trap 与 scroll lock，Bottom Drawer 包含 safe-area padding。Escape、backdrop、关闭按钮与 focus return 由同一容器实现。Record 与 Property 使用相同的 device-aware 配置模型，但按 user/workspace/database/target 分开持久化。
+
+属性设置继续把 visibleProperties/propertyOrder 写入当前 View config，不提升为 Database 全局 schema 状态；schema CRUD 仍使用既有 Property service/CAS。完整面板支持新增、删除、重命名、拖放/按钮排序、显示/隐藏、Select options，以及 Relation、Rollup、Formula 原配置编辑。高级属性配置复用同一 Property opening mode，不创建第二套临时面板。
+
+Record 创建仍由服务端同一事务原子创建 Record + Page；创建成功后与已有 Record title 点击共用同一 opening mode，并复用正式 `PageView` 进入可编辑状态。Page mode 使用正常 Page route；overlay mode 只改变呈现容器，不复制 Record body 或编辑器。多 Page editor session 按 workspace/page 独立注册和 flush，关闭 overlay 或路由前只提交对应 Record editor。
+
+Page 新增只读 `role: 'database-record'` 投影。该字段由 Record 创建事务写入；已有 P8 Record 不需要 migration，服务端在 snapshot/navigation 读取时按 DatabaseRecord.pageId 投影 legacy role。完整 snapshot 与按 ID Page 读取仍包含 Record Page，保证正常 Page route、Record body 和旧数据可访问；普通 Sidebar navigation 在 repository/local adapter 的分页前查询中排除该 role，因此 10,000 Records 不会扩大 Page Tree 返回结果。
+
+Database 自身通过 `GET /api/workspaces/:workspaceId/database-navigation` 返回只读导航项。新 Database 保存创建时的 host parent/order；旧 P8 Database 从最早的有效 Block 引用推导 host Page/order，不迁移或复制数据库数据。Sidebar 将 Database 显示为 host Page 的子项；独立 `/app/:workspaceId/database/:databaseId` route 复用同一 `DatabaseNodeView`，嵌入普通文档与 Linked Database 行为不变。
+
+兼容约束保持不变：Record ↔ Page 与 Page.title 唯一标题源不变；Filter/Sort 继续 server-before-pagination；Linked View 共享数据且保留独立 View config；Relation/Rollup/Formula、CAS、Mongo transaction/reference fence 不变；Page/Block 继续 Local-first，Database 继续 online-only；MCP 仍只读取 Database Block 稳定引用，不增加 Database tool。
+
+最终验收：Domain 31、Contracts 17、SDK 22、API domain 12、HTTP/MCP/Storage/Desktop/Visual 全套通过；完整 Product 254/255，唯一旧 Toggle reload 用例随后完整 blocks 14/14 通过，Database 41/41、Overlay matrix 8/8，无 skip。根 typecheck 与 Web/API/Desktop build、`git diff --check` 通过。桌面明暗主题、无蒙层 Drawer、属性与 Formula 配置、390px Bottom Drawer/表格已做人工视觉检查。独立 review 0 merge blocker，结果记录在 `.agents/handoff.md`。
+
+本轮接受的限制：Database 仍是 online-only/offline read-only；没有新增跨客户端 Database push、MCP tool、Automation 或其他 View。旧 P8 Database 的 Sidebar 宿主使用 Block 引用读取时推导，避免 migration break；10,000 Records 的 Page Tree 返回规模保持常数，但 legacy-safe 本地投影仍会扫描 Record 关联，后续可在不改变语义的前提下做索引优化。移动验收是 390px Chromium 响应式证据，不替代原生宿主真机验收；Web build 保留既有大 chunk warning。
+
 ## 核心模型
 
 `packages/domain` 定义 Database、DatabaseProperty、DatabaseRecord、DatabaseView；`packages/contracts` 提供严格的 runtime contract。服务端在 `server-domain` 使用四个独立 Mongo 集合：`databases`、`database_properties`、`database_records`、`database_views`。稳定 ID、workspaceId、version 与 timestamps 是领域边界，不把 persistence schema 暴露给客户端。

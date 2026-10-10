@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Attributes } from '@tiptap/core'
+import { Extension, type Attributes } from '@tiptap/core'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { EditorContent } from '@tiptap/vue-3'
 import Link from '@tiptap/extension-link'
@@ -8,7 +8,7 @@ import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
 import { blockTypeForNode } from '@eotion/domain/block-types'
 import { createLocalId } from '@eotion/storage'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { NodeSelection } from '@tiptap/pm/state'
+import { NodeSelection, Plugin } from '@tiptap/pm/state'
 
 import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
@@ -42,7 +42,10 @@ const props = defineProps<{
   touchToolbar: boolean
   fixedToolbar?: boolean
   ariaLabel?: string
+  autofocus?: boolean
+  protectDocument?: boolean
   workspaceId?: string
+  onDatabaseViewChange?: (viewId: string) => void
   commitAttachment?: (blockId: string) => Promise<boolean>
   createDatabaseReference?: (request: DatabaseInsertionRequest) => Promise<DatabaseReferenceAttrs | null>
   commitDatabaseReference?: (blockId: string) => Promise<boolean>
@@ -67,6 +70,10 @@ const ProductLink = Link.extend({
     return { href: attributes?.href ?? { default: null } }
   },
 }).configure({ openOnClick: false, autolink: false, linkOnPaste: false, isAllowedUri: isSafeLinkHref })
+const ProtectedDocument = Extension.create({
+  name: 'protectedDocument',
+  addProseMirrorPlugins: () => [new Plugin({ filterTransaction: transaction => !transaction.docChanged })],
+})
 const compositionWaiters = new Set<() => void>()
 const keyboardInset = ref(0)
 const uploads = ref<UploadTask[]>([])
@@ -142,7 +149,7 @@ function updateSelection() {
 }
 
 const { editor, getDocument } = useDocumentEditor({
-  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionDatabase.configure({ workspaceId: props.workspaceId ?? '' }), EotionCallout, EotionTable, EotionTableRow, EotionTableHeader, EotionTableCell, TablePasteGuard, AttachmentLifetime, BlockIdentity, NestedBlockInteractions,
+  extensions: [ProductLink, EotionImage, EotionFile, EotionTodo, EotionToggle, EotionDatabase.configure({ workspaceId: props.workspaceId ?? '', onViewChange: props.onDatabaseViewChange }), EotionCallout, EotionTable, EotionTableRow, EotionTableHeader, EotionTableCell, TablePasteGuard, AttachmentLifetime, BlockIdentity, NestedBlockInteractions, ...(props.protectDocument ? [ProtectedDocument] : []),
     createUploadPlaceholderExtension(uploadRegistry, { cancel: cancelUpload, retry: task => { void upload(task) }, remove: removeTask }),
     createSlashCommand(() => composing.value, openPicker, Boolean(props.workspaceId), props.workspaceId && props.createDatabaseReference ? openDatabaseCommand : undefined)],
   content: props.content,
@@ -157,7 +164,10 @@ const { editor, getDocument } = useDocumentEditor({
       return false
     },
   },
-  onCreate: updateSelection,
+  onCreate: ({ editor: createdEditor }) => {
+    updateSelection()
+    if (props.autofocus) requestAnimationFrame(() => createdEditor.commands.focus('start'))
+  },
   onSelectionUpdate: updateSelection,
   onUpdate: document => {
     editorAlert.value = ''
@@ -700,9 +710,12 @@ defineExpose({ editor })
 .eotion-upload-saving-hidden { display: none !important; }
 .eotion-editor-content .tiptap { position: relative; }
 .eotion-block-drag-anchor { position: absolute; top: 0; left: 0; display: inline-block; width: 0; height: 0; overflow: visible; line-height: 0; pointer-events: none; }
-.eotion-block-drag-handle { position: absolute; top: 0; left: -28px; z-index: 1; display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 0; border-radius: var(--e-radius-control); padding: 0; background: transparent; color: var(--e-color-text-muted); font: 600 18px / 1 var(--e-type-family); cursor: grab; opacity: .65; pointer-events: auto; }
-.eotion-block-drag-handle:hover, .eotion-block-drag-handle:focus-visible { background: var(--e-color-hover); color: var(--e-color-text-primary); opacity: 1; }
-.eotion-block-drag-handle::before { content: '⠿'; }
+.eotion-block-drag-handle, .eotion-block-insert-button { position: absolute; top: 0; z-index: 1; display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 0; border-radius: var(--e-radius-control); padding: 0; background: transparent; color: var(--e-color-text-muted); cursor: pointer; opacity: .12; pointer-events: auto; transition: opacity var(--e-motion-fast), background var(--e-motion-fast), color var(--e-motion-fast); }
+.eotion-block-drag-handle { left: -28px; cursor: grab; }
+.eotion-block-insert-button { left: -56px; }
+.eotion-block-drag-anchor:has(+ :hover, + :focus-within) .eotion-block-drag-handle, .eotion-block-drag-anchor:has(+ :hover, + :focus-within) .eotion-block-insert-button, .eotion-block-drag-anchor:focus-within .eotion-block-drag-handle, .eotion-block-drag-anchor:focus-within .eotion-block-insert-button { opacity: 1; }
+.eotion-block-drag-handle:hover, .eotion-block-drag-handle:focus-visible, .eotion-block-insert-button:hover, .eotion-block-insert-button:focus-visible { background: var(--e-color-hover); color: var(--e-color-text-primary); opacity: 1; }
+.eotion-block-drag-handle:active { cursor: grabbing; }
 .eotion-block-drag-handle:active { cursor: grabbing; }
 /* Tables scroll horizontally instead of squeezing columns into an unreadable width. */
 .eotion-editor-content .tiptap .tableWrapper { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
@@ -712,9 +725,9 @@ defineExpose({ editor })
 .eotion-editor-content .tiptap th p, .eotion-editor-content .tiptap td p { margin: 0; }
 .eotion-editor-content .tiptap th p + p, .eotion-editor-content .tiptap td p + p { margin-top: 6px; }
 .eotion-editor-content .tiptap .selectedCell::after { position: absolute; z-index: 2; inset: 0; background: var(--e-color-selected); content: ''; pointer-events: none; }
-.eotion-editor-content .tiptap [data-eotion-drop-zone="before"] { box-shadow: 0 -2px 0 var(--e-color-focus); }
-.eotion-editor-content .tiptap [data-eotion-drop-zone="after"] { box-shadow: 0 2px 0 var(--e-color-focus); }
-.eotion-editor-content .tiptap [data-eotion-drop-zone="inside"] { outline: 2px solid var(--e-color-focus); outline-offset: 2px; border-radius: var(--e-radius-block); }
+.eotion-editor-content .tiptap [data-eotion-drop-zone="before"] { box-shadow: 0 -2px 0 var(--e-color-accent); }
+.eotion-editor-content .tiptap [data-eotion-drop-zone="after"] { box-shadow: 0 2px 0 var(--e-color-accent); }
+.eotion-editor-content .tiptap [data-eotion-drop-zone="inside"] { outline: 2px solid var(--e-color-accent); outline-offset: 2px; border-radius: var(--e-radius-block); }
 .eotion-editor-content .tiptap > :nth-child(1 of :not(.eotion-block-drag-anchor)) { margin-top: 0; }
 @keyframes eotion-upload-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .eotion-upload-spinner { animation: none; } }

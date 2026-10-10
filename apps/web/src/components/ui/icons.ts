@@ -8,11 +8,13 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
+  Database,
   Eye,
   EyeOff,
   FileText,
   Filter,
   FolderInput,
+  GripVertical,
   Heading,
   Image,
   Info,
@@ -58,6 +60,8 @@ export enum IconName {
   LogOut = 'log-out',
   X = 'x',
   Plus = 'plus',
+  DragHandle = 'drag-handle',
+  Database = 'database',
   ChevronRight = 'chevron-right',
   ChevronDown = 'chevron-down',
   Filter = 'filter',
@@ -110,6 +114,8 @@ export const iconNodes: Record<IconName, IconNode> = {
   [IconName.LogOut]: LogOut,
   [IconName.X]: X,
   [IconName.Plus]: Plus,
+  [IconName.DragHandle]: GripVertical,
+  [IconName.Database]: Database,
   [IconName.ChevronRight]: ChevronRight,
   [IconName.ChevronDown]: ChevronDown,
   [IconName.Filter]: Filter,
@@ -153,4 +159,25 @@ export const iconNodes: Record<IconName, IconNode> = {
   [IconName.Italic]: Italic,
   [IconName.Link]: Link,
   [IconName.Strike]: Strikethrough,
+}
+
+/** Create a lightweight DOM icon for editor decorations outside Vue rendering. */
+export function createIconElement(name: IconName, ownerDocument: Document = document): SVGSVGElement {
+  const namespace = 'http://www.w3.org/2000/svg'
+  const svg = ownerDocument.createElementNS(namespace, 'svg')
+  svg.setAttribute('width', '18')
+  svg.setAttribute('height', '18')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('fill', 'none')
+  svg.setAttribute('stroke', 'currentColor')
+  svg.setAttribute('stroke-width', '2')
+  svg.setAttribute('stroke-linecap', 'round')
+  svg.setAttribute('stroke-linejoin', 'round')
+  svg.setAttribute('aria-hidden', 'true')
+  for (const [tag, attributes] of iconNodes[name]) {
+    const child = ownerDocument.createElementNS(namespace, tag)
+    Object.entries(attributes).forEach(([attribute, value]) => child.setAttribute(attribute, String(value)))
+    svg.append(child)
+  }
+  return svg
 }
