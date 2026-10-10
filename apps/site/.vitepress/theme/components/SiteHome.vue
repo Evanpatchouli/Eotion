@@ -88,7 +88,14 @@ const href = computed(() => `/download${platform.value ? `#${platform.value}` : 
           <a class="text-link" href="/guide/database">了解数据库 <span aria-hidden="true">↗</span></a>
         </div>
         <div class="product-shot database-shot">
-          <img src="/screenshots/database-table.webp" alt="Eotion Database 表格视图与筛选条件界面" width="585" height="180" loading="lazy" decoding="async">
+          <picture class="shot-light">
+            <source srcset="/screenshots/database-table.webp" type="image/webp">
+            <img src="/screenshots/database-table.webp" alt="Eotion Database 表格视图与筛选条件界面" width="585" height="180" loading="lazy" decoding="async">
+          </picture>
+          <picture class="shot-dark">
+            <source srcset="/screenshots/database-table-dark.webp" type="image/webp">
+            <img src="/screenshots/database-table-dark.webp" alt="Eotion Database 深色模式表格视图与筛选条件界面" width="585" height="180" loading="lazy" decoding="async">
+          </picture>
         </div>
       </div>
       <p class="database-note">当前公开版本提供 Table View；更多展示形态不在本阶段能力范围内。</p>

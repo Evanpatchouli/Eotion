@@ -3,6 +3,13 @@ import { mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import rootManifest from '../../../package.json' with { type: 'json' }
 
+async function chooseAppearance(page: import('@playwright/test').Page, value: 'auto' | 'light' | 'dark', label: string) {
+  const trigger = page.getByRole('combobox', { name: '网站外观' })
+  await trigger.click()
+  await page.getByRole('option', { name: label }).click()
+  await expect(trigger).toHaveAttribute('data-value', value)
+}
+
 const pages = ['/', '/download', '/guide/', '/guide/editor', '/guide/database', '/guide/mcp', '/changelog']
 test('static pages, navigation, release and safe download state', async ({ page, request }) => {
   const errors: string[] = []
@@ -20,7 +27,8 @@ test('static pages, navigation, release and safe download state', async ({ page,
   await expect(page.locator('.database-section').getByRole('heading', { name: /结构化资料/ })).toBeVisible()
   await expect(page.locator('.database-section').getByRole('link', { name: /了解数据库/ })).toHaveAttribute('href', '/guide/database')
   await expect(page.locator('.database-section')).toContainText('当前公开版本提供 Table View')
-  await expect(page.locator('.database-section img[alt*="Database"]')).toHaveAttribute('src', '/screenshots/database-table.webp')
+  await expect(page.locator('.database-section .shot-light img')).toHaveAttribute('src', '/screenshots/database-table.webp')
+  await expect(page.locator('.database-section .shot-dark img')).toHaveAttribute('src', '/screenshots/database-table-dark.webp')
   await expect(page.locator('.mcp-section').getByRole('heading', { name: '为 AI 而生的 MCP' })).toBeVisible()
   await expect(page.locator('.mcp-section').getByRole('link', { name: /连接你的 AI 客户端/ })).toHaveAttribute('href', '/guide/mcp')
   await page.locator('.site-hero').getByRole('link', { name: /下载|免费下载/ }).click()
@@ -65,22 +73,35 @@ test('native guide sidebar, TOC, search and document navigation', async ({ page 
 
 test('three appearance modes persist and follow system', async ({ page }) => {
   await page.goto('/')
-  const select = page.getByLabel('网站外观')
-  await select.selectOption('dark')
+  const select = page.getByRole('combobox', { name: '网站外观' })
+  await chooseAppearance(page, 'dark', '深色')
   await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect(page.locator('.database-section .shot-dark')).toBeVisible()
+  await expect(page.locator('.database-section .shot-light')).toBeHidden()
+
   await page.reload()
-  await expect(select).toHaveValue('dark')
+  await expect(select).toHaveAttribute('data-value', 'dark')
   await expect(page.locator('html')).toHaveClass(/dark/)
-  await select.selectOption('light')
+
+  await chooseAppearance(page, 'light', '浅色')
   await expect(page.locator('html')).not.toHaveClass(/dark/)
+  await expect(page.locator('.database-section .shot-light')).toBeVisible()
+
   await page.emulateMedia({ colorScheme: 'dark' })
-  await select.selectOption('auto')
+  await chooseAppearance(page, 'auto', '跟随系统')
   await expect(page.locator('html')).toHaveClass(/dark/)
   await page.emulateMedia({ colorScheme: 'light' })
   await expect(page.locator('html')).not.toHaveClass(/dark/)
   await expect.poll(() => page.evaluate(() => localStorage.getItem('vitepress-theme-appearance'))).toBe('auto')
+
   await page.reload()
-  await expect(select).toHaveValue('auto')
+  await expect(select).toHaveAttribute('data-value', 'auto')
+  await select.focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(page.getByRole('listbox', { name: '网站外观' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('listbox', { name: '网站外观' })).toHaveCount(0)
+
   await page.emulateMedia({ colorScheme: 'dark' })
   await expect(page.locator('html')).toHaveClass(/dark/)
 })
@@ -137,7 +158,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768
       await expect(page).toHaveURL(/\/guide\/editor/)
     }
     await page.goto('/')
-    await page.getByLabel('网站外观').selectOption('dark')
+    await chooseAppearance(page, 'dark', '深色')
     await expect(page.locator('html')).toHaveClass(/dark/)
     await page.locator('.hero-shot img:visible').evaluate((element) => (element as HTMLImageElement).decode())
     if (process.env.EOTION_SITE_QA_DIR) {
