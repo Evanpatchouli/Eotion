@@ -1,11 +1,14 @@
+import { mkdir } from 'node:fs/promises'
+import path from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 
-async function mountOverlay(page: Page, mode: string, navigate = true, longBody = false, withFooter = true, options: { title?: string; label?: string; dismissible?: boolean; acceptClose?: boolean; asyncClose?: boolean; holdClose?: boolean; clearBodyOnClose?: boolean } = {}) {
+async function mountOverlay(page: Page, mode: string, navigate = true, longBody = false, withFooter = true, options: { title?: string; label?: string; dismissible?: boolean; acceptClose?: boolean; asyncClose?: boolean; holdClose?: boolean; clearBodyOnClose?: boolean } = {}, withPopover = false) {
   if (navigate) await page.goto('/login')
-  await page.evaluate(async ({ mode: initialMode, longBody, withFooter, options }) => {
+  await page.evaluate(async ({ mode: initialMode, longBody, withFooter, options, withPopover }) => {
     const { acceptClose = true, asyncClose = false, holdClose = false, clearBodyOnClose = false, ...overlayProps } = options
     const Vue = await import('/node_modules/.vite/deps/vue.js')
     const { default: Overlay } = await import('/src/components/ui/EotionProductOverlay.vue')
+    const { default: Popover } = withPopover ? await import('/src/components/ui/EotionPopover.vue') : { default: null }
     const host = document.createElement('div')
     host.id = 'overlay-test-host'
     document.body.append(host)
@@ -19,6 +22,7 @@ async function mountOverlay(page: Page, mode: string, navigate = true, longBody 
     }
     const open = Vue.ref(false)
     const overlayMode = Vue.ref(initialMode)
+    const popoverRoot = Vue.ref<HTMLElement | string>('body')
     let releaseClose: (() => void) | null = null
     const app = Vue.createApp({
       setup() { return () => Vue.h('div', [
@@ -28,14 +32,18 @@ async function mountOverlay(page: Page, mode: string, navigate = true, longBody 
           default: () => clearBodyOnClose && !open.value ? [] : [
             Vue.h('input', { id: 'overlay-input', autofocus: true, 'aria-label': '编辑内容' }),
             ...(longBody ? Array.from({ length: 40 }, (_, index) => Vue.h('p', { key: index }, `长内容 ${index + 1}`)) : []),
+            ...(Popover ? [Vue.h(Popover, { label: '面板内菜单', teleportTo: popoverRoot.value }, {
+              trigger: ({ triggerProps }: { triggerProps: Record<string, unknown> }) => Vue.h('button', { ...triggerProps, id: 'overlay-popover-trigger' }, '打开菜单'),
+              default: ({ close: closePopover }: { close: (restoreFocus?: boolean) => void }) => Vue.h('button', { id: 'overlay-popover-option', role: 'menuitem', onClick: () => closePopover() }, '越界选项'),
+            })] : []),
           ],
           ...(withFooter ? { footer: () => Vue.h('button', { id: 'overlay-footer-action' }, '底部操作') } : {}),
         }),
       ]) },
     })
     app.mount(host)
-    Object.assign(window, { overlayTest: { open, mode: overlayMode, nextTick: Vue.nextTick, releaseClose: () => releaseClose?.(), unmount: () => { app.unmount(); host.remove(); if (ownsPageLayer) pageLayer?.remove() } } })
-  }, { mode, longBody, withFooter, options })
+    Object.assign(window, { overlayTest: { open, mode: overlayMode, nextTick: Vue.nextTick, setPopoverRoot: (root: HTMLElement) => { popoverRoot.value = root }, releaseClose: () => releaseClose?.(), unmount: () => { app.unmount(); host.remove(); if (ownsPageLayer) pageLayer?.remove() } } })
+  }, { mode, longBody, withFooter, options, withPopover })
 }
 
 async function readMotion(page: Page, selector: string) {
@@ -473,6 +481,7 @@ test('closing before drawer entrance finishes and reopening leaves no stale nati
 for (const target of [
   { name: 'desktop modal', width: 1440, mode: 'modal' },
   { name: 'desktop drawer', width: 1440, mode: 'drawer' },
+  { name: 'phone right drawer', width: 390, mode: 'right-drawer' },
   { name: 'phone bottom drawer', width: 390, mode: 'bottom-drawer' },
 ] as const) {
   test(`${target.name} keeps the header and optional footer outside the scrolling body`, async ({ page }) => {
@@ -489,10 +498,13 @@ for (const target of [
     const header = surface.locator('.eotion-product-overlay__header')
     const body = surface.locator('.eotion-product-overlay__body')
     const footer = surface.locator('.eotion-product-overlay__footer')
+    const shell = surface.locator('.eotion-product-overlay__shell')
     await expect(header.getByRole('heading', { level: 2 })).toHaveText('长内容面板')
     await expect(header.getByRole('button', { name: '关闭' })).toBeVisible()
     await expect(footer.getByRole('button', { name: '底部操作' })).toBeVisible()
     expect(Number.parseFloat(await footer.evaluate(element => getComputedStyle(element).borderTopWidth))).toBeGreaterThan(0)
+    expect(await surface.evaluate(element => getComputedStyle(element).overflow)).toBe('visible')
+    expect(await shell.evaluate(element => getComputedStyle(element).overflow)).toBe('hidden')
 
     const initial = await Promise.all([header.boundingBox(), body.boundingBox(), footer.boundingBox()])
     expect(initial[0]).not.toBeNull()
@@ -505,6 +517,55 @@ for (const target of [
     expect(after[0]!.y).toBe(initial[0]!.y)
     expect(after[2]!.y).toBe(initial[2]!.y)
     expect(await surface.getByRole('heading', { level: 2 }).count()).toBe(1)
+  })
+}
+
+for (const mode of ['right-drawer', 'bottom-drawer'] as const) {
+  test(`${mode} keeps an in-overlay popover interactive above the scrolling body`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await mountOverlay(page, mode, true, true, true, {}, true)
+    const selector = `dialog.eotion-product-overlay--${mode}`
+    const surface = page.locator(`${selector}[open]`)
+    await page.locator('#overlay-trigger').click()
+    await expect(surface).toHaveAttribute('data-motion-state', 'open')
+    await finishMotion(page, selector)
+    await page.evaluate(() => (window as any).overlayTest.setPopoverRoot(document.querySelector('dialog[open]')))
+    await page.evaluate(() => (window as any).overlayTest.nextTick())
+    const body = surface.locator('.eotion-product-overlay__body')
+    await body.evaluate(element => { (element as HTMLElement).scrollTop = (element as HTMLElement).scrollHeight })
+    await expect.poll(() => body.evaluate(element => (element as HTMLElement).scrollTop)).toBeGreaterThan(0)
+
+    const trigger = page.locator('#overlay-popover-trigger')
+    await trigger.click()
+    const menu = page.getByRole('menu', { name: '面板内菜单' })
+    const option = menu.getByRole('menuitem', { name: '越界选项' })
+    await expect(menu).toBeVisible()
+    expect(await menu.evaluate(element => element.parentElement?.matches('dialog[open]'))).toBe(true)
+    const box = await option.boundingBox()
+    expect(box).not.toBeNull()
+    expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[role="menuitem"]')?.id, {
+      x: box!.x + box!.width / 2,
+      y: box!.y + box!.height / 2,
+    })).toBe('overlay-popover-option')
+    if (mode === 'right-drawer' && process.env.EOTION_VISUAL_QA_DIR) {
+      const directory = process.env.EOTION_VISUAL_QA_DIR
+      await mkdir(directory, { recursive: true })
+      await page.screenshot({ path: path.join(directory, 'phone-right-drawer-popover.png') })
+    }
+    await option.click()
+    await expect(menu).toHaveCount(0)
+
+    await trigger.click()
+    await expect(menu).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
+    await expect(trigger).toBeFocused()
+
+    await trigger.click()
+    await expect(menu).toBeVisible()
+    await page.locator('#overlay-input').click()
+    await expect(menu).toHaveCount(0)
+    await expect(page.locator('#overlay-input')).toBeFocused()
   })
 }
 

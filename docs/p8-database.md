@@ -23,6 +23,8 @@ Slash 创建器首层将“创建新数据库 / 链接现有数据库”作为�
 
 Filter、Sort 与“记录打开方式”设置页本身不进入 opening preference：Desktop/Tablet 固定使用 Modal，Phone 固定使用 Bottom Drawer。Record 实际打开方式仍按独立 Record opening preference；Property 设置容器继续按独立 Property opening preference 打开。
 
+共享 Product Overlay 根节点允许浮层越界；Opening Select 的 Popover 继续 teleport 到最近的 Overlay 根节点，保持在 native dialog top-layer 内。内层 shell 负责圆角内容裁切，Header / Footer 不随 Body 滚动，Body 独立 overflow:auto；浮层不能 teleport 到 shell 或滚动 Body。
+
 `EotionProductOverlay` 统一提供 Header / Body / 可选 Footer：`title` 显示正式标题，`label` 可独立保留 accessible name（省略时使用 title）；Header 右侧关闭，Page mode 使用返回。正文独立滚动，Header/Footer 保持稳定；Footer 有顶部分隔线。Database 的筛选、排序、属性、记录打开方式与高级属性配置不在正文重复标题或关闭按钮。筛选/排序保存位于 Footer，数据逻辑不变。数据库创建器共用此容器（Desktop/Tablet Modal、Phone Bottom Drawer），创建层 Footer 左侧返回上一步，右侧取消整个流程与 Primary 创建；链接层沿用原列表与选择行为，返回/取消放入 Footer。
 
 Drawer motion：Desktop/Tablet Drawer 与 Phone Right Drawer 从 `translateX(100%)` 滑入到 `0`，Bottom Drawer 从 `translateY(100%)` 滑入到 `0`；退出反向。入场 200ms ease-out、退场 170ms ease-in，Masked Drawer 的 backdrop 同步淡入/淡出，Desktop Drawer 无遮罩。Escape、关闭按钮与 backdrop 共用退场流程；退场完成前保留 surface，之后才真正关闭、释放 scroll lock 并恢复焦点。受控关闭仍由调用方接受，Record 保存失败时继续保持面板。`prefers-reduced-motion: reduce` 禁用位移并立即完成退场；快速关闭/重开取消旧 motion，防止过期回调关闭新 surface。Modal/Page 不新增动画。

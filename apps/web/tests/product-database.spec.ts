@@ -1188,6 +1188,78 @@ test('phone record settings offer right and bottom drawers and apply both modes'
   await closeRecordSurface(page)
 })
 
+for (const target of ['记录', '属性'] as const) {
+  test(`desktop ${target} third-row opening popover remains interactive in the modal`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.addInitScript(() => {
+      for (const target of ['record', 'property']) {
+        localStorage.setItem(`eotion:database-opening:database-user:database-workspace:database-root-id:${target}`, JSON.stringify({ desktop: 'modal', tablet: 'drawer', mobile: 'bottom-drawer' }))
+      }
+    })
+    const api = await installApi(page, [
+      block(`phone-${target}-popover-database`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+    ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: target === '属性' ? [rootProperties[0]!] : rootProperties, records: [basicRecord] })
+    api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan', orderKey: '0000000000000002', role: 'database-record' })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const table = page.locator('.eotion-editor-content .eotion-database')
+    const settingName = target === '记录' ? '记录打开方式' : '属性'
+    const panelName = target === '记录' ? '记录打开方式' : '属性管理'
+    await openDatabaseSetting(page, table, settingName)
+
+    const group = openingGroup(page, target, '手机')
+    const trigger = openingTrigger(page, target, '手机')
+    const overlay = page.locator('.eotion-product-overlay').filter({ has: group })
+    const shell = overlay.locator('.eotion-product-overlay__shell')
+    await trigger.click()
+    const menu = page.getByRole('menu', { name: `${target}手机打开方式` })
+    await expect(menu).toBeVisible()
+    const lastOption = menu.getByRole('menuitem', { name: '页面', exact: true })
+    const geometry = await Promise.all([lastOption.boundingBox(), shell.boundingBox(), overlay.boundingBox()])
+    expect(geometry[0]).not.toBeNull()
+    expect(geometry[1]).not.toBeNull()
+    expect(geometry[2]).not.toBeNull()
+    expect(await menu.evaluate(element => element.parentElement?.classList.contains('eotion-product-overlay'))).toBe(true)
+    if (target === '记录') expect(geometry[0]!.y + geometry[0]!.height).toBeGreaterThan(geometry[2]!.y + geometry[2]!.height)
+    const hitPosition = {
+      x: geometry[0]!.x + geometry[0]!.width / 2,
+      y: geometry[0]!.y + geometry[0]!.height / 2,
+    }
+    if (target === '记录') {
+      await overlay.evaluate(element => { (element as HTMLElement).style.overflow = 'hidden' })
+      const clippedTarget = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[role="menuitem"]')?.textContent?.trim(), hitPosition)
+      expect(clippedTarget ?? '').not.toContain('页面')
+      await overlay.evaluate(element => { (element as HTMLElement).style.removeProperty('overflow') })
+      expect(await overlay.evaluate(element => getComputedStyle(element).overflow)).toBe('visible')
+    }
+    const hitTarget = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[role="menuitem"]')?.textContent?.trim(), hitPosition)
+    expect(hitTarget).toContain('页面')
+    await expect(menu.getByRole('menuitem').first()).toBeFocused()
+    await screenshot(page, `database-${target === '记录' ? 'record' : 'property'}-opening-popover-phone-light`)
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+    await screenshot(page, `database-${target === '记录' ? 'record' : 'property'}-opening-popover-phone-dark`)
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'))
+
+    await lastOption.click()
+    await expect(menu).toHaveCount(0)
+    await expect(trigger).toContainText('页面')
+
+    await trigger.click()
+    await expect(menu).toBeVisible()
+    await expect(menu.getByRole('menuitem').first()).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
+    await expect(trigger).toBeFocused()
+
+    await trigger.click()
+    await expect(menu).toBeVisible()
+    await group.locator('.opening-choices__label').click()
+    await expect(menu).toHaveCount(0)
+    await expect(trigger).toBeFocused()
+    await closeDatabaseSetting(page, panelName)
+    await expect(page.getByRole('group', { name: panelName })).toHaveCount(0)
+  })
+}
+
 test('opening choices persist independently across layouts and targets, including legacy saved keys', async ({ page }) => {
   await page.addInitScript(() => {
     if (sessionStorage.getItem('opening-preferences-seeded')) return

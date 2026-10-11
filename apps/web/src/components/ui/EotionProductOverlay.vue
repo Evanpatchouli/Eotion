@@ -246,44 +246,50 @@ onBeforeUnmount(() => {
 <template>
   <Teleport defer to="#eotion-product-page-layer">
     <section v-if="open && mode === 'page'" ref="surface" class="eotion-product-overlay eotion-product-overlay--page" :aria-label="accessibleName" data-overlay-mode="page" tabindex="-1">
-      <header class="eotion-product-overlay__header">
-        <h1 class="eotion-product-overlay__title">{{ visibleTitle }}</h1>
-        <button class="eotion-product-overlay__close eotion-product-overlay__back" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">← 返回</button>
-      </header>
-      <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
-      <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
+      <div class="eotion-product-overlay__shell">
+        <header class="eotion-product-overlay__header">
+          <h1 class="eotion-product-overlay__title">{{ visibleTitle }}</h1>
+          <button class="eotion-product-overlay__close eotion-product-overlay__back" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">← 返回</button>
+        </header>
+        <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
+        <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
+      </div>
     </section>
   </Teleport>
   <Teleport to="body">
     <Transition appear :css="false" @before-enter="onDrawerBeforeEnter" @enter="onDrawerEnter" @leave="onDrawerLeave">
       <aside v-if="open && mode === 'drawer'" ref="surface" class="eotion-product-overlay eotion-product-overlay--drawer" :aria-label="accessibleName" data-overlay-mode="drawer" tabindex="-1">
-        <header class="eotion-product-overlay__header">
-          <h2 class="eotion-product-overlay__title">{{ visibleTitle }}</h2>
-          <button class="eotion-product-overlay__close" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">×</button>
-        </header>
-        <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
-        <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
+        <div class="eotion-product-overlay__shell">
+          <header class="eotion-product-overlay__header">
+            <h2 class="eotion-product-overlay__title">{{ visibleTitle }}</h2>
+            <button class="eotion-product-overlay__close" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">×</button>
+          </header>
+          <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
+          <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
+        </div>
       </aside>
     </Transition>
     <Transition appear :css="false" @before-enter="onDrawerBeforeEnter" @enter="onDrawerEnter" @leave="onDrawerLeave">
       <dialog v-if="open && (mode === 'right-drawer' || mode === 'bottom-drawer')" ref="drawerDialog" class="eotion-product-overlay eotion-product-overlay--dialog" :class="`eotion-product-overlay--${mode}`" :aria-label="accessibleName" data-overlay-mode="masked" @cancel="onDialogCancel" @close="onDialogClose" @keydown="onDialogKeydown" @click="onBackdropClick">
-        <header class="eotion-product-overlay__header">
-          <h2 class="eotion-product-overlay__title">{{ visibleTitle }}</h2>
-          <button class="eotion-product-overlay__close" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">×</button>
-        </header>
-        <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
-        <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
+        <div class="eotion-product-overlay__shell">
+          <header class="eotion-product-overlay__header">
+            <h2 class="eotion-product-overlay__title">{{ visibleTitle }}</h2>
+            <button class="eotion-product-overlay__close" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">×</button>
+          </header>
+          <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
+          <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
+        </div>
       </dialog>
     </Transition>
     <dialog ref="dialog" class="eotion-product-overlay eotion-product-overlay--dialog eotion-product-overlay--modal" :aria-label="accessibleName" data-overlay-mode="masked" @cancel="onDialogCancel" @close="onDialogClose" @keydown="onDialogKeydown" @click="onBackdropClick">
-      <template v-if="open && mode === 'modal'">
+      <div v-if="open && mode === 'modal'" class="eotion-product-overlay__shell">
         <header class="eotion-product-overlay__header">
           <h2 class="eotion-product-overlay__title">{{ visibleTitle }}</h2>
           <button class="eotion-product-overlay__close" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">×</button>
         </header>
         <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
         <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
-      </template>
+      </div>
     </dialog>
   </Teleport>
 </template>
@@ -292,7 +298,8 @@ onBeforeUnmount(() => {
 .eotion-product-overlay {
   box-sizing: border-box;
   z-index: 1000;
-  overflow: hidden;
+  /* Popovers teleport here to remain inside the native dialog top layer. */
+  overflow: visible;
   overscroll-behavior: contain;
   padding: 0;
   background: var(--e-color-elevated);
@@ -301,6 +308,16 @@ onBeforeUnmount(() => {
   font: var(--e-type-ui-weight) var(--e-type-ui-size) / var(--e-type-ui-line) var(--e-type-family);
 }
 .eotion-product-overlay:not(dialog), .eotion-product-overlay--dialog[open] { display: flex; flex-direction: column; }
+.eotion-product-overlay__shell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  max-height: inherit;
+  overflow: hidden;
+  border-radius: inherit;
+}
 .eotion-product-overlay__header {
   display: flex;
   flex: none;
@@ -369,9 +386,9 @@ onBeforeUnmount(() => {
   width: 100vw;
   max-height: min(85dvh, 760px);
   margin: 0;
-  padding-bottom: env(safe-area-inset-bottom);
   border-radius: var(--e-radius-dialog) var(--e-radius-dialog) 0 0;
 }
+.eotion-product-overlay--bottom-drawer > .eotion-product-overlay__shell { padding-bottom: env(safe-area-inset-bottom); }
 .eotion-product-overlay--page { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto; }
 .eotion-product-overlay--drawer,
 .eotion-product-overlay--right-drawer,
