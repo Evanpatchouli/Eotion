@@ -9,7 +9,7 @@ import type { DatabaseViewResponse } from '@eotion/contracts'
 import EotionEditor from '../components/editor/EotionEditor.vue'
 import EotionButton from '../components/ui/EotionButton.vue'
 import EotionIcon from '../components/ui/EotionIcon.vue'
-import EotionCommandOverlay from '../components/ui/EotionCommandOverlay.vue'
+import EotionProductOverlay from '../components/ui/EotionProductOverlay.vue'
 import { IconName } from '../components/ui/icons'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
 import { registerActivePageEditor } from '../editor/activePageEditor'
@@ -524,28 +524,19 @@ onBeforeUnmount(() => {
       />
     </template>
   </div>
-  <EotionCommandOverlay v-model:open="databaseDialogOpen" label="数据库" :shortcut="false" :dismissible="!databaseListLoading">
+  <EotionProductOverlay v-model:open="databaseDialogOpen" title="数据库" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'modal'" :dismissible="!databaseListLoading">
     <div class="database-command">
-      <h2>数据库</h2>
       <template v-if="databaseMode === 'start'">
         <div class="database-command-choices" role="group" aria-label="数据库操作">
           <button class="database-command-option" type="button" @click="databaseMode = 'create'">创建新数据库</button>
           <button class="database-command-option" type="button" @click="databaseMode = 'databases'; databaseList = []; databaseCursor = null; loadDatabaseChoices()">链接现有数据库</button>
         </div>
       </template>
-      <form v-else-if="databaseMode === 'create'" class="database-command-form" @submit.prevent="onCreateDatabaseChoice">
-        <div class="database-command-create-header">
-          <EotionButton class="database-command-back" variant="ghost" type="button" @click="databaseMode = 'start'"><EotionIcon :name="IconName.ArrowLeft" :size="16" />返回</EotionButton>
-          <div class="database-command-actions">
-            <EotionButton variant="ghost" type="button" @click="resolveDatabase(null)">取消</EotionButton>
-            <EotionButton variant="primary" type="submit">创建数据库</EotionButton>
-          </div>
-        </div>
+      <form v-else-if="databaseMode === 'create'" :id="`database-create-${pageId}`" class="database-command-form" @submit.prevent="onCreateDatabaseChoice">
         <label for="database-name">数据库名称</label>
         <input id="database-name" v-model="databaseName" aria-label="数据库名称" maxlength="200" autofocus>
       </form>
       <template v-else-if="databaseMode === 'databases'">
-        <button class="database-command-back" type="button" @click="databaseMode = 'start'">返回</button>
         <p v-if="databaseListLoading" role="status">正在加载数据库列表…</p>
         <p v-if="databaseError" role="alert">{{ databaseError }} <button type="button" @click="loadDatabaseChoices()">重试</button></p>
         <ul class="database-command-list">
@@ -555,7 +546,6 @@ onBeforeUnmount(() => {
         <button v-if="databaseCursor" type="button" :disabled="databaseListLoading" @click="loadDatabaseChoices(true)">{{ databaseListLoading ? '正在加载…' : '加载更多数据库' }}</button>
       </template>
       <template v-else>
-        <button class="database-command-back" type="button" @click="databaseMode = 'databases'">返回数据库列表</button>
         <p v-if="databaseError" role="alert">{{ databaseError }} <button type="button" @click="selectDatabase(databaseSelectedId)">重试</button></p>
         <p v-else-if="databaseViewsLoading" role="status">正在加载表格视图…</p>
         <ul class="database-command-list">
@@ -563,32 +553,37 @@ onBeforeUnmount(() => {
         </ul>
         <p v-if="!databaseViewsLoading && !databaseViews.length && !databaseError">这个数据库没有可链接的表格视图。</p>
       </template>
-      <button v-if="databaseMode !== 'create'" class="database-command-cancel" type="button" @click="resolveDatabase(null)">取消</button>
     </div>
-  </EotionCommandOverlay>
+    <template #footer>
+      <div class="database-command-footer">
+        <EotionButton v-if="databaseMode !== 'start'" class="database-command-back" variant="ghost" type="button" @click="databaseMode = databaseMode === 'views' ? 'databases' : 'start'"><EotionIcon :name="IconName.ArrowLeft" :size="16" />{{ databaseMode === 'views' ? '返回数据库列表' : '返回' }}</EotionButton>
+        <div class="database-command-actions">
+          <EotionButton variant="ghost" type="button" @click="resolveDatabase(null)">取消</EotionButton>
+          <EotionButton v-if="databaseMode === 'create'" variant="primary" type="submit" :form="`database-create-${pageId}`">创建数据库</EotionButton>
+        </div>
+      </div>
+    </template>
+  </EotionProductOverlay>
 </template>
 
 <style scoped>
 .product-record-title { box-sizing: border-box; width: 100%; min-width: 0; border: 0; border-bottom: 1px solid transparent; padding: 0 0 4px; outline: 0; background: transparent; color: var(--e-color-text-primary); font: var(--e-type-page-title-weight) var(--e-type-page-title-size) / var(--e-type-page-title-line) var(--e-type-family); letter-spacing: var(--e-type-page-title-tracking); }
 .product-record-title:hover, .product-record-title:focus { border-bottom-color: var(--e-color-border); }
 .database-command { display: grid; gap: 10px; }
-.database-command h2 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
 .database-command-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.database-command-option, .database-command-form input, .database-command-list button, .database-command-cancel, .database-command > button { min-height: 40px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-control); padding: 8px 11px; background: var(--e-color-surface); color: var(--e-color-text-primary); font: inherit; text-align: left; cursor: pointer; }
+.database-command-option, .database-command-form input, .database-command-list button { min-height: 40px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-control); padding: 8px 11px; background: var(--e-color-surface); color: var(--e-color-text-primary); font: inherit; text-align: left; cursor: pointer; }
 .database-command-option:hover, .database-command-list button:hover { background: var(--surface-editor-hover); }
 .database-command-form { display: grid; gap: 8px; }
 .database-command-form label { color: var(--e-color-text-muted); font-size: 13px; }
 .database-command-form input { box-sizing: border-box; width: 100%; }
-.database-command-create-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.database-command-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
 .database-command-back { justify-self: start; }
-.database-command-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.database-command-actions { display: flex; justify-content: flex-end; gap: 8px; margin-left: auto; }
 .database-command-list { display: grid; max-height: min(45dvh, 360px); overflow: auto; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .database-command-list button { width: 100%; }
-.database-command-cancel { justify-self: end; }
 @media (max-width: 420px) {
   .database-command-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .database-command-option { padding-inline: 8px; text-align: center; }
-  .database-command-create-header { align-items: flex-start; }
   .database-command-actions { gap: 4px; }
 }
 </style>

@@ -422,6 +422,10 @@ async function screenshot(page: Page, name: string) {
   await page.screenshot({ path: path.join(directory, `${name}.png`), animations: 'disabled', fullPage: true })
 }
 
+function overlayFooter(content: Locator) {
+  return content.locator('xpath=ancestor::dialog[1]').locator('.eotion-product-overlay__footer')
+}
+
 async function openDatabaseSetting(page: Page, table: Locator, name: '筛选' | '排序' | '属性' | '记录打开方式') {
   const menu = page.getByRole('menu', { name: '数据库设置' })
   await expect(async () => {
@@ -456,6 +460,9 @@ async function openAdvancedPropertyCreator(page: Page, table: Locator, type: '�
     await creator.getByRole('button', { name: type }).click({ timeout: 1_000 })
     await expect(config).toBeVisible({ timeout: 1_000 })
   }).toPass({ timeout: 8_000 })
+  const overlay = page.locator('.eotion-product-overlay').filter({ has: config })
+  await expect(overlay.getByRole('heading', { level: 2 })).toHaveCount(1)
+  await expect(overlay.getByRole('button', { name: '关闭' })).toHaveCount(1)
   return config
 }
 
@@ -745,6 +752,8 @@ test('database command separates back from cancel and keeps create and link choi
   await page.goto('/#/app/database-workspace/page/database-page')
   await startDatabaseSlash(page)
   const dialog = page.getByRole('dialog', { name: '数据库' })
+  await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1)
+  await expect(dialog.getByRole('button', { name: /关闭/u })).toHaveCount(1)
   const createChoice = dialog.getByRole('button', { name: '创建新数据库' })
   const linkChoice = dialog.getByRole('button', { name: '链接现有数据库' })
   const [createBox, linkBox] = await Promise.all([createChoice.boundingBox(), linkChoice.boundingBox()])
@@ -754,8 +763,12 @@ test('database command separates back from cancel and keeps create and link choi
 
   await createChoice.click()
   const back = dialog.getByRole('button', { name: '返回', exact: true })
-  const cancel = dialog.getByRole('button', { name: '取消', exact: true })
-  const submit = dialog.getByRole('button', { name: '创建数据库', exact: true })
+  const footer = dialog.locator('.eotion-product-overlay__footer')
+  const cancel = footer.getByRole('button', { name: '取消', exact: true })
+  const submit = footer.getByRole('button', { name: '创建数据库', exact: true })
+  await expect(footer).toBeVisible()
+  await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1)
+  await screenshot(page, 'database-create-footer-desktop')
   await expect(back.locator('svg')).toHaveCount(1)
   await expect(submit).toHaveClass(/eotion-button--primary/u)
   const [backBox, cancelBox, submitBox] = await Promise.all([back.boundingBox(), cancel.boundingBox(), submit.boundingBox()])
@@ -765,7 +778,7 @@ test('database command separates back from cancel and keeps create and link choi
   await expect(dialog.getByRole('button', { name: '链接现有数据库' })).toBeVisible()
   await dialog.getByRole('button', { name: '创建新数据库' }).click()
   await cancel.click()
-  await expect(dialog).toHaveCount(0)
+  await expect(dialog).not.toBeVisible()
 })
 
 test('database settings exposes five entries and record and property opening modes drive real surfaces', async ({ page }) => {
@@ -790,13 +803,18 @@ test('database settings exposes five entries and record and property opening mod
   await expectOpeningOptions(page, table, '属性', '平板', ['抽屉', '弹窗', '页面'])
   await expectOpeningOptions(page, table, '属性', '手机', ['右侧抽屉', '下方抽屉', '弹窗', '页面'])
   await chooseOpening(page, table, '属性', '桌面', '弹窗')
-  await expect(page.locator('dialog[aria-label="属性"][open]')).toBeVisible()
+  const propertyModal = page.locator('dialog[aria-label="属性"][open]')
+  await expect(propertyModal).toBeVisible()
+  await expect(propertyModal.getByRole('heading', { level: 2 })).toHaveText('属性')
+  await expect(propertyModal.getByRole('button', { name: '关闭' })).toHaveCount(1)
   await closeDatabaseSetting(page, '属性管理')
 
   await openDatabaseSetting(page, table, '属性')
   await chooseOpening(page, table, '属性', '桌面', '页面')
   const propertyPage = page.locator('#eotion-product-page-layer [data-overlay-mode="page"]')
   await expect(propertyPage).toBeVisible()
+  await expect(propertyPage.locator('.eotion-product-overlay__header').getByRole('heading', { level: 1 })).toHaveText('属性')
+  await expect(propertyPage.locator('.eotion-product-overlay__header').getByRole('button', { name: '关闭' })).toHaveCount(1)
   const [layerBox, propertyPageBox] = await Promise.all([page.locator('#eotion-product-page-layer').boundingBox(), propertyPage.boundingBox()])
   expect(propertyPageBox).toEqual(layerBox)
   await closeDatabaseSetting(page, '属性管理')
@@ -815,6 +833,8 @@ test('database settings exposes five entries and record and property opening mod
   await table.getByRole('button', { name: '打开记录：Launch plan' }).click()
   const recordModal = page.locator('dialog[aria-label="记录"][open]')
   await expect(recordModal).toBeVisible()
+  await expect(recordModal.getByRole('heading', { level: 2 })).toHaveText('记录')
+  await expect(recordModal.getByRole('button', { name: '关闭记录' })).toHaveCount(1)
   await expect(recordModal.locator('.eotion-editor-content .tiptap')).toHaveAttribute('contenteditable', 'true')
   await recordModal.getByRole('button', { name: '关闭记录' }).click()
 
@@ -1056,11 +1076,13 @@ test('rapid title saves across records queue refreshes for both originating data
   try {
     holdNextSnapshot = true
     const titleA = page.locator('[data-overlay-mode="drawer"]').getByRole('textbox', { name: '记录标题' })
+    await expect(page.locator('[data-overlay-mode="drawer"]').getByRole('textbox', { name: '页面正文编辑区域' })).toBeFocused()
     await titleA.fill('Renamed in A')
     await tables.nth(1).getByRole('button', { name: '打开记录：Second plan' }).click()
     await snapshotStarted
     const titleB = page.locator('[data-overlay-mode="drawer"]').getByRole('textbox', { name: '记录标题' })
     await expect(titleB).toHaveValue('Second plan')
+    await expect(page.locator('[data-overlay-mode="drawer"]').getByRole('textbox', { name: '页面正文编辑区域' })).toBeFocused()
     await titleB.fill('Renamed in B')
     await titleB.press('Enter')
     await expect(titleB).toHaveValue('Renamed in B')
@@ -1228,10 +1250,10 @@ test('linked views keep independent server filters, multi-sort order and column 
   await filterPanel.getByRole('button', { name: '＋ 添加筛选条件' }).click()
   await filterPanel.getByRole('combobox', { name: '筛选属性 1' }).selectOption('root-select')
   await filterPanel.getByRole('combobox', { name: '筛选值 1' }).selectOption('status-done')
-  await filterPanel.getByRole('button', { name: '保存筛选' }).click()
+  await overlayFooter(filterPanel).getByRole('button', { name: '保存筛选' }).click()
   await expect(page.getByRole('alert')).toContainText('View temporarily unavailable')
   await expect(filterPanel.getByRole('combobox', { name: '筛选值 1' })).toHaveValue('status-done')
-  await filterPanel.getByRole('button', { name: '保存筛选' }).click()
+  await overlayFooter(filterPanel).getByRole('button', { name: '保存筛选' }).click()
   await expect(tables.nth(1).locator('tbody tr')).toHaveCount(4)
   await expect(tables.nth(1)).not.toContainText('Open task')
   expect(api.views.find(item => item.id !== 'view-root-id')?.config.filters).toEqual([{ propertyId: 'root-select', operator: 'is', value: 'status-done' }])
@@ -1246,7 +1268,7 @@ test('linked views keep independent server filters, multi-sort order and column 
   await sortPanel.getByRole('combobox', { name: '排序属性 1' }).selectOption('root-number')
   await sortPanel.getByRole('combobox', { name: '排序方向 1' }).selectOption('desc')
   await sortPanel.getByRole('button', { name: '＋ 添加排序' }).click()
-  await sortPanel.getByRole('button', { name: '保存排序' }).click()
+  await overlayFooter(sortPanel).getByRole('button', { name: '保存排序' }).click()
   await expect(tables.nth(1).locator('tbody tr').nth(0)).toContainText('Beta done')
   await expect(tables.nth(1).locator('tbody tr').nth(1)).toContainText('Delta done')
   await expect(tables.nth(1).locator('tbody tr').nth(2)).toContainText('Alpha done')
@@ -1257,7 +1279,7 @@ test('linked views keep independent server filters, multi-sort order and column 
   await openDatabaseSetting(page, tables.nth(1), '排序')
   const reorderPanel = page.getByRole('group', { name: '排序条件' })
   await reorderPanel.getByRole('button', { name: '排序下移 1' }).click()
-  await reorderPanel.getByRole('button', { name: '保存排序' }).click()
+  await overlayFooter(reorderPanel).getByRole('button', { name: '保存排序' }).click()
   await expect(tables.nth(1).locator('tbody tr').nth(0)).toContainText('Alpha done')
   expect(configuredView.config.sorts[0]?.propertyId).toBe('root-title')
 
@@ -1328,6 +1350,56 @@ test('linked views keep independent server filters, multi-sort order and column 
   await expect(tables.nth(1).getByRole('button', { name: '切换视图' })).toBeDisabled()
   await expect(tables.nth(1).getByRole('button', { name: '数据库设置' })).toBeEnabled()
   expect(api.requests.filter(({ method, path }) => ['POST', 'PATCH', 'DELETE'].includes(method) && path.includes(`/databases/${rootDatabase.id}/views`))).toHaveLength(mutationCount)
+})
+
+test('phone filter and sort panels save through their footers and restore saved drafts', async ({ page }) => {
+  const api = await installApi(page, [
+    block('phone-view-settings', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'phone-view-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('phone-view-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const mobileDialog = page.locator('dialog.eotion-product-overlay--bottom-drawer[open]')
+
+  await openDatabaseSetting(page, table, '筛选')
+  const filterPanel = page.getByRole('group', { name: '筛选条件' })
+  await expect(mobileDialog).toBeVisible()
+  await expect(mobileDialog.getByRole('heading', { level: 2 })).toHaveText('筛选条件')
+  await expect(mobileDialog.getByRole('heading', { level: 2 })).toHaveCount(1)
+  await filterPanel.getByRole('button', { name: '＋ 添加筛选条件' }).click()
+  await filterPanel.getByRole('combobox', { name: '筛选属性 1' }).selectOption('root-select')
+  await filterPanel.getByRole('combobox', { name: '筛选值 1' }).selectOption('status-done')
+  await overlayFooter(filterPanel).getByRole('button', { name: '保存筛选' }).click()
+  await expect.poll(() => api.views[0]!.config.filters).toEqual([{ propertyId: 'root-select', operator: 'is', value: 'status-done' }])
+  await expect(filterPanel).toHaveCount(0)
+  await expect(mobileDialog).toHaveCount(0)
+
+  await openDatabaseSetting(page, table, '筛选')
+  await expect(filterPanel.getByRole('combobox', { name: '筛选属性 1' })).toHaveValue('root-select')
+  await expect(filterPanel.getByRole('combobox', { name: '筛选值 1' })).toHaveValue('status-done')
+  await page.keyboard.press('Escape')
+  await expect(filterPanel).toHaveCount(0)
+  await expect(mobileDialog).toHaveCount(0)
+
+  await openDatabaseSetting(page, table, '排序')
+  const sortPanel = page.getByRole('group', { name: '排序条件' })
+  await expect(mobileDialog).toBeVisible()
+  await expect(mobileDialog.getByRole('heading', { level: 2 })).toHaveText('排序条件')
+  await expect(mobileDialog.getByRole('heading', { level: 2 })).toHaveCount(1)
+  await sortPanel.getByRole('button', { name: '＋ 添加排序' }).click()
+  await sortPanel.getByRole('combobox', { name: '排序属性 1' }).selectOption('root-number')
+  await sortPanel.getByRole('combobox', { name: '排序方向 1' }).selectOption('desc')
+  await overlayFooter(sortPanel).getByRole('button', { name: '保存排序' }).click()
+  await expect.poll(() => api.views[0]!.config.sorts).toEqual([{ propertyId: 'root-number', direction: 'desc' }])
+  await expect(sortPanel).toHaveCount(0)
+  await expect(mobileDialog).toHaveCount(0)
+
+  await openDatabaseSetting(page, table, '排序')
+  await expect(sortPanel.getByRole('combobox', { name: '排序属性 1' })).toHaveValue('root-number')
+  await expect(sortPanel.getByRole('combobox', { name: '排序方向 1' })).toHaveValue('desc')
+  await page.keyboard.press('Escape')
+  await expect(sortPanel).toHaveCount(0)
+  await expect(mobileDialog).toHaveCount(0)
 })
 
 test('database tables render and references round-trip at root and under a toggle', async ({ page }) => {
@@ -1528,18 +1600,49 @@ test('committed inline database creation fences its original user when auth swit
 
 test('mobile slash database dialog stays within the viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await installApi(page, [])
+  const api = await installApi(page, [])
   await page.goto('/#/app/database-workspace/page/database-page')
   await startDatabaseSlash(page)
   const dialog = page.getByRole('dialog', { name: '数据库' })
+  await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1)
+  await expect(dialog.getByRole('button', { name: /关闭/u })).toHaveCount(1)
   await dialog.getByRole('button', { name: '创建新数据库' }).click()
   await expect(dialog.getByRole('textbox', { name: '数据库名称' })).toBeVisible()
+  const footer = dialog.locator('.eotion-product-overlay__footer')
+  const back = footer.getByRole('button', { name: '返回', exact: true })
+  const cancel = footer.getByRole('button', { name: '取消', exact: true })
+  const submit = footer.getByRole('button', { name: '创建数据库', exact: true })
+  await expect(footer).toBeVisible()
+  await screenshot(page, 'database-create-footer-mobile-390')
+  await expect(back.locator('svg')).toHaveCount(1)
+  await expect(submit).toHaveAttribute('form', 'database-create-database-page')
+  const [footerBounds, backBounds, cancelBounds, submitBounds] = await Promise.all([footer.boundingBox(), back.boundingBox(), cancel.boundingBox(), submit.boundingBox()])
+  expect(footerBounds).not.toBeNull()
+  expect(backBounds!.x).toBeGreaterThanOrEqual(footerBounds!.x)
+  expect(backBounds!.x).toBeLessThan(cancelBounds!.x)
+  expect(cancelBounds!.x).toBeLessThan(submitBounds!.x)
+  expect(submitBounds!.x + submitBounds!.width).toBeLessThanOrEqual(footerBounds!.x + footerBounds!.width)
+  await expect(dialog.getByRole('heading', { level: 2 })).toHaveCount(1)
   const bounds = await dialog.boundingBox()
   expect(bounds).not.toBeNull()
   expect(bounds!.x).toBeGreaterThanOrEqual(0)
   expect(bounds!.y).toBeGreaterThanOrEqual(0)
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844)
+  await back.click()
+  await expect(dialog.getByRole('button', { name: '创建新数据库' })).toBeVisible()
+  await dialog.getByRole('button', { name: '创建新数据库' }).click()
+  await dialog.getByRole('textbox', { name: '数据库名称' }).fill('Mobile board')
+  await cancel.click()
+  await expect(dialog).not.toBeVisible()
+
+  await startDatabaseSlash(page)
+  const reopenedDialog = page.getByRole('dialog', { name: '数据库' })
+  await reopenedDialog.getByRole('button', { name: '创建新数据库' }).click()
+  await reopenedDialog.getByRole('textbox', { name: '数据库名称' }).fill('Mobile board')
+  await reopenedDialog.locator('.eotion-product-overlay__footer').getByRole('button', { name: '创建数据库', exact: true }).click()
+  await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('Mobile board')
+  await expect.poll(() => api.databases.some(item => item.name === 'Mobile board')).toBe(true)
 })
 
 test('slash creates a nested database under an existing toggle child', async ({ page }) => {

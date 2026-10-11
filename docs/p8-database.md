@@ -23,6 +23,8 @@ Slash 创建器首层将“创建新数据库 / 链接现有数据库”并排�
 
 Filter、Sort 与“记录打开方式”设置页本身不进入 opening preference：Desktop/Tablet 固定使用 Modal，Phone 固定使用 Bottom Drawer。Record 实际打开方式仍按独立 Record opening preference；Property 设置容器继续按独立 Property opening preference 打开。
 
+`EotionProductOverlay` 统一提供 Header / Body / 可选 Footer：`title` 显示正式标题，`label` 可独立保留 accessible name（省略时使用 title）；Header 右侧关闭，Page mode 使用返回。正文独立滚动，Header/Footer 保持稳定；Footer 有顶部分隔线。Database 的筛选、排序、属性、记录打开方式与高级属性配置不在正文重复标题或关闭按钮。筛选/排序保存位于 Footer，数据逻辑不变。数据库创建器共用此容器（Desktop/Tablet Modal、Phone Bottom Drawer），创建层 Footer 左侧返回上一步，右侧取消整个流程与 Primary 创建；链接层沿用原列表与选择行为，返回/取消放入 Footer。此结构不包含入场/退场动画。
+
 属性设置继续把 visibleProperties/propertyOrder 写入当前 View config，不提升为 Database 全局 schema 状态；schema CRUD 仍使用既有 Property service/CAS。完整面板支持新增、删除、重命名、拖放/按钮排序、显示/隐藏、Select options，以及 Relation、Rollup、Formula 原配置编辑。高级属性配置复用同一 Property opening mode，不创建第二套临时面板。
 
 Record 创建仍由服务端同一事务原子创建 Record + Page；“新建记录”点击后直接以系统标题“无标题”创建，不再先显示 Database Header inline title 表单。创建成功后先准备本地 Record Page，再与首列独立详情按钮共用既有 Record opening pipeline，按 Record opening preference 打开详情，并复用正式 `PageView` 立即进入标题和正文可编辑状态。首列标题主体直接编辑 `Page.title`，不写入 `Record.properties`；标题变更先 flush 当前 Page editor，再经过既有 sync 状态检查和 Page / Record / Database CAS。其他可写基础属性直接启动当前 cell editor，Date、Select、Relation 继续使用现有编辑器或 picker，Checkbox 点击或 Space 直接 toggle，Formula / Rollup 为只读。详情按钮只在首列出现；Desktop mouse 默认弱化，hover 或 focus 时显示，Tablet / Phone 与无 hover 输入常驻显示且至少 44px，不覆盖标题编辑区域。编辑器 Enter 提交，Escape 取消并返回 Cell 主体，Tab / Shift+Tab 通过失焦提交并离开当前 Cell；详情按钮不参与编辑中的标题 Tab 顺序。Page mode 使用正常 Page route；overlay mode 只改变呈现容器，不复制 Record body 或编辑器。多 Page editor session 按 workspace/page 独立注册和 flush，关闭 overlay 或路由前只提交对应 Record editor。

@@ -9,6 +9,7 @@ import { usePreferencesStore } from '../../stores/preferences'
 import { useDatabaseContentStore } from '../../stores/databaseContent'
 import { resolveOpeningMode, type ProductLayoutMode, type ProductOverlayMode } from '../ui/productOverlay'
 import EotionProductOverlay from '../ui/EotionProductOverlay.vue'
+import EotionButton from '../ui/EotionButton.vue'
 import DatabaseOpeningChoices from './DatabaseOpeningChoices.vue'
 
 import {
@@ -1187,7 +1188,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
             <button type="button" class="danger" :disabled="viewBusy || views.length < 2" @click.stop="deleteView(views.find(item => item.id === viewId)!)">删除视图</button>
           </form>
         </section></Teleport>
-        <EotionProductOverlay :open="viewControlsOpen === 'filters'" :mode="settingOverlayMode" label="筛选条件" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="筛选条件" @click.stop>
+        <EotionProductOverlay :open="viewControlsOpen === 'filters'" :mode="settingOverlayMode" title="筛选条件" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="筛选条件" @click.stop>
           <strong>所有筛选条件都需匹配</strong>
           <div v-for="(filter, index) in filterDrafts" :key="`${index}-${filter.propertyId}`" class="eotion-database-filter-row">
             <select :value="filter.propertyId" :aria-label="`筛选属性 ${index + 1}`" @change="changeFilterProperty(index, ($event.target as HTMLSelectElement).value)"><option v-for="property in properties" :key="property.id" :value="property.id" :disabled="property.type === 'rollup' || property.type === 'formula'">{{ displayPropertyName(property) }}{{ property.type === 'rollup' || property.type === 'formula' ? '（暂不支持筛选）' : '' }}</option></select>
@@ -1199,9 +1200,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
             <button type="button" :aria-label="`删除筛选条件 ${index + 1}`" @click.stop="filterDrafts.splice(index, 1)">×</button>
           </div>
           <button type="button" :disabled="filterDrafts.length >= 20" @click.stop="addFilter">＋ 添加筛选条件</button>
-          <button type="button" :disabled="viewBusy || !writable" @click.stop="saveFilters">保存筛选</button>
-        </section></EotionProductOverlay>
-        <EotionProductOverlay :open="viewControlsOpen === 'sorts'" :mode="settingOverlayMode" label="排序条件" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="排序条件" @click.stop>
+        </section><template #footer><EotionButton variant="primary" type="button" :disabled="viewBusy || !writable" @click.stop="saveFilters">保存筛选</EotionButton></template></EotionProductOverlay>
+        <EotionProductOverlay :open="viewControlsOpen === 'sorts'" :mode="settingOverlayMode" title="排序条件" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="排序条件" @click.stop>
           <strong>排序优先级（顶部优先）</strong>
           <div v-for="(sort, index) in sortDrafts" :key="`${index}-${sort.propertyId}`" class="eotion-database-sort-row">
             <select v-model="sort.propertyId" :aria-label="`排序属性 ${index + 1}`"><option v-for="property in properties" :key="property.id" :value="property.id" :disabled="['relation', 'rollup', 'formula'].includes(property.type) || sortDrafts.some((other, otherIndex) => otherIndex !== index && other.propertyId === property.id)">{{ displayPropertyName(property) }}{{ ['relation', 'rollup', 'formula'].includes(property.type) ? '（暂不支持排序）' : '' }}</option></select>
@@ -1211,14 +1211,11 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
             <button type="button" :aria-label="`删除排序 ${index + 1}`" @click.stop="sortDrafts.splice(index, 1)">×</button>
           </div>
           <button type="button" :disabled="sortDrafts.length >= 10 || sortDrafts.length >= properties.filter(property => !['relation', 'rollup', 'formula'].includes(property.type)).length" @click.stop="addSort">＋ 添加排序</button>
-          <button type="button" :disabled="viewBusy || !writable" @click.stop="saveSorts">保存排序</button>
-        </section></EotionProductOverlay>
-        <EotionProductOverlay :open="viewControlsOpen === 'record-opening'" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'modal'" label="记录打开方式" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="记录打开方式">
-          <h2>记录打开方式</h2>
+        </section><template #footer><EotionButton variant="primary" type="button" :disabled="viewBusy || !writable" @click.stop="saveSorts">保存排序</EotionButton></template></EotionProductOverlay>
+        <EotionProductOverlay :open="viewControlsOpen === 'record-opening'" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'modal'" title="记录打开方式" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="记录打开方式">
           <DatabaseOpeningChoices target="record" :config="recordOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('record', layout, mode)" />
         </section></EotionProductOverlay>
-        <EotionProductOverlay :open="viewControlsOpen === 'columns'" :mode="settingOverlayMode" label="属性" @update:open="onSettingsOverlayChange"><section :id="`database-property-settings-${blockId}`" class="eotion-database-settings eotion-database-property-settings" role="group" aria-label="属性管理">
-          <div class="eotion-database-settings-heading"><h2>属性</h2></div>
+        <EotionProductOverlay :open="viewControlsOpen === 'columns'" :mode="settingOverlayMode" title="属性" @update:open="onSettingsOverlayChange"><section :id="`database-property-settings-${blockId}`" class="eotion-database-settings eotion-database-property-settings" role="group" aria-label="属性管理">
           <DatabaseOpeningChoices target="property" :config="propertyOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('property', layout, mode)" />
           <div v-for="(property, index) in columnDraftProperties" :key="property.id" class="eotion-database-property-row" @dragover.prevent @drop.prevent="dropProperty(property.id)">
             <span class="eotion-database-property-grip" draggable="true" :title="`拖动属性 ${property.name}`" @dragstart="draggingPropertyId = property.id" @dragend="draggingPropertyId = ''">⋮⋮</span>
@@ -1241,8 +1238,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
         </div></Teleport>
       </div>
     </header>
-    <EotionProductOverlay :open="Boolean(propertyConfigType)" :mode="propertyOpeningMode" :label="`配置${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" @update:open="closePropertyConfig"><section v-if="propertyConfigType" class="eotion-database-advanced" role="group" :aria-label="`配置${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" @pointerdown.stop>
-      <div class="eotion-database-advanced-heading"><strong>{{ propertyConfigEditId ? '编辑' : '添加' }}{{ propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式' }}属性</strong><button type="button" @click="closePropertyConfig">关闭</button></div>
+    <EotionProductOverlay :open="Boolean(propertyConfigType)" :mode="propertyOpeningMode" :title="`${propertyConfigEditId ? '编辑' : '添加'}${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" :label="`配置${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" @update:open="closePropertyConfig"><section v-if="propertyConfigType" class="eotion-database-advanced" role="group" :aria-label="`配置${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" @pointerdown.stop>
       <label>属性名称<input v-model="propertyConfigName" maxlength="100" :disabled="!writable"></label>
       <template v-if="propertyConfigType === 'relation'">
         <label>目标数据库<select v-model="targetDatabaseId" :disabled="!writable || targetLoading"><option :value="databaseId">当前数据库：{{ title }}</option><option v-for="item in targetDatabases.filter(item => item.id !== databaseId)" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
@@ -1346,8 +1342,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 <style scoped>
 .eotion-database { display:block; min-width:0; margin:12px 0; overflow:hidden; border:1px solid var(--border-editor); border-radius:9px; background:var(--surface-raised); color:var(--editor-text); }
 .eotion-database :deep(.eotion-product-overlay--page) { position:fixed; inset:0; width:100vw; height:100dvh; z-index:1000; padding:24px max(24px,calc((100vw - 960px)/2)); }
-.eotion-database-advanced { display:grid; gap:10px; border-top:1px solid var(--border-editor); padding:14px; font-size:13px; }
-.eotion-database-advanced-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.eotion-database-advanced { display:grid; gap:10px; font-size:13px; }
 .eotion-database-advanced label { display:grid; gap:5px; min-width:0; color:var(--editor-muted); }
 .eotion-database-advanced input,.eotion-database-advanced select,.eotion-database-advanced textarea { box-sizing:border-box; width:100%; min-width:0; min-height:36px; border:1px solid var(--border-editor); border-radius:5px; padding:6px 8px; background:var(--surface-raised); color:var(--editor-text); font:inherit; }
 .eotion-database-advanced textarea { min-height:150px; resize:vertical; font-family:ui-monospace,monospace; }
@@ -1382,12 +1377,9 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-view-rename .danger,.eotion-database-view-error { color:var(--danger); }
 .eotion-database-settings { width:min(374px, calc(100vw - 16px)); }
 .eotion-database-settings { display:grid; gap:12px; width:100%; max-width:680px; padding:6px 2px; color:var(--editor-text); }
-.eotion-database-settings h2 { margin:0; font-size:18px; line-height:1.3; }
-.eotion-database-settings>label,.eotion-database-settings-heading label { display:grid; gap:5px; color:var(--editor-muted); font-size:12px; }
+.eotion-database-settings>label { display:grid; gap:5px; color:var(--editor-muted); font-size:12px; }
 .eotion-database-settings select { box-sizing:border-box; min-width:0; min-height:36px; border:1px solid var(--border-editor); border-radius:6px; padding:5px 8px; background:var(--surface-raised); color:var(--editor-text); font:inherit; }
 .eotion-database-settings>button,.eotion-database-property-row button { min-height:32px; border:1px solid var(--border-editor); border-radius:5px; padding:5px 9px; background:var(--surface-editor-hover); color:inherit; font:inherit; cursor:pointer; }
-.eotion-database-settings-heading { display:flex; align-items:end; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.eotion-database-settings-heading label { min-width:150px; }
 .eotion-database-property-row { display:grid; grid-template-columns:20px 20px minmax(60px,1fr) 56px 50px repeat(3,32px); align-items:center; gap:6px; min-width:0; border-bottom:1px solid var(--border-editor); padding:6px 0; }
 .eotion-database-property-row small { color:var(--editor-muted); }
 .eotion-database-property-row label { display:flex; align-items:center; gap:3px; font-size:12px; }
@@ -1435,5 +1427,5 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 }
 @media (hover:none) { .eotion-database-title-detail { flex-basis:44px; width:44px; min-width:44px; min-height:44px; opacity:1; } }
 @media (max-width:767px) { .eotion-database-new { order:4; }.eotion-database-table th,.eotion-database-table td { width:160px; min-width:160px; }.eotion-database-cell-button,.eotion-database-property-trigger,.eotion-database-popover button { min-height:44px; }.eotion-database-cell-input { min-height:44px; }.eotion-database-filter-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-sort-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-filter-row select,.eotion-database-filter-row input,.eotion-database-sort-row select { min-height:44px; }.eotion-database-filter-row>button,.eotion-database-sort-row button,.eotion-database-column-row button { min-width:44px; min-height:44px; }.eotion-database-column-row label { min-height:44px; }.eotion-database-sort-row button:nth-of-type(1) { grid-column:1; grid-row:2; }.eotion-database-sort-row button:nth-of-type(2) { grid-column:2; grid-row:2; }.eotion-database-sort-row button:nth-of-type(3) { grid-column:3; grid-row:2; } }
-@media (max-width:767px) { .eotion-database-property-row { grid-template-columns:18px 18px minmax(45px,1fr) 42px 48px repeat(3,30px); gap:3px; }.eotion-database-settings-heading label { width:100%; }.eotion-database-settings select { min-height:44px; } }
+@media (max-width:767px) { .eotion-database-property-row { grid-template-columns:18px 18px minmax(45px,1fr) 42px 48px repeat(3,30px); gap:3px; }.eotion-database-settings select { min-height:44px; } }
 </style>

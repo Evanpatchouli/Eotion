@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-10-11 Database Overlay Header / Body / Footer
+
+在 master 基线 6debd1a7e8a1878bf615c5ed4ec7baacc9e8ebf1 上完成统一 ProductOverlay 分区：title 可视 Header，label 保留独立 accessible name；Header 单关闭按钮，Page 返回；Body 独立滚动、可选 Footer 有分隔线且保持稳定。无动画。
+
+Database 筛选、排序、属性、记录打开方式和 Relation/Rollup/Formula 配置标题移入 Header，正文重复标题与高级属性额外关闭按钮删除。创建器迁移 ProductOverlay：Desktop/Tablet Modal、Phone Bottom Drawer，Footer 左返回上一步、右取消整个流程与 Primary 创建（关联原 form）；链接列表业务保持，返回/取消同样进入 Footer。Filter/Sort 保存移入 Footer，数据与保存成功关闭语义不变。原 CommandOverlay 的 IME keyCode 229 Escape 防护保留。
+
+验证：最终 Overlay/Database 两 spec 串行 71/71，全程 retries=0；Web typecheck、build:web、git diff --check 通过，保留既有 >500kB chunk warning。独立 review 无 blocker；Desktop Modal/Phone Bottom Drawer、长正文、明暗主题、可选 Footer、Back/Cancel/Create、Filter/Sort 保存回读、Property/Record Opening、focus trap/Escape/backdrop/restore 全覆盖。Rapid title saves 仅添加正文 rAF autofocus 就绪等待，快照 gate、事件与表格断言全部保留，不改同步业务。截图位于本次会话 visualizations/overlay-header-review（仓库外），使用 mock transport 与 Chromium responsive Web，不作为 Final Acceptance/原生宿主验收。
+
+本轮 PASS，提交后停止。Remaining issues：Drawer Motion、Universal Block +、Database UX Final Acceptance。不开始 P9。
+
 ## 2026-10-11 Database Table Cell Inline Editing
 
 在 master 基线 050173fce98d40eb7f8d2432cd3bd2e87486c3da 上完成聚焦 Cell 交互：Title 主体直接编辑 Page.title；删除铅笔入口，首列独立弱化的详情 icon button 复用现有 opening preference/pipeline。Desktop mouse idle 隐藏、hover/focus-within 显示；Tablet/Phone 与无 hover 输入常驻且至少 44px，与编辑主体不重叠。Text/Number/Date/Select/Checkbox/Relation 复用现有 editor/picker/mutation，Formula/Rollup 只读；Enter/Escape/Tab/Shift+Tab/Space 定向验证通过。

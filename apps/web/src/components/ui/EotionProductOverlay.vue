@@ -4,15 +4,19 @@ let originalOverflow = ''
 </script>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { ProductOverlayMode } from './productOverlay'
 
 const props = withDefaults(defineProps<{
   mode: ProductOverlayMode
-  label: string
+  label?: string
+  title?: string
   closeLabel?: string
-}>(), { closeLabel: '关闭' })
+  dismissible?: boolean
+}>(), { closeLabel: '关闭', dismissible: true })
 const open = defineModel<boolean>('open', { default: false })
+const accessibleName = computed(() => props.label ?? props.title)
+const visibleTitle = computed(() => props.title ?? props.label)
 const dialog = ref<HTMLDialogElement | null>(null)
 const surface = ref<HTMLElement | null>(null)
 let origin: HTMLElement | null = null
@@ -41,7 +45,7 @@ function restoreFocus() {
   if (target?.isConnected && !target.closest('[hidden], [inert], [aria-hidden="true"]')) target.focus({ preventScroll: true })
 }
 
-function close() { open.value = false }
+function close() { if (props.dismissible) open.value = false }
 
 async function syncSurface() {
   const isOpen = open.value
@@ -51,8 +55,10 @@ async function syncSurface() {
     if (!open.value || !isModalSurface(props.mode)) return
     if (!dialog.value?.open) dialog.value?.showModal()
     lockScroll()
-    const focusTarget = dialog.value?.querySelector<HTMLElement>('[autofocus]')
-      ?? dialog.value?.querySelector<HTMLElement>('input, textarea, select, [contenteditable="true"], button:not([disabled]), [tabindex="0"]')
+    const focusTarget = dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__body [autofocus]')
+      ?? dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__body input:not([disabled]), .eotion-product-overlay__body textarea:not([disabled]), .eotion-product-overlay__body select:not([disabled]), .eotion-product-overlay__body [contenteditable="true"], .eotion-product-overlay__body button:not([disabled]), .eotion-product-overlay__body [tabindex="0"]')
+      ?? dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__footer button:not([disabled]), .eotion-product-overlay__footer [tabindex="0"]')
+      ?? dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__body')
     focusTarget?.focus({ preventScroll: true })
   } else {
     if (dialog.value?.open) {
@@ -74,6 +80,11 @@ function onDialogCancel(event: Event) {
 }
 
 function onDialogKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && (event.isComposing || event.keyCode === 229 || !props.dismissible)) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
   if (event.key !== 'Tab' || !dialog.value) return
   const stops = [...dialog.value.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]')]
     .filter(element => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden')
@@ -91,7 +102,10 @@ function onDialogKeydown(event: KeyboardEvent) {
 
 function onDialogClose() {
   if (expectedClose) { expectedClose = false; return }
-  if (open.value) close()
+  if (open.value) {
+    if (props.dismissible) close()
+    else void syncSurface()
+  }
 }
 
 function onBackdropClick(event: MouseEvent) {
@@ -119,20 +133,32 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport defer to="#eotion-product-page-layer">
-    <section v-if="open && mode === 'page'" ref="surface" class="eotion-product-overlay eotion-product-overlay--page" :aria-label="label" data-overlay-mode="page" tabindex="-1">
-      <button class="eotion-product-overlay__close eotion-product-overlay__back" type="button" :aria-label="closeLabel" @click="close">← 返回</button>
-      <slot :close="close" />
+    <section v-if="open && mode === 'page'" ref="surface" class="eotion-product-overlay eotion-product-overlay--page" :aria-label="accessibleName" data-overlay-mode="page" tabindex="-1">
+      <header class="eotion-product-overlay__header">
+        <h1 class="eotion-product-overlay__title">{{ visibleTitle }}</h1>
+        <button class="eotion-product-overlay__close eotion-product-overlay__back" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">← 返回</button>
+      </header>
+      <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
+      <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
     </section>
   </Teleport>
   <Teleport to="body">
-    <aside v-if="open && mode === 'drawer'" ref="surface" class="eotion-product-overlay eotion-product-overlay--drawer" :aria-label="label" data-overlay-mode="drawer" tabindex="-1">
-      <button class="eotion-product-overlay__close" type="button" :aria-label="closeLabel" @click="close">×</button>
-      <slot :close="close" />
+    <aside v-if="open && mode === 'drawer'" ref="surface" class="eotion-product-overlay eotion-product-overlay--drawer" :aria-label="accessibleName" data-overlay-mode="drawer" tabindex="-1">
+      <header class="eotion-product-overlay__header">
+        <h2 class="eotion-product-overlay__title">{{ visibleTitle }}</h2>
+        <button class="eotion-product-overlay__close" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">×</button>
+      </header>
+      <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
+      <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
     </aside>
-    <dialog ref="dialog" class="eotion-product-overlay eotion-product-overlay--dialog" :class="`eotion-product-overlay--${mode}`" :aria-label="label" data-overlay-mode="masked" @cancel="onDialogCancel" @close="onDialogClose" @keydown="onDialogKeydown" @click="onBackdropClick">
+    <dialog ref="dialog" class="eotion-product-overlay eotion-product-overlay--dialog" :class="`eotion-product-overlay--${mode}`" :aria-label="accessibleName" data-overlay-mode="masked" @cancel="onDialogCancel" @close="onDialogClose" @keydown="onDialogKeydown" @click="onBackdropClick">
       <template v-if="open && isModalSurface(mode)">
-        <button class="eotion-product-overlay__close" type="button" :aria-label="closeLabel" @click="close">×</button>
-        <slot :close="close" />
+        <header class="eotion-product-overlay__header">
+          <h2 class="eotion-product-overlay__title">{{ visibleTitle }}</h2>
+          <button class="eotion-product-overlay__close" type="button" :aria-label="closeLabel" :disabled="!dismissible" @click="close">×</button>
+        </header>
+        <div class="eotion-product-overlay__body" tabindex="-1"><slot :close="close" /></div>
+        <footer v-if="$slots.footer" class="eotion-product-overlay__footer"><slot name="footer" :close="close" /></footer>
       </template>
     </dialog>
   </Teleport>
@@ -142,13 +168,51 @@ onBeforeUnmount(() => {
 .eotion-product-overlay {
   box-sizing: border-box;
   z-index: 1000;
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
-  padding: var(--e-space-6);
+  padding: 0;
   background: var(--e-color-elevated);
   color: var(--e-color-text-primary);
   border: var(--e-border-width) solid var(--e-color-border);
   font: var(--e-type-ui-weight) var(--e-type-ui-size) / var(--e-type-ui-line) var(--e-type-family);
+}
+.eotion-product-overlay:not(dialog), .eotion-product-overlay--dialog[open] { display: flex; flex-direction: column; }
+.eotion-product-overlay__header {
+  display: flex;
+  flex: none;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-space-4);
+  padding: var(--e-space-3) var(--e-space-6);
+  border-bottom: var(--e-border-width) solid var(--e-color-border-subtle);
+}
+.eotion-product-overlay__title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--e-color-text-primary);
+  font-size: var(--e-type-heading-2-size);
+  font-weight: var(--e-type-heading-2-weight);
+  line-height: var(--e-type-heading-2-line);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eotion-product-overlay__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--e-space-6);
+}
+.eotion-product-overlay__footer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--e-space-2);
+  padding: var(--e-space-4) var(--e-space-6);
+  border-top: var(--e-border-width) solid var(--e-color-border-subtle);
 }
 .eotion-product-overlay--drawer {
   position: fixed;
@@ -181,23 +245,28 @@ onBeforeUnmount(() => {
   width: 100vw;
   max-height: min(85dvh, 760px);
   margin: 0;
-  padding-bottom: calc(var(--e-space-6) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   border-radius: var(--e-radius-dialog) var(--e-radius-dialog) 0 0;
 }
-.eotion-product-overlay--page { position: absolute; inset: 0; width: 100%; min-height: 100%; pointer-events: auto; }
+.eotion-product-overlay--page { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: auto; }
 .eotion-product-overlay__close {
-  display: block;
-  margin: 0 0 var(--e-space-4) auto;
+  flex: none;
+  min-width: 36px;
+  min-height: 36px;
+  padding: var(--e-space-1);
   border: 0;
   border-radius: var(--e-radius-control);
   background: transparent;
   color: var(--e-color-text-secondary);
   font: inherit;
   font-size: 24px;
+  line-height: 1;
   cursor: pointer;
 }
 .eotion-product-overlay__close:hover { background: var(--e-color-hover); color: var(--e-color-text-primary); }
-.eotion-product-overlay__back { margin: 0 0 var(--e-space-6); font-size: inherit; }
+.eotion-product-overlay__close:disabled { color: var(--e-color-text-muted); cursor: default; }
+.eotion-product-overlay__close:disabled:hover { background: transparent; }
+.eotion-product-overlay__back { width: auto; padding: var(--e-space-2); font-size: var(--e-type-ui-size); line-height: var(--e-type-ui-line); }
 .eotion-product-overlay__close:focus-visible, .eotion-product-overlay:focus-visible { outline: var(--e-focus-ring-width) solid var(--e-color-focus); }
 @media (max-width: 767px) {
   .eotion-product-overlay--modal { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); }
