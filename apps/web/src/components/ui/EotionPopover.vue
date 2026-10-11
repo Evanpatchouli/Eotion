@@ -221,7 +221,7 @@ function onDocumentKeydown(event: KeyboardEvent) {
 function addPositionListeners() {
   window.addEventListener('resize', updatePosition)
   window.addEventListener('scroll', updatePosition, true)
-  document.addEventListener('click', onOutsideClick)
+  document.addEventListener('click', onOutsideClick, true)
   document.addEventListener('keydown', onDocumentKeydown)
   if (typeof ResizeObserver !== 'undefined') {
     resizeObserver = new ResizeObserver(updatePosition)
@@ -233,7 +233,7 @@ function addPositionListeners() {
 function removePositionListeners() {
   window.removeEventListener('resize', updatePosition)
   window.removeEventListener('scroll', updatePosition, true)
-  document.removeEventListener('click', onOutsideClick)
+  document.removeEventListener('click', onOutsideClick, true)
   document.removeEventListener('keydown', onDocumentKeydown)
   resizeObserver?.disconnect()
   resizeObserver = undefined

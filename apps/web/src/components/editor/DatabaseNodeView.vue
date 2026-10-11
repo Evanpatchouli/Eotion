@@ -10,6 +10,9 @@ import { useDatabaseContentStore } from '../../stores/databaseContent'
 import { resolveOpeningMode, type ProductLayoutMode, type ProductOverlayMode } from '../ui/productOverlay'
 import EotionProductOverlay from '../ui/EotionProductOverlay.vue'
 import EotionButton from '../ui/EotionButton.vue'
+import EotionInput from '../ui/EotionInput.vue'
+import EotionPopover from '../ui/EotionPopover.vue'
+import EotionContextMenu from '../ui/EotionContextMenu.vue'
 import DatabaseOpeningChoices from './DatabaseOpeningChoices.vue'
 
 import {
@@ -48,10 +51,8 @@ const viewVersion = ref(1)
 const viewConfig = ref<DatabaseViewConfig>({ ...DEFAULT_DATABASE_VIEW_CONFIG })
 const views = ref<DatabaseViewResponse[]>([])
 const viewMenuOpen = ref(false)
-const viewMenuStyle = ref<Record<string, string>>({})
 const viewControlsOpen = ref<'filters' | 'sorts' | 'columns' | 'record-opening' | ''>('')
 const settingsMenuOpen = ref(false)
-const settingsMenuStyle = ref<Record<string, string>>({})
 const viewSubmitting = ref(false)
 const viewBusy = computed(() => !props.editor.isEditable || !online.value || staleReadonly.value || loading.value || loadingMore.value || savingCell.value || creating.value || viewSubmitting.value || scopedViewDeleteState.value?.status === 'pending')
 const visibleViewCount = computed(() => viewConfig.value.filters.length)
@@ -386,28 +387,32 @@ function operatorLabel(operator: DatabaseFilterOperator): string {
   return ({ is: '是', is_not: '不是', contains: '包含', does_not_contain: '不包含', is_empty: '为空', is_not_empty: '不为空', eq: '=', ne: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤', checked: '已勾选', unchecked: '未勾选', before: '早于', after: '晚于' })[operator]
 }
 function needsFilterValue(operator: DatabaseFilterOperator): boolean { return operator !== 'is_empty' && operator !== 'is_not_empty' && operator !== 'checked' && operator !== 'unchecked' }
-function openViewMenu(event: MouseEvent): void {
+function onViewTriggerClick(event: MouseEvent): void {
   if (viewBusy.value) return
-  if (viewMenuOpen.value) { viewMenuOpen.value = false; return }
   returnFocusTo.value = event.currentTarget as HTMLElement
-  viewMenuStyle.value = anchoredStyle(event.currentTarget as HTMLElement)
-  viewMenuOpen.value = true
-  viewError.value = ''
-  void refreshViewList()
+  settingsMenuOpen.value = false
 }
 async function refreshViewList(): Promise<void> {
   try { views.value = await listProductDatabaseViews(workspaceId.value, databaseId.value) }
   catch (cause) { viewError.value = errorMessage(cause, '无法加载视图列表，请重试。') }
 }
-function openSettingsMenu(event: MouseEvent): void {
-  if (settingsMenuOpen.value) { settingsMenuOpen.value = false; return }
+watch(viewMenuOpen, (open) => {
+  if (!open) return
+  settingsMenuOpen.value = false
+  viewError.value = ''
+  void refreshViewList()
+})
+function onSettingsTriggerClick(event: MouseEvent): void {
   returnFocusTo.value = event.currentTarget as HTMLElement
-  settingsMenuStyle.value = window.innerWidth < 768
-    ? { position: 'fixed', left: '8px', right: '8px', bottom: 'calc(8px + env(safe-area-inset-bottom))', width: 'auto', maxHeight: 'calc(100dvh - 16px)', overflowY: 'auto' }
-    : anchoredStyle(event.currentTarget as HTMLElement, 210)
   viewMenuOpen.value = false
-  settingsMenuOpen.value = true
 }
+const settingsMenuItems = computed(() => [
+  { label: '筛选', icon: IconName.Filter, shortcut: visibleViewCount.value ? String(visibleViewCount.value) : undefined, action: () => openSettings('filters') },
+  { label: '排序', icon: IconName.Sort, shortcut: sortViewCount.value ? String(sortViewCount.value) : undefined, action: () => openSettings('sorts') },
+  { label: '属性', icon: IconName.Text, action: () => openSettings('columns') },
+  { label: '记录打开方式', icon: IconName.Settings, action: () => openSettings('record-opening') },
+  { label: '自动化', icon: IconName.Agent, disabled: true, action: () => {} },
+])
 function openSettings(kind: 'filters' | 'sorts' | 'columns' | 'record-opening'): void {
   settingsMenuOpen.value = false
   propertyMenuId.value = ''
@@ -1089,7 +1094,7 @@ function onEscape(event: KeyboardEvent): void {
   runDeferredRefresh()
 }
 function onOutsidePointer(event: PointerEvent): void {
-  if ((event.target as HTMLElement | null)?.closest('.eotion-database, .eotion-database-popover, .eotion-product-overlay')) return
+  if ((event.target as HTMLElement | null)?.closest('.eotion-database, .eotion-database-popover, .eotion-popover-panel, .eotion-product-overlay')) return
   propertyMenuId.value = ''
   cellPopover.value = null
   closeRelationPicker()
@@ -1105,10 +1110,6 @@ function closePopoversForViewportChange(): void {
   if (propertyMenuId.value) propertyMenuStyle.value = style
   if (cellPopover.value) cellPopoverStyle.value = style
   if (relationPicker.value) cellPopoverStyle.value = anchoredStyle(anchor, 320)
-  if (viewMenuOpen.value) viewMenuStyle.value = style
-  if (settingsMenuOpen.value) settingsMenuStyle.value = window.innerWidth < 768
-    ? { position: 'fixed', left: '8px', right: '8px', bottom: 'calc(8px + env(safe-area-inset-bottom))', width: 'auto', maxHeight: 'calc(100dvh - 16px)', overflowY: 'auto' }
-    : anchoredStyle(anchor, 210)
 }
 
 onMounted(() => {
@@ -1167,27 +1168,25 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
       <span class="eotion-database-mark" data-icon-name="database" aria-hidden="true" @click.stop="selectBlock"><EotionIcon :name="IconName.Database" :size="20" /></span>
       <span class="eotion-database-copy" @click.stop="selectBlock"><strong>{{ title }}</strong></span>
       <div class="eotion-database-view-controls">
-        <button type="button" class="eotion-database-control-trigger eotion-database-view-trigger" aria-label="切换视图" :disabled="viewBusy" @click.stop="openViewMenu($event)"><span>{{ displayViewName }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button>
-        <button type="button" class="eotion-database-control-trigger eotion-database-settings-trigger" aria-label="数据库设置" aria-haspopup="menu" :aria-expanded="settingsMenuOpen" @click.stop="openSettingsMenu($event)"><EotionIcon :name="IconName.More" :size="18" /></button>
-        <Teleport to="body"><div v-if="settingsMenuOpen" class="eotion-database-popover eotion-database-teleport eotion-database-settings-menu" :style="settingsMenuStyle" role="menu" aria-label="数据库设置" @click.stop>
-          <button type="button" role="menuitem" @click.stop="openSettings('filters')">筛选 <span v-if="visibleViewCount">{{ visibleViewCount }}</span></button>
-          <button type="button" role="menuitem" @click.stop="openSettings('sorts')">排序 <span v-if="sortViewCount">{{ sortViewCount }}</span></button>
-          <button type="button" role="menuitem" @click.stop="openSettings('columns')">属性</button>
-          <button type="button" role="menuitem" @click.stop="openSettings('record-opening')">记录打开方式</button>
-          <button type="button" role="menuitem" disabled aria-disabled="true" title="未开放">自动化（未开放）</button>
-        </div></Teleport>
-        <Teleport to="body"><section v-if="viewMenuOpen" class="eotion-database-popover eotion-database-teleport eotion-database-view-menu" :style="viewMenuStyle" role="group" aria-label="数据库视图" @click.stop>
-          <strong>视图</strong>
-          <button v-for="item in views" :key="item.id" type="button" class="eotion-database-view-option" :aria-current="item.id === viewId ? 'true' : undefined" @click.stop="switchView(item.id)">{{ item.name === 'Table' ? '表格视图' : item.name }}<span v-if="item.id === viewId">当前</span></button>
-          <p v-if="!views.length && !viewError" class="eotion-database-view-hint">正在加载视图…</p>
-          <button type="button" :disabled="viewBusy || views.length >= 100" @click.stop="createView">＋ 新建视图</button>
-          <form v-if="views.find(item => item.id === viewId)" class="eotion-database-view-rename" @submit.prevent="renameView(views.find(item => item.id === viewId)!)">
-            <label :for="`database-view-name-${viewId}`">重命名当前视图</label>
-            <input :id="`database-view-name-${viewId}`" v-model="renameViewDraft" maxlength="100" :placeholder="displayViewName" aria-label="当前视图名称">
-            <button type="submit" :disabled="viewBusy || !renameViewDraft.trim()">保存名称</button>
-            <button type="button" class="danger" :disabled="viewBusy || views.length < 2" @click.stop="deleteView(views.find(item => item.id === viewId)!)">删除视图</button>
-          </form>
-        </section></Teleport>
+        <EotionPopover v-model:open="viewMenuOpen" label="数据库视图" mode="dialog" panel-width="280px">
+          <template #trigger="{ triggerProps }"><button v-bind="triggerProps" type="button" class="eotion-database-control-trigger eotion-database-view-trigger" aria-label="切换视图" :disabled="viewBusy" @click.stop="onViewTriggerClick($event)"><span>{{ displayViewName }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button></template>
+          <section class="eotion-database-view-menu" role="group" aria-label="数据库视图" @click.stop>
+            <strong>视图</strong>
+            <EotionButton v-for="item in views" :key="item.id" type="button" variant="ghost" class="eotion-database-view-option" :aria-current="item.id === viewId ? 'true' : undefined" data-popover-item @click.stop="switchView(item.id)">{{ item.name === 'Table' ? '表格视图' : item.name }}<span v-if="item.id === viewId">当前</span></EotionButton>
+            <p v-if="!views.length && !viewError" class="eotion-database-view-hint">正在加载视图…</p>
+            <EotionButton type="button" variant="ghost" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView"><EotionIcon :name="IconName.Plus" :size="16" /> 新建视图</EotionButton>
+            <form v-if="views.find(item => item.id === viewId)" class="eotion-database-view-rename" @submit.prevent="renameView(views.find(item => item.id === viewId)!)">
+              <label :for="`database-view-name-${viewId}`">重命名当前视图</label>
+              <EotionInput :id="`database-view-name-${viewId}`" v-model="renameViewDraft" maxlength="100" :placeholder="displayViewName" aria-label="当前视图名称" />
+              <EotionButton type="submit" variant="ghost" data-popover-item :disabled="viewBusy || !renameViewDraft.trim()">保存名称</EotionButton>
+              <EotionButton type="button" variant="danger" class="danger" data-popover-item :disabled="viewBusy || views.length < 2" @click.stop="deleteView(views.find(item => item.id === viewId)!)">删除视图</EotionButton>
+            </form>
+          </section>
+        </EotionPopover>
+        <EotionPopover v-model:open="settingsMenuOpen" label="数据库设置" panel-width="180px">
+          <template #trigger="{ triggerProps }"><button v-bind="triggerProps" type="button" class="eotion-database-control-trigger eotion-database-settings-trigger" aria-label="数据库设置" @click.stop="onSettingsTriggerClick($event)"><EotionIcon :name="IconName.More" :size="18" /></button></template>
+          <EotionContextMenu :items="settingsMenuItems" />
+        </EotionPopover>
         <EotionProductOverlay :open="viewControlsOpen === 'filters'" :mode="settingOverlayMode" title="筛选条件" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="筛选条件" @click.stop>
           <strong>所有筛选条件都需匹配</strong>
           <div v-for="(filter, index) in filterDrafts" :key="`${index}-${filter.propertyId}`" class="eotion-database-filter-row">
@@ -1197,20 +1196,20 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
               <select v-if="properties.find(item => item.id === filter.propertyId)?.type === 'select'" class="eotion-database-filter-value" :value="filter.value" :aria-label="`筛选值 ${index + 1}`" @change="setFilterValue(index, ($event.target as HTMLSelectElement).value)"><option v-for="option in properties.find(item => item.id === filter.propertyId)?.options ?? []" :key="option.id" :value="option.id">{{ option.name }}</option></select>
               <input v-else class="eotion-database-filter-value" :value="filter.value" :type="properties.find(item => item.id === filter.propertyId)?.type === 'number' ? 'number' : properties.find(item => item.id === filter.propertyId)?.type === 'date' ? 'date' : 'text'" :aria-label="`筛选值 ${index + 1}`" @input="setFilterValue(index, ($event.target as HTMLInputElement).value)">
             </template>
-            <button type="button" :aria-label="`删除筛选条件 ${index + 1}`" @click.stop="filterDrafts.splice(index, 1)">×</button>
+            <button type="button" :aria-label="`删除筛选条件 ${index + 1}`" @click.stop="filterDrafts.splice(index, 1)"><EotionIcon :name="IconName.X" :size="16" /></button>
           </div>
-          <button type="button" :disabled="filterDrafts.length >= 20" @click.stop="addFilter">＋ 添加筛选条件</button>
+          <button type="button" :disabled="filterDrafts.length >= 20" @click.stop="addFilter"><EotionIcon :name="IconName.Plus" :size="16" /> 添加筛选条件</button>
         </section><template #footer><EotionButton variant="primary" type="button" :disabled="viewBusy || !writable" @click.stop="saveFilters">保存筛选</EotionButton></template></EotionProductOverlay>
         <EotionProductOverlay :open="viewControlsOpen === 'sorts'" :mode="settingOverlayMode" title="排序条件" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="排序条件" @click.stop>
           <strong>排序优先级（顶部优先）</strong>
           <div v-for="(sort, index) in sortDrafts" :key="`${index}-${sort.propertyId}`" class="eotion-database-sort-row">
             <select v-model="sort.propertyId" :aria-label="`排序属性 ${index + 1}`"><option v-for="property in properties" :key="property.id" :value="property.id" :disabled="['relation', 'rollup', 'formula'].includes(property.type) || sortDrafts.some((other, otherIndex) => otherIndex !== index && other.propertyId === property.id)">{{ displayPropertyName(property) }}{{ ['relation', 'rollup', 'formula'].includes(property.type) ? '（暂不支持排序）' : '' }}</option></select>
             <select v-model="sort.direction" :aria-label="`排序方向 ${index + 1}`"><option value="asc">升序</option><option value="desc">降序</option></select>
-            <button type="button" :aria-label="`排序上移 ${index + 1}`" :disabled="index === 0" @click.stop="moveSort(index, -1)">↑</button>
-            <button type="button" :aria-label="`排序下移 ${index + 1}`" :disabled="index === sortDrafts.length - 1" @click.stop="moveSort(index, 1)">↓</button>
-            <button type="button" :aria-label="`删除排序 ${index + 1}`" @click.stop="sortDrafts.splice(index, 1)">×</button>
+            <button type="button" :aria-label="`排序上移 ${index + 1}`" :disabled="index === 0" @click.stop="moveSort(index, -1)"><EotionIcon :name="IconName.ArrowUp" :size="16" /></button>
+            <button type="button" :aria-label="`排序下移 ${index + 1}`" :disabled="index === sortDrafts.length - 1" @click.stop="moveSort(index, 1)"><EotionIcon :name="IconName.ArrowDown" :size="16" /></button>
+            <button type="button" :aria-label="`删除排序 ${index + 1}`" @click.stop="sortDrafts.splice(index, 1)"><EotionIcon :name="IconName.X" :size="16" /></button>
           </div>
-          <button type="button" :disabled="sortDrafts.length >= 10 || sortDrafts.length >= properties.filter(property => !['relation', 'rollup', 'formula'].includes(property.type)).length" @click.stop="addSort">＋ 添加排序</button>
+          <button type="button" :disabled="sortDrafts.length >= 10 || sortDrafts.length >= properties.filter(property => !['relation', 'rollup', 'formula'].includes(property.type)).length" @click.stop="addSort"><EotionIcon :name="IconName.Plus" :size="16" /> 添加排序</button>
         </section><template #footer><EotionButton variant="primary" type="button" :disabled="viewBusy || !writable" @click.stop="saveSorts">保存排序</EotionButton></template></EotionProductOverlay>
         <EotionProductOverlay :open="viewControlsOpen === 'record-opening'" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'modal'" title="记录打开方式" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="记录打开方式">
           <DatabaseOpeningChoices target="record" :config="recordOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('record', layout, mode)" />
@@ -1218,17 +1217,17 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
         <EotionProductOverlay :open="viewControlsOpen === 'columns'" :mode="settingOverlayMode" title="属性" @update:open="onSettingsOverlayChange"><section :id="`database-property-settings-${blockId}`" class="eotion-database-settings eotion-database-property-settings" role="group" aria-label="属性管理">
           <DatabaseOpeningChoices target="property" :config="propertyOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('property', layout, mode)" />
           <div v-for="(property, index) in columnDraftProperties" :key="property.id" class="eotion-database-property-row" @dragover.prevent @drop.prevent="dropProperty(property.id)">
-            <span class="eotion-database-property-grip" draggable="true" :title="`拖动属性 ${property.name}`" @dragstart="draggingPropertyId = property.id" @dragend="draggingPropertyId = ''">⋮⋮</span>
+            <span class="eotion-database-property-grip" draggable="true" :title="`拖动属性 ${property.name}`" @dragstart="draggingPropertyId = property.id" @dragend="draggingPropertyId = ''"><EotionIcon :name="IconName.DragHandle" :size="16" /></span>
             <EotionIcon :name="propertyTypeIcon(property.type)" :size="16" />
             <span class="eotion-database-property-name">{{ displayPropertyName(property) }}</span>
             <small>{{ propertyTypeLabel(property.type) }}</small>
             <label><input type="checkbox" :aria-label="displayPropertyName(property)" :checked="columnDraft.visible.includes(property.id)" :disabled="property.type === 'title'" @change="toggleColumn(property.id)">显示</label>
-            <button type="button" :aria-label="`列上移 ${displayPropertyName(property)}`" :disabled="index === 0" @click.stop="moveColumn(property.id, -1)">↑</button>
-            <button type="button" :aria-label="`列下移 ${displayPropertyName(property)}`" :disabled="index === columnDraftProperties.length - 1" @click.stop="moveColumn(property.id, 1)">↓</button>
-            <button type="button" :aria-label="`编辑属性 ${displayPropertyName(property)}`" @click.stop="openPropertyMenu(property, $event)">…</button>
+            <button type="button" :aria-label="`列上移 ${displayPropertyName(property)}`" :disabled="index === 0" @click.stop="moveColumn(property.id, -1)"><EotionIcon :name="IconName.ArrowUp" :size="16" /></button>
+            <button type="button" :aria-label="`列下移 ${displayPropertyName(property)}`" :disabled="index === columnDraftProperties.length - 1" @click.stop="moveColumn(property.id, 1)"><EotionIcon :name="IconName.ArrowDown" :size="16" /></button>
+            <button type="button" :aria-label="`编辑属性 ${displayPropertyName(property)}`" @click.stop="openPropertyMenu(property, $event)"><EotionIcon :name="IconName.More" :size="16" /></button>
           </div>
           <button type="button" :disabled="viewBusy || !writable" @click.stop="saveColumns">保存显示与顺序</button>
-          <button type="button" :disabled="!writable" @click.stop="togglePropertyCreator($event)">＋ 新增属性</button>
+          <button type="button" :disabled="!writable" @click.stop="togglePropertyCreator($event)"><EotionIcon :name="IconName.Plus" :size="16" /> 新增属性</button>
         </section></EotionProductOverlay>
       </div>
       <button class="eotion-database-add" type="button" :aria-label="creating ? '正在新建…' : '新建记录'" :disabled="creating || creationUncertain || !writable" @pointerdown.stop @mousedown.stop @click.stop="createRecord"><EotionIcon :name="IconName.Plus" :size="16" /><span class="eotion-database-add-label">{{ creating ? '正在新建…' : '新建记录' }}</span></button>
@@ -1368,13 +1367,17 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-control-trigger:hover,.eotion-database-view-option[aria-current="true"] { background:var(--surface-editor-hover); }
 .eotion-database-control-trigger:disabled { opacity:.55; cursor:default; }
 .eotion-database-count { display:inline-grid; min-width:17px; height:17px; margin-left:4px; place-items:center; border-radius:9px; background:var(--surface-editor-hover); color:var(--editor-muted); font-size:11px; }
-.eotion-database-view-menu { width:min(300px, calc(100vw - 16px)); }
-.eotion-database-view-option { display:flex!important; align-items:center; justify-content:space-between; gap:8px; }
+.eotion-database-view-menu { display:grid; gap:4px; font:inherit; }
+.eotion-database-view-menu>strong { padding:4px 8px; color:var(--e-color-text-muted); font-size:12px; font-weight:500; }
+.eotion-database-view-menu>button { justify-content:flex-start; }
+.eotion-database-view-option { display:flex!important; width:100%; align-items:center; justify-content:space-between!important; gap:8px; }
+.eotion-database-view-option[aria-current="true"] { background:var(--surface-editor-hover); }
 .eotion-database-view-option span,.eotion-database-view-hint { color:var(--editor-muted); font-size:12px; }
-.eotion-database-view-rename { display:grid!important; grid-template-columns:minmax(0,1fr) auto; gap:5px!important; border-top:1px solid var(--border-editor); padding-top:8px; }
+.eotion-database-view-rename { display:grid!important; grid-template-columns:minmax(0,1fr) auto; gap:4px!important; border-top:1px solid var(--border-editor); padding-top:8px; }
 .eotion-database-view-rename label { grid-column:1/-1; color:var(--editor-muted); font-size:12px; }
-.eotion-database-view-rename input { min-width:0; }
+.eotion-database-view-rename input { box-sizing:border-box; min-width:0; width:100%; }
 .eotion-database-view-rename .danger,.eotion-database-view-error { color:var(--danger); }
+.eotion-database-view-rename .danger { grid-column:1/-1; justify-content:flex-start; }
 .eotion-database-settings { width:min(374px, calc(100vw - 16px)); }
 .eotion-database-settings { display:grid; gap:12px; width:100%; max-width:680px; padding:6px 2px; color:var(--editor-text); }
 .eotion-database-settings>label { display:grid; gap:5px; color:var(--editor-muted); font-size:12px; }
@@ -1386,7 +1389,6 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-property-row input { width:16px; height:16px; }
 .eotion-database-property-grip { color:var(--editor-muted); opacity:.5; text-align:center; }
 .eotion-database-property-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.eotion-database-settings-menu button:disabled { color:var(--editor-muted); opacity:.55; }
 .eotion-database-filter-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px; align-items:center; gap:5px; min-width:0; }
 .eotion-database-sort-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) repeat(3,32px); align-items:center; gap:4px; min-width:0; }
 .eotion-database-column-row { display:flex; align-items:center; gap:4px; min-width:0; }
@@ -1420,8 +1422,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
   .eotion-database-view-trigger { grid-column:1; grid-row:2; justify-self:start; min-width:44px; max-width:100%; min-height:44px; overflow:hidden; }
   .eotion-database-view-trigger span { min-width:0; overflow:hidden; flex:1 1 auto; text-overflow:ellipsis; white-space:nowrap; }
   .eotion-database-view-trigger svg { flex:0 0 auto; }
-  .eotion-database-settings-trigger { grid-column:3; grid-row:2; width:44px; min-width:44px; min-height:44px; justify-content:center; padding:0; }
-  .eotion-database-add { grid-column:2; grid-row:2; width:44px; min-width:44px; min-height:44px; justify-content:center; padding:0; }
+  .eotion-database-settings-trigger { grid-column:2; grid-row:2; width:44px; min-width:44px; min-height:44px; justify-content:center; padding:0; }
+  .eotion-database-add { grid-column:3; grid-row:2; width:44px; min-width:44px; min-height:44px; justify-content:center; padding:0; }
   .eotion-database-add-label { display:none; }
   .eotion-database-properties-menu { display:contents; }
 }

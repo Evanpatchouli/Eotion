@@ -171,6 +171,8 @@ test('Popover supports keyboard navigation, focus return, outside close, viewpor
   await page.keyboard.press('Escape')
   await trigger.click()
   const input = page.getByRole('textbox', { name: '演示输入框' })
+  // Product controls may stop bubbling; outside dismissal must still receive the click.
+  await input.evaluate(element => element.addEventListener('click', event => event.stopPropagation()))
   await input.click()
   await expect(menu).toBeHidden()
   await expect(input).toBeFocused()

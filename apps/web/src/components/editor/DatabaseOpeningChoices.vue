@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import type { DeviceOpeningConfig, ProductLayoutMode, ProductOverlayMode } from '../ui/productOverlay'
 import { openingOptions } from '../ui/productOverlay'
 import EotionPopover from '../ui/EotionPopover.vue'
+import EotionIcon from '../ui/EotionIcon.vue'
+import { IconName } from '../ui/icons'
 
 defineProps<{
   target: 'record' | 'property'
@@ -31,7 +33,7 @@ const labels: Record<ProductOverlayMode, string> = {
     <div v-for="layout in layouts" :key="layout.id" class="opening-choices__row" role="group" :aria-label="`${target === 'record' ? '记录' : '属性'}${layout.label}打开方式`">
       <div class="opening-choices__label">{{ layout.label }}<small v-if="currentLayout === layout.id">当前设备</small></div>
       <EotionPopover :label="`${target === 'record' ? '记录' : '属性'}${layout.label}打开方式`" :teleport-to="teleportTo" panel-width="168px">
-        <template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="opening-choices__trigger" :aria-label="`${target === 'record' ? '记录' : '属性'}${layout.label}打开方式`">{{ labels[config[layout.id]] }}<span aria-hidden="true">⌄</span></button></template>
+        <template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="opening-choices__trigger" :aria-label="`${target === 'record' ? '记录' : '属性'}${layout.label}打开方式`">{{ labels[config[layout.id]] }}<EotionIcon :name="IconName.ChevronDown" :size="16" /></button></template>
         <template #default="{ close }">
           <button
             v-for="mode in openingOptions[layout.id]"
@@ -41,7 +43,7 @@ const labels: Record<ProductOverlayMode, string> = {
             class="opening-choices__option"
             :aria-current="config[layout.id] === mode ? 'true' : undefined"
             @click="emit('change', layout.id, mode); close()"
-          ><span>{{ labels[mode] }}</span><span v-if="config[layout.id] === mode" aria-hidden="true">✓</span></button>
+          ><span>{{ labels[mode] }}</span><EotionIcon v-if="config[layout.id] === mode" :name="IconName.Check" :size="16" /></button>
         </template>
       </EotionPopover>
     </div>

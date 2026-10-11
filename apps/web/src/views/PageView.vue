@@ -533,8 +533,7 @@ onBeforeUnmount(() => {
         </div>
       </template>
       <form v-else-if="databaseMode === 'create'" :id="`database-create-${pageId}`" class="database-command-form" @submit.prevent="onCreateDatabaseChoice">
-        <label for="database-name">数据库名称</label>
-        <input id="database-name" v-model="databaseName" aria-label="数据库名称" maxlength="200" autofocus>
+        <input id="database-name" v-model="databaseName" aria-label="数据库名称" placeholder="数据库名字" maxlength="200" autofocus>
       </form>
       <template v-else-if="databaseMode === 'databases'">
         <p v-if="databaseListLoading" role="status">正在加载数据库列表…</p>
@@ -572,10 +571,11 @@ onBeforeUnmount(() => {
 .database-command { display: grid; gap: 10px; }
 .database-command-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .database-command-option, .database-command-form input, .database-command-list button { min-height: 40px; border: 1px solid var(--e-color-border); border-radius: var(--e-radius-control); padding: 8px 11px; background: var(--e-color-surface); color: var(--e-color-text-primary); font: inherit; text-align: left; cursor: pointer; }
+.database-command-option { display: flex; min-height: 96px; align-items: center; justify-content: center; text-align: center; }
 .database-command-option:hover, .database-command-list button:hover { background: var(--surface-editor-hover); }
 .database-command-form { display: grid; gap: 8px; }
-.database-command-form label { color: var(--e-color-text-muted); font-size: 13px; }
 .database-command-form input { box-sizing: border-box; width: 100%; }
+.database-command-form input::placeholder { color: var(--e-color-text-muted); opacity: 1; }
 .database-command-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; }
 .database-command-back { justify-self: start; }
 .database-command-actions { display: flex; justify-content: flex-end; gap: 8px; margin-left: auto; }

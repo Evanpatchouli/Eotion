@@ -88,6 +88,7 @@ withDefaults(defineProps<{
 .eotion-context-menu__item:disabled {
   color: var(--e-color-text-muted);
   cursor: not-allowed;
+  opacity: .45;
 }
 
 .eotion-context-menu__item--danger { color: var(--e-color-danger); }
