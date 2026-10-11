@@ -854,7 +854,7 @@ test('database command separates back from cancel and keeps create and link choi
 })
 
 for (const width of [1440, 390]) {
-  test(`database view popover uses shared controls and closes from outside clicks at ${width}px`, async ({ page }) => {
+  test(`database view popover uses shared controls and closes from outside clicks at ${width}px`, async ({ page, browser }) => {
     await page.setViewportSize({ width, height: 844 })
     await installApi(page, [
       block('view-polish-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
@@ -872,15 +872,32 @@ for (const width of [1440, 390]) {
       await screenshot(page, `database-automation-${width}-${theme}`)
       await trigger.click()
       await expect(menu).toBeVisible()
-      await expect(menu.getByRole('textbox', { name: '当前视图名称' })).toHaveClass(/eotion-input/u)
-      for (const button of await menu.getByRole('button').all()) await expect(button).toHaveClass(/eotion-button/u)
-      const input = menu.getByRole('textbox', { name: '当前视图名称' })
-      expect(await input.evaluate(element => getComputedStyle(element).fontSize)).toBe(await menu.getByRole('button', { name: '保存名称' }).evaluate(element => getComputedStyle(element).fontSize))
-      await input.click()
-      await input.fill('Draft view')
-      await input.press('ArrowDown')
-      await expect(input).toBeFocused()
-      await expect(menu).toBeVisible()
+      const currentRow = menu.locator('.eotion-database-view-row.is-selected')
+      await expect(currentRow).toHaveCount(1)
+      const currentName = currentRow.locator('.eotion-database-view-name')
+      await expect(currentName).toHaveAttribute('role', 'button')
+      await expect(currentName).toHaveAttribute('tabindex', '0')
+      await expect(currentName).toHaveAttribute('aria-current', 'true')
+      const createButton = menu.locator('.eotion-database-view-create')
+      await expect(createButton).toHaveClass(/eotion-database-view-create/u)
+      const createColor = await createButton.evaluate(element => {
+        const marker = document.createElement('span')
+        marker.style.color = 'var(--e-color-text-muted)'
+        document.body.append(marker)
+        const result = { actual: getComputedStyle(element).color, token: getComputedStyle(marker).color }
+        marker.remove()
+        return result
+      })
+      expect(createColor.actual).toBe(createColor.token)
+      for (const button of await menu.locator('button').all()) await expect(button).toHaveClass(/eotion-button/u)
+      await currentRow.hover()
+      await currentRow.getByRole('button', { name: '编辑视图 表格视图' }).click()
+      const editor = currentRow.getByRole('textbox', { name: '视图名称 表格视图' })
+      await expect(editor).toHaveAttribute('contenteditable', 'true')
+      await expect(editor).toHaveAttribute('tabindex', '0')
+      await expect(editor).toBeFocused()
+      await editor.press('Escape')
+      await expect(currentName).toBeVisible()
       const bounds = (await menu.boundingBox())!
       expect(bounds.x).toBeGreaterThanOrEqual(0)
       expect(bounds.x + bounds.width).toBeLessThanOrEqual(width)
@@ -897,9 +914,32 @@ for (const width of [1440, 390]) {
       await expect(menu).toHaveCount(0)
       await trigger.press('ArrowDown')
       await expect(menu).toBeVisible()
-      await expect(menu.getByRole('button', { name: '表格视图 当前' })).toBeVisible()
+      await expect(menu.locator('.eotion-database-view-name[aria-current="true"]')).toHaveText('表格视图')
       await page.keyboard.press('Escape')
       await expect(trigger).toBeFocused()
+    }
+
+    const touchContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+    try {
+      const touchPage = await touchContext.newPage()
+      await installApi(touchPage, [
+        block('touch-view-selector', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+      ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id), view('touch-second-view', rootDatabase.id, '表格 2')], properties: rootProperties, records: [] })
+      await touchPage.goto('/#/app/database-workspace/page/database-page')
+      const touchTable = touchPage.locator('#database-block-touch-view-selector')
+      await touchTable.getByRole('button', { name: '切换视图' }).click()
+      const touchRow = touchPage.locator('.eotion-database-view-row')
+      const touchActions = [
+        touchRow.getByRole('button', { name: '编辑视图 表格视图' }),
+        touchRow.getByRole('button', { name: '删除视图 表格视图' }),
+      ]
+      expect(await touchPage.evaluate(() => matchMedia('(hover: none)').matches && matchMedia('(pointer: coarse)').matches)).toBe(true)
+      for (const button of touchActions) {
+        const style = await button.evaluate(element => ({ opacity: getComputedStyle(element).opacity, pointerEvents: getComputedStyle(element).pointerEvents }))
+        expect(style).toEqual({ opacity: '1', pointerEvents: 'auto' })
+      }
+    } finally {
+      await touchContext.close()
     }
   })
 }
@@ -1336,7 +1376,7 @@ test('standalone database route switches views through routing without blanking 
   const table = page.getByLabel('数据库页面').locator('.eotion-database')
   await expect(table).toContainText('Launch plan')
   await table.getByRole('button', { name: '切换视图' }).click()
-  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '第二视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '第二视图', exact: true }).click()
   await expect(page).toHaveURL(/\/database\/database-root-id\?view=standalone-second-view$/u)
   await expect(table.getByRole('button', { name: '切换视图' })).toContainText('第二视图')
   await expect(table).toContainText('Launch plan')
@@ -1373,7 +1413,7 @@ test('database views create, rename, switch, delete and persist the selected ref
 
   await table.getByRole('button', { name: '切换视图' }).click()
   const viewsMenu = page.locator('.eotion-database-view-menu')
-  await expect(viewsMenu.getByRole('button', { name: '表格视图' })).toBeVisible()
+  await expect(viewsMenu.getByRole('button', { name: '表格视图', exact: true })).toBeVisible()
   await viewsMenu.getByRole('button', { name: '新建视图' }).click()
   await expect(table.getByRole('button', { name: '切换视图' })).toContainText('表格 2')
   expect(api.views).toHaveLength(2)
@@ -1381,8 +1421,11 @@ test('database views create, rename, switch, delete and persist the selected ref
 
   await table.getByRole('button', { name: '切换视图' }).click()
   const renameMenu = page.locator('.eotion-database-view-menu')
-  await renameMenu.getByRole('textbox', { name: '当前视图名称' }).fill('Quarterly')
-  await renameMenu.getByRole('button', { name: '保存名称' }).click()
+  await renameMenu.locator('.eotion-database-view-row').nth(1).hover()
+  await renameMenu.getByRole('button', { name: '编辑视图 表格 2' }).click()
+  const renameEditor = renameMenu.getByRole('textbox', { name: '视图名称 表格 2' })
+  await renameEditor.fill('Quarterly')
+  await renameEditor.press('Enter')
   await expect(table.getByRole('button', { name: '切换视图' })).toContainText('Quarterly')
   expect(api.views.find(item => item.name === 'Quarterly')?.version).toBe(2)
 
@@ -1393,21 +1436,22 @@ test('database views create, rename, switch, delete and persist the selected ref
 
   expect(api.blocks.filter(item => item.type === 'database' && (item.props.node?.attrs as { viewId?: string } | undefined)?.viewId === 'view-root-id')).toHaveLength(2)
   await table.getByRole('button', { name: '切换视图' }).click()
-  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '删除视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '删除视图 表格视图' }).click()
   await expect.poll(() => api.requests.some(({ method, path }) => method === 'DELETE' && path.endsWith('/views/view-root-id'))).toBe(true)
   await expect.poll(() => api.views).toHaveLength(2)
   await expect(page.getByRole('alert')).toContainText('仍被其它数据库块引用')
   await expect(table.getByRole('button', { name: '切换视图' })).toContainText('Quarterly')
 
   await tables.nth(1).getByRole('button', { name: '切换视图' }).click()
-  await page.locator('.eotion-database-view-menu').getByRole('button', { name: 'Quarterly' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: 'Quarterly', exact: true }).click()
   await expect(tables.nth(1).getByRole('button', { name: '切换视图' })).toContainText('Quarterly')
   await tables.nth(1).getByRole('button', { name: '切换视图' }).click()
   await page.locator('.eotion-database-view-menu').getByRole('button', { name: /^表格视图/u }).click()
   await expect(tables.nth(1).getByRole('button', { name: '切换视图' })).toContainText('表格视图')
   await tables.nth(1).getByRole('button', { name: '切换视图' }).click()
   const deleteMenu = page.locator('.eotion-database-view-menu')
-  await deleteMenu.getByRole('button', { name: '删除视图' }).click()
+  await deleteMenu.locator('.eotion-database-view-row.is-selected').hover()
+  await deleteMenu.getByRole('button', { name: '删除视图 表格视图' }).click()
   await expect.poll(() => api.views.map(item => item.name)).toEqual(['Quarterly'])
   expect(api.requests.some(({ method, path }) => method === 'DELETE' && path.endsWith('/views/view-root-id'))).toBe(true)
 
@@ -1415,7 +1459,8 @@ test('database views create, rename, switch, delete and persist the selected ref
   await page.locator('.eotion-database-view-menu').getByRole('button', { name: '新建视图' }).click()
   await expect(table.getByRole('button', { name: '切换视图' })).toContainText('表格 2')
   await table.getByRole('button', { name: '切换视图' }).click()
-  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '删除视图' }).click()
+  await page.locator('.eotion-database-view-menu .eotion-database-view-row.is-selected').hover()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '删除视图 表格 2' }).click()
   await expect(table.getByRole('button', { name: '切换视图' })).toContainText('Quarterly')
   await expect.poll(() => api.views.map(item => item.name)).toEqual(['Quarterly'])
   await expect.poll(() => api.blocks.find(item => item.id === 'view-lifecycle')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: api.views[0]?.id })
@@ -1424,7 +1469,157 @@ test('database views create, rename, switch, delete and persist the selected ref
   await expect(page.locator('.eotion-editor-content .eotion-database').nth(0).getByRole('button', { name: '切换视图' })).toContainText('Quarterly')
   await page.locator('.eotion-editor-content .eotion-database').nth(0).getByRole('button', { name: '切换视图' }).click()
   const lastViewMenu = page.locator('.eotion-database-view-menu')
-  await expect(lastViewMenu.getByRole('button', { name: '删除视图' })).toBeDisabled()
+  await expect(lastViewMenu.getByRole('button', { name: '删除视图 Quarterly' })).toBeDisabled()
+})
+
+test('database view selector supports accessible inline rename without switching on rename or delete', async ({ page }) => {
+  const secondView = view('selector-second-view', rootDatabase.id, '表格 2')
+  const api = await installApi(page, [
+    block('view-selector', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id), secondView], properties: rootProperties, records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('#database-block-view-selector')
+  const trigger = table.getByRole('button', { name: '切换视图' })
+  await trigger.click()
+  const menu = page.locator('.eotion-database-view-menu')
+  const currentRow = menu.locator('.eotion-database-view-row.is-selected')
+  const otherRow = menu.locator('.eotion-database-view-row').nth(1)
+  const currentName = currentRow.locator('.eotion-database-view-name')
+  await expect(currentRow).toHaveCount(1)
+  await expect(currentName).toHaveJSProperty('tagName', 'SPAN')
+  await expect(currentName).toHaveAttribute('role', 'button')
+  await expect(currentName).toHaveAttribute('tabindex', '0')
+  await expect(currentName).toHaveAttribute('aria-current', 'true')
+  expect(await currentRow.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe(await otherRow.evaluate(element => getComputedStyle(element).backgroundColor))
+  await expect(menu.getByRole('textbox', { name: '当前视图名称' })).toHaveCount(0)
+  await expect(menu.getByRole('button', { name: '保存名称' })).toHaveCount(0)
+  await expect(menu.locator(':scope > button')).toHaveCount(1)
+  const editCurrent = currentRow.getByRole('button', { name: '编辑视图 表格视图' })
+  const deleteCurrent = currentRow.getByRole('button', { name: '删除视图 表格视图' })
+  for (const button of [editCurrent, deleteCurrent]) {
+    await expect(button).toHaveClass(/eotion-button/u)
+    await expect(button.locator('svg')).toHaveCount(1)
+  }
+  const create = menu.locator('.eotion-database-view-create')
+  await expect(create).toHaveClass(/eotion-button/u)
+  const createColor = await create.evaluate(element => {
+    const marker = document.createElement('span')
+    marker.style.color = 'var(--e-color-text-muted)'
+    document.body.append(marker)
+    const result = { actual: getComputedStyle(element).color, token: getComputedStyle(marker).color }
+    marker.remove()
+    return result
+  })
+  expect(createColor.actual).toBe(createColor.token)
+
+  await otherRow.locator('.eotion-database-view-name').evaluate(element => (element as HTMLElement).focus())
+  await page.mouse.move(0, 0)
+  const initialVisibility = await editCurrent.evaluate(element => ({ opacity: getComputedStyle(element).opacity, pointerEvents: getComputedStyle(element).pointerEvents }))
+  expect(initialVisibility).toEqual({ opacity: '0', pointerEvents: 'none' })
+  await currentRow.hover()
+  await expect.poll(() => editCurrent.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+  await expect.poll(() => editCurrent.evaluate(element => getComputedStyle(element).pointerEvents)).toBe('auto')
+
+  await currentName.focus()
+  await expect.poll(() => editCurrent.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+  await currentName.evaluate(element => element.setAttribute('data-rename-node-marker', 'selector-name'))
+  const rowHeightBeforeEditing = (await currentRow.boundingBox())!.height
+  await currentRow.hover()
+  await editCurrent.click()
+  const editor = currentRow.getByRole('textbox', { name: '视图名称 表格视图' })
+  await expect(editor).toHaveAttribute('contenteditable', 'true')
+  await expect(editor).toHaveAttribute('tabindex', '0')
+  await expect(editor).toHaveAttribute('data-rename-node-marker', 'selector-name')
+  expect((await currentRow.boundingBox())!.height).toBe(rowHeightBeforeEditing)
+  await expect(editor).toBeFocused()
+  await expect.poll(() => editor.evaluate(element => {
+    const selection = window.getSelection()
+    if (!selection?.isCollapsed || !selection.anchorNode) return false
+    const textBeforeCaret = document.createRange()
+    textBeforeCaret.selectNodeContents(element)
+    textBeforeCaret.setEnd(selection.anchorNode, selection.anchorOffset)
+    return textBeforeCaret.toString().length === (element.textContent ?? '').length
+  })).toBe(true)
+
+  await editor.evaluate(element => element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, isComposing: true })))
+  await expect(editor).toBeVisible()
+  expect(api.views.find(item => item.id === 'view-root-id')?.name).toBe('Table')
+  await editor.press('Escape')
+  await expect(currentName).toHaveText('表格视图')
+  await expect(currentName).toHaveAttribute('data-rename-node-marker', 'selector-name')
+  expect(api.views.find(item => item.id === 'view-root-id')?.version).toBe(1)
+
+  await currentRow.hover()
+  await currentRow.getByRole('button', { name: '编辑视图 表格视图' }).click()
+  const emptyEditor = currentRow.getByRole('textbox', { name: '视图名称 表格视图' })
+  await emptyEditor.fill('   ')
+  await emptyEditor.evaluate(element => (element as HTMLElement).blur())
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveText('表格视图')
+  expect(api.views.find(item => item.id === 'view-root-id')?.version).toBe(1)
+
+  await currentRow.hover()
+  await currentRow.getByRole('button', { name: '编辑视图 表格视图' }).click()
+  const tooLongEditor = currentRow.getByRole('textbox', { name: '视图名称 表格视图' })
+  await tooLongEditor.fill('x'.repeat(101))
+  await tooLongEditor.press('Enter')
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveText('表格视图')
+  await expect(page.getByRole('alert')).toBeVisible()
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith('/views/view-root-id'))).toHaveLength(0)
+  expect(api.views.find(item => item.id === 'view-root-id')?.name).toBe('Table')
+  expect(api.views.find(item => item.id === 'view-root-id')?.version).toBe(1)
+
+  await currentRow.hover()
+  await currentRow.getByRole('button', { name: '编辑视图 表格视图' }).click()
+  const blurEditor = currentRow.getByRole('textbox', { name: '视图名称 表格视图' })
+  await blurEditor.fill('Working title')
+  await blurEditor.evaluate(element => (element as HTMLElement).blur())
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveText('Working title')
+  expect(api.views.find(item => item.id === 'view-root-id')?.name).toBe('Working title')
+  await currentRow.hover()
+  await currentRow.getByRole('button', { name: '编辑视图 Working title' }).click()
+  await currentRow.getByRole('textbox', { name: '视图名称 Working title' }).fill('Table')
+  await currentRow.getByRole('textbox', { name: '视图名称 Working title' }).press('Enter')
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveText('表格视图')
+
+  api.failViewUpdates = 1
+  await currentRow.hover()
+  await currentRow.getByRole('button', { name: '编辑视图 表格视图' }).click()
+  const failedSaveEditor = currentRow.getByRole('textbox', { name: '视图名称 表格视图' })
+  await failedSaveEditor.fill('Retry me')
+  await failedSaveEditor.press('Enter')
+  await expect(page.getByRole('alert')).toContainText('View temporarily unavailable')
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveText('表格视图')
+  await expect(trigger).toContainText('表格视图')
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveAttribute('aria-current', 'true')
+  await currentRow.hover()
+  await currentRow.getByRole('button', { name: '编辑视图 表格视图' }).click()
+  const retryEditor = currentRow.getByRole('textbox', { name: '视图名称 表格视图' })
+  await retryEditor.fill('Retry me')
+  await retryEditor.press('Enter')
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveText('Retry me')
+  expect(api.views.find(item => item.id === 'view-root-id')?.name).toBe('Retry me')
+  await currentRow.hover()
+  await currentRow.getByRole('button', { name: '编辑视图 Retry me' }).click()
+  const restoreEditor = currentRow.getByRole('textbox', { name: '视图名称 Retry me' })
+  await restoreEditor.fill('Table')
+  await restoreEditor.press('Enter')
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveText('表格视图')
+
+  await otherRow.hover()
+  await otherRow.getByRole('button', { name: '编辑视图 表格 2' }).click()
+  const otherEditor = otherRow.getByRole('textbox', { name: '视图名称 表格 2' })
+  await otherEditor.fill('Quarterly')
+  await otherEditor.press('Enter')
+  await expect(otherRow.locator('.eotion-database-view-name')).toHaveText('Quarterly')
+  expect(api.views.find(item => item.id === 'selector-second-view')?.name).toBe('Quarterly')
+  await expect(trigger).toContainText('表格视图')
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveAttribute('aria-current', 'true')
+
+  await otherRow.hover()
+  await otherRow.getByRole('button', { name: '删除视图 Quarterly' }).click()
+  await expect(otherRow).toHaveCount(0)
+  await expect(trigger).toContainText('表格视图')
+  await expect(currentRow.locator('.eotion-database-view-name')).toHaveAttribute('aria-current', 'true')
 })
 
 test('linked views keep independent server filters, multi-sort order and column layout', async ({ page, context }) => {

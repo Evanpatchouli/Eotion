@@ -79,6 +79,76 @@ const sortDrafts = ref<DatabaseViewConfig['sorts']>([])
 const columnDraft = ref<{ visible: string[]; order: string[] }>({ visible: [], order: [] })
 const draggingPropertyId = ref('')
 const renameViewDraft = ref('')
+const editingViewId = ref('')
+let editingViewElement: HTMLElement | null = null
+const composingViewName = ref(false)
+const displayItemName = (item: DatabaseViewResponse) => item.name === 'Table' ? '表格视图' : item.name
+
+async function startViewRename(item: DatabaseViewResponse, event: MouseEvent): Promise<void> {
+  if (viewBusy.value) return
+  const row = (event.currentTarget as HTMLElement).closest('.eotion-database-view-row')
+  editingViewId.value = item.id
+  renameViewDraft.value = item.name
+  composingViewName.value = false
+  await nextTick()
+  const element = row?.querySelector<HTMLElement>('.eotion-database-view-name')
+  if (!element) return
+  editingViewElement = element
+  element.focus()
+  const range = document.createRange()
+  range.selectNodeContents(element)
+  range.collapse(false)
+  const selection = window.getSelection()
+  selection?.removeAllRanges()
+  selection?.addRange(range)
+}
+
+function finishViewRename(item: DatabaseViewResponse): void {
+  if (editingViewId.value !== item.id) return
+  const element = editingViewElement
+  renameViewDraft.value = element?.textContent?.trim() ?? ''
+  editingViewId.value = ''
+  editingViewElement = null
+  composingViewName.value = false
+  if (element) element.textContent = displayItemName(item)
+  if (renameViewDraft.value.length > 100) {
+    viewError.value = '视图名称不能超过 100 个字符，请重新编辑。'
+    return
+  }
+  if (renameViewDraft.value && renameViewDraft.value !== displayItemName(item)) void renameView(item)
+}
+
+function onViewNameKeydown(event: KeyboardEvent, item: DatabaseViewResponse): void {
+  if (editingViewId.value !== item.id) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      switchView(item.id)
+    }
+    return
+  }
+  if (event.key === 'Tab') return
+  event.stopPropagation()
+  if (event.isComposing || composingViewName.value) return
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    const element = event.currentTarget as HTMLElement
+    element.blur()
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    editingViewId.value = ''
+    renameViewDraft.value = ''
+    const element = event.currentTarget as HTMLElement
+    element.textContent = displayItemName(item)
+    editingViewElement = null
+    element.blur()
+  }
+}
+
+watch(viewMenuOpen, (open) => {
+  if (open || !editingViewId.value) return
+  const item = views.value.find(view => view.id === editingViewId.value)
+  if (item) finishViewRename(item)
+})
 const viewError = ref('')
 const visibleViewError = computed(() => viewError.value || (scopedViewDeleteState.value?.status === 'failed' && scopedViewDeleteState.value.replacementViewId === viewId.value ? scopedViewDeleteState.value.error : ''))
 const pendingCreateView = ref<DatabaseViewCreateRequest | null>(null)
@@ -514,8 +584,10 @@ async function renameView(view: DatabaseViewResponse): Promise<void> {
   try {
     const result = await updateProductDatabaseView(workspaceId.value, databaseId.value, view.id, { name, expectedDatabaseVersion: databaseVersion.value, expectedViewVersion: view.version })
     databaseVersion.value = result.database.version
-    viewVersion.value = result.view.version
-    viewName.value = result.view.name
+    if (view.id === viewId.value) {
+      viewVersion.value = result.view.version
+      viewName.value = result.view.name
+    }
     views.value = views.value.map(item => item.id === view.id ? result.view : item)
     renameViewDraft.value = ''
   } catch (cause) { await handleViewMutationError(cause, '视图名称未更新，请重试。') }
@@ -1172,15 +1244,13 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
           <template #trigger="{ triggerProps }"><button v-bind="triggerProps" type="button" class="eotion-database-control-trigger eotion-database-view-trigger" aria-label="切换视图" :disabled="viewBusy" @click.stop="onViewTriggerClick($event)"><span>{{ displayViewName }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button></template>
           <section class="eotion-database-view-menu" role="group" aria-label="数据库视图" @click.stop>
             <strong>视图</strong>
-            <EotionButton v-for="item in views" :key="item.id" type="button" variant="ghost" class="eotion-database-view-option" :aria-current="item.id === viewId ? 'true' : undefined" data-popover-item @click.stop="switchView(item.id)">{{ item.name === 'Table' ? '表格视图' : item.name }}<span v-if="item.id === viewId">当前</span></EotionButton>
+            <div v-for="item in views" :key="item.id" class="eotion-database-view-row" :class="{ 'is-selected': item.id === viewId }">
+              <span class="eotion-database-view-name" :role="editingViewId === item.id ? 'textbox' : 'button'" tabindex="0" :aria-label="editingViewId === item.id ? `视图名称 ${displayItemName(item)}` : undefined" :aria-current="item.id === viewId ? 'true' : undefined" :contenteditable="editingViewId === item.id ? 'true' : 'false'" :data-popover-item="editingViewId === item.id ? undefined : ''" @click.stop="editingViewId !== item.id && switchView(item.id)" @keydown="onViewNameKeydown($event, item)" @blur="finishViewRename(item)" @compositionstart="composingViewName = true" @compositionend="composingViewName = false">{{ displayItemName(item) }}</span>
+              <EotionButton type="button" variant="ghost" class="eotion-database-view-action" data-popover-item :aria-label="`编辑视图 ${displayItemName(item)}`" :disabled="viewBusy" @click.stop="startViewRename(item, $event)"><EotionIcon :name="IconName.Rename" :size="16" /></EotionButton>
+              <EotionButton type="button" variant="danger" class="eotion-database-view-action" data-popover-item :aria-label="`删除视图 ${displayItemName(item)}`" :disabled="viewBusy || views.length < 2" @click.stop="deleteView(item)"><EotionIcon :name="IconName.Trash" :size="16" /></EotionButton>
+            </div>
             <p v-if="!views.length && !viewError" class="eotion-database-view-hint">正在加载视图…</p>
-            <EotionButton type="button" variant="ghost" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView"><EotionIcon :name="IconName.Plus" :size="16" /> 新建视图</EotionButton>
-            <form v-if="views.find(item => item.id === viewId)" class="eotion-database-view-rename" @submit.prevent="renameView(views.find(item => item.id === viewId)!)">
-              <label :for="`database-view-name-${viewId}`">重命名当前视图</label>
-              <EotionInput :id="`database-view-name-${viewId}`" v-model="renameViewDraft" maxlength="100" :placeholder="displayViewName" aria-label="当前视图名称" />
-              <EotionButton type="submit" variant="ghost" data-popover-item :disabled="viewBusy || !renameViewDraft.trim()">保存名称</EotionButton>
-              <EotionButton type="button" variant="danger" class="danger" data-popover-item :disabled="viewBusy || views.length < 2" @click.stop="deleteView(views.find(item => item.id === viewId)!)">删除视图</EotionButton>
-            </form>
+            <EotionButton type="button" variant="ghost" class="eotion-database-view-create" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView"><EotionIcon :name="IconName.Plus" :size="16" /> 新建视图</EotionButton>
           </section>
         </EotionPopover>
         <EotionPopover v-model:open="settingsMenuOpen" label="数据库设置" panel-width="180px">
@@ -1370,14 +1440,19 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-view-menu { display:grid; gap:4px; font:inherit; }
 .eotion-database-view-menu>strong { padding:4px 8px; color:var(--e-color-text-muted); font-size:12px; font-weight:500; }
 .eotion-database-view-menu>button { justify-content:flex-start; }
-.eotion-database-view-option { display:flex!important; width:100%; align-items:center; justify-content:space-between!important; gap:8px; }
-.eotion-database-view-option[aria-current="true"] { background:var(--surface-editor-hover); }
-.eotion-database-view-option span,.eotion-database-view-hint { color:var(--editor-muted); font-size:12px; }
-.eotion-database-view-rename { display:grid!important; grid-template-columns:minmax(0,1fr) auto; gap:4px!important; border-top:1px solid var(--border-editor); padding-top:8px; }
-.eotion-database-view-rename label { grid-column:1/-1; color:var(--editor-muted); font-size:12px; }
-.eotion-database-view-rename input { box-sizing:border-box; min-width:0; width:100%; }
-.eotion-database-view-rename .danger,.eotion-database-view-error { color:var(--danger); }
-.eotion-database-view-rename .danger { grid-column:1/-1; justify-content:flex-start; }
+.eotion-database-view-row { display:flex; align-items:center; min-height:36px; border-radius:var(--e-radius-control); }
+.eotion-database-view-row.is-selected,.eotion-database-view-row:hover { background:var(--surface-editor-hover); }
+.eotion-database-view-name { flex:1; min-width:0; padding:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+.eotion-database-view-name[contenteditable="true"] { cursor:text; outline:none; text-overflow:clip; }
+.eotion-database-view-action { flex:none; width:32px; padding:6px!important; opacity:0; pointer-events:none; }
+.eotion-database-view-row:hover .eotion-database-view-action,.eotion-database-view-row:focus-within .eotion-database-view-action { opacity:1; pointer-events:auto; }
+.eotion-database-view-create { color:var(--e-color-text-muted); }
+.eotion-database-view-create:hover:not(:disabled),.eotion-database-view-create:focus-visible { color:var(--e-color-text-primary); }
+.eotion-database-view-hint { color:var(--editor-muted); font-size:12px; }
+.eotion-database-view-error { color:var(--danger); }
+@media (hover:none), (pointer:coarse) {
+  .eotion-database-view-action { opacity:1; pointer-events:auto; min-width:44px; min-height:44px; }
+}
 .eotion-database-settings { width:min(374px, calc(100vw - 16px)); }
 .eotion-database-settings { display:grid; gap:12px; width:100%; max-width:680px; padding:6px 2px; color:var(--editor-text); }
 .eotion-database-settings>label { display:grid; gap:5px; color:var(--editor-muted); font-size:12px; }
