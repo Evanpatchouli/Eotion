@@ -1,27 +1,21 @@
-# 当前任务：Database Settings UI 微调（PASS）
+# 当前任务：Property Menu 共享 Popover 收敛（NO PASS）
 
-master；基线 0bfca481151f27911238672f55faa7166d59a913。仅属性、筛选、排序与 Opening 顶部展示；不进入 Final Acceptance / P9。
+master；基线 d353e61aeda05a9943e39e0d52c3df3037b7c22b。仅属性菜单、原位重命名、全局删除确认与类型列表 UI；无 Type Mutation，无 Final Acceptance / P9。
 
 | Work Unit | 难度 / 模式 / 角色 | 状态 |
 | --- | --- | --- |
-| 定位并确定最小展示方案 | S2 decide / 主 Agent | 完成：共享 Opening Collapse，局部 Select 复用现有 Popover |
-| Opening Collapse 与文档 | S1 execute / 主 Agent | 完成：默认当前设备一行、展开三行 |
-| Select、行对齐与 eye 控制 | S1 execute / fast_worker | 完成：禁用条件与保存逻辑保持原样 |
-| 定向浏览器回归 | S1 execute / fast_worker | PASS：Database 11 条；三设备双 target、light/dark、320px 右侧抽屉、几何对齐、可见状态与保存 |
-| Web typecheck / diff check | S0 verify / 主 Agent | PASS；Overlay / Settings 9 条定向回归 PASS |
-| 独立最终复核 | Review / reviewer | 完成：窄容器问题已修，无剩余 blocker |
+| 实现边界 | S2 decide / 主 Agent | 完成 |
+| 共享菜单、原文本编辑、确认与配置入口 | S1 execute / fast_worker | 已实现，定向验收未全绿 |
+| 定向回归 | S1 execute / fast_worker | NO PASS：最后落盘结果仍有4条失败 |
+| 文档 / typecheck / diff check | S0 verify / 主 Agent | PASS |
+| 独立复核 | Review / reviewer | 已发现并修复多处定位和嵌套Escape问题；未取得最终无blocker结论 |
 
-保留 Opening preference 数据结构与持久化、Filter / Sort / Property 规则、domain、Sync、Drawer Motion。仅窄属性容器将操作换行。
+到用户25分钟硬停止边界后停止新增工作。不能宣称整体PASS。最新失败记录：property menu、inline property rename、property schema mutations、edits versioned cells。部分失败是旧选择器（标题Name/名称、Deadline按钮）与严格caret断言，仍需下一轮真实复验；不能将原因推测当通过结果。
 
-Browser plugin not available（browser runtime skill 未列出），使用项目 Playwright。桌面/手机 light/dark 与 320px 右侧抽屉截图已视检，截图保存在仓库外 visualizations/database-settings。
+验证：Web typecheck PASS；git diff --check PASS；共享Overlay右/底部Drawer Popover 2/2 PASS。属性删除modal、320px属性Drawer及advanced配置定向用例已有通过证据，其余以最终落盘失败记录为准。
 
-验证：
-- pnpm --filter @eotion/web exec playwright test tests/product-database.spec.ts --grep "opening settings show|filter and sort setting menus|database UX controls|property settings remain usable|linked views keep independent|phone filter and sort panels" --workers=1
-- pnpm --filter @eotion/web exec playwright test tests/product-database.spec.ts --grep "database settings exposes five entries|opening choices persist independently|third-row opening popover|property schema mutations" --workers=2
-- pnpm --filter @eotion/web exec playwright test tests/product-overlay.spec.ts tests/product-settings.spec.ts --grep "opening model|desktop modal|phone drawer size|Popover|popover|Settings uses a selected|390px Settings index navigates|theme and toolbar controls" --workers=2
-- pnpm --filter @eotion/web typecheck
-- git diff --check
+Browser plugin not available（browser runtime skill 未列出），使用项目Playwright。桌面菜单、320px类型列表/确认modal/右侧Drawer截图已视检，仓库外路径 C:/Users/evanpatchouli/.codex/visualizations/property-menu。
 
-仅定向验证，未跑完整 product matrix。一个聚焦 commit，workspace clean 后停止。
+剩余手写浮层：A 新增属性类型列表、Select Cell picker（后续应迁移）；B Relation复杂picker（可保留专用surface）。Property Menu本身已移除手写Teleport/定位/outside处理。
 
-Remaining issues：Database UX Final Acceptance。
+Remaining issues：本轮Property Menu失败用例复验；Property Type Mutation；Database UX Final Acceptance。

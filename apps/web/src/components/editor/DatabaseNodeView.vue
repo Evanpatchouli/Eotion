@@ -15,6 +15,7 @@ import EotionPopover from '../ui/EotionPopover.vue'
 import EotionContextMenu from '../ui/EotionContextMenu.vue'
 import DatabaseOpeningChoices from './DatabaseOpeningChoices.vue'
 import DatabaseSettingsSelect from './DatabaseSettingsSelect.vue'
+import DatabasePropertyMenu from './DatabasePropertyMenu.vue'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -212,12 +213,23 @@ const refreshError = ref('')
 const moreError = ref('')
 const online = ref(navigator.onLine)
 const staleReadonly = ref(false)
+const savingPropertyName = ref(false)
+let deleteRequestEpoch = 0
 const creationUncertain = computed(() => isProductDatabaseRecordCreationUncertain(auth.user?.id ?? '', workspaceId.value, databaseId.value))
-const writable = computed(() => online.value && !staleReadonly.value && !loading.value && !savingCell.value && !viewSubmitting.value)
-const propertyMenuId = ref('')
-const menuProperty = computed(() => properties.value.find(property => property.id === propertyMenuId.value))
-const propertyMenuStyle = ref<Record<string, string>>({})
-const propertyNameDraft = ref('')
+const writable = computed(() => online.value && !staleReadonly.value && !loading.value && !savingCell.value && !viewSubmitting.value && !savingPropertyName.value && !deletingProperty.value)
+const propertyCreatorOpen = ref(false)
+const propertyCreatorStyle = ref<Record<string, string>>({})
+const propertyCreatorTeleportTarget = ref<HTMLElement | string>('body')
+const editingPropertyId = ref('')
+const editingPropertyElement = ref<HTMLElement | null>(null)
+const editingPropertySurface = ref<'settings' | 'header' | ''>('')
+const editingPropertyBlockId = ref('')
+const composingPropertyName = ref(false)
+const deletePropertyTarget = ref<DatabasePropertyResponse | null>(null)
+const deletingProperty = ref(false)
+const optionsPropertyId = ref('')
+const optionsProperty = computed(() => properties.value.find(property => property.id === optionsPropertyId.value))
+const propertyOptionsError = ref('')
 const optionNameDraft = ref('')
 const optionEditId = ref('')
 const optionEditName = ref('')
@@ -348,7 +360,7 @@ async function refreshLoadedWindow(): Promise<void> {
   const identity = [workspaceId.value, databaseId.value, viewId.value, auth.user?.id].join('\u0000')
   staleReadonly.value = true
   cellPopover.value = null
-  propertyMenuId.value = ''
+  propertyCreatorOpen.value = false
   loading.value = false
   loadingMore.value = false
   moreError.value = ''
@@ -426,16 +438,80 @@ async function createRecord(): Promise<void> {
   } finally { creating.value = false }
 }
 
-function openPropertyMenu(property: DatabasePropertyResponse, event: MouseEvent): void {
+async function startPropertyRename(property: DatabasePropertyResponse, trigger: HTMLElement | null): Promise<void> {
   if (!writable.value) return
-  if (propertyMenuId.value === property.id) { propertyMenuId.value = ''; return }
-  propertyMenuId.value = property.id
-  returnFocusTo.value = event.currentTarget as HTMLElement
-  propertyMenuStyle.value = anchoredStyle(event.currentTarget as HTMLElement)
-  propertyNameDraft.value = displayPropertyName(property)
+  const surface = trigger?.closest('.eotion-database-property-row') ? 'settings' : trigger?.closest('th') ? 'header' : ''
+  const node = surface === 'settings'
+    ? document.getElementById(`database-property-settings-${blockId.value}`)
+    : trigger?.closest<HTMLElement>('.eotion-database')
+  const selector = surface === 'settings' ? '.eotion-database-property-row [data-property-id]' : 'th [data-property-id]'
+  const element = [...(node?.querySelectorAll<HTMLElement>(selector) ?? [])].find(item => item.dataset.propertyId === property.id)
+  if (!element || !surface || !node) return
+  editingPropertyElement.value = element
+  editingPropertySurface.value = surface
+  editingPropertyBlockId.value = blockId.value
+  editingPropertyId.value = property.id
+  composingPropertyName.value = false
+  await nextTick()
+  element.focus()
+  const range = document.createRange()
+  range.selectNodeContents(element)
+  range.collapse(false)
+  const selection = window.getSelection()
+  selection?.removeAllRanges()
+  selection?.addRange(range)
+}
+function finishPropertyRename(property: DatabasePropertyResponse): void {
+  if (editingPropertyId.value !== property.id) return
+  const element = editingPropertyElement.value
+  const entered = element?.textContent?.trim() ?? ''
+  editingPropertyId.value = ''
+  editingPropertyElement.value = null
+  editingPropertySurface.value = ''
+  editingPropertyBlockId.value = ''
+  composingPropertyName.value = false
+  const original = displayPropertyName(property)
+  if (element) element.textContent = original
+  if (entered.length > 100) { mutationError.value = '属性名称不能超过 100 个字符，请重新编辑。'; return }
+  if (!entered || entered === original) return
+  void savePropertyName(property, entered)
+}
+function onPropertyNameKeydown(event: KeyboardEvent, property: DatabasePropertyResponse): void {
+  if (editingPropertyId.value !== property.id) return
+  event.stopPropagation()
+  if (event.isComposing || composingPropertyName.value || event.keyCode === 229) return
+  if (event.key === 'Enter') { event.preventDefault(); (event.currentTarget as HTMLElement).blur() }
+  else if (event.key === 'Escape') {
+    event.preventDefault()
+    const element = event.currentTarget as HTMLElement
+    editingPropertyId.value = ''
+    editingPropertyElement.value = null
+    editingPropertySurface.value = ''
+    editingPropertyBlockId.value = ''
+    composingPropertyName.value = false
+    element.textContent = displayPropertyName(property)
+    element.blur()
+  }
+}
+function unsupportedPropertyType(): void { mutationError.value = '暂不支持更改属性类型，当前不会修改数据。' }
+function confirmDeleteProperty(property: DatabasePropertyResponse): void {
+  if (!writable.value || property.type === 'title') return
+  mutationError.value = ''
+  deletePropertyTarget.value = property
+}
+function confirmCurrentPropertyDeletion(): void {
+  const selected = deletePropertyTarget.value
+  if (!selected || !writable.value) return
+  const current = properties.value.find(property => property.id === selected.id)
+  if (!current) { deletePropertyTarget.value = null; mutationError.value = '属性已不存在，数据库结构已刷新。'; return }
+  if (current.type === 'title') { deletePropertyTarget.value = null; return }
+  void deleteProperty(current)
+}
+function openPropertyOptions(property: DatabasePropertyResponse): void {
+  optionsPropertyId.value = property.id
   optionNameDraft.value = ''
   optionEditId.value = ''
-  event.stopPropagation()
+  propertyOptionsError.value = ''
 }
 
 function anchoredStyle(anchor: HTMLElement, preferredWidth = 280): Record<string, string> {
@@ -486,7 +562,7 @@ const settingsMenuItems = computed(() => [
 ])
 function openSettings(kind: 'filters' | 'sorts' | 'columns' | 'record-opening'): void {
   settingsMenuOpen.value = false
-  propertyMenuId.value = ''
+  propertyCreatorOpen.value = false
   viewMenuOpen.value = false
   if (kind === 'filters') filterDrafts.value = viewConfig.value.filters.map(filter => ({ ...filter }))
   if (kind === 'sorts') sortDrafts.value = viewConfig.value.sorts.map(sort => ({ ...sort }))
@@ -800,7 +876,7 @@ async function fetchTargetSchema(targetId: string): Promise<DatabasePropertyResp
   return table.properties
 }
 function openAdvancedProperty(type: AdvancedType, property?: DatabasePropertyResponse): void {
-  propertyMenuId.value = ''
+  propertyCreatorOpen.value = false
   viewControlsOpen.value = ''
   propertyConfigType.value = type
   propertyConfigEditId.value = property?.id ?? ''
@@ -880,20 +956,19 @@ async function saveAdvancedProperty(): Promise<void> {
   }
 }
 
-async function savePropertyName(property: DatabasePropertyResponse): Promise<void> {
-  const name = propertyNameDraft.value.trim()
-  if (!name || name.length > 100) return
+async function savePropertyName(property: DatabasePropertyResponse, name: string): Promise<void> {
+  if (!writable.value) return
+  savingPropertyName.value = true
   mutationError.value = ''
   try {
     await updateProductDatabaseProperty(workspaceId.value, databaseId.value, property.id, {
       name, expectedDatabaseVersion: databaseVersion.value, expectedPropertyVersion: property.version,
     })
     await refreshSchemaMutation()
-    propertyMenuId.value = ''
   } catch (cause) {
     if (cause instanceof ApiError && cause.statusCode === 409) { await refreshLoadedWindow(); mutationError.value = '属性已变化，已刷新版本，请确认后重试。' }
     else mutationError.value = errorMessage(cause, '属性未更新，请重试。')
-  }
+  } finally { savingPropertyName.value = false }
 }
 
 async function addProperty(type: 'text' | 'number' | 'checkbox' | 'select' | 'date'): Promise<void> {
@@ -906,7 +981,7 @@ async function addProperty(type: 'text' | 'number' | 'checkbox' | 'select' | 'da
       ...(type === 'select' ? { options: [] } : {}),
     })
     await refreshSchemaMutation()
-    propertyMenuId.value = ''
+    propertyCreatorOpen.value = false
   } catch (cause) {
     if (cause instanceof ApiError && cause.statusCode === 409) { await refreshLoadedWindow(); mutationError.value = '数据库结构已变化，已刷新版本，请重试。' }
     else mutationError.value = errorMessage(cause, '属性未创建，请重试。')
@@ -914,24 +989,32 @@ async function addProperty(type: 'text' | 'number' | 'checkbox' | 'select' | 'da
 }
 
 async function deleteProperty(property: DatabasePropertyResponse): Promise<void> {
+  if (!writable.value || property.type === 'title') return
+  const epoch = ++deleteRequestEpoch
+  const workspace = workspaceId.value
+  const database = databaseId.value
+  const identity = [auth.user?.id ?? '', workspace, database].join('\u0000')
   mutationError.value = ''
+  deletingProperty.value = true
   try {
-    await deleteProductDatabaseProperty(workspaceId.value, databaseId.value, property.id, {
+    await deleteProductDatabaseProperty(workspace, database, property.id, {
       expectedDatabaseVersion: databaseVersion.value, expectedPropertyVersion: property.version,
     })
+    if (epoch !== deleteRequestEpoch || identity !== [auth.user?.id ?? '', workspaceId.value, databaseId.value].join('\u0000')) return
     await refreshSchemaMutation()
-    propertyMenuId.value = ''
+    deletePropertyTarget.value = null
   } catch (cause) {
+    if (epoch !== deleteRequestEpoch || identity !== [auth.user?.id ?? '', workspaceId.value, databaseId.value].join('\u0000')) return
     if (cause instanceof ApiError && cause.statusCode === 409 && /version|stale|concurrent/iu.test(cause.message)) { await refreshLoadedWindow(); mutationError.value = '属性已变化，已刷新版本，请确认后重试。' }
     else if (cause instanceof ApiError && cause.statusCode === 409) mutationError.value = `${errorMessage(cause, '属性仍被引用。')} 请先修改依赖属性，再重试。`
     else if (cause instanceof ApiError && cause.statusCode === 400 && /dependenc/iu.test(cause.message)) mutationError.value = '该属性仍被公式或汇总引用。请先修改依赖属性，再删除。'
     else mutationError.value = errorMessage(cause, '属性未删除，请重试。')
-  }
+  } finally { if (epoch === deleteRequestEpoch) deletingProperty.value = false }
 }
 
 async function addSelectOption(property: DatabasePropertyResponse): Promise<void> {
   const name = optionNameDraft.value.trim()
-  if (!name || name.length > 100) return
+  if (!name || name.length > 100) { propertyOptionsError.value = name.length > 100 ? '选项名称不能超过 100 个字符。' : ''; return }
   const options = [...(property.options ?? []), { id: createLocalId(), name }]
   try {
     await updateProductDatabaseProperty(workspaceId.value, databaseId.value, property.id, {
@@ -939,9 +1022,10 @@ async function addSelectOption(property: DatabasePropertyResponse): Promise<void
     })
     await refreshSchemaMutation()
     optionNameDraft.value = ''
+    propertyOptionsError.value = ''
   } catch (cause) {
-    if (cause instanceof ApiError && cause.statusCode === 409) { await refreshLoadedWindow(); mutationError.value = '属性已变化，已刷新版本，请确认后重试。' }
-    else mutationError.value = errorMessage(cause, '选项未创建，请重试。')
+    if (cause instanceof ApiError && cause.statusCode === 409) { await refreshLoadedWindow(); propertyOptionsError.value = '属性已变化，已刷新版本，请确认后重试。' }
+    else propertyOptionsError.value = errorMessage(cause, '选项未创建，请重试。')
   }
 }
 
@@ -952,9 +1036,10 @@ async function saveSelectOptions(property: DatabasePropertyResponse, options: Ar
     })
     await refreshSchemaMutation()
     optionEditId.value = ''
+    propertyOptionsError.value = ''
   } catch (cause) {
-    if (cause instanceof ApiError && cause.statusCode === 409) { await refreshLoadedWindow(); mutationError.value = '属性已变化，已刷新版本，请确认后重试。' }
-    else mutationError.value = errorMessage(cause, '选项未更新，请重试。')
+    if (cause instanceof ApiError && cause.statusCode === 409) { await refreshLoadedWindow(); propertyOptionsError.value = '属性已变化，已刷新版本，请确认后重试。' }
+    else propertyOptionsError.value = errorMessage(cause, '选项未更新，请重试。')
   }
 }
 
@@ -1142,24 +1227,27 @@ function toggleCellPopover(record: TableRecord, property: DatabasePropertyRespon
 function togglePropertyCreator(event: MouseEvent): void {
   if (!writable.value) return
   closeRelationPicker()
-  if (propertyMenuId.value === '__add') { propertyMenuId.value = ''; return }
+  if (propertyCreatorOpen.value) { propertyCreatorOpen.value = false; return }
   returnFocusTo.value = event.currentTarget as HTMLElement
-  propertyMenuStyle.value = anchoredStyle(event.currentTarget as HTMLElement)
-  propertyMenuId.value = '__add'
+  propertyCreatorTeleportTarget.value = (event.currentTarget as HTMLElement).closest<HTMLElement>('.eotion-product-overlay') ?? 'body'
+  propertyCreatorStyle.value = anchoredStyle(event.currentTarget as HTMLElement)
+  propertyCreatorOpen.value = true
 }
 function onRecordCreated(event: Event): void { onDatabaseChanged(event) }
 function onOnlineChange(): void {
   online.value = navigator.onLine
-  if (!online.value) { propertyMenuId.value = ''; cellPopover.value = null; closeRelationPicker(); viewMenuOpen.value = false; settingsMenuOpen.value = false; viewControlsOpen.value = '' }
+  if (!online.value) { propertyCreatorOpen.value = false; cellPopover.value = null; closeRelationPicker(); viewMenuOpen.value = false; settingsMenuOpen.value = false; viewControlsOpen.value = '' }
   else void loadTable()
 }
 function onEscape(event: KeyboardEvent): void {
   if (event.key !== 'Escape') return
+  if (deletePropertyTarget.value || optionsPropertyId.value) return
+  if ((event.target as HTMLElement | null)?.closest('.eotion-product-overlay')) return
   if (cellEdit.value) cancelCellEdit()
-  const hadPopover = Boolean(cellPopover.value || relationPicker.value || propertyMenuId.value || viewMenuOpen.value || settingsMenuOpen.value || viewControlsOpen.value)
+  const hadPopover = Boolean(cellPopover.value || relationPicker.value || propertyCreatorOpen.value || viewMenuOpen.value || settingsMenuOpen.value || viewControlsOpen.value)
   if (cellPopover.value) cellPopover.value = null
   closeRelationPicker()
-  if (propertyMenuId.value) propertyMenuId.value = ''
+  propertyCreatorOpen.value = false
   viewMenuOpen.value = false
   settingsMenuOpen.value = false
   viewControlsOpen.value = ''
@@ -1168,7 +1256,7 @@ function onEscape(event: KeyboardEvent): void {
 }
 function onOutsidePointer(event: PointerEvent): void {
   if ((event.target as HTMLElement | null)?.closest('.eotion-database, .eotion-database-popover, .eotion-popover-panel, .eotion-product-overlay')) return
-  propertyMenuId.value = ''
+  propertyCreatorOpen.value = false
   cellPopover.value = null
   closeRelationPicker()
   viewMenuOpen.value = false
@@ -1178,9 +1266,9 @@ function onOutsidePointer(event: PointerEvent): void {
 }
 function closePopoversForViewportChange(): void {
   const anchor = returnFocusTo.value
-  if (!anchor?.isConnected) { propertyMenuId.value = ''; cellPopover.value = null; return }
+  if (!anchor?.isConnected) { propertyCreatorOpen.value = false; cellPopover.value = null; return }
   const style = anchoredStyle(anchor)
-  if (propertyMenuId.value) propertyMenuStyle.value = style
+  if (propertyCreatorOpen.value) propertyCreatorStyle.value = style
   if (cellPopover.value) cellPopoverStyle.value = style
   if (relationPicker.value) cellPopoverStyle.value = anchoredStyle(anchor, 320)
 }
@@ -1212,6 +1300,15 @@ onBeforeUnmount(() => {
 })
 watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous) => {
   requestEpoch += 1
+  deleteRequestEpoch += 1
+  deletingProperty.value = false
+  deletePropertyTarget.value = null
+  optionsPropertyId.value = ''
+  editingPropertyId.value = ''
+  editingPropertyElement.value = null
+  editingPropertySurface.value = ''
+  editingPropertyBlockId.value = ''
+  composingPropertyName.value = false
   cellEdit.value = null
   cellPopover.value = null
   closeRelationPicker()
@@ -1219,7 +1316,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
   relationTitles.value = new Map<string, RelationOption>()
   relationRequestEpoch += 1
   relationTitleEpoch += 1
-  propertyMenuId.value = ''
+  propertyCreatorOpen.value = false
   viewMenuOpen.value = false
   settingsMenuOpen.value = false
   viewControlsOpen.value = ''
@@ -1286,16 +1383,19 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
           <DatabaseOpeningChoices target="record" :config="recordOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('record', layout, mode)" />
         </section></EotionProductOverlay>
         <EotionProductOverlay :open="viewControlsOpen === 'columns'" :mode="settingOverlayMode" title="属性" @update:open="onSettingsOverlayChange"><section :id="`database-property-settings-${blockId}`" class="eotion-database-settings eotion-database-property-settings" role="group" aria-label="属性管理">
+          <p v-if="mutationError" role="alert">{{ mutationError }}</p>
           <DatabaseOpeningChoices target="property" :config="propertyOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('property', layout, mode)" />
           <div v-for="(property, index) in columnDraftProperties" :key="property.id" class="eotion-database-property-row" @dragover.prevent @drop.prevent="dropProperty(property.id)">
             <span class="eotion-database-property-grip settings-icon-button" draggable="true" :title="`拖动属性 ${property.name}`" @dragstart="draggingPropertyId = property.id" @dragend="draggingPropertyId = ''"><EotionIcon :name="IconName.DragHandle" :size="16" /></span>
             <EotionIcon :name="propertyTypeIcon(property.type)" :size="16" />
-            <span class="eotion-database-property-name">{{ displayPropertyName(property) }}</span>
-            <small>{{ propertyTypeLabel(property.type) }}</small>
+            <span class="eotion-database-property-name" :class="{ 'is-editing': editingPropertyId === property.id && editingPropertySurface === 'settings' && editingPropertyBlockId === blockId }" :role="editingPropertyId === property.id && editingPropertySurface === 'settings' && editingPropertyBlockId === blockId ? 'textbox' : undefined" :aria-label="editingPropertyId === property.id && editingPropertySurface === 'settings' && editingPropertyBlockId === blockId ? `属性名称 ${property.name}` : undefined" :contenteditable="editingPropertyId === property.id && editingPropertySurface === 'settings' && editingPropertyBlockId === blockId ? 'true' : 'false'" :data-property-id="property.id" @keydown="onPropertyNameKeydown($event, property)" @blur="finishPropertyRename(property)" @compositionstart="composingPropertyName = true" @compositionend="composingPropertyName = false">{{ displayPropertyName(property) }}</span>
+            <button v-if="property.type === 'select'" class="database-property-config-label" type="button" :disabled="!writable" :aria-label="`管理选项 ${property.name}`" @click.stop="openPropertyOptions(property)">{{ propertyTypeLabel(property.type) }}</button>
+            <button v-else-if="['relation', 'rollup', 'formula'].includes(property.type)" class="database-property-config-label" type="button" :disabled="!writable" :aria-label="`编辑${propertyTypeLabel(property.type)}设置 ${property.name}`" @click.stop="openAdvancedProperty(property.type as AdvancedType, property)">{{ propertyTypeLabel(property.type) }}</button>
+            <small v-else>{{ propertyTypeLabel(property.type) }}</small>
             <button class="settings-icon-button" type="button" :aria-label="`${columnDraft.visible.includes(property.id) ? '隐藏' : '显示'}属性 ${displayPropertyName(property)}`" :aria-pressed="columnDraft.visible.includes(property.id)" :disabled="property.type === 'title'" :title="property.type === 'title' ? '标题属性始终显示' : undefined" @click.stop="toggleColumn(property.id)"><EotionIcon :name="columnDraft.visible.includes(property.id) ? IconName.Eye : IconName.EyeOff" :size="16" /></button>
             <button class="settings-icon-button" type="button" :aria-label="`列上移 ${displayPropertyName(property)}`" :disabled="index === 0" @click.stop="moveColumn(property.id, -1)"><EotionIcon :name="IconName.ArrowUp" :size="16" /></button>
             <button class="settings-icon-button" type="button" :aria-label="`列下移 ${displayPropertyName(property)}`" :disabled="index === columnDraftProperties.length - 1" @click.stop="moveColumn(property.id, 1)"><EotionIcon :name="IconName.ArrowDown" :size="16" /></button>
-            <button class="settings-icon-button" type="button" :aria-label="`编辑属性 ${displayPropertyName(property)}`" @click.stop="openPropertyMenu(property, $event)"><EotionIcon :name="IconName.More" :size="16" /></button>
+            <DatabasePropertyMenu :property="property" :disabled="!writable" @rename="startPropertyRename(property, $event)" @change-type="unsupportedPropertyType" @delete="confirmDeleteProperty(property)"><template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="settings-icon-button database-property-settings-trigger" type="button" :aria-label="`属性设置 ${displayPropertyName(property)}`" @click.stop><EotionIcon :name="IconName.More" :size="16" /></button></template></DatabasePropertyMenu>
           </div>
           <button type="button" :disabled="viewBusy || !writable" @click.stop="saveColumns">保存显示与顺序</button>
           <EotionButton class="settings-action" type="button" variant="secondary" :disabled="!writable" @click.stop="togglePropertyCreator($event)"><EotionIcon :name="IconName.Plus" :size="16" /> 新增属性</EotionButton>
@@ -1303,7 +1403,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
       </div>
       <button class="eotion-database-add" type="button" :aria-label="creating ? '正在新建…' : '新建记录'" :disabled="creating || creationUncertain || !writable" @pointerdown.stop @mousedown.stop @click.stop="createRecord"><EotionIcon :name="IconName.Plus" :size="16" /><span class="eotion-database-add-label">{{ creating ? '正在新建…' : '新建记录' }}</span></button>
       <div class="eotion-database-properties-menu">
-        <Teleport defer :to="viewControlsOpen === 'columns' ? `#database-property-settings-${blockId}` : 'body'"><div v-if="propertyMenuId === '__add'" class="eotion-database-popover eotion-database-teleport" :style="propertyMenuStyle" role="group" aria-label="添加属性类型">
+        <Teleport defer :to="propertyCreatorTeleportTarget"><div v-if="propertyCreatorOpen" class="eotion-database-popover eotion-database-teleport" :style="propertyCreatorStyle" role="group" aria-label="添加属性类型">
           <button v-for="item in addableProperties" :key="item.type" type="button" @click.stop="['relation', 'rollup', 'formula'].includes(item.type) ? openAdvancedProperty(item.type as AdvancedType) : addProperty(item.type as 'text' | 'number' | 'checkbox' | 'select' | 'date')">{{ item.label }}</button>
         </div></Teleport>
       </div>
@@ -1334,21 +1434,24 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
       <p v-if="propertyConfigError" role="alert">{{ propertyConfigError }}</p>
       <button type="button" :disabled="!writable || targetLoading" @click="saveAdvancedProperty">保存属性</button>
     </section></EotionProductOverlay>
-    <Teleport defer :to="viewControlsOpen === 'columns' ? `#database-property-settings-${blockId}` : 'body'"><div v-if="menuProperty" class="eotion-database-popover eotion-database-teleport eotion-database-property-menu" :style="propertyMenuStyle" @click.stop>
-      <form @submit.prevent="savePropertyName(menuProperty)"><input v-model="propertyNameDraft" maxlength="100" aria-label="属性名称"><button type="submit">重命名</button></form>
-      <template v-if="menuProperty.type === 'select'">
-        <div v-for="option in menuProperty.options ?? []" :key="option.id" class="eotion-database-option-edit">
+    <EotionProductOverlay :open="Boolean(deletePropertyTarget)" mode="modal" :dismissible="!deletingProperty" :title="`删除属性“${deletePropertyTarget?.name ?? ''}”`" @update:open="value => { if (!value && !deletingProperty) { deletePropertyTarget = null; mutationError = '' } }">
+          <p>属性及其中的数据将被删除。此操作无法撤销。</p>
+      <p v-if="mutationError" role="alert">{{ mutationError }}</p>
+      <template #footer><EotionButton variant="secondary" type="button" :disabled="deletingProperty" @click="deletePropertyTarget = null; mutationError = ''">取消</EotionButton><EotionButton variant="danger" type="button" :disabled="deletingProperty || !online || !deletePropertyTarget" @click="confirmCurrentPropertyDeletion">{{ deletingProperty ? '正在删除…' : '删除属性' }}</EotionButton></template>
+    </EotionProductOverlay>
+    <EotionProductOverlay :open="Boolean(optionsProperty)" mode="modal" :title="`选择选项：${optionsProperty?.name ?? ''}`" @update:open="value => { if (!value) optionsPropertyId = '' }">
+      <section v-if="optionsProperty" class="eotion-database-option-settings" role="group" :aria-label="`选择选项：${optionsProperty.name}`">
+        <div v-for="option in optionsProperty.options ?? []" :key="option.id" class="eotion-database-option-edit">
           <input v-if="optionEditId === option.id" v-model="optionEditName" :aria-label="`重命名选项 ${option.name}`" maxlength="100">
           <span v-else>{{ option.name }}</span>
           <button v-if="optionEditId !== option.id" type="button" @click="optionEditId = option.id; optionEditName = option.name">重命名</button>
-          <button v-if="optionEditId === option.id" type="button" @click="saveSelectOptions(menuProperty, (menuProperty.options ?? []).map(item => item.id === option.id ? { ...item, name: optionEditName.trim() || item.name } : item))">保存</button>
-          <button type="button" @click="saveSelectOptions(menuProperty, (menuProperty.options ?? []).filter(item => item.id !== option.id))">删除</button>
+          <button v-if="optionEditId === option.id" type="button" @click="saveSelectOptions(optionsProperty, (optionsProperty.options ?? []).map(item => item.id === option.id ? { ...item, name: optionEditName.trim() || item.name } : item))">保存</button>
+          <button type="button" @click="saveSelectOptions(optionsProperty, (optionsProperty.options ?? []).filter(item => item.id !== option.id))">删除</button>
         </div>
-        <form @submit.prevent="addSelectOption(menuProperty)"><input v-model="optionNameDraft" aria-label="新选项名称" maxlength="100" placeholder="新选项"><button type="submit">添加</button></form>
-      </template>
-      <button v-if="['relation', 'rollup', 'formula'].includes(menuProperty.type)" type="button" @click="openAdvancedProperty(menuProperty.type as AdvancedType, menuProperty)">编辑{{ propertyTypeLabel(menuProperty.type) }}设置</button>
-      <button v-if="menuProperty.type !== 'title'" type="button" class="danger" @click="deleteProperty(menuProperty)">删除属性</button>
-    </div></Teleport>
+        <form @submit.prevent="addSelectOption(optionsProperty)"><input v-model="optionNameDraft" aria-label="新选项名称" maxlength="100" placeholder="新选项"><button type="submit">添加</button></form>
+        <p v-if="propertyOptionsError" role="alert">{{ propertyOptionsError }}</p>
+      </section>
+    </EotionProductOverlay>
     <p v-if="visibleViewError" class="eotion-database-error" role="alert">{{ visibleViewError }}</p>
     <p v-if="!online && !loading && !loadError" class="eotion-database-offline" role="status">离线 · 数据库只读，已加载内容仍可查看</p>
     <p v-if="refreshError" class="eotion-database-error" role="alert"><span>{{ refreshError }}</span><button type="button" @click.stop="void refreshLoadedWindow()">重试刷新</button></p>
@@ -1360,7 +1463,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
         <table class="eotion-database-table">
           <thead><tr>
             <th v-for="property in displayProperties" :key="property.id" scope="col">
-              <button class="eotion-database-property-trigger" type="button" :disabled="!writable" @click.stop="openPropertyMenu(property, $event)"><span>{{ displayPropertyName(property) }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button>
+              <div class="eotion-database-header-property"><span class="eotion-database-header-name" :class="{ 'is-editing': editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId }" :role="editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId ? 'textbox' : undefined" :aria-label="editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId ? `属性名称 ${property.name}` : undefined" :contenteditable="editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId ? 'true' : 'false'" :data-property-id="property.id" @keydown="onPropertyNameKeydown($event, property)" @blur="finishPropertyRename(property)" @compositionstart="composingPropertyName = true" @compositionend="composingPropertyName = false">{{ displayPropertyName(property) }}</span><DatabasePropertyMenu :property="property" :disabled="!writable" @rename="startPropertyRename(property, $event)" @change-type="unsupportedPropertyType" @delete="confirmDeleteProperty(property)"><template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="eotion-database-property-trigger" type="button" :aria-label="`属性设置 ${displayPropertyName(property)}`" @click.stop><EotionIcon :name="IconName.ChevronDown" :size="16" /></button></template></DatabasePropertyMenu></div>
             </th>
           </tr></thead>
           <tbody>
@@ -1466,6 +1569,12 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-property-row input { width:16px; height:16px; }
 .eotion-database-property-grip { color:var(--editor-muted); opacity:.5; text-align:center; }
 .eotion-database-property-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.eotion-database-property-name.is-editing,.eotion-database-header-name.is-editing { outline:1px solid var(--e-color-focus); outline-offset:2px; }
+.database-property-config-label { min-height:26px; border:0; border-radius:4px; padding:3px 6px; background:transparent; color:var(--editor-muted); font:inherit; font-size:11px; cursor:pointer; }
+.database-property-config-label:hover:not(:disabled) { background:var(--surface-editor-hover); color:var(--editor-text); }
+.database-property-config-label:disabled { opacity:.55; cursor:not-allowed; }
+.eotion-database-header-property { display:inline-flex; max-width:100%; align-items:center; gap:3px; }
+.eotion-database-header-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .settings-icon-button { box-sizing:border-box; display:inline-flex; width:36px; min-width:36px; height:36px; min-height:36px; align-items:center; justify-content:center; flex:0 0 36px; padding:0; border:0; border-radius:4px; background:transparent; color:inherit; font:inherit; line-height:1; cursor:pointer; }
 .settings-icon-button:hover:not(:disabled) { background:var(--surface-editor-hover); }
 .settings-icon-button:focus-visible { outline:var(--e-focus-ring-width) solid var(--e-color-focus); outline-offset:1px; }
@@ -1513,14 +1622,15 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 }
 @media (hover:none) { .eotion-database-title-detail { flex-basis:44px; width:44px; min-width:44px; min-height:44px; opacity:1; } }
 @media (max-width:767px) { .eotion-database-new { order:4; }.eotion-database-table th,.eotion-database-table td { width:160px; min-width:160px; }.eotion-database-cell-button,.eotion-database-property-trigger,.eotion-database-popover button { min-height:44px; }.eotion-database-cell-input { min-height:44px; }.eotion-database-filter-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-sort-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-filter-row select,.eotion-database-filter-row input,.eotion-database-sort-row select { min-height:44px; }.eotion-database-filter-row>button,.eotion-database-sort-row button,.eotion-database-column-row button { min-width:44px; min-height:44px; }.eotion-database-column-row label { min-height:44px; }.eotion-database-sort-row button:nth-of-type(1) { grid-column:1; grid-row:2; }.eotion-database-sort-row button:nth-of-type(2) { grid-column:2; grid-row:2; }.eotion-database-sort-row button:nth-of-type(3) { grid-column:3; grid-row:2; } }
-@media (max-width:767px) { .eotion-database-property-row { grid-template-columns:24px 16px minmax(0,1fr) repeat(4,44px); gap:3px; }.eotion-database-property-row small { display:none; }.settings-icon-button { width:44px; min-width:44px; height:44px; min-height:44px; flex-basis:44px; }.eotion-database-property-grip { width:24px; min-width:24px; flex-basis:24px; justify-self:center; }.settings-action { height:36px; min-height:36px; } }
+@media (max-width:767px) { .eotion-database-property-row { grid-template-columns:24px 16px minmax(0,1fr) max-content repeat(4,44px); gap:3px; }.eotion-database-property-row small { display:none; }.settings-icon-button { width:44px; min-width:44px; height:44px; min-height:44px; flex-basis:44px; }.eotion-database-property-grip { width:24px; min-width:24px; flex-basis:24px; justify-self:center; }.settings-action { height:36px; min-height:36px; } }
 @container database-property-settings (max-width:280px) {
-  .eotion-database-property-row { grid-template-columns:24px repeat(4,minmax(44px,1fr)); }
-  .eotion-database-property-row > .eotion-database-property-name { grid-column:3/5; grid-row:1; }
-  .eotion-database-property-row > button[aria-label^="隐藏属性"],.eotion-database-property-row > button[aria-label^="显示属性"] { grid-column:5; grid-row:1; }
-  .eotion-database-property-row > button[aria-label^="列上移"] { grid-column:2; grid-row:2; justify-self:end; }
-  .eotion-database-property-row > button[aria-label^="列下移"] { grid-column:3; grid-row:2; justify-self:end; }
-  .eotion-database-property-row > button[aria-label^="编辑属性"] { grid-column:4; grid-row:2; justify-self:end; }
+  .eotion-database-property-row { grid-template-columns:24px 16px minmax(0,1fr) repeat(3,44px); gap:3px; }
+  .eotion-database-property-row > .eotion-database-property-name { grid-column:3/6; grid-row:1; }
+  .eotion-database-property-row > button[aria-label^="隐藏属性"],.eotion-database-property-row > button[aria-label^="显示属性"] { grid-column:6; grid-row:1; }
+  .eotion-database-property-row > button[aria-label^="列上移"] { grid-column:4; grid-row:3; }
+  .eotion-database-property-row > button[aria-label^="列下移"] { grid-column:5; grid-row:3; }
+  .eotion-database-property-row > .database-property-config-label { grid-column:3/7; grid-row:2; justify-self:stretch; }
+  .eotion-database-property-row .database-property-settings-trigger { grid-column:6; grid-row:3; }
 }
 
 </style>

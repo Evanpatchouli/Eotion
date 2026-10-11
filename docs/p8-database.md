@@ -35,6 +35,12 @@ Drawer Motion 最终复验（2026-10-11，基线 `65e7b5e`）：**PASS**。Overl
 
 属性设置继续把 visibleProperties/propertyOrder 写入当前 View config，不提升为 Database 全局 schema 状态；schema CRUD 仍使用既有 Property service/CAS。完整面板支持新增、删除、重命名、拖放/按钮排序、显示/隐藏、Select options，以及 Relation、Rollup、Formula 原配置编辑。高级属性配置复用同一 Property opening mode，不创建第二套临时面板。
 
+Property Menu 使用共享 `EotionPopover` 与 `EotionContextMenu`，标准菜单仅包含带图标的重命名、变更类型、删除（danger）；title 的变更类型与删除禁用。菜单和类型列表的外部点击、Escape、焦点返回、定位与浮层互斥由共享底座负责。所有 menu / select / lightweight popover 优先使用此底座，禁止为 Property Menu 单独维护 Teleport、fixed 定位或外部点击监听。
+
+重命名关闭菜单后聚焦 Property Settings 行或 Table Header 的原名称文本，将其切换为 contenteditable，caret 位于末尾；blur / Enter 保存 trim 后的名称，Escape 恢复原名，IME Enter 不提交。空值恢复原名，超过 100 字符明确报错，写入失败恢复原显示并提示错误；仍调用既有 Property update/CAS，Property ID 不变。删除先关闭菜单，再打开 viewport backdrop 的全局 `EotionProductOverlay mode="modal"`；取消、Escape、backdrop 不删除，确认后调用既有删除 API，失败保留明确提示与依赖/409 语义。
+
+类型入口切换为同一 Popover 中的文本、数字、复选框、选择、日期、关联、汇总、公式列表，当前类型标记选中；选择后关闭，不伪造已保存结果，不改变 Property ID 或 Cell 数据。**Property Type mutation requires separate domain task.** Database UX Final Acceptance 仍为后续独立任务，本轮不进入 P9。
+
 Record 创建仍由服务端同一事务原子创建 Record + Page；“新建记录”点击后直接以系统标题“无标题”创建，不再先显示 Database Header inline title 表单。创建成功后先准备本地 Record Page，再与首列独立详情按钮共用既有 Record opening pipeline，按 Record opening preference 打开详情，并复用正式 `PageView` 立即进入标题和正文可编辑状态。首列标题主体直接编辑 `Page.title`，不写入 `Record.properties`；标题变更先 flush 当前 Page editor，再经过既有 sync 状态检查和 Page / Record / Database CAS。其他可写基础属性直接启动当前 cell editor，Date、Select、Relation 继续使用现有编辑器或 picker，Checkbox 点击或 Space 直接 toggle，Formula / Rollup 为只读。详情按钮只在首列出现；Desktop mouse 默认弱化，hover 或 focus 时显示，Tablet / Phone 与无 hover 输入常驻显示且至少 44px，不覆盖标题编辑区域。编辑器 Enter 提交，Escape 取消并返回 Cell 主体，Tab / Shift+Tab 通过失焦提交并离开当前 Cell；详情按钮不参与编辑中的标题 Tab 顺序。Page mode 使用正常 Page route；overlay mode 只改变呈现容器，不复制 Record body 或编辑器。多 Page editor session 按 workspace/page 独立注册和 flush，关闭 overlay 或路由前只提交对应 Record editor。
 
 Page 新增只读 `role: 'database-record'` 投影。该字段由 Record 创建事务写入；已有 P8 Record 不需要 migration，服务端在 snapshot/navigation 读取时按 DatabaseRecord.pageId 投影 legacy role。完整 snapshot 与按 ID Page 读取仍包含 Record Page，保证正常 Page route、Record body 和旧数据可访问；普通 Sidebar navigation 在 repository/local adapter 的分页前查询中排除该 role，因此 10,000 Records 不会扩大 Page Tree 返回结果。

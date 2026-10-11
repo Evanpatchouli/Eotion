@@ -347,3 +347,13 @@ Android SDK API36、MuMu、HarmonyOS6.1 nova14都实际显示production登录页
 ## 2026-10-04 Harmony false-offline 已修复
 
 nova14用户成功登录后显示离线，而MuMu正常。Harmony manifest缺ohos.permission.GET_NETWORK_INFO，设备已装HAP也只有INTERNET；官方ArkWeb FAQ确认缺网络状态权限可使navigator.onLine一直false。Web productSync在该值为false时于请求前退出，但auth.login仍可联网成功。只补GET_NETWORK_INFO后，HAP构建/签名/归档验证通过，覆盖安装保留Session，nova14同一页面由“离线 · 本地已保存”变为“已同步”，有前后UI layout/截图证据。runtime及Web同步逻辑均未变；version检查通过。正式说明见mobile-native-hosts runbook，证据位于忽略runtime-verification目录。完整Mobile/P5验收仍未整体关闭。
+
+## Property Menu 共享 Popover（2026-10-12，NO PASS）
+
+基线 d353e61；实现共享三项属性菜单、八类类型列表（不提交type mutation）、settings/header原span contenteditable rename、全局删除确认。既有select option与高级配置通过独立设置入口保留。
+
+用户25分钟硬停止已触发，停止扩展。Web typecheck与diffcheck通过；Overlay共享popover定向2/2通过；属性定向最后落盘结果4失败，需续轮复验，不能宣称完成验收。失败名称：property menu keeps its focus；inline property rename；property schema mutations；edits versioned cells。详见 .agents/current-task.md 和 apps/web/test-results（ignored，可能被后续run覆盖）。截图仓库外 C:/Users/evanpatchouli/.codex/visualizations/property-menu，已视检桌面菜单、320类型列表、全局modal与右侧Drawer。
+
+后续先复验真实caret末尾（Range collapse(false)可能anchor在span本身而非firstChild；不要在断言前手动改caret）、Name/名称和Deadline旧button选择器、嵌套options modal Escape只关闭顶层后属性面板仍可操作。不得实现Type Mutation、不得进入Final Acceptance/P9。
+
+剩余legacy审计：A新增属性类型列表、Select Cell picker；B Relation复杂picker。本轮Property Menu已迁移。

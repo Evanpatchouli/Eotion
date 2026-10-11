@@ -146,6 +146,8 @@ type DatabaseApi = {
   failCellUpdates: number
   conflictCellUpdates: number
   failViewUpdates: number
+  failPropertyUpdates: number
+  failPropertyDeletes: number
   abortViewCreatesAfterCommit: number
   abortViewDeletesAfterCommit: number
   failRecordPageReads: number
@@ -165,7 +167,7 @@ type DatabaseApi = {
   failRelationCandidates: number
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
@@ -185,6 +187,8 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     failCellUpdates: options.failCellUpdates ?? 0,
     conflictCellUpdates: options.conflictCellUpdates ?? 0,
     failViewUpdates: options.failViewUpdates ?? 0,
+    failPropertyUpdates: options.failPropertyUpdates ?? 0,
+    failPropertyDeletes: options.failPropertyDeletes ?? 0,
     abortViewCreatesAfterCommit: options.abortViewCreatesAfterCommit ?? 0,
     abortViewDeletesAfterCommit: options.abortViewDeletesAfterCommit ?? 0,
     failRecordPageReads: options.failRecordPageReads ?? 0, failSnapshots: options.failSnapshots ?? 0,
@@ -364,6 +368,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     }
     const propertyPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/properties/([^/]+)$`, 'u').exec(pathname)
     if (propertyPath && request.method() === 'PATCH') {
+      if (api.failPropertyUpdates > 0) { api.failPropertyUpdates -= 1; return json(route, 503, { statusCode: 503, message: 'Property update rejected' }) }
       const databaseItem = api.databases.find((item) => item.id === propertyPath[1])!
       const propertyItem = api.properties.find((item) => item.id === propertyPath[2])!
       const input = payload as { name?: string; options?: TestProperty['options']; config?: DatabasePropertyConfig; expectedDatabaseVersion: number; expectedPropertyVersion: number }
@@ -375,6 +380,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       return json(route, 200, { database: databaseItem, property: propertyItem })
     }
     if (propertyPath && request.method() === 'DELETE') {
+      if (api.failPropertyDeletes > 0) { api.failPropertyDeletes -= 1; return json(route, 503, { statusCode: 503, message: 'Property delete rejected' }) }
       const databaseItem = api.databases.find((item) => item.id === propertyPath[1])!
       const propertyItem = api.properties.find((item) => item.id === propertyPath[2])!
       const input = payload as { expectedDatabaseVersion: number; expectedPropertyVersion: number }
@@ -526,6 +532,12 @@ async function openAdvancedPropertyCreator(page: Page, table: Locator, type: '�
   await expect(overlay.getByRole('heading', { level: 2 })).toHaveCount(1)
   await expect(overlay.getByRole('button', { name: '关闭' })).toHaveCount(1)
   return config
+}
+
+async function beginPropertyRename(page: Page, scope: Locator, propertyName: string): Promise<Locator> {
+  await scope.getByRole('button', { name: `属性设置 ${propertyName}` }).click()
+  await page.getByRole('menu', { name: `属性设置: ${propertyName}` }).getByRole('menuitem', { name: '重命名' }).click()
+  return scope.getByRole('textbox', { name: `属性名称 ${propertyName}` })
 }
 
 async function submitNewRecord(table: ReturnType<Page['locator']>) {
@@ -1264,26 +1276,239 @@ test('property schema mutations refresh inside the open panel and preserve unsav
   await panel.getByRole('button', { name: '新增属性' }).click()
   await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '文本', exact: true }).click()
   await expect(panel.getByText('文本', { exact: true })).toBeVisible()
-  await panel.getByRole('button', { name: '编辑属性 选择' }).click()
-  let propertyMenu = page.locator('.eotion-database-property-menu')
-  await propertyMenu.getByRole('textbox', { name: '属性名称' }).fill('发布状态')
-  await propertyMenu.getByRole('button', { name: '重命名' }).click()
+  const renameEditor = await beginPropertyRename(page, panel, '选择')
+  await renameEditor.fill('发布状态')
+  await renameEditor.press('Enter')
   await expect(panel.getByText('发布状态', { exact: true })).toBeVisible()
 
-  await panel.getByRole('button', { name: '编辑属性 发布状态' }).click()
-  propertyMenu = page.locator('.eotion-database-property-menu')
-  await propertyMenu.getByRole('textbox', { name: '新选项名称' }).fill('待发布')
-  await propertyMenu.getByRole('button', { name: '添加', exact: true }).click()
-  await panel.getByRole('button', { name: '编辑属性 发布状态' }).click()
-  propertyMenu = page.locator('.eotion-database-property-menu')
-  await expect(propertyMenu.getByText('待发布', { exact: true })).toBeVisible()
+  await panel.getByRole('button', { name: '管理选项 发布状态' }).click()
+  let optionsPanel = page.getByRole('dialog', { name: '选择选项：发布状态' })
+  await optionsPanel.getByRole('textbox', { name: '新选项名称' }).fill('待发布')
+  await optionsPanel.getByRole('button', { name: '添加', exact: true }).click()
+  await expect(optionsPanel.getByText('待发布', { exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
 
-  await panel.getByRole('button', { name: '编辑属性 文本' }).click()
-  await page.locator('.eotion-database-property-menu').getByRole('button', { name: '删除属性' }).click()
-  await expect(panel.getByRole('button', { name: '编辑属性 文本' })).toHaveCount(0)
+  await panel.getByRole('button', { name: '属性设置 文本' }).click()
+  await page.getByRole('menu', { name: '属性设置: 文本' }).getByRole('menuitem', { name: '删除' }).click()
+  const deleteDialog = page.getByRole('dialog', { name: '删除属性“文本”' })
+  await deleteDialog.getByRole('button', { name: '删除属性' }).click()
+  await expect(panel.getByRole('button', { name: '属性设置 文本' })).toHaveCount(0)
   await expect(panel.getByRole('button', { name: '显示属性 Notes' })).toHaveAttribute('aria-pressed', 'false')
   await panel.getByRole('button', { name: '保存显示与顺序' }).click()
   await expect(page.getByRole('group', { name: '属性管理' })).toHaveCount(0)
+})
+
+test('property menu keeps its focus, type choices and database-local dismissal behavior', async ({ page }) => {
+  const api = await installApi(page, [
+    block('property-menu-contract', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const trigger = table.getByRole('button', { name: '属性设置 Status' })
+
+  await trigger.click()
+  const menu = page.getByRole('menu', { name: '属性设置: Status' })
+  await expect(menu).toBeVisible()
+  await screenshot(page, 'property-menu-desktop')
+  for (const action of ['重命名', '变更类型', '删除']) {
+    const item = menu.getByRole('menuitem', { name: action })
+    await expect(item).toBeVisible()
+    await expect(item.locator('svg')).toHaveCount(1)
+  }
+  await menu.getByRole('menuitem', { name: '变更类型' }).click()
+  const types = page.getByRole('group', { name: '更改属性类型' })
+  const labels = ['文本', '数字', '复选框', '选择', '日期', '关联', '汇总', '公式']
+  for (const label of labels) {
+    const item = types.getByRole('menuitem', { name: label })
+    await expect(item).toBeVisible()
+    await expect(item.locator('svg')).toHaveCount(label === '选择' ? 2 : 1)
+  }
+  await expect(types.getByRole('menuitem', { name: '选择' })).toHaveAttribute('aria-current', 'true')
+  await screenshot(page, 'property-menu-types-desktop')
+  await page.setViewportSize({ width: 320, height: 740 })
+  await screenshot(page, 'property-menu-types-phone-320')
+  const requestsBeforeTypeChoice = api.requests.length
+  await types.getByRole('menuitem', { name: '公式' }).click()
+  await expect(page.getByRole('alert')).toContainText('暂不支持更改属性类型')
+  await expect(page.getByRole('menu', { name: '属性设置: Status' })).toHaveCount(0)
+  expect(api.properties.find(item => item.id === 'root-select')?.type).toBe('select')
+  expect(api.requests.slice(requestsBeforeTypeChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select'))).toBe(false)
+
+  await trigger.click()
+  await expect(menu).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(menu).toHaveCount(0)
+  await expect(trigger).toBeFocused()
+
+  await trigger.click()
+  await expect(menu).toBeVisible()
+  await table.locator('tbody tr').first().locator('td').nth(1).click()
+  await expect(menu).toHaveCount(0)
+  await expect(table).toContainText('Launch plan')
+
+  const keyboardTrigger = table.getByRole('button', { name: '属性设置 Notes' })
+  await keyboardTrigger.focus()
+  await keyboardTrigger.press('ArrowDown')
+  const keyboardMenu = page.getByRole('menu', { name: '属性设置: Notes' })
+  await expect(keyboardMenu).toBeVisible()
+  await keyboardMenu.getByRole('menuitem', { name: '重命名' }).press('Enter')
+  const keyboardRename = table.getByRole('textbox', { name: '属性名称 Notes' })
+  await expect(keyboardRename).toBeFocused()
+  await keyboardRename.press('Escape')
+
+  await openDatabaseSetting(page, table, '属性')
+  const settingsPanel = page.getByRole('group', { name: '属性管理' })
+  await settingsPanel.getByRole('button', { name: '属性设置 Name' }).click()
+  const titleMenu = page.getByRole('menu', { name: '属性设置: Name' })
+  const deleteTitle = titleMenu.getByRole('menuitem', { name: '删除' })
+  await expect(deleteTitle).toBeDisabled()
+  await expect(deleteTitle).toHaveAttribute('title', '标题属性不能删除')
+  await expect(titleMenu.getByRole('menuitem', { name: '变更类型' })).toBeDisabled()
+  await closeDatabaseSetting(page, '属性管理')
+})
+
+test('inline property rename edits the existing header and settings spans and saves trimmed names with a stable ID', async ({ page }) => {
+  const api = await installApi(page, [
+    block('property-inline-rename', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const name = table.locator('.eotion-database-header-name').filter({ hasText: 'Notes' })
+  await expect(name).toHaveAttribute('data-property-id', 'root-text')
+  await name.evaluate(element => element.setAttribute('data-original-name-node', 'notes-header'))
+  let editor = await beginPropertyRename(page, table, 'Notes')
+  await expect(editor).toHaveAttribute('contenteditable', 'true')
+  await expect(editor).toHaveAttribute('data-original-name-node', 'notes-header')
+  await expect(editor).toBeFocused()
+  const caretAtEnd = await editor.evaluate(element => {
+    const selection = window.getSelection()
+    return selection?.rangeCount === 1 && selection.isCollapsed && selection.anchorNode === element.firstChild && selection.anchorOffset === (element.textContent ?? '').length
+  })
+  expect(caretAtEnd).toBe(true)
+  await editor.fill('  Notes updated  ')
+  await editor.press('Enter')
+  await expect(table.locator('.eotion-database-header-name').filter({ hasText: 'Notes updated' })).toBeVisible()
+  expect(api.properties.find(item => item.id === 'root-text')?.name).toBe('Notes updated')
+  await page.reload()
+  let refreshedTable = page.locator('.eotion-editor-content .eotion-database')
+  await expect(refreshedTable.locator('.eotion-database-header-name').filter({ hasText: 'Notes updated' })).toBeVisible()
+  expect(api.properties.find(item => item.name === 'Notes updated')?.id).toBe('root-text')
+
+  const writesBeforeInvalidNames = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-text')).length
+  editor = await beginPropertyRename(page, refreshedTable, 'Notes updated')
+  await editor.fill('')
+  await editor.press('Enter')
+  await expect(refreshedTable.locator('.eotion-database-header-name').filter({ hasText: 'Notes updated' })).toBeVisible()
+  editor = await beginPropertyRename(page, refreshedTable, 'Notes updated')
+  await editor.fill('N'.repeat(101))
+  await editor.press('Enter')
+  await expect(refreshedTable.getByRole('alert')).toContainText('属性名称不能超过 100 个字符')
+  await expect(refreshedTable.locator('.eotion-database-header-name').filter({ hasText: 'Notes updated' })).toBeVisible()
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-text'))).toHaveLength(writesBeforeInvalidNames)
+
+  editor = await beginPropertyRename(page, refreshedTable, 'Notes updated')
+  await editor.fill('Canceled draft')
+  await editor.press('Escape')
+  await expect(refreshedTable.locator('.eotion-database-header-name').filter({ hasText: 'Notes updated' })).toBeVisible()
+  expect(api.properties.find(item => item.id === 'root-text')?.name).toBe('Notes updated')
+
+  editor = await beginPropertyRename(page, refreshedTable, 'Notes updated')
+  await editor.fill('Composition draft')
+  await editor.evaluate(element => element.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' })))
+  await editor.evaluate(element => element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 229, which: 229, isComposing: true, bubbles: true })))
+  await expect(editor).toBeVisible()
+  expect(api.properties.find(item => item.id === 'root-text')?.name).toBe('Notes updated')
+  await editor.evaluate(element => element.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: 'Composition draft' })))
+  await editor.press('Escape')
+
+  api.failPropertyUpdates = 1
+  await refreshedTable.locator('.eotion-database-header-name').filter({ hasText: 'Notes updated' }).click()
+  editor = refreshedTable.getByRole('textbox', { name: '属性名称 Notes updated' })
+  await editor.fill('Failed rename')
+  await editor.press('Enter')
+  await expect(refreshedTable.getByRole('alert')).toContainText('Property update rejected')
+  await expect(refreshedTable.locator('.eotion-database-header-name').filter({ hasText: 'Notes updated' })).toBeVisible()
+  expect(api.properties.find(item => item.id === 'root-text')?.name).toBe('Notes updated')
+
+  await openDatabaseSetting(page, refreshedTable, '属性')
+  const settingsPanel = page.getByRole('group', { name: '属性管理' })
+  const settingsName = settingsPanel.locator('.eotion-database-property-name').filter({ hasText: 'Notes updated' })
+  await settingsName.evaluate(element => element.setAttribute('data-original-name-node', 'notes-settings'))
+  const settingsEditor = await beginPropertyRename(page, settingsPanel, 'Notes updated')
+  await expect(settingsEditor).toHaveAttribute('data-original-name-node', 'notes-settings')
+  await expect(settingsEditor).toBeFocused()
+  const settingsCaretAtEnd = await settingsEditor.evaluate(element => {
+    const selection = window.getSelection()
+    return selection?.rangeCount === 1 && selection.isCollapsed && selection.anchorNode === element.firstChild && selection.anchorOffset === (element.textContent ?? '').length
+  })
+  expect(settingsCaretAtEnd).toBe(true)
+  await settingsEditor.fill('  Settings name  ')
+  await settingsEditor.evaluate(element => (element as HTMLElement).blur())
+  await expect(settingsPanel.locator('.eotion-database-property-name').filter({ hasText: 'Settings name' })).toBeVisible()
+  expect(api.properties.find(item => item.id === 'root-text')?.name).toBe('Settings name')
+  expect(api.properties.find(item => item.name === 'Settings name')?.id).toBe('root-text')
+
+  for (const width of [1440, 1760]) {
+    await page.setViewportSize({ width, height: 900 })
+    const bounds = await settingsPanel.boundingBox()
+    expect(bounds).not.toBeNull()
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width)
+    await screenshot(page, `property-settings-desktop-${width}`)
+  }
+})
+
+test('property deletion requires modal confirmation and preserves the property on cancellation or failure', async ({ page }) => {
+  const api = await installApi(page, [
+    block('property-delete-confirmation', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord], failPropertyDeletes: 1 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const trigger = table.getByRole('button', { name: '属性设置 Points' })
+  const menu = page.getByRole('menu', { name: '属性设置: Points' })
+  const deleteRequests = () => api.requests.filter(({ method, path }) => method === 'DELETE' && path.endsWith('/properties/root-number'))
+
+  await trigger.click()
+  await menu.getByRole('menuitem', { name: '删除' }).click()
+  let dialog = page.getByRole('dialog', { name: '删除属性“Points”' })
+  await expect(dialog).toBeVisible()
+  expect(deleteRequests()).toHaveLength(0)
+  await dialog.getByRole('button', { name: '取消' }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(table.locator('.eotion-database-header-name').filter({ hasText: 'Points' })).toBeVisible()
+  expect(deleteRequests()).toHaveLength(0)
+
+  await trigger.click()
+  await menu.getByRole('menuitem', { name: '删除' }).click()
+  dialog = page.getByRole('dialog', { name: '删除属性“Points”' })
+  await expect(dialog).toBeVisible()
+  await page.setViewportSize({ width: 320, height: 740 })
+  await screenshot(page, 'property-delete-modal-phone-320')
+  const dialogBounds = await dialog.boundingBox()
+  expect(dialogBounds).not.toBeNull()
+  await page.mouse.click(Math.max(2, dialogBounds!.x - 2), Math.max(2, dialogBounds!.y - 2))
+  await expect(dialog).toHaveCount(0)
+  expect(deleteRequests()).toHaveLength(0)
+
+  await trigger.click()
+  await menu.getByRole('menuitem', { name: '删除' }).click()
+  dialog = page.getByRole('dialog', { name: '删除属性“Points”' })
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  expect(deleteRequests()).toHaveLength(0)
+
+  await trigger.click()
+  await menu.getByRole('menuitem', { name: '删除' }).click()
+  dialog = page.getByRole('dialog', { name: '删除属性“Points”' })
+  await dialog.getByRole('button', { name: '删除属性' }).click()
+  await expect(dialog.getByRole('alert')).toContainText('Property delete rejected')
+  await expect(table.locator('.eotion-database-header-name').filter({ hasText: 'Points' })).toBeVisible()
+  expect(deleteRequests()).toHaveLength(1)
+  await dialog.getByRole('button', { name: '删除属性' }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(table.locator('.eotion-database-header-name').filter({ hasText: 'Points' })).toHaveCount(0)
+  expect(api.records[0]?.properties['root-number']).toBeUndefined()
+  expect(deleteRequests()).toHaveLength(2)
 })
 
 test('phone record settings offer right and bottom drawers and apply both modes', async ({ page }) => {
@@ -2732,10 +2957,12 @@ test('edits versioned cells and manages property options without losing stable I
   await expect(table.locator('tbody tr').first().locator('td').nth(4).getByRole('button', { name: '', exact: true })).toBeVisible()
   expect(pageErrors).toEqual([])
 
-  await table.getByRole('button', { name: 'Due', exact: true }).click()
-  await page.getByRole('textbox', { name: '属性名称' }).fill('Deadline')
+  await table.getByRole('button', { name: '属性设置 Due' }).click()
+  await page.getByRole('menu', { name: '属性设置: Due' }).getByRole('menuitem', { name: '重命名' }).click()
+  const dueEditor = table.getByRole('textbox', { name: '属性名称 Due' })
+  await dueEditor.fill('Deadline')
   await screenshot(page, 'p83-desktop-light-property-menu')
-  await page.getByRole('button', { name: '重命名', exact: true }).click()
+  await dueEditor.press('Enter')
   await expect(table.getByRole('button', { name: 'Deadline', exact: true })).toBeVisible()
   await table.getByRole('button', { name: '2026-10-04' }).click()
   const dateInput = table.getByRole('textbox', { name: 'Deadline 值' })
@@ -2747,27 +2974,35 @@ test('edits versioned cells and manages property options without losing stable I
   await expect(table.locator('tbody tr').first().locator('td').nth(5).getByRole('button', { name: '', exact: true })).toBeVisible()
   expect(pageErrors).toEqual([])
 
-  await table.getByRole('button', { name: 'Status', exact: true }).click()
+  await openDatabaseSetting(page, table, '属性')
+  let optionPanel = page.getByRole('group', { name: '属性管理' })
+  await optionPanel.getByRole('button', { name: '管理选项 Status' }).click()
+  let selectOptions = page.getByRole('dialog', { name: '选择选项：Status' })
   await screenshot(page, 'p83-desktop-light-select-menu')
-  const optionInput = page.getByRole('textbox', { name: '新选项名称' })
+  const optionInput = selectOptions.getByRole('textbox', { name: '新选项名称' })
   await optionInput.fill('Review')
-  await page.getByRole('button', { name: '添加', exact: true }).click()
+  await selectOptions.getByRole('button', { name: '添加', exact: true }).click()
   const reviewOption = api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Review')
   expect(reviewOption?.id).toBeTruthy()
-  await table.getByRole('button', { name: 'Status', exact: true }).click()
-  await expect(page.locator('.eotion-database-option-edit').filter({ hasText: 'Review' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await optionPanel.getByRole('button', { name: '管理选项 Status' }).click()
+  selectOptions = page.getByRole('dialog', { name: '选择选项：Status' })
+  await expect(selectOptions.locator('.eotion-database-option-edit').filter({ hasText: 'Review' })).toBeVisible()
   const openOption = api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Open')
-  await page.locator('.eotion-database-option-edit').filter({ hasText: 'Open' }).getByRole('button', { name: '重命名' }).click()
+  await selectOptions.locator('.eotion-database-option-edit').filter({ hasText: 'Open' }).getByRole('button', { name: '重命名' }).click()
   await page.getByRole('textbox', { name: '重命名选项 Open' }).fill('Opened')
-  await page.locator('.eotion-database-option-edit').filter({ has: page.getByRole('textbox', { name: '重命名选项 Open' }) }).getByRole('button', { name: '保存' }).click()
+  await selectOptions.locator('.eotion-database-option-edit').filter({ has: page.getByRole('textbox', { name: '重命名选项 Open' }) }).getByRole('button', { name: '保存' }).click()
   expect(api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Opened')?.id).toBe(openOption?.id)
-  await table.getByRole('button', { name: 'Status', exact: true }).click()
-  await expect(page.locator('.eotion-database-option-edit').filter({ hasText: 'Opened' })).toBeVisible()
-  await page.locator('.eotion-database-option-edit').filter({ hasText: 'Review' }).getByRole('button', { name: '删除' }).click()
+  await expect(selectOptions.locator('.eotion-database-option-edit').filter({ hasText: 'Opened' })).toBeVisible()
+  await selectOptions.locator('.eotion-database-option-edit').filter({ hasText: 'Review' }).getByRole('button', { name: '删除' }).click()
   expect(api.properties.find((item) => item.id === 'root-select')?.options?.some((item) => item.id === reviewOption?.id)).toBe(false)
+  await page.keyboard.press('Escape')
+  await closeDatabaseSetting(page, '属性管理')
 
-  await table.getByRole('button', { name: 'Points', exact: true }).click()
-  await page.getByRole('button', { name: '删除属性' }).click()
+  await table.getByRole('button', { name: '属性设置 Points' }).click()
+  await page.getByRole('menu', { name: '属性设置: Points' }).getByRole('menuitem', { name: '删除' }).click()
+  const pointsDialog = page.getByRole('dialog', { name: '删除属性“Points”' })
+  await pointsDialog.getByRole('button', { name: '删除属性' }).click()
   await expect(table.getByRole('button', { name: 'Points', exact: true })).toHaveCount(0)
   expect(api.records[0]?.properties['root-number']).toBeUndefined()
   expect(api.requests.some(({ method, path }) => method === 'DELETE' && path.endsWith('/properties/root-number'))).toBe(true)
@@ -2775,19 +3010,21 @@ test('edits versioned cells and manages property options without losing stable I
   await page.getByRole('group', { name: '属性管理' }).getByRole('button', { name: '新增属性' }).click()
   await page.getByRole('button', { name: '文本', exact: true }).click()
   await expect(table.getByRole('button', { name: '文本', exact: true })).toBeVisible()
-  await table.getByRole('button', { name: '文本', exact: true }).click()
-  await page.getByRole('textbox', { name: '属性名称' }).fill('Context')
-  await page.getByRole('button', { name: '重命名', exact: true }).click()
+  const contextEditor = await beginPropertyRename(page, table, '文本')
+  await contextEditor.fill('Context')
+  await contextEditor.press('Enter')
   await expect(table.getByRole('button', { name: 'Context', exact: true })).toBeVisible()
-  await table.getByRole('button', { name: 'Context', exact: true }).click()
-  await page.getByRole('button', { name: '删除属性' }).click()
+  await table.getByRole('button', { name: '属性设置 Context' }).click()
+  await page.getByRole('menu', { name: '属性设置: Context' }).getByRole('menuitem', { name: '删除' }).click()
+  const contextDialog = page.getByRole('dialog', { name: '删除属性“Context”' })
+  await contextDialog.getByRole('button', { name: '删除属性' }).click()
   await expect(table.getByRole('button', { name: 'Context', exact: true })).toHaveCount(0)
   await page.reload()
   await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('Planning')
   await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('Revised notes')
   await installLocalBlockReader(page)
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
-  await table.getByRole('button', { name: 'Deadline', exact: true }).click()
+  await table.getByRole('button', { name: '属性设置 Deadline' }).click()
   await screenshot(page, 'p83-desktop-dark-property-menu')
   api.offline = true
   const writesBeforeOffline = api.requests.filter(({ method, path }) => path.includes('/databases/') && (method === 'POST' || method === 'PATCH' || method === 'DELETE')).length
@@ -3356,7 +3593,7 @@ test('advanced properties configure relation and formula, keep linked views in s
   await formula.getByLabel('结果类型').selectOption('number')
   await screenshot(page, 'p85-formula-config-desktop')
   await formula.getByRole('button', { name: '保存属性' }).click()
-  await expect(table.getByRole('button', { name: '公式', exact: true })).toBeVisible()
+  await expect(table.locator('.eotion-database-header-name').filter({ hasText: '公式' })).toBeVisible()
   const formulaProperty = api.properties.find(item => item.type === 'formula')!
   expect(formulaProperty).toBeDefined()
   const rollup = await openAdvancedPropertyCreator(page, table, '汇总')

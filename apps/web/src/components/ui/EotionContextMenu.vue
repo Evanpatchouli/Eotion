@@ -7,6 +7,7 @@ interface EotionContextMenuItem {
   icon: IconName
   danger?: boolean
   disabled?: boolean
+  title?: string
   shortcut?: string
   action: () => void
 }
@@ -29,6 +30,7 @@ withDefaults(defineProps<{
       type="button"
       :role="itemRole"
       :disabled="item.disabled"
+      :title="item.title"
       :data-danger="item.danger ? 'true' : undefined"
       data-popover-item
       @click="item.action"
