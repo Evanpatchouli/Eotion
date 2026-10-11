@@ -1,6 +1,6 @@
 # P8 Database
 
-P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1–P8.5 分别完成 Domain、Table、Properties、Views 与 Advanced Properties；P8.6 Database Final Acceptance 于 2026-10-11 完成，P8.1–P8.6 全部 PASS，P8 Database COMPLETE。最终组合验收、规模测量与已接受限制见本页末尾。
+P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1–P8.5 分别完成 Domain、Table、Properties、Views 与 Advanced Properties；P8.6 Database Final Acceptance 于 2026-10-11 完成，P8.1–P8.6 全部 PASS。P8 Database UX Final Acceptance 于 2026-10-11 通过，**P8 Database COMPLETE / SEALED**。最终组合验收、Database UX 验收、规模测量与已接受限制见本页末尾。
 
 | 阶段 | 范围 | 状态 |
 | --- | --- | --- |
@@ -10,6 +10,7 @@ P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1–P8.5 
 | P8.4 | Views / Filter / Sort | PASS |
 | P8.5 | Advanced Properties | PASS |
 | P8.6 | Database Final Acceptance | PASS |
+| P8 UX | Database UX Final Acceptance | PASS / SEALED |
 
 ## Database UX 收敛（2026-10-11）
 
@@ -621,4 +622,57 @@ Property Menu 的 relation / rollup / formula target 复用既有高级配置 Ov
 
 change-type 点击「继续」仅关闭配置并进入类型变更确认，保留 config draft 和版本；确认明确说明已有值清空、引用该属性的筛选和排序移除，随后调用专用 `/type` endpoint。成功通过 `refreshSchemaMutation()` 刷新类型、配置、Cell、View 和版本，保留 Property ID/name/createdAt。客户端不扫描 Records，服务端仍为最终 authority。
 
-普通失败保留确认与服务端错误，不乐观更改类型；依赖冲突不删除或改写 Formula/Rollup。409 刷新 schema；原属性仍存在且 source type 未变化时保留高级 config draft、更新 expected versions 并要求重新确认，提交前重新验证依赖；原属性消失或类型已被外部修改时取消 pending mutation 并提示重新操作。Database UX Final Acceptance / P9 不属于本轮范围。
+普通失败保留确认与服务端错误，不乐观更改类型；依赖冲突不删除或改写 Formula/Rollup。409 刷新 schema；原属性仍存在且 source type 未变化时保留高级 config draft、更新 expected versions 并要求重新确认，提交前重新验证依赖；原属性消失或类型已被外部修改时取消 pending mutation 并提示重新操作。
+
+## Database UX Final Acceptance（2026-10-11）
+
+验收结论：**P8 Database UX Final Acceptance — PASS；P8 Database — COMPLETE / SEALED。** 本轮只做验收与最小 blocker 修复，不新增 Database 产品能力，不进入 P9。基线 `32c671192a470cad72d132a2b981fed9ad2fb361`；验收提交为本节所在 commit。
+
+### 实际验收行为
+
+| 区域 | 验收结果 |
+| --- | --- |
+| Database Header | Desktop 单行：标题、View Selector、新建记录、More。Block chrome 在 hover/focus 显示 `[+] [drag]`，加号在 drag 左侧，绝对定位不改变正文布局。Phone（<768px）两行：第一行标题单行 ellipsis，第二行 View Selector / More `…` / 仅图标 `+`；隐藏 Database icon、Block `+`/drag，无预留左边距与横向溢出。Tablet 保持 Desktop 单行与 coarse 可见控件，不被 Phone CSS 误伤。 |
+| 通用 Block Chrome | 覆盖 Paragraph / Heading / List / Todo / Quote / Callout / Toggle / Table / Code / Divider / Database。点击 `+` 在完整 Block 之后、同 parent 插入普通 Paragraph 并聚焦可立即输入；Toggle 后插不进入 children，nested child 保持 parent；undo/redo、drag、indent/outdent 保持。Phone 隐藏 `+`/drag。 |
+| Create / Link Database | 首层两张约 96px 高卡片，文本水平与垂直居中，light/dark 正常；创建层 Header 标题正确、Body 只有输入框、placeholder「数据库名字」、无可见 label；Footer 左返回、右取消/创建。 |
+| Overlay Shell | 所有 Database Modal/Drawer 使用 EotionProductOverlay 的 Header（可见标题 + 单一 close）+ 独立滚动 Body + 可选 Footer；Header/Footer 不随 Body 滚动；Escape、backdrop、focus trap、focus restore、IME 229 Escape 与 `dismissible=false` 语义通过。覆盖 Filter、Sort、属性、记录打开方式、高级属性配置、Create Database、删除属性确认、类型变更确认。 |
+| Drawer Motion | Right/Desktop X 与 Bottom Y 正反位移；200ms enter、170ms leave；masked backdrop fade；Desktop 无 mask 且背景可交互。关闭顺序为 request close → leave animation → 完成后 unmount/unlock/focus restore，不会先 unmount。reduced-motion 下无位移、立即关闭、无残留 dialog 或 scroll lock。 |
+| Snapshot / Editor 稳定性 | blocks 语义等价时 Phone Filter/Sort 打开后 snapshot convergence 不 remount EotionEditor / DatabaseNodeView，Drawer 不消失、draft 不丢；段落真实变化仍 reload。 |
+| View Selector | 使用共享 EotionPopover；外部点击、Escape、focus return、viewport 定位正常；列表为当前 View / 其他 View / 新建视图；当前 View 仅靠 selected background + `aria-current`，不显示「当前」文字；mouse hover/focus-within 显示 edit/delete，coarse pointer 直接显示；重命名在原名文本元素上切换 contenteditable（caret 末尾、blur/Enter 保存、Escape 恢复、IME 不误提交、空名恢复、>100 明确错误）；最后一个 View 不可删除；新建视图 muted。 |
+| More Menu | 共享 EotionPopover / EotionContextMenu 的字号、行高、padding、panel width 与系统菜单一致；条目为筛选、排序、属性、记录打开方式、自动化；「自动化」仅文案本体、disabled 明显置灰、无括号说明。Phone 锚定 `…` 按钮、不漂到底部、不超视口、390px 无 overflow。 |
+| Opening Preferences | Record / Property 配置独立；默认 Collapse 只显示当前设备行，展开后 Desktop/Tablet/Phone 都显示；设备识别为 <768 mobile / <1200 tablet / 其余 desktop；选择器非原生风格，Popover 不被 Modal 边界裁切；preference 数据语义不变。 |
+| Popover Layering | 记录/属性打开方式 Modal 第三行打开 select 的 Popover 能越过 Modal 下边界、不被裁切、option 可点击，仍在 native dialog top-layer 内且 backdrop 不覆盖；Right/Bottom Drawer 内 Popover 无回归。 |
+| Filter / Sort | 所有 selector 使用系统 Popover Select（非原生 `<select>`），icon button 与行元素水平/垂直居中；Filter 添加/删除/operator/value/save，Sort 添加/属性/asc-desc/上移下移/删除/save，Save 位于 Footer；Phone 为 Bottom Drawer，snapshot convergence 后 draft 不丢。 |
+| Property Settings | 行内整体对齐，窄 Drawer（320px、container query）合理换行，icon button 居中，无文本字符冒充 icon；显示状态为 Eye/EyeOff，不再有 checkbox +「显示」；title 永远显示且 eye action disabled；新增属性按钮 icon + 文本垂直居中；select/advanced 的行内文字配置入口保留。 |
+| Property Menu / Rename / Delete | Property Menu 只走共享 EotionPopover + EotionContextMenu，不再自建 Teleport + anchoredStyle + outside listener；菜单仅 [icon] 重命名 / 变更类型 / 删除；title 的 type、delete disabled；Escape 只关最内层菜单、不误关父 Drawer。重命名在 Table Header 与 Property Settings 两处都使用原文本元素 contenteditable（非 input），caret 末尾、blur/Enter 保存、Escape 恢复、IME Enter 不误提交、空名恢复、>100 提示、API failure 恢复旧显示且 Property ID 不变。删除先关菜单，再全视口 confirmation Modal，confirm 才删除；覆盖 Cancel、Escape、backdrop、danger button、API failure 与 dependency 409；title 不能删除。 |
+| Property Type Mutation | 基础 text/number/checkbox/select/date 与高级 relation/rollup/formula 完整闭环。当前类型点击只关闭、不请求；cancel/Escape/backdrop 不请求；success 刷新 schema/cells/views；failure 不乐观更新；409 refresh + reconfirm，source 消失或已改型时取消 pending mutation。高级 change-type 名称只读，create/edit 仍走各自既有 endpoint，不误走 `/type`。Domain 转换规则与 `/type` 原子实现不变。 |
+| Cell Editing / Record Opening | Cell body click 进入编辑（无 pencil button）；title 编辑 Page.title 且第一列有独立 detail button（Desktop hover/focus 出现，Tablet/Phone 常显、≥44px）；Enter/Escape/Tab/Shift+Tab/Space、save/cancel、title sync 与类型变更后 editor 立即更新通过；formula/rollup 只读。新建记录点击 `+` 原子创建「无标题」并按 preference 立即打开，不再有 inline title pre-form。 |
+| Sidebar / Navigation | Database 有独立 Sidebar navigation semantics；Record Pages 不出现在普通 Sidebar page tree；linked view 不产生重复 canonical Database sidebar node；Record 可 direct-open。本轮不做 10k benchmark。 |
+
+### 验证
+
+| 验证 | 结果 |
+| --- | --- |
+| 完整 Database + Overlay + Pages 产品套件 | 144/144，`--workers=1 --retries=0`，fresh Vite dev server，无 flaky |
+| Domain / Contracts / SDK | 35/35、21/21、22/22，通过 |
+| API domain（含 database.test） | 13/13，通过 |
+| Web / SDK typecheck | 通过 |
+| `build:web` | 通过（保留既有 >500kB chunk 提示） |
+| `git diff --check` / workspace | 通过 / clean |
+| 设备矩阵 | Desktop 1440×1000、Tablet 834×1112（另 820 coarse）、Phone 390×844；light 与 dark |
+| 截图包 | 仓库外 `artifacts/database-ux-final/`，含 `manifest.json`（filename / viewport / theme / scenario） |
+
+### 本轮修复
+
+- `product-database.spec.ts` 中 4 处 stale locator 对齐 f383c12 之后的属性行语义：表头属性名改读 `.eotion-database-header-name`（原来断言 trigger 按钮文本），属性行 icon 审计限定 icon-only 控件并新增对文字配置入口的对齐断言（未削弱 icon 断言）。
+- 修复 390px 创建卡片断言与 Bottom Drawer 200ms 入场位移的竞态：测量前等待 `transform: none`（新增真实同步，不 sleep、不重试掩盖）。`--repeat-each=5` 10/10。
+
+### 已接受限制与非阻塞债务
+
+- 继承 P8.6：Database 在线读写、离线只读；无 Database MCP / oplog / 跨客户端实时推送；分页无跨请求 snapshot；derived 不支持 Filter/Sort；Formula 为轻量 JSON AST；date rollup min/max、People/Files、其它 View、双向 Relation 不在 P8；390px 为响应式 Web，不替代 native 设备验收。
+- 共享浮层审计：`添加属性类型` 与 Table select cell 的轻量菜单仍为 DatabaseNodeView 内手写 Teleport + `anchoredStyle` 定位，行为正确且有测试覆盖；Relation complex picker 按既定边界保留。属技术债，非阻塞。
+- select/advanced 属性的行内配置入口是带类型文字的真实按钮（`database-property-config-label`），非文本冒充图标。
+- 长生命周期 Vite dev server 在经历多次 HMR 更新后，测试中按路径 `import()` 的应用模块可能与页面内实例不一致，导致 7 个 snapshot/fencing 用例假失败；验收使用 fresh dev server（本次即如此）。属测试运行环境边界，产品行为正确。
+
+完成一个聚焦 acceptance commit 后停止；不在本会话开始 P9。
+

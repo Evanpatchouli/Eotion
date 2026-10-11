@@ -1,5 +1,17 @@
 # Handoff
 
+## 2026-10-11 Database UX Final Acceptance（PASS / SEALED）
+
+**P8 Database UX Final Acceptance — PASS；P8 Database — COMPLETE / SEALED。** 基线 `32c671192a470cad72d132a2b981fed9ad2fb361`；验收提交为本节所在 commit。本轮只做验收与最小 blocker 修复，没有新增 Database 产品能力，没有改 Domain / API / Contracts / Overlay 产品实现，没有开始 P9。
+
+自动化：完整 Database + Overlay + Pages 产品套件 `144/144`（`--workers=1 --retries=0`，fresh Vite dev server）；Domain 35/35、Contracts 21/21、SDK 22/22、API domain 13/13；Web/SDK typecheck、`build:web`（保留既有 chunk 提示）、`git diff --check` 通过；workspace clean。
+
+仅有的失败都是测试视角问题，已修复且未削弱断言：(1) 4 处 stale locator —— f383c12 之后表头属性名位于 `.eotion-database-header-name`，属性 trigger 变为纯图标按钮，select/advanced 行内是刻意的文字配置按钮；改为断言新语义并新增文字入口的对齐断言。(2) 390px 创建卡片断言与 Bottom Drawer 200ms 入场 translateY 竞态；测量前等待 `transform: none`，`--repeat-each=5` 10/10。另观察到 7 个 snapshot/fencing 用例只会在长生命周期 HMR dev server 上假失败（测试按路径 import 的应用模块与页面实例分裂），fresh server 下全绿，产品行为正确，记为运行环境边界。
+
+截图包在仓库外 `artifacts/database-ux-final/`（22 张请求命名 + 94 张完整捕获 + `manifest.json`，Chromium responsive Web，非真机）。Device/Theme 已人工检查 Desktop light/dark、Tablet coarse、Phone light/dark 的表头、菜单、属性 Drawer、类型变更确认。
+
+Non-blocking debt：`添加属性类型` 与 Table select cell 仍是 DatabaseNodeView 内手写 Teleport + `anchoredStyle`；Relation complex picker 按既定边界保留。历史 59/60 用例已通过。到此停止，不开始 P9。
+
 ## 2026-10-11 Universal Block +（PASS）
 
 master 基线 7b6e689cffbdebbba07ad9007b631e586994b8cc；复用 nestedBlockInteractions 的既有 widget 和 insertParagraphAfter，为所有 movable Block 创建统一 [+] [drag]。覆盖 Paragraph / Heading / Bulleted & Numbered List / Todo / Quote / Code / Divider / Callout / Toggle / Table / Database，不纳入附件或上传 placeholder。

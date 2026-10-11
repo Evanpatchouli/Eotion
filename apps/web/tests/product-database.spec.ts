@@ -1068,6 +1068,8 @@ test(`database creation cards and placeholder stay coordinated in light and dark
     await page.setViewportSize({ width, height: 844 })
     await startDatabaseSlash(page)
     const dialog = page.getByRole('dialog', { name: '数据库' })
+    // The phone surface enters as a bottom drawer; measure only once its enter transform has settled.
+    if (width < 768) await expect(page.locator('dialog.eotion-product-overlay--bottom-drawer[open]')).toHaveCSS('transform', 'none')
     for (const theme of ['light', 'dark']) {
       await page.evaluate(value => { document.documentElement.dataset.theme = value }, theme)
       const choices = dialog.locator('.database-command-option')
@@ -1271,11 +1273,24 @@ test('database UX controls render library icons instead of text glyphs', async (
   await page.setViewportSize({ width: 1440, height: 900 })
   await openDatabaseSetting(page, table, '属性')
   await expandOpeningChoices(page, '属性')
-  const visiblePropertyControls = propertiesPanel.locator('.eotion-database-property-row button, .eotion-database-property-grip').filter({ visible: true })
-  for (const control of await visiblePropertyControls.all()) {
+  const visibleIconControls = propertiesPanel.locator('.eotion-database-property-row .settings-icon-button, .eotion-database-property-grip').filter({ visible: true })
+  for (const control of await visibleIconControls.all()) {
     await expect(control.locator('svg')).toHaveCount(1)
     await expectButtonIconCentered(control)
     expect((await control.textContent())?.trim()).toBe('')
+  }
+  // Select and advanced properties open their editor from a text type label inside the row.
+  // It must stay a real, vertically centred text button rather than a glyph-only icon.
+  const configLabels = propertiesPanel.locator('.database-property-config-label').filter({ visible: true })
+  expect(await configLabels.count()).toBeGreaterThan(0)
+  for (const label of await configLabels.all()) {
+    expect(['选择', '关联', '汇总', '公式']).toContain((await label.textContent())?.trim())
+    const offset = await label.evaluate(element => {
+      const row = element.closest('.eotion-database-property-row')!.getBoundingClientRect()
+      const self = element.getBoundingClientRect()
+      return Math.abs(self.y + self.height / 2 - (row.y + row.height / 2))
+    })
+    expect(offset).toBeLessThanOrEqual(2)
   }
   await expect(propertiesPanel.getByRole('button', { name: '新增属性' }).locator('svg')).toHaveCount(1)
   await closeDatabaseSetting(page, '属性管理')
@@ -2764,7 +2779,7 @@ test('linked views keep independent server filters, multi-sort order and column 
   expect(headers.some(header => header.includes('Notes'))).toBe(false)
   expect(headers.indexOf('Due')).toBeLessThan(headers.indexOf('Points'))
   await expect(tables.nth(0).locator('thead th')).toHaveCount(6)
-  await expect(tables.nth(0).getByRole('button', { name: 'Notes', exact: true })).toBeVisible()
+  await expect(tables.nth(0).locator('.eotion-database-header-name').filter({ hasText: 'Notes' })).toHaveCount(1)
   expect(configuredView.config.visibleProperties).not.toContain('root-text')
 
   await chooseSelectCell(page, tables.nth(0).getByRole('button', { name: 'Open', exact: true }), 'Done')
@@ -3097,7 +3112,7 @@ test('database tables render and references round-trip at root and under a toggl
   const references = editor.locator('.eotion-database')
   await expect(references).toHaveCount(2)
   await expect(references.first()).toContainText('Root projects')
-  await expect(references.first().locator('th button.eotion-database-property-trigger')).toHaveText(['名称', 'Notes', 'Points', 'Done', 'Status', 'Due'])
+  await expect(references.first().locator('th .eotion-database-header-name')).toHaveText(['名称', 'Notes', 'Points', 'Done', 'Status', 'Due'])
   await expect(references.first().locator('tbody tr td')).toHaveText(['Launch plan', 'Draft ready', '42', '已完成', 'Open', '2026-10-04'])
   await expect(references.nth(1)).toContainText('Nested projects')
   await expect(references.nth(1)).toContainText('暂无记录')
@@ -4295,7 +4310,7 @@ test('existing cross-database rollup allows a new formula and a second target ro
   await formula.getByRole('button', { name: '数字相加模板' }).click()
   await formula.getByLabel('结果类型').selectOption('number')
   await formula.getByRole('button', { name: '保存属性' }).click()
-  await expect(table.getByRole('button', { name: '公式', exact: true })).toBeVisible()
+  await expect(table.locator('.eotion-database-header-name').filter({ hasText: '公式' })).toHaveCount(1)
   const relationPanel = await openAdvancedPropertyCreator(page, table, '关联')
   await relationPanel.getByLabel('目标数据库').selectOption(third.id)
   await relationPanel.getByRole('button', { name: '保存属性' }).click()
