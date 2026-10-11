@@ -37,6 +37,8 @@ Drawer Motion 最终复验（2026-10-11，基线 `65e7b5e`）：**PASS**。Overl
 
 Property Menu 使用共享 `EotionPopover` 与 `EotionContextMenu`，标准菜单仅包含带图标的重命名、变更类型、删除（danger）；title 的变更类型与删除禁用。菜单和类型列表的外部点击、Escape、焦点返回、定位与浮层互斥由共享底座负责。所有 menu / select / lightweight popover 优先使用此底座，禁止为 Property Menu 单独维护 Teleport、fixed 定位或外部点击监听。
 
+属性抽屉中的 Property Menu、名称 contenteditable、删除或选项 Modal 优先处理自身 Escape；共享 Overlay 的 window capture 不抢占这些内层交互。关闭内层菜单或 Modal、取消原位编辑后，父属性面板继续保留。
+
 重命名关闭菜单后聚焦 Property Settings 行或 Table Header 的原名称文本，将其切换为 contenteditable，caret 位于末尾；blur / Enter 保存 trim 后的名称，Escape 恢复原名，IME Enter 不提交。空值恢复原名，超过 100 字符明确报错，写入失败恢复原显示并提示错误；仍调用既有 Property update/CAS，Property ID 不变。删除先关闭菜单，再打开 viewport backdrop 的全局 `EotionProductOverlay mode="modal"`；取消、Escape、backdrop 不删除，确认后调用既有删除 API，失败保留明确提示与依赖/409 语义。
 
 类型入口切换为同一 Popover 中的文本、数字、复选框、选择、日期、关联、汇总、公式列表，当前类型标记选中；选择后关闭，不伪造已保存结果，不改变 Property ID 或 Cell 数据。**Property Type mutation requires separate domain task.** Database UX Final Acceptance 仍为后续独立任务，本轮不进入 P9。

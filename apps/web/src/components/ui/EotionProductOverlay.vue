@@ -224,6 +224,10 @@ function onBackdropClick(event: MouseEvent) {
 
 function onWindowKeydown(event: KeyboardEvent) {
   if (!open.value || (props.mode !== 'drawer' && props.mode !== 'page') || event.key !== 'Escape' || event.isComposing || event.keyCode === 229 || event.defaultPrevented) return
+  const target = event.target instanceof HTMLElement ? event.target : null
+  const owningOverlay = target?.closest('.eotion-product-overlay')
+  if (owningOverlay && owningOverlay !== surface.value) return
+  if (target?.closest('.eotion-popover-panel, [contenteditable="true"]')) return
   event.preventDefault()
   event.stopPropagation()
   close()
