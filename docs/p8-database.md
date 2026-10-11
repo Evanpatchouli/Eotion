@@ -611,4 +611,6 @@ Title 永远禁止变更类型；同类型请求在校验预期版本后返回 n
 
 所有 Views 删除引用变更属性的 filters；target 为 relation/rollup/formula 时删除该属性 sorts，basic/select 保留 sorts。visibleProperties/propertyOrder 保持原值；所有结果继续通过 View config validator，仅实际修复的 View 递增版本。依赖非法返回 409，不自动删除或改写 Formula/Rollup。响应为 database、property、convertedRecordCount、clearedRecordCount、repairedViewCount；Record 计数只统计已有 key 的转换/清理，缺失 key 不计数，迁移单次扫描完成。
 
-本基础能力尚未接入 Property Menu UI 或修改 Type List；Database UX Final Acceptance/P9 不属于本次交付。
+Property Menu 已接入 text/number/checkbox/select/date 五种基础 target。当前类型点击只关闭列表；不同基础类型先关闭列表，再用 `EotionProductOverlay mode="modal"` 确认。正文按服务端 conversion 规则说明转换或清空及筛选移除，不扫描客户端 Records。确认后通过 typed SDK/Web service 调用专用 `/type` endpoint，沿用 online-only、auth/workspace identity fence、数据库 mutation serialization 与 `notifyDatabaseUpdated`；成功调用 `refreshSchemaMutation()` 更新属性类型/版本、记录 Cell 和 View filter/sort，并关闭确认框。
+
+失败保留确认框和原类型，显示服务端错误并允许取消/重试；409 刷新 schema 后提示重新确认，并使用刷新后的版本。依赖冲突不会自动删除 Formula/Rollup。关联/汇总/公式点击仅提示尚需配置，不提交 type change，也不改变高级配置入口。定向 Web 回归覆盖基础转换、稳定 Property ID、View 修复、取消/失败和 Desktop/390px Phone。Advanced Property Type Mutation UI hookup、Database UX Final Acceptance/P9 不属于本次交付。

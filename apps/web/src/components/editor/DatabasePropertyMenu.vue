@@ -75,7 +75,7 @@ watch(showingTypes, async (value) => {
         <EotionContextMenu :items="items(close)" />
       </div>
       <div v-else ref="typeList" class="database-property-types" role="group" aria-label="更改属性类型">
-        <button v-for="item in addableTypes" :key="item.type" type="button" role="menuitem" :aria-current="property.type === item.type ? 'true' : undefined" :data-property-type="item.type" data-popover-item @click.stop="close(false); showingTypes = false; emit('changeType', item.type)">
+        <button v-for="item in addableTypes" :key="item.type" type="button" role="menuitem" :aria-current="property.type === item.type ? 'true' : undefined" :data-property-type="item.type" data-popover-item @click.stop="close(); showingTypes = false; if (item.type !== property.type) emit('changeType', item.type)">
           <EotionIcon :name="typeIcons[item.type]" :size="16" /><span>{{ item.label }}</span><EotionIcon v-if="property.type === item.type" :name="IconName.Check" :size="16" />
         </button>
       </div>

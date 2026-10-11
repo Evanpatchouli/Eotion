@@ -11,6 +11,8 @@ import type {
   DatabaseRecordPageCreateRequest,
   DatabasePropertyCreateRequest,
   DatabasePropertyUpdateRequest,
+  DatabasePropertyTypeChangeRequest,
+  DatabasePropertyTypeChangeResponse,
   DatabasePropertyDeleteRequest,
   DatabaseViewHttpCreateRequest,
   DatabaseViewUpdateRequest,
@@ -125,6 +127,7 @@ export class EotionApiClient {
     createDatabaseRecord: (workspaceId: string, databaseId: string, input: DatabaseRecordPageCreateRequest, signal?: AbortSignal) => Promise<{ record: DatabaseTableRecordResponse; page: PageResponse }>
     createDatabaseProperty: (workspaceId: string, databaseId: string, input: DatabasePropertyCreateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; property: DatabasePropertyResponse }>
     updateDatabaseProperty: (workspaceId: string, databaseId: string, propertyId: string, input: DatabasePropertyUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; property: DatabasePropertyResponse }>
+    changeDatabasePropertyType: (workspaceId: string, databaseId: string, propertyId: string, input: DatabasePropertyTypeChangeRequest, signal?: AbortSignal) => Promise<DatabasePropertyTypeChangeResponse>
     deleteDatabaseProperty: (workspaceId: string, databaseId: string, propertyId: string, input: DatabasePropertyDeleteRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse }>
     createDatabaseView: (workspaceId: string, databaseId: string, input: DatabaseViewHttpCreateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; view: DatabaseViewResponse }>
     updateDatabaseView: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; view: DatabaseViewResponse }>
@@ -210,6 +213,7 @@ export class EotionApiClient {
       createDatabaseRecord: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/records`, { method: 'POST', body: input, signal }),
       createDatabaseProperty: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/properties`, { method: 'POST', body: input, signal }),
       updateDatabaseProperty: (workspaceId, databaseId, propertyId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/properties/${segment(propertyId)}`, { method: 'PATCH', body: input, signal }),
+      changeDatabasePropertyType: (workspaceId, databaseId, propertyId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/properties/${segment(propertyId)}/type`, { method: 'PATCH', body: input, signal }),
       deleteDatabaseProperty: (workspaceId, databaseId, propertyId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/properties/${segment(propertyId)}`, { method: 'DELETE', body: input, signal }),
       createDatabaseView: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views`, { method: 'POST', body: input, signal }),
       updateDatabaseView: (workspaceId, databaseId, viewId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}`, { method: 'PATCH', body: input, signal }),

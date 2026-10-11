@@ -1,5 +1,5 @@
 import { createLocalId } from '@eotion/storage'
-import type { DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest } from '@eotion/contracts'
+import type { DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyTypeChangeRequest, DatabasePropertyTypeChangeResponse, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest } from '@eotion/contracts'
 import { nextOrderKey } from '../utils/pageTree'
 
 import { flushActivePageEditor } from '../editor/activePageEditor'
@@ -268,6 +268,19 @@ export async function updateProductDatabaseProperty(workspaceId: string, databas
   return serializeDatabaseMutation(workspaceId, databaseId, async () => {
     assertOnlineAndCurrent(workspaceId, userId)
     const result = await api.databases.updateDatabaseProperty(workspaceId, databaseId, propertyId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
+}
+
+export async function changeProductDatabasePropertyType(workspaceId: string, databaseId: string, propertyId: string, input: DatabasePropertyTypeChangeRequest): Promise<DatabasePropertyTypeChangeResponse> {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再编辑数据库。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const result = await api.databases.changeDatabasePropertyType(workspaceId, databaseId, propertyId, input)
     assertOnlineAndCurrent(workspaceId, userId)
     notifyDatabaseUpdated({ workspaceId, databaseId })
     return result

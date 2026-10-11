@@ -2,7 +2,7 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
-import { DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig } from '@eotion/domain/database'
+import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig } from '@eotion/domain/database'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -148,6 +148,8 @@ type DatabaseApi = {
   failViewUpdates: number
   failPropertyUpdates: number
   failPropertyDeletes: number
+  failPropertyTypeChanges: number
+  conflictPropertyTypeChanges: number
   abortViewCreatesAfterCommit: number
   abortViewDeletesAfterCommit: number
   failRecordPageReads: number
@@ -167,7 +169,7 @@ type DatabaseApi = {
   failRelationCandidates: number
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
@@ -189,6 +191,8 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     failViewUpdates: options.failViewUpdates ?? 0,
     failPropertyUpdates: options.failPropertyUpdates ?? 0,
     failPropertyDeletes: options.failPropertyDeletes ?? 0,
+    failPropertyTypeChanges: options.failPropertyTypeChanges ?? 0,
+    conflictPropertyTypeChanges: options.conflictPropertyTypeChanges ?? 0,
     abortViewCreatesAfterCommit: options.abortViewCreatesAfterCommit ?? 0,
     abortViewDeletesAfterCommit: options.abortViewDeletesAfterCommit ?? 0,
     failRecordPageReads: options.failRecordPageReads ?? 0, failSnapshots: options.failSnapshots ?? 0,
@@ -379,6 +383,55 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       propertyItem.version += 1; databaseItem.version += 1
       return json(route, 200, { database: databaseItem, property: propertyItem })
     }
+    const propertyTypePath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/properties/([^/]+)/type$`, 'u').exec(pathname)
+    if (propertyTypePath && request.method() === 'PATCH') {
+      if (api.failPropertyTypeChanges > 0) { api.failPropertyTypeChanges -= 1; return json(route, 503, { statusCode: 503, message: 'Property type change rejected' }) }
+      const databaseItem = api.databases.find(item => item.id === propertyTypePath[1])
+      const propertyItem = api.properties.find(item => item.id === propertyTypePath[2] && item.databaseId === propertyTypePath[1])
+      if (!databaseItem || !propertyItem) return json(route, 404, { statusCode: 404, message: 'Database property not found' })
+      const input = payload as { targetType: TestProperty['type']; config?: DatabasePropertyConfig; expectedDatabaseVersion: number; expectedPropertyVersion: number }
+      if (api.conflictPropertyTypeChanges > 0) {
+        api.conflictPropertyTypeChanges -= 1
+        propertyItem.version += 1
+        databaseItem.version += 1
+        return json(route, 409, { statusCode: 409, message: 'Database or property version is stale' })
+      }
+      if (input.expectedDatabaseVersion !== databaseItem.version || input.expectedPropertyVersion !== propertyItem.version) return json(route, 409, { statusCode: 409, message: 'Database or property version is stale' })
+      let convertedRecordCount = 0
+      let clearedRecordCount = 0
+      for (const item of api.records.filter(item => item.databaseId === databaseItem.id)) {
+        if (Object.hasOwn(item.properties, propertyItem.id)) {
+          const conversion = convertDatabasePropertyValueForTypeChange(propertyItem.type, input.targetType, item.properties[propertyItem.id]!)
+          if (conversion.action === 'keep') {
+            item.properties[propertyItem.id] = conversion.value
+            convertedRecordCount += 1
+          } else {
+            delete item.properties[propertyItem.id]
+            clearedRecordCount += 1
+          }
+        }
+        item.version += 1
+      }
+      let repairedViewCount = 0
+      for (const item of api.views.filter(item => item.databaseId === databaseItem.id)) {
+        const nextConfig = {
+          ...item.config,
+          filters: item.config.filters.filter(filter => filter.propertyId !== propertyItem.id),
+          sorts: ['relation', 'rollup', 'formula'].includes(input.targetType) ? item.config.sorts.filter(sort => sort.propertyId !== propertyItem.id) : item.config.sorts,
+        }
+        if (nextConfig.filters.length !== item.config.filters.length || nextConfig.sorts.length !== item.config.sorts.length) {
+          item.config = nextConfig
+          item.version += 1
+          repairedViewCount += 1
+        }
+      }
+      propertyItem.type = input.targetType
+      propertyItem.options = input.targetType === 'select' ? [] : undefined
+      propertyItem.config = input.config
+      propertyItem.version += 1
+      databaseItem.version += 1
+      return json(route, 200, { database: databaseItem, property: propertyItem, convertedRecordCount, clearedRecordCount, repairedViewCount })
+    }
     if (propertyPath && request.method() === 'DELETE') {
       if (api.failPropertyDeletes > 0) { api.failPropertyDeletes -= 1; return json(route, 503, { statusCode: 503, message: 'Property delete rejected' }) }
       const databaseItem = api.databases.find((item) => item.id === propertyPath[1])!
@@ -538,6 +591,13 @@ async function beginPropertyRename(page: Page, scope: Locator, propertyName: str
   await scope.getByRole('button', { name: `属性设置 ${propertyName}` }).click()
   await page.getByRole('menu', { name: `属性设置: ${propertyName}` }).getByRole('menuitem', { name: '重命名' }).click()
   return scope.getByRole('textbox', { name: `属性名称 ${propertyName}` })
+}
+
+async function beginPropertyTypeChange(page: Page, scope: Locator, propertyName: string, targetType: string): Promise<Locator> {
+  await scope.getByRole('button', { name: `属性设置 ${propertyName}` }).click()
+  await page.getByRole('menu', { name: `属性设置: ${propertyName}` }).getByRole('menuitem', { name: '变更类型' }).click()
+  await page.getByRole('group', { name: '更改属性类型' }).getByRole('menuitem', { name: targetType, exact: true }).click()
+  return page.getByRole('dialog', { name: '变更属性类型？' })
 }
 
 async function submitNewRecord(table: ReturnType<Page['locator']>) {
@@ -1256,6 +1316,151 @@ test('database UX controls render library icons instead of text glyphs', async (
   await expect(page.getByRole('group', { name: '数据库视图' }).getByRole('button', { name: '新建视图' }).locator('svg')).toHaveCount(1)
 })
 
+test('basic property type changes convert stored values and repair filters while retaining compatible sorts', async ({ page }) => {
+  const conversionProperty = property('conversion-number-text', rootDatabase.id, 'Convertible points', 'text')
+  const numberProperty = property('conversion-number', rootDatabase.id, 'Convertible count', 'number')
+  const dateProperty = property('conversion-date', rootDatabase.id, 'Convertible date', 'date')
+  const checkboxProperty = property('conversion-checkbox', rootDatabase.id, 'Convertible checkbox', 'text')
+  const selectProperty = property('conversion-select', rootDatabase.id, 'Convertible select', 'text')
+  const dateClearProperty = property('conversion-date-clear', rootDatabase.id, 'Convertible due', 'text')
+  const secondRecord = record('conversion-second-record', rootDatabase.id, 'conversion-second-page', {
+    ...basicRecord.properties,
+    'conversion-number-text': 'not a number',
+    'conversion-number': 8,
+    'conversion-date': '2026-10-10',
+    'conversion-checkbox': 'yes',
+    'conversion-select': 'open',
+    'conversion-date-clear': '2026-10-10',
+  })
+  const firstRecord = {
+    ...basicRecord,
+    properties: {
+      ...basicRecord.properties,
+      'conversion-number-text': ' 12.5 ',
+      'conversion-number': 42,
+      'conversion-date': '2026-10-04',
+      'conversion-checkbox': 'true',
+      'conversion-select': 'status-open',
+      'conversion-date-clear': 'today',
+    },
+  }
+  const filteredView = view('view-root-id', rootDatabase.id, 'Table', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    filters: [{ propertyId: conversionProperty.id, operator: 'contains', value: '12' }],
+    sorts: [{ propertyId: conversionProperty.id, direction: 'asc' }],
+  })
+  const api = await installApi(page, [
+    block('property-conversion', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], {
+    databases: [rootDatabase], views: [filteredView],
+    properties: [...rootProperties, conversionProperty, numberProperty, dateProperty, checkboxProperty, selectProperty, dateClearProperty],
+    records: [firstRecord, secondRecord],
+  })
+  api.pages.push(
+    { ...pageRecord, id: firstRecord.pageId, title: 'Launch plan', role: 'database-record' },
+    { ...pageRecord, id: secondRecord.pageId, title: 'Second plan', role: 'database-record' },
+  )
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  await expect(table.locator('tbody tr')).toHaveCount(1)
+
+  const firstTypeDialog = await beginPropertyTypeChange(page, table, conversionProperty.name, '数字')
+  await expect(firstTypeDialog).toBeVisible()
+  await expect(firstTypeDialog).toContainText('可转换的数字文本会保留')
+  await expect(firstTypeDialog).toContainText('现有筛选条件会被移除')
+  const requestCountBeforeConfirm = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${conversionProperty.id}/type`)).length
+  expect(requestCountBeforeConfirm).toBe(0)
+  await firstTypeDialog.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect.poll(() => api.properties.find(item => item.id === conversionProperty.id)?.type).toBe('number')
+  await expect.poll(() => api.records.find(item => item.id === firstRecord.id)?.properties[conversionProperty.id]).toBe(12.5)
+  expect(api.records.find(item => item.id === secondRecord.id)?.properties[conversionProperty.id]).toBeUndefined()
+  expect(api.views[0]?.config.filters).toEqual([])
+  expect(api.views[0]?.config.sorts).toEqual([{ propertyId: conversionProperty.id, direction: 'asc' }])
+  await expect(table.locator('tbody tr')).toHaveCount(2)
+  const convertedNumber = table.getByRole('button', { name: '12.5', exact: true })
+  await convertedNumber.click()
+  const convertedNumberEditor = table.getByRole('textbox', { name: 'Convertible points 值' })
+  await expect(convertedNumberEditor).toBeFocused()
+  await expect(convertedNumberEditor).toHaveAttribute('inputmode', 'decimal')
+  await page.keyboard.press('Escape')
+
+  const numberDialog = await beginPropertyTypeChange(page, table, numberProperty.name, '文本')
+  await numberDialog.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect.poll(() => api.properties.find(item => item.id === numberProperty.id)?.type).toBe('text')
+  expect(api.records.find(item => item.id === firstRecord.id)?.properties[numberProperty.id]).toBe('42')
+  expect(api.records.find(item => item.id === secondRecord.id)?.properties[numberProperty.id]).toBe('8')
+
+  const dateDialog = await beginPropertyTypeChange(page, table, dateProperty.name, '文本')
+  await dateDialog.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect.poll(() => api.properties.find(item => item.id === dateProperty.id)?.type).toBe('text')
+  expect(api.records.find(item => item.id === firstRecord.id)?.properties[dateProperty.id]).toBe('2026-10-04')
+  expect(api.records.find(item => item.id === secondRecord.id)?.properties[dateProperty.id]).toBe('2026-10-10')
+
+  for (const [item, targetType, label] of [
+    [checkboxProperty, 'checkbox', '复选框'], [selectProperty, 'select', '选择'], [dateClearProperty, 'date', '日期'],
+  ] as const) {
+    const dialog = await beginPropertyTypeChange(page, table, item.name, label)
+    await dialog.getByRole('button', { name: '变更类型', exact: true }).click()
+    await expect.poll(() => api.properties.find(propertyItem => propertyItem.id === item.id)?.type).toBe(targetType)
+    expect(api.records.find(recordItem => recordItem.id === firstRecord.id)?.properties[item.id]).toBeUndefined()
+    expect(api.records.find(recordItem => recordItem.id === secondRecord.id)?.properties[item.id]).toBeUndefined()
+  }
+  for (const item of [conversionProperty, numberProperty, dateProperty, checkboxProperty, selectProperty, dateClearProperty]) {
+    expect(api.properties.find(propertyItem => propertyItem.id === item.id)?.id).toBe(item.id)
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openDatabaseSetting(page, table, '属性')
+  const settingsPanel = page.getByRole('group', { name: '属性管理' })
+  await settingsPanel.getByRole('button', { name: '属性设置 Notes' }).click()
+  await page.getByRole('menu', { name: '属性设置: Notes' }).getByRole('menuitem', { name: '变更类型' }).click()
+  await page.getByRole('group', { name: '更改属性类型' }).getByRole('menuitem', { name: '数字' }).click()
+  const settingsTypeDialog = page.getByRole('dialog', { name: '变更属性类型？' })
+  await expect(settingsTypeDialog).toBeVisible()
+  const settingsDialogBounds = await settingsTypeDialog.boundingBox()
+  expect(settingsDialogBounds).not.toBeNull()
+  expect(settingsDialogBounds!.x).toBeGreaterThanOrEqual(0)
+  expect(settingsDialogBounds!.x + settingsDialogBounds!.width).toBeLessThanOrEqual(390)
+  await settingsTypeDialog.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(settingsTypeDialog).toHaveCount(0)
+  await expect(settingsPanel.locator('.eotion-database-property-row').filter({ hasText: 'Notes' })).toContainText('数字')
+  expect(api.properties.find(item => item.id === 'root-text')?.type).toBe('number')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.includes('/properties/') && path.endsWith('/type'))).toHaveLength(7)
+})
+
+test('property type change failures keep the confirmation available and report conflicts without optimistic type changes', async ({ page }) => {
+  const api = await installApi(page, [
+    block('property-type-errors', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord], failPropertyTypeChanges: 1 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  let dialog = await beginPropertyTypeChange(page, table, 'Notes', '数字')
+  await dialog.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('Property type change rejected')
+  await expect(dialog).toBeVisible()
+  expect(api.properties.find(item => item.id === 'root-text')?.type).toBe('text')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-text/type'))).toHaveLength(1)
+  await dialog.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  expect(api.properties.find(item => item.id === 'root-text')?.type).toBe('number')
+
+  api.conflictPropertyTypeChanges = 1
+  const tableReadsBeforeConflict = api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith('/table')).length
+  const dateDialog = await beginPropertyTypeChange(page, table, 'Due', '文本')
+  await dateDialog.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(dateDialog.getByRole('alert')).toContainText('数据库结构已变化，已刷新，请重新确认')
+  await expect(dateDialog.getByRole('alert')).toContainText('stale')
+  await expect(dateDialog).toBeVisible()
+  expect(api.properties.find(item => item.id === 'root-date')?.type).toBe('date')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-date/type'))).toHaveLength(1)
+  expect(api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith('/table')).length).toBeGreaterThan(tableReadsBeforeConflict)
+  await dateDialog.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(dateDialog).toHaveCount(0)
+  expect(api.properties.find(item => item.id === 'root-date')?.type).toBe('text')
+  const dateTypeRequest = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-date/type')).at(-1)!
+  expect(dateTypeRequest.payload?.expectedPropertyVersion).toBe(api.properties.find(item => item.id === 'root-date')?.version - 1)
+  expect(dateTypeRequest.payload?.expectedDatabaseVersion).toBe(api.databases[0]?.version - 1)
+})
+
 test('property schema mutations refresh inside the open panel and preserve unsaved view drafts', async ({ page }) => {
   await installApi(page, [
     block('property-refresh-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
@@ -1327,22 +1532,52 @@ test('property menu keeps its focus, type choices and database-local dismissal b
     await expect(item.locator('svg')).toHaveCount(label === '选择' ? 2 : 1)
   }
   await expect(types.getByRole('menuitem', { name: '选择' })).toHaveAttribute('aria-current', 'true')
+  const sameTypeRequestCount = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select/type')).length
+  await types.getByRole('menuitem', { name: '选择' }).click()
+  await expect(types).toHaveCount(0)
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select/type'))).toHaveLength(sameTypeRequestCount)
+  await trigger.click()
+  await menu.getByRole('menuitem', { name: '变更类型' }).click()
+  await expect(types).toBeVisible()
   await screenshot(page, 'property-menu-types-desktop')
-  await page.setViewportSize({ width: 320, height: 740 })
-  await screenshot(page, 'property-menu-types-phone-320')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await screenshot(page, 'property-menu-types-phone-390')
   const requestsBeforeTypeChoice = api.requests.length
-  await types.getByRole('menuitem', { name: '公式' }).click()
-  await expect(page.getByRole('alert')).toContainText('暂不支持更改属性类型')
-  await expect(page.getByRole('menu', { name: '属性设置: Status' })).toHaveCount(0)
+  await types.getByRole('menuitem', { name: '数字' }).click()
+  const typeDialog = page.getByRole('dialog', { name: '变更属性类型？' })
+  await expect(typeDialog).toBeVisible()
+  await expect(typeDialog.getByRole('button', { name: '变更类型', exact: true })).toBeVisible()
+  await expect(typeDialog.getByRole('button', { name: '取消', exact: true })).toBeVisible()
+  const typeDialogBounds = await typeDialog.boundingBox()
+  expect(typeDialogBounds).not.toBeNull()
+  expect(typeDialogBounds!.x).toBeGreaterThanOrEqual(0)
+  expect(typeDialogBounds!.x + typeDialogBounds!.width).toBeLessThanOrEqual(390)
+  await screenshot(page, 'property-type-confirmation-phone-390')
+  await typeDialog.getByRole('button', { name: '取消', exact: true }).click()
+  await expect(typeDialog).toHaveCount(0)
   expect(api.properties.find(item => item.id === 'root-select')?.type).toBe('select')
-  expect(api.requests.slice(requestsBeforeTypeChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select'))).toBe(false)
+  expect(api.requests.slice(requestsBeforeTypeChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select/type'))).toBe(false)
 
   await trigger.click()
   await menu.getByRole('menuitem', { name: '变更类型' }).click()
   await expect(types).toBeVisible()
+  await types.getByRole('menuitem', { name: '文本' }).click()
+  const escapeDialog = page.getByRole('dialog', { name: '变更属性类型？' })
+  await expect(escapeDialog).toBeVisible()
   await page.keyboard.press('Escape')
+  await expect(escapeDialog).toHaveCount(0)
   await expect(types).toHaveCount(0)
   await expect(trigger).toBeFocused()
+  expect(api.requests.slice(requestsBeforeTypeChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select/type'))).toBe(false)
+
+  await trigger.click()
+  await menu.getByRole('menuitem', { name: '变更类型' }).click()
+  await page.getByRole('group', { name: '更改属性类型' }).getByRole('menuitem', { name: '日期' }).click()
+  const backdropDialog = page.getByRole('dialog', { name: '变更属性类型？' })
+  await expect(backdropDialog).toBeVisible()
+  await page.mouse.click(1, 1)
+  await expect(backdropDialog).toHaveCount(0)
+  expect(api.requests.slice(requestsBeforeTypeChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select/type'))).toBe(false)
 
   await trigger.click()
   await menu.getByRole('menuitem', { name: '变更类型' }).click()
@@ -1350,7 +1585,7 @@ test('property menu keeps its focus, type choices and database-local dismissal b
   await table.locator('.eotion-database-header-name[data-property-id="root-text"]').click()
   await expect(types).toHaveCount(0)
   expect(api.properties.find(item => item.id === 'root-select')?.type).toBe('select')
-  expect(api.requests.slice(requestsBeforeTypeChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select'))).toBe(false)
+  expect(api.requests.slice(requestsBeforeTypeChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select/type'))).toBe(false)
 
   await trigger.click()
   await expect(menu).toBeVisible()
@@ -1363,6 +1598,16 @@ test('property menu keeps its focus, type choices and database-local dismissal b
   await table.locator('.eotion-database-header-name[data-property-id="root-text"]').click()
   await expect(menu).toHaveCount(0)
   await expect(table).toContainText('Launch plan')
+
+  for (const advancedType of ['关联', '汇总', '公式']) {
+    const requestsBeforeAdvancedChoice = api.requests.length
+    await trigger.click()
+    await menu.getByRole('menuitem', { name: '变更类型' }).click()
+    await page.getByRole('group', { name: '更改属性类型' }).getByRole('menuitem', { name: advancedType }).click()
+    await expect(page.getByRole('alert')).toContainText('该类型尚需配置')
+    expect(api.properties.find(item => item.id === 'root-select')?.type).toBe('select')
+    expect(api.requests.slice(requestsBeforeAdvancedChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select/type'))).toBe(false)
+  }
 
   const keyboardTrigger = table.getByRole('button', { name: '属性设置 Notes' })
   await keyboardTrigger.focus()

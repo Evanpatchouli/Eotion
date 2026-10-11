@@ -22,7 +22,7 @@ import {
   createProductDatabaseView, deleteProductDatabaseView, listProductDatabaseViews,
   clearProductDatabaseViewDeleteState, getProductDatabaseViewDeleteState, setProductDatabaseViewDeleteState,
   isProductDatabaseRecordCreationUncertain, loadProductDatabaseTable, prepareProductDatabaseRecordPage,
-  updateProductDatabaseProperty, updateProductDatabaseRecordCell, updateProductDatabaseView,
+  updateProductDatabaseProperty, changeProductDatabasePropertyType, updateProductDatabaseRecordCell, updateProductDatabaseView,
   listProductDatabases, listProductRelationCandidates, resolveProductRelationTitles,
 } from '../../services/productDatabases'
 import { ApiError, errorMessage } from '../../services/productApi'
@@ -216,7 +216,19 @@ const staleReadonly = ref(false)
 const savingPropertyName = ref(false)
 let deleteRequestEpoch = 0
 const creationUncertain = computed(() => isProductDatabaseRecordCreationUncertain(auth.user?.id ?? '', workspaceId.value, databaseId.value))
-const writable = computed(() => online.value && !staleReadonly.value && !loading.value && !savingCell.value && !viewSubmitting.value && !savingPropertyName.value && !deletingProperty.value)
+const writable = computed(() => online.value && !staleReadonly.value && !loading.value && !savingCell.value && !viewSubmitting.value && !savingPropertyName.value && !deletingProperty.value && !changingPropertyType.value)
+type BasicPropertyType = 'text' | 'number' | 'checkbox' | 'select' | 'date'
+const typeChangeTarget = ref<{ property: DatabasePropertyResponse; targetType: BasicPropertyType; databaseVersion: number } | null>(null)
+const changingPropertyType = ref(false)
+const typeChangeError = ref('')
+let typeChangeRequestEpoch = 0
+const typeChangeDescription = computed(() => {
+  const change = typeChangeTarget.value
+  if (!change) return ''
+  if (change.targetType === 'text' && ['number', 'date'].includes(change.property.type)) return '已有属性值会转换为文本。'
+  if (change.property.type === 'text' && change.targetType === 'number') return '可转换的数字文本会保留；无法转换的值会被清空。'
+  return '已有属性值将被清空。'
+})
 const propertyCreatorOpen = ref(false)
 const propertyCreatorStyle = ref<Record<string, string>>({})
 const propertyCreatorTeleportTarget = ref<HTMLElement | string>('body')
@@ -493,7 +505,58 @@ function onPropertyNameKeydown(event: KeyboardEvent, property: DatabasePropertyR
     element.blur()
   }
 }
-function unsupportedPropertyType(): void { mutationError.value = '暂不支持更改属性类型，当前不会修改数据。' }
+function requestPropertyTypeChange(property: DatabasePropertyResponse, targetType: DatabasePropertyType): void {
+  if (!writable.value || property.type === 'title' || property.type === targetType) return
+  if (!['text', 'number', 'checkbox', 'select', 'date'].includes(targetType)) {
+    mutationError.value = '该类型尚需配置，当前不会修改数据。'
+    return
+  }
+  mutationError.value = ''
+  typeChangeError.value = ''
+  typeChangeTarget.value = { property, targetType: targetType as BasicPropertyType, databaseVersion: databaseVersion.value }
+}
+function closePropertyTypeChange(open = false): void {
+  if (open || changingPropertyType.value) return
+  typeChangeTarget.value = null
+  typeChangeError.value = ''
+  runDeferredRefresh()
+}
+async function confirmPropertyTypeChange(): Promise<void> {
+  const selected = typeChangeTarget.value
+  if (!selected || !writable.value) return
+  const current = properties.value.find(property => property.id === selected.property.id)
+  if (!current || current.type === 'title') { typeChangeError.value = '属性已不存在或无法变更，请取消后重新选择。'; return }
+  if (current.type === selected.targetType) { closePropertyTypeChange(); return }
+  if (current.version !== selected.property.version || databaseVersion.value !== selected.databaseVersion) {
+    typeChangeTarget.value = { ...selected, property: current, databaseVersion: databaseVersion.value }
+    typeChangeError.value = '数据库结构已变化，已刷新，请重新确认。'
+    return
+  }
+  const epoch = ++typeChangeRequestEpoch
+  const workspace = workspaceId.value
+  const database = databaseId.value
+  const identity = [auth.user?.id ?? '', workspace, database, viewId.value].join('\u0000')
+  const isCurrent = () => epoch === typeChangeRequestEpoch && identity === [auth.user?.id ?? '', workspaceId.value, databaseId.value, viewId.value].join('\u0000')
+  changingPropertyType.value = true
+  typeChangeError.value = ''
+  try {
+    await changeProductDatabasePropertyType(workspace, database, current.id, {
+      targetType: selected.targetType, expectedDatabaseVersion: selected.databaseVersion, expectedPropertyVersion: current.version,
+    })
+    if (!isCurrent()) return
+    await refreshSchemaMutation()
+    if (isCurrent()) typeChangeTarget.value = null
+  } catch (cause) {
+    if (!isCurrent()) return
+    if (cause instanceof ApiError && cause.statusCode === 409) {
+      await refreshSchemaMutation()
+      if (!isCurrent()) return
+      const refreshed = properties.value.find(property => property.id === current.id)
+      if (refreshed) typeChangeTarget.value = { ...selected, property: refreshed, databaseVersion: databaseVersion.value }
+      typeChangeError.value = `${staleReadonly.value ? '数据库结构已变化，刷新未完成，请取消后重试加载。' : '数据库结构已变化，已刷新，请重新确认。'}${errorMessage(cause, '属性未变更。')}`
+    } else typeChangeError.value = errorMessage(cause, '属性类型未变更，请重试。')
+  } finally { if (isCurrent()) changingPropertyType.value = false }
+}
 function confirmDeleteProperty(property: DatabasePropertyResponse): void {
   if (!writable.value || property.type === 'title') return
   mutationError.value = ''
@@ -1206,7 +1269,7 @@ function onDatabaseChanged(event: Event): void {
   const detail = (event as CustomEvent<DatabaseRecordCreatedDetail | DatabaseUpdatedDetail>).detail
   if (detail?.workspaceId !== workspaceId.value) return
   if (detail.databaseId !== databaseId.value && !properties.value.some(property => property.type === 'relation' && (property.config as { targetDatabaseId: string }).targetDatabaseId === detail.databaseId)) return
-  if (cellPopover.value || cellEdit.value || relationPicker.value || propertyConfigType.value || settingsMenuOpen.value || viewControlsOpen.value) {
+  if (cellPopover.value || cellEdit.value || relationPicker.value || propertyConfigType.value || typeChangeTarget.value || settingsMenuOpen.value || viewControlsOpen.value) {
     externalRefreshPending = true
     return
   }
@@ -1285,6 +1348,7 @@ onMounted(() => {
   void loadTable()
 })
 onBeforeUnmount(() => {
+  typeChangeRequestEpoch += 1
   requestEpoch += 1
   relationRequestEpoch += 1
   relationTitleEpoch += 1
@@ -1299,6 +1363,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', closePopoversForViewportChange)
 })
 watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous) => {
+  typeChangeRequestEpoch += 1
+  changingPropertyType.value = false
+  typeChangeTarget.value = null
+  typeChangeError.value = ''
   requestEpoch += 1
   deleteRequestEpoch += 1
   deletingProperty.value = false
@@ -1395,7 +1463,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
             <button class="settings-icon-button" type="button" :aria-label="`${columnDraft.visible.includes(property.id) ? '隐藏' : '显示'}属性 ${displayPropertyName(property)}`" :aria-pressed="columnDraft.visible.includes(property.id)" :disabled="property.type === 'title'" :title="property.type === 'title' ? '标题属性始终显示' : undefined" @click.stop="toggleColumn(property.id)"><EotionIcon :name="columnDraft.visible.includes(property.id) ? IconName.Eye : IconName.EyeOff" :size="16" /></button>
             <button class="settings-icon-button" type="button" :aria-label="`列上移 ${displayPropertyName(property)}`" :disabled="index === 0" @click.stop="moveColumn(property.id, -1)"><EotionIcon :name="IconName.ArrowUp" :size="16" /></button>
             <button class="settings-icon-button" type="button" :aria-label="`列下移 ${displayPropertyName(property)}`" :disabled="index === columnDraftProperties.length - 1" @click.stop="moveColumn(property.id, 1)"><EotionIcon :name="IconName.ArrowDown" :size="16" /></button>
-            <DatabasePropertyMenu :property="property" :disabled="!writable" @rename="startPropertyRename(property, $event)" @change-type="unsupportedPropertyType" @delete="confirmDeleteProperty(property)"><template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="settings-icon-button database-property-settings-trigger" type="button" :aria-label="`属性设置 ${displayPropertyName(property)}`" @click.stop><EotionIcon :name="IconName.More" :size="16" /></button></template></DatabasePropertyMenu>
+            <DatabasePropertyMenu :property="property" :disabled="!writable" @rename="startPropertyRename(property, $event)" @change-type="requestPropertyTypeChange(property, $event)" @delete="confirmDeleteProperty(property)"><template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="settings-icon-button database-property-settings-trigger" type="button" :aria-label="`属性设置 ${displayPropertyName(property)}`" @click.stop><EotionIcon :name="IconName.More" :size="16" /></button></template></DatabasePropertyMenu>
           </div>
           <button type="button" :disabled="viewBusy || !writable" @click.stop="saveColumns">保存显示与顺序</button>
           <EotionButton class="settings-action" type="button" variant="secondary" :disabled="!writable" @click.stop="togglePropertyCreator($event)"><EotionIcon :name="IconName.Plus" :size="16" /> 新增属性</EotionButton>
@@ -1439,6 +1507,14 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
       <p v-if="mutationError" role="alert">{{ mutationError }}</p>
       <template #footer><EotionButton variant="secondary" type="button" :disabled="deletingProperty" @click="deletePropertyTarget = null; mutationError = ''">取消</EotionButton><EotionButton variant="danger" type="button" :disabled="deletingProperty || !online || !deletePropertyTarget" @click="confirmCurrentPropertyDeletion">{{ deletingProperty ? '正在删除…' : '删除属性' }}</EotionButton></template>
     </EotionProductOverlay>
+    <EotionProductOverlay :open="Boolean(typeChangeTarget)" mode="modal" :dismissible="!changingPropertyType" title="变更属性类型？" @update:open="closePropertyTypeChange">
+      <template v-if="typeChangeTarget">
+        <p>“{{ displayPropertyName(typeChangeTarget.property) }}”将从「{{ propertyTypeLabel(typeChangeTarget.property.type) }}」变更为「{{ propertyTypeLabel(typeChangeTarget.targetType) }}」。</p>
+        <p>{{ typeChangeDescription }}<br>现有筛选条件会被移除。</p>
+        <p v-if="typeChangeError" role="alert">{{ typeChangeError }}</p>
+      </template>
+      <template #footer><EotionButton variant="secondary" type="button" :disabled="changingPropertyType" @click="closePropertyTypeChange()">取消</EotionButton><EotionButton variant="primary" type="button" :disabled="!writable || !typeChangeTarget" @click="confirmPropertyTypeChange">{{ changingPropertyType ? '正在变更…' : '变更类型' }}</EotionButton></template>
+    </EotionProductOverlay>
     <EotionProductOverlay :open="Boolean(optionsProperty)" mode="modal" :title="`选择选项：${optionsProperty?.name ?? ''}`" @update:open="value => { if (!value) optionsPropertyId = '' }">
       <section v-if="optionsProperty" class="eotion-database-option-settings" role="group" :aria-label="`选择选项：${optionsProperty.name}`">
         <div v-for="option in optionsProperty.options ?? []" :key="option.id" class="eotion-database-option-edit">
@@ -1463,7 +1539,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
         <table class="eotion-database-table">
           <thead><tr>
             <th v-for="property in displayProperties" :key="property.id" scope="col">
-              <div class="eotion-database-header-property"><span class="eotion-database-header-name" :class="{ 'is-editing': editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId }" :role="editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId ? 'textbox' : undefined" :aria-label="editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId ? `属性名称 ${property.name}` : undefined" :contenteditable="editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId ? 'true' : 'false'" :data-property-id="property.id" @keydown="onPropertyNameKeydown($event, property)" @blur="finishPropertyRename(property)" @compositionstart="composingPropertyName = true" @compositionend="composingPropertyName = false">{{ displayPropertyName(property) }}</span><DatabasePropertyMenu :property="property" :disabled="!writable" @rename="startPropertyRename(property, $event)" @change-type="unsupportedPropertyType" @delete="confirmDeleteProperty(property)"><template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="eotion-database-property-trigger" type="button" :aria-label="`属性设置 ${displayPropertyName(property)}`" @click.stop><EotionIcon :name="IconName.ChevronDown" :size="16" /></button></template></DatabasePropertyMenu></div>
+              <div class="eotion-database-header-property"><span class="eotion-database-header-name" :class="{ 'is-editing': editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId }" :role="editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId ? 'textbox' : undefined" :aria-label="editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId ? `属性名称 ${property.name}` : undefined" :contenteditable="editingPropertyId === property.id && editingPropertySurface === 'header' && editingPropertyBlockId === blockId ? 'true' : 'false'" :data-property-id="property.id" @keydown="onPropertyNameKeydown($event, property)" @blur="finishPropertyRename(property)" @compositionstart="composingPropertyName = true" @compositionend="composingPropertyName = false">{{ displayPropertyName(property) }}</span><DatabasePropertyMenu :property="property" :disabled="!writable" @rename="startPropertyRename(property, $event)" @change-type="requestPropertyTypeChange(property, $event)" @delete="confirmDeleteProperty(property)"><template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="eotion-database-property-trigger" type="button" :aria-label="`属性设置 ${displayPropertyName(property)}`" @click.stop><EotionIcon :name="IconName.ChevronDown" :size="16" /></button></template></DatabasePropertyMenu></div>
             </th>
           </tr></thead>
           <tbody>
