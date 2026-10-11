@@ -469,6 +469,21 @@ async function screenshot(page: Page, name: string) {
   await page.screenshot({ path: path.join(directory, `${name}.png`), animations: 'disabled', fullPage: true })
 }
 
+async function expectButtonIconCentered(button: Locator, includeLabel = false) {
+  const geometry = await button.evaluate(element => {
+    const bounds = element.getBoundingClientRect()
+    const icon = element.querySelector('svg')!.getBoundingClientRect()
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT)
+    let textNode: Node | null = null
+    while ((textNode = walker.nextNode())) if (textNode.textContent?.trim()) break
+    const label = textNode ? (() => { const range = document.createRange(); range.selectNodeContents(textNode!); return range.getBoundingClientRect() })() : null
+    return { buttonX: bounds.x + bounds.width / 2, buttonY: bounds.y + bounds.height / 2, iconX: icon.x + icon.width / 2, iconY: icon.y + icon.height / 2, labelY: label ? label.y + label.height / 2 : null }
+  })
+  if (!includeLabel) expect(Math.abs(geometry.buttonX - geometry.iconX)).toBeLessThanOrEqual(1)
+  if (!includeLabel) expect(Math.abs(geometry.buttonY - geometry.iconY)).toBeLessThanOrEqual(1)
+  if (includeLabel) expect(Math.abs(geometry.labelY! - geometry.iconY)).toBeLessThanOrEqual(2)
+}
+
 function overlayFooter(content: Locator) {
   return content.locator('xpath=ancestor::dialog[1]').locator('.eotion-product-overlay__footer')
 }
@@ -526,14 +541,36 @@ function openingTrigger(page: Page, target: '记录' | '属性', layout: '桌面
   return openingGroup(page, target, layout).getByRole('button', { name: `${target}${layout}打开方式` })
 }
 
+function openingSettingsPanel(page: Page, target: '记录' | '属性') {
+  return page.getByRole('group', { name: target === '记录' ? '记录打开方式' : '属性管理' })
+}
+
+async function expandOpeningChoices(page: Page, target: '记录' | '属性') {
+  const trigger = page.getByRole('button', { name: '展开其他设备打开方式' })
+  if (await trigger.isVisible()) await trigger.click()
+  await expect(openingGroup(page, target, '桌面')).toBeVisible()
+  await expect(openingGroup(page, target, '平板')).toBeVisible()
+  await expect(openingGroup(page, target, '手机')).toBeVisible()
+}
+
+async function selectSettingOption(panel: Locator, label: string, value: string, optionName: string) {
+  const trigger = panel.getByRole('button', { name: label })
+  await trigger.click()
+  const overlay = panel.locator('xpath=ancestor::dialog[1]')
+  const menu = overlay.getByRole('menu', { name: label })
+  await menu.getByRole('menuitem', { name: optionName, exact: true }).click()
+  await expect(trigger).toHaveAttribute('data-value', value)
+}
+
 async function chooseOpening(page: Page, table: Locator, target: '记录' | '属性', layout: '桌面' | '平板' | '手机', mode: string) {
   const menu = page.getByRole('menu', { name: `${target}${layout}打开方式` })
   await expect(async () => {
-    if (!await openingGroup(page, target, layout).isVisible()) await openDatabaseSetting(page, table, target === '记录' ? '记录打开方式' : '属性')
+    if (!await openingSettingsPanel(page, target).isVisible()) await openDatabaseSetting(page, table, target === '记录' ? '记录打开方式' : '属性')
+    await expandOpeningChoices(page, target)
     if (!await menu.isVisible()) await openingTrigger(page, target, layout).click({ timeout: 1_000 })
     await expect(menu).toBeVisible({ timeout: 1_000 })
     await menu.getByRole('menuitem', { name: mode, exact: true }).click({ timeout: 1_000 })
-    if (!await openingGroup(page, target, layout).isVisible()) await openDatabaseSetting(page, table, target === '记录' ? '记录打开方式' : '属性')
+    if (!await openingSettingsPanel(page, target).isVisible()) await openDatabaseSetting(page, table, target === '记录' ? '记录打开方式' : '属性')
     await expect(openingTrigger(page, target, layout)).toContainText(mode, { timeout: 1_000 })
   }).toPass({ timeout: 8_000 })
 }
@@ -542,6 +579,7 @@ async function expectOpeningOptions(page: Page, table: Locator, target: '记录'
   const menu = page.getByRole('menu', { name: `${target}${layout}打开方式` })
   await expect(async () => {
     if (!await openingGroup(page, target, layout).isVisible()) await openDatabaseSetting(page, table, target === '记录' ? '记录打开方式' : '属性')
+    await expandOpeningChoices(page, target)
     if (!await menu.isVisible()) await openingTrigger(page, target, layout).click({ timeout: 1_000 })
     await expect(menu).toBeVisible({ timeout: 1_000 })
     expect((await menu.getByRole('menuitem').allTextContents()).map(text => text.replace('✓', '').trim())).toEqual(options)
@@ -1050,25 +1088,40 @@ test('database settings exposes five entries and record and property opening mod
   await expect(page.locator('.eotion-editor-content .tiptap')).toHaveAttribute('contenteditable', 'true')
 })
 
-test('record opening settings use modal on desktop and tablet and bottom drawer on phone', async ({ page }) => {
+test('opening settings show the current device by default and expand or collapse the other layouts', async ({ page }) => {
   await installApi(page, [
     block('settings-container-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
   ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
   await page.goto('/#/app/database-workspace/page/database-page')
   const table = page.locator('.eotion-editor-content .eotion-database')
 
-  for (const target of [
+  for (const device of [
     { width: 1440, mode: 'modal' },
     { width: 900, mode: 'modal' },
     { width: 390, mode: 'bottom-drawer' },
   ] as const) {
-    await page.setViewportSize({ width: target.width, height: 844 })
-    await openDatabaseSetting(page, table, '记录打开方式')
-    await expect(page.locator(`dialog.eotion-product-overlay--${target.mode}[open][aria-label="记录打开方式"]`)).toBeVisible()
-    await expect(openingTrigger(page, '记录', '桌面')).toBeVisible()
-    await expect(openingTrigger(page, '记录', '平板')).toBeVisible()
-    await expect(openingTrigger(page, '记录', '手机')).toBeVisible()
-    await closeDatabaseSetting(page, '记录打开方式')
+    await page.setViewportSize({ width: device.width, height: 844 })
+    for (const target of ['记录', '属性'] as const) {
+      const setting = target === '记录' ? '记录打开方式' : '属性'
+      const panel = target === '记录' ? '记录打开方式' : '属性管理'
+      await openDatabaseSetting(page, table, setting)
+      if (target === '记录') await expect(page.locator(`dialog.eotion-product-overlay--${device.mode}[open][aria-label="${setting}"]`)).toBeVisible()
+      else await expect(openingSettingsPanel(page, target)).toBeVisible()
+      const currentLayout = device.width === 390 ? '手机' : device.width === 900 ? '平板' : '桌面'
+      await expect(openingTrigger(page, target, currentLayout)).toBeVisible()
+      for (const layout of ['桌面', '平板', '手机'] as const) {
+        if (layout !== currentLayout) await expect(openingGroup(page, target, layout)).toHaveCount(0)
+      }
+      await expect(page.getByRole('button', { name: '展开其他设备打开方式' })).toHaveAttribute('aria-expanded', 'false')
+      await expandOpeningChoices(page, target)
+      await expect(page.getByRole('button', { name: '收起其他设备打开方式' })).toHaveAttribute('aria-expanded', 'true')
+      await expect(page.locator('.opening-choices__row .opening-choices__label').allTextContents()).resolves.toEqual(['桌面', '平板', '手机'].map(layout => currentLayout === layout ? `${layout}当前设备` : layout))
+      await page.getByRole('button', { name: '收起其他设备打开方式' }).click()
+      for (const layout of ['桌面', '平板', '手机'] as const) {
+        if (layout !== currentLayout) await expect(openingGroup(page, target, layout)).toHaveCount(0)
+      }
+      await closeDatabaseSetting(page, panel)
+    }
   }
 })
 
@@ -1079,6 +1132,7 @@ test('database UX controls render library icons instead of text glyphs', async (
   await page.goto('/#/app/database-workspace/page/database-page')
   const table = page.locator('#database-block-icon-audit-database')
   await openDatabaseSetting(page, table, '记录打开方式')
+  await expandOpeningChoices(page, '记录')
   for (const trigger of await page.locator('.opening-choices__trigger').all()) {
     await expect(trigger.locator('svg')).toHaveCount(1)
     await expect(trigger).not.toContainText('⌄')
@@ -1090,9 +1144,58 @@ test('database UX controls render library icons instead of text glyphs', async (
   await page.keyboard.press('Escape')
   await closeDatabaseSetting(page, '记录打开方式')
   await openDatabaseSetting(page, table, '属性')
+  await expandOpeningChoices(page, '属性')
   const propertiesPanel = page.getByRole('group', { name: '属性管理' })
-  for (const control of await propertiesPanel.locator('.eotion-database-property-row button, .eotion-database-property-grip').all()) {
+  await expect(propertiesPanel.getByRole('button', { name: '隐藏属性 名称' })).toBeDisabled()
+  await expect(propertiesPanel.getByRole('button', { name: '隐藏属性 名称' })).toHaveAttribute('title', '标题属性始终显示')
+  for (const viewport of [{ width: 1440, height: 900, suffix: 'desktop' }, { width: 390, height: 844, suffix: 'phone' }] as const) {
+    await closeDatabaseSetting(page, '属性管理')
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await openDatabaseSetting(page, table, '属性')
+    await expandOpeningChoices(page, '属性')
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+      const eye = propertiesPanel.getByRole('button', { name: '隐藏属性 Notes' }).filter({ visible: true })
+      await expect(eye).toHaveCount(1)
+      const geometry = await eye.evaluate(element => {
+        const button = element.getBoundingClientRect()
+        const icon = element.querySelector('svg')!.getBoundingClientRect()
+        const rowElement = element.closest('.eotion-database-property-row')!
+        const row = rowElement.getBoundingClientRect()
+        const rowChildren = [...rowElement.children].filter(child => child.getClientRects().length > 0).map(child => {
+          const bounds = child.getBoundingClientRect()
+          return { centerY: bounds.y + bounds.height / 2, tag: child.tagName, className: typeof child.className === 'string' ? child.className : '', text: child.textContent?.trim() ?? '' }
+        })
+        return { buttonX: button.x + button.width / 2, buttonY: button.y + button.height / 2, iconX: icon.x + icon.width / 2, iconY: icon.y + icon.height / 2, rowY: row.y + row.height / 2, rowChildren }
+      })
+      expect(Math.abs(geometry.buttonX - geometry.iconX)).toBeLessThanOrEqual(1)
+      expect(Math.abs(geometry.buttonY - geometry.iconY)).toBeLessThanOrEqual(1)
+      expect(Math.abs(geometry.buttonY - geometry.rowY)).toBeLessThanOrEqual(1)
+      for (const child of geometry.rowChildren) {
+        expect(Math.abs(child.centerY - geometry.rowY), `${viewport.suffix}/${theme} row child ${child.tag}.${child.className} ${child.text}`).toBeLessThanOrEqual(2)
+      }
+      const add = propertiesPanel.getByRole('button', { name: '新增属性' })
+      const addGeometry = await add.evaluate(element => {
+        const icon = element.querySelector('svg')!.getBoundingClientRect()
+        const range = document.createRange()
+        const text = [...element.childNodes].find(node => node.nodeType === Node.TEXT_NODE && node.textContent?.trim())!
+        range.selectNodeContents(text)
+        const label = range.getBoundingClientRect()
+        return { iconY: icon.y + icon.height / 2, labelY: label.y + label.height / 2 }
+      })
+      expect(Math.abs(addGeometry.iconY - addGeometry.labelY)).toBeLessThanOrEqual(2)
+      await screenshot(page, `database-property-settings-${viewport.suffix}-${theme}`)
+    }
+  }
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'))
+  await closeDatabaseSetting(page, '属性管理')
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await openDatabaseSetting(page, table, '属性')
+  await expandOpeningChoices(page, '属性')
+  const visiblePropertyControls = propertiesPanel.locator('.eotion-database-property-row button, .eotion-database-property-grip').filter({ visible: true })
+  for (const control of await visiblePropertyControls.all()) {
     await expect(control.locator('svg')).toHaveCount(1)
+    await expectButtonIconCentered(control)
     expect((await control.textContent())?.trim()).toBe('')
   }
   await expect(propertiesPanel.getByRole('button', { name: '新增属性' }).locator('svg')).toHaveCount(1)
@@ -1100,7 +1203,19 @@ test('database UX controls render library icons instead of text glyphs', async (
   await openDatabaseSetting(page, table, '排序')
   const sorts = page.getByRole('group', { name: '排序条件' })
   await sorts.getByRole('button', { name: '添加排序' }).click()
-  for (const control of await sorts.locator('.eotion-database-sort-row button').all()) {
+  for (const viewport of [{ width: 1440, height: 900, suffix: 'desktop' }, { width: 390, height: 844, suffix: 'phone' }] as const) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+      const addSort = sorts.getByRole('button', { name: '添加排序' })
+      await expectButtonIconCentered(addSort, true)
+      for (const control of await sorts.locator('.eotion-database-sort-row .settings-icon-button').all()) await expectButtonIconCentered(control)
+      await screenshot(page, `database-sort-settings-${viewport.suffix}-${theme}`)
+    }
+  }
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'))
+  await page.setViewportSize({ width: 1440, height: 900 })
+  for (const control of await sorts.locator('.eotion-database-sort-row .settings-icon-button').all()) {
     await expect(control.locator('svg')).toHaveCount(1)
     expect((await control.textContent())?.trim()).toBe('')
   }
@@ -1109,6 +1224,18 @@ test('database UX controls render library icons instead of text glyphs', async (
   await openDatabaseSetting(page, table, '筛选')
   const filters = page.getByRole('group', { name: '筛选条件' })
   await filters.getByRole('button', { name: '添加筛选条件' }).click()
+  for (const viewport of [{ width: 1440, height: 900, suffix: 'desktop' }, { width: 390, height: 844, suffix: 'phone' }] as const) {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+      const addFilter = filters.getByRole('button', { name: '添加筛选条件' })
+      await expectButtonIconCentered(addFilter, true)
+      await expectButtonIconCentered(filters.getByRole('button', { name: '删除筛选条件 1' }))
+      await screenshot(page, `database-filter-settings-${viewport.suffix}-${theme}`)
+    }
+  }
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'))
+  await page.setViewportSize({ width: 1440, height: 900 })
   await expect(filters.getByRole('button', { name: '删除筛选条件 1' }).locator('svg')).toHaveCount(1)
   await expect(filters.getByRole('button', { name: '添加筛选条件' }).locator('svg')).toHaveCount(1)
   await page.keyboard.press('Escape')
@@ -1125,12 +1252,14 @@ test('property schema mutations refresh inside the open panel and preserve unsav
   const table = page.locator('.eotion-editor-content .eotion-database')
   await openDatabaseSetting(page, table, '属性')
   const panel = page.getByRole('group', { name: '属性管理' })
-  await panel.getByRole('checkbox', { name: 'Notes' }).uncheck()
+  const notesVisibility = panel.getByRole('button', { name: '隐藏属性 Notes' })
+  await notesVisibility.click()
+  await expect(panel.getByRole('button', { name: '显示属性 Notes' })).toHaveAttribute('aria-pressed', 'false')
 
   await panel.getByRole('button', { name: '新增属性' }).click()
   await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '选择', exact: true }).click()
   await expect(panel.getByText('选择', { exact: true })).toBeVisible()
-  await expect(panel.getByRole('checkbox', { name: 'Notes' })).not.toBeChecked()
+  await expect(panel.getByRole('button', { name: '显示属性 Notes' })).toHaveAttribute('aria-pressed', 'false')
 
   await panel.getByRole('button', { name: '新增属性' }).click()
   await page.getByRole('group', { name: '添加属性类型' }).getByRole('button', { name: '文本', exact: true }).click()
@@ -1152,7 +1281,7 @@ test('property schema mutations refresh inside the open panel and preserve unsav
   await panel.getByRole('button', { name: '编辑属性 文本' }).click()
   await page.locator('.eotion-database-property-menu').getByRole('button', { name: '删除属性' }).click()
   await expect(panel.getByRole('button', { name: '编辑属性 文本' })).toHaveCount(0)
-  await expect(panel.getByRole('checkbox', { name: 'Notes' })).not.toBeChecked()
+  await expect(panel.getByRole('button', { name: '显示属性 Notes' })).toHaveAttribute('aria-pressed', 'false')
   await panel.getByRole('button', { name: '保存显示与顺序' }).click()
   await expect(page.getByRole('group', { name: '属性管理' })).toHaveCount(0)
 })
@@ -1170,6 +1299,7 @@ test('phone record settings offer right and bottom drawers and apply both modes'
   await expect(openingTrigger(page, '属性', '手机')).toContainText('下方抽屉')
   await closeDatabaseSetting(page, '属性管理')
   await openDatabaseSetting(page, table, '记录打开方式')
+  await expandOpeningChoices(page, '记录')
   await screenshot(page, 'database-opening-settings-mobile-390')
   const openingOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(openingOverflow).toBeLessThanOrEqual(0)
@@ -1186,6 +1316,56 @@ test('phone record settings offer right and bottom drawers and apply both modes'
   await table.getByRole('button', { name: '打开记录：Launch plan' }).click()
   await expect(page.locator('dialog.eotion-product-overlay--right-drawer[open]')).toBeVisible()
   await closeRecordSurface(page)
+})
+
+test('property settings remain usable in a 320px phone right drawer', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 })
+  await installApi(page, [
+    block('narrow-property-settings-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  await openDatabaseSetting(page, table, '属性')
+  await expandOpeningChoices(page, '属性')
+  await chooseOpening(page, table, '属性', '手机', '右侧抽屉')
+  await closeDatabaseSetting(page, '属性管理')
+
+  await openDatabaseSetting(page, table, '属性')
+  const panel = page.getByRole('group', { name: '属性管理' })
+  const drawer = page.locator('dialog.eotion-product-overlay--right-drawer[open][aria-label="属性"]')
+  await expect(drawer).toBeVisible()
+  const collapse = page.getByRole('button', { name: '展开其他设备打开方式' })
+  const phoneRow = openingGroup(page, '属性', '手机')
+  const [collapseBounds, labelBounds, triggerBounds] = await Promise.all([
+    collapse.boundingBox(), phoneRow.locator('.opening-choices__label').boundingBox(), openingTrigger(page, '属性', '手机').boundingBox(),
+  ])
+  expect(collapseBounds).not.toBeNull()
+  expect(labelBounds).not.toBeNull()
+  expect(triggerBounds).not.toBeNull()
+  const overlaps = (left: NonNullable<typeof collapseBounds>, right: NonNullable<typeof labelBounds>) =>
+    left.x < right.x + right.width && left.x + left.width > right.x && left.y < right.y + right.height && left.y + left.height > right.y
+  expect(overlaps(collapseBounds!, labelBounds!)).toBe(false)
+  expect(overlaps(collapseBounds!, triggerBounds!)).toBe(false)
+  expect(await panel.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(0)
+  await screenshot(page, 'database-property-settings-phone-320-right-drawer')
+  await page.getByRole('button', { name: '展开其他设备打开方式' }).click()
+  await expect(page.getByRole('group', { name: '属性桌面打开方式' })).toBeVisible()
+  await expect(page.getByRole('group', { name: '属性平板打开方式' })).toBeVisible()
+  await expect(page.getByRole('group', { name: '属性手机打开方式' })).toBeVisible()
+  await expect(panel.evaluate(element => element.scrollWidth - element.clientWidth)).resolves.toBeLessThanOrEqual(0)
+  await drawer.evaluate(element => { element.scrollTop = 0 })
+  for (const control of await panel.locator('.eotion-database-property-row button').all()) {
+    await control.scrollIntoViewIfNeeded()
+    const bounds = await control.boundingBox()
+    expect(bounds).not.toBeNull()
+    expect(bounds!.x).toBeGreaterThanOrEqual(0)
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(320)
+    const hit = await control.evaluate(element => {
+      const bounds = element.getBoundingClientRect()
+      return document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)?.closest('button') === element
+    })
+    expect(hit).toBe(true)
+  }
 })
 
 for (const target of ['记录', '属性'] as const) {
@@ -1205,6 +1385,7 @@ for (const target of ['记录', '属性'] as const) {
     const settingName = target === '记录' ? '记录打开方式' : '属性'
     const panelName = target === '记录' ? '记录打开方式' : '属性管理'
     await openDatabaseSetting(page, table, settingName)
+    await expandOpeningChoices(page, target)
 
     const group = openingGroup(page, target, '手机')
     const trigger = openingTrigger(page, target, '手机')
@@ -1273,6 +1454,7 @@ test('opening choices persist independently across layouts and targets, includin
   await page.goto('/#/app/database-workspace/page/database-page')
   const table = page.locator('.eotion-editor-content .eotion-database')
   await openDatabaseSetting(page, table, '记录打开方式')
+  await expandOpeningChoices(page, '记录')
   await expect(openingTrigger(page, '记录', '桌面')).toContainText('弹窗')
   await expect(openingTrigger(page, '记录', '平板')).toContainText('页面')
   await expect(openingTrigger(page, '记录', '手机')).toContainText('右侧抽屉')
@@ -1281,17 +1463,20 @@ test('opening choices persist independently across layouts and targets, includin
   await expect(openingTrigger(page, '记录', '平板')).toContainText('页面')
   await closeDatabaseSetting(page, '记录打开方式')
   await openDatabaseSetting(page, table, '属性')
+  await expandOpeningChoices(page, '属性')
   await expect(openingTrigger(page, '属性', '桌面')).toContainText('抽屉')
   await expect(openingTrigger(page, '属性', '平板')).toContainText('弹窗')
   await expect(openingTrigger(page, '属性', '手机')).toContainText('下方抽屉')
   await chooseOpening(page, table, '属性', '平板', '页面')
   await page.reload()
   await openDatabaseSetting(page, table, '记录打开方式')
+  await expandOpeningChoices(page, '记录')
   await expect(openingTrigger(page, '记录', '桌面')).toContainText('弹窗')
   await expect(openingTrigger(page, '记录', '平板')).toContainText('页面')
   await expect(openingTrigger(page, '记录', '手机')).toContainText('下方抽屉')
   await closeDatabaseSetting(page, '记录打开方式')
   await openDatabaseSetting(page, table, '属性')
+  await expandOpeningChoices(page, '属性')
   await expect(openingTrigger(page, '属性', '桌面')).toContainText('抽屉')
   await expect(openingTrigger(page, '属性', '平板')).toContainText('页面')
   await expect(openingTrigger(page, '属性', '手机')).toContainText('下方抽屉')
@@ -1724,11 +1909,11 @@ test('linked views keep independent server filters, multi-sort order and column 
   expect(await page.locator('dialog.eotion-product-overlay--modal[open]').evaluate(element => element.matches(':modal'))).toBe(true)
   await screenshot(page, 'p84-database-filter-desktop')
   await filterPanel.getByRole('button', { name: '添加筛选条件' }).click()
-  await filterPanel.getByRole('combobox', { name: '筛选属性 1' }).selectOption('root-select')
-  await filterPanel.getByRole('combobox', { name: '筛选值 1' }).selectOption('status-done')
+  await selectSettingOption(filterPanel, '筛选属性 1', 'root-select', 'Status')
+  await selectSettingOption(filterPanel, '筛选值 1', 'status-done', 'Done')
   await overlayFooter(filterPanel).getByRole('button', { name: '保存筛选' }).click()
   await expect(page.getByRole('alert')).toContainText('View temporarily unavailable')
-  await expect(filterPanel.getByRole('combobox', { name: '筛选值 1' })).toHaveValue('status-done')
+  await expect(filterPanel.getByRole('button', { name: '筛选值 1' })).toHaveAttribute('data-value', 'status-done')
   await overlayFooter(filterPanel).getByRole('button', { name: '保存筛选' }).click()
   await expect(tables.nth(1).locator('tbody tr')).toHaveCount(4)
   await expect(tables.nth(1)).not.toContainText('Open task')
@@ -1741,8 +1926,8 @@ test('linked views keep independent server filters, multi-sort order and column 
   expect(await page.locator('dialog.eotion-product-overlay--modal[open]').evaluate(element => element.matches(':modal'))).toBe(true)
   await screenshot(page, 'p84-database-sort-desktop')
   await sortPanel.getByRole('button', { name: '添加排序' }).click()
-  await sortPanel.getByRole('combobox', { name: '排序属性 1' }).selectOption('root-number')
-  await sortPanel.getByRole('combobox', { name: '排序方向 1' }).selectOption('desc')
+  await selectSettingOption(sortPanel, '排序属性 1', 'root-number', 'Points')
+  await selectSettingOption(sortPanel, '排序方向 1', 'desc', '降序')
   await sortPanel.getByRole('button', { name: '添加排序' }).click()
   await overlayFooter(sortPanel).getByRole('button', { name: '保存排序' }).click()
   await expect(tables.nth(1).locator('tbody tr').nth(0)).toContainText('Beta done')
@@ -1763,8 +1948,9 @@ test('linked views keep independent server filters, multi-sort order and column 
   await openDatabaseSetting(page, tables.nth(1), '属性')
   const columnsPanel = page.getByRole('group', { name: '属性管理' })
   await screenshot(page, 'p84-database-columns-desktop')
-  const notes = columnsPanel.getByRole('checkbox', { name: 'Notes' })
-  await notes.uncheck()
+  const notes = columnsPanel.getByRole('button', { name: '隐藏属性 Notes' })
+  await notes.click()
+  await expect(columnsPanel.getByRole('button', { name: '显示属性 Notes' })).toHaveAttribute('aria-pressed', 'false')
   for (let index = 0; index < 3; index += 1) {
     const moveDue = columnsPanel.getByRole('button', { name: '列上移 Due' })
     if (!await moveDue.isEnabled()) break
@@ -1848,13 +2034,13 @@ for (const panelKind of ['筛选', '排序'] as const) {
     if (panelKind === '筛选') {
       const panel = page.getByRole('group', { name: '筛选条件' })
       await panel.getByRole('button', { name: '添加筛选条件' }).click()
-      await panel.getByRole('combobox', { name: '筛选属性 1' }).selectOption('root-select')
-      await panel.getByRole('combobox', { name: '筛选值 1' }).selectOption('status-done')
+      await selectSettingOption(panel, '筛选属性 1', 'root-select', 'Status')
+      await selectSettingOption(panel, '筛选值 1', 'status-done', 'Done')
     } else {
       const panel = page.getByRole('group', { name: '排序条件' })
       await panel.getByRole('button', { name: '添加排序' }).click()
-      await panel.getByRole('combobox', { name: '排序属性 1' }).selectOption('root-number')
-      await panel.getByRole('combobox', { name: '排序方向 1' }).selectOption('desc')
+      await selectSettingOption(panel, '排序属性 1', 'root-number', 'Points')
+      await selectSettingOption(panel, '排序方向 1', 'desc', '降序')
     }
 
     await page.evaluate(() => {
@@ -1905,9 +2091,9 @@ for (const panelKind of ['筛选', '排序'] as const) {
     })
     expect(identity).toEqual({ editorSame: true, databaseSame: true, dialogSame: true, editorConnected: true, databaseConnected: true, dialogConnected: true, editorComponentSame: true, databaseComponentSame: true, detached: [] })
     if (panelKind === '筛选') {
-      await expect(page.getByRole('group', { name: '筛选条件' }).getByRole('combobox', { name: '筛选值 1' })).toHaveValue('status-done')
+      await expect(page.getByRole('group', { name: '筛选条件' }).getByRole('button', { name: '筛选值 1' })).toHaveAttribute('data-value', 'status-done')
     } else {
-      await expect(page.getByRole('group', { name: '排序条件' }).getByRole('combobox', { name: '排序方向 1' })).toHaveValue('desc')
+      await expect(page.getByRole('group', { name: '排序条件' }).getByRole('button', { name: '排序方向 1' })).toHaveAttribute('data-value', 'desc')
     }
   })
 }
@@ -2015,16 +2201,16 @@ test('phone filter and sort panels save through their footers and restore saved 
   await expect(mobileDialog.getByRole('heading', { level: 2 })).toHaveText('筛选条件')
   await expect(mobileDialog.getByRole('heading', { level: 2 })).toHaveCount(1)
   await filterPanel.getByRole('button', { name: '添加筛选条件' }).click()
-  await filterPanel.getByRole('combobox', { name: '筛选属性 1' }).selectOption('root-select')
-  await filterPanel.getByRole('combobox', { name: '筛选值 1' }).selectOption('status-done')
+  await selectSettingOption(filterPanel, '筛选属性 1', 'root-select', 'Status')
+  await selectSettingOption(filterPanel, '筛选值 1', 'status-done', 'Done')
   await overlayFooter(filterPanel).getByRole('button', { name: '保存筛选' }).click()
   await expect.poll(() => api.views[0]!.config.filters).toEqual([{ propertyId: 'root-select', operator: 'is', value: 'status-done' }])
   await expect(filterPanel).toHaveCount(0)
   await expect(mobileDialog).toHaveCount(0)
 
   await openDatabaseSetting(page, table, '筛选')
-  await expect(filterPanel.getByRole('combobox', { name: '筛选属性 1' })).toHaveValue('root-select')
-  await expect(filterPanel.getByRole('combobox', { name: '筛选值 1' })).toHaveValue('status-done')
+  await expect(filterPanel.getByRole('button', { name: '筛选属性 1' })).toHaveAttribute('data-value', 'root-select')
+  await expect(filterPanel.getByRole('button', { name: '筛选值 1' })).toHaveAttribute('data-value', 'status-done')
   await page.keyboard.press('Escape')
   await expect(filterPanel).toHaveCount(0)
   await expect(mobileDialog).toHaveCount(0)
@@ -2035,19 +2221,53 @@ test('phone filter and sort panels save through their footers and restore saved 
   await expect(mobileDialog.getByRole('heading', { level: 2 })).toHaveText('排序条件')
   await expect(mobileDialog.getByRole('heading', { level: 2 })).toHaveCount(1)
   await sortPanel.getByRole('button', { name: '添加排序' }).click()
-  await sortPanel.getByRole('combobox', { name: '排序属性 1' }).selectOption('root-number')
-  await sortPanel.getByRole('combobox', { name: '排序方向 1' }).selectOption('desc')
+  await selectSettingOption(sortPanel, '排序属性 1', 'root-number', 'Points')
+  await selectSettingOption(sortPanel, '排序方向 1', 'desc', '降序')
   await overlayFooter(sortPanel).getByRole('button', { name: '保存排序' }).click()
   await expect.poll(() => api.views[0]!.config.sorts).toEqual([{ propertyId: 'root-number', direction: 'desc' }])
   await expect(sortPanel).toHaveCount(0)
   await expect(mobileDialog).toHaveCount(0)
 
   await openDatabaseSetting(page, table, '排序')
-  await expect(sortPanel.getByRole('combobox', { name: '排序属性 1' })).toHaveValue('root-number')
-  await expect(sortPanel.getByRole('combobox', { name: '排序方向 1' })).toHaveValue('desc')
+  await expect(sortPanel.getByRole('button', { name: '排序属性 1' })).toHaveAttribute('data-value', 'root-number')
+  await expect(sortPanel.getByRole('button', { name: '排序方向 1' })).toHaveAttribute('data-value', 'desc')
   await page.keyboard.press('Escape')
   await expect(sortPanel).toHaveCount(0)
   await expect(mobileDialog).toHaveCount(0)
+})
+
+test('filter and sort setting menus are keyboard operable and disable unsupported properties', async ({ page }) => {
+  const relation = { ...property('unsupported-relation', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: rootDatabase.id } }
+  const formula = { ...property('unsupported-formula', rootDatabase.id, 'Calculated', 'formula'), config: { expression: { kind: 'literal', value: 1 }, resultType: 'number' } } as TestProperty
+  await installApi(page, [
+    block('settings-select-accessibility', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties, relation, formula], records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+
+  await openDatabaseSetting(page, table, '筛选')
+  const filters = page.getByRole('group', { name: '筛选条件' })
+  await filters.getByRole('button', { name: '添加筛选条件' }).click()
+  await expect(filters.locator('select')).toHaveCount(0)
+  const filterProperty = filters.getByRole('button', { name: '筛选属性 1' })
+  await filterProperty.press('ArrowDown')
+  const filterMenu = page.getByRole('menu', { name: '筛选属性 1' })
+  await expect(filterMenu).toBeVisible()
+  await expect(filterMenu.getByRole('menuitem').first()).toBeFocused()
+  await expect(filterMenu.getByRole('menuitem', { name: 'Calculated（暂不支持筛选）' })).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape')
+
+  await openDatabaseSetting(page, table, '排序')
+  const sorts = page.getByRole('group', { name: '排序条件' })
+  await sorts.getByRole('button', { name: '添加排序' }).click()
+  await expect(sorts.locator('select')).toHaveCount(0)
+  const sortProperty = sorts.getByRole('button', { name: '排序属性 1' })
+  await sortProperty.press('ArrowDown')
+  const sortMenu = page.getByRole('menu', { name: '排序属性 1' })
+  await expect(sortMenu).toBeVisible()
+  await expect(sortMenu.getByRole('menuitem').first()).toBeFocused()
+  await expect(sortMenu.getByRole('menuitem', { name: 'Related（暂不支持排序）' })).toBeDisabled()
 })
 
 test('database tables render and references round-trip at root and under a toggle', async ({ page }) => {
