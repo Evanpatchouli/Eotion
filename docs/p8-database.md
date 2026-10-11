@@ -37,6 +37,98 @@ Database 自身通过 `GET /api/workspaces/:workspaceId/database-navigation` 返
 
 本轮接受的限制：Database 仍是 online-only/offline read-only；没有新增跨客户端 Database push、MCP tool、Automation 或其他 View。旧 P8 Database 的 Sidebar 宿主使用 Block 引用读取时推导，避免 migration break；10,000 Records 的 Page Tree 返回规模保持常数，但 legacy-safe 本地投影仍会扫描 Record 关联，后续可在不改变语义的前提下做索引优化。移动验收是 390px Chromium 响应式证据，不替代原生宿主真机验收；Web build 保留既有大 chunk warning。
 
+## Page Tree / 10k Projection Performance Audit（2026-10-11）
+
+基线为 `7c7a7e528393e31f5af9261a2390fe20f0a888c3`。本轮只做隔离测量和路径审查，没有修改产品实现、Mongo/IndexedDB/SQLite schema 或 index，也没有开始 Database UX Final Acceptance 或 P9。重复测量使用各自的随机 Mongo database、内存 SQLite database、随机 IndexedDB database；测试数据不落入开发者工作区。每格三次，时长按 `min / median / max`（毫秒）记录；这些是本机观察值，不是 SLA。
+
+环境：Windows 11 x64，Intel 13th Gen i7-13620H（16 logical processors），约 31.8 GiB RAM，Node 26.3.0、pnpm 10.34.2、MongoDB 8.2.11、Playwright Headless Chrome 154。每个 workspace 固定 50 普通 Pages、1 个 Database、1 个 database Block；Record Pages 分别为 0、1,000、5,000、10,000。Server fixture 将 legacy Page 保持 roleless 并写入对应 `database_records.pageId`；Web/SQLite 另分 raw roleless 本地缓存与由 server snapshot 投影出 `role: database-record` 的 legacy 缓存。API 测量直接调用生产 service，不计 HTTP/网络；Web 的 ready latency 和 SQLite/Electron 页面 ready latency 未测量。
+
+### 真实数据路径
+
+| 路径 | 实际调用链与成本边界 |
+| --- | --- |
+| A. Server Page navigation | `GET /api/workspaces/:workspaceId/pages` → `PageService.listNavigation()` → `PageRepository.listNavigationByWorkspace()`，按 100 id cursor window 取数。查询先按 workspace/role 过滤、按 id 排序，再用 `database_records(workspaceId,pageId)` `$lookup` 排除 legacy Record Page，最后取导航结果。roleless legacy 候选在 lookup 前无法被 role 条件排除。 |
+| B. Server Database navigation | `GET /api/workspaces/:workspaceId/database-navigation` → `DatabaseService.listNavigationWindow()` → Database repository、`BlockRepository.firstDatabaseReferences()` 与 host `PageRepository.findManyInWorkspace()`。本 fixture 是 1 Database、1 Block、1 host Page；该读取量不随 Record Pages 增长。 |
+| C. Workspace snapshot | `SyncController` → `SyncService.snapshot()` 并行读取 `PageService.list()` 与 `BlockService.listByWorkspace()`；Page service 取完整 workspace Pages，并从 DatabaseRecord.pageId 投影补齐 legacy role。Snapshot 保留 Record Pages 与其正文 Page，但不包含 DatabaseRecord/Database 本体；记录页仍可按 Page ID 读取。 |
+| D. Web IndexedDB | `IndexedDbLocalStore.listPagesByWorkspace()` 与 `listNavigationPagesByWorkspace()` 都从 `pages` object store `getAll()` 后在 JS 按 workspace/role 过滤。Page object store 没有 workspace/role index；导航返回少不代表只读取少。 |
+| E. Electron SQLite | preload/IPC → `SqliteLocalStore`。完整 Page 读取查询 `pages` 全表、JSON.parse 全部 document 后再 JS 按 workspace 过滤；导航 SQL 用 `json_extract(document,'$.workspaceId')` 与 role 条件，命中 `navigation_pages_by_workspace` 表达式 index，但仍扫描该 workspace 的行。 |
+| F. ProductPages hydration | `ProductShell` 在 workspace 切换时调用 `ProductPagesStore.load()`；它先 `sync.prepare()`，再并行读取完整 `items` 与 `navigationItems`。完整 items 保留 Record Page 供 Page ID 打开；PageTree 只消费 navigationItems。成功 snapshot 更新 sync revision 后通常触发 refresh。 |
+| G. PageTree / ready | `PageTree` 对 navigationItems 执行 `buildPageTree()` / `flattenPageTree()`；Database navigation item 独立插入 host Page 下。此处测的是数据准备函数，不是浏览器绘制、可点击时刻或完整冷启动 ready latency。 |
+
+本机有缓存时，PageTree 常用路径是 LocalStore → ProductPages hydration → PageTree；它不等待 Server Page navigation API。冷 workspace / snapshot 刷新会额外走完整 snapshot，并包含网络传输、snapshot 写入与本机刷新成本，本轮没有把这些未测部分合并成伪精确的 “ready” 数字。
+在本 fixture 的正常 role-aware 状态下，Sidebar 有 50 个 Page items 加 1 个独立 Database item，共 51 项；raw roleless 旧缓存会把 Page items 放大到 `50 + N`，若 Database item 已加载则总数为 `51 + N`。
+
+### Server：导航与 snapshot
+
+下表中的 Page navigation 均返回 50 普通 Pages。Profiler 总量包含 workspace 权限/定位查询；括号内另给出 `pages` collection 文档检查数。Database navigation 每次返回 1 个 Database nav item，并读取 1 个 host Page。
+
+| Records | Fixture | Page navigation ms（min/med/max） | Profiler docs/keys（总计；Pages docs） | Database navigation ms（min/med/max） | Snapshot ms（min/med/max） | Snapshot pages / blocks / JSON bytes |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 0 | 新 role | 9.25 / 9.90 / 12.34 | 51 / 51；50 | 6.77 / 7.91 / 11.31 | 8.27 / 8.90 / 10.07 | 50 / 1 / 14,398 |
+| 0 | legacy roleless | 12.57 / 14.76 / 16.91 | 51 / 51；50 | 5.98 / 6.67 / 6.74 | 6.53 / 6.67 / 8.26 | 50 / 1 / 14,398 |
+| 1,000 | 新 role | 11.81 / 12.20 / 15.74 | 1,051 / 1,051；1,050 | 5.29 / 6.40 / 9.28 | 28.37 / 29.38 / 33.57 | 1,050 / 1 / 333,710 |
+| 1,000 | legacy roleless | 95.77 / 107.33 / 121.83 | 2,051 / 2,051；2,050 | 5.80 / 8.26 / 10.07 | 32.97 / 35.65 / 53.47 | 1,050 / 1 / 333,710 |
+| 5,000 | 新 role | 18.19 / 21.16 / 25.91 | 5,051 / 5,051；5,050 | 4.70 / 4.84 / 5.45 | 89.77 / 106.21 / 117.60 | 5,050 / 1 / 1,609,710 |
+| 5,000 | legacy roleless | 427.16 / 430.45 / 445.04 | 10,051 / 10,051；10,050 | 5.44 / 6.46 / 6.52 | 97.99 / 98.34 / 102.51 | 5,050 / 1 / 1,609,710 |
+| 10,000 | 新 role | 28.29 / 30.79 / 31.39 | 10,051 / 10,051；10,050 | 4.82 / 5.03 / 13.89 | 184.59 / 194.59 / 195.53 | 10,050 / 1 / 3,224,814 |
+| 10,000 | legacy roleless | 869.51 / 933.21 / 990.36 | 20,051 / 20,051；20,050 | 4.98 / 5.45 / 38.05 | 175.39 / 177.82 / 190.61 | 10,050 / 1 / 3,224,814 |
+
+Mongo aggregate explain 的 Page cursor 在 10k 两种 fixture 都检查约 10,050 docs/keys，计划可见 `FETCH`、`IXSCAN`、`SORT` 与 `workspaceId_1_id_1`；Page schema 没有 role index。plan tree 也含有 `workspaceId_1_pageId_1` lookup index 名称，但 Mongo 8.2 对该 `$lookup` stage 没有提供可读的分阶段 docs/keys 计数（benchmark 明确标记 lookup counters unavailable）。Profiler 的总量可见 legacy 从约 10,051 增至 20,051 docs/keys，且 `pages` collection docs 从 10,050 增至 20,050；结合 Page navigation 从 31ms 增至约 933ms，额外成本位于 legacy `$lookup` 路径，而不是返回数组或 PageTree 计算。Database navigation 的 profiler 约 4 docs、4–5 keys，与 Record 数无关。
+
+Snapshot 保留 `50 + N` Pages，JSON 从约 14KB 增至 3.22MB；10k 新/legacy 的生成中位数分别约 195ms / 178ms。该耗时不含网络与客户端 IndexedDB 写入。同步还会读取 record page id 集合（10k 时约 10k keys），但不把 DatabaseRecord 文档放进 snapshot payload。
+
+### Web / IndexedDB：三种缓存形态
+
+每格为 `min / median / max` 毫秒。Full read 是 `listPagesByWorkspace`；Navigation 是本地 projection 读取；Hydration 是 `ProductPagesStore.load()`，其 API prepare/store 被替换为确定的本地 fixture；Tree 是 `buildPageTree + flattenPageTree`。最终树计数是 Page 行，不含单独的 Database nav item。
+
+| Records | Fixture | Full read | Navigation projection | ProductPages hydration | PageTree | Navigation / final tree items |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 0 | 新 role | 0.5 / 0.9 / 2.0 | 0.5 / 0.5 / 0.7 | 0.7 / 0.7 / 1.0 | 0.2 / 0.2 / 0.9 | 50 / 50 |
+| 0 | raw roleless | 0.4 / 0.5 / 0.7 | 0.3 / 0.4 / 0.4 | 0.6 / 0.8 / 0.9 | 0.1 / 0.2 / 0.2 | 50 / 50 |
+| 0 | server-projected legacy | 0.4 / 0.5 / 0.5 | 0.4 / 0.4 / 0.4 | 0.7 / 0.8 / 0.9 | 0.0 / 0.1 / 0.2 | 50 / 50 |
+| 1,000 | 新 role | 6.5 / 6.9 / 7.2 | 5.7 / 6.1 / 7.3 | 9.9 / 10.1 / 10.3 | 0.2 / 0.2 / 0.3 | 50 / 50 |
+| 1,000 | raw roleless | 6.0 / 6.8 / 7.1 | 5.4 / 6.6 / 7.1 | 9.8 / 11.1 / 19.9 | 2.1 / 2.7 / 5.7 | 1,050 / 1,050 |
+| 1,000 | server-projected legacy | 6.0 / 6.1 / 14.0 | 6.2 / 6.3 / 44.7 | 10.2 / 14.2 / 14.3 | 0.1 / 0.2 / 0.2 | 50 / 50 |
+| 5,000 | 新 role | 24.5 / 25.4 / 26.2 | 24.2 / 26.9 / 27.5 | 46.8 / 47.1 / 52.8 | 0.1 / 0.2 / 0.2 | 50 / 50 |
+| 5,000 | raw roleless | 21.6 / 22.3 / 23.4 | 23.6 / 27.3 / 29.0 | 40.2 / 57.1 / 80.5 | 9.1 / 9.3 / 9.8 | 5,050 / 5,050 |
+| 5,000 | server-projected legacy | 24.1 / 24.5 / 27.9 | 27.5 / 28.2 / 37.3 | 51.4 / 60.7 / 61.3 | 0.1 / 0.2 / 0.3 | 50 / 50 |
+| 10,000 | 新 role | 45.1 / 48.5 / 67.7 | 44.4 / 44.8 / 45.3 | 80.9 / 87.5 / 92.5 | 0.1 / 0.2 / 0.3 | 50 / 50 |
+| 10,000 | raw roleless | 42.9 / 44.4 / 51.2 | 46.5 / 51.3 / 53.6 | 79.6 / 79.9 / 82.2 | 18.1 / 19.8 / 23.6 | 10,050 / 10,050 |
+| 10,000 | server-projected legacy | 45.0 / 46.3 / 49.8 | 44.5 / 54.1 / 61.0 | 85.2 / 96.1 / 113.3 | 0.0 / 0.1 / 0.2 | 50 / 50 |
+
+At 10k, each of the two ProductPages reads starts from all 10,050 pages. Hydration reads 20,100 page records across those two calls; role-aware final state retains 10,050 full-page items plus 50 navigation items (10,100 array entries), while the raw-roleless case retains 10,050 in each array. The store deliberately retains Record Pages so `PageView` can open them by ID. Browser ready / interactive latency is not measured by this harness.
+
+### Electron / SQLite
+
+每格为 `min / median / max` 毫秒；List 是完整 Page list，Nav 是 `listNavigationPagesByWorkspace`，Tree 使用共享 PageTree 函数。表中的 workspace 候选行数根据 fixture 行数与 `EXPLAIN QUERY PLAN` 推算，不是 SQLite 实际 row-visit counter；JSON.parse 次数由 benchmark 包装器实测。
+
+| Records | Fixture | List | Nav | Tree | List plan candidate / parsed | Nav plan candidate / parsed / returned |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 0 | 新 role | 0.048 / 0.058 / 0.192 | 0.103 / 0.126 / 0.155 | 0.026 / 0.074 / 0.231 | 50 / 50 | 50 / 50 / 50 |
+| 0 | raw roleless | 0.054 / 0.068 / 0.098 | 0.072 / 0.081 / 0.181 | 0.024 / 0.046 / 0.050 | 50 / 50 | 50 / 50 / 50 |
+| 0 | server-projected legacy | 0.048 / 0.052 / 0.064 | 0.056 / 0.059 / 0.076 | 0.025 / 0.037 / 0.040 | 50 / 50 | 50 / 50 / 50 |
+| 1,000 | 新 role | 1.370 / 1.669 / 2.248 | 0.158 / 0.205 / 0.255 | 0.032 / 0.056 / 0.057 | 1,050 / 1,050 | 1,050 / 50 / 50 |
+| 1,000 | raw roleless | 1.257 / 1.548 / 1.736 | 1.302 / 1.415 / 1.745 | 0.413 / 0.428 / 0.705 | 1,050 / 1,050 | 1,050 / 1,050 / 1,050 |
+| 1,000 | server-projected legacy | 0.953 / 1.099 / 1.257 | 0.111 / 0.122 / 0.162 | 0.016 / 0.017 / 0.032 | 1,050 / 1,050 | 1,050 / 50 / 50 |
+| 5,000 | 新 role | 5.482 / 5.689 / 5.887 | 0.307 / 0.318 / 0.393 | 0.009 / 0.012 / 0.029 | 5,050 / 5,050 | 5,050 / 50 / 50 |
+| 5,000 | raw roleless | 4.515 / 4.578 / 5.486 | 6.701 / 7.289 / 8.088 | 1.461 / 2.161 / 2.623 | 5,050 / 5,050 | 5,050 / 5,050 / 5,050 |
+| 5,000 | server-projected legacy | 4.094 / 4.376 / 4.906 | 0.267 / 0.287 / 0.363 | 0.015 / 0.018 / 0.094 | 5,050 / 5,050 | 5,050 / 50 / 50 |
+| 10,000 | 新 role | 8.101 / 8.732 / 9.281 | 0.573 / 0.632 / 0.671 | 0.020 / 0.020 / 0.038 | 10,050 / 10,050 | 10,050 / 50 / 50 |
+| 10,000 | raw roleless | 8.079 / 9.427 / 10.424 | 10.201 / 10.756 / 11.644 | 1.983 / 2.019 / 3.593 | 10,050 / 10,050 | 10,050 / 10,050 / 10,050 |
+| 10,000 | server-projected legacy | 8.030 / 8.366 / 8.761 | 0.567 / 0.593 / 0.808 | 0.009 / 0.010 / 0.045 | 10,050 / 10,050 | 10,050 / 50 / 50 |
+
+`EXPLAIN QUERY PLAN` 的 List 是 `SCAN pages USING INDEX sqlite_autoindex_pages_1`；Nav 是 `SEARCH pages USING INDEX navigation_pages_by_workspace (<expr>=?)`，并出现 `USE TEMP B-TREE FOR ORDER BY`。fixture 中每个独立数据库只含一个 workspace，因此导航的 workspace 候选数为 10,050；SQLite 没有提供真实访问行计数，不能把候选数当作实测扫描数。新 role / server-projected legacy 的 JSON.parse 实测为 50 条，raw roleless 则 parse 并返回 10,050 条；完整 List 的 plan 是全表 scan，返回并 parse 10,050 条。
+
+### 结果、正确性与结论
+
+“10k Records 不扩大当前正确 PageTree 的返回结果”与“10k Records 不影响 PageTree 成本”是两回事：当前有效 role 下 Sidebar Page 行保持 50，但 Server、IndexedDB、SQLite projection 都仍有 O(total workspace pages) 读取；ProductPages 还保留完整 Page 集合以支持 Record Page 直达。实际 PageTree 构造/展平只有约 0.1–0.2ms（10k role-aware Web）或约 0.02ms（SQLite），不是主要瓶颈。Web 10k 本地 hydration 中位数约 88–96ms，SQLite nav 中位数约 0.6ms；数据库独立导航约 5–7ms。Server legacy Page navigation 约 0.93s 是显著性能债务，根因是 roleless 候选的关联 `$lookup`，但 Web 的常用 Sidebar 加载不调用该 server Page navigation endpoint。
+
+raw roleless 本地缓存是另一个边界：IndexedDB/SQLite 无法仅凭本地 Page 判定它属于 Record，因此离线初显会把 10k Record Pages 带入 Sidebar，Web Tree 计算升至约 20ms，且 ProductPages 两个数组各自保留这 10k 行。在线成功 snapshot 会给 legacy Page 补 role，通常经 sync revision 刷新本地树；但如果 revision 在初次 `ProductPagesStore.load()` 仍 loading 时到达，当前 `refresh()` 会直接返回且不排队，旧 projection 可能留下；完全离线则会一直使用旧本地树。现有测试未串联验证 roleless Record Page 从初显到远端投影后的收敛。这属于待跟进的缓存正确性边界，本轮不改语义。
+
+必要回归通过：API `database-http.test.js` 1/1（Database navigation 与 Record Page direct read）；Web PageTree/独立 Database route/Linked View 聚焦测试 3/3。API benchmark 有 8 组（4 个规模 × 新 role / legacy roleless），Web 与 SQLite benchmark 各 12 组（4 个规模 × 新 role / raw roleless / server-projected legacy），每项 3 次，角色与结果计数断言通过。Benchmark 源码：`apps/api/src/modules/server-domain/page-tree-benchmark.test.ts`、`apps/web/tests/page-tree-benchmark.spec.ts`、`apps/desktop/src/main/sqlite-page-benchmark.cjs`。
+
+**结论：B — PASS WITH DEBT。** 10k role-aware 常用本地 PageTree 路径测得 hydration < 200ms，树计算很小，无需把当前性能认定为 beta blocker；但服务端 legacy navigation 接近 1s，workspace snapshot 约 3.2MB，本地 projection 与完整 Page list 线性读全量数据，raw roleless 离线缓存还可能误显记录页。后续若开展性能工作，优先为初次 load/revision 竞态补收敛保障与回归，再单独评估 legacy lookup 的实际使用量和可替代查询；这两项都不在本轮实施。Database UX Final Acceptance 仍未开始。
+
 ## 核心模型
 
 `packages/domain` 定义 Database、DatabaseProperty、DatabaseRecord、DatabaseView；`packages/contracts` 提供严格的 runtime contract。服务端在 `server-domain` 使用四个独立 Mongo 集合：`databases`、`database_properties`、`database_records`、`database_views`。稳定 ID、workspaceId、version 与 timestamps 是领域边界，不把 persistence schema 暴露给客户端。

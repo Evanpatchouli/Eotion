@@ -1,4 +1,17 @@
 # Handoff
+
+## 2026-10-11 Page Tree / 10k Projection Performance Audit
+
+基线 `7c7a7e528393e31f5af9261a2390fe20f0a888c3`；审计结论 **B — PASS WITH DEBT**。本轮只新增隔离 benchmark、文档和任务记录，没有改产品实现、schema 或 index；未开始 Database UX Final Acceptance 或 P9。完整数据路径与每组 `min/median/max` 见 `docs/p8-database.md` 的 Page Tree / 10k audit 章节。
+
+环境为 Windows 11 x64、i7-13620H、Node 26.3.0、MongoDB 8.2.11、Headless Chrome 154。每个 workspace 50 普通 Page、1 Database、1 Block，Records 0/1k/5k/10k。API 有新 role / legacy roleless 两种 fixture，共 8 组；Web 与 SQLite 另含 server-projected legacy，共各 12 组。每项三次。API 用随机 Mongo DB，Web 用随机 IndexedDB DB，Desktop 用内存 SQLite。
+
+10k role-aware Server Page navigation median 约 31ms、返回 50 页、仍检查 10,050 Page；legacy median 约 0.93s、返回仍为 50，profiler 合计约 20,051 docs/keys。Snapshot 含 10,050 Pages、1 Block、约 3.22MB JSON，server 生成约 178–195ms（网络和客户端写入未测）。Web hydration median 约 88–96ms、PageTree 约 0.1–0.2ms；IndexedDB 两次读取均线性读全量。SQLite nav 约 0.6ms，plan+fixture 推断 workspace 候选行为 10,050（无实际 row-visit counter）；role-aware parse 50，raw legacy parse/返回 10,050。
+
+需保留的发现：旧本地 roleless snapshot 在 offline 时会把 Record Pages 放入 PageTree；服务端 snapshot 成功通常补 role 并 refresh，但若 revision 在首次 pages load 仍 loading 时触发，`ProductPagesStore.refresh()` 会直接返回且不排队，旧 projection 可能保留。现有测试尚未覆盖 roleless local tree → snapshot 投影 → tree 收敛的端到端链路。后续优先评估对此 race 的收敛保障与回归，再单独评估 legacy `$lookup`；本轮不修。
+
+聚焦回归通过：API Database HTTP 1/1；PageTree / standalone Database route / Linked View 3/3；API benchmark 8 组、Web/SQLite benchmark 各 12 组，每组 3 次。SQLite `EXPLAIN QUERY PLAN` 没有实际 row-visit counter；文档将候选行数标为按 plan 与 fixture 推断，JSON.parse 次数是包装器实测。独立 reviewer 复核无其余 blocker；上述审计口径已修正，收尾前形成一个 audit commit 并确认 clean。Database UX Final Acceptance 仍待后续独立工作。
+
 ## 2026-10-11 Database Opening / Record Creation / Overlay 聚焦修复
 
 本轮聚焦修复 **PASS**，但 Database UX Refinement **尚未 Final PASS**。基线 `7419e7043790085f855963f7a2d5a2b8a2fba73b`；本节随最终聚焦提交落库，提交哈希以当前 HEAD 为准。没有开始 P9。

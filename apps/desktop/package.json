@@ -14,7 +14,8 @@
     "preview": "electron-vite preview",
     "postinstall": "node node_modules/electron/install.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test src/main/*.test.cjs"
+    "test": "node --test src/main/*.test.cjs",
+    "benchmark:pages": "node --test src/main/sqlite-page-benchmark.cjs"
   },
   "dependencies": {
     "@eotion/contracts": "workspace:*",
