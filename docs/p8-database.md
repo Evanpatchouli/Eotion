@@ -600,3 +600,15 @@ fresh 验证清单：
 已接受限制：Database 全部在线读写、离线只读；没有 Database MCP / oplog / 实时跨客户端推送；分页不提供跨请求 snapshot，title mutation 后旧 cursor 需要刷新；Rollup/Formula 为读取时计算且有 100 rows / 5,000 target 限制，Filter/Sort 不支持 derived property；relation search/cleanup 在预算外拒绝整个操作；Formula 是轻量 JSON AST editor；date rollup min/max、People/Files、其他 Views 与双向 Relation 不在 P8。Web bundle 仍有既有大 chunk 提示；390px 为响应式 Web 验收，不替代 native 设备验收。
 
 P8.1–P8.6 全部 PASS；**P8 Database COMPLETE**。本轮到此停止，不进入下一阶段。
+
+### Property Type Mutation — Domain / API Foundation
+
+专用 `DatabasePropertyTypeChangeRequestSchema` 请求携带 `targetType`、可选匹配 `config`、`expectedDatabaseVersion` 和 `expectedPropertyVersion`。`PATCH /api/workspaces/:workspaceId/databases/:databaseId/properties/:propertyId/type` 沿用 Session、SameOrigin 和 Workspace 写权限。请求严格拒绝额外字段：target 不允许 title；relation/rollup/formula 必须有匹配 config；basic/select 不接受 config/options。Select 的新 options 固定为空数组。现有 Property update 不承载类型迁移。
+
+Title 永远禁止变更类型；同类型请求在校验预期版本后返回 no-op，不修改时间、fence 或任何版本。跨类型只保留三种转换：text → number 使用 trim、非空、Number 和有限数校验；number → text 使用 String；合法 YYYY-MM-DD date → text 保留原字符串。其余转换及失败转换删除 Record 的对应 property key，不持久化 null placeholder。转换规则由 Domain 的 `convertDatabasePropertyValueForTypeChange` 统一定义。
+
+服务复用 Mongo snapshot transaction：校验版本和新定义、校验本库及 incoming Rollup 来源库依赖（含 reference fences）、有界扫描全部 Records、逐条转换/清理并用 stored validator 校验、修复全部 Views、CAS 修改原 Property 后提交。超过 10,000 条 Records 整体拒绝。任一步失败全部回滚；Property 的 ID/name/createdAt 保持原值，离开 select/advanced 清除 options/config，新定义及 Database 版本递增，每条扫描 Record 版本递增（包括缺少该 key 的 Record）。其它 Record properties 保持原值。
+
+所有 Views 删除引用变更属性的 filters；target 为 relation/rollup/formula 时删除该属性 sorts，basic/select 保留 sorts。visibleProperties/propertyOrder 保持原值；所有结果继续通过 View config validator，仅实际修复的 View 递增版本。依赖非法返回 409，不自动删除或改写 Formula/Rollup。响应为 database、property、convertedRecordCount、clearedRecordCount、repairedViewCount；Record 计数只统计已有 key 的转换/清理，缺失 key 不计数，迁移单次扫描完成。
+
+本基础能力尚未接入 Property Menu UI 或修改 Type List；Database UX Final Acceptance/P9 不属于本次交付。

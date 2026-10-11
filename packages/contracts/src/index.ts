@@ -263,6 +263,44 @@ export const DatabasePropertyUpdateRequestSchema = z.object({
 }).strict().refine(value => value.name !== undefined || value.options !== undefined || value.config !== undefined, { message: 'At least one field must be provided' })
 export type DatabasePropertyUpdateRequest = z.infer<typeof DatabasePropertyUpdateRequestSchema>
 
+const databasePropertyTypeChangeVersions = {
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+  expectedPropertyVersion: z.number().int().positive().safe(),
+}
+const databasePropertyTypeChangeBase = {
+  ...databasePropertyTypeChangeVersions,
+  targetType: z.enum(['text', 'number', 'checkbox', 'select', 'date', 'relation', 'rollup', 'formula']),
+}
+const databasePropertyTypeChangeRequestInputSchema = z.discriminatedUnion('targetType', [
+  z.object({ ...databasePropertyTypeChangeBase, targetType: z.literal('text') }).strict(),
+  z.object({ ...databasePropertyTypeChangeBase, targetType: z.literal('number') }).strict(),
+  z.object({ ...databasePropertyTypeChangeBase, targetType: z.literal('checkbox') }).strict(),
+  z.object({ ...databasePropertyTypeChangeBase, targetType: z.literal('select') }).strict(),
+  z.object({ ...databasePropertyTypeChangeBase, targetType: z.literal('date') }).strict(),
+  z.object({ ...databasePropertyTypeChangeBase, targetType: z.literal('relation'), config: z.custom<DatabasePropertyConfig>() }).strict(),
+  z.object({ ...databasePropertyTypeChangeBase, targetType: z.literal('rollup'), config: z.custom<DatabasePropertyConfig>() }).strict(),
+  z.object({ ...databasePropertyTypeChangeBase, targetType: z.literal('formula'), config: z.custom<DatabasePropertyConfig>() }).strict(),
+])
+/** Strict input contract for a type change. Select options are initialized by the service. */
+export const DatabasePropertyTypeChangeRequestSchema = databasePropertyTypeChangeRequestInputSchema
+  .superRefine((value, context) => {
+    if (value.targetType === 'text' || value.targetType === 'number' || value.targetType === 'checkbox' || value.targetType === 'select' || value.targetType === 'date') return
+    if (!isValidDatabasePropertyDefinition({ id: 'property-type-change', name: 'Property', type: value.targetType, config: value.config })) {
+      context.addIssue({ code: 'custom', message: 'Invalid database property configuration', path: ['config'] })
+    }
+  })
+export type DatabasePropertyTypeChangeRequest = z.infer<typeof DatabasePropertyTypeChangeRequestSchema>
+
+const databasePropertyTypeChangeCountSchema = z.number().int().nonnegative().safe()
+export const DatabasePropertyTypeChangeResponseSchema = z.object({
+  database: DatabaseSchema,
+  property: DatabasePropertySchema,
+  convertedRecordCount: databasePropertyTypeChangeCountSchema,
+  clearedRecordCount: databasePropertyTypeChangeCountSchema,
+  repairedViewCount: databasePropertyTypeChangeCountSchema,
+}).strict()
+export type DatabasePropertyTypeChangeResponse = z.infer<typeof DatabasePropertyTypeChangeResponseSchema>
+
 export const DatabasePropertyDeleteRequestSchema = z.object({
   expectedDatabaseVersion: z.number().int().positive().safe(),
   expectedPropertyVersion: z.number().int().positive().safe(),

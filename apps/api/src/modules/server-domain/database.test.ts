@@ -13,7 +13,7 @@ import { PageEntity } from './schemas/page.schema'
 import { DatabasePropertyEntity } from './schemas/database-property.schema'
 import { DatabaseRecordEntity } from './schemas/database-record.schema'
 import { DatabaseViewEntity } from './schemas/database-view.schema'
-import { DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from './repositories/database.repository'
+import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from './repositories/database.repository'
 import { BlockService } from './services/block.service'
 import { DatabaseService } from './services/database.service'
 import { supportsTransactions } from './services/mongo-transactions'
@@ -892,4 +892,143 @@ test('advanced reference fences resolve relation and rollup races without dangli
   const sourceProperties = await databases.listProperties(owner.id, 'race-ws', 'race-source')
   const targetProperties = await databases.listProperties(owner.id, 'race-ws', 'race-target')
   assert.equal(sourceProperties.some(property => property.id === 'race-rollup'), targetProperties.some(property => property.id === 'race-number'))
+})
+
+test('property type mutation atomically migrates records, repairs views and protects dependencies', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  assert.equal(await supportsTransactions(connection), true, 'type mutation regression requires Mongo replica set')
+  const service = app.get(DatabaseService)
+  const pages = app.get(PageService)
+  const owner = await app.get(AuthService).register(`mutation-${randomUUID()}@example.com`, 'correct horse battery staple')
+  await app.get(WorkspaceService).create(owner.id, { id: 'mutation-ws', name: 'Mutation' })
+  await pages.create(owner.id, 'mutation-ws', { id: 'mutation-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  const models = [DatabaseEntity, DatabasePropertyEntity, DatabaseRecordEntity, DatabaseViewEntity].map(entity => app.get<Model<any>>(getModelToken(entity.name)))
+  await Promise.all(models.map(model => model.init()))
+  const [databaseModel, propertyModel, recordModel, viewModel] = models as [Model<any>, Model<any>, Model<any>, Model<any>]
+  const ws = 'mutation-ws', db = 'mutation-db'
+  const createDb = (id: string) => service.createInPage(owner.id, ws, 'mutation-home', { id, name: id, titlePropertyId: `${id}-title`, viewId: `${id}-view`, blockId: `${id}-block`, orderKey: id, parentBlockId: null })
+  await createDb(db)
+  const current = async (databaseId = db) => (await service.find(owner.id, ws, databaseId))!
+  const property = async (id: string, databaseId = db) => (await service.listProperties(owner.id, ws, databaseId)).find(row => row.id === id)!
+  const add = async (id: string, type: any, extras: any = {}, databaseId = db) => (await service.createProperty(owner.id, ws, databaseId, { id, name: id, type, ...extras, expectedDatabaseVersion: (await current(databaseId)).version })).property
+  const change = async (id: string, targetType: any, extras: any = {}, databaseId = db) => service.changePropertyType(owner.id, ws, databaseId, id, { targetType, ...extras, expectedDatabaseVersion: (await current(databaseId)).version, expectedPropertyVersion: (await property(id, databaseId)).version })
+  const snapshot = async () => Promise.all(models.map(model => model.find({ workspaceId: ws }).sort({ id: 1 }).lean()))
+  await add('value', 'text')
+  await add('other', 'checkbox')
+  for (let i = 0; i < 5; i++) await service.createRecordPage(owner.id, ws, db, { id: `mutation-row-${i}`, pageId: `mutation-page-${i}`, title: `Row ${i}`, orderKey: String(i) })
+  for (const [i, value] of ['12.5', ' 42 ', 'abc', ''].entries()) await recordModel.updateOne({ id: `mutation-row-${i}` }, { $set: { properties: { value, other: true } } })
+  await recordModel.updateOne({ id: 'mutation-row-4' }, { $set: { properties: { other: false } } })
+  const view = (await service.listViews(owner.id, ws, db))[0]!
+  await service.updateView(owner.id, ws, db, view.id, { expectedDatabaseVersion: (await current()).version, expectedViewVersion: view.version, config: { filters: [{ propertyId: 'value', operator: 'contains', value: '1' }], sorts: [{ propertyId: 'value', direction: 'desc' }], visibleProperties: [`${db}-title`, 'value', 'other'], propertyOrder: ['other', 'value'] } })
+  const before = await snapshot()
+  await assert.rejects(change(`${db}-title`, 'text'), /title/i)
+  await assert.rejects(change('value', 'title'), /Invalid database input/i)
+  const stale = { targetType: 'number' as const, expectedDatabaseVersion: (await current()).version, expectedPropertyVersion: 999 }
+  await assert.rejects(service.changePropertyType(owner.id, ws, db, 'value', stale), /stale/i)
+  await assert.rejects(service.changePropertyType(owner.id, ws, db, 'value', { ...stale, expectedDatabaseVersion: 999, expectedPropertyVersion: 1 }), /stale/i)
+  const noop = await change('value', 'text')
+  assert.deepEqual([noop.convertedRecordCount, noop.clearedRecordCount, noop.repairedViewCount], [0, 0, 0])
+  assert.deepEqual(await snapshot(), before, 'rejected and same-type operations write nothing, including fences/timestamps')
+
+  const recordRepository = app.get(DatabaseRecordRepository)
+  const save = recordRepository.updateProperties.bind(recordRepository)
+  let writes = 0
+  recordRepository.updateProperties = async (...args: Parameters<typeof save>) => {
+    const saved = await save(...args)
+    if (++writes === 2) throw new Error('injected second record failure')
+    return saved
+  }
+  try { await assert.rejects(change('value', 'number'), /injected second record failure/) } finally { recordRepository.updateProperties = save }
+  assert.deepEqual(await snapshot(), before, 'first and second record writes and database fence fully roll back')
+  const viewsRepository = app.get(DatabaseViewRepository)
+  const repair = viewsRepository.updateConfigForProperty.bind(viewsRepository)
+  viewsRepository.updateConfigForProperty = async (...args: Parameters<typeof repair>) => { await repair(...args); throw new Error('injected view failure') }
+  try { await assert.rejects(change('value', 'number'), /injected view failure/) } finally { viewsRepository.updateConfigForProperty = repair }
+  assert.deepEqual(await snapshot(), before, 'records and repaired view fully roll back')
+  const propertyRepository = app.get(DatabasePropertyRepository)
+  const saveType = propertyRepository.changeType.bind(propertyRepository)
+  propertyRepository.changeType = async (...args: Parameters<typeof saveType>) => { await saveType(...args); throw new Error('injected property failure') }
+  try { await assert.rejects(change('value', 'number'), /injected property failure/) } finally { propertyRepository.changeType = saveType }
+  assert.deepEqual(await snapshot(), before, 'property definition, records, view and database all roll back after final write')
+  const migrated = await change('value', 'number')
+  assert.deepEqual([migrated.convertedRecordCount, migrated.clearedRecordCount, migrated.repairedViewCount], [2, 2, 1])
+  const original = before[1]!.find((row: any) => row.id === 'value')!
+  assert.equal(migrated.property.id, original.id)
+  assert.equal(migrated.property.name, original.name)
+  assert.equal(migrated.property.createdAt, original.createdAt.toISOString())
+  assert.equal(migrated.property.version, original.version + 1)
+  assert.equal(migrated.database.version, noop.database.version + 1)
+  const rows = await recordModel.find({ databaseId: db }).sort({ id: 1 }).lean()
+  assert.deepEqual(rows.map(row => row.properties), [{ value: 12.5, other: true }, { value: 42, other: true }, { other: true }, { other: true }, { other: false }])
+  for (const row of rows) assert.equal(row.version, before[2]!.find((old: any) => old.id === row.id)!.version + 1)
+  const repaired = (await service.listViews(owner.id, ws, db))[0]!
+  assert.deepEqual(repaired.config, { filters: [], sorts: [{ propertyId: 'value', direction: 'desc' }], visibleProperties: [`${db}-title`, 'value', 'other'], propertyOrder: ['other', 'value'] })
+  assert.equal(repaired.version, view.version + 2)
+  await change('value', 'text')
+  assert.equal((await recordModel.findOne({ id: 'mutation-row-0' }).lean())!.properties.value, '12.5')
+  await change('value', 'date')
+  assert.equal(Object.hasOwn((await recordModel.findOne({ id: 'mutation-row-0' }).lean())!.properties, 'value'), false)
+  await recordModel.updateOne({ id: 'mutation-row-0' }, { $set: { 'properties.value': '2026-10-12' } })
+  await change('value', 'text')
+  assert.equal((await recordModel.findOne({ id: 'mutation-row-0' }).lean())!.properties.value, '2026-10-12')
+  await change('value', 'select')
+  assert.deepEqual((await property('value')).options, [])
+  await service.updateProperty(owner.id, ws, db, 'value', { options: [{ id: 'opt', name: 'Option' }], expectedDatabaseVersion: (await current()).version, expectedPropertyVersion: (await property('value')).version })
+  await recordModel.updateOne({ id: 'mutation-row-0' }, { $set: { 'properties.value': 'opt' } })
+  await change('value', 'text')
+  assert.equal(Object.hasOwn((await propertyModel.findOne({ id: 'value' }).lean())!, 'options'), false)
+  assert.equal(Object.hasOwn((await recordModel.findOne({ id: 'mutation-row-0' }).lean())!.properties, 'value'), false)
+  await change('value', 'checkbox')
+  await recordModel.updateOne({ id: 'mutation-row-0' }, { $set: { 'properties.value': true } })
+  await change('value', 'number')
+  assert.equal(Object.hasOwn((await recordModel.findOne({ id: 'mutation-row-0' }).lean())!.properties, 'value'), false)
+  for (const targetType of ['relation', 'rollup', 'formula']) await assert.rejects(change('value', targetType), /Invalid database input/)
+
+  // Real overflow scan: repository must return the 10001st row and abort before migration.
+  await recordModel.insertMany(Array.from({ length: 9996 }, (_, i) => ({ id: `overflow-${i}`, databaseId: db, workspaceId: ws, pageId: `overflow-page-${i}`, properties: {}, version: 1 })))
+  const overflowBefore = await snapshot()
+  await assert.rejects(change('value', 'text'), /10000/)
+  assert.deepEqual(await snapshot(), overflowBefore)
+  await recordModel.deleteMany({ id: /^overflow-/ })
+
+  await add('numeric-formula', 'formula', { config: { expression: { kind: 'binary', operator: '*', left: { kind: 'property', propertyId: 'value' }, right: { kind: 'literal', value: 2 } }, resultType: 'number' } })
+  let dependencyBefore = await snapshot()
+  await assert.rejects(change('value', 'text'), (error: any) => error.status === 409 && /dependenc/i.test(error.message))
+  assert.deepEqual(await snapshot(), dependencyBefore)
+  await service.deleteProperty(owner.id, ws, db, 'numeric-formula', { expectedDatabaseVersion: (await current()).version, expectedPropertyVersion: 1 })
+  await createDb('incoming-db')
+  await add('incoming-link', 'relation', { config: { targetDatabaseId: db } }, 'incoming-db')
+  await add('incoming-rollup', 'rollup', { config: { relationPropertyId: 'incoming-link', targetPropertyId: 'value', aggregation: 'sum' } }, 'incoming-db')
+  dependencyBefore = await snapshot()
+  await assert.rejects(change('value', 'text'), (error: any) => error.status === 409 && /dependenc/i.test(error.message))
+  assert.deepEqual(await snapshot(), dependencyBefore, 'incoming rollup dependency and both database fences roll back')
+  await service.deleteProperty(owner.id, ws, 'incoming-db', 'incoming-rollup', { expectedDatabaseVersion: (await current('incoming-db')).version, expectedPropertyVersion: 1 })
+
+  const race = await Promise.allSettled([
+    change('value', 'text'),
+    add('racing-rollup', 'rollup', { config: { relationPropertyId: 'incoming-link', targetPropertyId: 'value', aggregation: 'sum' } }, 'incoming-db'),
+  ])
+  assert.equal(race.filter(result => result.status === 'fulfilled').length, 1, 'type mutation and incompatible incoming rollup creation cannot both commit')
+  const racingRollup = (await service.listProperties(owner.id, ws, 'incoming-db')).find(row => row.id === 'racing-rollup')
+  assert.equal((await property('value')).type === 'number', !!racingRollup)
+  if (racingRollup) await service.deleteProperty(owner.id, ws, 'incoming-db', racingRollup.id, { expectedDatabaseVersion: (await current('incoming-db')).version, expectedPropertyVersion: racingRollup.version })
+  // Every advanced target removes its sort; leaving it removes the old config.
+  for (const [targetType, config] of [
+    ['relation', { targetDatabaseId: 'incoming-db' }],
+    ['rollup', { relationPropertyId: 'local-link', targetPropertyId: 'incoming-db-title', aggregation: 'count' }],
+    ['formula', { expression: { kind: 'literal', value: 1 }, resultType: 'number' }],
+  ] as const) {
+    if (targetType === 'rollup') await add('local-link', 'relation', { config: { targetDatabaseId: 'incoming-db' } })
+    const oldView = (await service.listViews(owner.id, ws, db))[0]!
+    await service.updateView(owner.id, ws, db, oldView.id, { expectedDatabaseVersion: (await current()).version, expectedViewVersion: oldView.version, config: { ...oldView.config!, filters: [{ propertyId: 'value', operator: 'is_empty' }], sorts: [{ propertyId: 'value', direction: 'asc' }] } })
+    const advanced = await change('value', targetType, { config })
+    assert.equal(advanced.repairedViewCount, 1)
+    assert.deepEqual((await service.listViews(owner.id, ws, db))[0]!.config?.sorts, [])
+    if (targetType === 'relation') await recordModel.updateOne({ id: 'mutation-row-0' }, { $set: { 'properties.value': [] } })
+    await change('value', 'text')
+    assert.equal(Object.hasOwn((await propertyModel.findOne({ id: 'value' }).lean())!, 'config'), false)
+    assert.equal(Object.hasOwn((await recordModel.findOne({ id: 'mutation-row-0' }).lean())!.properties, 'value'), false)
+  }
 })

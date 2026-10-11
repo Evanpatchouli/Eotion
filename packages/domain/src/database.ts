@@ -68,6 +68,38 @@ export interface DatabasePropertyDefinition {
 export type DatabasePropertyValue = string | number | boolean | null | string[]
 export type DatabaseRecordValues = Record<string, DatabasePropertyValue>
 
+export type DatabasePropertyValueConversion =
+  | { action: 'keep'; value: DatabasePropertyValue }
+  | { action: 'clear' }
+
+/** Converts a stored cell when a property changes type. Unsupported or lossy conversions clear the cell. */
+export function convertDatabasePropertyValueForTypeChange(
+  sourceType: DatabasePropertyType,
+  targetType: DatabasePropertyType,
+  value: DatabasePropertyValue,
+): DatabasePropertyValueConversion {
+  if (sourceType === 'title' || targetType === 'title') throw new Error('Title property type changes are not supported')
+  if (sourceType === targetType) return { action: 'keep', value }
+
+  if (sourceType === 'text' && targetType === 'number' && typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed.length > 0) {
+      const converted = Number(trimmed)
+      if (Number.isFinite(converted)) return { action: 'keep', value: converted }
+    }
+  }
+
+  if (sourceType === 'number' && targetType === 'text' && typeof value === 'number' && Number.isFinite(value)) {
+    return { action: 'keep', value: String(value) }
+  }
+
+  if (sourceType === 'date' && targetType === 'text' && typeof value === 'string' && isValidDateOnly(value)) {
+    return { action: 'keep', value }
+  }
+
+  return { action: 'clear' }
+}
+
 export interface DatabaseReferenceAttrs {
   databaseId: string
   viewId: string

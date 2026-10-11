@@ -70,6 +70,16 @@ export class DatabasePropertyRepository {
     const doc = await this.model.findOneAndUpdate({ workspaceId, databaseId, id, version: expectedVersion }, [{ $set: set }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
     return doc ? this.toRecord(doc) : null
   }
+  async changeType(workspaceId: string, databaseId: string, id: string, expectedVersion: number, candidate: DatabaseProperty, session: ClientSession): Promise<DatabaseProperty | null> {
+    const doc = await this.model.findOneAndUpdate({ workspaceId, databaseId, id, version: expectedVersion }, [{ $set: {
+      type: { $literal: candidate.type },
+      options: candidate.options === undefined ? '$$REMOVE' : { $literal: candidate.options },
+      config: candidate.config === undefined ? '$$REMOVE' : { $literal: candidate.config },
+      version: { $add: ['$version', 1] },
+      updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] },
+    } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
+    return doc ? this.toRecord(doc) : null
+  }
   async delete(workspaceId: string, databaseId: string, id: string, expectedVersion: number, session: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndDelete({ workspaceId, databaseId, id, version: expectedVersion }, { session }).exec())
   }

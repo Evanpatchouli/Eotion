@@ -1,8 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
 import { createHash } from 'node:crypto'
-import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression } from '@eotion/domain'
-import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
+import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression } from '@eotion/domain'
+import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
 import { PageRepository } from '../repositories/page.repository'
@@ -14,6 +14,7 @@ import type { ServerBlockRecord } from '../types'
 
 type CreateInPage = { id: string; name: string; titlePropertyId: string; viewId: string; blockId: string; orderKey: string; parentBlockId: string | null }
 type CreateProperty = { id: string; name: string; type: DatabaseProperty['type']; options?: DatabaseProperty['options']; config?: DatabaseProperty['config']; expectedDatabaseVersion: number }
+type ChangePropertyType = import('@eotion/contracts').DatabasePropertyTypeChangeRequest
 type CreateRecord = { id: string; pageId: string; properties: DatabaseRecord['properties'] }
 type CreateView = { id: string; name: string; type: DatabaseView['type']; config?: DatabaseViewConfig; expectedDatabaseVersion?: number }
 type WindowInput = { cursor?: string; limit: number }
@@ -366,6 +367,95 @@ export class DatabaseService {
     })
   }
 
+  async changePropertyType(userId: string, workspaceId: string, databaseId: string, propertyId: string, input: ChangePropertyType): Promise<{ database: Database; property: DatabaseProperty; convertedRecordCount: number; clearedRecordCount: number; repairedViewCount: number }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    this.parse(DatabasePropertyTypeChangeRequestSchema, input)
+    return this.transact(async session => {
+      const currentDatabase = await this.databases.findInWorkspace(workspaceId, databaseId, session)
+      if (!currentDatabase) throw new NotFoundException('Database not found in workspace')
+      const existing = await this.properties.findInDatabase(workspaceId, databaseId, propertyId, session)
+      if (!existing) throw new NotFoundException('Database property not found')
+      if (currentDatabase.version !== input.expectedDatabaseVersion || existing.version !== input.expectedPropertyVersion) throw new ConflictException('Database or property version is stale')
+      if (existing.type === 'title') throw new BadRequestException('The title property cannot change type')
+      if (existing.type === input.targetType) return { database: currentDatabase, property: existing, convertedRecordCount: 0, clearedRecordCount: 0, repairedViewCount: 0 }
+
+      const candidate: DatabaseProperty = {
+        ...existing,
+        type: input.targetType,
+        ...(input.targetType === 'select' ? { options: [] } : {}),
+        ...(!('config' in input) ? {} : { config: input.config }),
+      }
+      if (input.targetType !== 'select') delete candidate.options
+      if (!('config' in input)) delete candidate.config
+      if (!isValidDatabaseProperty(candidate)) throw new BadRequestException('Invalid database property')
+      const existingProperties = await this.properties.list(workspaceId, databaseId, session)
+      const candidateProperties = existingProperties.map(property => property.id === propertyId ? candidate : property)
+      try {
+        await this.assertDependencies(workspaceId, databaseId, candidateProperties, session)
+      } catch (error) {
+        if (error instanceof BadRequestException) throw new ConflictException('Property type change invalidates existing dependencies')
+        throw error
+      }
+
+      const references = await this.properties.listRelationsInWorkspace(workspaceId, DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, session)
+      if (references.length > DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES) throw new ConflictException('Workspace exceeds the maximum of 1000 relation properties for dependency validation')
+      const incomingSourceIds = [...new Set(references.filter(reference => reference.type === 'relation'
+        && (reference.config as { targetDatabaseId: string }).targetDatabaseId === databaseId
+        && reference.databaseId !== databaseId).map(reference => reference.databaseId))].sort()
+      await this.touchAdvanced(workspaceId, incomingSourceIds, session)
+      for (const sourceDatabaseId of incomingSourceIds) {
+        const sourceProperties = await this.properties.listLimited(workspaceId, sourceDatabaseId, DATABASE_MAX_PROPERTIES + 1, session)
+        if (sourceProperties.length > DATABASE_MAX_PROPERTIES) throw new ConflictException(`Relation source exceeds the maximum of ${DATABASE_MAX_PROPERTIES} properties`)
+        try {
+          await this.assertDependencies(workspaceId, sourceDatabaseId, sourceProperties, session, { databaseId, properties: candidateProperties })
+        } catch (error) {
+          if (error instanceof BadRequestException) throw new ConflictException('Property type change invalidates an incoming rollup dependency')
+          throw error
+        }
+      }
+
+      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      if (!database) throw new ConflictException('Database version is stale')
+      await this.touchAdvanced(workspaceId, [databaseId], session)
+      const records = await this.records.listForCleanup(workspaceId, databaseId, session)
+      if (records.length > DATABASE_RECORD_SCAN_MAX_RECORDS) throw new ConflictException('Database exceeds the maximum of 10000 records for property type conversion')
+      let convertedRecordCount = 0
+      let clearedRecordCount = 0
+      for (const record of records) {
+        const values: Record<string, DatabasePropertyValue> = { ...record.properties }
+        if (Object.hasOwn(record.properties, propertyId)) {
+          const result = convertDatabasePropertyValueForTypeChange(existing.type, candidate.type, record.properties[propertyId])
+          if (result.action === 'keep') {
+            Object.defineProperty(values, propertyId, { value: result.value, enumerable: true, configurable: true, writable: true })
+            convertedRecordCount += 1
+          } else {
+            delete values[propertyId]
+            clearedRecordCount += 1
+          }
+        }
+        if (!validateStoredDatabaseRecordValues(values, candidateProperties)) throw new ConflictException('Database record values are incompatible with the changed property type')
+        if (!await this.records.updateProperties(workspaceId, databaseId, record.id, record.version, values, session)) throw new ConflictException('Database record changed during property type conversion')
+      }
+
+      let repairedViewCount = 0
+      for (const view of await this.views.list(workspaceId, databaseId, session)) {
+        const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+        const nextConfig: DatabaseViewConfig = {
+          ...config,
+          filters: config.filters.filter(filter => filter.propertyId !== propertyId),
+          sorts: ['relation', 'rollup', 'formula'].includes(candidate.type) ? config.sorts.filter(sort => sort.propertyId !== propertyId) : config.sorts,
+        }
+        if (!validateDatabaseViewConfig(nextConfig, candidateProperties)) throw new ConflictException('Database view configuration could not be repaired after changing property type')
+        if (nextConfig.filters.length === config.filters.length && nextConfig.sorts.length === config.sorts.length) continue
+        if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during property type conversion')
+        repairedViewCount += 1
+      }
+      const property = await this.properties.changeType(workspaceId, databaseId, propertyId, input.expectedPropertyVersion, candidate, session)
+      if (!property) throw new ConflictException('Database property version is stale')
+      return { database, property, convertedRecordCount, clearedRecordCount, repairedViewCount }
+    })
+  }
+
   async deleteProperty(userId: string, workspaceId: string, databaseId: string, propertyId: string, input: { expectedDatabaseVersion: number; expectedPropertyVersion: number }): Promise<{ database: Database }> {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabasePropertyDeleteRequestSchema, input)
@@ -601,7 +691,7 @@ export class DatabaseService {
     }
   }
 
-  private async assertDependencies(workspaceId: string, databaseId: string, properties: DatabaseProperty[], session: ClientSession): Promise<void> {
+  private async assertDependencies(workspaceId: string, databaseId: string, properties: DatabaseProperty[], session: ClientSession, override?: { databaseId: string; properties: DatabaseProperty[] }): Promise<void> {
     const targets = new Set(properties.filter(property => property.type === 'relation').map(property => (property.config as { targetDatabaseId: string }).targetDatabaseId))
     await this.touchAdvanced(workspaceId, [...targets].filter(id => id !== databaseId), session)
     const targetProperties = new Map<string, DatabaseProperty[]>()
@@ -609,7 +699,7 @@ export class DatabaseService {
       if (targetId === databaseId) continue
       const database = await this.databases.findInWorkspace(workspaceId, targetId, session)
       if (!database) throw new BadRequestException('Relation target database must belong to the workspace')
-      const rows = await this.properties.listLimited(workspaceId, targetId, DATABASE_MAX_PROPERTIES + 1, session)
+      const rows = override?.databaseId === targetId ? override.properties : await this.properties.listLimited(workspaceId, targetId, DATABASE_MAX_PROPERTIES + 1, session)
       if (rows.length > DATABASE_MAX_PROPERTIES) throw new ConflictException(`Relation target exceeds the maximum of ${DATABASE_MAX_PROPERTIES} properties`)
       targetProperties.set(targetId, rows)
     }

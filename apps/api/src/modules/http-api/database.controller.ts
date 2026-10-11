@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
-import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseTableQuerySchema, DatabaseViewListQuerySchema, DatabaseViewHttpCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
+import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabaseTableQuerySchema, DatabaseViewListQuerySchema, DatabaseViewHttpCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
 import { DatabaseService } from '../server-domain/services/database.service'
 import type { UserRecord } from '../server-domain/types'
 import { CurrentUser, SessionAuthGuard } from './auth.transport'
@@ -81,6 +81,11 @@ export class DatabaseController {
   @Patch('databases/:databaseId/properties/:propertyId')
   updateProperty(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('propertyId') propertyId: string, @Body() body: unknown) {
     return this.databases.updateProperty(user.id, parseId(workspaceId), parseId(databaseId), parseId(propertyId), parseBody(DatabasePropertyUpdateRequestSchema, body))
+  }
+
+  @Patch('databases/:databaseId/properties/:propertyId/type')
+  changePropertyType(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('propertyId') propertyId: string, @Body() body: unknown) {
+    return this.databases.changePropertyType(user.id, parseId(workspaceId), parseId(databaseId), parseId(propertyId), parseBody(DatabasePropertyTypeChangeRequestSchema, body))
   }
 
   @Delete('databases/:databaseId/properties/:propertyId')
