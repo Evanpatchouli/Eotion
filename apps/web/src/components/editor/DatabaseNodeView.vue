@@ -881,6 +881,7 @@ async function saveSelectOptions(property: DatabasePropertyResponse, options: Ar
 
 function startCellEdit(record: TableRecord, property: DatabasePropertyResponse): void {
   if (!writable.value || ['checkbox', 'select', 'relation', 'rollup', 'formula'].includes(property.type)) return
+  returnFocusTo.value = document.activeElement instanceof HTMLElement ? document.activeElement.closest<HTMLElement>('td') ?? document.activeElement : null
   cellPopover.value = null
   cellDraftError.value = ''
   const current = getCellValue(record, property.id)
@@ -891,7 +892,16 @@ function setCellInputRef(element: Element | ComponentPublicInstance | null): voi
   cellInput.value = element instanceof HTMLInputElement ? element : null
 }
 
-function cancelCellEdit(): void { cellEdit.value = null; cellDraftError.value = ''; runDeferredRefresh() }
+function cancelCellEdit(): void {
+  cellEdit.value = null
+  cellDraftError.value = ''
+  runDeferredRefresh()
+  void nextTick(() => {
+    const origin = returnFocusTo.value
+    const target = origin?.matches('td') ? origin.querySelector<HTMLElement>('.eotion-database-title-body, .eotion-database-cell-button') : origin
+    if (target?.isConnected) target.focus({ preventScroll: true })
+  })
+}
 function isEditingCell(record: TableRecord, property: DatabasePropertyResponse): boolean { return cellEdit.value?.recordId === record.id && cellEdit.value?.propertyId === property.id }
 function isOpenSelect(record: TableRecord, property: DatabasePropertyResponse): boolean { return cellPopover.value?.recordId === record.id && cellPopover.value?.propertyId === property.id }
 
@@ -956,7 +966,6 @@ function onCellEnter(event: KeyboardEvent, record: TableRecord, property: Databa
   event.preventDefault()
   void saveCell(record, property)
 }
-
 async function toggleCheckbox(record: TableRecord, property: DatabasePropertyResponse): Promise<void> {
   if (!writable.value) return
   try {
@@ -1291,13 +1300,16 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
           <tbody>
             <tr v-for="record in records" :key="record.id">
               <td v-for="property in displayProperties" :key="property.id">
-                <template v-if="property.type === 'title' && !isEditingCell(record, property)"><RouterLink class="eotion-database-title" :aria-label="`打开记录：${formatValue(getCellValue(record, property.id), property)}`" :to="{ name: 'product-page', params: { workspaceId, pageId: record.pageId } }" @pointerdown.stop @mousedown.stop @click.capture="openRecordPage($event, record.pageId)">{{ formatValue(getCellValue(record, property.id), property) }}</RouterLink><button class="eotion-database-title-edit" type="button" :disabled="!writable" :aria-label="`编辑${displayPropertyName(property)}：${formatValue(getCellValue(record, property.id), property)}`" @click.stop="startCellEdit(record, property)"></button></template>
-                <input v-else-if="isEditingCell(record, property)" v-model="cellDraft" :ref="setCellInputRef" class="eotion-database-cell-input" :type="property.type === 'date' ? 'date' : 'text'" :inputmode="property.type === 'number' ? 'decimal' : undefined" :aria-label="`${displayPropertyName(property)} 值`" :disabled="savingCell || !writable" @keydown.enter="onCellEnter($event, record, property)" @keydown.esc.prevent="cancelCellEdit" @blur="saveCell(record, property)">
+                <div v-if="property.type === 'title'" class="eotion-database-title-cell" :class="{ 'eotion-database-title-cell--touch': layoutMode !== 'desktop' }">
+                  <input v-if="isEditingCell(record, property)" v-model="cellDraft" :ref="setCellInputRef" class="eotion-database-cell-input" type="text" :aria-label="`${displayPropertyName(property)} 值`" :disabled="savingCell || !writable" @keydown.enter="onCellEnter($event, record, property)" @keydown.tab.stop @keydown.esc.prevent="cancelCellEdit" @blur="saveCell(record, property)">
+                  <button v-else class="eotion-database-cell-button eotion-database-title-body" type="button" :disabled="!writable" :aria-label="`编辑${displayPropertyName(property)}：${formatValue(getCellValue(record, property.id), property)}`" @click.stop="startCellEdit(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
+                  <button class="eotion-database-title-detail" type="button" :tabindex="isEditingCell(record, property) ? -1 : 0" :aria-label="`打开记录：${formatValue(getCellValue(record, property.id), property)}`" @pointerdown.stop @mousedown.stop @click.stop="openRecordPage($event, record.pageId)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10" /></svg></button>
+                </div>
+                <input v-else-if="isEditingCell(record, property)" v-model="cellDraft" :ref="setCellInputRef" class="eotion-database-cell-input" :type="property.type === 'date' ? 'date' : 'text'" :inputmode="property.type === 'number' ? 'decimal' : undefined" :aria-label="`${displayPropertyName(property)} 值`" :disabled="savingCell || !writable" @keydown.enter="onCellEnter($event, record, property)" @keydown.tab.stop @keydown.esc.prevent="cancelCellEdit" @blur="saveCell(record, property)">
                 <button v-else-if="property.type === 'checkbox'" class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-pressed="getCellValue(record, property.id) === true" @click.stop="toggleCheckbox(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                 <button v-else-if="property.type === 'select'" class="eotion-database-cell-button" type="button" :disabled="!writable" @click.stop="toggleCellPopover(record, property, $event)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                 <button v-else-if="property.type === 'relation'" class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-label="`编辑关联 ${property.name}`" @click.stop="openRelationPicker(record, property, $event)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                 <span v-else-if="property.type === 'rollup' || property.type === 'formula'" class="eotion-database-derived-value" :aria-label="`${property.name}，只读`">{{ formatValue(getCellValue(record, property.id), property) }}</span>
-                <button v-else-if="property.type === 'title'" class="eotion-database-cell-button" type="button" :disabled="!writable" @click.stop="startCellEdit(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                 <button v-else class="eotion-database-cell-button" type="button" :disabled="!writable" @click.stop="startCellEdit(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                 <Teleport to="body"><div v-if="isOpenSelect(record, property)" class="eotion-database-popover eotion-database-teleport eotion-database-cell-menu" :style="cellPopoverStyle">
                   <button type="button" @click.stop="chooseSelect(record, property, null)">清除</button>
@@ -1315,8 +1327,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
                   <button v-if="relationNextCursor" type="button" :disabled="relationLoading" @click="loadRelationOptions(true)">加载更多</button>
                   <button type="button" @click="closeRelationPicker">完成</button>
                 </section></Teleport>
-                <button v-if="isEditingCell(record, property)" class="eotion-database-cell-save" type="button" :disabled="savingCell || !writable" @pointerdown.prevent @click.stop="saveCell(record, property)">保存</button>
-                <button v-if="isEditingCell(record, property) && property.type === 'date'" class="eotion-database-cell-save" type="button" :disabled="savingCell || !writable" @pointerdown.prevent @click.stop="saveCell(record, property, true)">清除</button>
+                <button v-if="isEditingCell(record, property)" class="eotion-database-cell-save" type="button" tabindex="-1" :disabled="savingCell || !writable" @pointerdown.prevent @click.stop="saveCell(record, property)">保存</button>
+                <button v-if="isEditingCell(record, property) && property.type === 'date'" class="eotion-database-cell-save" type="button" tabindex="-1" :disabled="savingCell || !writable" @pointerdown.prevent @click.stop="saveCell(record, property, true)">清除</button>
                 <small v-if="isEditingCell(record, property) && cellDraftError" class="eotion-database-cell-error" role="alert">{{ cellDraftError }} <button type="button" @click.stop="saveCell(record, property)">重试</button></small>
               </td>
             </tr>
@@ -1393,10 +1405,16 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-column-row label { display:flex; align-items:center; gap:8px; min-width:0; flex:1; min-height:32px; overflow-wrap:normal; word-break:normal; white-space:normal; }
 .eotion-database-column-row label input[type="checkbox"] { box-sizing:border-box; flex:0 0 18px; width:18px; min-width:18px; height:18px; min-height:18px; margin:0; }
 .eotion-database-settings>button { margin-top:3px; }
-.eotion-database-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain; border-top:1px solid var(--border-editor); }.eotion-database-table { width:max-content; min-width:100%; border-collapse:collapse; font-size:13px; }.eotion-database-table th,.eotion-database-table td { position:relative; width:180px; min-width:180px; max-width:260px; overflow-wrap:anywhere; border-right:1px solid var(--border-editor); border-bottom:1px solid var(--border-editor); padding:8px 11px; text-align:left; vertical-align:top; }.eotion-database-table th { color:var(--editor-muted); font-size:12px; font-weight:600; }.eotion-database-property-trigger,.eotion-database-cell-button { min-height:28px; border:0; padding:2px 4px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-property-trigger { display:inline-flex; align-items:center; gap:3px; }.eotion-database-title { color:inherit; text-decoration:underline; text-decoration-color:var(--editor-muted); text-underline-offset:2px; }.eotion-database-cell-input { box-sizing:border-box; width:100%; min-height:32px; border:1px solid var(--border-editor); border-radius:4px; padding:4px 6px; color:inherit; font:inherit; }.eotion-database-cell-error { display:block; color:var(--danger); }
-.eotion-database-popover { z-index:10000; display:grid; min-width:170px; max-width:min(280px,80vw); gap:5px; border:1px solid var(--border-editor); border-radius:8px; padding:8px; background:var(--surface-raised); box-shadow:var(--e-shadow-popover,0 8px 24px #0002); color:var(--editor-text); }.eotion-database-popover button { min-height:32px; border:0; border-radius:4px; padding:5px 8px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-popover button:hover { background:var(--surface-editor-hover); }.eotion-database-popover form,.eotion-database-option-edit { display:flex; align-items:center; gap:4px; }.eotion-database-popover input { min-width:0; width:100%; min-height:32px; }.eotion-database-popover .danger { color:var(--danger); }.eotion-database-title-edit,.eotion-database-cell-save { margin-left:6px; min-height:28px; border:0; background:transparent; color:var(--editor-muted); font:inherit; cursor:pointer; }
-.eotion-database-title-edit::before { content:'✎'; }
-.eotion-database-title { text-decoration:underline; text-decoration-color:var(--editor-muted); text-underline-offset:2px; }.eotion-database-title::after { content:'↗'; display:inline-block; margin-left:4px; color:var(--editor-muted); }
+.eotion-database-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain; border-top:1px solid var(--border-editor); }.eotion-database-table { width:max-content; min-width:100%; border-collapse:collapse; font-size:13px; }.eotion-database-table th,.eotion-database-table td { position:relative; width:180px; min-width:180px; max-width:260px; overflow-wrap:anywhere; border-right:1px solid var(--border-editor); border-bottom:1px solid var(--border-editor); padding:8px 11px; text-align:left; vertical-align:top; }.eotion-database-table th { color:var(--editor-muted); font-size:12px; font-weight:600; }.eotion-database-property-trigger,.eotion-database-cell-button { min-height:28px; border:0; padding:2px 4px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-cell-button { width:100%; }.eotion-database-property-trigger { display:inline-flex; align-items:center; gap:3px; }.eotion-database-cell-input { box-sizing:border-box; width:100%; min-height:32px; border:1px solid var(--border-editor); border-radius:4px; padding:4px 6px; color:inherit; font:inherit; }.eotion-database-cell-error { display:block; color:var(--danger); }
+.eotion-database-popover { z-index:10000; display:grid; min-width:170px; max-width:min(280px,80vw); gap:5px; border:1px solid var(--border-editor); border-radius:8px; padding:8px; background:var(--surface-raised); box-shadow:var(--e-shadow-popover,0 8px 24px #0002); color:var(--editor-text); }.eotion-database-popover button { min-height:32px; border:0; border-radius:4px; padding:5px 8px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-popover button:hover { background:var(--surface-editor-hover); }.eotion-database-popover form,.eotion-database-option-edit { display:flex; align-items:center; gap:4px; }.eotion-database-popover input { min-width:0; width:100%; min-height:32px; }.eotion-database-popover .danger { color:var(--danger); }.eotion-database-cell-save { margin-left:6px; min-height:28px; border:0; background:transparent; color:var(--editor-muted); font:inherit; cursor:pointer; }
+.eotion-database-title-cell { display:flex; align-items:center; gap:4px; min-width:0; }
+.eotion-database-title-cell .eotion-database-cell-input { flex:1 1 auto; width:auto; min-width:0; }
+.eotion-database-title-body { flex:1 1 auto; width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.eotion-database-title-detail { display:inline-flex; flex:0 0 28px; align-items:center; justify-content:center; width:28px; min-width:28px; min-height:28px; border:0; border-radius:5px; padding:0; background:transparent; color:var(--editor-muted); font:inherit; opacity:0; cursor:pointer; }
+.eotion-database-table td:hover .eotion-database-title-detail,.eotion-database-table td:focus-within .eotion-database-title-detail { opacity:1; }
+.eotion-database-title-cell--touch .eotion-database-title-detail { opacity:1; }
+.eotion-database-title-cell--touch .eotion-database-title-detail { flex-basis:44px; width:44px; min-width:44px; min-height:44px; }
+.eotion-database-title-detail:hover,.eotion-database-title-detail:focus-visible { background:var(--surface-editor-hover); color:var(--editor-text); }
 .eotion-database-cell-input,.eotion-database-popover input { background:var(--surface-raised); color:var(--editor-text); }
 .eotion-database-popover button { flex-shrink:0; white-space:nowrap; }
 .eotion-database-popover form input { flex:1; width:auto; }
@@ -1415,6 +1433,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
   .eotion-database-add-label { display:none; }
   .eotion-database-properties-menu { display:contents; }
 }
+@media (hover:none) { .eotion-database-title-detail { flex-basis:44px; width:44px; min-width:44px; min-height:44px; opacity:1; } }
 @media (max-width:767px) { .eotion-database-new { order:4; }.eotion-database-table th,.eotion-database-table td { width:160px; min-width:160px; }.eotion-database-cell-button,.eotion-database-property-trigger,.eotion-database-popover button { min-height:44px; }.eotion-database-cell-input { min-height:44px; }.eotion-database-filter-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-sort-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-filter-row select,.eotion-database-filter-row input,.eotion-database-sort-row select { min-height:44px; }.eotion-database-filter-row>button,.eotion-database-sort-row button,.eotion-database-column-row button { min-width:44px; min-height:44px; }.eotion-database-column-row label { min-height:44px; }.eotion-database-sort-row button:nth-of-type(1) { grid-column:1; grid-row:2; }.eotion-database-sort-row button:nth-of-type(2) { grid-column:2; grid-row:2; }.eotion-database-sort-row button:nth-of-type(3) { grid-column:3; grid-row:2; } }
 @media (max-width:767px) { .eotion-database-property-row { grid-template-columns:18px 18px minmax(45px,1fr) 42px 48px repeat(3,30px); gap:3px; }.eotion-database-settings-heading label { width:100%; }.eotion-database-settings select { min-height:44px; } }
 </style>

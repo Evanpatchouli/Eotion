@@ -1,5 +1,16 @@
 # Handoff
 
+## 2026-10-11 Database Table Cell Inline Editing
+
+在 master 基线 050173fce98d40eb7f8d2432cd3bd2e87486c3da 上完成聚焦 Cell 交互：Title 主体直接编辑 Page.title；删除铅笔入口，首列独立弱化的详情 icon button 复用现有 opening preference/pipeline。Desktop mouse idle 隐藏、hover/focus-within 显示；Tablet/Phone 与无 hover 输入常驻且至少 44px，与编辑主体不重叠。Text/Number/Date/Select/Checkbox/Relation 复用现有 editor/picker/mutation，Formula/Rollup 只读；Enter/Escape/Tab/Shift+Tab/Space 定向验证通过。
+
+Title Tab 最小复现发现：sync.runSync 首次 flush 父页面生成 pending operations 后 deferRetry 返回 syncing，使既有 title 状态检查拒绝提交。现复用 activePageEditor 先 flush 同 Workspace 页面，再经过原 sync-state / auth / workspace / Page+Record+Database CAS gate；没有改 Database domain、服务端协议或同步域。详情字形使用 aria-hidden SVG，不混入 Cell 文本值。
+
+验证：定向 8/8；初始 Record autofocus readiness 定向 3/3；完整 Database suite 最终 55/55，无 retry；Web typecheck、build:web、git diff --check 通过，保留既有 >500kB chunk warning。原 HEAD 上 Record title focus 测试 repeat2 为 1 pass/1 fail，证实正文 rAF initial autofocus 与过早 fill 的竞态；只补测试等待现有 body focus 的就绪断言，原 title focus / close / route 断言未削弱，未改 Overlay。独立 reviewer 最终无 blocker。
+
+提交后从最终 HEAD 重采的视觉包放在 artifacts/database-ux-review/（ignored），manifest 记录 commit、生成时刻、尺寸/主题和完整文件清单。使用 Chromium responsive Web + product mock transport；不把它当 native 真机验收。截图保留等待用户人工查看；本节对应最终聚焦提交，实际 hash 见 git HEAD 与截图 manifest。
+
+本轮实现/验证 PASS；Database UX Final Acceptance 仍待用户审阅。Remaining issues：Drawer Motion、Universal Block +、Database UX Final Acceptance。截图采集完成后停止，不开始下一项、性能或 P9。
 ## 2026-10-11 Mobile Database Header UX
 
 在 `master` 基线 `0a3066b4e82ce21cc674e0e43d7a393f1d55bd67` 上仅修改 Phone（<768px）Database Block/Header presentation：隐藏插入与拖拽控件并取消 100px 左侧预留；标题独占第一行、长标题单行 ellipsis；第二行左 View Selector、右图标新建记录 `+` 与设置 `…`，三个触控目标至少 44px。Phone 隐藏 Database icon。Desktop/Tablet 原布局、Tablet coarse controls/插入交互与 Record/View/Settings/opening preference 保持。

@@ -2,6 +2,7 @@ import { createLocalId } from '@eotion/storage'
 import type { DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest } from '@eotion/contracts'
 import { nextOrderKey } from '../utils/pageTree'
 
+import { flushActivePageEditor } from '../editor/activePageEditor'
 import { notifyDatabaseRecordCreated, notifyDatabaseUpdated } from '../editor/databaseEvents'
 import { reactive } from 'vue'
 import { ApiError, api } from './productApi'
@@ -296,6 +297,9 @@ export async function updateProductDatabaseRecordCell(workspaceId: string, datab
     const sync = useProductSyncStore()
     const pages = useProductPagesStore()
     if (isTitle) {
+      // Flush pending Page editor operations before the sync-state gate for the title CAS.
+      if (!(await flushActivePageEditor(workspaceId))) throw new Error('页面尚未保存，标题暂不能修改。')
+      assertOnlineAndCurrent(workspaceId, userId)
       await sync.runSync()
       assertOnlineAndCurrent(workspaceId, userId)
       if (sync.state !== 'synced') throw new Error('页面尚未同步，标题暂不能修改。')
