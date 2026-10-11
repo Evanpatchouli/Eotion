@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-10-11 Drawer Motion（NO PASS）
+
+基线 a9c206722e6d4c5bf05cff54e2212297729d6113，范围仅 EotionProductOverlay Drawer motion。Right/Desktop X、Bottom Y 从 100% 到 0，退出反向；enter 200ms ease-out、leave 170ms ease-in，masked backdrop 同步 opacity，Desktop 无遮罩。Vue Transition 保留退出前的 vnode 和正文，受控父级接受关闭后才 leave，结束后真正 close/unmount、unlock 与 focus restore。保存拒绝维持面板；reduced-motion 禁用位移并立即完成；快速切换/取消清理与 Modal 回退关闭焦点已覆盖。
+
+最终指定验证通过：Overlay 35/35、Database opening/record 14/14（workers=1、retries=0），Web typecheck、build:web、git diff --check。构建保留既有 >500kB chunk warning。独立复核完成。但本轮不能 PASS：扩展完整 Database 回归曾为 54/56；恢复 baseline nextTick 显示/聚焦时序后 Desktop 属性单例通过，Phone filter/sort 仍在添加排序时因父编辑器重建而卸载。隔离基线 Overlay 两例 2/2 通过，确认本改动时序暴露了回归；不将其标为无关失败。
+
+运行时证据：Phone Sort Drawer 入场后 PagePersistence.matchesLocalBlocks 返回 false（两侧均 2 blocks，mismatch phone-view-settings），随后整个 .eotion-editor、Database NodeView 和 open=true 的 Overlay 同时移除再重建，无 Overlay close 请求。调用链为 PageView snapshotRevision -> loadBlocks -> editorRevision key 重建。该父编辑器/Sync 生命周期超出本轮明确边界，未修改；详见 current-task。探针已按 SHA256 恢复测试原字节，诊断日志及临时配置已清理。当前提交保留此阻断，不宣称完整 Database UX 通过。
+
+Remaining issues：Universal Block +、Database UX Final Acceptance。提交后停止，不开始 P9。
+
 ## 2026-10-11 Database Overlay Header / Body / Footer
 
 在 master 基线 6debd1a7e8a1878bf615c5ed4ec7baacc9e8ebf1 上完成统一 ProductOverlay 分区：title 可视 Header，label 保留独立 accessible name；Header 单关闭按钮，Page 返回；Body 独立滚动、可选 Footer 有分隔线且保持稳定。无动画。
