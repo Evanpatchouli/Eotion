@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-10-11 ProductPages snapshot revision 收敛竞态
+
+在 `master` 基线 `153797d` 上完成聚焦修复：首次 load 期间 refresh 置 pending，由原 load promise 合并并串行重读完整 Pages 与 navigation projection；每次读取和提交检查 epoch/workspace，切换和 reset 清 pending。未修改 sync contract、LocalStore schema/index、PageTree 或 Database navigation，未做性能优化。
+
+确定性 IndexedDB 回归：先截获 10,050 条 roleless navigation，再真实 replaceWorkspaceSnapshot 补 Record role 并触发 sync revision；最终 items=10,050、navigationItems=50，Record direct-open 保留。覆盖多次 revision 合并、尾随读取期间再次 revision、in-flight load 复用、workspace 切换/reset 旧读取隔离、正常 load 单次读取。新增测试 2/2、已有相关 product-pages/product-sync 定向测试 5/5、Web typecheck、git diff --check 均通过。
+
+10k Audit 继续 **B — PASS WITH DEBT**。Remaining issues 保留：Mobile Database Header UX、Table Cell Inline Editing、Drawer Motion、Universal Block +、Database UX Final Acceptance（HOLD）。本轮结束后停止，不开始 P9 或下一项；完全离线 roleless 缓存与 legacy lookup 性能债务保持既有边界。
+
 ## 2026-10-11 Page Tree / 10k Projection Performance Audit
 
 基线 `7c7a7e528393e31f5af9261a2390fe20f0a888c3`；审计结论 **B — PASS WITH DEBT**。本轮只新增隔离 benchmark、文档和任务记录，没有改产品实现、schema 或 index；未开始 Database UX Final Acceptance 或 P9。完整数据路径与每组 `min/median/max` 见 `docs/p8-database.md` 的 Page Tree / 10k audit 章节。

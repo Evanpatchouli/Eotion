@@ -22,9 +22,11 @@ export const useProductPagesStore = defineStore('product-pages', () => {
   const deletePending = ref(false), deleteError = ref('')
   let epoch = 0
   let loadPromise: Promise<void> | null = null
+  let pendingRefresh = false
 
   function reset(): void {
     epoch += 1
+    pendingRefresh = false
     forWorkspaceId.value = ''
     items.value = []
     navigationItems.value = []
@@ -36,11 +38,19 @@ export const useProductPagesStore = defineStore('product-pages', () => {
 
   async function refresh(workspaceId = forWorkspaceId.value): Promise<void> {
     if (!workspaceId || workspaceId !== forWorkspaceId.value) return
+    if (loading.value) {
+      pendingRefresh = true
+      return
+    }
     const requestEpoch = epoch
     const local = await useProductSyncStore().store()
     if (requestEpoch !== epoch || workspaceId !== forWorkspaceId.value) return
+    if (loading.value) {
+      pendingRefresh = true
+      return
+    }
     if (!loaded.value) {
-      if (loading.value || !(await local.hasWorkspaceSnapshot(workspaceId))) return
+      if (!(await local.hasWorkspaceSnapshot(workspaceId))) return
       if (requestEpoch !== epoch || workspaceId !== forWorkspaceId.value) return
       await load(workspaceId)
       return
@@ -49,7 +59,7 @@ export const useProductPagesStore = defineStore('product-pages', () => {
       local.listPagesByWorkspace(workspaceId),
       local.listNavigationPagesByWorkspace(workspaceId),
     ])
-    if (requestEpoch === epoch) {
+    if (requestEpoch === epoch && workspaceId === forWorkspaceId.value) {
       items.value = pages as PageResponse[]
       navigationItems.value = navigationPages as PageResponse[]
     }
@@ -59,6 +69,7 @@ export const useProductPagesStore = defineStore('product-pages', () => {
     if (workspaceId === forWorkspaceId.value && loaded.value && !force) return Promise.resolve()
     if (workspaceId === forWorkspaceId.value && loadPromise && !force) return loadPromise
     const requestEpoch = ++epoch
+    pendingRefresh = false
     forWorkspaceId.value = workspaceId
     items.value = []
     navigationItems.value = []
@@ -75,17 +86,26 @@ export const useProductPagesStore = defineStore('product-pages', () => {
           return
         }
         const local = await sync.store()
-        const [pages, navigationPages] = await Promise.all([
-          local.listPagesByWorkspace(workspaceId),
-          local.listNavigationPagesByWorkspace(workspaceId),
-        ])
+        if (requestEpoch !== epoch || workspaceId !== forWorkspaceId.value) return
+        let pages: Awaited<ReturnType<typeof local.listPagesByWorkspace>>
+        let navigationPages: Awaited<ReturnType<typeof local.listNavigationPagesByWorkspace>>
+        do {
+          pendingRefresh = false
+          const result = await Promise.all([
+            local.listPagesByWorkspace(workspaceId),
+            local.listNavigationPagesByWorkspace(workspaceId),
+          ])
+          pages = result[0]
+          navigationPages = result[1]
+          if (requestEpoch !== epoch || workspaceId !== forWorkspaceId.value) return
+        } while (pendingRefresh)
         items.value = pages as PageResponse[]
         navigationItems.value = navigationPages as PageResponse[]
         loaded.value = true
       } catch (cause) {
-        if (requestEpoch === epoch) error.value = cause instanceof Error ? cause.message : '无法加载本地页面。'
+        if (requestEpoch === epoch && workspaceId === forWorkspaceId.value) error.value = cause instanceof Error ? cause.message : '无法加载本地页面。'
       } finally {
-        if (requestEpoch === epoch) { loading.value = false; loadPromise = null }
+        if (requestEpoch === epoch && workspaceId === forWorkspaceId.value) { loading.value = false; loadPromise = null }
       }
     })()
     loadPromise = request

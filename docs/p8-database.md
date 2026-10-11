@@ -37,6 +37,12 @@ Database 自身通过 `GET /api/workspaces/:workspaceId/database-navigation` 返
 
 本轮接受的限制：Database 仍是 online-only/offline read-only；没有新增跨客户端 Database push、MCP tool、Automation 或其他 View。旧 P8 Database 的 Sidebar 宿主使用 Block 引用读取时推导，避免 migration break；10,000 Records 的 Page Tree 返回规模保持常数，但 legacy-safe 本地投影仍会扫描 Record 关联，后续可在不改变语义的前提下做索引优化。移动验收是 390px Chromium 响应式证据，不替代原生宿主真机验收；Web build 保留既有大 chunk warning。
 
+## ProductPages snapshot revision 收敛（2026-10-11）
+
+首次 `ProductPages.load()` 期间到达的 `refresh()` 必须保留为 pending。原 load promise 串行重读 LocalStore 的完整 Page list 与 navigation projection；同一轮读取期间的多次 refresh 合并，重读期间再次到达则继续读取，直到没有 pending。每次提交都检查 epoch 与 workspace identity，切换 workspace 或 reset 清空 pending，旧任务不能提交或清除新任务状态。
+
+完整 `items` 继续保留 Record Pages 支持 direct-open，`navigationItems` 继续使用 LocalStore 的 role projection。此修复不改变 sync contract、schema、index、Database navigation 或 PageTree，也不优化 legacy `$lookup`。10k Performance Audit 仍为 **B — PASS WITH DEBT**，完全离线的 roleless 缓存仍需成功 snapshot 才能补 role；Database UX Final Acceptance 仍 HOLD，不开始 P9。
+
 ## Page Tree / 10k Projection Performance Audit（2026-10-11）
 
 基线为 `7c7a7e528393e31f5af9261a2390fe20f0a888c3`。本轮只做隔离测量和路径审查，没有修改产品实现、Mongo/IndexedDB/SQLite schema 或 index，也没有开始 Database UX Final Acceptance 或 P9。重复测量使用各自的随机 Mongo database、内存 SQLite database、随机 IndexedDB database；测试数据不落入开发者工作区。每格三次，时长按 `min / median / max`（毫秒）记录；这些是本机观察值，不是 SLA。
