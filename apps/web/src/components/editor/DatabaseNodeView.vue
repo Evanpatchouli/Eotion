@@ -1157,8 +1157,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
       <span class="eotion-database-mark" data-icon-name="database" aria-hidden="true" @click.stop="selectBlock"><EotionIcon :name="IconName.Database" :size="20" /></span>
       <span class="eotion-database-copy" @click.stop="selectBlock"><strong>{{ title }}</strong></span>
       <div class="eotion-database-view-controls">
-        <button type="button" class="eotion-database-control-trigger" aria-label="切换视图" :disabled="viewBusy" @click.stop="openViewMenu($event)"><span>{{ displayViewName }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button>
-        <button type="button" class="eotion-database-control-trigger" aria-label="数据库设置" aria-haspopup="menu" :aria-expanded="settingsMenuOpen" @click.stop="openSettingsMenu($event)"><EotionIcon :name="IconName.More" :size="18" /></button>
+        <button type="button" class="eotion-database-control-trigger eotion-database-view-trigger" aria-label="切换视图" :disabled="viewBusy" @click.stop="openViewMenu($event)"><span>{{ displayViewName }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button>
+        <button type="button" class="eotion-database-control-trigger eotion-database-settings-trigger" aria-label="数据库设置" aria-haspopup="menu" :aria-expanded="settingsMenuOpen" @click.stop="openSettingsMenu($event)"><EotionIcon :name="IconName.More" :size="18" /></button>
         <Teleport to="body"><div v-if="settingsMenuOpen" class="eotion-database-popover eotion-database-teleport eotion-database-settings-menu" :style="settingsMenuStyle" role="menu" aria-label="数据库设置" @click.stop>
           <button type="button" role="menuitem" @click.stop="openSettings('filters')">筛选 <span v-if="visibleViewCount">{{ visibleViewCount }}</span></button>
           <button type="button" role="menuitem" @click.stop="openSettings('sorts')">排序 <span v-if="sortViewCount">{{ sortViewCount }}</span></button>
@@ -1225,7 +1225,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
           <button type="button" :disabled="!writable" @click.stop="togglePropertyCreator($event)">＋ 新增属性</button>
         </section></EotionProductOverlay>
       </div>
-      <button class="eotion-database-add" type="button" :disabled="creating || creationUncertain || !writable" @pointerdown.stop @mousedown.stop @click.stop="createRecord"><EotionIcon :name="IconName.Plus" :size="16" />{{ creating ? '正在新建…' : '新建记录' }}</button>
+      <button class="eotion-database-add" type="button" :aria-label="creating ? '正在新建…' : '新建记录'" :disabled="creating || creationUncertain || !writable" @pointerdown.stop @mousedown.stop @click.stop="createRecord"><EotionIcon :name="IconName.Plus" :size="16" /><span class="eotion-database-add-label">{{ creating ? '正在新建…' : '新建记录' }}</span></button>
       <div class="eotion-database-properties-menu">
         <Teleport defer :to="viewControlsOpen === 'columns' ? `#database-property-settings-${blockId}` : 'body'"><div v-if="propertyMenuId === '__add'" class="eotion-database-popover eotion-database-teleport" :style="propertyMenuStyle" role="group" aria-label="添加属性类型">
           <button v-for="item in addableProperties" :key="item.type" type="button" @click.stop="['relation', 'rollup', 'formula'].includes(item.type) ? openAdvancedProperty(item.type as AdvancedType) : addProperty(item.type as 'text' | 'number' | 'checkbox' | 'select' | 'date')">{{ item.label }}</button>
@@ -1402,6 +1402,19 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-popover form input { flex:1; width:auto; }
 .eotion-database-option-edit span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .eotion-database-table tr:last-child td { border-bottom:0; }.eotion-database-state,.eotion-database-error { margin:0; padding:12px 14px; color:var(--editor-muted); font-size:13px; }.eotion-database-offline { margin:0; border-top:1px solid var(--border-editor); padding:7px 14px; color:var(--editor-muted); font-size:12px; }.eotion-database-error { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; color:var(--danger); }.eotion-database-more { margin:10px 14px; }
-@media (max-width:767px) { .eotion-database-header { gap:6px; padding:9px 10px; flex-wrap:wrap; }.eotion-database-copy { flex-basis:calc(100% - 56px); }.eotion-database-view-controls { order:3; max-width:100%; overflow-x:auto; }.eotion-database-control-trigger { min-height:44px; padding-inline:8px; }.eotion-database-add { min-height:44px; padding-inline:7px; }.eotion-database-new { order:4; }.eotion-database-table th,.eotion-database-table td { width:160px; min-width:160px; }.eotion-database-cell-button,.eotion-database-property-trigger,.eotion-database-popover button { min-height:44px; }.eotion-database-cell-input { min-height:44px; }.eotion-database-filter-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-sort-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-filter-row select,.eotion-database-filter-row input,.eotion-database-sort-row select { min-height:44px; }.eotion-database-filter-row>button,.eotion-database-sort-row button,.eotion-database-column-row button { min-width:44px; min-height:44px; }.eotion-database-column-row label { min-height:44px; }.eotion-database-sort-row button:nth-of-type(1) { grid-column:1; grid-row:2; }.eotion-database-sort-row button:nth-of-type(2) { grid-column:2; grid-row:2; }.eotion-database-sort-row button:nth-of-type(3) { grid-column:3; grid-row:2; } }
+@media (max-width:767px) {
+  .eotion-database-header { display:grid; grid-template-columns:minmax(0,1fr) 44px 44px; grid-template-rows:auto 44px; gap:6px; padding:9px 10px; }
+  .eotion-database-mark { display:none; }
+  .eotion-database-copy { grid-column:1/-1; grid-row:1; }
+  .eotion-database-view-controls { display:contents; }
+  .eotion-database-view-trigger { grid-column:1; grid-row:2; justify-self:start; min-width:44px; max-width:100%; min-height:44px; overflow:hidden; }
+  .eotion-database-view-trigger span { min-width:0; overflow:hidden; flex:1 1 auto; text-overflow:ellipsis; white-space:nowrap; }
+  .eotion-database-view-trigger svg { flex:0 0 auto; }
+  .eotion-database-settings-trigger { grid-column:3; grid-row:2; width:44px; min-width:44px; min-height:44px; justify-content:center; padding:0; }
+  .eotion-database-add { grid-column:2; grid-row:2; width:44px; min-width:44px; min-height:44px; justify-content:center; padding:0; }
+  .eotion-database-add-label { display:none; }
+  .eotion-database-properties-menu { display:contents; }
+}
+@media (max-width:767px) { .eotion-database-new { order:4; }.eotion-database-table th,.eotion-database-table td { width:160px; min-width:160px; }.eotion-database-cell-button,.eotion-database-property-trigger,.eotion-database-popover button { min-height:44px; }.eotion-database-cell-input { min-height:44px; }.eotion-database-filter-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-sort-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px; }.eotion-database-filter-row select,.eotion-database-filter-row input,.eotion-database-sort-row select { min-height:44px; }.eotion-database-filter-row>button,.eotion-database-sort-row button,.eotion-database-column-row button { min-width:44px; min-height:44px; }.eotion-database-column-row label { min-height:44px; }.eotion-database-sort-row button:nth-of-type(1) { grid-column:1; grid-row:2; }.eotion-database-sort-row button:nth-of-type(2) { grid-column:2; grid-row:2; }.eotion-database-sort-row button:nth-of-type(3) { grid-column:3; grid-row:2; } }
 @media (max-width:767px) { .eotion-database-property-row { grid-template-columns:18px 18px minmax(45px,1fr) 42px 48px repeat(3,30px); gap:3px; }.eotion-database-settings-heading label { width:100%; }.eotion-database-settings select { min-height:44px; } }
 </style>

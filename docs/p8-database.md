@@ -15,7 +15,7 @@ P8 在 P7 Advanced Blocks 之后引入独立的结构化数据域。P8.1–P8.5 
 
 本轮是 P8 完成后的既有 Table View 产品体验重构，不增加新 View 类型，也不引入 Database MCP、Database offline sync、真实 Automation、People 或 Files。
 
-Database Block 使用统一的 `[+] [drag]` Block controls；加号在当前 Database Block 下方插入普通 Block，desktop mouse 下 drag handle 默认不可见，只在当前 Block hover/focus 时显示；touch/coarse pointer 下两个控件保持可见、可触达，且不会因显示状态改变文档布局。拖放指示器使用 Quiet Studio 的语义强调色。Slash Menu、Sidebar 与 Database Block Header 统一使用 Database icon。用户可见的默认标题与 View 名称显示为“名称 / 表格视图”，空 Cell 留空，不再使用破折号占位。
+Database Block 使用统一的 `[+] [drag]` Block controls；加号在当前 Database Block 下方插入普通 Block，desktop mouse 下 drag handle 默认不可见，只在当前 Block hover/focus 时显示；Tablet coarse pointer 下两个控件保持可见、可触达，且不会因显示状态改变文档布局。Phone（宽度小于 768px）隐藏 Database Block controls 并取消 header 的预留左边距；Database Header 固定两行：标题独占第一行，长名称单行 ellipsis；第二行左侧为 View Selector，右侧为仅图标的新建记录 `+` 和设置 `…`，触控目标至少 44px，不产生第三行或页面横向溢出。拖放指示器使用 Quiet Studio 的语义强调色。Slash Menu、Sidebar 与 Desktop/Tablet Database Block Header 统一使用 Database icon；Phone Header 隐藏图标以保留标题空间。用户可见的默认标题与 View 名称显示为“名称 / 表格视图”，空 Cell 留空，不再使用破折号占位。
 
 Slash 创建器首层将“创建新数据库 / 链接现有数据库”并排展示。创建层明确区分左侧带箭头的“返回”和右侧“取消”，创建按钮使用正式 Primary action。Database 顶部不再提供独立属性按钮；`…` 是唯一设置入口，顺序为筛选、排序、属性、记录打开方式、自动化。自动化明确 disabled/未开放，其他入口先关闭轻量菜单，再进入完整设置容器。
 

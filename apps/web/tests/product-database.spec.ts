@@ -589,7 +589,7 @@ test('database block controls reveal on hover or focus and insert a sibling para
 test.describe('touch database block controls', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
 
-  test('keeps drag and insert controls visible without hover and preserves insert behavior', async ({ page }) => {
+  test('hides database block controls on phone without reserving header space', async ({ page }) => {
     const api = await installApi(page, [
       block('touch-control-before', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Before touch database' }] }, 50),
       block('touch-control-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
@@ -605,30 +605,135 @@ test.describe('touch database block controls', () => {
     await page.goto('/#/app/database-workspace/page/database-page')
 
     const anchor = page.locator('.eotion-block-drag-anchor--database').filter({ has: page.locator('[data-eotion-drag-handle="touch-control-database"]') })
-    const handle = anchor.locator('[data-eotion-drag-handle="touch-control-database"]')
-    const insert = anchor.getByRole('button', { name: '在数据库区块下方插入区块' })
-    await expect.poll(() => anchor.evaluate(element => getComputedStyle(element).display)).not.toBe('none')
-    await expect(handle).toBeVisible()
-    await expect(insert).toBeVisible()
-    expect(await handle.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
-    const [insertBox, handleBox] = await Promise.all([insert.boundingBox(), handle.boundingBox()])
-    expect(insertBox).not.toBeNull()
-    expect(handleBox).not.toBeNull()
-    expect(insertBox!.x).toBeGreaterThanOrEqual(0)
-    expect(insertBox!.x + insertBox!.width).toBeLessThanOrEqual(390)
-    expect(insertBox!.x).toBeLessThan(handleBox!.x)
+    const rootHeader = page.locator('#database-block-touch-control-database .eotion-database-header')
+    await expect.poll(() => anchor.evaluate(element => getComputedStyle(element).display)).toBe('none')
+    expect(await rootHeader.evaluate(element => getComputedStyle(element).paddingLeft)).toBe('10px')
 
     const nestedAnchor = page.locator('.eotion-block-drag-anchor--database').filter({ has: page.locator('[data-eotion-drag-handle="touch-control-nested-database"]') })
-    const nestedHandle = nestedAnchor.locator('[data-eotion-drag-handle="touch-control-nested-database"]')
     const nestedHeader = page.locator('.eotion-toggle-body .eotion-database-header')
-    const [nestedHandleBox, nestedHeaderBox] = await Promise.all([nestedHandle.boundingBox(), nestedHeader.boundingBox()])
-    expect(nestedHandleBox).not.toBeNull()
-    expect(nestedHeaderBox).not.toBeNull()
-    expect(nestedHandleBox!.x).toBeGreaterThanOrEqual(0)
-    expect(nestedHandleBox!.x + nestedHandleBox!.width).toBeLessThanOrEqual(390)
-    expect(Math.abs(nestedHandleBox!.y - nestedHeaderBox!.y)).toBeLessThanOrEqual(1)
+    await expect.poll(() => nestedAnchor.evaluate(element => getComputedStyle(element).display)).toBe('none')
+    expect(await nestedHeader.evaluate(element => getComputedStyle(element).paddingLeft)).toBe('10px')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  })
+
+  test('phone header uses two rows for long names, stays within the viewport, and creates a record', async ({ page }) => {
+    const longTitle = 'A very long project database title that must remain on one clipped line on a phone'
+    const longViewName = 'A very long table view name that must be truncated without pushing controls offscreen'
+    const longDatabase = { ...rootDatabase, name: longTitle }
+    const longView = view('phone-long-view-id', longDatabase.id, longViewName)
+    const api = await installApi(page, [
+      block('phone-long-header-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: longDatabase.id, viewId: longView.id } }, 100),
+    ], { databases: [longDatabase], views: [longView], properties: [rootProperties[0]!], records: [] })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const table = page.locator('#database-block-phone-long-header-database')
+    const header = table.locator('.eotion-database-header')
+    const title = header.locator('.eotion-database-copy')
+    const viewTrigger = header.getByRole('button', { name: '切换视图' })
+    const settings = header.getByRole('button', { name: '数据库设置' })
+    const add = header.getByRole('button', { name: '新建记录' })
+
+    const phoneLayout = async () => {
+      const [headerBox, titleBox, viewBox, addBox, settingsBox] = await Promise.all([
+        header.boundingBox(), title.boundingBox(), viewTrigger.boundingBox(), add.boundingBox(), settings.boundingBox(),
+      ])
+      expect(headerBox).not.toBeNull()
+      expect(titleBox).not.toBeNull()
+      expect(viewBox).not.toBeNull()
+      expect(addBox).not.toBeNull()
+      expect(settingsBox).not.toBeNull()
+      await expect(title).toContainText(longTitle)
+      await expect(viewTrigger).toContainText(longViewName)
+      expect(titleBox!.y + titleBox!.height).toBeLessThanOrEqual(viewBox!.y)
+      expect(Math.abs(viewBox!.y - addBox!.y)).toBeLessThanOrEqual(4)
+      expect(Math.abs(viewBox!.y - settingsBox!.y)).toBeLessThanOrEqual(4)
+      for (const box of [viewBox!, addBox!, settingsBox!]) {
+        expect(box.width).toBeGreaterThanOrEqual(44)
+        expect(box.height).toBeGreaterThanOrEqual(44)
+        expect(box.x).toBeGreaterThanOrEqual(headerBox!.x)
+        expect(box.x + box.width).toBeLessThanOrEqual(headerBox!.x + headerBox!.width)
+      }
+      expect(await title.locator('strong').evaluate(element => {
+        const style = getComputedStyle(element)
+        return style.textOverflow === 'ellipsis' && style.whiteSpace === 'nowrap' && element.scrollWidth > element.clientWidth
+      })).toBe(true)
+      expect(titleBox!.width).toBeLessThan(headerBox!.width)
+      expect(await viewTrigger.locator('span').evaluate(element => {
+        const style = getComputedStyle(element)
+        return style.textOverflow === 'ellipsis' && style.whiteSpace === 'nowrap' && element.scrollWidth > element.clientWidth
+      })).toBe(true)
+      expect(await table.locator('.eotion-database-mark').evaluate(element => getComputedStyle(element).display)).toBe('none')
+      expect(await add.locator('.eotion-database-add-label').evaluate(element => getComputedStyle(element).display)).toBe('none')
+      expect(await header.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+      expect(await page.locator('.eotion-editor-content').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+    }
+
+    await phoneLayout()
+    await screenshot(page, 'database-header-phone-long-names-light')
+    await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
+    await phoneLayout()
+    await screenshot(page, 'database-header-phone-long-names-dark')
+    await page.evaluate(() => { document.documentElement.dataset.theme = 'light' })
+
+    await viewTrigger.click()
+    await expect(page.getByRole('group', { name: '数据库视图' })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await settings.click()
+    await expect(page.getByRole('menu', { name: '数据库设置' })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await add.click()
+    await expect.poll(() => api.records).toHaveLength(1)
+    await expect(page.getByRole('textbox', { name: '记录标题' })).toHaveValue('无标题')
+  })
+})
+
+test('database header keeps desktop and tablet controls on one row', async ({ page }) => {
+  const api = await installApi(page, [
+    block('wide-header-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [rootProperties[0]!], records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const header = page.locator('#database-block-wide-header-database .eotion-database-header')
+  const assertOneRow = async (width: number, screenshotName: string) => {
+    await page.setViewportSize({ width, height: 844 })
+    const [title, viewTrigger, settings, add] = await Promise.all([
+      header.locator('.eotion-database-copy').boundingBox(),
+      header.getByRole('button', { name: '切换视图' }).boundingBox(),
+      header.getByRole('button', { name: '数据库设置' }).boundingBox(),
+      header.getByRole('button', { name: '新建记录' }).boundingBox(),
+    ])
+    expect(title).not.toBeNull()
+    expect(viewTrigger).not.toBeNull()
+    expect(settings).not.toBeNull()
+    expect(add).not.toBeNull()
+    for (const box of [viewTrigger!, settings!, add!]) expect(Math.abs(box.y - title!.y)).toBeLessThanOrEqual(10)
+    expect(await header.evaluate(element => getComputedStyle(element).display)).toBe('flex')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    await screenshot(page, screenshotName)
+  }
+  await assertOneRow(1280, 'database-header-desktop')
+  await assertOneRow(768, 'database-header-tablet')
+  expect(api.records).toHaveLength(0)
+})
+
+test.describe('tablet coarse database block controls', () => {
+  test.use({ viewport: { width: 820, height: 844 }, hasTouch: true, isMobile: false })
+
+  test('preserves the existing tablet layout and visible controls', async ({ page }) => {
+    const api = await installApi(page, [
+      block('tablet-touch-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+    ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [rootProperties[0]!], records: [] })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const anchor = page.locator('.eotion-block-drag-anchor--database').filter({ has: page.locator('[data-eotion-drag-handle="tablet-touch-database"]') })
+    const header = page.locator('#database-block-tablet-touch-database .eotion-database-header')
+    await expect.poll(() => anchor.evaluate(element => getComputedStyle(element).display)).not.toBe('none')
+    await expect(anchor.locator('[data-eotion-drag-handle="tablet-touch-database"]')).toBeVisible()
+    const insert = anchor.getByRole('button', { name: '在数据库区块下方插入区块' })
+    await expect(insert).toBeVisible()
+    expect(await header.evaluate(element => getComputedStyle(element).display)).toBe('flex')
+    expect(await header.evaluate(element => getComputedStyle(element).paddingLeft)).toBe('100px')
+    await screenshot(page, 'database-header-tablet-touch')
     const paragraphCount = api.blocks.filter(item => item.type === 'paragraph').length
-    await insert.tap()
+    await insert.click()
     await expect.poll(() => api.blocks.filter(item => item.type === 'paragraph')).toHaveLength(paragraphCount + 1)
   })
 })

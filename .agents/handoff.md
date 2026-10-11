@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-10-11 Mobile Database Header UX
+
+在 `master` 基线 `0a3066b4e82ce21cc674e0e43d7a393f1d55bd67` 上仅修改 Phone（<768px）Database Block/Header presentation：隐藏插入与拖拽控件并取消 100px 左侧预留；标题独占第一行、长标题单行 ellipsis；第二行左 View Selector、右图标新建记录 `+` 与设置 `…`，三个触控目标至少 44px。Phone 隐藏 Database icon。Desktop/Tablet 原布局、Tablet coarse controls/插入交互与 Record/View/Settings/opening preference 保持。
+
+验证：Header 定向 5/5；完整 Database suite 最终 `--workers=1 --retries=1` 为 53 passed + 1 flaky，exit 0。无重试完整运行曾有 linked view Phone 抽屉缺失与 advanced property DOM detach 超时；隔离原基线也复现两种症状（advanced 连跑 3 次为 2 pass/1 fail），未修改这些行为、断言或超时。Web typecheck、build:web、git diff --check 通过；既有 chunk size warning 保留。390px light/dark 与 Desktop/Tablet 截图复核通过，独立 reviewer 无 blocker。临时基线 worktree 已归档。本轮 Header UX PASS，整体 Database UX Final Acceptance 仍 HOLD。
+
+Remaining issues：Table Cell Inline Editing、Drawer Motion、Universal Block +、Database UX Final Acceptance。本轮提交后停止，不开始下一项、性能或 P9。
+
 ## 2026-10-11 ProductPages snapshot revision 收敛竞态
 
 在 `master` 基线 `153797d` 上完成聚焦修复：首次 load 期间 refresh 置 pending，由原 load promise 合并并串行重读完整 Pages 与 navigation projection；每次读取和提交检查 epoch/workspace，切换和 reset 清 pending。未修改 sync contract、LocalStore schema/index、PageTree 或 Database navigation，未做性能优化。

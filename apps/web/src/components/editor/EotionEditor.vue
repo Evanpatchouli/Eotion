@@ -741,4 +741,8 @@ defineExpose({ editor })
   .eotion-block-drag-anchor--database .eotion-block-drag-handle { left: 44px; }
   .eotion-block-drag-anchor--database + .eotion-database .eotion-database-header { padding-left: 100px; }
 }
+@media (max-width: 767px) {
+  .eotion-block-drag-anchor--database { display: none !important; }
+  .eotion-block-drag-anchor--database + .eotion-database .eotion-database-header { padding-left: 10px; }
+}
 </style>
