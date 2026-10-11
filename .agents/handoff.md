@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-10-11 Drawer Motion Final Re-acceptance（PASS）
+
+基线 `65e7b5ea7736bc0f46999fe82d84e12e362e20b8`，继续 master；复验 `a37aba8` Motion 与 `65e7b5e` snapshot 修复。Right / Desktop Drawer 的 X 与 Bottom Drawer 的 Y 正反位移、200ms enter / 170ms leave、masked backdrop fade 均通过；关闭按钮、Escape、backdrop、leave 完成前 surface/scroll lock/焦点保留及完成后关闭、解锁、focus restore 通过。Desktop 无 mask、背景可交互；三种 Drawer reduced-motion 无位移、立即关闭、无残留打开 dialog 或 scroll lock。
+
+Phone Filter / Sort 的正常 snapshot convergence 回归通过：等待实际 hydrate、snapshotRevision 与 PageView 比较完成，EotionEditor / DatabaseNodeView DOM 与 Vue 实例不 remount，MutationObserver 无瞬时卸载，Drawer 与 draft 保留。额外临时探针 2/2 将同次 convergence 后的保存与 leave 串起来：保存 config 正确，leave 期间 surface 仍 open/visible、scroll lock 保留，动画完成后关闭并解锁；探针已删除，未修改永久测试或产品代码。
+
+验证命令：`pnpm --filter @eotion/web exec playwright test tests/product-overlay.spec.ts tests/product-database.spec.ts --workers=1 --retries=0`，Overlay 35/35、Database 59/60，共 94/95（2.4 分钟）；opening、record、Filter/Sort、snapshot 与相关 overlay 全通过。唯一失败 `edits versioned cells and manages property options without losing stable IDs` 在 `product-database.spec.ts:2118`：属性 Drawer 已处于 open，测试点击被 property-row 覆盖的背景 Table 文本按钮；一次隔离复现仍同因失败。证据不指向 Motion 入/退场或 snapshot，按本轮范围停止诊断，未修复，也未认定为历史既有失败。Web typecheck、git diff --check 通过；独立 review 无 Drawer Motion blocker。完整 Database 并非全绿，本结论不代表 Database UX Final Acceptance。
+
+Drawer Motion：**PASS**。本轮只更新验收文档、current-task 与 handoff，不修改 Motion、Universal Block + 或其他产品实现；未跑 product matrix。Remaining issues：Universal Block +、Database UX Final Acceptance。完成一个聚焦 acceptance commit 后停止，不开始 P9。
+
 ## 2026-10-11 Page snapshot convergence（PASS for scoped fix）
 
 基线 a37aba8dd36ced4f1bf1683418dfb2cad185140e，继续 master。本次最小运行时比对确认 phone-view-settings 的 props 完全一致，parent/type 一致；baseline orderKey=000000000000000001000000000000，snapshot=0000000000000100。原 Phone 测试同步 mock 漏处理 block.move，编辑器新增尾段落后 rebalance 的 move 被 ACK 却未落库；snapshot 因此恢复旧次序并重建编辑器。补齐 mock move（不存在目标返回 404）后原用例通过，生产 orderKey 比较保持严格。

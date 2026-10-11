@@ -1,20 +1,17 @@
-# 当前任务：Page snapshot convergence / editor remount correctness
+# 当前任务：Drawer Motion Final Re-acceptance（PASS）
 
-master；基线 a37aba8dd36ced4f1bf1683418dfb2cad185140e。范围仅快照比较与回归；25 分钟停止，最迟 30 分钟。
+master；基线 65e7b5ea7736bc0f46999fe82d84e12e362e20b8。仅复验 a37aba8 Drawer Motion 与 65e7b5e snapshot 修复，未修改产品实现。
 
 | Work Unit | 难度 / 模式 / 角色 | 状态 |
 | --- | --- | --- |
-| 最小 mismatch 证据 | S0 investigate / scout + fast_worker | 完成：props 完全相同，orderKey 不同；测试 mock 漏 block.move |
-| 比较语义决策 | S2 decide / worker | 完成：忽略 JSON 对象字段插入顺序，保留真实 props/树变化 |
-| 聚焦实现与生命周期回归 | S1 execute / fast_worker | 完成：两处 props 比较共用 canonical JSON；mock 处理 block.move |
-| targeted tests、typecheck、diff check | S0 verify / scout | PASS：新增及原 Phone 5/5，相关 Editor/Sync 13/13，Web typecheck、diff check |
-| 最终独立复核 | Review reviewer | 完成：无 blocker |
-| 额外 Database opening tests | S0 verify / scout | PASS：8/8（required checks 全绿后执行） |
+| 验收行为与现有证据覆盖审读 | S0 investigate / 主 Agent | 完成：Right / Bottom / Desktop、关闭入口、backdrop、退出生命周期与 reduced-motion |
+| Overlay、Database、snapshot 回归与 Web typecheck | S0 verify / scout | 完成：Overlay 35/35、Database 59/60；typecheck、diff check 通过 |
+| 同次 Phone snapshot convergence → 保存 → leave 探针 | S0 verify / 主 Agent | PASS 2/2：身份与 draft 保留，保存正确，leave 前后资源清理正常；临时文件已删除 |
+| 验收结论、任务与 handoff 记录 | S1 execute / 主 Agent | 完成：Drawer Motion PASS，完整 Database 非全绿 |
+| 最终聚焦验收复核 | Review / reviewer | 完成：无 Drawer Motion blocker，无关失败归属复核完成 |
 
-原失败 phone-view-settings baseline orderKey=000000000000000001000000000000，snapshot=0000000000000100；props、parent、type 一致。编辑器新增尾段落后 rebalance 发出 block.move，旧 mock ACK 但未落库，导致 snapshot 返回旧次序。补齐 mock 后原例无需放宽生产 order 检查即通过。
+完整命令：pnpm --filter @eotion/web exec playwright test tests/product-overlay.spec.ts tests/product-database.spec.ts --workers=1 --retries=0；共 94/95（2.4 分钟）。Phone Filter/Sort 原 blocker 消失；实际 snapshot hydrate、PageView 比较、DOM / Vue identity 与无瞬时卸载均通过。opening / record / 相关 Database overlay 通过。
 
-独立回归在旧比较实现上 3 红 / 1 绿；修复后等价 props 键重排保持 EotionEditor/DatabaseNodeView/Phone Filter、Sort Drawer 的 DOM、Vue 实例和未保存草稿，真实 paragraph 更新仍 reload。snapshotRevision 到达与 PageView 比较完成均显式等待；MutationObserver 检查无瞬时卸载。dirty 检测同用比较，数组次序、props 值、ID/type/parent/order、增删仍能识别变化。
+唯一失败：edits versioned cells and manages property options without losing stable IDs，product-database.spec.ts:2118。属性 Drawer 已 open，测试点击被其 property-row 覆盖的背景 Table 文本按钮；一次隔离复现仍失败，证据不指向 Motion 或 snapshot。按范围停止诊断，未修复、不认定为历史既有失败。未跑整个 product matrix。
 
-未修改 PageView fences、local-first draft、sync contract 或 Drawer Motion；未执行 Final Acceptance、Universal Block +、P9 或完整 Database suite。
-
-Remaining issues：Drawer Motion final re-acceptance、Universal Block +、Database UX Final Acceptance。
+正式结果见 docs/p8-database.md 与 .agents/handoff.md。仅验收记录提交，不修改 Motion。Remaining issues：Universal Block +、Database UX Final Acceptance；完成 acceptance commit 后停止，不开始 Universal Block +、Database UX Final Acceptance 或 P9。
