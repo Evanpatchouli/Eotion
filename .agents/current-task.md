@@ -1,21 +1,22 @@
-# 当前任务：Property Type Mutation UI Hookup — Basic Types（PASS）
+# 当前任务：Advanced Property Type Mutation UI Hookup（PASS）
 
-master；基线 8297210eefd5dde8fae79bddcfc2cdc1ab0dc4f2。只接 text/number/checkbox/select/date；advanced 配置、Final Acceptance/P9 不在范围内。
+master；基线 4eb4b4005eea6926ca3aa092faab1854adffefbb。仅 relation / rollup / formula UI hookup；未修改 Domain / API / Contract，未进入 Final Acceptance / P9。
 
 | Work Unit | 难度 / 模式 / 角色 | 状态 |
 | --- | --- | --- |
-| 确认既有调用链与 UI lifecycle | S2 decide / 主 Agent | 完成：复用 service serialization、专用 endpoint、schema refresh 和产品 Modal |
-| SDK / Web service hookup | S1 execute / fast_worker | 完成 |
-| 基础 Type List / confirmation lifecycle | S1 execute / 主 Agent | 完成 |
-| 定向 Web 回归与已知命令验证 | S1 execute / fast_worker | 完成：4/4 targeted Playwright、Web typecheck PASS |
-| 最终独立复核 | Review / reviewer | 完成：无 blocker；409 真实版本递增与刷新后重试已补充 |
+| UI 状态、版本与确认边界 | S2 decide / 主 Agent | 完成 |
+| 高级配置与确认 hookup | S1 execute / fast_worker | 完成 |
+| 定向 Web 回归 | S1 execute / fast_worker | 完成：11/11 PASS |
+| Web/SDK typecheck 与 diff 验证 | S0 verify / 主 Agent | PASS |
+| 最终独立复核 | Review / reviewer | 完成：0 blocker；加载锁及未知响应文案已修正 |
 
-验证：`pnpm --filter @eotion/web exec playwright test tests/product-database.spec.ts -g "property menu keeps its focus|basic property type changes|property type change failures|property schema mutations refresh inside the open panel" --workers=1`（4 passed）；Web/SDK typecheck、git diff --check PASS。未跑完整 Database suite。
+显式 create/edit/change-type；change-type 保留 source/version snapshot、名称只读；candidate 使用 target type、清除 options/替换 config。复用 Advanced Overlay/loader，配置继续后仅进入确认，确认调用 /type；成功刷新 schema，不扫描 Records。失败保留确认；409 同 source type 保留 draft 更新版本，source 删除或外部变更类型则取消。既有 create/edit endpoints 保持。
 
-覆盖基础转换、稳定 Property ID、filter 移除与 sort 保留、当前类型关闭、取消/Escape/backdrop 不提交、API 失败重试、409 新版本重试、三个高级 target 不提交、Desktop 与 390px Phone Header/Settings confirmation。Web 测试使用 mocked API，并复用已验证 Domain conversion；未重新实现客户端 conversion。
+验证：在 apps/web 运行 `pnpm exec playwright test tests/product-database.spec.ts -g "basic property type changes|advanced type|property type change failures|property menu keeps|advanced properties configure|existing advanced property editors|mobile relation picker"`（11 passed）；Web/SDK typecheck、git diff --check PASS。未跑完整 Database suite。Web 使用 mocked API，复用既有 Domain conversion，不重复实现转换规则。
 
-成功刷新 schema；失败保留 Modal，409 刷新并重新确认。高级配置入口未修改，不自动删除高级依赖，不新增 Toast 系统。聚焦提交后停止。
+覆盖 text -> relation/formula/rollup、advanced -> advanced、稳定 ID/name、旧值和 config 清理、filters/sorts 移除、配置/确认取消与 Escape/backdrop、invalid config、503 retry、dependency conflict、409 保留草稿/版本及 source 改型/删除取消、既有 create/edit 与 Desktop/390px Phone。
 
 remaining issues:
-- Advanced Property Type Mutation UI hookup
 - Database UX Final Acceptance
+
+完成本轮后停止。

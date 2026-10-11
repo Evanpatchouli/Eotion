@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DatabasePropertyResponse, DatabaseRecordCellUpdateRequest, DatabaseTableResponse, DatabaseViewCreateRequest, DatabaseViewResponse, DatabaseResponse } from '@eotion/contracts'
+import type { DatabasePropertyResponse, DatabasePropertyTypeChangeRequest, DatabaseRecordCellUpdateRequest, DatabaseTableResponse, DatabaseViewCreateRequest, DatabaseViewResponse, DatabaseResponse } from '@eotion/contracts'
 import { DEFAULT_DATABASE_VIEW_CONFIG, isValidFormulaExpression, validateDatabasePropertyDependencies, validateDatabaseViewConfig, type DatabaseFilter, type DatabaseFilterOperator, type DatabaseViewConfig, type DatabasePropertyType, type DatabasePropertyConfig, type DatabaseFormulaResultType, type FormulaExpression } from '@eotion/domain/database'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { createLocalId } from '@eotion/storage'
@@ -163,6 +163,9 @@ const addableProperties = [
 type AdvancedType = 'relation' | 'rollup' | 'formula'
 type RelationOption = { recordId: string; pageId: string; title: string }
 const propertyConfigType = ref<AdvancedType | ''>('')
+const propertyConfigMode = ref<'create' | 'edit' | 'change-type' | ''>('')
+const propertyConfigChange = ref<{ property: DatabasePropertyResponse; targetType: AdvancedType; databaseVersion: number } | null>(null)
+let propertyConfigEpoch = 0
 const propertyConfigEditId = ref('')
 const propertyConfigName = ref('')
 const propertyConfigError = ref('')
@@ -178,8 +181,8 @@ const targetPropertyId = ref('')
 const rollupAggregation = ref<'count' | 'count_values' | 'sum' | 'avg' | 'min' | 'max'>('count')
 const formulaDraft = ref('')
 const formulaResultType = ref<DatabaseFormulaResultType>('string')
-const formulaProperties = computed(() => properties.value.filter(property => property.type !== 'relation'))
-const relationProperties = computed(() => properties.value.filter(property => property.type === 'relation'))
+const formulaProperties = computed(() => properties.value.filter(property => property.type !== 'relation' && property.id !== propertyConfigEditId.value))
+const relationProperties = computed(() => properties.value.filter(property => property.type === 'relation' && property.id !== propertyConfigEditId.value))
 const rollupTargetDatabaseId = computed(() => (relationProperties.value.find(property => property.id === relationPropertyId.value)?.config as { targetDatabaseId?: string } | undefined)?.targetDatabaseId ?? '')
 const rollupTargets = computed(() => rollupTargetDatabaseId.value === databaseId.value ? properties.value : targetProperties.value)
 const rollupBaseTargets = computed(() => rollupTargets.value.filter(property => !['relation', 'rollup', 'formula'].includes(property.type)))
@@ -217,8 +220,8 @@ const savingPropertyName = ref(false)
 let deleteRequestEpoch = 0
 const creationUncertain = computed(() => isProductDatabaseRecordCreationUncertain(auth.user?.id ?? '', workspaceId.value, databaseId.value))
 const writable = computed(() => online.value && !staleReadonly.value && !loading.value && !savingCell.value && !viewSubmitting.value && !savingPropertyName.value && !deletingProperty.value && !changingPropertyType.value)
-type BasicPropertyType = 'text' | 'number' | 'checkbox' | 'select' | 'date'
-const typeChangeTarget = ref<{ property: DatabasePropertyResponse; targetType: BasicPropertyType; databaseVersion: number } | null>(null)
+type MutablePropertyType = Exclude<DatabasePropertyType, 'title'>
+const typeChangeTarget = ref<{ property: DatabasePropertyResponse; targetType: MutablePropertyType; databaseVersion: number; config?: DatabasePropertyConfig } | null>(null)
 const changingPropertyType = ref(false)
 const typeChangeError = ref('')
 let typeChangeRequestEpoch = 0
@@ -229,6 +232,7 @@ const typeChangeDescription = computed(() => {
   if (change.property.type === 'text' && change.targetType === 'number') return '可转换的数字文本会保留；无法转换的值会被清空。'
   return '已有属性值将被清空。'
 })
+const advancedTypeChange = computed(() => Boolean(typeChangeTarget.value && ['relation', 'rollup', 'formula'].includes(typeChangeTarget.value.targetType)))
 const propertyCreatorOpen = ref(false)
 const propertyCreatorStyle = ref<Record<string, string>>({})
 const propertyCreatorTeleportTarget = ref<HTMLElement | string>('body')
@@ -506,14 +510,17 @@ function onPropertyNameKeydown(event: KeyboardEvent, property: DatabasePropertyR
   }
 }
 function requestPropertyTypeChange(property: DatabasePropertyResponse, targetType: DatabasePropertyType): void {
-  if (!writable.value || property.type === 'title' || property.type === targetType) return
-  if (!['text', 'number', 'checkbox', 'select', 'date'].includes(targetType)) {
-    mutationError.value = '该类型尚需配置，当前不会修改数据。'
+  if (!writable.value || property.type === 'title' || targetType === 'title' || property.type === targetType) return
+  if (['relation', 'rollup', 'formula'].includes(targetType)) {
+    openAdvancedProperty(targetType as AdvancedType, property, 'change-type')
     return
   }
   mutationError.value = ''
   typeChangeError.value = ''
-  typeChangeTarget.value = { property, targetType: targetType as BasicPropertyType, databaseVersion: databaseVersion.value }
+  typeChangeTarget.value = { property: snapshotProperty(property), targetType, databaseVersion: databaseVersion.value }
+}
+function snapshotProperty(property: DatabasePropertyResponse): DatabasePropertyResponse {
+  return JSON.parse(JSON.stringify(property)) as DatabasePropertyResponse
 }
 function closePropertyTypeChange(open = false): void {
   if (open || changingPropertyType.value) return
@@ -522,14 +529,19 @@ function closePropertyTypeChange(open = false): void {
   runDeferredRefresh()
 }
 async function confirmPropertyTypeChange(): Promise<void> {
-  const selected = typeChangeTarget.value
+  let selected = typeChangeTarget.value
   if (!selected || !writable.value) return
-  const current = properties.value.find(property => property.id === selected.property.id)
-  if (!current || current.type === 'title') { typeChangeError.value = '属性已不存在或无法变更，请取消后重新选择。'; return }
-  if (current.type === selected.targetType) { closePropertyTypeChange(); return }
+  const current = properties.value.find(property => property.id === selected!.property.id)
+  if (!current || current.type !== selected.property.type) {
+    typeChangeTarget.value = null
+    mutationError.value = '源属性已删除或类型已变化，待提交变更已取消；请重新选择属性类型。'
+    typeChangeError.value = ''
+    return
+  }
   if (current.version !== selected.property.version || databaseVersion.value !== selected.databaseVersion) {
-    typeChangeTarget.value = { ...selected, property: current, databaseVersion: databaseVersion.value }
-    typeChangeError.value = '数据库结构已变化，已刷新，请重新确认。'
+    selected = { ...selected, property: snapshotProperty(current), databaseVersion: databaseVersion.value }
+    typeChangeTarget.value = selected
+    typeChangeError.value = '数据库结构已变化，已刷新，请重新确认。配置已保留。'
     return
   }
   const epoch = ++typeChangeRequestEpoch
@@ -540,9 +552,32 @@ async function confirmPropertyTypeChange(): Promise<void> {
   changingPropertyType.value = true
   typeChangeError.value = ''
   try {
-    await changeProductDatabasePropertyType(workspace, database, current.id, {
-      targetType: selected.targetType, expectedDatabaseVersion: selected.databaseVersion, expectedPropertyVersion: current.version,
-    })
+    if (selected.config) {
+      const candidate: DatabasePropertyResponse = { ...current, name: current.name, type: selected.targetType, config: selected.config }
+      delete candidate.options
+      const nextProperties = properties.value.map(property => property.id === current.id ? candidate : property)
+      const relationById = new Map(nextProperties.filter(property => property.type === 'relation').map(property => [property.id, property]))
+      const targetIds = [...new Set(nextProperties.filter(property => property.type === 'rollup').map(property => {
+        const relationId = (property.config as { relationPropertyId: string }).relationPropertyId
+        return (relationById.get(relationId)?.config as { targetDatabaseId?: string } | undefined)?.targetDatabaseId
+      }).filter((id): id is string => Boolean(id) && id !== database))]
+      targetLoading.value = true
+      try { await Promise.all(targetIds.map(fetchTargetSchema)) }
+      catch (cause) {
+        if (isCurrent()) typeChangeError.value = `${errorMessage(cause, '目标属性暂时无法读取。')} 请修复连接后重试。`
+        return
+      } finally { if (isCurrent()) targetLoading.value = false }
+      if (!isCurrent()) return
+      const resolver = (id: string) => id === database ? nextProperties : targetPropertySchemas.get(id)
+      if (!validateDatabasePropertyDependencies(nextProperties, resolver)) {
+        typeChangeError.value = '属性引用、类型或公式结果不匹配；请修复配置后重试。'
+        return
+      }
+    }
+    const request = {
+      targetType: selected.targetType, ...(selected.config ? { config: selected.config } : {}), expectedDatabaseVersion: selected.databaseVersion, expectedPropertyVersion: current.version,
+    } as DatabasePropertyTypeChangeRequest
+    await changeProductDatabasePropertyType(workspace, database, current.id, request)
     if (!isCurrent()) return
     await refreshSchemaMutation()
     if (isCurrent()) typeChangeTarget.value = null
@@ -552,10 +587,18 @@ async function confirmPropertyTypeChange(): Promise<void> {
       await refreshSchemaMutation()
       if (!isCurrent()) return
       const refreshed = properties.value.find(property => property.id === current.id)
-      if (refreshed) typeChangeTarget.value = { ...selected, property: refreshed, databaseVersion: databaseVersion.value }
-      typeChangeError.value = `${staleReadonly.value ? '数据库结构已变化，刷新未完成，请取消后重试加载。' : '数据库结构已变化，已刷新，请重新确认。'}${errorMessage(cause, '属性未变更。')}`
+      if (!refreshed || refreshed.type !== selected.property.type) {
+        typeChangeTarget.value = null
+        mutationError.value = '源属性已删除或类型已变化，待提交变更已取消；请重新选择属性类型。'
+        typeChangeError.value = ''
+      } else {
+        const updated = { ...selected, property: snapshotProperty(refreshed), databaseVersion: databaseVersion.value }
+        typeChangeTarget.value = updated
+        selected = updated
+        typeChangeError.value = `${staleReadonly.value ? '数据库结构已变化，刷新未完成，请取消后重试加载。' : '数据库结构已变化，已刷新，请重新确认。配置已保留。'}${errorMessage(cause, '属性未变更。')}`
+      }
     } else typeChangeError.value = errorMessage(cause, '属性类型未变更，请重试。')
-  } finally { if (isCurrent()) changingPropertyType.value = false }
+  } finally { if (epoch === typeChangeRequestEpoch) changingPropertyType.value = false }
 }
 function confirmDeleteProperty(property: DatabasePropertyResponse): void {
   if (!writable.value || property.type === 'title') return
@@ -911,25 +954,35 @@ function saveColumns(): void {
   void saveViewConfig({ ...viewConfig.value, visibleProperties, propertyOrder })
 }
 
-function closePropertyConfig(): void { propertyConfigType.value = ''; propertyConfigEditId.value = ''; propertyConfigError.value = ''; runDeferredRefresh() }
-async function loadTargetDatabases(cursor?: string): Promise<void> {
+function closePropertyConfig(preserveChange = false): void {
+  propertyConfigEpoch += 1
+  targetLoading.value = false
+  propertyConfigType.value = ''
+  propertyConfigMode.value = ''
+  propertyConfigEditId.value = ''
+  propertyConfigError.value = ''
+  if (!preserveChange) propertyConfigChange.value = null
+  runDeferredRefresh()
+}
+async function loadTargetDatabases(cursor?: string, epoch = propertyConfigEpoch, identity = [auth.user?.id ?? '', workspaceId.value, databaseId.value].join('\u0000')): Promise<void> {
   targetLoading.value = true; targetError.value = ''
   try {
     const result = await listProductDatabases(workspaceId.value, cursor)
+    if (epoch !== propertyConfigEpoch || identity !== [auth.user?.id ?? '', workspaceId.value, databaseId.value].join('\u0000') || propertyConfigType.value !== 'relation') return
     targetDatabases.value = cursor ? [...targetDatabases.value, ...result.items] : result.items
     targetDatabaseCursor.value = result.nextCursor
-  } catch (cause) { targetError.value = errorMessage(cause, '暂时无法加载目标数据库。') }
-  finally { targetLoading.value = false }
+  } catch (cause) { if (epoch === propertyConfigEpoch && identity === [auth.user?.id ?? '', workspaceId.value, databaseId.value].join('\u0000')) targetError.value = errorMessage(cause, '暂时无法加载目标数据库。') }
+  finally { if (epoch === propertyConfigEpoch) targetLoading.value = false }
 }
-async function loadTargetProperties(targetId: string): Promise<void> {
+async function loadTargetProperties(targetId: string, epoch = propertyConfigEpoch, identity = [auth.user?.id ?? '', workspaceId.value, databaseId.value].join('\u0000')): Promise<void> {
   targetProperties.value = []; targetError.value = ''
   if (!targetId || targetId === databaseId.value) return
   targetLoading.value = true
   try {
     const schema = await fetchTargetSchema(targetId)
-    if (targetId === (propertyConfigType.value === 'relation' ? targetDatabaseId.value : rollupTargetDatabaseId.value)) targetProperties.value = schema
-  } catch (cause) { targetError.value = errorMessage(cause, '暂时无法读取目标属性。') }
-  finally { targetLoading.value = false }
+    if (epoch === propertyConfigEpoch && identity === [auth.user?.id ?? '', workspaceId.value, databaseId.value].join('\u0000') && propertyConfigType.value === 'rollup' && targetId === rollupTargetDatabaseId.value) targetProperties.value = schema
+  } catch (cause) { if (epoch === propertyConfigEpoch && identity === [auth.user?.id ?? '', workspaceId.value, databaseId.value].join('\u0000')) targetError.value = errorMessage(cause, '暂时无法读取目标属性。') }
+  finally { if (epoch === propertyConfigEpoch) targetLoading.value = false }
 }
 async function fetchTargetSchema(targetId: string): Promise<DatabasePropertyResponse[]> {
   const views = await listProductDatabaseViews(workspaceId.value, targetId)
@@ -938,21 +991,31 @@ async function fetchTargetSchema(targetId: string): Promise<DatabasePropertyResp
   targetPropertySchemas.set(targetId, table.properties)
   return table.properties
 }
-function openAdvancedProperty(type: AdvancedType, property?: DatabasePropertyResponse): void {
+function openAdvancedProperty(type: AdvancedType, property?: DatabasePropertyResponse, mode: 'create' | 'edit' | 'change-type' = property ? 'edit' : 'create'): void {
+  propertyConfigEpoch += 1
+  const epoch = propertyConfigEpoch
+  const identity = [auth.user?.id ?? '', workspaceId.value, databaseId.value].join('\u0000')
   propertyCreatorOpen.value = false
   viewControlsOpen.value = ''
   propertyConfigType.value = type
+  propertyConfigMode.value = mode
   propertyConfigEditId.value = property?.id ?? ''
-  propertyConfigName.value = property?.name ?? ({ relation: '关联', rollup: '汇总', formula: '公式' })[type]
+  const source = property ? snapshotProperty(property) : undefined
+  propertyConfigChange.value = mode === 'change-type' && source ? { property: source, targetType: type, databaseVersion: databaseVersion.value } : null
+  const reuseConfig = mode === 'edit' ? source?.config : undefined
+  propertyConfigName.value = mode === 'change-type' ? source?.name ?? '' : source?.name ?? ({ relation: '关联', rollup: '汇总', formula: '公式' })[type]
   propertyConfigError.value = ''
-  targetDatabaseId.value = type === 'relation' ? (property?.config as { targetDatabaseId?: string } | undefined)?.targetDatabaseId ?? databaseId.value : databaseId.value
-  relationPropertyId.value = type === 'rollup' ? (property?.config as { relationPropertyId?: string } | undefined)?.relationPropertyId ?? relationProperties.value[0]?.id ?? '' : ''
-  targetPropertyId.value = type === 'rollup' ? (property?.config as { targetPropertyId?: string } | undefined)?.targetPropertyId ?? '' : ''
-  rollupAggregation.value = type === 'rollup' ? (property?.config as { aggregation?: typeof rollupAggregation.value } | undefined)?.aggregation ?? 'count' : 'count'
-  formulaDraft.value = type === 'formula' ? JSON.stringify((property?.config as { expression?: FormulaExpression } | undefined)?.expression ?? { kind: 'literal', value: '' }, null, 2) : ''
-  formulaResultType.value = type === 'formula' ? (property?.config as { resultType?: DatabaseFormulaResultType } | undefined)?.resultType ?? 'string' : 'string'
-  if (type === 'relation') void loadTargetDatabases()
-  if (type === 'rollup' && rollupTargetDatabaseId.value) void loadTargetProperties(rollupTargetDatabaseId.value)
+  targetDatabaseId.value = type === 'relation' ? (reuseConfig as { targetDatabaseId?: string } | undefined)?.targetDatabaseId ?? databaseId.value : databaseId.value
+  relationPropertyId.value = type === 'rollup' ? (reuseConfig as { relationPropertyId?: string } | undefined)?.relationPropertyId ?? relationProperties.value.find(item => item.id !== property?.id)?.id ?? '' : ''
+  targetPropertyId.value = type === 'rollup' ? (reuseConfig as { targetPropertyId?: string } | undefined)?.targetPropertyId ?? '' : ''
+  rollupAggregation.value = type === 'rollup' ? (reuseConfig as { aggregation?: typeof rollupAggregation.value } | undefined)?.aggregation ?? 'count' : 'count'
+  formulaDraft.value = type === 'formula' ? JSON.stringify((reuseConfig as { expression?: FormulaExpression } | undefined)?.expression ?? { kind: 'literal', value: '' }, null, 2) : ''
+  formulaResultType.value = type === 'formula' ? (reuseConfig as { resultType?: DatabaseFormulaResultType } | undefined)?.resultType ?? 'string' : 'string'
+  targetProperties.value = []
+  targetLoading.value = false
+  targetError.value = ''
+  if (type === 'relation') void loadTargetDatabases(undefined, epoch, identity)
+  if (type === 'rollup' && rollupTargetDatabaseId.value) void loadTargetProperties(rollupTargetDatabaseId.value, epoch, identity)
 }
 function insertFormulaProperty(propertyId: string): void {
   const node = JSON.stringify({ kind: 'property', propertyId }, null, 2)
@@ -983,15 +1046,32 @@ function buildPropertyConfig(): DatabasePropertyConfig | null {
   return null
 }
 async function saveAdvancedProperty(): Promise<void> {
-  if (!writable.value || !propertyConfigType.value) return
-  const name = propertyConfigName.value.trim()
+  const mode = propertyConfigMode.value
+  const type = propertyConfigType.value
+  const change = propertyConfigChange.value
+  const source = propertyConfigEditId.value ? properties.value.find(item => item.id === propertyConfigEditId.value) : undefined
+  const sourceSnapshot = mode === 'change-type' ? change?.property : source ? snapshotProperty(source) : undefined
+  const epoch = propertyConfigEpoch
+  const workspace = workspaceId.value
+  const database = databaseId.value
+  const identity = [auth.user?.id ?? '', workspace, database, viewId.value].join('\u0000')
+  const sourceDatabaseVersion = mode === 'change-type' ? change!.databaseVersion : databaseVersion.value
+  const isCurrent = () => epoch === propertyConfigEpoch && identity === [auth.user?.id ?? '', workspaceId.value, databaseId.value, viewId.value].join('\u0000') && propertyConfigType.value === type && propertyConfigMode.value === mode
+  if (!writable.value || targetLoading.value || !type || !mode || (mode === 'edit' && !sourceSnapshot) || (mode === 'change-type' && (!change || !sourceSnapshot))) return
+  if (mode === 'change-type' && (!source || source.type !== change!.property.type)) {
+    propertyConfigError.value = '源属性已删除或类型已变化，请关闭配置后重新选择。'
+    return
+  }
+  const name = mode === 'change-type' ? change!.property.name : propertyConfigName.value.trim()
   const config = buildPropertyConfig()
   if (!name || name.length > 100 || !config) { propertyConfigError.value = '请填写有效名称和配置。'; return }
-  const existing = properties.value.find(item => item.id === propertyConfigEditId.value)
-  const candidate: DatabasePropertyResponse = existing ? { ...existing, name, config } : {
-    id: createLocalId(), workspaceId: workspaceId.value, databaseId: databaseId.value, name,
-    type: propertyConfigType.value, config, version: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-  }
+  const candidate: DatabasePropertyResponse = mode === 'change-type'
+    ? { ...sourceSnapshot!, name, type: change!.targetType, config }
+    : sourceSnapshot ? { ...sourceSnapshot, name, config } : {
+      id: createLocalId(), workspaceId: workspace, databaseId: database, name,
+      type, config, version: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    }
+  if (mode === 'change-type') delete candidate.options
   const nextProperties = [...properties.value.filter(item => item.id !== candidate.id), candidate]
   const relationById = new Map(nextProperties.filter(item => item.type === 'relation').map(item => [item.id, item]))
   const targetIds = [...new Set(nextProperties.filter(item => item.type === 'rollup').map(item => {
@@ -1000,20 +1080,29 @@ async function saveAdvancedProperty(): Promise<void> {
   }).filter((id): id is string => Boolean(id) && id !== databaseId.value))]
   targetLoading.value = true
   try { await Promise.all(targetIds.map(fetchTargetSchema)) }
-  catch (cause) { propertyConfigError.value = errorMessage(cause, '目标属性暂时无法读取，请重试。'); targetLoading.value = false; return }
-  targetLoading.value = false
-  const resolver = (id: string) => id === databaseId.value ? nextProperties : targetPropertySchemas.get(id)
+  catch (cause) { if (isCurrent()) propertyConfigError.value = errorMessage(cause, '目标属性暂时无法读取，请重试。'); return }
+  finally { if (isCurrent()) targetLoading.value = false }
+  if (!isCurrent()) return
+  const resolver = (id: string) => id === database ? nextProperties : targetPropertySchemas.get(id)
   if (!validateDatabasePropertyDependencies(nextProperties, resolver)) {
     propertyConfigError.value = '属性引用、类型或公式结果不匹配；请检查目标属性与结果类型。'; return
   }
   propertyConfigError.value = ''
+  if (mode === 'change-type') {
+    typeChangeError.value = ''
+    typeChangeTarget.value = { property: snapshotProperty(change!.property), targetType: change!.targetType, databaseVersion: sourceDatabaseVersion, config }
+    closePropertyConfig(true)
+    return
+  }
   try {
-    if (existing) await updateProductDatabaseProperty(workspaceId.value, databaseId.value, existing.id, { name, config, expectedDatabaseVersion: databaseVersion.value, expectedPropertyVersion: existing.version })
-    else await createProductDatabaseProperty(workspaceId.value, databaseId.value, { id: candidate.id, name, type: propertyConfigType.value, config, expectedDatabaseVersion: databaseVersion.value })
+    if (sourceSnapshot) await updateProductDatabaseProperty(workspace, database, sourceSnapshot.id, { name, config, expectedDatabaseVersion: sourceDatabaseVersion, expectedPropertyVersion: sourceSnapshot.version })
+    else await createProductDatabaseProperty(workspace, database, { id: candidate.id, name, type, config, expectedDatabaseVersion: sourceDatabaseVersion })
+    if (!isCurrent()) return
     await refreshSchemaMutation()
-    closePropertyConfig()
+    if (isCurrent()) closePropertyConfig()
   } catch (cause) {
-    if (cause instanceof ApiError && cause.statusCode === 409 && /version|stale|concurrent/iu.test(cause.message)) { await refreshLoadedWindow(); propertyConfigError.value = '数据库结构已变化，已刷新版本，请确认后重试。' }
+    if (!isCurrent()) return
+    if (cause instanceof ApiError && cause.statusCode === 409 && /version|stale|concurrent/iu.test(cause.message)) { await refreshLoadedWindow(); if (isCurrent()) propertyConfigError.value = '数据库结构已变化，已刷新版本，请确认后重试。' }
     else if (cause instanceof ApiError && cause.statusCode === 409) propertyConfigError.value = `${errorMessage(cause, '属性仍被引用。')} 请先修改依赖属性，再重试。`
     else propertyConfigError.value = errorMessage(cause, '属性未保存，请重试。')
   }
@@ -1349,6 +1438,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   typeChangeRequestEpoch += 1
+  propertyConfigEpoch += 1
   requestEpoch += 1
   relationRequestEpoch += 1
   relationTitleEpoch += 1
@@ -1476,8 +1566,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
         </div></Teleport>
       </div>
     </header>
-    <EotionProductOverlay :open="Boolean(propertyConfigType)" :mode="propertyOpeningMode" :title="`${propertyConfigEditId ? '编辑' : '添加'}${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" :label="`配置${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" @update:open="closePropertyConfig"><section v-if="propertyConfigType" class="eotion-database-advanced" role="group" :aria-label="`配置${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" @pointerdown.stop>
-      <label>属性名称<input v-model="propertyConfigName" maxlength="100" :disabled="!writable"></label>
+    <EotionProductOverlay :open="Boolean(propertyConfigType)" :mode="propertyOpeningMode" :title="`${propertyConfigMode === 'change-type' ? '变更为' : propertyConfigMode === 'edit' ? '编辑' : '添加'}${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" :label="`配置${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" @update:open="closePropertyConfig"><section v-if="propertyConfigType" class="eotion-database-advanced" role="group" :aria-label="`配置${propertyConfigType === 'relation' ? '关联' : propertyConfigType === 'rollup' ? '汇总' : '公式'}属性`" @pointerdown.stop>
+  <label>属性名称<input v-model="propertyConfigName" maxlength="100" :readonly="propertyConfigMode === 'change-type'" :disabled="!writable && propertyConfigMode !== 'change-type'"></label>
       <template v-if="propertyConfigType === 'relation'">
         <label>目标数据库<select v-model="targetDatabaseId" :disabled="!writable || targetLoading"><option :value="databaseId">当前数据库：{{ title }}</option><option v-for="item in targetDatabases.filter(item => item.id !== databaseId)" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
         <button v-if="targetDatabaseCursor" type="button" :disabled="targetLoading" @click="loadTargetDatabases(targetDatabaseCursor)">更多数据库</button>
@@ -1500,7 +1590,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
       <p v-if="targetLoading" role="status">正在加载属性…</p>
       <p v-if="targetError" role="alert">{{ targetError }} <button type="button" @click="propertyConfigType === 'rollup' ? loadTargetProperties(rollupTargetDatabaseId) : loadTargetDatabases()">重试</button></p>
       <p v-if="propertyConfigError" role="alert">{{ propertyConfigError }}</p>
-      <button type="button" :disabled="!writable || targetLoading" @click="saveAdvancedProperty">保存属性</button>
+      <button type="button" :disabled="!writable || targetLoading" @click="saveAdvancedProperty">{{ propertyConfigMode === 'change-type' ? '继续' : '保存属性' }}</button>
     </section></EotionProductOverlay>
     <EotionProductOverlay :open="Boolean(deletePropertyTarget)" mode="modal" :dismissible="!deletingProperty" :title="`删除属性“${deletePropertyTarget?.name ?? ''}”`" @update:open="value => { if (!value && !deletingProperty) { deletePropertyTarget = null; mutationError = '' } }">
           <p>属性及其中的数据将被删除。此操作无法撤销。</p>
@@ -1510,7 +1600,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
     <EotionProductOverlay :open="Boolean(typeChangeTarget)" mode="modal" :dismissible="!changingPropertyType" title="变更属性类型？" @update:open="closePropertyTypeChange">
       <template v-if="typeChangeTarget">
         <p>“{{ displayPropertyName(typeChangeTarget.property) }}”将从「{{ propertyTypeLabel(typeChangeTarget.property.type) }}」变更为「{{ propertyTypeLabel(typeChangeTarget.targetType) }}」。</p>
-        <p>{{ typeChangeDescription }}<br>现有筛选条件会被移除。</p>
+        <p>{{ typeChangeDescription }}<br>{{ advancedTypeChange ? '现有筛选条件和排序规则会被移除。' : '现有筛选条件会被移除。' }}</p>
         <p v-if="typeChangeError" role="alert">{{ typeChangeError }}</p>
       </template>
       <template #footer><EotionButton variant="secondary" type="button" :disabled="changingPropertyType" @click="closePropertyTypeChange()">取消</EotionButton><EotionButton variant="primary" type="button" :disabled="!writable || !typeChangeTarget" @click="confirmPropertyTypeChange">{{ changingPropertyType ? '正在变更…' : '变更类型' }}</EotionButton></template>

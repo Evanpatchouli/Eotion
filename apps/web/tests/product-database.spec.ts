@@ -600,6 +600,13 @@ async function beginPropertyTypeChange(page: Page, scope: Locator, propertyName:
   return page.getByRole('dialog', { name: '变更属性类型？' })
 }
 
+async function beginAdvancedPropertyTypeChange(page: Page, scope: Locator, propertyName: string, targetType: '关联' | '汇总' | '公式') {
+  await scope.getByRole('button', { name: `属性设置 ${propertyName}` }).click()
+  await page.getByRole('menu', { name: `属性设置: ${propertyName}` }).getByRole('menuitem', { name: '变更类型' }).click()
+  await page.getByRole('group', { name: '更改属性类型' }).getByRole('menuitem', { name: targetType, exact: true }).click()
+  return page.getByRole('group', { name: `配置${targetType}属性` })
+}
+
 async function submitNewRecord(table: ReturnType<Page['locator']>) {
   await table.getByRole('button', { name: '新建记录', exact: true }).click()
   await expect(table.getByRole('textbox', { name: '记录标题' })).toHaveCount(0)
@@ -1427,6 +1434,256 @@ test('basic property type changes convert stored values and repair filters while
   expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.includes('/properties/') && path.endsWith('/type'))).toHaveLength(7)
 })
 
+test('advanced type changes configure before confirmation and preserve property identity', async ({ page }) => {
+  const relation = property('advanced-convert-relation', rootDatabase.id, 'Related', 'text')
+  const formula = property('advanced-convert-formula', rootDatabase.id, 'Calculated', 'text')
+  const rollup = property('advanced-convert-rollup', rootDatabase.id, 'Total', 'text')
+  const rollupRelation = { ...property('advanced-convert-rollup-relation', rootDatabase.id, 'Rollup relation', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const conversionView = view('view-root-id', rootDatabase.id, 'Table', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    filters: [{ propertyId: relation.id, operator: 'is_not_empty' }],
+    sorts: [{ propertyId: relation.id, direction: 'asc' }],
+  })
+  const api = await installApi(page, [
+    block('advanced-type-conversion', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], {
+    databases: [rootDatabase], views: [conversionView], properties: [...rootProperties, relation, formula, rollup, rollupRelation],
+    records: [{ ...basicRecord, properties: { ...basicRecord.properties, [relation.id]: 'old relation value', [formula.id]: 'old formula value', [rollup.id]: 'old rollup value' } }],
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+
+  const relationConfig = await beginAdvancedPropertyTypeChange(page, table, relation.name, '关联')
+  await expect(relationConfig.getByLabel('属性名称')).toHaveAttribute('readonly', '')
+  await relationConfig.getByLabel('目标数据库').selectOption(rootDatabase.id)
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`))).toHaveLength(0)
+  await relationConfig.getByRole('button', { name: '继续', exact: true }).click()
+  const relationConfirm = page.getByRole('dialog', { name: '变更属性类型？' })
+  await expect(relationConfirm).toBeVisible()
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`))).toHaveLength(0)
+  await relationConfirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect.poll(() => api.properties.find(item => item.id === relation.id)?.type).toBe('relation')
+  expect(api.properties.find(item => item.id === relation.id)?.id).toBe(relation.id)
+  expect(api.properties.find(item => item.id === relation.id)?.name).toBe(relation.name)
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`)).at(-1)?.payload).toMatchObject({ targetType: 'relation', config: { targetDatabaseId: rootDatabase.id } })
+  expect(api.records[0]?.properties[relation.id]).toBeUndefined()
+  expect(api.views[0]?.config.filters).toEqual([])
+  expect(api.views[0]?.config.sorts).toEqual([])
+
+  const relationToFormulaConfig = await beginAdvancedPropertyTypeChange(page, table, relation.name, '公式')
+  const priorRelationTypeRequests = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`)).length
+  await expect(relationToFormulaConfig.getByLabel('属性名称')).toHaveAttribute('readonly', '')
+  await relationToFormulaConfig.getByRole('button', { name: '数字相加模板' }).click()
+  await relationToFormulaConfig.getByLabel('结果类型').selectOption('number')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`))).toHaveLength(priorRelationTypeRequests)
+  await relationToFormulaConfig.getByRole('button', { name: '继续', exact: true }).click()
+  const formulaConfirm = page.getByRole('dialog', { name: '变更属性类型？' })
+  await expect(formulaConfirm).toBeVisible()
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`))).toHaveLength(priorRelationTypeRequests)
+  await formulaConfirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect.poll(() => api.properties.find(item => item.id === relation.id)?.type).toBe('formula')
+  expect(api.properties.find(item => item.id === relation.id)?.id).toBe(relation.id)
+  expect(api.properties.find(item => item.id === relation.id)?.name).toBe(relation.name)
+  expect(api.properties.find(item => item.id === relation.id)?.config).toMatchObject({ resultType: 'number' })
+  expect(api.records[0]?.properties[relation.id]).toBeUndefined()
+  const formulaRequest = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`)).at(-1)!
+  expect(formulaRequest.payload).toMatchObject({ targetType: 'formula', config: { resultType: 'number' } })
+
+  const formulaConfig = await beginAdvancedPropertyTypeChange(page, table, formula.name, '公式')
+  await expect(formulaConfig.getByLabel('属性名称')).toHaveAttribute('readonly', '')
+  await formulaConfig.getByLabel('表达式').fill('{bad json')
+  await formulaConfig.getByRole('button', { name: '继续', exact: true }).click()
+  await expect(formulaConfig.getByRole('alert')).toContainText('有效名称和配置')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${formula.id}/type`))).toHaveLength(0)
+  await formulaConfig.getByRole('button', { name: '数字相加模板' }).click()
+  await formulaConfig.getByLabel('结果类型').selectOption('number')
+  await formulaConfig.getByRole('button', { name: '继续', exact: true }).click()
+  const textToFormulaConfirm = page.getByRole('dialog', { name: '变更属性类型？' })
+  await expect(textToFormulaConfirm).toBeVisible()
+  await textToFormulaConfirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect.poll(() => api.properties.find(item => item.id === formula.id)?.type).toBe('formula')
+  expect(api.properties.find(item => item.id === formula.id)?.id).toBe(formula.id)
+  expect(api.properties.find(item => item.id === formula.id)?.name).toBe(formula.name)
+  expect(api.records[0]?.properties[formula.id]).toBeUndefined()
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${formula.id}/type`)).at(-1)?.payload).toMatchObject({ targetType: 'formula', config: { resultType: 'number' } })
+
+  const rollupConfig = await beginAdvancedPropertyTypeChange(page, table, rollup.name, '汇总')
+  await expect(rollupConfig.getByLabel('属性名称')).toHaveAttribute('readonly', '')
+  await rollupConfig.getByLabel('关联属性').selectOption(rollupRelation.id)
+  await rollupConfig.getByLabel('目标属性').selectOption('root-number')
+  await rollupConfig.getByLabel('汇总方式').selectOption('sum')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${rollup.id}/type`))).toHaveLength(0)
+  await rollupConfig.getByRole('button', { name: '继续', exact: true }).click()
+  const rollupConfirm = page.getByRole('dialog', { name: '变更属性类型？' })
+  await expect(rollupConfirm).toBeVisible()
+  await rollupConfirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect.poll(() => api.properties.find(item => item.id === rollup.id)?.type).toBe('rollup')
+  expect(api.properties.find(item => item.id === rollup.id)?.id).toBe(rollup.id)
+  expect(api.properties.find(item => item.id === rollup.id)?.name).toBe(rollup.name)
+  expect(api.records[0]?.properties[rollup.id]).toBeUndefined()
+  const rollupRequest = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${rollup.id}/type`)).at(-1)!
+  expect(rollupRequest.payload).toMatchObject({ targetType: 'rollup', config: { relationPropertyId: rollupRelation.id, targetPropertyId: 'root-number', aggregation: 'sum' } })
+})
+
+test('advanced type conversion cancels after a 409 refresh when the source type changed', async ({ page }) => {
+  const relation = { ...property('stale-advanced-source', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const api = await installApi(page, [
+    block('stale-advanced-source-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties, relation], records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const config = await beginAdvancedPropertyTypeChange(page, table, relation.name, '公式')
+  await config.getByRole('button', { name: '数字相加模板' }).click()
+  await config.getByLabel('结果类型').selectOption('number')
+  await config.getByRole('button', { name: '继续', exact: true }).click()
+  const confirm = page.getByRole('dialog', { name: '变更属性类型？' })
+  let attemptedTypeChange = 0
+  await page.route('**/properties/stale-advanced-source/type', async route => {
+    attemptedTypeChange += 1
+    const changed = api.properties.find(item => item.id === relation.id)!
+    changed.type = 'text'
+    changed.config = undefined
+    changed.version += 1
+    api.databases[0]!.version += 1
+    await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ statusCode: 409, message: 'Database or property version is stale' }) })
+  })
+  await confirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(confirm).toHaveCount(0)
+  await expect.poll(() => api.properties.find(item => item.id === relation.id)?.type).toBe('text')
+  await expect(page.getByRole('alert')).toContainText('请重新选择')
+  expect(attemptedTypeChange).toBe(1)
+  await expect(table.locator('.eotion-database-header-name[data-property-id="stale-advanced-source"]')).toContainText('Related')
+})
+
+test('advanced type conversion cancels after a 409 refresh when the source property was deleted', async ({ page }) => {
+  const relation = { ...property('deleted-advanced-source', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const api = await installApi(page, [
+    block('deleted-advanced-source-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties, relation], records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const config = await beginAdvancedPropertyTypeChange(page, table, relation.name, '公式')
+  await config.getByRole('button', { name: '数字相加模板' }).click()
+  await config.getByLabel('结果类型').selectOption('number')
+  await config.getByRole('button', { name: '继续', exact: true }).click()
+  const confirm = page.getByRole('dialog', { name: '变更属性类型？' })
+  let attemptedTypeChange = 0
+  await page.route('**/properties/deleted-advanced-source/type', async route => {
+    attemptedTypeChange += 1
+    api.properties = api.properties.filter(item => item.id !== relation.id)
+    api.databases[0]!.version += 1
+    await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ statusCode: 409, message: 'Database or property version is stale' }) })
+  })
+  await confirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(confirm).toHaveCount(0)
+  expect(api.properties.some(item => item.id === relation.id)).toBe(false)
+  await expect(page.getByRole('alert')).toContainText('请重新选择')
+  expect(attemptedTypeChange).toBe(1)
+})
+
+test('advanced type conversion keeps confirmation after a server dependency 409 and can retry with refreshed versions', async ({ page }) => {
+  const relation = { ...property('dependency-conflict-source', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const api = await installApi(page, [
+    block('dependency-conflict-source-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties, relation], records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const config = await beginAdvancedPropertyTypeChange(page, table, relation.name, '公式')
+  await config.getByRole('button', { name: '数字相加模板' }).click()
+  await config.getByLabel('结果类型').selectOption('number')
+  await config.getByRole('button', { name: '继续', exact: true }).click()
+  const confirm = page.getByRole('dialog', { name: '变更属性类型？' })
+  let attemptedTypeChange = 0
+  const rejectOnce = async (route: Route) => {
+    attemptedTypeChange += 1
+    const current = api.properties.find(item => item.id === relation.id)!
+    current.version += 1
+    api.databases[0]!.version += 1
+    await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ statusCode: 409, message: 'Database property dependency conflict' }) })
+  }
+  await page.route('**/properties/dependency-conflict-source/type', rejectOnce)
+  await confirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(confirm).toBeVisible()
+  await expect(confirm.getByRole('alert')).toContainText('Database property dependency conflict')
+  expect(api.properties.find(item => item.id === relation.id)?.type).toBe('relation')
+  expect(attemptedTypeChange).toBe(1)
+  await page.unroute('**/properties/dependency-conflict-source/type', rejectOnce)
+  await confirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(confirm).toHaveCount(0)
+  await expect.poll(() => api.properties.find(item => item.id === relation.id)?.type).toBe('formula')
+  const retry = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`)).at(-1)!
+  expect(retry.payload?.expectedDatabaseVersion).toBe(api.databases[0]!.version - 1)
+  expect(retry.payload?.expectedPropertyVersion).toBe(api.properties.find(item => item.id === relation.id)!.version - 1)
+})
+
+test('advanced type conversion retains its configured draft and refreshed versions after a same-source 409', async ({ page }) => {
+  const relation = { ...property('same-source-conflict', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const api = await installApi(page, [
+    block('same-source-conflict-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties, relation], records: [basicRecord], failPropertyTypeChanges: 1, conflictPropertyTypeChanges: 1 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const config = await beginAdvancedPropertyTypeChange(page, table, relation.name, '公式')
+  await config.getByRole('button', { name: '数字相加模板' }).click()
+  await config.getByLabel('结果类型').selectOption('number')
+  await config.getByRole('button', { name: '继续', exact: true }).click()
+  const confirm = page.getByRole('dialog', { name: '变更属性类型？' })
+  await confirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(confirm.getByRole('alert')).toContainText('Property type change rejected')
+  await expect(confirm).toBeVisible()
+  expect(api.properties.find(item => item.id === relation.id)?.type).toBe('relation')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`))).toHaveLength(1)
+  await confirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(confirm).toBeVisible()
+  await expect(confirm.getByRole('alert')).toContainText('已刷新，请重新确认。配置已保留')
+  expect(api.properties.find(item => item.id === relation.id)?.type).toBe('relation')
+  const requestCount = () => api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`)).length
+  expect(requestCount()).toBe(2)
+  await confirm.getByRole('button', { name: '变更类型', exact: true }).click()
+  await expect(confirm).toHaveCount(0)
+  await expect.poll(() => api.properties.find(item => item.id === relation.id)?.type).toBe('formula')
+  expect(requestCount()).toBe(3)
+  const retry = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${relation.id}/type`)).at(-1)!
+  expect(retry.payload).toMatchObject({ targetType: 'formula', config: { resultType: 'number' } })
+  expect(retry.payload?.expectedDatabaseVersion).toBe(api.databases[0]!.version - 1)
+  expect(retry.payload?.expectedPropertyVersion).toBe(api.properties.find(item => item.id === relation.id)!.version - 1)
+})
+
+test('existing advanced property editors still use property PATCH instead of type mutation', async ({ page }) => {
+  const relation = { ...property('existing-edit-relation', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const formula = { ...property('existing-edit-formula', rootDatabase.id, 'Calculated', 'formula'), config: { expression: { kind: 'literal', value: 1 }, resultType: 'number' } } as TestProperty
+  const rollupRelation = { ...property('existing-edit-rollup-relation', rootDatabase.id, 'Rollup relation', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const rollup = { ...property('existing-edit-rollup', rootDatabase.id, 'Total', 'rollup'), config: { relationPropertyId: rollupRelation.id, targetPropertyId: 'root-number', aggregation: 'sum' } } as TestProperty
+  const api = await installApi(page, [
+    block('existing-advanced-editors', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties, relation, formula, rollupRelation, rollup], records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  const settings = page.getByRole('group', { name: '属性管理' })
+  for (const [item, label] of [[relation, '关联'], [formula, '公式'], [rollup, '汇总']] as const) {
+    await openDatabaseSetting(page, table, '属性')
+    await expect(settings).toBeVisible()
+    await settings.getByRole('button', { name: `编辑${label}设置 ${item.name}` }).click()
+    const config = page.getByRole('group', { name: `配置${label}属性` })
+    await expect(config).toBeVisible()
+    if (label === '关联') await config.getByLabel('目标数据库').selectOption(rootDatabase.id)
+    if (label === '公式') {
+      await config.getByRole('button', { name: '数字相加模板' }).click()
+      await config.getByLabel('结果类型').selectOption('number')
+    }
+    if (label === '汇总') {
+      await config.getByLabel('关联属性').selectOption(rollupRelation.id)
+      await config.getByLabel('目标属性').selectOption('root-number')
+      await config.getByLabel('汇总方式').selectOption('sum')
+    }
+    await config.getByRole('button', { name: '保存属性', exact: true }).click()
+    await expect(config).toHaveCount(0)
+    expect(api.properties.find(propertyItem => propertyItem.id === item.id)?.type).toBe(item.type)
+    expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${item.id}`))).toHaveLength(1)
+    expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/properties/${item.id}/type`))).toHaveLength(0)
+  }
+})
+
 test('property type change failures keep the confirmation available and report conflicts without optimistic type changes', async ({ page }) => {
   const api = await installApi(page, [
     block('property-type-errors', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
@@ -1506,9 +1763,10 @@ test('property schema mutations refresh inside the open panel and preserve unsav
 })
 
 test('property menu keeps its focus, type choices and database-local dismissal behavior', async ({ page }) => {
+  const relation = { ...property('property-menu-relation', rootDatabase.id, 'Related for rollup', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
   const api = await installApi(page, [
     block('property-menu-contract', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
-  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties, relation], records: [basicRecord] })
   await page.goto('/#/app/database-workspace/page/database-page')
   const table = page.locator('.eotion-editor-content .eotion-database')
   const trigger = table.getByRole('button', { name: '属性设置 Status' })
@@ -1599,14 +1857,41 @@ test('property menu keeps its focus, type choices and database-local dismissal b
   await expect(menu).toHaveCount(0)
   await expect(table).toContainText('Launch plan')
 
-  for (const advancedType of ['关联', '汇总', '公式']) {
+  for (const [index, advancedType] of ['关联', '汇总', '公式'].entries()) {
     const requestsBeforeAdvancedChoice = api.requests.length
-    await trigger.click()
-    await menu.getByRole('menuitem', { name: '变更类型' }).click()
+    const advancedTrigger = table.getByRole('button', { name: '属性设置 Notes' })
+    await advancedTrigger.click()
+    await page.getByRole('menu', { name: '属性设置: Notes' }).getByRole('menuitem', { name: '变更类型' }).click()
     await page.getByRole('group', { name: '更改属性类型' }).getByRole('menuitem', { name: advancedType }).click()
-    await expect(page.getByRole('alert')).toContainText('该类型尚需配置')
-    expect(api.properties.find(item => item.id === 'root-select')?.type).toBe('select')
-    expect(api.requests.slice(requestsBeforeAdvancedChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-select/type'))).toBe(false)
+    const config = page.getByRole('group', { name: `配置${advancedType}属性` })
+    await expect(config).toBeVisible()
+    await expect(config.getByLabel('属性名称')).toHaveAttribute('readonly', '')
+    await expect(config.getByRole('button', { name: '继续', exact: true })).toBeVisible()
+    const configOverlay = page.locator('.eotion-product-overlay').filter({ has: config })
+    const configBounds = await configOverlay.boundingBox()
+    expect(configBounds).not.toBeNull()
+    expect(configBounds!.x).toBeGreaterThanOrEqual(0)
+    expect(configBounds!.x + configBounds!.width).toBeLessThanOrEqual(390)
+    if (advancedType === '关联') await config.getByLabel('目标数据库').selectOption(rootDatabase.id)
+    if (advancedType === '汇总') {
+      await config.getByLabel('关联属性').selectOption(relation.id)
+      await config.getByLabel('目标属性').selectOption('root-number')
+      await config.getByLabel('汇总方式').selectOption('sum')
+    }
+    if (advancedType === '公式') {
+      await config.getByRole('button', { name: '数字相加模板' }).click()
+      await config.getByLabel('结果类型').selectOption('number')
+    }
+    await config.getByRole('button', { name: '继续', exact: true }).click()
+    const confirm = page.getByRole('dialog', { name: '变更属性类型？' })
+    await expect(confirm).toBeVisible()
+    if (index === 0) await confirm.getByRole('button', { name: '取消', exact: true }).click()
+    else if (index === 1) await page.keyboard.press('Escape')
+    else await page.mouse.click(1, 1)
+    await expect(confirm).toHaveCount(0)
+    await expect(config).toHaveCount(0)
+    expect(api.properties.find(item => item.id === 'root-text')?.type).toBe('text')
+    expect(api.requests.slice(requestsBeforeAdvancedChoice).some(({ method, path }) => method === 'PATCH' && path.endsWith('/properties/root-text/type'))).toBe(false)
   }
 
   const keyboardTrigger = table.getByRole('button', { name: '属性设置 Notes' })

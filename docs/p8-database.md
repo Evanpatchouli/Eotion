@@ -613,4 +613,12 @@ Title 永远禁止变更类型；同类型请求在校验预期版本后返回 n
 
 Property Menu 已接入 text/number/checkbox/select/date 五种基础 target。当前类型点击只关闭列表；不同基础类型先关闭列表，再用 `EotionProductOverlay mode="modal"` 确认。正文按服务端 conversion 规则说明转换或清空及筛选移除，不扫描客户端 Records。确认后通过 typed SDK/Web service 调用专用 `/type` endpoint，沿用 online-only、auth/workspace identity fence、数据库 mutation serialization 与 `notifyDatabaseUpdated`；成功调用 `refreshSchemaMutation()` 更新属性类型/版本、记录 Cell 和 View filter/sort，并关闭确认框。
 
-失败保留确认框和原类型，显示服务端错误并允许取消/重试；409 刷新 schema 后提示重新确认，并使用刷新后的版本。依赖冲突不会自动删除 Formula/Rollup。关联/汇总/公式点击仅提示尚需配置，不提交 type change，也不改变高级配置入口。定向 Web 回归覆盖基础转换、稳定 Property ID、View 修复、取消/失败和 Desktop/390px Phone。Advanced Property Type Mutation UI hookup、Database UX Final Acceptance/P9 不属于本次交付。
+基础类型交付时，失败保留确认框和原类型，显示服务端错误并允许取消/重试；409 刷新 schema 后提示重新确认，并使用刷新后的版本。依赖冲突不会自动删除 Formula/Rollup。定向 Web 回归覆盖基础转换、稳定 Property ID、View 修复、取消/失败和 Desktop/390px Phone。
+
+### Advanced Property Type Mutation — UI Hookup
+
+Property Menu 的 relation / rollup / formula target 复用既有高级配置 Overlay 和 loader。配置显式区分 create、edit 和 change-type：create 使用创建 endpoint，edit 使用普通 property update；change-type 保存原属性及 Database/Property 版本快照，名称只读，验证 candidate 时使用目标类型、替换旧 config 并清除 options。当前类型点击只关闭列表，不请求。
+
+change-type 点击「继续」仅关闭配置并进入类型变更确认，保留 config draft 和版本；确认明确说明已有值清空、引用该属性的筛选和排序移除，随后调用专用 `/type` endpoint。成功通过 `refreshSchemaMutation()` 刷新类型、配置、Cell、View 和版本，保留 Property ID/name/createdAt。客户端不扫描 Records，服务端仍为最终 authority。
+
+普通失败保留确认与服务端错误，不乐观更改类型；依赖冲突不删除或改写 Formula/Rollup。409 刷新 schema；原属性仍存在且 source type 未变化时保留高级 config draft、更新 expected versions 并要求重新确认，提交前重新验证依赖；原属性消失或类型已被外部修改时取消 pending mutation 并提示重新操作。Database UX Final Acceptance / P9 不属于本轮范围。
