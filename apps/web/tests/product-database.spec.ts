@@ -84,6 +84,50 @@ async function readLocalBlocks(page: Page, pageId: string): Promise<string> {
   }, pageId)
 }
 
+async function requestSnapshotHydration(page: Page): Promise<boolean> {
+  const revision = await page.evaluate(async () => {
+    const { PagePersistence } = await import('/src/editor/pagePersistence.ts')
+    const original = PagePersistence.prototype.matchesLocalBlocks
+    const target = window as Window & { __snapshotComparison?: boolean | null }
+    target.__snapshotComparison = null
+    PagePersistence.prototype.matchesLocalBlocks = function (blocks) {
+      const result = original.call(this, blocks)
+      target.__snapshotComparison = result
+      PagePersistence.prototype.matchesLocalBlocks = original
+      return result
+    }
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    const sync = useProductSyncStore()
+    const current = sync.snapshotRevision
+    sync.requestSync(0)
+    return current
+  })
+  await expect.poll(() => page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    return useProductSyncStore().snapshotRevision
+  })).toBeGreaterThan(revision)
+  await expect.poll(() => page.evaluate(() => (window as Window & { __snapshotComparison?: boolean | null }).__snapshotComparison ?? null)).not.toBeNull()
+  const comparison = await page.evaluate(async () => {
+    await Promise.resolve()
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+    return (window as Window & { __snapshotComparison?: boolean | null }).__snapshotComparison!
+  })
+  return comparison
+}
+
+async function alignServerBlocksWithLocal(page: Page, api: DatabaseApi): Promise<void> {
+  const local = JSON.parse(await readLocalBlocks(page, pageRecord.id)) as BlockResponse[]
+  expect(local.map(item => item.id).sort()).toEqual(api.blocks.map(item => item.id).sort())
+  for (const block of api.blocks) {
+    const current = local.find(item => item.id === block.id)!
+    block.type = current.type
+    block.orderKey = current.orderKey
+    block.parentBlockId = current.parentBlockId
+    block.props = structuredClone(current.props)
+    block.updatedAt = current.updatedAt
+  }
+}
+
 type DatabaseApi = {
   pages: PageResponse[]
   blocks: BlockResponse[]
@@ -407,6 +451,9 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
         const value: BlockResponse = { ...payload, workspaceId: operation.workspaceId, parentBlockId: payload.parentBlockId ?? null, createdAt: existing?.createdAt ?? now, updatedAt: later }
         if (index < 0) api.blocks.push(value)
         else api.blocks[index] = value
+      } else if (operation.kind === 'block.move') {
+        if (index < 0) return json(route, 404, { statusCode: 404, message: 'Block not found' })
+        api.blocks[index] = { ...api.blocks[index]!, parentBlockId: payload.parentBlockId ?? null, orderKey: payload.orderKey, updatedAt: later }
       } else if (operation.kind === 'block.delete' && index >= 0) api.blocks.splice(index, 1)
       return json(route, 200, { id: 'database-operation', status: 'applied' })
     }
@@ -1350,6 +1397,178 @@ test('linked views keep independent server filters, multi-sort order and column 
   await expect(tables.nth(1).getByRole('button', { name: '切换视图' })).toBeDisabled()
   await expect(tables.nth(1).getByRole('button', { name: '数据库设置' })).toBeEnabled()
   expect(api.requests.filter(({ method, path }) => ['POST', 'PATCH', 'DELETE'].includes(method) && path.includes(`/databases/${rootDatabase.id}/views`))).toHaveLength(mutationCount)
+})
+
+for (const panelKind of ['筛选', '排序'] as const) {
+  test(`snapshot convergence preserves phone ${panelKind} draft without detaching editor`, async ({ page }) => {
+    test.setTimeout(60_000)
+    const api = await installApi(page, [
+      block('snapshot-phone-paragraph', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Stable page text' }] }, 100),
+      block('phone-view-settings', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'phone-view-id' } }, 200),
+    ], { databases: [rootDatabase], views: [view('phone-view-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    await expect(page.locator('.product-sync-status')).toContainText('已同步')
+    await installLocalBlockReader(page)
+    await alignServerBlocksWithLocal(page, api)
+
+    const table = page.locator('.eotion-editor-content .eotion-database')
+    await openDatabaseSetting(page, table, panelKind)
+    const drawer = page.locator('dialog.eotion-product-overlay--bottom-drawer[open]')
+    await expect(drawer).toBeVisible()
+    if (panelKind === '筛选') {
+      const panel = page.getByRole('group', { name: '筛选条件' })
+      await panel.getByRole('button', { name: '＋ 添加筛选条件' }).click()
+      await panel.getByRole('combobox', { name: '筛选属性 1' }).selectOption('root-select')
+      await panel.getByRole('combobox', { name: '筛选值 1' }).selectOption('status-done')
+    } else {
+      const panel = page.getByRole('group', { name: '排序条件' })
+      await panel.getByRole('button', { name: '＋ 添加排序' }).click()
+      await panel.getByRole('combobox', { name: '排序属性 1' }).selectOption('root-number')
+      await panel.getByRole('combobox', { name: '排序方向 1' }).selectOption('desc')
+    }
+
+    await page.evaluate(() => {
+      type Capture = { editor: Element; database: Element; dialog: Element; editorInstance: unknown; databaseInstance: unknown; detached: string[] }
+      const editor = document.querySelector('.eotion-editor')
+      const database = document.querySelector('.eotion-database')
+      const dialog = document.querySelector('dialog.eotion-product-overlay--bottom-drawer[open]')
+      if (!editor || !database || !dialog) throw new Error('Expected editor, database, and open mobile drawer')
+      const capture: Capture = {
+        editor, database, dialog,
+        editorInstance: (editor as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+        databaseInstance: (database as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+        detached: [],
+      }
+      const observer = new MutationObserver(records => {
+        for (const record of records) for (const removed of record.removedNodes) {
+          for (const [name, target] of [['editor', capture.editor], ['database', capture.database], ['dialog', capture.dialog]] as const) {
+            if (removed === target || (removed instanceof Element && removed.contains(target))) capture.detached.push(name)
+          }
+        }
+      })
+      observer.observe(document.documentElement, { childList: true, subtree: true })
+      ;(window as Window & { __snapshotCapture?: Capture; __snapshotObserver?: MutationObserver }).__snapshotCapture = capture
+      ;(window as Window & { __snapshotObserver?: MutationObserver }).__snapshotObserver = observer
+    })
+
+    const databaseBlock = api.blocks.find(item => item.id === 'phone-view-settings')!
+    const node = databaseBlock.props.node as { type: string; attrs: Record<string, unknown> }
+    databaseBlock.props = { node: { attrs: { viewId: node.attrs.viewId, databaseId: node.attrs.databaseId }, type: node.type } }
+    expect(await requestSnapshotHydration(page)).toBe(true)
+
+    const identity = await page.evaluate(() => {
+      const capture = (window as Window & { __snapshotCapture?: { editor: Element; database: Element; dialog: Element; editorInstance: unknown; databaseInstance: unknown; detached: string[] } }).__snapshotCapture!
+      const editor = document.querySelector('.eotion-editor')
+      const database = document.querySelector('.eotion-database')
+      const dialog = document.querySelector('dialog.eotion-product-overlay--bottom-drawer[open]')
+      return {
+        editorSame: editor === capture.editor,
+        databaseSame: database === capture.database,
+        dialogSame: dialog === capture.dialog,
+        editorConnected: capture.editor.isConnected,
+        databaseConnected: capture.database.isConnected,
+        dialogConnected: capture.dialog.isConnected,
+        editorComponentSame: capture.editorInstance === (editor as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent,
+        databaseComponentSame: capture.databaseInstance === (database as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent,
+        detached: capture.detached,
+      }
+    })
+    expect(identity).toEqual({ editorSame: true, databaseSame: true, dialogSame: true, editorConnected: true, databaseConnected: true, dialogConnected: true, editorComponentSame: true, databaseComponentSame: true, detached: [] })
+    if (panelKind === '筛选') {
+      await expect(page.getByRole('group', { name: '筛选条件' }).getByRole('combobox', { name: '筛选值 1' })).toHaveValue('status-done')
+    } else {
+      await expect(page.getByRole('group', { name: '排序条件' }).getByRole('combobox', { name: '排序方向 1' })).toHaveValue('desc')
+    }
+  })
+}
+
+test('snapshot convergence reloads the editor when paragraph content changes', async ({ page }) => {
+  test.setTimeout(60_000)
+  const api = await installApi(page, [
+    block('snapshot-content-paragraph', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Before snapshot' }] }, 100),
+    block('snapshot-content-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'phone-view-id' } }, 200),
+  ], { databases: [rootDatabase], views: [view('phone-view-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  await expect(page.locator('.product-sync-status')).toContainText('已同步')
+  await installLocalBlockReader(page)
+  await alignServerBlocksWithLocal(page, api)
+
+  const previousEditor = await page.locator('.eotion-editor').elementHandle()
+  expect(previousEditor).not.toBeNull()
+  const paragraph = api.blocks.find(item => item.id === 'snapshot-content-paragraph')!
+  paragraph.props = { node: { type: 'paragraph', content: [{ type: 'text', text: 'Updated from snapshot' }] } }
+  expect(await requestSnapshotHydration(page)).toBe(false)
+  await expect(page.locator('.eotion-editor-content')).toContainText('Updated from snapshot')
+  expect(await previousEditor!.evaluate(element => element.isConnected)).toBe(false)
+})
+
+test('snapshot convergence PagePersistence matches equivalent blocks independent of object key order', async ({ page }) => {
+  const api = await installApi(page, [
+    block('snapshot-compare-paragraph', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'First' }, { type: 'hardBreak' }, { type: 'text', text: 'Second' }] }, 100),
+    block('snapshot-compare-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'phone-view-id' } }, 200),
+  ], { databases: [rootDatabase], views: [view('phone-view-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  await expect(page.locator('.product-sync-status')).toContainText('已同步')
+  await installLocalBlockReader(page)
+  await alignServerBlocksWithLocal(page, api)
+  const outcomes = await page.evaluate(async pageId => {
+    const [{ PagePersistence }, { useProductSyncStore }, { blocksToDocument }] = await Promise.all([
+      import('/src/editor/pagePersistence.ts'), import('/src/stores/productSync.ts'), import('/src/editor/blockCodec.ts'),
+    ])
+    const persistence = new PagePersistence('database-user', 'database-workspace', pageId, () => {})
+    await persistence.load()
+    const blocks = await (await useProductSyncStore().store()).listBlocksByPage(pageId)
+    const base = structuredClone(blocks)
+    const matches = (candidate: unknown[]) => persistence.matchesLocalBlocks(candidate as never[])
+    const database = base.find(block => block.id === 'snapshot-compare-database')!
+    const paragraph = base.find(block => block.id === 'snapshot-compare-paragraph')!
+    const originalNode = database.props.node as { type: string; attrs: Record<string, unknown> }
+    const reordered = structuredClone(base)
+    const reorderedDatabase = reordered.find(block => block.id === database.id)!
+    reorderedDatabase.props = { node: { attrs: { viewId: originalNode.attrs.viewId, databaseId: originalNode.attrs.databaseId }, type: originalNode.type } }
+    persistence.update(blocksToDocument(reordered))
+    const reorderedDocumentDirty = persistence.dirty
+    const nullParentUndefined = structuredClone(base).map(block => ({ ...block, parentBlockId: undefined }))
+    const changed = (edit: (copy: typeof base) => void) => { const copy = structuredClone(base); edit(copy); return matches(copy) }
+    const paragraphContent = paragraph.props.node as { content: unknown[] }
+    const reversedContent = changed(copy => {
+      const target = copy.find(block => block.id === paragraph.id)!
+      const node = target.props.node as { content: unknown[] }
+      node.content = [...paragraphContent.content].reverse()
+    })
+    const results = {
+      reorderedObjectKeys: matches(reordered),
+      reorderedDocumentDirty,
+      nullAndUndefinedParent: matches(nullParentUndefined),
+      changedProps: changed(copy => { copy.find(block => block.id === database.id)!.props.description = 'changed' }),
+      changedDatabaseId: changed(copy => { const node = copy.find(block => block.id === database.id)!.props.node as { type: string; attrs: Record<string, unknown> }; node.attrs.databaseId = 'changed-database' }),
+      changedViewId: changed(copy => { const node = copy.find(block => block.id === database.id)!.props.node as { type: string; attrs: Record<string, unknown> }; node.attrs.viewId = 'changed-view' }),
+      changedType: changed(copy => { copy.find(block => block.id === database.id)!.type = 'paragraph' }),
+      changedOrder: changed(copy => { copy.find(block => block.id === database.id)!.orderKey += 'x' }),
+      changedParent: changed(copy => { copy.find(block => block.id === database.id)!.parentBlockId = 'other-parent' }),
+      changedArrayOrder: reversedContent,
+      addedBlock: changed(copy => { copy.push({ ...copy[0]!, id: 'added-block' }) }),
+      removedBlock: matches(base.filter(block => block.id !== database.id)),
+    }
+    persistence.dispose()
+    return results
+  }, pageRecord.id)
+  expect(outcomes).toEqual({
+    reorderedObjectKeys: true,
+    reorderedDocumentDirty: false,
+    nullAndUndefinedParent: true,
+    changedProps: false,
+    changedDatabaseId: false,
+    changedViewId: false,
+    changedType: false,
+    changedOrder: false,
+    changedParent: false,
+    changedArrayOrder: false,
+    addedBlock: false,
+    removedBlock: false,
+  })
 })
 
 test('phone filter and sort panels save through their footers and restore saved drafts', async ({ page }) => {

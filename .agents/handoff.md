@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-10-11 Page snapshot convergence（PASS for scoped fix）
+
+基线 a37aba8dd36ced4f1bf1683418dfb2cad185140e，继续 master。本次最小运行时比对确认 phone-view-settings 的 props 完全一致，parent/type 一致；baseline orderKey=000000000000000001000000000000，snapshot=0000000000000100。原 Phone 测试同步 mock 漏处理 block.move，编辑器新增尾段落后 rebalance 的 move 被 ACK 却未落库；snapshot 因此恢复旧次序并重建编辑器。补齐 mock move（不存在目标返回 404）后原用例通过，生产 orderKey 比较保持严格。
+
+另以独立等价 snapshot 回归证实原 JSON.stringify props 比较对对象字段插入顺序敏感；PagePersistence.matchesLocalBlocks 与 changes 共用递归排序对象键的 JSON 比较，数组顺序与真实属性值继续参与。没有调整 PageView、sync、Drawer Motion、pending work/databaseBusy/identity fences 或 local-first draft。新增 Filter/Sort Phone 回归实际 hydrate snapshot 并等待 PageView 比较，确认 DOM 与 Vue 组件身份保留、无瞬时卸载、Drawer 未保存草稿保留；paragraph 真实变化仍 reload。
+
+验证：旧实现新增回归 3 红 / 1 绿，修复后新增及原 Phone 5/5；相关 Page Editor/Sync 13/13，Web typecheck、git diff --check；required checks 全绿后额外 Database opening/drawer 8/8。独立 review 无 blocker。未跑完整 Database suite，未执行任何 Final Acceptance。
+
+Remaining issues：Drawer Motion final re-acceptance、Universal Block +、Database UX Final Acceptance。完成一个聚焦 commit 后停止，不开始 P9。
+
 ## 2026-10-11 Drawer Motion（NO PASS）
 
 基线 a9c206722e6d4c5bf05cff54e2212297729d6113，范围仅 EotionProductOverlay Drawer motion。Right/Desktop X、Bottom Y 从 100% 到 0，退出反向；enter 200ms ease-out、leave 170ms ease-in，masked backdrop 同步 opacity，Desktop 无遮罩。Vue Transition 保留退出前的 vnode 和正文，受控父级接受关闭后才 leave，结束后真正 close/unmount、unlock 与 focus restore。保存拒绝维持面板；reduced-motion 禁用位移并立即完成；快速切换/取消清理与 Modal 回退关闭焦点已覆盖。

@@ -21,6 +21,8 @@ LocalStore pending / failed operations
 
 任一 push 失败即停止本轮 pull，错误状态保留本地内容。`replaceWorkspaceSnapshot` 还会拒绝仍有 pending / failed operation 的 workspace；pull 前先尝试 flush 当前编辑器，避免正在编辑或输入法组合中的内容被替换。替换完成后页面树可从本地 store 刷新；不因 snapshot 到达而对活跃 Tiptap 文档无条件调用 `setContent()`。
 
+Page snapshot 收敛比较保留 Block ID、类型、父级与 `orderKey`，props 按 JSON 值比较，对象字段插入顺序不影响等价性，数组顺序与真实属性值仍参与比较。相同 props 比较也用于本地 dirty 检测，避免等价字段重排产生无意义保存。等价 snapshot 保留当前 Editor、Database NodeView 与已打开面板的交互状态；真实正文或树结构变化仍触发重新加载。PageView 继续保留 pending work、databaseBusy 与 workspace/page identity fences。
+
 ## Snapshot API 与 hydrate
 
 `GET /api/sync/workspaces/:workspaceId/snapshot` 是只读、类型化的完整 workspace snapshot 接口，返回现有 `PageResponse[]` 与 `BlockResponse[]`。它使用 Cookie Session 和现有 workspace 权限；无权或不存在沿用隐藏语义，不创建 operation receipt，也不修改数据。SDK 通过 `api.sync.snapshot(workspaceId)` 调用。此阶段不增加 revision 或增量 cursor，也不通过逐页读取 blocks 构造 N+1 请求。

@@ -16,6 +16,14 @@ type Change =
   | { kind: 'move'; block: EditorBlock }
   | { kind: 'delete'; block: BlockResponse }
 
+function jsonPropsEqual(left: unknown, right: unknown): boolean {
+  const stringify = (value: unknown) => JSON.stringify(value, (_key, nested) => {
+    if (nested === null || typeof nested !== 'object' || Array.isArray(nested)) return nested
+    return Object.fromEntries(Object.keys(nested).sort().map((key) => [key, nested[key]]))
+  })
+  return stringify(left) === stringify(right)
+}
+
 export class PagePersistence {
   status: SaveStatus = 'loading'
   error = ''
@@ -96,7 +104,7 @@ export class PagePersistence {
       const old = this.baseline.get(block.id)
       return old?.type === block.type && old.orderKey === block.orderKey &&
         (old.parentBlockId ?? null) === (block.parentBlockId ?? null) &&
-        JSON.stringify(old.props) === JSON.stringify(block.props)
+        jsonPropsEqual(old.props, block.props)
     })
   }
 
@@ -168,7 +176,7 @@ export class PagePersistence {
       }
       const patch: BlockUpdateRequest = {}
       if (old.type !== block.type) patch.type = block.type
-      if (JSON.stringify(old.props) !== JSON.stringify(block.props)) patch.props = block.props
+      if (!jsonPropsEqual(old.props, block.props)) patch.props = block.props
       if (Object.keys(patch).length) changes.push({ kind: 'update', block, patch })
       if (old.orderKey !== block.orderKey || (old.parentBlockId ?? null) !== (block.parentBlockId ?? null)) changes.push({ kind: 'move', block })
     }
