@@ -113,6 +113,11 @@ P7.2 于 2026-10-07 完成验收并 PASS（实现提交 `139a6ff`）。本轮只
 - `hardBreak + marks` 真实可达：在 Callout 内 Shift+Enter 换行后，选中跨换行的正文并加粗，Tiptap 会给 hardBreak 加 bold mark。domain Callout validator 现接受与 inline text 相同的合法 marks、拒绝未知 mark/不安全链接/额外字段，与 codec/MCP 保持一致；产品测试验证保存和 reload。
 - 上下文收口：移动端 Touch Toolbar 的文本/标题/列表按钮改走与桌面工具栏、slash 相同的 `runBlockCommand`；`runBlockCommand` 对工具栏当前选区也执行 range safety。此前触屏在列表项内点「标题」会生成 codec 拒绝的 `ul > li > h2` 导致整页无法保存，本轮关闭该入口。
 
+### Universal Block Chrome 契约
+
+- 所有 `movable` 区块在桌面共用 24px 拖动与下方插入控件，默认隐藏，区块 hover / focus-within 或控件 focus 时显示。插入会在同级列表中、完整区块（含 Toggle 子树）之后创建并选中普通段落，随后聚焦编辑器。
+- Phone 隐藏这些控件且不留布局占位。Tablet coarse pointer 保留现有 Database 专用触屏边界：仅 Database 显示 44px 控件，其他区块继续隐藏；桌面控件仍共用同一实现。
+
 ## P7.3 Final Acceptance
 
 P7.3 于 2026-10-07 完成验收并 PASS。

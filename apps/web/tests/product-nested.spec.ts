@@ -21,6 +21,175 @@ const toggle = (id: string, text: string, order: number, parentBlockId: string |
 })
 
 function editor(page: Page) { return page.locator('.eotion-editor-content .tiptap') }
+
+test('universal block chrome reveals on hover and focus and inserts editable root siblings with undo', async ({ page }) => {
+  test.setTimeout(90_000)
+  const text = (value: string) => [{ type: 'text', text: value }]
+  const ordinary = (id: string, type: string, node: unknown, order: number): BlockResponse => ({
+    ...paragraph(id, id, order), type, props: { node },
+  })
+  const blocks = [
+    paragraph('plus-paragraph', 'Paragraph', 100),
+    ordinary('plus-heading', 'heading', { type: 'heading', attrs: { level: 2 }, content: text('Heading') }, 200),
+    ordinary('plus-callout', 'callout', { type: 'eotionCallout', attrs: { icon: '💡', tone: 'neutral' }, content: text('Callout') }, 300),
+    ordinary('plus-bullet', 'bulleted-list', { type: 'bulletList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: text('Bullet') }] }] }, 400),
+    ordinary('plus-ordered', 'numbered-list', { type: 'orderedList', content: [{ type: 'listItem', content: [{ type: 'paragraph', content: text('Ordered') }] }] }, 500),
+    ordinary('plus-todo', 'todo', { type: 'eotionTodo', attrs: { checked: false }, content: text('Todo') }, 600),
+    ordinary('plus-quote', 'quote', { type: 'blockquote', content: [{ type: 'paragraph', content: text('Quote') }] }, 700),
+    ordinary('plus-code', 'code', { type: 'codeBlock', content: text('Code') }, 800),
+    ordinary('plus-divider', 'divider', { type: 'horizontalRule' }, 900),
+    ordinary('plus-table', 'table', { type: 'table', content: [{ type: 'tableRow', content: [{ type: 'tableCell', content: [{ type: 'paragraph', content: text('Cell') }] }] }] }, 1000),
+  ]
+  const server = { blocks, offline: false, requests: [] as { path: string; kind?: string }[] }
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await installApi(page, server)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto(pageUrl())
+  const body = editor(page)
+  await expect(body).toBeVisible()
+  for (const block of blocks) {
+    const insert = body.locator(`[data-eotion-block-insert="${block.id}"]`)
+    const anchor = body.locator('.eotion-block-drag-anchor').filter({ has: page.locator(`[data-eotion-block-insert="${block.id}"]`) })
+    const handle = anchor.locator('[data-eotion-drag-handle]')
+    const content = anchor.locator('xpath=following-sibling::*[1]')
+    await content.scrollIntoViewIfNeeded()
+    await page.mouse.click(1, 1)
+    await expect.poll(() => insert.evaluate(element => getComputedStyle(element).opacity)).toBe('0')
+    await expect.poll(() => handle.evaluate(element => getComputedStyle(element).opacity)).toBe('0')
+    const before = await content.boundingBox()
+    await content.hover()
+    await expect.poll(() => insert.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+    await expect.poll(() => handle.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+    expect(await content.boundingBox()).toEqual(before)
+    const [plusBox, dragBox] = await Promise.all([insert.boundingBox(), handle.boundingBox()])
+    expect(plusBox!.x + plusBox!.width).toBeLessThanOrEqual(dragBox!.x)
+    expect(dragBox!.x + dragBox!.width).toBeLessThanOrEqual(before!.x)
+    const travelY = before!.y + Math.min(before!.height / 2, 12)
+    await page.mouse.move(before!.x - 2, travelY)
+    await page.mouse.move(dragBox!.x + 12, travelY)
+    await page.mouse.move(dragBox!.x - 2, travelY)
+    await page.mouse.move(plusBox!.x + 12, plusBox!.y + 12)
+    expect(await insert.evaluate(element => element.contains(document.elementFromPoint(element.getBoundingClientRect().x + 12, element.getBoundingClientRect().y + 12)))).toBe(true)
+    await expect.poll(() => handle.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+    const screenshotDirectory = process.env.EOTION_VISUAL_QA_DIR
+    if (screenshotDirectory && block.id === 'plus-paragraph') {
+      await mkdir(screenshotDirectory, { recursive: true })
+      await page.screenshot({ path: path.join(screenshotDirectory, 'universal-plus-desktop.png') })
+    }
+    await insert.focus()
+    await page.mouse.move(1, 1)
+    await expect(insert).toBeFocused()
+    await expect.poll(() => handle.evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+    expect(await insert.evaluate(element => getComputedStyle(element).outlineStyle)).not.toBe('none')
+    await insert.click()
+    const sibling = content.locator('xpath=following-sibling::*[not(contains(@class,"eotion-block-drag-anchor"))][1]')
+    await expect(sibling).toHaveJSProperty('tagName', 'P')
+    expect(await sibling.evaluate(element => element.contains(window.getSelection()?.anchorNode ?? null))).toBe(true)
+    const insertedId = await sibling.evaluate(element => element.previousElementSibling?.querySelector<HTMLElement>('[data-eotion-block-insert]')?.dataset.eotionBlockInsert)
+    expect(insertedId).toBeTruthy()
+    await expect.poll(() => server.blocks.find(item => item.id === insertedId)?.parentBlockId).toBeNull()
+    await page.keyboard.press('Control+Z')
+    await expect.poll(() => server.blocks.some(item => item.id === insertedId)).toBe(false)
+    await page.keyboard.press('Control+Y')
+    await expect(sibling).toHaveJSProperty('tagName', 'P')
+    expect(await sibling.evaluate(element => element.contains(window.getSelection()?.anchorNode ?? null))).toBe(true)
+    await page.keyboard.type(`After ${block.id}`)
+    await expect(sibling).toHaveText(`After ${block.id}`)
+    await expect.poll(() => server.blocks.find(item => JSON.stringify(item.props).includes(`After ${block.id}`))?.parentBlockId).toBeNull()
+    expect(server.blocks.find(item => item.id === block.id)?.type).toBe(block.type)
+  }
+  expect(errors).toEqual([])
+})
+
+test('universal chrome follows the caret block while the editor is focused', async ({ page }) => {
+  const server = { blocks: [paragraph('focus-root', 'Root', 50), toggle('focus-parent', 'Parent', 100), paragraph('focus-child', 'Child', 100, 'focus-parent')], offline: false, requests: [] as { path: string; kind?: string }[] }
+  await installApi(page, server)
+  await page.goto(pageUrl())
+  const body = editor(page)
+  for (const [id, text] of [['focus-root', 'Root'], ['focus-child', 'Child']]) {
+    await putCaretAtStart(body.getByText(text!, { exact: true }))
+    await page.mouse.move(1, 1)
+    await expect.poll(() => body.locator(`[data-eotion-block-insert="${id}"]`).evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+    await expect.poll(() => body.locator(`[data-eotion-drag-handle="${id}"]`).evaluate(element => getComputedStyle(element).opacity)).toBe('1')
+  }
+  await page.mouse.click(1, 1)
+  await expect.poll(() => body.locator('[data-eotion-block-insert="focus-child"]').evaluate(element => getComputedStyle(element).opacity)).toBe('0')
+})
+
+test('universal plus keeps nested siblings and inserts after the whole toggle with stable IDs', async ({ page }) => {
+  const server = { blocks: [paragraph('plus-before', 'Before parent', 50), toggle('plus-parent', 'Parent', 100), paragraph('plus-child', 'Child', 100, 'plus-parent'), paragraph('plus-next', 'Next', 200, 'plus-parent'), paragraph('plus-tail', 'Tail', 200)], offline: false, requests: [] as { path: string; kind?: string }[] }
+  await installApi(page, server)
+  await page.goto(pageUrl())
+  const body = editor(page)
+  await body.getByText('Child', { exact: true }).hover()
+  await expect.poll(async () => {
+    const [control, child] = await Promise.all([body.locator('[data-eotion-block-insert="plus-child"]').boundingBox(), body.getByText('Child', { exact: true }).boundingBox()])
+    return Math.abs(control!.y - child!.y)
+  }).toBeLessThanOrEqual(1)
+  await body.locator('[data-eotion-block-insert="plus-child"]').click()
+  await page.keyboard.type('New nested sibling')
+  await expect(body.locator('.eotion-toggle p')).toHaveText(['Parent', 'Child', 'New nested sibling', 'Next'])
+  await expect.poll(() => server.blocks.find(item => JSON.stringify(item.props).includes('New nested sibling'))?.parentBlockId).toBe('plus-parent')
+  const nestedId = server.blocks.find(item => JSON.stringify(item.props).includes('New nested sibling'))!.id
+  expect(nestedId).toBeTruthy()
+  await body.getByText('Parent', { exact: true }).hover()
+  await body.locator('[data-eotion-block-insert="plus-parent"]').click()
+  await expect(body.locator(':scope > p')).toHaveText(['Before parent', '', 'Tail'])
+  await page.keyboard.press('Control+Z')
+  await expect(body.locator(':scope > p')).toHaveText(['Before parent', 'Tail'])
+  await page.keyboard.press('Control+Y')
+  await expect(body.locator(':scope > p')).toHaveText(['Before parent', '', 'Tail'])
+  await page.keyboard.type('After whole toggle')
+  await expect(body.locator(':scope > p')).toHaveText(['Before parent', 'After whole toggle', 'Tail'])
+  await expect.poll(() => server.blocks.find(item => JSON.stringify(item.props).includes('After whole toggle'))?.parentBlockId).toBeNull()
+  expect(server.blocks.find(item => item.id === 'plus-child')?.parentBlockId).toBe('plus-parent')
+  await page.reload()
+  await expect(editor(page).locator('.eotion-toggle p')).toHaveText(['Parent', 'Child', 'New nested sibling', 'Next'])
+  expect(server.blocks.find(item => item.id === nestedId)?.parentBlockId).toBe('plus-parent')
+})
+
+test('universal block chrome stays hidden without layout space at phone width', async ({ page }) => {
+  const server = { blocks: [toggle('phone-parent', 'Parent', 100), paragraph('phone-child', 'Child', 100, 'phone-parent'), paragraph('phone-root', 'Root', 200)], offline: false, requests: [] as { path: string; kind?: string }[] }
+  await installApi(page, server)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(pageUrl())
+  const body = editor(page)
+  await expect(body).toBeVisible()
+  for (const id of ['phone-parent', 'phone-child', 'phone-root']) {
+    await expect(body.locator(`[data-eotion-block-insert="${id}"]`)).toBeHidden()
+    await expect(body.locator(`[data-eotion-drag-handle="${id}"]`)).toBeHidden()
+  }
+  expect(await body.evaluate(element => Array.from(element.querySelectorAll('.eotion-block-drag-anchor')).every(anchor => getComputedStyle(anchor).position === 'absolute' && anchor.getBoundingClientRect().width === 0))).toBe(true)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  const screenshotDirectory = process.env.EOTION_VISUAL_QA_DIR
+  if (screenshotDirectory) {
+    await mkdir(screenshotDirectory, { recursive: true })
+    await page.screenshot({ path: path.join(screenshotDirectory, 'universal-plus-phone.png') })
+  }
+  const root = body.getByText('Root', { exact: true })
+  const before = await root.boundingBox()
+  await body.locator('.eotion-block-drag-anchor').evaluateAll(anchors => anchors.forEach(anchor => anchor.remove()))
+  expect(await root.boundingBox()).toEqual(before)
+})
+
+test.describe('universal coarse tablet chrome boundary', () => {
+  test.use({ viewport: { width: 820, height: 844 }, hasTouch: true })
+  test('ordinary controls remain hidden and do not squeeze or cover content', async ({ page }) => {
+    const server = { blocks: [toggle('tablet-parent', 'Parent', 100), paragraph('tablet-child', 'Child', 100, 'tablet-parent'), paragraph('tablet-root', 'Root', 200)], offline: false, requests: [] as { path: string; kind?: string }[] }
+    await installApi(page, server)
+    await page.goto(pageUrl())
+    const body = editor(page)
+    await expect(body).toBeVisible()
+    expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true)
+    await expect(body.locator('[data-eotion-block-insert]')).toHaveCount(3)
+    for (const id of ['tablet-parent', 'tablet-child', 'tablet-root']) {
+      await expect(body.locator(`[data-eotion-block-insert="${id}"]`)).toBeHidden()
+      await expect(body.locator(`[data-eotion-drag-handle="${id}"]`)).toBeHidden()
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(820)
+  })
+})
 function pageUrl() { return `/#/app/${workspace.id}/page/${pageRecord.id}` }
 async function putCaretAtStart(locator: Locator) {
   await locator.evaluate((node) => {

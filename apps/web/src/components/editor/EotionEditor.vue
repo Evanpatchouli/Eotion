@@ -710,13 +710,14 @@ defineExpose({ editor })
 .eotion-upload-saving-hidden { display: none !important; }
 .eotion-editor-content .tiptap { position: relative; }
 .eotion-block-drag-anchor { position: absolute; top: 0; left: 0; display: inline-block; width: 0; height: 0; overflow: visible; line-height: 0; pointer-events: none; }
-.eotion-block-drag-handle, .eotion-block-insert-button { position: absolute; top: 0; z-index: 1; display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 0; border-radius: var(--e-radius-control); padding: 0; background: transparent; color: var(--e-color-text-muted); cursor: pointer; opacity: .12; pointer-events: auto; transition: opacity var(--e-motion-fast), background var(--e-motion-fast), color var(--e-motion-fast); }
-.eotion-block-drag-anchor--database .eotion-block-drag-handle { opacity: 0; }
+.eotion-block-drag-handle, .eotion-block-insert-button { position: absolute; top: 0; z-index: 1; display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 0; border-radius: var(--e-radius-control); padding: 0; background: transparent; color: var(--e-color-text-muted); cursor: pointer; opacity: 0; pointer-events: auto; transition: opacity var(--e-motion-fast), background var(--e-motion-fast), color var(--e-motion-fast); }
 .eotion-block-drag-handle { left: -28px; cursor: grab; }
 .eotion-block-insert-button { left: -56px; }
-.eotion-block-drag-anchor:has(+ :hover, + :focus-within) .eotion-block-drag-handle, .eotion-block-drag-anchor:has(+ :hover, + :focus-within) .eotion-block-insert-button, .eotion-block-drag-anchor:focus-within .eotion-block-drag-handle, .eotion-block-drag-anchor:focus-within .eotion-block-insert-button { opacity: 1; }
-.eotion-block-drag-handle:hover, .eotion-block-drag-handle:focus-visible, .eotion-block-insert-button:hover, .eotion-block-insert-button:focus-visible { background: var(--e-color-hover); color: var(--e-color-text-primary); opacity: 1; }
-.eotion-block-drag-handle:active { cursor: grabbing; }
+/* Bridge the 4px gaps so mouse hover survives travel from content to controls. */
+.eotion-block-drag-handle::after, .eotion-block-insert-button::after { content: ''; position: absolute; inset: 0 -4px 0 0; }
+.eotion-block-drag-anchor:has(+ :hover, + :focus-within) .eotion-block-drag-handle, .eotion-block-drag-anchor:has(+ :hover, + :focus-within) .eotion-block-insert-button, .eotion-block-drag-anchor:focus-within .eotion-block-drag-handle, .eotion-block-drag-anchor:focus-within .eotion-block-insert-button, .eotion-block-drag-anchor:hover .eotion-block-drag-handle, .eotion-block-drag-anchor:hover .eotion-block-insert-button, .eotion-block-drag-anchor[data-eotion-block-focused="true"] .eotion-block-drag-handle, .eotion-block-drag-anchor[data-eotion-block-focused="true"] .eotion-block-insert-button { opacity: 1; z-index: 2; }
+.eotion-block-drag-handle:hover, .eotion-block-drag-handle:focus-visible, .eotion-block-insert-button:hover, .eotion-block-insert-button:focus-visible { background: var(--e-color-hover); color: var(--e-color-text-primary); opacity: 1; z-index: 2; }
+.eotion-block-drag-handle:focus-visible, .eotion-block-insert-button:focus-visible { outline: 2px solid var(--e-color-accent); outline-offset: 2px; }
 .eotion-block-drag-handle:active { cursor: grabbing; }
 /* Tables scroll horizontally instead of squeezing columns into an unreadable width. */
 .eotion-editor-content .tiptap .tableWrapper { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }

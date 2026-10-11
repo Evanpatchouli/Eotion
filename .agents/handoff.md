@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-10-11 Universal Block +（PASS）
+
+master 基线 7b6e689cffbdebbba07ad9007b631e586994b8cc；复用 nestedBlockInteractions 的既有 widget 和 insertParagraphAfter，为所有 movable Block 创建统一 [+] [drag]。覆盖 Paragraph / Heading / Bulleted & Numbered List / Todo / Quote / Code / Divider / Callout / Toggle / Table / Database，不纳入附件或上传 placeholder。
+
+普通空 Paragraph 插在完整节点后、同 parent sibling list，保持 BlockIdentity、selection/history 与保存通路并立即 focus。Desktop idle 两控件 opacity 0；hover、focus-visible 或正文 caret Block 显示，24px绝对定位无正文位移。修复已实际复现的 nested anchor 使用整页 top 造成41px纵向偏差，改用真实offsetParent；透明命中桥及显现层叠修复Divider邻接Table时透明控件抢点击。Phone<768全隐藏无预留；Tablet coarse既有Database控件边界保留。
+
+定向 product-blocks / product-nested / Database Chrome 最终21/21（retries=0）；Web typecheck、git diff --check通过。包含root各类型插入/输入/undo/redo、nested同parent和reload、完整Toggle后插入、caret focus/blur、鼠标跨间隙、Phone390/Tablet820、原drag/indent/outdent。独立review无剩余blocker。Desktop/Phone截图已在仓库外查看。未运行完整Database suite，不处理59/60属性Drawer失败，不修改Drawer/Sync/Database domain/model/codec。
+
+剩余事项仅 Database UX Final Acceptance；提交后停止，不开始 Final Acceptance 或 P9。
+
 ## 2026-10-11 Drawer Motion Final Re-acceptance（PASS）
 
 基线 `65e7b5ea7736bc0f46999fe82d84e12e362e20b8`，继续 master；复验 `a37aba8` Motion 与 `65e7b5e` snapshot 修复。Right / Desktop Drawer 的 X 与 Bottom Drawer 的 Y 正反位移、200ms enter / 170ms leave、masked backdrop fade 均通过；关闭按钮、Escape、backdrop、leave 完成前 surface/scroll lock/焦点保留及完成后关闭、解锁、focus restore 通过。Desktop 无 mask、背景可交互；三种 Drawer reduced-motion 无位移、立即关闭、无残留打开 dialog 或 scroll lock。

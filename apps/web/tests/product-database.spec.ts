@@ -667,6 +667,10 @@ test.describe('touch database block controls', () => {
     const nestedHeader = page.locator('.eotion-toggle-body .eotion-database-header')
     await expect.poll(() => nestedAnchor.evaluate(element => getComputedStyle(element).display)).toBe('none')
     expect(await nestedHeader.evaluate(element => getComputedStyle(element).paddingLeft)).toBe('10px')
+    for (const id of ['touch-control-before', 'touch-control-database', 'touch-control-toggle', 'touch-control-nested-database', 'touch-control-after']) {
+      await expect(page.locator(`[data-eotion-block-insert="${id}"]`)).toBeHidden()
+      await expect(page.locator(`[data-eotion-drag-handle="${id}"]`)).toBeHidden()
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   })
 

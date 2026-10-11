@@ -107,11 +107,11 @@ function movable(entry: BlockEntry | undefined): entry is BlockEntry {
   return type !== undefined && !blockCapability(type).attachment
 }
 
-/** Insert a normal identified paragraph after a database reference in its own sibling list. */
+/** Insert a normal identified paragraph after a movable block in its own sibling list. */
 function insertParagraphAfter(view: EditorView, blockId: string): boolean {
   const entry = entriesFor(view.state.doc).find((candidate) => candidate.id === blockId)
   const paragraphType = view.state.schema.nodes.paragraph
-  if (!entry || entry.node.type.name !== 'eotionDatabase' || !paragraphType) return false
+  if (!movable(entry) || !paragraphType) return false
   const position = view.state.doc.resolve(entry.pos)
   const paragraph = paragraphType.createAndFill()
   const index = position.index() + 1
@@ -120,6 +120,7 @@ function insertParagraphAfter(view: EditorView, blockId: string): boolean {
   const transaction = view.state.tr.insert(insertAt, paragraph)
   transaction.setSelection(TextSelection.near(transaction.doc.resolve(insertAt + 1), 1))
   view.dispatch(transaction.scrollIntoView())
+  view.focus()
   return true
 }
 
@@ -173,22 +174,20 @@ function addHandleDecorations(doc: ProseMirrorNode): DecorationSet {
     handle.setAttribute('aria-label', '拖动区块')
     handle.setAttribute('data-eotion-drag-handle', entry.id)
     handle.append(createIconElement(IconName.DragHandle))
-    if (entry.node.type.name === 'eotionDatabase') {
-      anchor.classList.add('eotion-block-drag-anchor--database')
-      const insert = document.createElement('button')
-      insert.type = 'button'
-      insert.className = 'eotion-block-insert-button'
-      insert.contentEditable = 'false'
-      insert.setAttribute('aria-label', '在数据库区块下方插入区块')
-      insert.setAttribute('data-eotion-block-insert', entry.id)
-      insert.append(createIconElement(IconName.Plus))
-      insert.addEventListener('click', (event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        insertParagraphAfter(view, entry.id)
-      })
-      anchor.append(insert)
-    }
+    if (entry.node.type.name === 'eotionDatabase') anchor.classList.add('eotion-block-drag-anchor--database')
+    const insert = document.createElement('button')
+    insert.type = 'button'
+    insert.className = 'eotion-block-insert-button'
+    insert.contentEditable = 'false'
+    insert.setAttribute('aria-label', entry.node.type.name === 'eotionDatabase' ? '在数据库区块下方插入区块' : '在区块下方插入区块')
+    insert.setAttribute('data-eotion-block-insert', entry.id)
+    insert.append(createIconElement(IconName.Plus))
+    insert.addEventListener('click', (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      insertParagraphAfter(view, entry.id)
+    })
+    anchor.append(insert)
     anchor.append(handle)
     return anchor
   }, { key: `eotion-block-handle-${entry.id}`, side: -1, stopEvent: stopHandleEvent }))
@@ -200,15 +199,27 @@ function positionAnchors(view: EditorView): void {
   if (!view.dom.isConnected) return
   const anchors = view.dom.querySelectorAll<HTMLElement>('.eotion-block-drag-anchor')
   if (anchors.length === 0) return
-  const domTop = view.dom.getBoundingClientRect().top
-  const measured: { anchor: HTMLElement; top: number }[] = []
+  const selection = view.state.selection
+  const focusedEntry = view.hasFocus()
+    ? entriesFor(view.state.doc)
+      .filter((entry) => selection.from >= entry.pos && selection.to <= entry.pos + entry.node.nodeSize)
+      .sort((left, right) => right.pos - left.pos)[0]
+    : undefined
+  const measured: { anchor: HTMLElement; top: number; focused: boolean }[] = []
   // Measure every block before writing any style so the batch triggers one layout.
   for (const anchor of anchors) {
+    const handleId = anchor.querySelector<HTMLElement>('[data-eotion-drag-handle]')?.dataset.eotionDragHandle
     const block = anchor.nextElementSibling
     if (!(block instanceof HTMLElement)) continue
-    measured.push({ anchor, top: block.getBoundingClientRect().top - domTop })
+    const offsetParent = anchor.offsetParent instanceof HTMLElement ? anchor.offsetParent : view.dom
+    const offsetParentRect = offsetParent.getBoundingClientRect()
+    const blockTop = block.getBoundingClientRect().top
+    measured.push({ anchor, top: blockTop - offsetParentRect.top - offsetParent.clientTop + offsetParent.scrollTop, focused: focusedEntry?.id === handleId })
   }
-  for (const { anchor, top } of measured) anchor.style.top = `${top}px`
+  for (const { anchor, top, focused } of measured) {
+    anchor.style.top = `${top}px`
+    anchor.dataset.eotionBlockFocused = String(focused)
+  }
 }
 
 function dropZone(event: Pick<DragEvent, 'clientY'>, target: BlockEntry, hitTarget: HTMLElement): DropZone {
@@ -277,8 +288,17 @@ export const NestedBlockInteractions = Extension.create({
     return [new Plugin({
       key: pluginKey,
       view: (view) => {
+        const onFocusChange = () => scheduleAnchorPositions(view)
+        view.dom.addEventListener('focusin', onFocusChange)
+        view.dom.addEventListener('focusout', onFocusChange)
         scheduleAnchorPositions(view)
-        return { update: (updatedView) => scheduleAnchorPositions(updatedView) }
+        return {
+          update: (updatedView) => scheduleAnchorPositions(updatedView),
+          destroy: () => {
+            view.dom.removeEventListener('focusin', onFocusChange)
+            view.dom.removeEventListener('focusout', onFocusChange)
+          },
+        }
       },
       state: {
         init: (_, state): InteractionState => ({ handles: addHandleDecorations(state.doc), target: null }),
