@@ -24,7 +24,7 @@ test('static pages, navigation, release and safe download state', async ({ page,
   }
   await page.goto('/')
   await expect(page.locator('.site-home section')).toHaveCount(8)
-  await expect(page.locator('.database-section').getByRole('heading', { name: /结构化资料/ })).toBeVisible()
+  await expect(page.locator('.database-section').getByRole('heading', { name: /一份数据/ })).toBeVisible()
   await expect(page.locator('.database-section').getByRole('link', { name: /了解数据库/ })).toHaveAttribute('href', '/guide/database')
   await expect(page.locator('.database-section')).toContainText('Table、List、Board')
   await expect(page.locator('.database-section .database-view-card')).toHaveCount(3)
