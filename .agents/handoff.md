@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-10-13 0.0.1 已发布 / P10–P15 Roadmap 冻结
+
+用户已发布 Eotion `0.0.1` tag 与 GitHub Release；仓库当前 package version 为 `0.0.1`。后续阶段顺序正式固定为：P10 Database MCP Extension（目标 0.0.2）→ P11 Timeline（0.0.3）→ P12 Gallery（0.0.4）→ P13 Calendar（0.0.5）→ P14 Chart（0.0.6）→ P15 MCP Full Adaptation（0.1.0）。每项都是独立阶段，独立 Final Acceptance；通过后才切对应版本，P15 后再做 0.1.0 Release Acceptance/tag/release。
+
+P10 核心约束：MCP 面向 Database/Property/Record/View 领域并复用既有 auth/domain/transaction/CAS/generic records，不按 Table/List/Board 或未来 renderer 创建平行工具；当前 Database online read/write、offline readonly 及 Page/Block local-first 边界不变。P11 Timeline 优先于 Gallery/Calendar，先冻结日期/range 契约；P13 Calendar 必须复用 P11 日期语义。P14 Chart 聚合必须基于服务端完整过滤数据，不能对当前分页 records 做客户端统计。P15 才对 Table/List/Board/Timeline/Gallery/Calendar/Chart 做 MCP 全适配，并保持领域级而非 renderer-specific 的工具模型。详细计划见 `docs/roadmap.md`。
+
+当前任务已切到 P10 规划完成、尚未实施状态；下一轮应从 P10.1 Contract + Security Foundation 开始，不提前进入 P11。
+
+
 ## 2026-10-13 P9 Multi-View Final Acceptance（已通过）
 
 Acceptance baseline：`52af49bb2b1b9ee22ececd6d3d31e8b6e0796a57`，初始 master 工作区干净。P8 Database 保持 SEALED；P9.1–P9.6 implementation COMPLETE，独立最终验收正式 **P9 FINAL PASS**。测试适配 commit `a8d05132407fa550c6b5c6004b15fd7f02bf7a0f`；收口文档 commit 为本节所在 commit，没有产品源码、identity fence、依赖、模型/API/sync/storage/MCP/breakpoint 改动。

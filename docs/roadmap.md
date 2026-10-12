@@ -168,6 +168,119 @@ P8 Database UX 收敛：✅ **PASS（2026-10-11）**。仅重构既有 Table Vie
 
 P9.1–P9.6 implementation COMPLETE（2026-10-13）：同一 Database 模型上的 Table / List / Board、generic records 与 legacy Table 兼容、Select 分组设置/修改、Desktop drag、CAS 与响应生命周期保护均已交付。独立 Final Acceptance：✅ **P9 FINAL PASS**。完整 Product 367/367（workers=1/retries=0）、P9 补验 65/65、既有 visual 7/7，核心 Domain/Contracts/SDK/API/MCP 与 typecheck/build 全部通过，独立复核无确定 P1/P2。本轮旧 API MCP/Zod 编译 blocker 未复现。阶段契约见 [P9 Multi-View](p9-multi-view.md)，最终验收证据见 [P9 Final Acceptance](p9-final-acceptance.md)。
 
+## Release 0.0.1
+
+✅ **已发布（2026-10-13）**。P8 Database 与 P9 Multi-View 已封板，正式版本包含 Table / List / Board、Local-first 文档、Advanced Blocks 与 P6 MCP 页面能力。后续 Database 演进不回改 0.0.1 的已发布边界；每个阶段独立实施、独立 Final Acceptance，通过后才切换对应目标版本。
+
+固定版本 / 阶段映射：
+
+| 阶段 | 目标版本 | 主题 |
+| --- | --- | --- |
+| P10 | 0.0.2 | Database MCP Extension |
+| P11 | 0.0.3 | Timeline |
+| P12 | 0.0.4 | Gallery |
+| P13 | 0.0.5 | Calendar |
+| P14 | 0.0.6 | Chart |
+| P15 | 0.1.0 | MCP Full Adaptation |
+
+## P10 - Database MCP Extension（目标版本 0.0.2）
+
+目标：把 P6 MCP 从“能读写 Page、只能看到 Database Block 的 `databaseId/viewId` 引用”扩展到真正可安全操作 Database 领域，同时继续复用 P8/P9 已有应用服务、权限、事务、CAS 与 generic records seam。
+
+计划：
+
+- P10.1 Contract + Security Foundation：冻结 MCP Database DTO、工具边界、workspace scope、结果大小、分页、CAS、幂等与 mutation receipt 规则；不暴露 Mongo/Repository。
+- P10.2 Read Tools：覆盖 Database、Properties、Views、Records 的有界读取与查询，复用既有 server-side filter / sort / projection / cursor 语义。
+- P10.3 Write Tools：覆盖必要的 Record / Property / View 创建与更新能力，所有写入继续经过现有领域服务、权限、事务与版本检查；Page.title 仍是 Record title 唯一来源。
+- P10.4 Final Acceptance：真实 MCP Client + HTTP/domain 回归、权限/越权、分页/限额、CAS/幂等、P6 Page MCP 兼容与 Product 回归。
+
+长期约束：
+
+- MCP 面向 `Database / Property / Record / View` 领域，不按 renderer 制造 `move_board_card` 等专用工具。
+- Board 跨列移动仍等价于更新 Select；未来 Timeline / Calendar 的移动也应落到通用属性 mutation。
+- P10 不实现 Timeline / Gallery / Calendar / Chart 专属配置，也不把 Database 数据加入 Page/Block local-first oplog。
+- Database 仍保持当前 online read/write、offline readonly 边界，除非未来单独立项改变。
+- P10 Final Acceptance 通过前不切换 0.0.2。
+
+## P11 - Timeline（目标版本 0.0.3）
+
+Timeline 是 0.0.2 后最高优先级的 Database View。
+
+目标：在同一 `DatabaseView + generic records` 模型上增加 Timeline，不复制 Database/Record，不建立 TimelineRecord/TimelineDatabase 等平行实体。
+
+计划：
+
+- P11.1 Timeline Domain Foundation：扩展 `DatabaseViewType` 与 `config.options`；先冻结 Timeline 日期来源 / range 契约、无日期记录语义、依赖 Property 的删除/类型变更规则与 backward compatibility。
+- P11.2 Read Renderer：服务端继续负责 filter / multi-sort / cursor；Timeline 只负责时间轴投影与布局，不从当前已加载分页数据推导服务端业务结果。
+- P11.3 Interaction：支持符合日期契约的区间展示、时间尺度/导航以及必要的日期 mutation；拖动本质必须复用通用 Record cell mutation 与 CAS，不新增 Timeline mutation endpoint。
+- P11.4 Responsive + Lifecycle：Desktop/Tablet 提供横向时间轴；Phone 提供合理的窄屏交互，不破坏 Editor/NodeView/Drawer/snapshot identity。
+- P11.5 Final Acceptance：日期边界、跨区间、空日期、筛选/排序/分页、CAS、linked views、三尺寸、Light/Dark、P8/P9 回归。
+
+P11.1 未冻结日期范围模型前，不提前实现 Calendar；Calendar 必须复用这里形成的日期语义。
+
+## P12 - Gallery（目标版本 0.0.4）
+
+目标：增加面向浏览和视觉组织的 Gallery View，继续共享同一批 Records、Properties 与 View config。
+
+计划：
+
+- P12.1 Gallery Foundation：增加 Gallery view type 与最小 view-specific options，保持旧 View 无迁移。
+- P12.2 Card Projection：Page.title 为标题来源，复用 visibleProperties / propertyOrder；卡片只做 projection，不创建 GalleryRecord。
+- P12.3 Visual Source：在已有附件能力之上定义可维护的封面/预览来源与 fallback；不得复制二进制或在 Record 中保存第二份页面内容。
+- P12.4 Responsive + Final Acceptance：Desktop/Tablet 响应式网格、Phone 单列/紧凑布局、空态/分页/离线只读/linked view/lifecycle 与主题验收。
+
+Gallery 优先保持安静、文档化的视觉语言，不演变成模板市场或高度可配置的卡片设计器。
+
+## P13 - Calendar（目标版本 0.0.5）
+
+目标：基于 P11 已验证的日期 / range 语义增加 Calendar View；不重新设计第二套日期模型。
+
+计划：
+
+- P13.1 Calendar Foundation：增加 calendar type 与日期来源配置，复用 P11 日期依赖与 schema 保护。
+- P13.2 Month-first Renderer：首个正式能力以月视图为核心，正确处理跨月、空日期、同日多记录与有界分页/查询。
+- P13.3 Date Mutation：日历拖动或日期选择最终落到通用 Date cell mutation + CAS；不创建 CalendarEvent 实体或专用 Record endpoint。
+- P13.4 Responsive + Final Acceptance：Desktop/Tablet/Phone、Light/Dark、linked views、filter/sort、snapshot/lifecycle、Timeline 兼容与 backward compatibility。
+
+Calendar 不在本阶段扩展为完整日程/会议系统；提醒、参会人、外部日历同步需要独立产品决策。
+
+## P14 - Chart（目标版本 0.0.6）
+
+目标：为 Database 提供受控的统计与可视化 View，而不是建设通用 BI 平台。
+
+计划：
+
+- P14.1 Aggregation Contract：定义维度、指标、grouping、null、Select、Number、Date bucket 以及 Formula/Rollup 可参与范围。
+- P14.2 Server-side Aggregation：聚合必须基于符合 View filter/scope 的完整服务端数据执行，禁止在客户端对当前分页 records 计算并冒充完整 Chart。
+- P14.3 Chart Renderer：先交付少量明确图表类型与稳定 options；Chart 默认是读视图，数据修改继续回到通用 Record/Property 编辑链路。
+- P14.4 Limits + Performance：为聚合复杂度、分组数、返回点数和查询成本设置明确上限，并纳入真实 Mongo 性能验证。
+- P14.5 Final Acceptance：聚合正确性、权限、分页无关性、空值、派生属性、linked view、响应式、主题与旧 View 回归。
+
+不创建 ChartRecord/ChartDatabase，不在客户端复制一套统计数据存储。
+
+## P15 - MCP Full Adaptation（目标版本 0.1.0）
+
+目标：在 P10 的 Database MCP 基础上，对截至 0.0.6 的完整 Database / View 体系做统一 MCP 收口，并以 0.1.0 作为这一轮 Database + MCP 能力的阶段性稳定版本。
+
+覆盖：
+
+- Table
+- List
+- Board
+- Timeline
+- Gallery
+- Calendar
+- Chart
+
+原则：
+
+- MCP 仍以 `Database / Property / Record / View / View config` 领域能力为中心，不为每个 renderer 平行复制 CRUD 工具。
+- renderer-specific 行为应翻译成通用领域 mutation：例如 Board → Select、Timeline/Calendar → Date；Gallery 主要是 projection；Chart 主要是 View config + server-side aggregation read。
+- 为不同 View 的 options 提供稳定、白名单化、版本可演进的 DTO；未知未来字段按兼容策略处理，禁止透传任意内部对象。
+- 补齐 capability discovery、跨 View 读写、权限、结果限制、幂等/CAS、审计与真实 MCP Client 端到端验收。
+- P15 不顺手加入 Agent UI / Automation；它们继续作为独立产品阶段。
+- P15 Final Acceptance 通过后才切换 0.1.0，并单独进行 Release Acceptance / tag / release。
+
 ## 后续 - 异步基础设施
 
 仅在存在具体消费者时引入 Kafka，例如：
