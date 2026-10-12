@@ -147,13 +147,15 @@ const databaseWindowQuerySchema = z.object({
 }).strict()
 export const DatabaseListQuerySchema = databaseWindowQuerySchema
 export const DatabaseViewListQuerySchema = z.object({ limit: z.coerce.number().int().min(1).max(DATABASE_MAX_VIEWS).default(DATABASE_MAX_VIEWS) }).strict()
-export const DatabaseTableQuerySchema = z.object({
+export const DatabaseViewRecordsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(DATABASE_MAX_TABLE_ROWS).default(50),
   cursor: z.string().min(1).max(16_384).refine(value => value.trim() === value).optional(),
 }).strict()
+export const DatabaseTableQuerySchema = DatabaseViewRecordsQuerySchema
 export type DatabaseListQuery = z.infer<typeof DatabaseListQuerySchema>
 export type DatabaseViewListQuery = z.infer<typeof DatabaseViewListQuerySchema>
-export type DatabaseTableQuery = z.infer<typeof DatabaseTableQuerySchema>
+export type DatabaseViewRecordsQuery = z.infer<typeof DatabaseViewRecordsQuerySchema>
+export type DatabaseTableQuery = DatabaseViewRecordsQuery
 
 export const DatabaseLinkInPageRequestSchema = z.object({
   databaseId: databaseStableIdSchema,
@@ -188,16 +190,18 @@ export const DatabaseNavigationWindowResponseSchema = z.object({
   nextCursor: databaseStableIdSchema.nullable(),
 }).strict()
 export type DatabaseNavigationWindowResponse = z.infer<typeof DatabaseNavigationWindowResponseSchema>
-export type DatabaseTableResponse = {
+export type DatabaseViewRecordsResponse = {
   database: Database
   view: DatabaseView
   properties: DatabaseProperty[]
   records: DatabaseTableRecord[]
   nextCursor: string | null
 }
-export const DatabaseTableResponseSchema = z.custom<DatabaseTableResponse>(isValidDatabaseTableResponse)
+export const DatabaseViewRecordsResponseSchema = z.custom<DatabaseViewRecordsResponse>(isValidDatabaseViewRecordsResponse)
+export type DatabaseTableResponse = DatabaseViewRecordsResponse
+export const DatabaseTableResponseSchema = DatabaseViewRecordsResponseSchema
 
-function isValidDatabaseTableResponse(value: unknown): value is DatabaseTableResponse {
+function isValidDatabaseViewRecordsResponse(value: unknown): value is DatabaseViewRecordsResponse {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
   const table = value as Record<string, unknown>
   if (Object.keys(table).sort().join(',') !== 'database,nextCursor,properties,records,view') return false

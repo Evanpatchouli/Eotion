@@ -1,19 +1,19 @@
-# 当前任务：Database UX Final Acceptance（PASS）
+# 当前任务：P9.1A — Generic View Records Read Foundation（已完成）
 
-master；基线 32c671192a470cad72d132a2b981fed9ad2fb361。仅验收与最小 blocker 修复；未新增 Database 产品能力，未修改 Domain / API / Contracts / Overlay 产品实现，未进入 P9。
+master 基线 `13053793ffa4683e3ffdb6d7f1f512f270ebc499`；P8 COMPLETE / SEALED。开始时间 2026-10-12 13:20（Asia/Shanghai），25 分钟硬停止。
 
 | Work Unit | 难度 / 模式 / 角色 | 状态 |
 | --- | --- | --- |
-| 自动化验收（Database + Overlay + Pages） | S0 verify / 主 Agent | 完成：144/144，workers=1，retries=0 |
-| Domain / Contracts / SDK / API domain / typecheck / build:web | S0 verify / 主 Agent | 全通过 |
-| 4 处 stale locator + 1 处动画竞态修复 | S1 execute / 主 Agent | 完成；`--repeat-each=5` 10/10 |
-| Device / Theme walkthrough + 截图包 | S0 verify / 主 Agent | 完成，仓库外 `artifacts/database-ux-final` |
-| 文档与封板 | S0 / 主 Agent | 完成 |
+| 定位现有 read 流程与测试边界 | S0 investigate / 主 Agent + scout | 完成 |
+| 决定最小 generic seam 与兼容关系 | S2 decide / 主 Agent | 完成 |
+| Contracts / SDK / API 最小实现 | S1 execute / fast_worker | 完成 |
+| 定向 HTTP / contract / SDK 回归 | S1 execute / 主 Agent + fast_worker | 完成 |
+| 最小验证与一次独立 review | S0 verify / scout；Review / reviewer | 完成：目标编译与 API 13/13；独立 review 无 blocker |
 
-结论：**P8 Database UX Final Acceptance — PASS；P8 Database — COMPLETE / SEALED。** 详细矩阵、验证与限制见 `docs/p8-database.md` 的「Database UX Final Acceptance（2026-10-11）」。
+Implementation Brief：新增 GET `/api/workspaces/:workspaceId/databases/:databaseId/views/:viewId/records`；新增 `DatabaseViewRecordsQuery` / `DatabaseViewRecordsResponse` 和 schemas，legacy query/response 保留为兼容别名。SDK 增加 `getDatabaseViewRecords()`。将 getTable 查询体移至 `getViewRecords()`，getTable 只 delegate；transaction 递归调用 generic 方法。保持 permission、validation、filters/sorts、bounded query、title/derived projection、cursor 与 version/config fence 原样。
 
-- 无产品行为修复。测试侧修复：4 处 stale locator（对齐 f383c12 之后的属性行语义，未削弱 icon 断言）与 1 处 390px 创建卡片 / Bottom Drawer 200ms 入场位移竞态（等待 `transform: none`）。
-- 另有 7 个 snapshot / fencing 用例只在长生命周期 HMR dev server 上假失败；fresh dev server 下全绿，产品行为正确。
-- Historical 59/60 属性 Drawer 遮挡用例在本次完整套件中通过。
+保持 DatabaseView.type=table，不改 Mongo/domain/view CRUD、queryTableWindow、cursor helpers、DatabaseTableRecord 或 Web。验收：legacy/generic 核心数据及分页等价、generic filter/multi-sort、workspace/database/view/version/config fencing；原 Table 测试保留。禁止完整 Web Product / Visual / Final Acceptance。完成文档、提交、报告后停止，不进入后续 P9。
 
-P9 not started。完成本接受 commit 后停止。
+验证：Contracts 23/23、SDK 23/23；两包 typecheck 通过。API 目标测试依赖闭包的 scoped TypeScript compile 通过；真实 HTTP + 原 database service tests 13/13，无 skip。完整 API build/typecheck 因未变的 MCP 源/依赖环境失败（缺失 MCP 包、Zod 类型错配），未修复。HTTP fixture 引入生产 HttpApiModule + ConfigModule + Mongo，保留所有原 Table 断言；不承担完整 AppModule 启动验收。详情见 handoff。
+
+未发现本阶段或 P9 后续 seam blocker。完整 API 构建环境需另行恢复；不在本轮处理。提交后停止，不开始 View.type 泛化、List 或 Board。

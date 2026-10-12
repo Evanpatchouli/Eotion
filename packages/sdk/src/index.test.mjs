@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { AttachmentAttrsSchema, FileUpdateRequestSchema, FileUploadMetadataSchema, PageMoveRequestSchema, SAFE_IMAGE_MIME_TYPES, SyncOperationSchema, WorkspaceSnapshotResponseSchema } from '@eotion/contracts'
+import { AttachmentAttrsSchema, DatabaseViewRecordsResponseSchema, FileUpdateRequestSchema, FileUploadMetadataSchema, PageMoveRequestSchema, SAFE_IMAGE_MIME_TYPES, SyncOperationSchema, WorkspaceSnapshotResponseSchema } from '@eotion/contracts'
 import { ApiError, EotionApiClient, EotionOperationTransport } from './index.ts'
 
 test('login sends JSON to the auth endpoint with session credentials enabled', async () => {
@@ -83,6 +83,37 @@ test('database navigation uses its separate scoped read endpoint', async () => {
   assert.deepEqual(await client.databases.listNavigation('workspace/1', { limit: 3, cursor: 'db 1' }), { items: [], nextCursor: null })
   assert.equal(request.url, 'https://eotion.test/api/workspaces/workspace%2F1/database-navigation?limit=3&cursor=db+1')
   assert.equal(request.credentials, 'include')
+})
+
+test('database view records uses its scoped records route and returns the strict response', async () => {
+  const requests = []
+  const signals = []
+  const controller = new AbortController()
+  const timestamp = '2026-01-02T03:04:05.000Z'
+  const response = {
+    database: { id: 'db/1', workspaceId: 'workspace/1', name: 'Tasks', version: 1, createdAt: timestamp, updatedAt: timestamp },
+    view: { id: 'view#1', databaseId: 'db/1', workspaceId: 'workspace/1', name: 'All tasks', type: 'table', config: { filters: [], sorts: [], visibleProperties: null, propertyOrder: null }, version: 1, createdAt: timestamp, updatedAt: timestamp },
+    properties: [{ id: 'title-1', databaseId: 'db/1', workspaceId: 'workspace/1', name: 'Name', type: 'title', version: 1, createdAt: timestamp, updatedAt: timestamp }],
+    records: [{ id: 'record-1', databaseId: 'db/1', workspaceId: 'workspace/1', pageId: 'page-1', properties: { 'title-1': 'A task' }, version: 1, createdAt: timestamp, updatedAt: timestamp, pageVersion: timestamp }],
+    nextCursor: 'next/1',
+  }
+  const client = new EotionApiClient({
+    baseUrl: 'https://eotion.test/',
+    fetch: async (input, init) => {
+      requests.push(new Request(input, init))
+      signals.push(init.signal)
+      return Response.json(response)
+    },
+  })
+
+  const result = await client.databases.getDatabaseViewRecords('workspace/1', 'db/1', 'view#1', { limit: 25, cursor: 'next /1' }, controller.signal)
+
+  assert.deepEqual(result, response)
+  assert.deepEqual(DatabaseViewRecordsResponseSchema.parse(result), response)
+  assert.equal(requests[0].url, 'https://eotion.test/api/workspaces/workspace%2F1/databases/db%2F1/views/view%231/records?limit=25&cursor=next+%2F1')
+  assert.equal(requests[0].method, 'GET')
+  assert.equal(requests[0].credentials, 'include')
+  assert.equal(signals[0], controller.signal)
 })
 
 test('database view mutations use scoped endpoints and typed versioned payloads', async () => {

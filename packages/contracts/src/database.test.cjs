@@ -16,6 +16,8 @@ const {
   DatabaseViewListQuerySchema,
   DatabaseTableQuerySchema,
   DatabaseTableResponseSchema,
+  DatabaseViewRecordsQuerySchema,
+  DatabaseViewRecordsResponseSchema,
   DatabaseSchema,
   DatabaseNavigationItemSchema,
   DatabaseNavigationWindowResponseSchema,
@@ -146,6 +148,50 @@ test('database table response validates scope, property values, and the property
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, properties: Array(101).fill(property) }).success, false)
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, extra: true }).success, false)
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: Array(101).fill(record) }).success, false)
+})
+
+test('database view records query is bounded, strict, and compatible with the legacy table query', () => {
+  assert.deepEqual(DatabaseViewRecordsQuerySchema.parse({}), { limit: 50 })
+  assert.deepEqual(DatabaseViewRecordsQuerySchema.parse({ limit: '100', cursor: 'next/1' }), { limit: 100, cursor: 'next/1' })
+  assert.equal(DatabaseViewRecordsQuerySchema.safeParse({ limit: 101 }).success, false)
+  assert.equal(DatabaseViewRecordsQuerySchema.safeParse({ limit: 0 }).success, false)
+  assert.equal(DatabaseViewRecordsQuerySchema.safeParse({ cursor: 'x'.repeat(16_384) }).success, true)
+  assert.equal(DatabaseViewRecordsQuerySchema.safeParse({ cursor: 'x'.repeat(16_385) }).success, false)
+  assert.equal(DatabaseViewRecordsQuerySchema.safeParse({ cursor: ' next' }).success, false)
+  assert.equal(DatabaseViewRecordsQuerySchema.safeParse({ extra: true }).success, false)
+  const input = { limit: '25', cursor: 'next/1' }
+  assert.deepEqual(DatabaseTableQuerySchema.parse(input), DatabaseViewRecordsQuerySchema.parse(input))
+  assert.deepEqual(DatabaseTableQuerySchema.parse({}), DatabaseViewRecordsQuerySchema.parse({}))
+  assert.equal(DatabaseTableQuerySchema.safeParse({ extra: true }).success, DatabaseViewRecordsQuerySchema.safeParse({ extra: true }).success)
+})
+
+test('database view records response strictly validates scope, rows, properties, and caps with table compatibility', () => {
+  const record = { id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task' }, version: 1, createdAt: timestamp, updatedAt: timestamp, pageVersion: timestamp }
+  const response = { database, view, properties: [property], records: [record], nextCursor: null }
+  assert.deepEqual(DatabaseViewRecordsResponseSchema.parse(response), response)
+  assert.deepEqual(DatabaseTableResponseSchema.parse(response), DatabaseViewRecordsResponseSchema.parse(response))
+  const invalidCases = [
+    { ...response, database: { ...database, workspaceId: 'ws-2' } },
+    { ...response, view: { ...view, workspaceId: 'ws-2' } },
+    { ...response, view: { ...view, databaseId: 'db-2' } },
+    { ...response, properties: [{ ...property, workspaceId: 'ws-2' }] },
+    { ...response, properties: [{ ...property, databaseId: 'db-2' }] },
+    { ...response, records: [{ ...record, workspaceId: 'ws-2' }] },
+    { ...response, records: [{ ...record, databaseId: 'db-2' }] },
+    { ...response, records: [{ ...record, properties: { 'title-1': 4 } }] },
+    { ...response, records: [{ ...record, extra: true }] },
+    { ...response, properties: Array(101).fill(property) },
+    { ...response, records: Array(101).fill(record) },
+    { ...response, nextCursor: 'x'.repeat(16_385) },
+    { ...response, extra: true },
+  ]
+  for (const invalid of invalidCases) {
+    assert.equal(DatabaseViewRecordsResponseSchema.safeParse(invalid).success, false)
+    assert.equal(DatabaseTableResponseSchema.safeParse(invalid).success, false)
+  }
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'list' } }).success, false)
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'board' } }).success, false)
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'table' } }).success, true)
 })
 
 test('database contracts accept exact property, row, filter, sort, and column-order limits', () => {

@@ -2,10 +2,13 @@ import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
 import { FastifyAdapter } from '@nestjs/platform-fastify'
-import { getConnectionToken } from '@nestjs/mongoose'
+import { getConnectionToken, MongooseModule } from '@nestjs/mongoose'
 import type { Connection } from 'mongoose'
+import { HttpApiModule } from './http-api.module'
 
 type JsonResponse = { status: number; headers: Headers; body: Record<string, any> }
 
@@ -51,8 +54,9 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
   let app: Awaited<ReturnType<typeof NestFactory.create>> | undefined
   let connection: Connection | undefined
   try {
-    const { AppModule } = await import('../../app.module')
-    app = await NestFactory.create(AppModule, new FastifyAdapter(), { logger: false })
+    @Module({ imports: [ConfigModule.forRoot({ isGlobal: true }), MongooseModule.forRoot(process.env.MONGODB_URI!), HttpApiModule] })
+    class DatabaseHttpTestModule {}
+    app = await NestFactory.create(DatabaseHttpTestModule, new FastifyAdapter(), { logger: false })
     app.setGlobalPrefix('api')
     await app.listen(0, '127.0.0.1')
     const address = app.getHttpServer().address()
@@ -269,6 +273,9 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
     assert.equal(linkCell.status, 200)
     assert.equal(linkCell.body.record.properties['db-http-count-plus-one'], 2)
     assert.equal((await table()).records[0].properties['db-http-count-plus-one'], 2)
+    const genericDerived = await request(baseUrl, `${databaseRoute}/views/${viewId}/records`, 'GET', { cookie })
+    assert.equal(genericDerived.status, 200)
+    assert.deepEqual(genericDerived.body, await table(), 'generic read preserves title, Relation, Rollup and Formula projections')
     const derivedCell = await request(baseUrl, cellRoute('db-http-link-count'), 'PATCH', { cookie, body: { value: 9, expectedDatabaseVersion: linkCell.body.database.version, expectedRecordVersion: linkCell.body.record.version } })
     assert.equal(derivedCell.status, 400)
     const oversizedRelation = await request(baseUrl, cellRoute('db-http-links'), 'PATCH', { cookie, body: { value: Array.from({ length: 51 }, (_, index) => `record-${index}`), expectedDatabaseVersion: linkCell.body.database.version, expectedRecordVersion: linkCell.body.record.version } })
@@ -309,6 +316,105 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
     const notesDelete = await request(baseUrl, deleteRoute, 'DELETE', { cookie, body: { expectedDatabaseVersion: current.database.version, expectedPropertyVersion: current.properties.find((p: any) => p.id === 'db-http-notes').version } })
     assert.equal(notesDelete.status, 200)
     assert.equal((await table()).properties.some((property: any) => property.id === 'db-http-notes'), false)
+
+    await t.test('generic records and legacy table share pagination, filters, multi-sort and cursor fences', async () => {
+      const id = 'generic-db'
+      const titleId = 'generic-title'
+      const view = 'generic-view'
+      const route = `/api/workspaces/${workspace}/databases/${id}`
+      const viewRoute = `${route}/views/${view}`
+      const created = await request(baseUrl, `/api/workspaces/${workspace}/pages/db-http-home/databases`, 'POST', {
+        cookie, body: { id, name: 'Generic reads', titlePropertyId: titleId, viewId: view, blockId: 'generic-block', orderKey: 'd', parentBlockId: null },
+      })
+      assert.equal(created.status, 201)
+      const read = async (kind = 'records', query = '') => {
+        const result = await request(baseUrl, `${viewRoute}/${kind}${query}`, 'GET', { cookie })
+        assert.equal(result.status, 200)
+        return result.body
+      }
+      const scoreId = 'generic-score'
+      const score = await request(baseUrl, `${route}/properties`, 'POST', {
+        cookie, body: { id: scoreId, name: 'Score', type: 'number', expectedDatabaseVersion: created.body.database.version },
+      })
+      assert.equal(score.status, 201)
+      for (const [suffix, title, value] of [['a', 'Zulu', 2], ['b', 'Alpha', 1], ['c', 'Beta', 1], ['d', 'Skip', 0]] as const) {
+        const record = await request(baseUrl, `${route}/records`, 'POST', {
+          cookie, body: { id: `generic-${suffix}`, pageId: `generic-page-${suffix}`, title, orderKey: suffix },
+        })
+        assert.equal(record.status, 201)
+        const data = await read()
+        const updated = await request(baseUrl, `${route}/records/generic-${suffix}/cells/${scoreId}`, 'PATCH', {
+          cookie, body: { value, expectedDatabaseVersion: data.database.version, expectedRecordVersion: record.body.record.version },
+        })
+        assert.equal(updated.status, 200)
+      }
+
+      const first = await read('records', '?limit=2')
+      assert.deepEqual(first, await read('table', '?limit=2'))
+      assert.deepEqual(first.records.map((row: any) => row.id), ['generic-a', 'generic-b'])
+      assert.ok(first.nextCursor)
+      const nextQuery = `?limit=2&cursor=${encodeURIComponent(first.nextCursor)}`
+      const second = await read('records', nextQuery)
+      assert.deepEqual(second, await read('table', nextQuery), 'cursors work across both endpoints')
+      assert.deepEqual(second.records.map((row: any) => row.id), ['generic-c', 'generic-d'])
+      assert.equal(second.nextCursor, null)
+      assert.equal((await request(baseUrl, `${viewRoute}/records`)).status, 401)
+      assert.equal((await request(baseUrl, `${viewRoute}/records`, 'GET', { cookie: outsiderCookie })).status, 404)
+      for (const query of ['?limit=101', '?cursor=bad', '?extra=true']) {
+        assert.equal((await request(baseUrl, `${viewRoute}/records${query}`, 'GET', { cookie })).status, 400)
+      }
+
+      const config = { filters: [{ propertyId: scoreId, operator: 'gt', value: 0 }], sorts: [{ propertyId: scoreId, direction: 'asc' }, { propertyId: titleId, direction: 'desc' }], visibleProperties: null, propertyOrder: null }
+      const configure = await request(baseUrl, viewRoute, 'PATCH', {
+        cookie, body: { config, expectedDatabaseVersion: first.database.version, expectedViewVersion: first.view.version },
+      })
+      assert.equal(configure.status, 200)
+      const sorted = await read()
+      assert.deepEqual(sorted, await read('table'))
+      assert.deepEqual(sorted.records.map((row: any) => row.id), ['generic-c', 'generic-b', 'generic-a'], 'filter applies before paging and secondary sort breaks score ties')
+      const sortedFirst = await read('records', '?limit=1')
+      const sortedSecondQuery = `?limit=1&cursor=${encodeURIComponent(sortedFirst.nextCursor)}`
+      const sortedSecond = await read('records', sortedSecondQuery)
+      assert.deepEqual(sortedSecond, await read('table', sortedSecondQuery))
+      assert.deepEqual(sortedSecond.records.map((row: any) => row.id), ['generic-b'])
+      const sortedThird = await read('records', `?limit=1&cursor=${encodeURIComponent(sortedSecond.nextCursor)}`)
+      assert.deepEqual(sortedThird.records.map((row: any) => row.id), ['generic-a'])
+      assert.equal(sortedThird.nextCursor, null)
+
+      // Change each scope independently while keeping a valid cursor envelope.
+      const cursor = JSON.parse(Buffer.from(sortedFirst.nextCursor, 'base64url').toString('utf8'))
+      for (const field of ['w', 'd', 'v']) {
+        const scopedCursor = Buffer.from(JSON.stringify({ ...cursor, [field]: `other-${field}` })).toString('base64url')
+        const rejected = await request(baseUrl, `${viewRoute}/records?cursor=${encodeURIComponent(scopedCursor)}`, 'GET', { cookie })
+        assert.equal(rejected.status, 400)
+        assert.match(rejected.body.message, /different workspace, database, or view/)
+      }
+      assert.equal((await request(baseUrl, `/api/workspaces/${workspace}/databases/${secondDbId}/views/db-http-second-view/records${sortedSecondQuery}`, 'GET', { cookie })).status, 400)
+
+      const expectFence = async (query: string) => {
+        for (const kind of ['records', 'table']) {
+          const rejected = await request(baseUrl, `${viewRoute}/${kind}${query}`, 'GET', { cookie })
+          assert.equal(rejected.status, 409)
+          assert.match(rejected.body.message, /Database or view changed/)
+        }
+      }
+      await expectFence(nextQuery) // Config/version mutation invalidated the old default cursor.
+      const schemaChange = await request(baseUrl, `${route}/properties`, 'POST', {
+        cookie, body: { id: 'generic-notes', name: 'Notes', type: 'text', expectedDatabaseVersion: sortedFirst.database.version },
+      })
+      assert.equal(schemaChange.status, 201)
+      await expectFence(sortedSecondQuery)
+
+      const versionFirst = await read('records', '?limit=1')
+      // Isolate view-version and config-hash fences from the Database version.
+      const views = connection!.db!.collection('database_views')
+      await views.updateOne({ id: view }, { $inc: { version: 1 } })
+      await expectFence(`?cursor=${encodeURIComponent(versionFirst.nextCursor)}`)
+      const configFirst = await read('records', '?limit=1')
+      await views.updateOne({ id: view }, { $set: { 'config.sorts': [{ propertyId: titleId, direction: 'asc' }] } })
+      await expectFence(`?cursor=${encodeURIComponent(configFirst.nextCursor)}`)
+      assert.deepEqual(await read(), await read('table'), 'both endpoints can restart after config changes')
+    })
   } finally {
     if (!app) {
       if (previousMongoUri === undefined) delete process.env.MONGODB_URI

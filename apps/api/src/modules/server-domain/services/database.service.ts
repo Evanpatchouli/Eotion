@@ -3,6 +3,7 @@ import { InjectConnection } from '@nestjs/mongoose'
 import { createHash } from 'node:crypto'
 import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression } from '@eotion/domain'
 import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
+import type { DatabaseTableResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
 import { PageRepository } from '../repositories/page.repository'
@@ -111,7 +112,11 @@ export class DatabaseService {
     }) }
   }
 
-  async getTable(userId: string, workspaceId: string, databaseId: string, viewId: string, input: WindowInput, session?: ClientSession): Promise<{ database: Database; view: DatabaseView; properties: DatabaseProperty[]; records: DatabaseTableRecord[]; nextCursor: string | null }> {
+  async getTable(userId: string, workspaceId: string, databaseId: string, viewId: string, input: WindowInput, session?: ClientSession): Promise<DatabaseTableResponse> {
+    return this.getViewRecords(userId, workspaceId, databaseId, viewId, input, session)
+  }
+
+  async getViewRecords(userId: string, workspaceId: string, databaseId: string, viewId: string, input: WindowInput, session?: ClientSession): Promise<DatabaseViewRecordsResponse> {
     this.validateTableWindow(input)
     const database = await this.requireDatabase(userId, workspaceId, databaseId, false, session)
     const view = await this.views.findInWorkspace(workspaceId, viewId, session)
@@ -119,7 +124,7 @@ export class DatabaseService {
     const properties = await this.properties.listLimited(workspaceId, databaseId, DATABASE_MAX_PROPERTIES + 1, session)
     if (properties.length > DATABASE_MAX_PROPERTIES) throw new BadRequestException(`Database exceeds the maximum of ${DATABASE_MAX_PROPERTIES} properties`)
     if (!session && properties.some(property => property.type === 'rollup' || property.type === 'formula')) {
-      return this.transact(readSession => this.getTable(userId, workspaceId, databaseId, viewId, input, readSession))
+      return this.transact(readSession => this.getViewRecords(userId, workspaceId, databaseId, viewId, input, readSession))
     }
     const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
     if (!validateDatabaseViewConfig(config, properties)) throw new ConflictException('Database view configuration is invalid; refresh and repair the view before querying it')

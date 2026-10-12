@@ -105,6 +105,8 @@ P3 reconnect 依赖持久 oplog，以稳定 operation id 至少一次投递；�
 
 P8.1 Database 作为独立 server-domain 数据域存在：Database / Property / Record / View 使用独立 Mongo 集合，Database Block 只携带稳定 databaseId/viewId 引用。Record 的正文继续由同 Workspace 的既有 Page/Block 承载；移除 Block 引用不删除 Database。Database 原子创建要求 Mongo 多文档事务，权限复用 WorkspacePermissionService。Database 数据尚不进入 LocalStore / Page-Block oplog；实体 ID、version 与后续 sync 边界见 [P8 Database](../p8-database.md)。
 
+P9.1A 提供统一的 View records 读取入口：`GET .../views/:viewId/records` → `DatabaseService.getViewRecords()`。Legacy `/table` / `getTable()` 委托同一查询流程，继续共享权限、Filter/Sort、有界分页、cursor/version/config fence 与 Page.title/derived projection；View.type 当前仍仅 table。Contract / SDK 与兼容边界见 [P9 Multi-View](../p9-multi-view.md)。
+
 ## 6. 编辑器方向
 
 编辑器应在所有目标平台上保持 Web 技术。Eotion 的编辑器框架只有 **Tiptap 3**；ProseMirror 是 Tiptap 的底层编辑引擎，不作为第二套编辑器并行接入。

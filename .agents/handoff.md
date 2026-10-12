@@ -1,5 +1,23 @@
 # Handoff
 
+## 2026-10-12 P9.1A Generic View Records Read Foundation（已完成）
+
+基于 master `13053793ffa4683e3ffdb6d7f1f512f270ebc499`，P8 保持 COMPLETE / SEALED。新增 `GET /api/workspaces/:workspaceId/databases/:databaseId/views/:viewId/records`、`DatabaseViewRecordsQuery/Response` 及 schemas、SDK `getDatabaseViewRecords()`。唯一读取体为 `DatabaseService.getViewRecords()`；legacy `/table` / `getTable()` 委托 generic 方法，原 Table contracts、SDK 路径和结构保留。查询、权限、title/derived projection、transaction、bounded query 与 cursor scope/version/config fence 未复制或削弱。正式设计见 `docs/p9-multi-view.md`。
+
+新增定向 HTTP 回归通过：同一 Table View 的新旧核心数据及默认/配置分页完全等价，cursor 可跨 endpoint 继续；Filter before pagination 与双层 Sort 生效；独立 workspace/database/view scope、Database version、View version、config hash fence fail closed；title/Relation/Rollup/Formula 投影等价。所有原 Table 断言保留。HTTP fixture 直接装载生产 HttpApiModule + ConfigModule + 隔离 Mongo，继续使用真实 SessionAuthGuard、SameOriginGuard、controller/service 和监听端口，不替代完整 AppModule 启动测试。
+
+验证：
+
+- `pnpm --filter @eotion/contracts test`：23/23；`pnpm --filter @eotion/sdk test`：23/23。
+- Contracts / SDK `typecheck` 通过，`git diff --check` 通过。
+- API scoped TypeScript compile 通过：仓库外临时 tsconfig extends `apps/api/tsconfig.json`，`incremental: false`，include 仅 `src/modules/http-api/database-http.test.ts`、`src/modules/server-domain/database.test.ts` 及其真实依赖闭包；使用 `pnpm --filter @eotion/api exec tsc -p <temporary-config>`，没有关闭类型检查。
+- 包内 `node --test dist/modules/http-api/database-http.test.js dist/modules/server-domain/database.test.js`：13/13，0 fail，0 skip（11 个原 service tests + HTTP 父测试与 generic 子测试）。
+- 独立 reviewer 无 blocker，补充确认 scoped HTTP fixture 保留真实守卫与原断言。
+
+环境限制：完整 API `build` / `typecheck` 未通过，错误涉及 MCP 模块缺失及 Zod 类型/API 错配；build 报 43 errors。初始完整 AppModule targeted group 为 12 pass / 2 fail，失败均在装载 MCP 时（尚未进入 Database HTTP 断言）。失败涉及的 MCP 源、API/package 配置、tsconfig、lockfile 与 `13053793` 的 `git diff --exit-code` 为 0；未另建 clean worktree 重跑全基线，因此不声称第二次 baseline build 证据。Ownership 在约 2 分钟内核对，未修复 MCP/依赖、未削弱断言；以上 scoped compile/HTTP 测试作为本轮替代验证。该环境问题仍阻断完整 API 验证，后续另行处理。
+
+本轮未改 Web、domain、Mongo enum、View CRUD、queryTableWindow、DatabaseTableRecord 或 cursor helpers。未运行完整 Web Product、Visual、Final Acceptance。未发现 P9 后续 read seam blocker；View.type 泛化、List、Board 未开始。完成一个聚焦 commit 后停止。
+
 ## 2026-10-11 Database UX Final Acceptance（PASS / SEALED）
 
 **P8 Database UX Final Acceptance — PASS；P8 Database — COMPLETE / SEALED。** 基线 `32c671192a470cad72d132a2b981fed9ad2fb361`；验收提交为本节所在 commit。本轮只做验收与最小 blocker 修复，没有新增 Database 产品能力，没有改 Domain / API / Contracts / Overlay 产品实现，没有开始 P9。
