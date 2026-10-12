@@ -1,6 +1,6 @@
 {
   "name": "@eotion/desktop",
-  "version": "0.0.1-beta",
+  "version": "0.0.1",
   "private": true,
   "type": "commonjs",
   "main": "./out/main/index.js",
