@@ -1,4 +1,13 @@
 # Handoff
+## 2026-10-12 P9.5A Board Renderer Foundation（已完成）
+
+基线 `73f1762d2c860f1c8d96ff9548cdb569950d8bca`，P8 COMPLETE / SEALED；聚焦提交为本节所在 commit。新增独立只读 DatabaseBoardView，DatabaseNodeView 仅 import + renderer 分支；Table DOM 与 List 不变。Props 沿用 records/properties/config/formatValue，openRecord emit 复用既有 Page prepare/record opening/Drawer。select options 按稳定 ID 生成全部列；保留输入排序，空值/未知值在有记录时进入未分组；Vue key 与真实 option ID 隔离。未配置 grouping 只提示，不推断/写回。title 为 Page.title projection；详情按 visibleProperties（null 全部）与 propertyOrder。
+
+现有 product helper 仍调用 legacy /table，服务端 getTable 委托 getViewRecords；没有新增读取/写入接口、Domain/schema/SDK、snapshot 数据或 Board mutation。Filter/Sort/projection/分页/refresh 共用。Desktop/Tablet 局部横向滚动，Phone <768 单列堆叠。列计数为已加载记录数，非全库总数。
+
+验证：`pnpm --filter @eotion/web exec playwright test tests/product-database.spec.ts --grep 'board renderer|list view renders projected|database tables render and references|database table scrolls horizontally|snapshot convergence preserves phone' --workers=1 --retries=0`，8/8，通过。Web typecheck 通过；独立 review 无 blocker，diff/UTF-8 无 BOM 检查通过。首轮 6/8，新测试误将标题计数纳入名称断言、Drawer 遮挡 selector 鼠标点击；修正名称 locator，并通过真实键盘 focus/Enter 操作切换后同组通过。无 scope-external failure。Table/List 往返保持 Editor/NodeView/记录 Drawer identity 和标题 draft；Phone Filter/Sort snapshot draft 原回归保持。
+
+未运行完整 Product suite、Visual Acceptance 或 Final Acceptance；未发现只读 renderer/record opening blocker。Board 创建与 grouping settings UI 尚未实现，是后续阶段入口，未进入 drag/mutation/MCP/local-first。修改：Board 组件、NodeView、targeted tests、P9 文档、architecture/context、current-task/handoff。完成聚焦 commit 后停止。
 
 ## 2026-10-12 P9.4B Board Property Dependency（已完成）
 

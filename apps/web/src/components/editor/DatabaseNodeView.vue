@@ -17,6 +17,7 @@ import DatabaseOpeningChoices from './DatabaseOpeningChoices.vue'
 import DatabaseSettingsSelect from './DatabaseSettingsSelect.vue'
 import DatabasePropertyMenu from './DatabasePropertyMenu.vue'
 import DatabaseListView from './DatabaseListView.vue'
+import DatabaseBoardView from './DatabaseBoardView.vue'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -1635,6 +1636,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
     <template v-else>
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}</p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
+      <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <div v-else-if="properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>

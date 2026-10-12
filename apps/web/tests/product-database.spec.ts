@@ -3196,6 +3196,116 @@ test('filter and sort setting menus are keyboard operable and disable unsupporte
   await expect(sortMenu.getByRole('menuitem', { name: 'Related（暂不支持排序）' })).toBeDisabled()
 })
 
+test('board renderer groups generic records by option IDs with projected titles and configured properties', async ({ page }) => {
+  const boardConfig: DatabaseViewConfig = {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    filters: [{ propertyId: 'root-number', operator: 'gte', value: 10 }],
+    sorts: [{ propertyId: 'root-number', direction: 'desc' }],
+    visibleProperties: ['root-title', 'root-number', 'root-text'],
+    propertyOrder: ['root-text', 'root-number', 'root-title'],
+    options: { groupByPropertyId: 'root-select' },
+  }
+  const boardView = view('board-view', rootDatabase.id, 'Board', boardConfig, 'board')
+  const status = property('root-select', rootDatabase.id, 'Status', 'select', [
+    { id: 'todo', name: 'Todo' }, { id: 'doing', name: 'Doing' }, { id: 'unassigned', name: 'Done' },
+  ])
+  const records = [
+    record('board-a', rootDatabase.id, 'page-a', { 'root-title': 'Stale copy', 'root-select': 'todo', 'root-number': 20, 'root-text': 'First' }),
+    record('board-b', rootDatabase.id, 'page-b', { 'root-select': 'todo', 'root-number': 40, 'root-text': 'Second' }),
+    record('board-c', rootDatabase.id, 'page-c', { 'root-select': 'doing', 'root-number': 30 }),
+    record('board-d', rootDatabase.id, 'page-d', { 'root-number': 15 }),
+    record('board-e', rootDatabase.id, 'page-e', { 'root-select': null, 'root-number': 16 }),
+    record('board-filtered', rootDatabase.id, 'page-filtered', { 'root-select': 'unassigned', 'root-number': 1 }),
+  ]
+  const api = await installApi(page, [
+    block('board-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+  ], { databases: [rootDatabase], views: [boardView], properties: rootProperties.map(item => item.id === status.id ? status : item), records })
+  for (const [index, item] of records.entries()) api.pages.push({ ...pageRecord, id: item.pageId, title: `Projected ${item.id}`, orderKey: String(index + 2).padStart(16, '0'), role: 'database-record' })
+  const original = structuredClone({ records: api.records, properties: api.properties, views: api.views })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const board = page.getByTestId('database-board')
+  await expect(board).toBeVisible()
+  await expect(board.locator('.eotion-database-board-column-name')).toHaveText(['Todo', 'Doing', 'Done', '未分组'])
+  const todo = board.locator('[data-option-id="todo"]')
+  await expect(todo.locator('.eotion-database-board-card')).toHaveCount(2)
+  expect(await todo.locator('.eotion-database-board-card').evaluateAll(elements => elements.map(element => element.getAttribute('data-record-id')))).toEqual(['board-b', 'board-a'])
+  await expect(board.locator('[data-option-id="doing"] .eotion-database-board-card')).toHaveAttribute('data-record-id', 'board-c')
+  await expect(board.locator('[data-option-id="unassigned"] .eotion-database-board-card')).toHaveCount(0)
+  expect(await board.locator('[data-option-id=""] .eotion-database-board-card').evaluateAll(elements => elements.map(element => element.getAttribute('data-record-id')))).toEqual(['board-e', 'board-d'])
+  const card = board.locator('[data-record-id="board-a"]')
+  await expect(card.getByRole('button', { name: '打开记录：Projected board-a' })).toBeVisible()
+  await expect(card.locator('dt')).toHaveText(['Notes', 'Points'])
+  await expect(card.locator('dd')).toHaveText(['First', '20'])
+  await expect(board.getByText('Stale copy', { exact: true })).toHaveCount(0)
+  await expect(board.locator('input, [contenteditable="true"], [draggable="true"]')).toHaveCount(0)
+  expect(api.requests.some(item => item.method === 'GET' && item.path.endsWith(`/views/${boardView.id}/table`))).toBe(true)
+  expect({ records: api.records, properties: api.properties, views: api.views }).toEqual(original)
+
+  for (const viewport of [{ width: 834, height: 1112 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+    const columns = board.locator('.eotion-database-board-column')
+    const first = await columns.nth(0).boundingBox()
+    const second = await columns.nth(1).boundingBox()
+    expect(first && second).toBeTruthy()
+    if (viewport.width === 390) {
+      expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height)
+      expect(await board.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    } else expect(second!.x).toBeGreaterThan(first!.x)
+  }
+  await card.getByRole('button', { name: '打开记录：Projected board-a' }).click()
+  await expect(page.getByRole('button', { name: '关闭记录' })).toBeVisible()
+  expect(api.requests.filter(item => ['POST', 'PATCH', 'DELETE'].includes(item.method) && item.path.includes('/databases/'))).toHaveLength(0)
+})
+
+test('board renderer switches with Table and List without replacing editor or record drawer drafts', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  const boardView = view('board-lifecycle-view', rootDatabase.id, 'Board', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: 'root-select' } }, 'board')
+  const listView = view('board-list-view', rootDatabase.id, 'List', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'list')
+  const api = await installApi(page, [
+    block('board-lifecycle', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id), listView, boardView], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Board record', orderKey: '0000000000000002', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-board-lifecycle')
+  await expect(database.getByTestId('database-board')).toBeVisible()
+  await expect(database.locator('.eotion-database-board-card dt')).toHaveText(['Notes', 'Points', 'Done', 'Status', 'Due'])
+  await page.locator('.eotion-editor-content').first().evaluate(element => element.setAttribute('data-board-lifecycle', 'stable'))
+  await database.evaluate(element => element.setAttribute('data-board-lifecycle', 'stable'))
+  await database.getByRole('button', { name: '打开记录：Board record' }).click()
+  const drawer = page.locator('[data-overlay-mode="drawer"]')
+  await expect(drawer).toBeVisible()
+  await drawer.evaluate(element => element.setAttribute('data-board-lifecycle', 'stable'))
+  const title = drawer.getByRole('textbox', { name: '记录标题' })
+  await title.fill('Board draft survives')
+  for (const [name, renderer] of [['表格视图', 'table'], ['List', '[data-testid="database-list"]'], ['Board', '[data-testid="database-board"]']] as const) {
+    await database.getByRole('button', { name: '切换视图' }).focus()
+    await database.getByRole('button', { name: '切换视图' }).press('Enter')
+    await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name, exact: true }).click()
+    await expect(database.locator(renderer)).toBeVisible()
+    await expect(database).toHaveAttribute('data-board-lifecycle', 'stable')
+    await expect(page.locator('.eotion-editor-content').first()).toHaveAttribute('data-board-lifecycle', 'stable')
+    await expect(drawer).toHaveAttribute('data-board-lifecycle', 'stable')
+    await expect(title).toHaveValue('Board draft survives')
+  }
+  await expect.poll(() => ((api.blocks.find(item => item.id === 'board-lifecycle')?.props as { node?: { attrs?: { viewId?: string } } })?.node?.attrs?.viewId)).toBe(boardView.id)
+  expect(api.blocks.filter(item => item.type === 'database')).toHaveLength(1)
+})
+
+test('board renderer handles missing grouping and empty select options without table fallback', async ({ page }) => {
+  const unconfigured = view('board-unconfigured', rootDatabase.id, 'Unconfigured', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'board')
+  const empty = view('board-empty', rootDatabase.id, 'Empty', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: 'root-select' } }, 'board')
+  await installApi(page, [
+    block('board-unconfigured-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: unconfigured.id } }, 100),
+    block('board-empty-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: empty.id } }, 200),
+  ], { databases: [rootDatabase], views: [unconfigured, empty], properties: rootProperties.map(item => item.id === 'root-select' ? { ...item, options: [] } : item), records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  await expect(page.getByTestId('database-board')).toHaveCount(2)
+  await expect(page.locator('#database-block-board-unconfigured-block')).toContainText('尚未配置分组属性')
+  await expect(page.locator('#database-block-board-empty-block .eotion-database-board-column')).toHaveCount(0)
+  await expect(page.locator('.eotion-database table')).toHaveCount(0)
+})
+
 test('list view renders projected titles and ordered visible properties at desktop and phone widths', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   const listConfig: DatabaseViewConfig = {

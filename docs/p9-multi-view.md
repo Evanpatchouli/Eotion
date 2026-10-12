@@ -1,6 +1,6 @@
 # P9 Multi-View
 
-P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation；P9.4B 保护 Board grouping Property 的删除与改型，不包含 Board UI 或 renderer。
+P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation；P9.4B 保护 Board grouping Property 的删除与改型；P9.5A 增加只读 Board renderer。
 
 ## P9.1A — Generic View Records Read Foundation
 
@@ -145,3 +145,17 @@ Property 删除以及 `select` → 非 `select` 的类型变更，在现有事�
 
 本阶段只处理依赖生命周期；Board renderer / UI / drag / MCP 均未开始。不运行 Web Product、Visual 或 Final Acceptance。
 定向验证：API Database HTTP/service 真实依赖闭包 scoped TypeScript compile 通过，真实 Mongo 测试 14/14、0 fail、0 skip。新增回归覆盖 Board delete/type 409 与无写入、多个 Board 引用、显式释放依赖、无依赖 mutation 成功、Doing option 删除后的 Record cleanup 与 Board records 可读、Table/List opaque options 及原 View repair。一次独立 review 无 blocker；diff / UTF-8 无 BOM 检查通过。未执行完整 API build/typecheck（继承既有 MCP/Zod 环境限制），未运行 Web Product、Visual 或 Final Acceptance。
+
+## P9.5A — Board Renderer Foundation
+
+基线 `73f1762d2c860f1c8d96ff9548cdb569950d8bca`。`DatabaseNodeView` 按 records 响应的 `view.type` 路由 Table / List / `DatabaseBoardView`；Table 继续保持原有内联 DOM，不重写父组件。Board 是独立只读展示组件，接收既有 records、properties、config、formatValue，通过 openRecord 事件调用既有 openRecordPage / Record Drawer 流程。
+
+`config.options.groupByPropertyId` 解析当前库 select Property，每个 option 按 schema 中的顺序形成一列（包含空列），以稳定 option ID 匹配 Record value。列内保留 generic records 返回的排序顺序，不做二次过滤、排序或请求。缺失/null/未知 option 值进入“未分组”列，只有存在这类已加载记录时才出现；其 Vue key 与真实 option ID 隔离。缺省 groupBy 显示“尚未配置分组属性”，不自动选择或写回配置。空 options 合法，仍可显示已有未分组记录。
+
+卡片标题读取 title Property ID 下的服务端 Page.title projection，不读取 Record.title 副本。非 title 属性遵循 visibleProperties（null 表示全部）和 propertyOrder（未指定的属性按 schema 顺序补齐）。标题始终显示，点击复用既有记录打开方式。Board 不提供属性/标题 inline mutation、drag、select value 修改或 settings。
+
+读取完整复用 product database loading：现有 loadProductDatabaseTable → SDK legacy /table → getTable → getViewRecords；没有 getBoardRecords 或专属 endpoint。Filter/Sort/projection、25 条分页、加载更多/refresh、权限和 cursor/version fence 保持。列记录数只表示当前已加载窗口，不声明全库总数。Database Block / Page snapshot 仍只有稳定引用，切换 renderer 不 remount Editor/NodeView，也不替换记录 Drawer 或丢失 draft。
+
+Desktop / Tablet 在 Board 内局部横向滚动，列保持可读宽度；Phone 沿用 `<768px` 断点堆叠单列，不使页面横向溢出。没有新增 breakpoint。Board 创建/分组配置 UI、drag/mutation、MCP、Local-first 留待后续阶段。
+
+定向验证：Board 三项（renderer/分组/投影/配置/Filter/Sort/Tablet/Phone/记录打开、Table/List 往返与 Drawer draft、缺省 grouping/空 options）+ 既有 List、Table root/nested、Phone Table、Phone Filter/Sort snapshot draft 共 8/8，通过（workers=1，retries=0）。Web typecheck 通过，独立 reviewer 无 blocker。未运行完整 Product suite、Visual Acceptance 或 Final Acceptance。
