@@ -83,3 +83,11 @@ Selector 打开时通过 product database service 的 `listProductDatabaseViews(
 新的 `viewId` 由 `DatabaseNodeView` 既有 watch 触发 records reload，records 响应中的 `view.type` 继续选择现有 Table renderer 或 `DatabaseListView`。Selector 关闭、Table/List 切换、nested Database Block 与 Editor/NodeView identity 均复用既有 lifecycle；Phone 继续使用既有 `<768px` 两行 header，不新增 breakpoint。Create/Rename/Delete、Board、Calendar、Gallery、MCP、Local-first 与 Database domain 均不在本阶段。
 
 定向 Web 验证：View Selector integration（Table + List、当前高亮、`viewId` 往返、nested block、Editor identity）1/1；Phone selector breakpoint 1/1；既有 View lifecycle 1/1；List renderer 1/1；long-name Phone header 1/1；共 5/5。Web typecheck 与 `git diff --check` 通过。未运行完整 Product、Visual 或 Final Acceptance；未发现 Create View 或 Board blocker。
+
+## P9.3B-2 — Create List View
+
+基线：`a9217b6496ce3d97f6f3999055c081fab5deb488`。Create View 沿用既有 `createProductDatabaseView()` / `POST .../views` API；View Selector 保留原有 Table 创建入口，并新增 List 创建入口。两者都创建新的 `DatabaseView`，不复制 Database、不创建新的 Database Block、不修改 Page Tree 或 snapshot。
+
+新建 List 显式传入 `type: 'list'`，使用 `DEFAULT_DATABASE_VIEW_CONFIG`（`filters: []`、`sorts: []`、`visibleProperties: null`、`propertyOrder: null`，不增加 List 专属 options），成功后复用既有创建完成路径，只更新当前 Database Block 的 `viewId`。既有 watch 触发 reload，响应中的 `view.type` 进入 `DatabaseListView`；切回 Table 仍使用原 renderer 与 block reference。Rename/Delete、View settings、Board、Calendar、Gallery、MCP 与 Local-first 仍不在范围内。
+
+定向 Web 验证：Table 创建回归、List 创建（View 数量/type/default config/block viewId/List renderer）、Table/List selector、nested block、Phone selector 共 5/5；Web typecheck 与 `git diff --check` 通过。未运行完整 Product、Visual 或 Final Acceptance；未发现 View CRUD 或 Board blocker。

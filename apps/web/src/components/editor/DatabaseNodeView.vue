@@ -722,13 +722,13 @@ function switchView(targetId: string, force = false): void {
   viewControlsOpen.value = ''
   props.updateAttributes({ viewId: targetId })
 }
-async function createView(): Promise<void> {
+async function createView(type: Extract<DatabaseViewType, 'table' | 'list'> = 'table'): Promise<void> {
   if (viewBusy.value) return
   const workspace = workspaceId.value
   const database = databaseId.value
   const userId = auth.user?.id
   if (!userId) return
-  pendingCreateView.value ??= { id: createLocalId(), name: `表格 ${views.value.length + 1}`, type: 'table', config: { ...DEFAULT_DATABASE_VIEW_CONFIG }, expectedDatabaseVersion: databaseVersion.value }
+  pendingCreateView.value ??= { id: createLocalId(), name: `${type === 'list' ? '列表' : '表格'} ${views.value.length + 1}`, type, config: { ...DEFAULT_DATABASE_VIEW_CONFIG }, expectedDatabaseVersion: databaseVersion.value }
   viewSubmitting.value = true
   viewError.value = ''
   try {
@@ -1512,7 +1512,10 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
               <EotionButton type="button" variant="danger" class="eotion-database-view-action" data-popover-item :aria-label="`删除视图 ${displayItemName(item)}`" :disabled="viewBusy || views.length < 2" @click.stop="deleteView(item)"><EotionIcon :name="IconName.Trash" :size="16" /></EotionButton>
             </div>
             <p v-if="!views.length && !viewError" class="eotion-database-view-hint">正在加载视图…</p>
-            <EotionButton type="button" variant="ghost" class="eotion-database-view-create" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView"><EotionIcon :name="IconName.Plus" :size="16" /> 新建视图</EotionButton>
+            <div class="eotion-database-view-create-group" role="group" aria-label="新建数据库视图">
+              <EotionButton type="button" variant="ghost" class="eotion-database-view-create" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('table')"><EotionIcon :name="IconName.Plus" :size="16" /> 新建视图</EotionButton>
+              <EotionButton type="button" variant="ghost" class="eotion-database-view-create-list" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('list')"><EotionIcon :name="IconName.List" :size="16" /> 新建列表视图</EotionButton>
+            </div>
           </section>
         </EotionPopover>
         <EotionPopover v-model:open="settingsMenuOpen" label="数据库设置" panel-width="180px">
@@ -1723,8 +1726,9 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-view-name[contenteditable="true"] { cursor:text; outline:none; text-overflow:clip; }
 .eotion-database-view-action { flex:none; width:32px; padding:6px!important; opacity:0; pointer-events:none; }
 .eotion-database-view-row:hover .eotion-database-view-action,.eotion-database-view-row:focus-within .eotion-database-view-action { opacity:1; pointer-events:auto; }
-.eotion-database-view-create { color:var(--e-color-text-muted); }
-.eotion-database-view-create:hover:not(:disabled),.eotion-database-view-create:focus-visible { color:var(--e-color-text-primary); }
+.eotion-database-view-create,.eotion-database-view-create-list { justify-content:flex-start; color:var(--e-color-text-muted); }
+.eotion-database-view-create:hover:not(:disabled),.eotion-database-view-create:focus-visible,.eotion-database-view-create-list:hover:not(:disabled),.eotion-database-view-create-list:focus-visible { color:var(--e-color-text-primary); }
+.eotion-database-view-create-group { display:grid; gap:2px; }
 .eotion-database-view-hint { color:var(--editor-muted); font-size:12px; }
 .eotion-database-view-error { color:var(--danger); }
 @media (hover:none), (pointer:coarse) {

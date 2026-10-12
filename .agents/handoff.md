@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-10-12 P9.3B-2 Create List View（已完成）
+
+基线 `a9217b6496ce3d97f6f3999055c081fab5deb488`。View Selector 保留既有“新建视图”Table 创建流程，新增“新建列表视图”List 创建入口；两者复用 `createProductDatabaseView()` / `POST .../views`，不复制 Database、不创建新的 Database Block、不修改 Page Tree 或 snapshot。
+
+List 创建显式传 `type: 'list'`，使用通用 `DEFAULT_DATABASE_VIEW_CONFIG`，不增加 List 专属 config。成功后沿用既有创建路径和 `switchView()`，只更新当前 Database Block 的 `viewId`；既有 watch reload 后进入 `DatabaseListView`，切回 Table 保持原 renderer 与行为。Rename/Delete、View settings、Board、Calendar、Gallery、MCP、Local-first 未开始。
+
+新增 targeted regression：View 数量 +1、创建结果 type 为 list、默认 config、block `viewId`、List renderer、Table 回归；与既有 selector/nested/Phone/List 测试组合共 5/5 通过。Web typecheck、`git diff --check` 通过；未运行完整 Product、Visual、Final Acceptance；未改 lockfile。修改文件为 `apps/web/src/components/editor/DatabaseNodeView.vue`、`apps/web/tests/product-database.spec.ts`、`docs/p9-multi-view.md`、`.agents/current-task.md`、`.agents/handoff.md`。
+
 ## 2026-10-12 P9.3B-1 View Selector Integration（已完成）
 
 基线 `38b3ac54c43b30cef918641b8afa7599f81441b8`。本轮确认并固化既有 View Selector 与 P9.3A Table/List renderer 的集成契约，没有新增产品 renderer 或 Database domain 逻辑：selector 打开时经 `listProductDatabaseViews()` 读取 server DatabaseView entity；当前项由 Block attrs `viewId` 高亮；点击通过既有 `switchView()` 只更新 `{ viewId }`，不修改 `databaseId`、Page tree、Page snapshot 或创建新的 Database Block。

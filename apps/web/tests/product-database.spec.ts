@@ -259,10 +259,10 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     if (viewsPath && request.method() === 'GET') return json(route, 200, api.views.filter((item) => item.databaseId === viewsPath[1]))
     if (viewsPath && request.method() === 'POST') {
       const databaseItem = api.databases.find(item => item.id === viewsPath[1])
-      const input = payload as { id: string; name: string; type: 'table'; config?: DatabaseViewConfig; expectedDatabaseVersion: number }
+      const input = payload as { id: string; name: string; type: 'table' | 'list'; config?: DatabaseViewConfig; expectedDatabaseVersion: number }
       if (!databaseItem) return json(route, 404, { statusCode: 404, message: 'Database not found' })
       if (input.expectedDatabaseVersion !== databaseItem.version) return json(route, 409, { statusCode: 409, message: 'Database version conflict' })
-      const created = view(input.id, databaseItem.id, input.name, input.config)
+      const created = view(input.id, databaseItem.id, input.name, input.config, input.type)
       databaseItem.version += 1
       api.views.push(created)
       if (api.abortViewCreatesAfterCommit > 0) { api.abortViewCreatesAfterCommit -= 1; return route.abort('failed') }
@@ -2544,6 +2544,34 @@ test('database views create, rename, switch, delete and persist the selected ref
   await page.locator('.eotion-editor-content .eotion-database').nth(0).getByRole('button', { name: '切换视图' }).click()
   const lastViewMenu = page.locator('.eotion-database-view-menu')
   await expect(lastViewMenu.getByRole('button', { name: '删除视图 Quarterly' })).toBeDisabled()
+})
+
+test('database view selector creates a List view through the existing DatabaseView API', async ({ page }) => {
+  const api = await installApi(page, [
+    block('create-list-view-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'List record', orderKey: '0000000000000002', role: 'database-record' })
+  const initialViewCount = api.views.length
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const database = page.locator('#database-block-create-list-view-block')
+  await expect(database.locator('tbody')).toBeVisible()
+  await database.getByRole('button', { name: '切换视图' }).click()
+  const menu = page.locator('.eotion-database-view-menu')
+  await menu.getByRole('button', { name: '新建列表视图' }).click()
+
+  await expect(database.getByTestId('database-list')).toBeVisible()
+  await expect.poll(() => api.views).toHaveLength(initialViewCount + 1)
+  const created = api.views.find(item => item.id !== 'view-root-id')
+  expect(created?.type).toBe('list')
+  expect(created?.config).toEqual(DEFAULT_DATABASE_VIEW_CONFIG)
+  expect(api.requests.some(({ method, path, payload }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`) && payload?.type === 'list' && payload?.config?.filters?.length === 0 && payload?.config?.sorts?.length === 0 && payload?.config?.visibleProperties === null && payload?.config?.propertyOrder === null)).toBe(true)
+  await expect.poll(() => api.blocks.find(item => item.id === 'create-list-view-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: created?.id })
+
+  await database.getByRole('button', { name: '切换视图' }).click()
+  await menu.getByRole('button', { name: '表格视图', exact: true }).click()
+  await expect(database.locator('tbody')).toBeVisible()
+  await expect(database.getByTestId('database-list')).toHaveCount(0)
 })
 
 test('database view selector supports accessible inline rename without switching on rename or delete', async ({ page }) => {
