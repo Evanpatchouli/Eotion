@@ -47,7 +47,7 @@ function openRecord(event: MouseEvent, pageId: string): void {
       <button
         class="eotion-database-list-title"
         type="button"
-        :aria-label="`打开记录：${titleProperty ? cellValue(record, titleProperty) : record.pageId}`"
+        :aria-label="`打开记录：${titleProperty ? cellValue(record, titleProperty) || '无标题' : '无标题'}`"
         @click="openRecord($event, record.pageId)"
       >
         <span class="eotion-database-list-title-text">{{ titleProperty ? cellValue(record, titleProperty) || '无标题' : '无标题' }}</span>

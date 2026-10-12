@@ -916,6 +916,8 @@ function moveSort(index: number, delta: number): void {
 }
 async function saveViewConfig(next: DatabaseViewConfig): Promise<void> {
   if (viewBusy.value) return
+  const identity = loadedViewIdentity.value
+  const isCurrent = () => identity === [workspaceId.value, databaseId.value, viewId.value, auth.user?.id ?? ''].join('\u0000')
   for (const filter of next.filters) {
     const property = properties.value.find(item => item.id === filter.propertyId)
     if (property?.type === 'number' && typeof filter.value === 'number' && !Number.isFinite(filter.value)) {
@@ -935,12 +937,13 @@ async function saveViewConfig(next: DatabaseViewConfig): Promise<void> {
   viewError.value = ''
   try {
     const result = await updateProductDatabaseView(workspaceId.value, databaseId.value, viewId.value, { config: next, expectedDatabaseVersion: databaseVersion.value, expectedViewVersion: viewVersion.value })
+    if (!isCurrent()) return
     databaseVersion.value = result.database.version
     viewVersion.value = result.view.version
     viewConfig.value = result.view.config ?? next
     viewControlsOpen.value = ''
     runDeferredRefresh()
-  } catch (cause) { await handleViewMutationError(cause, '视图设置未保存，请重试。') }
+  } catch (cause) { if (isCurrent()) await handleViewMutationError(cause, '视图设置未保存，请重试。') }
   finally { viewSubmitting.value = false }
 }
 function saveFilters(): void {

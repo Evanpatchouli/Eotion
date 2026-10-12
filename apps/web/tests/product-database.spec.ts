@@ -4066,6 +4066,16 @@ test('list view renders projected titles and ordered visible properties at deskt
   await expect(page.getByRole('button', { name: '关闭记录' })).toBeVisible()
 })
 
+test('List empty projected title keeps its visible and accessible name consistent', async ({ page }) => {
+  const listView = view('empty-title-list', rootDatabase.id, 'List', undefined, 'list')
+  const api = await installApi(page, [
+    block('empty-title-list-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: listView.id } }, 100),
+  ], { databases: [rootDatabase], views: [listView], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: '', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  await expect(page.getByTestId('database-list').getByRole('button', { name: '打开记录：无标题', exact: true })).toBeVisible()
+})
+
 test('database tables render and references round-trip at root and under a toggle', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))

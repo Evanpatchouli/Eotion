@@ -1,4 +1,10 @@
 # Handoff
+## 2026-10-13 P9.6 Multi-View Product Polish（硬停止，未 READY）
+
+基线 `d06a3af32174e32a0f8bcb2de99be109ee5a7324`。只读 Scout 检查 View identity/lifecycle 与 List/Board/picker。实际修复两点：List 空标题按钮可访问名称回退为“无标题”；saveViewConfig 请求完成后校验 loadedViewIdentity 对应 user/workspace/database/view，避免旧设置响应覆盖新 View config/version 或关闭当前 overlay。没有 API/model/架构/新功能/依赖/breakpoint 变更。
+
+Web typecheck / diff check 通过；定向 product 13/13 通过（workers=1/retries=0），覆盖三种创建、Board→Table/List 延迟读取门禁、分组/无Select/390px离线/409、Board Filter/Sort/properties/responsive、Drawer/title draft、Desktop drag pending、Phone picker与List空标题。独立 review 未发现其他已证实代码缺陷，提出 P2：补设置 PATCH 在途外部切换的成功/409 回归。List 空标题新增回归；外部 editor attrs/snapshot 切换时延迟 PATCH 回归尚缺，renameView 的同类 scope 风险尚未复现。未完成完整 A–L matrix，因此不能宣布 P9.6 READY FOR FINAL ACCEPTANCE。25 分钟硬停止，不运行 Full Product、Visual Acceptance、P9 Final Acceptance；下一轮继续本阶段剩余验证。
+
 ## 2026-10-12 P9.5C-2 Board Grouping Settings（已完成）
 
 基线 `bfe51bf85ada8677b7e26cd504366097d217c12d`；聚焦提交为本节所在 commit。既有 `DatabaseNodeView` Database Settings 菜单仅在 Board View 增加“分组属性”入口，复用 `DatabaseSettingsSelect` 与现有 Overlay；Table/List 不显示。候选严格为当前 Database 的 `type === 'select'` Property，首项为“未设置”；无 Select 时设置仍可打开并显示“没有可用的选择属性”，不会自动创建 Property。Phone 复用现有 `<768px` bottom drawer，离线时 selector 与保存按钮不可写。
