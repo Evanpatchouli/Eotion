@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1A Temporal Domain Foundation 已冻结并实施；P11.1B–P11.6 尚未实施**
+> Status: **P11.1A Temporal Domain Foundation 与 P11.1B Generic Date Data Path 已完成 / PASS；P11.1C–P11.6 尚未实施**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -274,7 +274,7 @@ Focus / keyboard 状态必须与 hover 有等价可感知反馈。
 
 ## 10. 日期来源与 Date Range
 
-当前 Eotion Date Property 的存储值本质上仍是 date-only string；这不足以完整承载 Notion Timeline。
+P11.1A 冻结了 date-only / range / datetime 模型；P11.1B 将同一模型接入现有通用 Record 数据链路。
 
 P11.1 必须先扩展 Date 语义，再进入 renderer。
 
@@ -323,11 +323,11 @@ P11.1 冻结 wire shape 时必须满足：
 - resize 产生 end 后，该 Record 正式成为 range。
 - 这能让 deadline / milestone 类记录存在于 Timeline 中，同时不伪造持久化时长。
 
-### 10.4 P11.1A Temporal Domain Foundation 冻结契约
+### 10.4 P11.1A / P11.1B Date 数据契约
 
-P11.1A 只落地 `packages/domain` 的纯日期领域基础，不切换现有
-`DatabasePropertyValue` 联合类型。后续 P11.1B 负责完整数据链路改造前，既有
-Contracts、Mongo 与 Web 消费者继续只依赖 legacy date value。
+P11.1A 落地 `packages/domain/src/date.ts` 的纯日期领域基础；P11.1B 正式扩展
+`DatabasePropertyValue` 并复用该基础接入 Contracts、Mongo、Formula 与 Web Table。
+P11.1A 的 validator / normalizer 是唯一校验与规范化标准。
 
 - 继续使用现有 `Database / Property / Record / View`；Date Property 仍是现有
   `date` 类型，不新增 Property 类型或 Timeline 专属实体。
@@ -340,8 +340,8 @@ Contracts、Mongo 与 Web 消费者继续只依赖 legacy date value。
   `start <= end`；相等的 `end` 表示显式零长度 range，仍与省略 `end` 的单点语义
   区分；非法日期、闰年、UTC instant、时区或混合类型一律拒绝。
 - normalization 通过共享纯函数完成：legacy string 与新对象都归一为带
-  `kind` 的 normalized value，并保留 normalized `start` 供后续 Filter / Sort /
-  Formula 消费；本阶段不改写这些消费者。
+  `kind` 的 normalized value。持久化和 HTTP 响应保留原 wire shape、end 是否存在
+  与 timeZone；不把 `kind` 写入 Record，不改写旧字符串或批量迁移历史值。
 - Timeline date source 后续支持单 Date Property range 与独立 Start / End Date
   Properties。Dependency 后续复用现有 self Relation，direction / shift policy
   进入 View config；引用的关键 Property 必须有 lifecycle 409 fence。
@@ -349,10 +349,55 @@ Contracts、Mongo 与 Web 消费者继续只依赖 legacy date value。
   Timeline 专属 mutation API；Database 继续 online-only，不扩展 Page / Block
   sync。
 
-P11.1A 的 Domain API 与测试是上述契约的可执行标准。P11.1B 的准确接续入口是：
-在不破坏 legacy string 兼容的前提下，将 normalized date value 接入完整
-Property / Record / Contracts / Mongo 数据链路，并协调切换共享值联合类型；在此
-之前不得提前实现 Timeline renderer、mutation、dependency UI 或其他 P11 子阶段。
+#### P11.1B 通用写入、比较与派生读取
+
+- 只有 Date Property 接受日期对象；其他 Property 不因共享值联合类型扩大而接受对象。
+  Create / Cell Update 的 Zod 输入委托同一严格 validator，服务端再按真实 Property 类型
+  校验。未知字段、非法时区、非法 start/end、混合或逆序范围均拒绝。
+- 现有 HTTP Record POST 增加可选 `properties` 初值，复用相同值 schema；旧只包含
+  id/pageId/title/orderKey 的请求不变。初值禁止 title 副本、派生字段与未知 Property；
+  title 继续由 Page.title 投影，Relation 按现有引用 fence 校验。Page/Record 与 Database
+  版本在原事务内一致创建，非法 Date 或 Property 初值不得留下 Page 或部分 Record。
+- **统一排序键**：`getDatabaseDateStartInstant` 从 normalized start 生成 canonical UTC
+  字符串；date-only 视作该日 `00:00:00.000Z`，datetime 保持原 UTC instant。
+  例如 legacy `2026-10-13`、`{ start: '2026-10-13' }` 与 datetime
+  `2026-10-13T00:00:00.000Z` 排序相等；当天中午 datetime 排在它们之后。
+  timeZone 和 end 不改变排序键；空值在升/降序均最后，Record ID asc 为最终 tie-break。
+- **既有日期 Filter 仍按天比较**：配置值保持 `YYYY-MM-DD`，`is` / `before` / `after`
+  比较 normalized start 的 UTC 日历日（前 10 字符）；datetime 的 `is` 匹配整 UTC 日，
+  `before` / `after` 严格匹配更早/更晚日，不把同日不同时间判为更早/更晚日。
+  legacy 字符串行为不变。范围只看 start，不新增 overlap Filter 或 datetime Filter 配置。
+- Mongo aggregation 以受控表达式从 legacy string 或对象 start 生成同一键，不比较 BSON
+  日期对象本身。排序与 cursor anchor 使用同一 UTC instant 键；保留现有 scope/config/
+  Database version/View version/Page version 绑定，日期更新使旧 cursor 返回 409。
+  继续 filter → sort → paginate，不在客户端重排当前页；默认无 Filter/Sort 保持 ID 索引快路径。
+- **Formula date 结果保持 `YYYY-MM-DD`**：合法日期对象通过
+  `projectDatabaseDateToFormulaDate` 投影 normalized start 的 UTC 日历日；date-only 原日
+  不变，datetime 不按浏览器、服务器或值的 timeZone 改换日历日。range end 不进入 Formula
+  结果，省略 end 的单点也可读取；不引入 range Formula 类型或隐式对象字符串化。
+  UTC 日粒度投影与既有日期 Filter 一致；Formula 不暴露时间精度。
+- Rollup 保持原矩阵：Date 仅支持 count / count_values；合法范围或 datetime 对象各是一个
+  非空值，不按 end 拆成多个值；Date min/max 与 range 聚合不在本轮。
+- Property 类型转换继续既有保守矩阵：同型 Date no-op 完整保留对象；legacy Date → text
+  保留原字符串，日期对象 → text 及其他未支持转换清除该 key（不隐式截 start 或
+  `[object Object]`）。沿用类型变更确认、事务/CAS 和有界扫描，不批量转换现有 Date 值。
+
+#### P11.1B Table 编辑边界
+
+Table Date Cell 展示完整 start、显式 end 与 datetime timezone，并用完整多字段草稿编辑。
+仅修改 start/end/timeZone 时保留其他字段；只有显式清除 end 才变为单点。legacy 只改 start
+继续保存字符串，原对象保持对象。datetime 使用明确标识 UTC 的日期时间输入，timeZone
+编辑改变显示时区元数据，不移动 instant；切换“包含时间”是用户显式模式转换。
+字段间移动焦点不会保存半成品，完整保存继续沿用 generic Cell Update、Database/Record CAS、
+loading、错误草稿与冲突刷新。390px 响应式 Web 继续可用；不等价于原生宿主真机验收。
+
+P11.1B 完成后，P11.1C 接续入口是共享 normalized Date + 现有 generic records/View config；
+须先读取本节、日期 helper 和 query/cursor 回归，再处理 Timeline date source / View config
+与相应 lifecycle fence。本轮不提前创建 Timeline renderer、mutation 或 dependency UI。
+
+P11.1B 验收：Domain 41/41、Contracts 24/24、SDK 23/23、Storage 7/7、真实 Mongo API
+19/19、完整 Web Database 111/111（workers=1 / retries=0）；相关 typecheck / build、
+diff / UTF-8 检查与独立复核通过。完整证据与边界见 [P11.1B 验收](verification/p11-1b-generic-date.md)。
 
 ## 11. 时间条移动与 Resize
 

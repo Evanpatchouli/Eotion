@@ -176,7 +176,7 @@ Database Block 沿用既有 Block props wrapper，只保存引用：
 
 Block 的 ID/pageId/parentBlockId/orderKey 继续由现有模型维护。properties、records、views 不进入 `props.node`。同一 Database 可以有多个引用，每个引用选择属于该 Database 的 View。
 
-Property 支持 title、text、number、checkbox、select、date，以及 P8.5 的 relation、rollup、formula。Property ID 是 Record properties 的键；select 值是稳定 option ID，date 是有效的 YYYY-MM-DD。每个 Database 恰好一个 title Property。P8.3 中 title 由关联 Page.title 投影，Record 持久化 properties 不再保存 title 副本；其他可写字段可以缺失，显式清空删除键。Rollup/Formula 只保存配置，读取时计算。没有 people、files 或 property 插件系统。View 只有 table；P8.4 增加独立 AND 筛选、多级排序和列配置。
+Property 支持 title、text、number、checkbox、select、date，以及 P8.5 的 relation、rollup、formula。Property ID 是 Record properties 的键；select 值是稳定 option ID，date 永久兼容有效的 YYYY-MM-DD；P11.1B 扩展严格日期对象，当前契约见 [P11 §10.4](p11-timeline.md#104-p111a--p111b-date-数据契约)。每个 Database 恰好一个 title Property。P8.3 中 title 由关联 Page.title 投影，Record 持久化 properties 不再保存 title 副本；其他可写字段可以缺失，显式清空删除键。Rollup/Formula 只保存配置，读取时计算。没有 people、files 或 property 插件系统。View 只有 table；P8.4 增加独立 AND 筛选、多级排序和列配置。
 
 ## Record 与 Page
 
@@ -288,7 +288,7 @@ Table 支持新增 text、number、checkbox、select、date 属性；所有属�
 | number | finite number | null，删除属性键 |
 | checkbox | boolean | API 可用 null 删除键，UI 一键写 true/false |
 | select | 当前 options 中的稳定 option ID | null，删除属性键 |
-| date | 有效日历日期 YYYY-MM-DD | null，删除属性键 |
+| date | YYYY-MM-DD 或严格 `{ start, end?, timeZone? }`（P11.1B；见 P11 §10.4） | null，删除属性键 |
 
 缺失字段代表未设置，text 的空字符串是合法文本值；UI 空输入以清空处理。数值 0 与 boolean false 是实际值。Server 根据实际 Property 校验值，拒绝未知属性、非法数字、无效日期、已删除 option 或跨 Database 的值。请求使用明确的 typed contract，不允许对象、数组或任意 JSON 作为 cell value。
 
@@ -356,7 +356,7 @@ Web 产品回归使用 mock transport；typed validation、Workspace/Database �
 
 ### Sort 与有界查询
 
-最多 10 条排序，不允许重复 Property，按用户配置顺序依次生效。title/text 与 date 按二进制字符串排序，number 按数值，checkbox 为 false < true，select 按稳定 option ID。所有方向都将空值放在末尾；最后追加 Record ID asc 作为确定性 tie-break，无配置时直接按 Record ID asc。
+最多 10 条排序，不允许重复 Property，按用户配置顺序依次生效。title/text 按二进制字符串排序，date 按 normalized start 的 canonical UTC instant 字符串排序（date-only 为 UTC 零点；P11.1B 扩展，legacy 顺序不变），number 按数值，checkbox 为 false < true，select 按稳定 option ID。Date Filter 仍使用 YYYY-MM-DD，比较 start 的 UTC 日历日。所有方向都将空值放在末尾；最后追加 Record ID asc 作为确定性 tie-break，无配置时直接按 Record ID asc。
 
 有 Filter/Sort 的 Table 查询从服务端持久化 View 配置生成已校验的 Mongo aggregation。按 Workspace/Database 约束记录、关联同 Workspace 的 Page 并投影权威标题，再过滤、排序和分页；不会先读一页再由前端筛选。没有 Filter/Sort 时保留既有 ID 索引分页快路径：先取最多 limit + 1 个 Record，再批量读取这些 Page，列配置不触发全库 join。默认路径发现窗口内缺失关联 Page 时明确拒绝查询，避免静默缩短窗口或漏掉下一页。
 
@@ -452,7 +452,7 @@ Formula config 为 `{ expression, resultType }`，resultType 为 string/number/b
 
 算术只接受 number；and/or/not 与 if condition 只接受 boolean；比较支持同类型 number/string/date，==/!= 允许与 null 比较。if 分支必须同类型或一个为 null。text/title/select reference 为 string，date 为 date，checkbox 为 boolean，number/rollup 为 number；其它 Formula 引用其声明且验证过的 resultType。Relation 仅允许用于 empty，不可作算术/比较值或直接 Formula 结果。concat 只接受 string/null，null 视为空字符串；不做隐式数字、布尔或日期转换。
 
-空 property 值传播为 null；算术/顺序比较遇 null 返回 null；==/!= 对 null 使用显式相等语义。boolean and/or 遵守确定性短路；if condition 为 null 时结果为 null。empty 判断 null/空字符串/空 Relation 数组，0/false 不为空。除零、非有限计算和超限输出返回 null。Formula 无时钟、随机、网络、JS eval、Function、vm 或 Mongo $where。
+空 property 值传播为 null；算术/顺序比较遇 null 返回 null；==/!= 对 null 使用显式相等语义。boolean and/or 遵守确定性短路；if condition 为 null 时结果为 null。empty 判断 null/空字符串/空 Relation 数组，0/false 不为空。除零、非有限计算和超限输出返回 null。Formula 无时钟、随机、网络、JS eval、Function、vm 或 Mongo $where。P11.1B 的 Date 对象在 Formula 读取时投影 start 的 UTC 日历日，结果仍为 YYYY-MM-DD；end / timeZone 不改变该投影，不引入 range 结果类型。Rollup Date count/count_values 范围不变。
 
 ### Dependency graph 与只读
 
@@ -606,7 +606,7 @@ P8.1–P8.6 全部 PASS；**P8 Database COMPLETE**。本轮到此停止，不进
 
 专用 `DatabasePropertyTypeChangeRequestSchema` 请求携带 `targetType`、可选匹配 `config`、`expectedDatabaseVersion` 和 `expectedPropertyVersion`。`PATCH /api/workspaces/:workspaceId/databases/:databaseId/properties/:propertyId/type` 沿用 Session、SameOrigin 和 Workspace 写权限。请求严格拒绝额外字段：target 不允许 title；relation/rollup/formula 必须有匹配 config；basic/select 不接受 config/options。Select 的新 options 固定为空数组。现有 Property update 不承载类型迁移。
 
-Title 永远禁止变更类型；同类型请求在校验预期版本后返回 no-op，不修改时间、fence 或任何版本。跨类型只保留三种转换：text → number 使用 trim、非空、Number 和有限数校验；number → text 使用 String；合法 YYYY-MM-DD date → text 保留原字符串。其余转换及失败转换删除 Record 的对应 property key，不持久化 null placeholder。转换规则由 Domain 的 `convertDatabasePropertyValueForTypeChange` 统一定义。
+Title 永远禁止变更类型；同类型请求在校验预期版本后返回 no-op，不修改时间、fence 或任何版本。跨类型只保留三种转换：text → number 使用 trim、非空、Number 和有限数校验；number → text 使用 String；合法 YYYY-MM-DD date → text 保留原字符串。其余转换及失败转换删除 Record 的对应 property key，不持久化 null placeholder。P11.1B 的同型 Date no-op 保留对象全部字段，Date 对象 → text 仍属于未支持转换，不隐式截 start 或字符串化对象。转换规则由 Domain 的 `convertDatabasePropertyValueForTypeChange` 统一定义。
 
 服务复用 Mongo snapshot transaction：校验版本和新定义、校验本库及 incoming Rollup 来源库依赖（含 reference fences）、有界扫描全部 Records、逐条转换/清理并用 stored validator 校验、修复全部 Views、CAS 修改原 Property 后提交。超过 10,000 条 Records 整体拒绝。任一步失败全部回滚；Property 的 ID/name/createdAt 保持原值，离开 select/advanced 清除 options/config，新定义及 Database 版本递增，每条扫描 Record 版本递增（包括缺少该 key 的 Record）。其它 Record properties 保持原值。
 

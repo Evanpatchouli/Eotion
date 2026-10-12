@@ -1,5 +1,41 @@
 # Handoff
 
+## 2026-10-13 P11.1B Generic Date Data Path（PASS，停在此处）
+
+基线 `499877a`；实现提交：`5e2d3e1`（Domain/Contracts）、`03d8ee0`（API/Mongo +
+Record 创建初值）、`ccc3b63`（Web Table 日期与回归）。文档/验收收口为本节所在提交。
+正式版本仍为 `0.0.1`，P11 目标 `0.0.3`，本轮未修改版本；P10 未实施，P11.1C 未开始。
+
+Date Property 永久兼容 `YYYY-MM-DD`；新值为严格 `{ start, end?, timeZone? }`。
+复用 P11.1A validator/normalizer，date-only 无 timezone，datetime 为 canonical UTC
+instant + IANA timeZone，省略 end 不伪造时长。仅 Date 接受日期对象，其他类型继续拒绝。
+现有 Record POST 增加 optional properties 初值；同一 API 路径、Page.title 投影、
+Mongo 事务/Database 与 Record CAS、Database online-only、Page/Block sync 均保持。
+
+比较规则已写入 `docs/p11-timeline.md` §10.4：Sort / cursor 使用 normalized start
+canonical UTC key，date-only 为 UTC 零点，empty 最后、ID asc tie-break；既有日期 Filter
+与 Formula date 按 start 的 UTC 日历日，end / timeZone 不参与，Formula 输出继续 date-only。
+Rollup Date 仅 count/count_values；同型 Date 保留对象，legacy Date→text 保留字符串，
+对象→text 沿用 unsupported clear。Mongo 不比较 BSON 对象、不新增集合、不批量迁移。
+
+Table 日期完整草稿保留 end/timeZone/毫秒/wire shape；字段间 Tab 不提交，首末 Tab 可退出，
+Enter/保存提交、Esc/取消退出、显式清除才删除值。409 与错误保留草稿；未知网络结果用
+normalized 结构确认。复核发现的 Tab trap 已修。两个旧 Board 草稿测试补等待 embedded
+Record Editor 可编辑，未改 P9/Page/Block 产品逻辑或削弱操作后草稿/身份断言。
+
+验证：Domain 41/41、Contracts 24/24、SDK 23/23、Storage 7/7，真实 Mongo 8.0.32
+单节点 replica set API 19/19、完整 Web Database 111/111（workers=1/retries=0）。
+相关 typecheck/build、diff/UTF-8 检查、独立复核 0 blocker。隔离 Mongo 实例已停止；
+日志/截图保存在 `E:\Temp\eotion-p111b-20261013-ad204e56`。
+未运行完整 Product、API performance/MCP 全套或 Desktop/Lynx 原生真机；390px 是
+响应式 Web 验证；既有 bundle chunk warning 保留。完整证据、文件清单和初轮失败处理
+见 `docs/verification/p11-1b-generic-date.md`。
+
+**P11.1C 接续入口**：先读 §10.4、`packages/domain/src/date.ts` 的 normalization /
+start instant / Formula projection helper、generic records/View config 和新增 Mongo
+query/cursor 回归，再处理 Timeline date source / View config 与对应 Property lifecycle fence。
+不要创建 Timeline-specific Record/API 或改变 Page/Block sync。本轮已停止，不能自动继续 C。
+
 ## 2026-10-13 P11 Timeline Notion Parity 标准已冻结（仅文档）
 
 用户提供 Notion Timeline 实际截图并要求后续 Timeline 产品结构/交互直接按 Notion 复刻；另补充两个截图外硬要求：当前日期存在贯穿时间网格的竖直红线；Timeline 主区域可水平滚动且底部有滚动条。已新增 `docs/p11-timeline.md` 作为 P11 source of truth。标准覆盖双层 ruler、Hour/Day/Week/Bi-week/Month/Quarter/Year scale、prev/today/next、横向原生滚动、Today red line、Record bar 属性投影、整体拖动、左右 resize、离屏 jump、Frozen Table、Load more/New、未排期记录、single Date range 与 separate Start/End source、Dependency relation/connector/自动 shift、三尺寸/Light-Dark、P9 identity/CAS/lifecycle 继承与 Final Acceptance 矩阵。
