@@ -73,32 +73,39 @@ const href = computed(() => `/download${platform.value ? `#${platform.value}` : 
 
     <section class="database-section site-wrap site-section" aria-labelledby="database-title">
       <div class="section-heading">
-        <h2 id="database-title">结构化资料，<br>仍然住在文档里。</h2>
-        <p>在页面中插入数据库，用属性、筛选和排序整理信息。<br>每条记录仍然是一篇可以继续书写的 Eotion 页面。</p>
+        <h2 id="database-title">一份数据，<br>换几种看法。</h2>
+        <p>表格适合编辑，列表适合浏览，看板适合推进。<br>三种视图共享同一份记录与属性。</p>
       </div>
       <div class="database-grid">
         <div class="database-copy">
-          <p>同一份数据可以拥有多个独立的表格视图，也可以在不同页面中以 Linked View 再次呈现。</p>
+          <p>同一个 Database 可以创建 Table、List 和 Board。每个 View 保存自己的筛选、排序、属性展示与分组方式，也可以在其他页面以 Linked View 再次呈现。</p>
           <ul class="database-points" aria-label="数据库能力">
-            <li>文本、数字、复选框、选择与日期属性</li>
-            <li>筛选、排序、显示列与列顺序</li>
-            <li>Relation、Rollup 与受控 Formula</li>
-            <li>记录页面与数据库数据保持同一份标题来源</li>
+            <li>Table、List、Board 共用同一份 Records</li>
+            <li>筛选、多级排序与属性展示按 View 独立保存</li>
+            <li>Board 按 Select 属性分组，桌面支持拖动卡片</li>
+            <li>记录仍是一篇可以继续书写的 Eotion 页面</li>
           </ul>
           <a class="text-link" href="/guide/database">了解数据库 <span aria-hidden="true">↗</span></a>
         </div>
-        <div class="product-shot database-shot">
-          <picture class="shot-light">
-            <source srcset="/screenshots/database-table.webp" type="image/webp">
-            <img src="/screenshots/database-table.webp" alt="Eotion Database 表格视图与筛选条件界面" width="585" height="180" loading="lazy" decoding="async">
-          </picture>
-          <picture class="shot-dark">
-            <source srcset="/screenshots/database-table-dark.webp" type="image/webp">
-            <img src="/screenshots/database-table-dark.webp" alt="Eotion Database 深色模式表格视图与筛选条件界面" width="585" height="180" loading="lazy" decoding="async">
-          </picture>
+        <div class="database-card-stack" role="img" aria-label="Eotion 同一数据库的表格、列表和看板视图">
+          <div class="database-view-card database-view-card--table" aria-hidden="true">
+            <picture class="shot-light"><img src="/screenshots/database-table.svg" alt="" width="900" height="500" loading="lazy" decoding="async"></picture>
+            <picture class="shot-dark"><img src="/screenshots/database-table-dark.svg" alt="" width="900" height="500" loading="lazy" decoding="async"></picture>
+            <span>Table</span>
+          </div>
+          <div class="database-view-card database-view-card--list" aria-hidden="true">
+            <picture class="shot-light"><img src="/screenshots/database-list.svg" alt="" width="900" height="500" loading="lazy" decoding="async"></picture>
+            <picture class="shot-dark"><img src="/screenshots/database-list-dark.svg" alt="" width="900" height="500" loading="lazy" decoding="async"></picture>
+            <span>List</span>
+          </div>
+          <div class="database-view-card database-view-card--board" aria-hidden="true">
+            <picture class="shot-light"><img src="/screenshots/database-board.svg" alt="" width="900" height="500" loading="lazy" decoding="async"></picture>
+            <picture class="shot-dark"><img src="/screenshots/database-board-dark.svg" alt="" width="900" height="500" loading="lazy" decoding="async"></picture>
+            <span>Board</span>
+          </div>
         </div>
       </div>
-      <p class="database-note">当前公开版本提供 Table View；更多展示形态不在本阶段能力范围内。</p>
+      <p class="database-note">同一 Database 可以拥有多个独立 View；Table、List、Board 共享数据，不复制记录。</p>
     </section>
 
     <section class="mcp-section site-wrap site-section" aria-labelledby="mcp-title">

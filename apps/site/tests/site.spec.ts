@@ -26,9 +26,12 @@ test('static pages, navigation, release and safe download state', async ({ page,
   await expect(page.locator('.site-home section')).toHaveCount(8)
   await expect(page.locator('.database-section').getByRole('heading', { name: /结构化资料/ })).toBeVisible()
   await expect(page.locator('.database-section').getByRole('link', { name: /了解数据库/ })).toHaveAttribute('href', '/guide/database')
-  await expect(page.locator('.database-section')).toContainText('当前公开版本提供 Table View')
-  await expect(page.locator('.database-section .shot-light img')).toHaveAttribute('src', '/screenshots/database-table.webp')
-  await expect(page.locator('.database-section .shot-dark img')).toHaveAttribute('src', '/screenshots/database-table-dark.webp')
+  await expect(page.locator('.database-section')).toContainText('Table、List、Board')
+  await expect(page.locator('.database-section .database-view-card')).toHaveCount(3)
+  for (const view of ['table', 'list', 'board']) {
+    await expect(page.locator(`.database-view-card--${view} .shot-light img`)).toHaveAttribute('src', `/screenshots/database-${view}.svg`)
+    await expect(page.locator(`.database-view-card--${view} .shot-dark img`)).toHaveAttribute('src', `/screenshots/database-${view}-dark.svg`)
+  }
   await expect(page.locator('.mcp-section').getByRole('heading', { name: '为 AI 而生的 MCP' })).toBeVisible()
   await expect(page.locator('.mcp-section').getByRole('link', { name: /连接你的 AI 客户端/ })).toHaveAttribute('href', '/guide/mcp')
   await page.locator('.site-hero').getByRole('link', { name: /下载|免费下载/ }).click()
@@ -52,7 +55,8 @@ test('static pages, navigation, release and safe download state', async ({ page,
   const raw = await request.get('/guide/editor')
   expect(await raw.text()).toContain('可用内容格式')
   const databaseGuide = await request.get('/guide/database')
-  expect(await databaseGuide.text()).toContain('当前只提供 Table View')
+  expect(await databaseGuide.text()).toContain('Table、List 与 Board')
+  expect(await databaseGuide.text()).toContain('Gallery、Calendar、Timeline 或 Chart')
   expect(errors).toEqual([])
 })
 
@@ -76,8 +80,8 @@ test('three appearance modes persist and follow system', async ({ page }) => {
   const select = page.getByRole('combobox', { name: '网站外观' })
   await chooseAppearance(page, 'dark', '深色')
   await expect(page.locator('html')).toHaveClass(/dark/)
-  await expect(page.locator('.database-section .shot-dark')).toBeVisible()
-  await expect(page.locator('.database-section .shot-light')).toBeHidden()
+  await expect(page.locator('.database-section .shot-dark').first()).toBeVisible()
+  await expect(page.locator('.database-section .shot-light').first()).toBeHidden()
 
   await page.reload()
   await expect(select).toHaveAttribute('data-value', 'dark')
@@ -85,7 +89,7 @@ test('three appearance modes persist and follow system', async ({ page }) => {
 
   await chooseAppearance(page, 'light', '浅色')
   await expect(page.locator('html')).not.toHaveClass(/dark/)
-  await expect(page.locator('.database-section .shot-light')).toBeVisible()
+  await expect(page.locator('.database-section .shot-light').first()).toBeVisible()
 
   await page.emulateMedia({ colorScheme: 'dark' })
   await chooseAppearance(page, 'auto', '跟随系统')

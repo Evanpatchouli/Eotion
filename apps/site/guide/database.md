@@ -1,6 +1,6 @@
 ---
 title: 数据库
-description: 在 Eotion 页面中使用 Database、Table View、筛选、排序、Relation、Rollup 与 Formula。
+description: 在 Eotion 页面中使用 Database、Table / List / Board、多视图筛选排序、Relation、Rollup 与 Formula。
 ---
 
 # 数据库
@@ -17,18 +17,35 @@ Eotion 的 Database 用来整理结构化信息。它可以直接插入普通页
 - 点击标题可以打开记录页面，正文继续使用普通 Eotion 页面与编辑器。
 - 删除 Database Block 不等于删除 Database；同一个 Database 可以在其他页面继续被引用。
 
-## Table View
+## Table、List 与 Board
 
-当前只提供 **Table View**。同一个 Database 可以创建多个表格视图，每个 View 可以保存自己的：
+一个 Database 可以拥有多个 View。当前提供 **Table、List、Board** 三种展示方式，它们共享同一批 Records 和 Properties，但每个 View 可以独立保存筛选、排序、属性显示顺序等配置。
 
-- 筛选条件
-- 排序规则
-- 显示列
-- 列顺序
+### Table View
 
-这些 View 共享同一批 Records。你也可以在其他页面创建 Linked View，选择已有 Database 与 View；修改记录后，其他引用同一 Database 的视图刷新后会看到同一份数据。
+Table 适合结构化编辑。属性按列显示，可以直接在单元格里维护 Text、Number、Checkbox、Select、Date 等可写属性，也可以打开记录页面继续编辑正文。
 
-目前还没有 List、Board、Gallery、Calendar 或 Timeline View。
+### List View
+
+List 适合快速纵向浏览。每条记录以 Page 标题为主，并在旁边展示当前 View 选中的属性；筛选、排序、显示属性与属性顺序仍然来自同一个 View 配置。List 不复制 Record，也不会维护另一份标题。
+
+### Board View
+
+Board 使用一个 **Select 属性**作为分组依据：
+
+- 每个 Select option 对应一列，空值进入“未分组”。
+- 更换分组属性只修改当前 View，不会批量改写 Records。
+- 桌面端可以拖动卡片跨列移动；移动实际上更新该 Record 的分组 Select 值。
+- 手机端不依赖触摸拖拽，可以通过卡片上的分组选择器完成同样的移动。
+- Board 卡片仍遵循当前 View 的筛选、排序、显示属性和属性顺序。
+
+新建 Board 后可以先保持“尚未配置分组属性”，再从当前 Database 的 Select 属性中选择分组。
+
+### 多 View 与 Linked View
+
+同一个 Database 的多个 View 共享数据，但配置彼此独立。例如一个 Board 可以按“状态”分组，另一个 Board 可以按“优先级”分组；Table 和 List 也可以保存自己的筛选和排序。
+
+Database Block 只引用 `databaseId` 与 `viewId`。两个 Block 引用同一个 `viewId` 时会看到同一份 View 配置；引用不同 View 时配置独立。你也可以在其他页面创建 Linked View，再次呈现同一个 Database，而不会复制 Records。
 
 ## 基础属性
 
@@ -45,9 +62,9 @@ Eotion 的 Database 用来整理结构化信息。它可以直接插入普通页
 
 Title 属性不可删除。
 
-## 筛选、排序与列设置
+## 筛选、排序与属性显示
 
-Table View 可以组合多个筛选条件和多级排序，并独立控制列的显示与顺序。
+Table、List、Board 共用同一套 View 查询语义：可以组合多个筛选条件和多级排序，并独立控制属性的显示与顺序。Table 把这些属性显示为列，List 显示为记录摘要，Board 显示为卡片信息。Board 会先按服务端筛选与排序得到记录，再按分组 Select 属性组织成列。
 
 Relation 当前支持空 / 非空筛选。Relation 不支持排序；Rollup 与 Formula 当前也不支持筛选或排序。遇到这些不支持的配置时，Eotion 会明确拒绝，而不是先分页再在客户端得到不完整结果。
 
@@ -102,7 +119,8 @@ MCP 的文档读写能力见 [MCP 指南](/guide/mcp)。
 
 当前公开版本刻意保持以下范围：
 
-- 只有 Table View。
+- View 支持 Table、List、Board；暂不提供 Gallery、Calendar、Timeline 或 Chart。
+- Board 只支持按单个 Select 属性分组，不提供多级分组、泳道、WIP 限制或自定义列顺序。
 - Relation 为单向关系。
 - Date Rollup 暂不提供日期 min / max。
 - Rollup / Formula 不支持作为 Filter / Sort 键。
