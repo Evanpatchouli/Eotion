@@ -17,6 +17,8 @@ import {
   validateDatabaseViewConfig,
 } from '@eotion/domain/database'
 import type { Database, DatabaseProperty, DatabasePropertyConfig, DatabaseRecord, DatabaseTableRecord, DatabaseView, DatabaseViewConfig } from '@eotion/domain/database'
+import { isValidDatabaseDateRangeValue } from '@eotion/domain/date'
+import type { DatabaseDateRangeValue } from '@eotion/domain/date'
 export { BLOCK_TYPES }
 
 export interface HealthResponse {
@@ -312,8 +314,22 @@ export const DatabasePropertyDeleteRequestSchema = z.object({
 }).strict()
 export type DatabasePropertyDeleteRequest = z.infer<typeof DatabasePropertyDeleteRequestSchema>
 
+const databaseDateRangeValueSchema = z.object({
+  start: z.string(),
+  end: z.string().optional(),
+  timeZone: z.string().optional(),
+}).strict().refine(isValidDatabaseDateRangeValue) as z.ZodType<DatabaseDateRangeValue>
+const databaseRecordPropertyValueSchema = z.union([
+  z.string(),
+  z.number().finite(),
+  z.boolean(),
+  z.null(),
+  z.array(databaseStableIdSchema).max(DATABASE_RELATION_MAX_LINKS).refine(value => new Set(value).size === value.length),
+  databaseDateRangeValueSchema,
+])
+
 export const DatabaseRecordCellUpdateRequestSchema = z.object({
-  value: z.string().or(z.number().finite()).or(z.boolean()).or(z.array(databaseStableIdSchema).max(DATABASE_RELATION_MAX_LINKS).refine(value => new Set(value).size === value.length)).nullable(),
+  value: databaseRecordPropertyValueSchema,
   expectedDatabaseVersion: z.number().int().positive().safe(),
   expectedRecordVersion: z.number().int().positive().safe(),
   expectedPageUpdatedAt: dateSchema.optional(),
@@ -323,7 +339,7 @@ export type DatabaseRecordCellUpdateRequest = z.infer<typeof DatabaseRecordCellU
 export const DatabaseRecordCreateRequestSchema = z.object({
   id: databaseStableIdSchema,
   pageId: databaseStableIdSchema,
-  properties: z.record(databaseStableIdSchema, z.union([z.string(), z.number().finite(), z.boolean(), z.null(), z.array(databaseStableIdSchema).max(DATABASE_RELATION_MAX_LINKS).refine(value => new Set(value).size === value.length)])),
+  properties: z.record(databaseStableIdSchema, databaseRecordPropertyValueSchema),
 }).strict()
 export type DatabaseRecordCreateRequest = z.infer<typeof DatabaseRecordCreateRequestSchema>
 

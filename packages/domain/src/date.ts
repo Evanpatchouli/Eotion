@@ -110,6 +110,18 @@ export function normalizeDatabaseDateValue(value: unknown): NormalizedDatabaseDa
   }
 }
 
+/** Returns the UTC instant used to sort/filter a date value by its start. */
+export function getDatabaseDateStartInstant(value: unknown): string | null {
+  const normalized = normalizeDatabaseDateValue(value)
+  if (!normalized) return null
+  return normalized.kind === 'date-only' ? `${normalized.start}T00:00:00.000Z` : normalized.start
+}
+
+/** Projects a valid date value to the UTC calendar day used by Formula. */
+export function projectDatabaseDateToFormulaDate(value: unknown): string | null {
+  return normalizeDatabaseDateValue(value)?.start.slice(0, 10) ?? null
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

@@ -82,6 +82,30 @@ test('database create request schemas enforce exact request shapes', () => {
   assert.equal(DatabaseRecordCreateRequestSchema.safeParse({ ...createRecord, extra: true }).success, false)
   assert.equal(DatabaseRecordCreateRequestSchema.safeParse({ ...createRecord, properties: { invalid: Infinity } }).success, false)
 
+  const dateValues = [
+    { start: '2026-02-28' },
+    { start: '2026-02-28', end: '2026-03-01' },
+    { start: '2026-02-28T09:00:00.000Z', timeZone: 'Asia/Shanghai' },
+    { start: '2026-02-28T09:00:00.000Z', end: '2026-02-28T10:00:00.000Z', timeZone: 'Asia/Shanghai' },
+  ]
+  for (const value of dateValues) {
+    assert.equal(DatabaseRecordCreateRequestSchema.safeParse({ ...createRecord, properties: { due: value } }).success, true)
+    assert.equal(DatabaseRecordCellUpdateRequestSchema.safeParse({ value, expectedDatabaseVersion: 1, expectedRecordVersion: 1 }).success, true)
+  }
+  const invalidDateValues = [
+    { start: '2026-02-30' },
+    { start: '2026-02-28', end: '2026-02-27' },
+    { start: '2026-02-28', end: undefined },
+    { start: '2026-02-28', unknown: true },
+    { start: '2026-02-28T09:00:00.000+08:00', timeZone: 'Asia/Shanghai' },
+    { start: '2026-02-28T09:00:00.000Z', timeZone: 'Not/AZone' },
+    { start: '2026-02-28T09:00:00.000Z', timeZone: undefined },
+  ]
+  for (const value of invalidDateValues) {
+    assert.equal(DatabaseRecordCreateRequestSchema.safeParse({ ...createRecord, properties: { due: value } }).success, false)
+    assert.equal(DatabaseRecordCellUpdateRequestSchema.safeParse({ value, expectedDatabaseVersion: 1, expectedRecordVersion: 1 }).success, false)
+  }
+
   const createView = { id: 'view-1', name: 'All tasks', type: 'table' }
   assert.deepEqual(DatabaseViewCreateRequestSchema.parse(createView), createView)
   assert.equal(DatabaseViewCreateRequestSchema.safeParse({ ...createView, type: 'calendar' }).success, false)
@@ -252,16 +276,19 @@ test('database contracts accept exact property, row, filter, sort, and column-or
 test('advanced requests and projected values keep derived fields read-only', () => {
   const relation = { ...property, id: 'rel', name: 'Links', type: 'relation', config: { targetDatabaseId: 'db-2' } }
   const formula = { ...property, id: 'calc', name: 'Score', type: 'formula', config: { expression: { kind: 'literal', value: 2 }, resultType: 'number' } }
+  const date = { ...property, id: 'due', name: 'Due', type: 'date' }
   assert.equal(DatabasePropertyCreateRequestSchema.safeParse({ id: 'rel', name: 'Links', type: 'relation', config: relation.config, expectedDatabaseVersion: 1 }).success, true)
   assert.equal(DatabasePropertyCreateRequestSchema.safeParse({ id: 'rel', name: 'Links', type: 'relation', expectedDatabaseVersion: 1 }).success, false)
   assert.equal(DatabaseRecordCellUpdateRequestSchema.safeParse({ value: ['r1', 'r2'], expectedDatabaseVersion: 1, expectedRecordVersion: 1 }).success, true)
   assert.equal(DatabaseRecordCellUpdateRequestSchema.safeParse({ value: ['r1', 'r1'], expectedDatabaseVersion: 1, expectedRecordVersion: 1 }).success, false)
   assert.equal(DatabaseRecordCreateRequestSchema.safeParse({ id: 'r1', pageId: 'p1', properties: { rel: Array.from({ length: 51 }, (_, i) => `r${i}`) } }).success, false)
-  const table = { database, view, properties: [property, relation, formula], records: [{ id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task', rel: ['r1'], calc: 2 }, version: 1, createdAt: timestamp, updatedAt: timestamp, pageVersion: timestamp }], nextCursor: null }
+  const dateRange = { start: '2026-01-05T23:30:00.000Z', end: '2026-01-06T01:00:00.000Z', timeZone: 'America/Los_Angeles' }
+  const table = { database, view, properties: [property, relation, formula, date], records: [{ id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: { 'title-1': 'A task', rel: ['r1'], calc: 2, due: dateRange }, version: 1, createdAt: timestamp, updatedAt: timestamp, pageVersion: timestamp }], nextCursor: null }
   assert.equal(DatabaseTableResponseSchema.safeParse(table).success, true)
   assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: [{ ...table.records[0], properties: { ...table.records[0].properties, calc: '2' } }] }).success, false)
+  assert.equal(DatabaseTableResponseSchema.safeParse({ ...table, records: [{ ...table.records[0], properties: { ...table.records[0].properties, due: { ...dateRange, zone: 'UTC' } } }] }).success, false)
   const { pageVersion: _pageVersion, ...storedShape } = table.records[0]
-  assert.equal(databaseRecordSchema(table.properties).safeParse({ ...storedShape, properties: { rel: ['r1'], calc: 2 } }).success, false)
+  assert.equal(databaseRecordSchema(table.properties).safeParse({ ...storedShape, properties: { rel: ['r1'], calc: 2, due: dateRange } }).success, false)
 })
 
 test('relation picker contracts bound searches and title resolution', () => {

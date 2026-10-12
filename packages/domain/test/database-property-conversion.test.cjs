@@ -9,6 +9,12 @@ test('property value conversion keeps unchanged values and handles supported sca
   assert.deepEqual(convertDatabasePropertyValueForTypeChange('number', 'text', 0), { action: 'keep', value: '0' })
   assert.deepEqual(convertDatabasePropertyValueForTypeChange('number', 'text', 1e+21), { action: 'keep', value: '1e+21' })
   assert.deepEqual(convertDatabasePropertyValueForTypeChange('date', 'text', '2024-02-29'), { action: 'keep', value: '2024-02-29' })
+  const dateRange = { start: '2024-02-29', end: '2024-03-02', timeZone: 'UTC' }
+  assert.deepEqual(convertDatabasePropertyValueForTypeChange('date', 'date', dateRange), { action: 'keep', value: dateRange })
+  assert.deepEqual(convertDatabasePropertyValueForTypeChange('date', 'text', dateRange), { action: 'clear' })
+  const datetime = { start: '2024-02-29T09:00:00.000Z', end: '2024-02-29T10:00:00.000Z', timeZone: 'UTC' }
+  assert.deepEqual(convertDatabasePropertyValueForTypeChange('date', 'date', datetime), { action: 'keep', value: datetime })
+  assert.deepEqual(convertDatabasePropertyValueForTypeChange('date', 'text', datetime), { action: 'clear' })
 })
 
 test('property value conversion clears invalid, lossy, and unsupported values', () => {

@@ -8,6 +8,8 @@ const {
   isValidDatabaseDateRangeValue,
   isValidDatabaseDateValue,
   normalizeDatabaseDateValue,
+  getDatabaseDateStartInstant,
+  projectDatabaseDateToFormulaDate,
 } = require('../dist/date.js')
 
 test('date-only validation is strict and handles leap years', () => {
@@ -67,4 +69,17 @@ test('datetime normalization preserves canonical instant, range, and timezone wi
   })
   assert.equal(normalizeDatabaseDateValue({ start: '2026-01-05', timeZone: 'Asia/Shanghai' }), null)
   assert.equal(normalizeDatabaseDateValue({ start: '2026-01-05T09:00:00.000Z', timeZone: 'Asia/Shanghai', end: '2026-01-04T09:00:00.000Z' }), null)
+})
+
+test('database date projections use start and UTC calendar day while ignoring range end and timezone', () => {
+  assert.equal(getDatabaseDateStartInstant('2026-01-05'), '2026-01-05T00:00:00.000Z')
+  assert.equal(getDatabaseDateStartInstant({ start: '2026-01-05', end: '2026-01-08' }), '2026-01-05T00:00:00.000Z')
+  const datetime = { start: '2026-01-05T23:30:00.000Z', end: '2026-01-06T01:00:00.000Z', timeZone: 'America/Los_Angeles' }
+  assert.equal(getDatabaseDateStartInstant(datetime), datetime.start)
+  assert.equal(projectDatabaseDateToFormulaDate(datetime), '2026-01-05')
+  assert.equal(projectDatabaseDateToFormulaDate({ start: '2026-01-05', end: '2026-01-08' }), '2026-01-05')
+  for (const invalid of [null, { start: '2026-01-05', end: undefined }, { start: datetime.start, timeZone: '+08:00' }, { start: '2026-01-05', extra: true }]) {
+    assert.equal(getDatabaseDateStartInstant(invalid), null)
+    assert.equal(projectDatabaseDateToFormulaDate(invalid), null)
+  }
 })

@@ -72,6 +72,16 @@ test('record values strictly follow definitions and require the unique non-empty
   assert.equal(validateDatabaseRecordValues({ ...values, 'prop-checkbox': 1 }, properties), false)
   assert.equal(validateDatabaseRecordValues({ ...values, 'prop-select': 'Open' }, properties), false)
   assert.equal(validateDatabaseRecordValues({ ...values, 'prop-date': '2026-02-30' }, properties), false)
+  const dateRange = { start: '2026-02-28', end: '2026-03-01' }
+  assert.equal(validateDatabaseRecordValues({ ...values, 'prop-date': dateRange }, properties), true)
+  assert.equal(validateStoredDatabaseRecordValues({ ...Object.fromEntries(Object.entries(values).filter(([id]) => id !== 'prop-title' && id !== 'prop-date')), 'prop-date': dateRange }, properties), true)
+  assert.equal(validateDatabaseRecordValues({ ...values, 'prop-text': dateRange }, properties), false)
+  assert.equal(validateDatabaseRecordValues({ ...values, 'prop-number': dateRange }, properties), false)
+  for (const property of properties.filter(property => property.type !== 'date')) {
+    assert.equal(validateDatabaseRecordValues({ ...values, [property.id]: dateRange }, properties), false, `${property.type} rejects date objects`)
+  }
+  assert.equal(validateDatabaseRecordValues({ ...values, 'prop-date': { ...dateRange, timezone: 'UTC' } }, properties), false)
+  assert.equal(validateDatabaseRecordValues({ ...values, 'prop-date': { ...dateRange, timeZone: undefined } }, properties), false)
   assert.equal(validateDatabaseRecordValues({ 'prop-title': null }, properties), false)
   assert.equal(validateDatabaseRecordValues({}, properties), false)
   assert.equal(validateDatabaseRecordValues(values, properties.slice(1)), false)
@@ -210,6 +220,14 @@ test('formula shape, types, cycles and evaluator guards', () => {
   assert.equal(evaluateDatabaseFormula({ kind: 'binary', operator: '*', left: { kind: 'literal', value: 1e308 }, right: { kind: 'literal', value: 1e308 } }, () => null), null)
   assert.equal(evaluateDatabaseFormula({ kind: 'if', condition: { kind: 'literal', value: true }, then: { kind: 'property', propertyId: 'prop-number' }, else: literal }, () => 7), 7)
   assert.equal(evaluateDatabaseFormula({ kind: 'call', name: 'concat', args: [{ kind: 'literal', value: 'a' }, { kind: 'literal', value: null }] }, () => null), 'a')
+  const dateRange = { start: '2026-01-01T23:30:00.000Z', end: '2026-01-02T01:00:00.000Z', timeZone: 'America/Los_Angeles' }
+  const dateProperty = { kind: 'property', propertyId: 'date' }
+  const dateLiteral = { kind: 'literal', value: '2026-01-01', valueType: 'date' }
+  assert.equal(evaluateDatabaseFormula(dateProperty, () => dateRange), '2026-01-01')
+  assert.equal(evaluateDatabaseFormula({ kind: 'binary', operator: '==', left: dateProperty, right: dateLiteral }, () => dateRange), true)
+  assert.equal(evaluateDatabaseFormula({ kind: 'call', name: 'empty', args: [dateProperty] }, () => dateRange), false)
+  assert.equal(evaluateDatabaseFormula(dateProperty, () => ({ start: '2026-01-01', end: undefined })), null)
+  assert.equal(evaluateDatabaseFormula(dateProperty, () => ({ start: '2026-01-01', surprise: true })), null)
   assert.equal(evaluateDatabaseFormula({ kind: 'property', propertyId: 'p' }, () => 'x'.repeat(DATABASE_FORMULA_MAX_STRING_LENGTH + 1)), null)
   assert.equal(evaluateDatabaseFormula({ kind: 'call', name: 'concat', args: [{ kind: 'property', propertyId: 'p' }, { kind: 'property', propertyId: 'p' }] }, () => 'x'.repeat(DATABASE_FORMULA_MAX_STRING_LENGTH)), null)
   assert.equal(evaluateDatabaseRollup([1, null, 3], 'avg'), 2)
@@ -224,6 +242,9 @@ test('rollup aggregations keep bounded numeric and empty-value semantics', () =>
   assert.equal(evaluateDatabaseRollup([1, null, 3], 'min'), 1)
   assert.equal(evaluateDatabaseRollup([1, null, 3], 'max'), 3)
   assert.equal(evaluateDatabaseRollup([null, '', 0, false], 'count_values'), 2)
+  const dateObject = { start: '2026-01-01', end: '2026-01-02' }
+  assert.equal(evaluateDatabaseRollup([dateObject], 'count'), 1)
+  assert.equal(evaluateDatabaseRollup([dateObject], 'count_values'), 1)
   assert.equal(evaluateDatabaseRollup([], 'count'), 0)
   assert.equal(evaluateDatabaseRollup([], 'count_values'), 0)
   for (const aggregation of ['sum', 'avg', 'min', 'max']) {

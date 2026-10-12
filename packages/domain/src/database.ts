@@ -1,4 +1,5 @@
-import { isValidDateOnly } from './date'
+import { isValidDatabaseDateValue, isValidDateOnly, projectDatabaseDateToFormulaDate } from './date'
+import type { DatabaseDateRangeValue } from './date'
 
 export type DatabasePropertyType = 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'relation' | 'rollup' | 'formula'
 export type DatabaseBasePropertyType = Exclude<DatabasePropertyType, 'relation' | 'rollup' | 'formula'>
@@ -69,7 +70,7 @@ export interface DatabasePropertyDefinition {
   config?: DatabasePropertyConfig
 }
 
-export type DatabasePropertyValue = string | number | boolean | null | string[]
+export type DatabasePropertyValue = string | number | boolean | null | string[] | DatabaseDateRangeValue
 export type DatabaseRecordValues = Record<string, DatabasePropertyValue>
 
 export type DatabasePropertyValueConversion =
@@ -401,7 +402,7 @@ function isValidPropertyValue(value: unknown, property: DatabaseProperty): boole
     case 'number': return typeof value === 'number' && Number.isFinite(value)
     case 'checkbox': return typeof value === 'boolean'
     case 'select': return typeof value === 'string' && property.options?.some((option) => option.id === value) === true
-    case 'date': return typeof value === 'string' && isValidDateOnly(value)
+    case 'date': return isValidDatabaseDateValue(value)
     case 'relation': return Array.isArray(value) && value.length <= DATABASE_RELATION_MAX_LINKS && value.every(isStableId) && new Set(value).size === value.length
     case 'rollup': return value === null || typeof value === 'number' && Number.isFinite(value)
     case 'formula': return isValidFormulaResult(value, (property.config as { resultType: DatabaseFormulaResultType }).resultType)
@@ -521,6 +522,9 @@ export function evaluateDatabaseFormula(expression: FormulaExpression, readPrope
     if (node.kind === 'literal') return node.value
     if (node.kind === 'property') {
       const value = readProperty(node.propertyId) ?? null
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        return projectDatabaseDateToFormulaDate(value)
+      }
       return typeof value === 'string' && value.length > DATABASE_FORMULA_MAX_STRING_LENGTH
         || typeof value === 'number' && !Number.isFinite(value)
         || Array.isArray(value) && value.length > DATABASE_RELATION_MAX_LINKS ? null : value
