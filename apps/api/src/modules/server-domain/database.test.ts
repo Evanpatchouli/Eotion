@@ -6,7 +6,7 @@ import { Module } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { getConnectionToken, getModelToken, MongooseModule } from '@nestjs/mongoose'
 import type { Connection, Model } from 'mongoose'
-import { DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter } from '@eotion/domain'
+import { DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain'
 import { ServerDomainModule } from './server-domain.module'
 import { DatabaseEntity } from './schemas/database.schema'
 import { PageEntity } from './schemas/page.schema'
@@ -208,7 +208,7 @@ test('database service keeps references scoped and writes initial data atomicall
   await addProperty('done', 'Done', 'checkbox')
   await addProperty('due', 'Due', 'date')
   const unsafeProperty = await addProperty('property.$key', 'Unsafe key', 'text')
-  const cell = async (propertyId: string, value: string | number | boolean | null, expectedPageUpdatedAt?: string) => {
+  const cell = async (propertyId: string, value: DatabasePropertyValue, expectedPageUpdatedAt?: string) => {
     const currentDatabase = await databases.find(owner.id, 'workspace-a', 'database-a')
     const currentRecord = (await databases.listRecords(owner.id, 'workspace-a', 'database-a')).find(row => row.id === 'row-a')
     assert.ok(currentDatabase && currentRecord)
@@ -271,6 +271,54 @@ test('database service keeps references scoped and writes initial data atomicall
   assert.deepEqual(await applyViewFilter({ propertyId: 'due', operator: 'after', value: '2026-10-09' }), ['row-a'])
   assert.deepEqual(await applyViewFilter({ propertyId: 'due', operator: 'before', value: '2026-10-11' }), ['row-a'])
   assert.deepEqual(await applyViewFilter({ propertyId: 'due', operator: 'is_empty' }), ['row-z', 'row-zero'])
+  const setDate = async (recordId: string, value: DatabasePropertyValue) => {
+    const db = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+    const record = (await databases.listRecords(owner.id, 'workspace-a', 'database-a')).find(row => row.id === recordId)!
+    return databases.updateRecordCell(owner.id, 'workspace-a', 'database-a', recordId, 'due', { value, expectedDatabaseVersion: db.version, expectedRecordVersion: record.version })
+  }
+  await setDate('row-a', { start: '2026-10-12T01:00:00.000Z', end: '2026-10-15T00:00:00.000Z', timeZone: 'Asia/Tokyo' })
+  await setDate('row-zero', { start: '2026-10-12', end: '2026-10-15' })
+  await setDate('row-z', '2026-10-12')
+  await databases.createRecordPage(owner.id, 'workspace-a', 'database-a', { id: 'row-empty', pageId: 'page-empty', title: 'Empty date', orderKey: 'f' })
+  assert.deepEqual(await applyViewFilter({ propertyId: 'due', operator: 'is', value: '2026-10-12' }), ['row-a', 'row-z', 'row-zero'])
+  assert.deepEqual(await applyViewFilter({ propertyId: 'due', operator: 'after', value: '2026-10-11' }), ['row-a', 'row-z', 'row-zero'])
+  assert.deepEqual(await applyViewFilter({ propertyId: 'due', operator: 'is_empty' }), ['row-empty'])
+  assert.deepEqual(await applyViewFilter({ propertyId: 'due', operator: 'is_not_empty' }), ['row-a', 'row-z', 'row-zero'])
+  const dateFilterDb = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  const dateFilterView = (await databases.listViews(owner.id, 'workspace-a', 'database-a')).find(view => view.id === 'table-two')!
+  await databases.updateView(owner.id, 'workspace-a', 'database-a', dateFilterView.id, { config: { filters: [], sorts: [{ propertyId: 'due', direction: 'asc' }], visibleProperties: null, propertyOrder: null }, expectedDatabaseVersion: dateFilterDb.version, expectedViewVersion: dateFilterView.version })
+  const dateWindow = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', dateFilterView.id, { limit: 1 })
+  assert.equal(dateWindow.records[0]?.id, 'row-z')
+  assert.equal(dateWindow.records[0]?.properties.due, '2026-10-12')
+  const dateNext = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', dateFilterView.id, { limit: 1, cursor: dateWindow.nextCursor! })
+  assert.equal(dateNext.records[0]?.id, 'row-zero', 'equal UTC start keys use the record id tie-break')
+  const dateLast = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', dateFilterView.id, { limit: 2, cursor: dateNext.nextCursor! })
+  assert.deepEqual(dateLast.records.map(row => row.id), ['row-a', 'row-empty'], 'missing dates sort last and remain reachable through the cursor')
+  const dateTwoFirst = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', dateFilterView.id, { limit: 2 })
+  const dateTwoNext = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', dateFilterView.id, { limit: 2, cursor: dateTwoFirst.nextCursor! })
+  assert.deepEqual([...dateTwoFirst.records, ...dateTwoNext.records].map(row => row.id), ['row-z', 'row-zero', 'row-a', 'row-empty'])
+  const dateDescDb = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  const dateDescView = (await databases.listViews(owner.id, 'workspace-a', 'database-a')).find(view => view.id === 'table-two')!
+  await databases.updateView(owner.id, 'workspace-a', 'database-a', dateDescView.id, { config: { filters: [], sorts: [{ propertyId: 'due', direction: 'desc' }], visibleProperties: null, propertyOrder: null }, expectedDatabaseVersion: dateDescDb.version, expectedViewVersion: dateDescView.version })
+  const dateDescFirst = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', dateDescView.id, { limit: 2 })
+  const dateDescNext = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', dateDescView.id, { limit: 2, cursor: dateDescFirst.nextCursor! })
+  assert.deepEqual([...dateDescFirst.records, ...dateDescNext.records].map(row => row.id), ['row-a', 'row-z', 'row-zero', 'row-empty'])
+  const multiSortDb = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  const multiSortView = (await databases.listViews(owner.id, 'workspace-a', 'database-a')).find(view => view.id === 'table-two')!
+  await databases.updateView(owner.id, 'workspace-a', 'database-a', multiSortView.id, { config: { filters: [], sorts: [{ propertyId: 'due', direction: 'asc' }, { propertyId: 'database-a-title', direction: 'asc' }], visibleProperties: null, propertyOrder: null }, expectedDatabaseVersion: multiSortDb.version, expectedViewVersion: multiSortView.version })
+  const multiSortFirst = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', multiSortView.id, { limit: 2 })
+  const multiSortNext = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', multiSortView.id, { limit: 2, cursor: multiSortFirst.nextCursor! })
+  assert.deepEqual([...multiSortFirst.records, ...multiSortNext.records].map(row => row.id), ['row-z', 'row-zero', 'row-a', 'row-empty'], 'date anchor prefix is followed by the title sort key')
+  const staleDateCursor = await databases.getViewRecords(owner.id, 'workspace-a', 'database-a', multiSortView.id, { limit: 1 })
+  await cell('notes', 'date cursor fence change')
+  await assert.rejects(databases.getViewRecords(owner.id, 'workspace-a', 'database-a', multiSortView.id, { limit: 1, cursor: staleDateCursor.nextCursor! }), /Database or view changed/)
+  const emptyDateRecord = (await databases.listRecords(owner.id, 'workspace-a', 'database-a')).find(row => row.id === 'row-empty')!
+  const emptyDateDatabase = (await databases.find(owner.id, 'workspace-a', 'database-a'))!
+  await databases.deleteRecord(owner.id, 'workspace-a', 'database-a', 'row-empty', { expectedDatabaseVersion: emptyDateDatabase.version, expectedRecordVersion: emptyDateRecord.version })
+  assert.equal(await pages.delete(owner.id, 'workspace-a', 'page-empty'), true)
+  await setDate('row-a', '2026-10-10')
+  await setDate('row-zero', null)
+  await setDate('row-z', null)
   await cell('notes', 'symbols [.*$]')
   assert.deepEqual(await applyViewFilter({ propertyId: 'notes', operator: 'contains', value: '.*$' }), ['row-a'])
   await cell('notes', null)
@@ -1034,4 +1082,148 @@ test('property type mutation atomically migrates records, repairs views and prot
     assert.equal(Object.hasOwn((await propertyModel.findOne({ id: 'value' }).lean())!, 'config'), false)
     assert.equal(Object.hasOwn((await recordModel.findOne({ id: 'mutation-row-0' }).lean())!.properties, 'value'), false)
   }
+})
+
+test('P11.1B Date values round-trip through createRecord, derived reads, CAS rollback, and type conversion', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  const databases = app.get(DatabaseService)
+  const pages = app.get(PageService)
+  const auth = app.get(AuthService)
+  const workspaces = app.get(WorkspaceService)
+  const databaseModel = app.get<Model<unknown>>(getModelToken(DatabaseEntity.name))
+  const propertyModel = app.get<Model<unknown>>(getModelToken(DatabasePropertyEntity.name))
+  const recordModel = app.get<Model<unknown>>(getModelToken(DatabaseRecordEntity.name))
+  await Promise.all([DatabaseEntity, DatabasePropertyEntity, DatabaseRecordEntity, DatabaseViewEntity].map(entity => app.get<Model<unknown>>(getModelToken(entity.name)).init()))
+  const owner = await auth.register(`p11b-date-${randomUUID()}@example.com`, 'correct horse battery staple')
+  const workspaceId = 'p11b-date-workspace'
+  const databaseId = 'p11b-date-database'
+  const targetDatabaseId = 'p11b-date-target'
+  await workspaces.create(owner.id, { id: workspaceId, name: 'P11.1B dates' })
+  await pages.create(owner.id, workspaceId, { id: 'p11b-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  await databases.createInPage(owner.id, workspaceId, 'p11b-home', { id: databaseId, name: 'Date values', titlePropertyId: 'p11b-title', viewId: 'p11b-view', blockId: 'p11b-block', orderKey: 'a', parentBlockId: null })
+  await databases.createInPage(owner.id, workspaceId, 'p11b-home', { id: targetDatabaseId, name: 'Date targets', titlePropertyId: 'p11b-target-title', viewId: 'p11b-target-view', blockId: 'p11b-target-block', orderKey: 'b', parentBlockId: null })
+  const add = async (database: string, definition: { id: string; name: string; type: 'date' | 'text' | 'number' | 'checkbox' | 'select' | 'formula' | 'relation' | 'rollup'; options?: Array<{ id: string; name: string }>; config?: DatabasePropertyConfig }) => {
+    const current = (await databases.find(owner.id, workspaceId, database))!
+    return databases.createProperty(owner.id, workspaceId, database, { ...definition, expectedDatabaseVersion: current.version })
+  }
+  const due = (await add(databaseId, { id: 'p11b-due', name: 'Due', type: 'date' })).property
+  await add(databaseId, { id: 'p11b-text', name: 'Text', type: 'text' })
+  await add(databaseId, { id: 'p11b-number', name: 'Number', type: 'number' })
+  await add(databaseId, { id: 'p11b-checkbox', name: 'Checkbox', type: 'checkbox' })
+  await add(databaseId, { id: 'p11b-select', name: 'Select', type: 'select', options: [{ id: 'p11b-option', name: 'Option' }] })
+  const formula = (await add(databaseId, { id: 'p11b-formula-date', name: 'Formula date', type: 'formula', config: { expression: { kind: 'property', propertyId: due.id }, resultType: 'date' } })).property
+  const targetDate = (await add(targetDatabaseId, { id: 'p11b-target-date', name: 'Target date', type: 'date' })).property
+  const relation = (await add(databaseId, { id: 'p11b-links', name: 'Targets', type: 'relation', config: { targetDatabaseId } })).property
+  await add(databaseId, { id: 'p11b-count', name: 'Target count', type: 'rollup', config: { relationPropertyId: relation.id, targetPropertyId: targetDate.id, aggregation: 'count' } })
+  await add(databaseId, { id: 'p11b-count-values', name: 'Target values', type: 'rollup', config: { relationPropertyId: relation.id, targetPropertyId: targetDate.id, aggregation: 'count_values' } })
+  for (const aggregation of ['min', 'max'] as const) {
+    const current = (await databases.find(owner.id, workspaceId, databaseId))!
+    await assert.rejects(databases.createProperty(owner.id, workspaceId, databaseId, { id: `p11b-${aggregation}`, name: aggregation, type: 'rollup', config: { relationPropertyId: relation.id, targetPropertyId: targetDate.id, aggregation }, expectedDatabaseVersion: current.version }), /Invalid database property/i)
+    assert.equal((await databases.find(owner.id, workspaceId, databaseId))?.version, current.version)
+  }
+
+  const targetValues = [
+    { start: '2026-10-10', end: '2026-10-11' },
+    '2026-10-12',
+    undefined,
+  ] as const
+  const targetIds: string[] = []
+  for (const [index, value] of targetValues.entries()) {
+    const id = `p11b-target-${index}`
+    targetIds.push(id)
+    await databases.createRecordPage(owner.id, workspaceId, targetDatabaseId, {
+      id, pageId: `${id}-page`, title: `Target ${index}`, orderKey: String(index),
+      ...(value === undefined ? {} : { properties: { [targetDate.id]: value } }),
+    })
+  }
+
+  const dateValues: readonly DatabasePropertyValue[] = [
+    '2026-10-11',
+    { start: '2026-10-12' },
+    { start: '2026-10-13', end: '2026-10-14' },
+    { start: '2026-10-12T23:00:00.000Z', timeZone: 'Asia/Tokyo' },
+    { start: '2026-10-13T01:00:00.000Z', end: '2026-10-14T01:00:00.000Z', timeZone: 'Asia/Tokyo' },
+  ]
+  const recordIds: string[] = []
+  for (const [index, value] of dateValues.entries()) {
+    const id = `p11b-record-${index}`
+    const pageId = `${id}-page`
+    const titleValue = `Date ${index}`
+    recordIds.push(id)
+    await pages.create(owner.id, workspaceId, { id: pageId, parentPageId: null, title: titleValue, orderKey: String(index + 10) })
+    await databases.createRecord(owner.id, workspaceId, databaseId, {
+      id, pageId,
+      properties: { 'p11b-title': titleValue, [due.id]: value, ...(index === 4 ? { [relation.id]: targetIds } : {}) },
+    })
+    const database = (await databases.find(owner.id, workspaceId, databaseId))!
+    const record = (await databases.listRecords(owner.id, workspaceId, databaseId)).find(row => row.id === id)!
+    await databases.updateRecordCell(owner.id, workspaceId, databaseId, id, due.id, { value, expectedDatabaseVersion: database.version, expectedRecordVersion: record.version })
+  }
+  const rows = await databases.getViewRecords(owner.id, workspaceId, databaseId, 'p11b-view', { limit: 10 })
+  for (const [index, id] of recordIds.entries()) assert.deepEqual(rows.records.find(row => row.id === id)?.properties[due.id], dateValues[index], `date shape ${index} remains raw after create, patch, and read`)
+  assert.equal(rows.records.find(row => row.id === recordIds[3])?.properties[formula.id], '2026-10-12', 'Formula projects the UTC start day even when the local timezone is on the next day')
+  assert.equal(rows.records.find(row => row.id === recordIds[4])?.properties[formula.id], '2026-10-13', 'Formula uses start and ignores range end')
+  assert.equal(rows.records.find(row => row.id === recordIds[4])?.properties['p11b-count-values'], 2, 'count_values counts Date objects as values and ignores the missing target date')
+  assert.equal(rows.records.find(row => row.id === recordIds[4])?.properties['p11b-count'], 3, 'count counts linked records regardless of Date emptiness')
+  await assert.rejects(databases.updateRecordCell(owner.id, workspaceId, databaseId, recordIds[4], formula.id, { value: '2026-10-13', expectedDatabaseVersion: rows.database.version, expectedRecordVersion: rows.records.find(row => row.id === recordIds[4])!.version }), /read only/)
+  await assert.rejects(databases.updateRecordCell(owner.id, workspaceId, databaseId, recordIds[4], 'p11b-count', { value: 3, expectedDatabaseVersion: rows.database.version, expectedRecordVersion: rows.records.find(row => row.id === recordIds[4])!.version }), /read only/)
+
+  for (const propertyId of ['p11b-text', 'p11b-number', 'p11b-checkbox', 'p11b-select', 'p11b-title']) {
+    const beforeDatabase = (await databases.find(owner.id, workspaceId, databaseId))!
+    const beforeRecord = (await databases.listRecords(owner.id, workspaceId, databaseId)).find(row => row.id === recordIds[0])!
+    const beforeProps = { ...beforeRecord.properties }
+    await assert.rejects(databases.updateRecordCell(owner.id, workspaceId, databaseId, recordIds[0], propertyId, {
+      value: { start: '2026-10-15' }, expectedDatabaseVersion: beforeDatabase.version, expectedRecordVersion: beforeRecord.version,
+      ...(propertyId === 'p11b-title' ? { expectedPageUpdatedAt: beforeRecord.pageVersion } : {}),
+    }), error => (error as { status?: number }).status === 400)
+    assert.equal((await databases.find(owner.id, workspaceId, databaseId))?.version, beforeDatabase.version)
+    assert.deepEqual((await databases.listRecords(owner.id, workspaceId, databaseId)).find(row => row.id === recordIds[0])?.properties, beforeProps)
+  }
+
+  const beforeStaleDatabase = (await databases.find(owner.id, workspaceId, databaseId))!
+  const beforeStaleRecord = (await databases.listRecords(owner.id, workspaceId, databaseId)).find(row => row.id === recordIds[4])!
+  const rawSnapshot = async () => await recordModel.find({ databaseId }).sort({ id: 1 }).lean() as unknown as Array<{ id: string; properties: Record<string, unknown>; version: number }>
+  const rawBeforeStale = await rawSnapshot()
+  await assert.rejects(databases.updateRecordCell(owner.id, workspaceId, databaseId, recordIds[4], due.id, { value: { start: '2026-10-15' }, expectedDatabaseVersion: beforeStaleDatabase.version, expectedRecordVersion: beforeStaleRecord.version - 1 }), /record version is stale/i)
+  assert.equal((await databases.find(owner.id, workspaceId, databaseId))?.version, beforeStaleDatabase.version)
+  assert.deepEqual(await rawSnapshot(), rawBeforeStale)
+
+  const recordRepository = app.get(DatabaseRecordRepository)
+  const saveProperties = recordRepository.updateProperties.bind(recordRepository)
+  recordRepository.updateProperties = async (...args: Parameters<typeof saveProperties>) => saveProperties(...args).then(() => null)
+  try {
+    await assert.rejects(databases.updateRecordCell(owner.id, workspaceId, databaseId, recordIds[4], due.id, { value: { start: '2026-10-15' }, expectedDatabaseVersion: beforeStaleDatabase.version, expectedRecordVersion: beforeStaleRecord.version }), /record version is stale/i)
+  } finally {
+    recordRepository.updateProperties = saveProperties
+  }
+  assert.equal((await databases.find(owner.id, workspaceId, databaseId))?.version, beforeStaleDatabase.version)
+  assert.deepEqual(await rawSnapshot(), rawBeforeStale, 'failed date cell CAS rolls back the database fence and all date values')
+
+  const sameTypeDatabase = (await databases.find(owner.id, workspaceId, databaseId))!
+  const sameTypeProperty = (await databases.listProperties(owner.id, workspaceId, databaseId)).find(property => property.id === due.id)!
+  const beforeSameType = await rawSnapshot()
+  const sameType = await databases.changePropertyType(owner.id, workspaceId, databaseId, due.id, { targetType: 'date', expectedDatabaseVersion: sameTypeDatabase.version, expectedPropertyVersion: sameTypeProperty.version })
+  assert.deepEqual([sameType.convertedRecordCount, sameType.clearedRecordCount], [0, 0])
+  assert.deepEqual(await rawSnapshot(), beforeSameType, 'same-type Date conversion preserves range and timezone fields')
+  await databases.deleteProperty(owner.id, workspaceId, databaseId, formula.id, { expectedDatabaseVersion: (await databases.find(owner.id, workspaceId, databaseId))!.version, expectedPropertyVersion: formula.version })
+  const conversionDb = (await databases.find(owner.id, workspaceId, databaseId))!
+  const conversionProperty = (await databases.listProperties(owner.id, workspaceId, databaseId)).find(property => property.id === due.id)!
+  const beforeConversion = await rawSnapshot()
+  recordRepository.updateProperties = async (...args: Parameters<typeof saveProperties>) => saveProperties(...args).then(() => null)
+  try {
+    await assert.rejects(databases.changePropertyType(owner.id, workspaceId, databaseId, due.id, { targetType: 'text', expectedDatabaseVersion: conversionDb.version, expectedPropertyVersion: conversionProperty.version }), /record changed during property type conversion/)
+  } finally {
+    recordRepository.updateProperties = saveProperties
+  }
+  assert.equal((await databases.find(owner.id, workspaceId, databaseId))?.version, conversionDb.version)
+  assert.equal((await databases.listProperties(owner.id, workspaceId, databaseId)).find(property => property.id === due.id)?.version, conversionProperty.version)
+  assert.deepEqual(await rawSnapshot(), beforeConversion, 'failed date type conversion rolls back every record write and version')
+  await databases.changePropertyType(owner.id, workspaceId, databaseId, due.id, { targetType: 'text', expectedDatabaseVersion: conversionDb.version, expectedPropertyVersion: conversionProperty.version })
+  const afterConversion = await rawSnapshot()
+  assert.equal(afterConversion.find(row => row.id === recordIds[0])?.properties[due.id], '2026-10-11', 'legacy Date string to text is preserved')
+  for (const id of recordIds.slice(1)) assert.equal(Object.hasOwn(afterConversion.find(row => row.id === id)!.properties, due.id), false, 'range and datetime objects clear when changed to text')
+  assert.equal(((await databaseModel.findOne({ id: databaseId }).lean()) as unknown as { version: number }).version, conversionDb.version + 1)
+  assert.ok(await propertyModel.findOne({ id: due.id, type: 'text' }).lean())
 })

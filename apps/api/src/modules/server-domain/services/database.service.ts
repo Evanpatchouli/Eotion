@@ -3,6 +3,7 @@ import { InjectConnection } from '@nestjs/mongoose'
 import { createHash } from 'node:crypto'
 import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression } from '@eotion/domain'
 import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
+import type { DatabaseRecordPageCreateRequest } from '@eotion/contracts'
 import type { DatabaseTableResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
@@ -176,7 +177,7 @@ export class DatabaseService {
     })
   }
 
-  async createRecordPage(userId: string, workspaceId: string, databaseId: string, input: { id: string; pageId: string; title: string; orderKey: string }): Promise<{ record: DatabaseTableRecord; page: Awaited<ReturnType<PageRepository['create']>> }> {
+  async createRecordPage(userId: string, workspaceId: string, databaseId: string, input: DatabaseRecordPageCreateRequest): Promise<{ record: DatabaseTableRecord; page: Awaited<ReturnType<PageRepository['create']>> }> {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabaseRecordPageCreateRequestSchema, input)
     return this.transact(async session => {
@@ -186,9 +187,17 @@ export class DatabaseService {
       const properties = await this.properties.list(workspaceId, databaseId, session)
       const title = properties.find(property => property.type === 'title')
       if (!title) throw new BadRequestException('Database title property is missing')
+      const values = { ...(input.properties ?? {}) }
+      if (!validateStoredDatabaseRecordValues(values, properties)) throw new BadRequestException('Invalid database record properties')
+      for (const relation of properties.filter(property => property.type === 'relation')) {
+        const targetId = (relation.config as { targetDatabaseId: string }).targetDatabaseId
+        await this.touchAdvanced(workspaceId, [databaseId, targetId], session)
+        if (Object.hasOwn(values, relation.id)) await this.assertRelationValues(workspaceId, targetId, values[relation.id], session)
+      }
+      for (const [propertyId, value] of Object.entries(values)) if (value === null) delete values[propertyId]
       const page = await this.pages.create(workspaceId, { id: input.pageId, parentPageId: null, title: input.title, orderKey: input.orderKey, role: 'database-record' }, session)
-      const record = await this.records.create({ id: input.id, workspaceId, databaseId: database.id, pageId: page.id, properties: {}, version: 1 }, session)
-      const projected = { ...record, properties: { [title.id]: page.title }, pageVersion: page.updatedAt }
+      const record = await this.records.create({ id: input.id, workspaceId, databaseId: database.id, pageId: page.id, properties: values, version: 1 }, session)
+      const projected = { ...record, properties: { ...record.properties, [title.id]: page.title }, pageVersion: page.updatedAt }
       return { record: (await this.projectDerived(workspaceId, [projected], properties, session))[0]!, page }
     })
   }

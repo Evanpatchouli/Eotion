@@ -42,6 +42,19 @@ export type { MobileP1Ping, MobileP1Pong } from './mobile.js'
 const idSchema = z.string().trim().min(1)
 const nameSchema = z.string().trim().min(1).max(200)
 const databaseStableIdSchema = z.string().min(1).max(256).refine((value) => value === value.trim(), 'Expected a stable database id')
+const databaseDateRangeValueSchema = z.object({
+  start: z.string(),
+  end: z.string().optional(),
+  timeZone: z.string().optional(),
+}).strict().refine(isValidDatabaseDateRangeValue) as z.ZodType<DatabaseDateRangeValue>
+const databaseRecordPropertyValueSchema = z.union([
+  z.string(),
+  z.number().finite(),
+  z.boolean(),
+  z.null(),
+  z.array(databaseStableIdSchema).max(DATABASE_RELATION_MAX_LINKS).refine(value => new Set(value).size === value.length),
+  databaseDateRangeValueSchema,
+])
 const databaseNameSchema = z.string().min(1).max(200).refine((value) => value === value.trim(), 'Expected a stable database name')
 const emailSchema = z.string().trim().min(1).max(320).pipe(z.email())
 const passwordSchema = z.string().min(1).max(1024)
@@ -174,6 +187,7 @@ export const DatabaseRecordPageCreateRequestSchema = z.object({
   pageId: databaseStableIdSchema,
   title: nameSchema,
   orderKey: idSchema,
+  properties: z.record(databaseStableIdSchema, databaseRecordPropertyValueSchema).optional(),
 }).strict()
 export type DatabaseRecordPageCreateRequest = z.infer<typeof DatabaseRecordPageCreateRequestSchema>
 
@@ -313,20 +327,6 @@ export const DatabasePropertyDeleteRequestSchema = z.object({
   expectedPropertyVersion: z.number().int().positive().safe(),
 }).strict()
 export type DatabasePropertyDeleteRequest = z.infer<typeof DatabasePropertyDeleteRequestSchema>
-
-const databaseDateRangeValueSchema = z.object({
-  start: z.string(),
-  end: z.string().optional(),
-  timeZone: z.string().optional(),
-}).strict().refine(isValidDatabaseDateRangeValue) as z.ZodType<DatabaseDateRangeValue>
-const databaseRecordPropertyValueSchema = z.union([
-  z.string(),
-  z.number().finite(),
-  z.boolean(),
-  z.null(),
-  z.array(databaseStableIdSchema).max(DATABASE_RELATION_MAX_LINKS).refine(value => new Set(value).size === value.length),
-  databaseDateRangeValueSchema,
-])
 
 export const DatabaseRecordCellUpdateRequestSchema = z.object({
   value: databaseRecordPropertyValueSchema,

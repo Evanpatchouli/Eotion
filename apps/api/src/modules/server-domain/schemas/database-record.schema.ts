@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { HydratedDocument } from 'mongoose'
+import type { DatabaseRecordValues } from '@eotion/domain'
 
 @Schema({ collection: 'database_records', timestamps: true, versionKey: false })
 export class DatabaseRecordEntity {
@@ -7,7 +8,7 @@ export class DatabaseRecordEntity {
   @Prop({ type: String, required: true }) workspaceId!: string
   @Prop({ type: String, required: true }) databaseId!: string
   @Prop({ type: String, required: true }) pageId!: string
-  @Prop({ type: Object, required: true, default: {} }) properties!: Record<string, string | number | boolean | null | string[]>
+  @Prop({ type: Object, required: true, default: {} }) properties!: DatabaseRecordValues
   @Prop({ type: Number, required: true, default: 1 }) version!: number
   createdAt!: Date
   updatedAt!: Date

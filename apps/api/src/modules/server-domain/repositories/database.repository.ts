@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { DATABASE_RECORD_SCAN_MAX_RECORDS, DEFAULT_DATABASE_VIEW_CONFIG } from '@eotion/domain'
 import type { Database, DatabaseProperty, DatabaseRecord, DatabaseTableRecord, DatabaseView, DatabaseViewConfig } from '@eotion/domain'
+import { getDatabaseDateStartInstant } from '@eotion/domain/date'
 import type { ClientSession, Model, PipelineStage } from 'mongoose'
 import { DatabaseDocument, DatabaseEntity } from '../schemas/database.schema'
 import { DatabasePropertyDocument, DatabasePropertyEntity } from '../schemas/database-property.schema'
@@ -164,6 +165,27 @@ export class DatabaseRecordRepository {
       : ({ $getField: { field: { $literal: property.id }, input: { $ifNull: ['$properties', {}] } } } as unknown)]))
     const propertyExpression = (id: string): unknown => ({ $ifNull: [expressions.get(id), null] })
     const emptyExpression = (expression: unknown): unknown => ({ $or: [{ $eq: [expression, null] }, { $eq: [expression, ''] }] })
+    const dateStartExpression = (expression: unknown): unknown => ({ $let: {
+      vars: { raw: expression },
+      in: { $let: {
+        vars: { start: { $cond: [
+          { $eq: [{ $type: '$$raw' }, 'object'] },
+          { $getField: { field: 'start', input: '$$raw' } },
+          '$$raw',
+        ] } },
+        in: { $cond: [
+          { $ne: [{ $type: '$$start' }, 'string'] },
+          null,
+          { $switch: {
+            branches: [
+              { case: { $eq: [{ $strLenCP: '$$start' }, 10] }, then: { $concat: ['$$start', 'T00:00:00.000Z'] } },
+              { case: { $eq: [{ $strLenCP: '$$start' }, 24] }, then: '$$start' },
+            ],
+            default: null,
+          } },
+        ] },
+      } },
+    } })
     const pipeline: Record<string, unknown>[] = [
       { $match: { workspaceId: input.workspaceId, databaseId: input.databaseId } },
       { $lookup: { from: 'pages', let: { pageId: '$pageId' }, pipeline: [
@@ -189,11 +211,14 @@ export class DatabaseRecordRepository {
         const contains = { $gte: [{ $indexOfCP: [{ $ifNull: [expression, ''] }, expected] }, 0] }
         return operator === 'contains' ? { $and: [{ $not: [emptyExpression(expression)] }, contains] } : { $and: [{ $not: [emptyExpression(expression)] }, { $not: [contains] }] }
       }
+      const comparedExpression = property?.type === 'date'
+        ? { $substrCP: [dateStartExpression(expression), 0, 10] }
+        : expression
       const compare = operator === 'is' || operator === 'eq' ? '$eq'
         : operator === 'is_not' || operator === 'ne' ? '$ne'
           : operator === 'gt' || operator === 'after' ? '$gt'
             : operator === 'gte' ? '$gte' : operator === 'lt' || operator === 'before' ? '$lt' : '$lte'
-      const result = { [compare]: [expression, expected] }
+      const result = { [compare]: [comparedExpression, expected] }
       return { $and: [{ $not: [emptyExpression(expression)] }, result] }
     })
     if (filterExpr.length > 0) pipeline.push({ $match: { $expr: { $and: filterExpr } } })
@@ -201,7 +226,10 @@ export class DatabaseRecordRepository {
     const sortFields: Record<string, unknown> = {}
     const sortOrder: Record<string, 1 | -1> = {}
     input.config.sorts.forEach((sort, index) => {
-      const expression = propertyExpression(sort.propertyId)
+      const rawExpression = propertyExpression(sort.propertyId)
+      const expression = input.properties.find(property => property.id === sort.propertyId)?.type === 'date'
+        ? dateStartExpression(rawExpression)
+        : rawExpression
       const emptyKey = `_sortEmpty${index}`
       const valueKey = `_sortValue${index}`
       sortFields[emptyKey] = { $cond: [emptyExpression(expression), 1, 0] }
@@ -218,7 +246,9 @@ export class DatabaseRecordRepository {
         const branch: unknown[] = []
         const prefix: unknown[] = []
         input.config.sorts.forEach((sort, index) => {
-          const raw = Object.hasOwn(anchor.properties, sort.propertyId) ? anchor.properties[sort.propertyId] : undefined
+          const property = input.properties.find(item => item.id === sort.propertyId)
+          const anchorValue = Object.hasOwn(anchor.properties, sort.propertyId) ? anchor.properties[sort.propertyId] : undefined
+          const raw = property?.type === 'date' ? getDatabaseDateStartInstant(anchorValue) ?? undefined : anchorValue
           const isEmpty = raw === undefined || raw === null || raw === ''
           const value = isEmpty ? null : raw
           const emptyKey = `$_sortEmpty${index}`

@@ -147,6 +147,9 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
     current = await table()
     const checkboxCreate = await createProperty({ id: 'db-http-done', name: 'Done', type: 'checkbox', expectedDatabaseVersion: current.database.version })
     assert.equal(checkboxCreate.status, 201)
+    current = await table()
+    const dateCreate = await createProperty({ id: 'db-http-due', name: 'Due', type: 'date', expectedDatabaseVersion: current.database.version })
+    assert.equal(dateCreate.status, 201)
 
     current = await table()
     const selectRoute = routeForProperty(selectId)
@@ -202,6 +205,30 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
     current = await table()
     const validCheckbox = await request(baseUrl, cellRoute('db-http-done'), 'PATCH', { cookie, body: { ...getCell(current, 'db-http-done'), value: true } })
     assert.equal(validCheckbox.status, 200)
+    current = await table()
+    const dateCellRoute = cellRoute('db-http-due')
+    const legacyDate = await request(baseUrl, dateCellRoute, 'PATCH', { cookie, body: { ...getCell(current, 'db-http-due'), value: '2026-10-11' } })
+    assert.equal(legacyDate.status, 200)
+    assert.equal((await table()).records[0].properties['db-http-due'], '2026-10-11')
+    current = await table()
+    const validDate = await request(baseUrl, dateCellRoute, 'PATCH', { cookie, body: { ...getCell(current, 'db-http-due'), value: { start: '2026-10-12', end: '2026-10-14' } } })
+    assert.equal(validDate.status, 200)
+    assert.deepEqual(validDate.body.record.properties['db-http-due'], { start: '2026-10-12', end: '2026-10-14' })
+    assert.deepEqual((await table()).records[0].properties['db-http-due'], { start: '2026-10-12', end: '2026-10-14' }, 'GET preserves the stored date range object')
+    current = await table()
+    const validDateTime = await request(baseUrl, dateCellRoute, 'PATCH', { cookie, body: { ...getCell(current, 'db-http-due'), value: { start: '2026-10-12T01:00:00.000Z', timeZone: 'Asia/Tokyo' } } })
+    assert.equal(validDateTime.status, 200)
+    assert.deepEqual((await table()).records[0].properties['db-http-due'], { start: '2026-10-12T01:00:00.000Z', timeZone: 'Asia/Tokyo' })
+    current = await table()
+    for (const value of [
+      { start: '2026-10-12T01:00:00.000Z', timeZone: 'Not/AZone' },
+      { start: '2026-10-13', end: '2026-10-12' },
+      { start: '2026-10-12', unknown: true },
+    ]) {
+      const invalidDate = await request(baseUrl, dateCellRoute, 'PATCH', { cookie, body: { ...getCell(current, 'db-http-due'), value } })
+      assert.equal(invalidDate.status, 400)
+      current = await table()
+    }
 
     current = await table()
     const titleCellRoute = cellRoute(titlePropertyId)
@@ -768,6 +795,133 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
       await expectFence(`?cursor=${encodeURIComponent(configFirst.nextCursor)}`)
       assert.deepEqual(await read(), await read('table'), 'both endpoints can restart after config changes')
     })
+  } finally {
+    if (!app) {
+      if (previousMongoUri === undefined) delete process.env.MONGODB_URI
+      else process.env.MONGODB_URI = previousMongoUri
+      if (previousWebOrigin === undefined) delete process.env.WEB_ORIGIN
+      else process.env.WEB_ORIGIN = previousWebOrigin
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+      else process.env.NODE_ENV = previousNodeEnv
+    }
+  }
+})
+
+test('P11.1B HTTP Record create, cell patch, and GET preserve all Date wire shapes', async t => {
+  const previousMongoUri = process.env.MONGODB_URI
+  const previousWebOrigin = process.env.WEB_ORIGIN
+  const previousNodeEnv = process.env.NODE_ENV
+  process.env.MONGODB_URI = testMongoUri()
+  process.env.WEB_ORIGIN = 'https://trusted.example.test'
+  delete process.env.NODE_ENV
+  let app: Awaited<ReturnType<typeof NestFactory.create>> | undefined
+  let connection: Connection | undefined
+  try {
+    @Module({ imports: [ConfigModule.forRoot({ isGlobal: true }), MongooseModule.forRoot(process.env.MONGODB_URI!), HttpApiModule] })
+    class P11DateHttpTestModule {}
+    app = await NestFactory.create(P11DateHttpTestModule, new FastifyAdapter(), { logger: false })
+    app.setGlobalPrefix('api')
+    await app.listen(0, '127.0.0.1')
+    const address = app.getHttpServer().address()
+    assert.ok(address && typeof address === 'object')
+    const baseUrl = `http://127.0.0.1:${address.port}`
+    connection = app.get<Connection>(getConnectionToken())
+    t.after(async () => {
+      try { await connection?.dropDatabase() } finally {
+        await app?.close()
+        if (previousMongoUri === undefined) delete process.env.MONGODB_URI
+        else process.env.MONGODB_URI = previousMongoUri
+        if (previousWebOrigin === undefined) delete process.env.WEB_ORIGIN
+        else process.env.WEB_ORIGIN = previousWebOrigin
+        if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+        else process.env.NODE_ENV = previousNodeEnv
+      }
+    })
+
+    const credentials = { email: `p11b-http-${randomUUID()}@example.test`, password: 'correct horse battery staple' }
+    assert.equal((await request(baseUrl, '/api/auth/register', 'POST', { body: credentials })).status, 201)
+    const login = await request(baseUrl, '/api/auth/login', 'POST', { body: credentials })
+    assert.equal(login.status, 201)
+    const cookie = cookieFrom(login)
+    const workspaceId = 'p11b-http-workspace'
+    assert.equal((await request(baseUrl, '/api/workspaces', 'POST', { cookie, body: { id: workspaceId, name: 'P11 dates' } })).status, 201)
+    assert.equal((await request(baseUrl, `/api/workspaces/${workspaceId}/pages`, 'POST', { cookie, body: { id: 'p11b-http-home', parentPageId: null, title: 'Home', orderKey: 'a' } })).status, 201)
+    const databaseId = 'p11b-http-dates'
+    const titleId = 'p11b-http-title'
+    const dueId = 'p11b-http-due'
+    const viewId = 'p11b-http-view'
+    const route = `/api/workspaces/${workspaceId}/databases/${databaseId}`
+    const table = async () => {
+      const response = await request(baseUrl, `${route}/views/${viewId}/records?limit=20`, 'GET', { cookie })
+      assert.equal(response.status, 200)
+      return response.body
+    }
+    const created = await request(baseUrl, `/api/workspaces/${workspaceId}/pages/p11b-http-home/databases`, 'POST', { cookie, body: { id: databaseId, name: 'Dates', titlePropertyId: titleId, viewId, blockId: 'p11b-http-block', orderKey: 'b', parentBlockId: null } })
+    assert.equal(created.status, 201)
+    const createProperty = async (input: Record<string, unknown>) => {
+      const current = await table()
+      const response = await request(baseUrl, `${route}/properties`, 'POST', { cookie, body: { ...input, expectedDatabaseVersion: current.database.version } })
+      assert.equal(response.status, 201, JSON.stringify(response.body))
+    }
+    await createProperty({ id: dueId, name: 'Due', type: 'date' })
+    await createProperty({ id: 'p11b-http-text', name: 'Text', type: 'text' })
+    await createProperty({ id: 'p11b-http-number', name: 'Number', type: 'number' })
+    await createProperty({ id: 'p11b-http-checkbox', name: 'Checkbox', type: 'checkbox' })
+    await createProperty({ id: 'p11b-http-select', name: 'Select', type: 'select', options: [{ id: 'p11b-http-option', name: 'Option' }] })
+    await createProperty({ id: 'p11b-http-formula', name: 'Formula date', type: 'formula', config: { expression: { kind: 'property', propertyId: dueId }, resultType: 'date' } })
+
+    const wireValues = [
+      '2026-10-11',
+      { start: '2026-10-12' },
+      { start: '2026-10-13', end: '2026-10-14' },
+      { start: '2026-10-12T23:00:00.000Z', timeZone: 'Asia/Tokyo' },
+      { start: '2026-10-13T01:00:00.000Z', end: '2026-10-14T01:00:00.000Z', timeZone: 'Asia/Tokyo' },
+    ] as const
+    const recordIds: string[] = []
+    for (const [index, value] of wireValues.entries()) {
+      const id = `p11b-http-record-${index}`
+      recordIds.push(id)
+      const response = await request(baseUrl, `${route}/records`, 'POST', { cookie, body: { id, pageId: `${id}-page`, title: `Date ${index}`, orderKey: String(index + 10), properties: { [dueId]: value } } })
+      assert.equal(response.status, 201, JSON.stringify(response.body))
+      assert.deepEqual(response.body.record.properties[dueId], value, `POST preserves Date wire shape ${index}`)
+      const before = await table()
+      const record = before.records.find((row: any) => row.id === id)
+      assert.ok(record)
+      const patched = await request(baseUrl, `${route}/records/${id}/cells/${dueId}`, 'PATCH', { cookie, body: { value, expectedDatabaseVersion: before.database.version, expectedRecordVersion: record.version } })
+      assert.equal(patched.status, 200, JSON.stringify(patched.body))
+      assert.deepEqual(patched.body.record.properties[dueId], value, `PATCH preserves Date wire shape ${index}`)
+      const after = await table()
+      const read = after.records.find((row: any) => row.id === id)
+      assert.deepEqual(read?.properties[dueId], value, `GET preserves Date wire shape ${index}`)
+      if (index === 3) assert.equal(read?.properties['p11b-http-formula'], '2026-10-12')
+      if (index === 4) assert.equal(read?.properties['p11b-http-formula'], '2026-10-13', 'Formula uses UTC start day and ignores end')
+    }
+
+    const records = connection!.db!.collection('database_records')
+    const pages = connection!.db!.collection('pages')
+    const invalidCreateBefore = await table()
+    const invalidCreate = await request(baseUrl, `${route}/records`, 'POST', { cookie, body: { id: 'p11b-http-invalid-record', pageId: 'p11b-http-invalid-page', title: 'Invalid', orderKey: 'z', properties: { 'p11b-http-text': { start: '2026-10-12' } } } })
+    assert.equal(invalidCreate.status, 400)
+    assert.equal((await table()).database.version, invalidCreateBefore.database.version)
+    assert.equal(await records.countDocuments({ id: 'p11b-http-invalid-record' }), 0)
+    assert.equal(await pages.countDocuments({ id: 'p11b-http-invalid-page' }), 0)
+    const invalidDateBefore = await table()
+    const invalidDate = await request(baseUrl, `${route}/records`, 'POST', { cookie, body: { id: 'p11b-http-invalid-date', pageId: 'p11b-http-invalid-date-page', title: 'Invalid date', orderKey: 'zz', properties: { [dueId]: { start: '2026-10-13', end: '2026-10-12' } } } })
+    assert.equal(invalidDate.status, 400)
+    assert.equal((await table()).database.version, invalidDateBefore.database.version)
+    assert.equal(await records.countDocuments({ id: 'p11b-http-invalid-date' }), 0)
+    assert.equal(await pages.countDocuments({ id: 'p11b-http-invalid-date-page' }), 0)
+
+    for (const propertyId of ['p11b-http-text', 'p11b-http-number', 'p11b-http-checkbox', 'p11b-http-select', titleId, 'p11b-http-formula']) {
+      const before = await table()
+      const record = before.records.find((row: any) => row.id === recordIds[0])
+      const body = { value: { start: '2026-10-15' }, expectedDatabaseVersion: before.database.version, expectedRecordVersion: record.version, ...(propertyId === titleId ? { expectedPageUpdatedAt: record.pageVersion } : {}) }
+      const rejected = await request(baseUrl, `${route}/records/${recordIds[0]}/cells/${propertyId}`, 'PATCH', { cookie, body })
+      assert.equal(rejected.status, 400, `Date objects must be rejected for ${propertyId}`)
+      const after = await table()
+      assert.equal(after.database.version, before.database.version)
+      assert.deepEqual(after.records.find((row: any) => row.id === recordIds[0]).properties, record.properties)
+    }
   } finally {
     if (!app) {
       if (previousMongoUri === undefined) delete process.env.MONGODB_URI

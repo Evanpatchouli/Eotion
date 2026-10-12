@@ -156,6 +156,30 @@ test('database HTTP contracts strictly validate page creation, links, and bounde
   const recordPage = { id: 'record-1', pageId: 'page-2', title: 'A task', orderKey: 'a' }
   assert.deepEqual(DatabaseRecordPageCreateRequestSchema.parse(recordPage), recordPage)
   assert.equal(DatabaseRecordPageCreateRequestSchema.safeParse({ ...recordPage, parentPageId: null }).success, false)
+  const dateValues = [
+    '2026-02-28',
+    { start: '2026-02-28' },
+    { start: '2026-02-28', end: '2026-03-01' },
+    { start: '2026-02-28T09:00:00.000Z', timeZone: 'Asia/Shanghai' },
+    { start: '2026-02-28T09:00:00.000Z', end: '2026-02-28T10:00:00.000Z', timeZone: 'Asia/Shanghai' },
+  ]
+  for (const value of dateValues) {
+    const request = { ...recordPage, properties: { due: value } }
+    assert.deepEqual(DatabaseRecordPageCreateRequestSchema.parse(request), request)
+  }
+  const invalidDateValues = [
+    { start: '2026-02-28', end: undefined },
+    { start: '2026-02-28', end: '2026-02-27' },
+    { start: '2026-02-28', type: 'date' },
+    { start: '2026-02-28', unknown: true },
+    { start: '2026-02-28T09:00:00.000Z', timeZone: 'Not/AZone' },
+    { start: '2026-02-28T09:00:00.000Z', timeZone: undefined },
+    { start: '2026-02-28T09:00:00.000+08:00', timeZone: 'Asia/Shanghai' },
+  ]
+  for (const value of invalidDateValues) {
+    assert.equal(DatabaseRecordPageCreateRequestSchema.safeParse({ ...recordPage, properties: { due: value } }).success, false)
+  }
+  assert.equal(DatabaseRecordPageCreateRequestSchema.safeParse({ ...recordPage, properties: { due: 42 } }).success, true)
   assert.deepEqual(DatabaseListQuerySchema.parse({}), { limit: 50 })
   assert.deepEqual(DatabaseListQuerySchema.parse({ limit: '12', cursor: 'db-1' }), { limit: 12, cursor: 'db-1' })
   assert.equal(DatabaseListQuerySchema.safeParse({ limit: '101' }).success, false)
