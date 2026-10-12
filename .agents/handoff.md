@@ -1,9 +1,11 @@
 # Handoff
-## 2026-10-13 P9.6 Multi-View Product Polish（硬停止，未 READY）
+## 2026-10-13 P9.6B Multi-View Verification Closure（已闭合）
 
-基线 `d06a3af32174e32a0f8bcb2de99be109ee5a7324`。只读 Scout 检查 View identity/lifecycle 与 List/Board/picker。实际修复两点：List 空标题按钮可访问名称回退为“无标题”；saveViewConfig 请求完成后校验 loadedViewIdentity 对应 user/workspace/database/view，避免旧设置响应覆盖新 View config/version 或关闭当前 overlay。没有 API/model/架构/新功能/依赖/breakpoint 变更。
+基线 `f83d188`。本轮完成 P9.6B 定向验证，不进入 P9 Final Acceptance。List 空标题保持可见“无标题”与 accessible name 一致；`saveViewConfig` 在请求返回时同时校验捕获的 user/workspace/database/view、loaded identity、组件局部 scope epoch、当前 NodeView/DOM 与 Editor Block attrs，并在 View tuple 变化或卸载时先使旧请求失效，避免旧 View PATCH 的 success/409/error 跨作用域落地。成功响应沿用既有 database-level notification，但只允许当前 scope 安全刷新。没有 API/model/renderer/依赖/breakpoint 变更。
 
-Web typecheck / diff check 通过；定向 product 13/13 通过（workers=1/retries=0），覆盖三种创建、Board→Table/List 延迟读取门禁、分组/无Select/390px离线/409、Board Filter/Sort/properties/responsive、Drawer/title draft、Desktop drag pending、Phone picker与List空标题。独立 review 未发现其他已证实代码缺陷，提出 P2：补设置 PATCH 在途外部切换的成功/409 回归。List 空标题新增回归；外部 editor attrs/snapshot 切换时延迟 PATCH 回归尚缺，renameView 的同类 scope 风险尚未复现。未完成完整 A–L matrix，因此不能宣布 P9.6 READY FOR FINAL ACCEPTANCE。25 分钟硬停止，不运行 Full Product、Visual Acceptance、P9 Final Acceptance；下一轮继续本阶段剩余验证。
+验证：P9.6 targeted product 34/34（workers=1）；新增 delayed View PATCH success/409、外部 snapshot A→B→A、Table/List/Board 七方向 switch matrix 共 4/4。相邻证据覆盖三 renderer empty/loaded/loading/error/pagination/offline readonly、Board 无分组/空 Select、390px header、View selector、shared/independent View config、Record Drawer/title draft、phone snapshot convergence 与 Editor/NodeView/component identity。Web typecheck、`git diff --check`、修改文件 UTF-8 无 BOM 通过。
+
+`renameView` 相似在途响应风险已静态检查但未复现，本轮不扩大修改。独立 reviewer 复核确认原先的卸载与 ABA P2 已由局部 epoch fence 关闭，无新的 P1/P2 blocker。未运行 Full Product、Visual Acceptance 或 P9 Final Acceptance；完成 commit 后停在 Final Acceptance 入口。
 
 ## 2026-10-12 P9.5C-2 Board Grouping Settings（已完成）
 

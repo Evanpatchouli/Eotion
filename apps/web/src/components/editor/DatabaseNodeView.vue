@@ -273,6 +273,7 @@ const returnFocusTo = ref<HTMLElement | null>(null)
 const cellInput = ref<HTMLInputElement | null>(null)
 const cellDraft = computed({ get: () => cellEdit.value?.value ?? '', set: value => { if (cellEdit.value) cellEdit.value.value = value } })
 let requestEpoch = 0
+let viewIdentityEpoch = 0
 let externalRefreshPending = false
 
 function selectBlock(): void {
@@ -917,7 +918,23 @@ function moveSort(index: number, delta: number): void {
 async function saveViewConfig(next: DatabaseViewConfig): Promise<void> {
   if (viewBusy.value) return
   const identity = loadedViewIdentity.value
-  const isCurrent = () => identity === [workspaceId.value, databaseId.value, viewId.value, auth.user?.id ?? ''].join('\u0000')
+  const capturedViewId = viewId.value
+  const capturedViewReady = viewReady.value
+  const capturedViewIdentityEpoch = viewIdentityEpoch
+  const currentEditorViewId = (): string => {
+    let current = viewId.value
+    props.editor.state.doc.descendants(node => {
+      if (node.type.name === 'eotionDatabase' && node.attrs.blockId === blockId.value) current = String(node.attrs.viewId ?? '')
+    })
+    return current
+  }
+  const isCurrent = () => {
+    const currentRoot = document.getElementById(`database-block-${blockId.value}`)
+    const currentViewId = currentRoot?.getAttribute('data-view-id')
+    const currentViewReady = currentRoot?.getAttribute('data-view-ready') === 'true'
+    return capturedViewReady && capturedViewIdentityEpoch === viewIdentityEpoch && currentRoot !== null && currentViewId === capturedViewId && currentViewReady &&
+      identity === loadedViewIdentity.value && identity === [workspaceId.value, databaseId.value, currentEditorViewId(), auth.user?.id ?? ''].join('\u0000')
+  }
   for (const filter of next.filters) {
     const property = properties.value.find(item => item.id === filter.propertyId)
     if (property?.type === 'number' && typeof filter.value === 'number' && !Number.isFinite(filter.value)) {
@@ -1525,6 +1542,7 @@ onMounted(() => {
   void loadTable()
 })
 onBeforeUnmount(() => {
+  viewIdentityEpoch += 1
   typeChangeRequestEpoch += 1
   propertyConfigEpoch += 1
   requestEpoch += 1
@@ -1574,12 +1592,16 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
   loadingMore.value = false
   returnFocusTo.value = null
   externalRefreshPending = false
+  if (current.some((value, index) => value !== previous[index])) {
+    viewIdentityEpoch += 1
+    loadedViewIdentity.value = ''
+  }
   void loadTable()
 })
 </script>
 
 <template>
-  <NodeViewWrapper :id="`database-block-${blockId}`" class="eotion-database" :data-cell-popover="cellPopover?.propertyId ?? ''" contenteditable="false" aria-label="数据库视图">
+  <NodeViewWrapper :id="`database-block-${blockId}`" class="eotion-database" :data-view-id="viewId" :data-view-ready="viewReady ? 'true' : 'false'" :data-cell-popover="cellPopover?.propertyId ?? ''" contenteditable="false" aria-label="数据库视图">
     <header class="eotion-database-header">
       <span class="eotion-database-mark" data-icon-name="database" aria-hidden="true" @click.stop="selectBlock"><EotionIcon :name="IconName.Database" :size="20" /></span>
       <span class="eotion-database-copy" @click.stop="selectBlock"><strong>{{ title }}</strong></span>

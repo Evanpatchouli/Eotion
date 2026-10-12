@@ -2845,6 +2845,278 @@ test('Board grouping settings keep the existing View conflict behavior', async (
   expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/views/board-settings-conflict-view'))).toHaveLength(1)
 })
 
+for (const outcome of ['success', 'conflict'] as const) {
+  test(`delayed Board View settings PATCH ${outcome} cannot overwrite a List View after external snapshot switch`, async ({ page }) => {
+    test.setTimeout(60_000)
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    const boardConfig: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: 'root-select' } }
+    const listConfig: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG, visibleProperties: ['root-title'] }
+    const boardView = view('delayed-board-a', rootDatabase.id, 'Board A', boardConfig, 'board')
+    const listView = view('delayed-list-b', rootDatabase.id, 'List B', listConfig, 'list')
+    boardView.version = 5
+    listView.version = 7
+    const boardProperties = [
+      ...rootProperties,
+      property('root-priority', rootDatabase.id, 'Priority', 'select', [{ id: 'priority-high', name: 'High' }, { id: 'priority-low', name: 'Low' }]),
+    ]
+    const api = await installApi(page, [
+      block('delayed-view-switch-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+    ], {
+      databases: [rootDatabase],
+      views: [boardView, listView],
+      properties: boardProperties,
+      records: [basicRecord],
+    })
+    api.databases[0]!.version = 5
+    api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Delayed view record', role: 'database-record' })
+
+    let signalPatchStarted!: () => void
+    let releasePatch!: () => void
+    let heldPatchPayload: unknown
+    const patchStarted = new Promise<void>(resolve => { signalPatchStarted = resolve })
+    const patchGate = new Promise<void>(resolve => { releasePatch = resolve })
+    await page.route(`**/views/${boardView.id}`, async route => {
+      if (route.request().method() !== 'PATCH') return route.fallback()
+      heldPatchPayload = route.request().postDataJSON()
+      signalPatchStarted()
+      await patchGate
+      await route.fallback()
+    })
+
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const database = page.locator('#database-block-delayed-view-switch-block')
+    await expect(database.getByTestId('database-board')).toBeVisible()
+    await openDatabaseSetting(page, database, '分组属性')
+    const groupingPanel = page.getByRole('group', { name: '分组属性' })
+    await selectSettingOption(groupingPanel, '分组属性', 'root-priority', 'Priority')
+    const patchResponse = page.waitForResponse(response => response.request().method() === 'PATCH' && response.url().endsWith(`/views/${boardView.id}`))
+    await overlayFooter(groupingPanel).getByRole('button', { name: '保存分组' }).click()
+    await patchStarted
+    expect(heldPatchPayload).toMatchObject({ config: { options: { groupByPropertyId: 'root-priority' } } })
+
+    const blockItem = api.blocks.find(item => item.id === 'delayed-view-switch-block')!
+    blockItem.props = { node: { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: listView.id } } }
+    expect(await requestSnapshotHydration(page)).toBe(false)
+    await expect(database.getByTestId('database-list')).toBeVisible()
+    await expect(database.getByRole('button', { name: '切换视图' })).toContainText('List B')
+    await expect(database.locator('.eotion-database-list-property')).toHaveCount(0)
+    await expect.poll(() => api.blocks.find(item => item.id === blockItem.id)?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: listView.id })
+
+    await page.evaluate(() => {
+      const editor = document.querySelector('.eotion-editor')
+      const database = document.querySelector('#database-block-delayed-view-switch-block')
+      if (!editor || !database) throw new Error('Expected converged editor and List NodeView')
+      ;(window as Window & { __delayedViewIdentity?: { editor: Element; database: Element; editorComponent: unknown; databaseComponent: unknown } }).__delayedViewIdentity = {
+        editor,
+        database,
+        editorComponent: (editor as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+        databaseComponent: (database as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+      }
+    })
+    const listTableRequestsBeforeRelease = api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(`/views/${listView.id}/table`)).length
+    const listViewListRequestsBeforeRelease = api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(`/databases/${rootDatabase.id}/views`)).length
+    const listPatchRequestsBeforeRelease = api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/views/${listView.id}`)).length
+    const listConfigBeforeRelease = structuredClone(api.views.find(item => item.id === listView.id)!.config)
+    const listVersionBeforeRelease = api.views.find(item => item.id === listView.id)!.version
+
+    if (outcome === 'conflict') api.databases[0]!.version += 1
+    releasePatch()
+    const response = await patchResponse
+    expect(response.status()).toBe(outcome === 'success' ? 200 : 409)
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())))
+
+    await expect(database.getByTestId('database-list')).toBeVisible()
+    await expect(database).toContainText('Delayed view record')
+    await expect(database.locator('.eotion-database-list-property')).toHaveCount(0)
+    await expect.poll(() => api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(`/views/${listView.id}/table`)).length).toBe(listTableRequestsBeforeRelease + (outcome === 'success' ? 1 : 0))
+    await expect.poll(() => api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(`/databases/${rootDatabase.id}/views`)).length).toBe(listViewListRequestsBeforeRelease)
+    expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/views/${listView.id}`))).toHaveLength(listPatchRequestsBeforeRelease)
+    expect(api.views.find(item => item.id === listView.id)?.config).toEqual(listConfigBeforeRelease)
+    expect(api.views.find(item => item.id === listView.id)?.version).toBe(listVersionBeforeRelease)
+    expect(api.views.find(item => item.id === boardView.id)?.config).toEqual(outcome === 'success' ? { ...boardConfig, options: { groupByPropertyId: 'root-priority' } } : boardConfig)
+
+    await database.getByRole('button', { name: '数据库设置' }).click()
+    const listSettingsMenu = page.getByRole('menu', { name: '数据库设置' })
+    await expect(listSettingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    await expect.poll(() => page.evaluate(() => {
+      const before = (window as Window & { __delayedViewIdentity?: { editor: Element; database: Element; editorComponent: unknown; databaseComponent: unknown } }).__delayedViewIdentity!
+      const editor = document.querySelector('.eotion-editor')
+      const database = document.querySelector('#database-block-delayed-view-switch-block')
+      return {
+        editorSame: editor === before.editor,
+        databaseSame: database === before.database,
+        editorComponentSame: (editor as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.editorComponent,
+        databaseComponentSame: (database as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.databaseComponent,
+      }
+    })).toEqual({ editorSame: true, databaseSame: true, editorComponentSame: true, databaseComponentSame: true })
+  })
+}
+
+test('A to B to A editor-attribute switching does not let an old View PATCH refresh reloaded A', async ({ page }) => {
+  test.setTimeout(60_000)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  const boardConfig: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: 'root-select' } }
+  const boardView = view('revisit-board-a', rootDatabase.id, 'Board A', boardConfig, 'board')
+  const listView = view('revisit-list-b', rootDatabase.id, 'List B', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'list')
+  const boardProperties = [
+    ...rootProperties,
+    property('revisit-priority', rootDatabase.id, 'Priority', 'select', [{ id: 'revisit-high', name: 'High' }]),
+  ]
+  const api = await installApi(page, [
+    block('revisit-view-switch-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+  ], {
+    databases: [rootDatabase],
+    views: [boardView, listView],
+    properties: boardProperties,
+    records: [basicRecord],
+  })
+  api.databases[0]!.version = 5
+  boardView.version = 5
+  api.views.find(item => item.id === boardView.id)!.version = 5
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'A-B-A record', role: 'database-record' })
+
+  let signalPatchStarted!: () => void
+  let releasePatch!: () => void
+  const patchStarted = new Promise<void>(resolve => { signalPatchStarted = resolve })
+  const patchGate = new Promise<void>(resolve => { releasePatch = resolve })
+  await page.route(`**/views/${boardView.id}`, async route => {
+    if (route.request().method() !== 'PATCH') return route.fallback()
+    signalPatchStarted()
+    await patchGate
+    await route.fallback()
+  })
+
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-revisit-view-switch-block')
+  await expect(database.getByTestId('database-board')).toBeVisible()
+  await expect(database).toHaveAttribute('data-view-ready', 'true')
+  await openDatabaseSetting(page, database, '分组属性')
+  const groupingPanel = page.getByRole('group', { name: '分组属性' })
+  await selectSettingOption(groupingPanel, '分组属性', 'revisit-priority', 'Priority')
+  await expect(overlayFooter(groupingPanel).getByRole('button', { name: '保存分组' })).toBeEnabled()
+  const patchResponse = page.waitForResponse(response => response.request().method() === 'PATCH' && response.url().endsWith(`/views/${boardView.id}`))
+  await overlayFooter(groupingPanel).getByRole('button', { name: '保存分组' }).click()
+  await patchStarted
+
+  const blockItem = api.blocks.find(item => item.id === 'revisit-view-switch-block')!
+  blockItem.props = { node: { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: listView.id } } }
+  expect(await requestSnapshotHydration(page)).toBe(false)
+  await expect(database.getByTestId('database-list')).toBeVisible()
+  await expect(database).toHaveAttribute('data-view-ready', 'true')
+  await installLocalBlockReader(page)
+  await expect.poll(() => readLocalBlocks(page, pageRecord.id)).toContain(listView.id)
+
+  let signalBoardLoadStarted!: () => void
+  let releaseBoardLoad!: () => void
+  const boardLoadStarted = new Promise<void>(resolve => { signalBoardLoadStarted = resolve })
+  const boardLoadGate = new Promise<void>(resolve => { releaseBoardLoad = resolve })
+  await page.route(url => url.pathname.endsWith(`/views/${boardView.id}/table`), async route => {
+    signalBoardLoadStarted()
+    await boardLoadGate
+    await route.fallback()
+  })
+  blockItem.props = { node: { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } } }
+  await page.evaluate((targetViewId) => {
+    const root = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null
+    const exposedEditor = root?.__vueParentComponent?.exposed?.editor
+    const editor = exposedEditor?.commands ? exposedEditor : exposedEditor?.value
+    if (!editor?.view) throw new Error('Expected the active Tiptap editor')
+    let position = -1
+    let attrs: Record<string, unknown> | undefined
+    editor.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, unknown> }, nodePosition: number) => {
+      if (position < 0 && node.type.name === 'eotionDatabase') {
+        position = nodePosition
+        attrs = node.attrs
+      }
+    })
+    if (position < 0 || !attrs) throw new Error('Expected the database node in the active editor')
+    editor.view.dispatch(editor.state.tr.setNodeMarkup(position, undefined, { ...attrs, viewId: targetViewId }))
+  }, boardView.id)
+  await boardLoadStarted
+  await expect(database).toHaveAttribute('data-view-ready', 'false')
+  releaseBoardLoad()
+  await expect(database.getByTestId('database-board')).toBeVisible()
+  await expect(database).toHaveAttribute('data-view-ready', 'true')
+  const currentBoardTableRequests = api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(`/views/${boardView.id}/table`)).length
+  const currentViewListRequests = api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(`/databases/${rootDatabase.id}/views`)).length
+  api.databases[0]!.version += 1
+  releasePatch()
+  expect((await patchResponse).status()).toBe(409)
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())))
+  await expect.poll(() => api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(`/views/${boardView.id}/table`)).length).toBe(currentBoardTableRequests)
+  await expect.poll(() => api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(`/databases/${rootDatabase.id}/views`)).length).toBe(currentViewListRequests)
+  await expect(database.getByRole('button', { name: '切换视图' })).toContainText('Board A')
+  expect(api.views.find(item => item.id === boardView.id)?.config).toEqual(boardConfig)
+  await expect.poll(() => api.blocks.find(item => item.id === 'revisit-view-switch-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: boardView.id })
+})
+
+test('Table List Board switch matrix keeps the database reference, renderer settings, and editor identity', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  const tableView = view('matrix-table-view', rootDatabase.id, 'Table A', { ...DEFAULT_DATABASE_VIEW_CONFIG, visibleProperties: ['root-title'] }, 'table')
+  const listView = view('matrix-list-view', rootDatabase.id, 'List B', { ...DEFAULT_DATABASE_VIEW_CONFIG, visibleProperties: ['root-title'] }, 'list')
+  const boardView = view('matrix-board-view', rootDatabase.id, 'Board C', { ...DEFAULT_DATABASE_VIEW_CONFIG, visibleProperties: ['root-title'], options: { groupByPropertyId: 'root-select' } }, 'board')
+  const api = await installApi(page, [
+    block('matrix-view-switch-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: tableView.id } }, 100),
+  ], { databases: [rootDatabase], views: [tableView, listView, boardView], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Matrix record', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-matrix-view-switch-block')
+  await expect(database.locator('tbody')).toBeVisible()
+  await page.evaluate(() => {
+    const editor = document.querySelector('.eotion-editor')
+    const database = document.querySelector('#database-block-matrix-view-switch-block')
+    if (!editor || !database) throw new Error('Expected matrix editor and Database NodeView')
+    ;(window as Window & { __viewMatrixIdentity?: { editor: Element; database: Element; editorComponent: unknown; databaseComponent: unknown } }).__viewMatrixIdentity = {
+      editor,
+      database,
+      editorComponent: (editor as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+      databaseComponent: (database as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+    }
+  })
+
+  const transitions = [
+    { target: listView, name: 'List B', renderer: 'list' as const },
+    { target: tableView, name: 'Table A', renderer: 'table' as const },
+    { target: boardView, name: 'Board C', renderer: 'board' as const },
+    { target: tableView, name: 'Table A', renderer: 'table' as const },
+    { target: listView, name: 'List B', renderer: 'list' as const },
+    { target: boardView, name: 'Board C', renderer: 'board' as const },
+    { target: listView, name: 'List B', renderer: 'list' as const },
+  ]
+  for (const transition of transitions) {
+    await database.getByRole('button', { name: '切换视图' }).click()
+    await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: transition.name, exact: true }).click()
+    if (transition.renderer === 'table') await expect(database.locator('tbody')).toBeVisible()
+    if (transition.renderer === 'list') {
+      await expect(database.getByTestId('database-list')).toBeVisible()
+      await expect(database.locator('.eotion-database-list-property')).toHaveCount(0)
+    }
+    if (transition.renderer === 'board') {
+      await expect(database.getByTestId('database-board')).toBeVisible()
+      await expect(database.locator('.eotion-database-board-column-name')).toHaveText(['Open', 'Done', '未分组'])
+    }
+    await expect(database.getByRole('button', { name: '切换视图' })).toContainText(transition.name)
+    await expect.poll(() => api.blocks.find(item => item.id === 'matrix-view-switch-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: transition.target.id })
+    await expect.poll(() => page.evaluate(() => {
+      const before = (window as Window & { __viewMatrixIdentity?: { editor: Element; database: Element; editorComponent: unknown; databaseComponent: unknown } }).__viewMatrixIdentity!
+      const editor = document.querySelector('.eotion-editor')
+      const database = document.querySelector('#database-block-matrix-view-switch-block')
+      return {
+        editorSame: editor === before.editor,
+        databaseSame: database === before.database,
+        editorComponentSame: (editor as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.editorComponent,
+        databaseComponentSame: (database as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.databaseComponent,
+      }
+    })).toEqual({ editorSame: true, databaseSame: true, editorComponentSame: true, databaseComponentSame: true })
+    await database.getByRole('button', { name: '数据库设置' }).click()
+    const settingsMenu = page.getByRole('menu', { name: '数据库设置' })
+    if (transition.renderer === 'board') await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toBeVisible()
+    else await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+  }
+})
+
 test('phone creates a Board view without a Select property and keeps the two-row header in the viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   const api = await installApi(page, [

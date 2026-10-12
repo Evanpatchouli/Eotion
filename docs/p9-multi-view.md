@@ -204,8 +204,10 @@ Desktop / Tablet 在 Board 内局部横向滚动，列保持可读宽度；Phone
 
 定向验证新增 5/5，并与相邻回归组合 13/13 通过（workers=1 / retries=0）：覆盖候选过滤、View config 字段/unknown options 保留、Status → Priority、清除 grouping、Record 不变、shared/independent View、Table/List 隔离、无 Select、390px/离线只读、View 409 conflict，以及 Board → Table/List 延迟切换时不显示 grouping 且不发送错误 PATCH。Web typecheck 通过；未运行 Full Product、Visual Acceptance 或 Final Acceptance。
 
-## P9.6 — Multi-View Product Polish（验证待完成）
+## P9.6 — Multi-View Product Polish（验证闭合，READY FOR FINAL ACCEPTANCE）
 
-基线 `d06a3af32174e32a0f8bcb2de99be109ee5a7324`。本阶段仅收口已有 Table / List / Board。List 空标题的可访问名称与可见“无标题”一致；View 设置保存响应仅在原 user/workspace/database/view 仍匹配时更新本地 config/version 与浮层状态。数据模型、读取/写入 API、共享配置、Page.title projection、Record opening 与既有断点保持。
+基线 `f83d188`。本阶段仅收口已有 Table / List / Board。List 空标题的可访问名称与可见“无标题”一致；View 设置保存请求捕获 user/workspace/database/view 与已加载状态，响应返回时再次确认当前 NodeView、编辑器 Block attrs、DOM View identity 与局部 scope epoch 仍匹配，旧响应不会覆盖新 View 的 config/version、写入当前 View 的错误状态或关闭当前浮层；成功响应触发的既有 database-level notification 仍只对当前 scope 做安全刷新。View identity 变化时先清空 loaded identity，再开始新的 table load。数据模型、读取/写入 API、共享配置、Page.title projection、Record opening 与既有断点保持。
 
-定向验证尚未覆盖完整 A–L matrix 与外部 View identity 变化时延迟 PATCH 回归，阶段未 READY；遵守 25 分钟硬停止。剩余项见 `.agents/current-task.md` 与 `.agents/handoff.md`，不进入 P9 Final Acceptance。
+新增回归覆盖延迟 View PATCH 的 success / 409、外部 snapshot A→B 与 editor attrs B→A 的 A→B→A、Table/List/Board 七条方向切换矩阵，以及 Editor/NodeView/component identity、List/Board renderer 设置隔离。最终 P9.6 targeted 34/34 通过（含新增 race/matrix 4/4）；另外覆盖空、loaded、loading、load failure、pagination、offline readonly、390px header、Board 无分组/空 options、Record Drawer/draft 与 phone snapshot convergence。Web typecheck、`git diff --check`、修改文件 UTF-8 无 BOM 通过。
+
+`renameView` 的相似在途响应风险已做静态检查，本轮未能复现，不扩大为未经证实的改动。未运行 Full Product、Visual Acceptance 或 P9 Final Acceptance；本阶段验证 blocker 已闭合，下一步仅进入 Final Acceptance。
