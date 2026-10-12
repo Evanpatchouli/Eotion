@@ -2,7 +2,7 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
-import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig } from '@eotion/domain/database'
+import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain/database'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -13,7 +13,7 @@ const pageRecord: PageResponse = { id: 'database-page', workspaceId: workspace.i
 type TestDatabase = { id: string; workspaceId: string; name: string; version: number; createdAt: string; updatedAt: string }
 type TestProperty = { id: string; databaseId: string; workspaceId: string; name: string; type: 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'relation' | 'rollup' | 'formula'; version: number; createdAt: string; updatedAt: string; options?: Array<{ id: string; name: string }>; config?: DatabasePropertyConfig }
 type TestView = { id: string; databaseId: string; workspaceId: string; name: string; type: 'table' | 'list' | 'board'; config: DatabaseViewConfig; version: number; createdAt: string; updatedAt: string }
-type TestRecord = { id: string; databaseId: string; workspaceId: string; pageId: string; properties: Record<string, string | number | boolean | null | string[]>; version: number; pageVersion: string; createdAt: string; updatedAt: string }
+type TestRecord = { id: string; databaseId: string; workspaceId: string; pageId: string; properties: Record<string, DatabasePropertyValue>; version: number; pageVersion: string; createdAt: string; updatedAt: string }
 
 function database(id: string, name = 'Projects'): TestDatabase { return { id, workspaceId: workspace.id, name, version: 1, createdAt: now, updatedAt: now } }
 function property(id: string, databaseId: string, name: string, type: TestProperty['type'], options?: TestProperty['options']): TestProperty {
@@ -143,6 +143,7 @@ type DatabaseApi = {
   abortDatabaseCreatesAfterCommit: number
   failDatabaseReferenceReads: number
   abortRecordCreatesAfterCommit: number
+  abortCellUpdatesAfterCommit: number
   failCellUpdates: number
   conflictCellUpdates: number
   failViewUpdates: number
@@ -169,7 +170,7 @@ type DatabaseApi = {
   failRelationCandidates: number
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'abortCellUpdatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
@@ -186,6 +187,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     abortDatabaseCreatesAfterCommit: options.abortDatabaseCreatesAfterCommit ?? 0,
     failDatabaseReferenceReads: options.failDatabaseReferenceReads ?? 0,
     abortRecordCreatesAfterCommit: options.abortRecordCreatesAfterCommit ?? 0,
+    abortCellUpdatesAfterCommit: options.abortCellUpdatesAfterCommit ?? 0,
     failCellUpdates: options.failCellUpdates ?? 0,
     conflictCellUpdates: options.conflictCellUpdates ?? 0,
     failViewUpdates: options.failViewUpdates ?? 0,
@@ -449,7 +451,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       const databaseItem = api.databases.find((item) => item.id === cellPath[1])!
       const recordItem = api.records.find((item) => item.id === cellPath[2])!
       const prop = api.properties.find((item) => item.id === cellPath[3])!
-      const input = payload as { value: string | number | boolean | string[] | null; expectedDatabaseVersion: number; expectedRecordVersion: number; expectedPageUpdatedAt?: string }
+      const input = payload as { value: DatabasePropertyValue; expectedDatabaseVersion: number; expectedRecordVersion: number; expectedPageUpdatedAt?: string }
       if (api.conflictCellUpdates > 0) {
         api.conflictCellUpdates -= 1
         recordItem.properties[prop.id] = 'Concurrent edit'
@@ -477,6 +479,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
         api.pages.splice(api.pages.indexOf(pageItem), 1, updatedPage)
         recordItem.pageVersion = later
       }
+      if (api.abortCellUpdatesAfterCommit > 0) { api.abortCellUpdatesAfterCommit -= 1; return route.abort('failed') }
       return json(route, 200, { database: databaseItem, record: recordItem, ...(updatedPage ? { page: updatedPage } : {}) })
     }
     const createRecord = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/records$`, 'u').exec(pathname)
@@ -2596,7 +2599,9 @@ test('database view selector creates a Board view through the existing DatabaseV
   const drawer = page.locator('[data-overlay-mode="drawer"]')
   await expect(drawer).toBeVisible()
   const titleDraft = drawer.getByRole('textbox', { name: '记录标题' })
+  await expect(drawer.locator('.eotion-editor-content .tiptap')).toHaveAttribute('contenteditable', 'true')
   await titleDraft.fill('Board draft survives creation')
+  await expect(titleDraft).toHaveValue('Board draft survives creation')
   await database.getByRole('button', { name: '切换视图' }).click()
   const menu = page.getByRole('group', { name: '数据库视图', exact: true })
   await expect(menu.getByRole('button', { name: '新建看板视图' })).toBeVisible()
@@ -4168,7 +4173,9 @@ test('board grouping mutation updates the record, keeps linked Table and List in
   const drawer = page.locator('[data-overlay-mode="drawer"]')
   await expect(drawer).toBeVisible()
   const titleDraft = drawer.getByRole('textbox', { name: '记录标题' })
+  await expect(drawer.locator('.eotion-editor-content .tiptap')).toHaveAttribute('contenteditable', 'true')
   await titleDraft.fill('Draft survives Board mutation')
+  await expect(titleDraft).toHaveValue('Draft survives Board mutation')
   await page.locator('.eotion-editor-content').first().evaluate(element => element.setAttribute('data-board-mutation-lifecycle', 'stable'))
   await boardBlock.evaluate(element => element.setAttribute('data-board-mutation-lifecycle', 'stable'))
   await drawer.evaluate(element => element.setAttribute('data-board-mutation-lifecycle', 'stable'))
@@ -4828,7 +4835,10 @@ test('edits versioned cells and manages property options without losing stable I
   await expect(table.getByRole('button', { name: '2026-11-05' })).toBeVisible()
   await table.getByRole('button', { name: '2026-11-05' }).click()
   await table.getByRole('button', { name: '清除' }).click()
-  await expect(table.locator('tbody tr').first().locator('td').nth(5).getByRole('button', { name: '', exact: true })).toBeVisible()
+  const clearedDate = table.locator('tbody tr').first().locator('td').nth(5).getByRole('button', { name: '编辑Deadline：', exact: true })
+  await expect(clearedDate).toBeVisible()
+  await expect(clearedDate).toHaveText('')
+  expect(api.records[0]?.properties['root-date']).toBeNull()
   expect(pageErrors).toEqual([])
 
   await openDatabaseSetting(page, table, '属性')
@@ -5396,7 +5406,7 @@ test('database table scrolls horizontally on mobile without document overflow', 
   await mobileText.fill('Saved on mobile')
   await mobileText.press('Enter')
   await expect(table).toContainText('Saved on mobile')
-  await table.getByRole('button', { name: '2026-10-08' }).click()
+  await table.getByRole('button', { name: /编辑Due date/u }).click()
   const mobileDate = table.getByRole('textbox', { name: 'Due date 值' })
   await mobileDate.fill('2026-12-15')
   await mobileDate.press('Enter')
@@ -5588,4 +5598,146 @@ test('existing cross-database rollup allows a new formula and a second target ro
   await rollup.getByRole('button', { name: '保存属性' }).click()
   await expect(rollup).toHaveCount(0)
   expect(api.properties.filter(item => item.type === 'rollup')).toHaveLength(2)
+})
+
+test('P11.1B formats, edits, validates, and reloads date values without losing range data', async ({ page }) => {
+  test.setTimeout(60_000)
+  const errors: string[] = []
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
+  page.on('pageerror', error => errors.push(error.message))
+  const legacy = property('p111b-legacy', rootDatabase.id, 'Legacy', 'date')
+  const ranged = property('p111b-range', rootDatabase.id, 'Range', 'date')
+  const equal = property('p111b-equal', rootDatabase.id, 'Equal', 'date')
+  const timed = property('p111b-timed', rootDatabase.id, 'When', 'date')
+  const single = property('p111b-single', rootDatabase.id, 'Single', 'date')
+  const createRange = property('p111b-create-range', rootDatabase.id, 'Create range', 'date')
+  const api = await installApi(page, [block('p111b-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100)], {
+    databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [property('p111b-title', rootDatabase.id, 'Name', 'title'), legacy, ranged, equal, timed, single, createRange],
+    records: [record('p111b-record', rootDatabase.id, 'p111b-page', {
+      'p111b-title': 'Date row', [legacy.id]: '2026-10-01',
+      [ranged.id]: { start: '2026-10-02', end: '2026-10-05' },
+      [equal.id]: { start: '2026-10-06', end: '2026-10-06' },
+      [timed.id]: { start: '2026-10-07T09:30:12.345Z', end: '2026-10-07T10:30:45.678Z', timeZone: 'Asia/Shanghai' },
+      [single.id]: { start: '2026-10-08' },
+      [createRange.id]: '2026-10-09',
+    })],
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  expect(page.url()).toContain('/#/app/database-workspace/page/database-page')
+  await expect(page).toHaveTitle(/Eotion/u)
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+  const table = page.locator('.eotion-editor-content .eotion-database')
+  await expect(table).toContainText('2026-10-01')
+  await expect(table).toContainText('2026-10-02 → 2026-10-05')
+  await expect(table).toContainText('2026-10-06 → 2026-10-06')
+  await expect(table).toContainText('2026-10-07 09:30 UTC → 2026-10-07 10:30 UTC (Asia/Shanghai)')
+
+  await table.getByRole('button', { name: /编辑Legacy/u }).click()
+  await screenshot(page, 'p111b-date-editor-desktop')
+  const legacyInput = table.getByLabel('Legacy 值')
+  await expect(legacyInput).toBeFocused()
+  await legacyInput.fill('2026-10-11')
+  await legacyInput.press('Enter')
+  await expect.poll(() => api.records[0]?.properties[legacy.id]).toBe('2026-10-11')
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await table.getByRole('button', { name: /编辑Range/u }).click()
+  await screenshot(page, 'p111b-date-editor-mobile-390')
+  await expect(table.getByLabel('Range 值')).toBeFocused()
+  const cellPatchCount = () => api.requests.filter(request => request.method === 'PATCH' && /\/cells\//u.test(request.path)).length
+  const beforeTab = cellPatchCount()
+  await page.keyboard.press('Tab')
+  await expect(table.getByRole('textbox', { name: '结束日期' })).toBeFocused()
+  expect(cellPatchCount()).toBe(beforeTab)
+  const cancelDateEdit = table.getByRole('button', { name: '取消', exact: true })
+  await cancelDateEdit.focus()
+  await page.keyboard.press('Tab')
+  await expect.poll(() => page.evaluate(() => !document.activeElement?.closest('.eotion-database-date-editor'))).toBe(true)
+  await expect(table.getByLabel('Range 值')).toBeVisible()
+  expect(cellPatchCount()).toBe(beforeTab)
+  const rangeStart = table.getByLabel('Range 值')
+  await rangeStart.focus()
+  await page.keyboard.press('Shift+Tab')
+  await expect.poll(() => page.evaluate(() => !document.activeElement?.closest('.eotion-database-date-editor'))).toBe(true)
+  expect(cellPatchCount()).toBe(beforeTab)
+  await expect(rangeStart).toHaveValue('2026-10-02')
+  await table.getByLabel('Range 值').fill('')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(table.getByRole('alert')).toContainText('请选择有效日期')
+  await expect(table.getByLabel('Range 值')).toHaveValue('')
+  await table.getByLabel('Range 值').fill('2026-10-03')
+  await table.getByRole('textbox', { name: '结束日期' }).fill('2026-10-02')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(table.getByRole('alert')).toContainText('结束日期不早于开始日期')
+  await table.getByRole('textbox', { name: '结束日期' }).fill('2026-10-05')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect.poll(() => api.records[0]?.properties[ranged.id]).toEqual({ start: '2026-10-03', end: '2026-10-05' })
+
+  await table.getByRole('button', { name: /编辑Create range/u }).click()
+  await table.getByRole('checkbox', { name: '结束日期' }).check()
+  await table.getByRole('textbox', { name: '结束日期' }).fill('2026-10-10')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect.poll(() => api.records[0]?.properties[createRange.id]).toEqual({ start: '2026-10-09', end: '2026-10-10' })
+
+  await table.getByRole('button', { name: /编辑When/u }).click()
+  await expect(table.getByLabel('When 值')).toHaveValue('2026-10-07T09:30:12.345')
+  await table.getByLabel('时区').fill('America/New_York')
+  api.abortCellUpdatesAfterCommit = 1
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect.poll(() => api.records[0]?.properties[timed.id]).toEqual({ start: '2026-10-07T09:30:12.345Z', end: '2026-10-07T10:30:45.678Z', timeZone: 'America/New_York' })
+
+  await table.getByRole('button', { name: /编辑When/u }).click()
+  await table.getByLabel('When 值').fill('2026-10-07T09:45:12.789')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect.poll(() => api.records[0]?.properties[timed.id]).toEqual({ start: '2026-10-07T09:45:12.789Z', end: '2026-10-07T10:30:45.678Z', timeZone: 'America/New_York' })
+
+  await table.getByRole('button', { name: /编辑When/u }).click()
+  await table.getByLabel('时区').fill('Not/AZone')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(table.getByRole('alert')).toContainText('UTC 日期时间范围和 IANA 时区')
+  await expect(table.getByLabel('时区')).toHaveValue('Not/AZone')
+  await table.getByLabel('时区').fill('America/New_York')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(table.getByLabel('When 值')).toHaveCount(0)
+
+  await table.getByRole('button', { name: /编辑Equal/u }).click()
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect.poll(() => api.records[0]?.properties[equal.id]).toEqual({ start: '2026-10-06', end: '2026-10-06' })
+
+  await table.getByRole('button', { name: /编辑Single/u }).click()
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect.poll(() => api.records[0]?.properties[single.id]).toEqual({ start: '2026-10-08' })
+
+  await table.getByRole('button', { name: /编辑Single/u }).click()
+  await table.getByLabel('Single 值').fill('')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(table.getByRole('alert')).toContainText('请选择有效日期')
+  await expect(table.getByLabel('Single 值')).toHaveValue('')
+  await table.getByLabel('Single 值').fill('2026-10-08')
+  await table.getByLabel('包含时间').check()
+  await table.getByLabel('Single 值').fill('')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(table.getByRole('alert')).toContainText('UTC 日期时间范围')
+  await expect(table.getByLabel('Single 值')).toHaveValue('')
+  await table.getByLabel('Single 值').fill('2026-10-08T00:00')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect.poll(() => api.records[0]?.properties[single.id]).toEqual({ start: '2026-10-08T00:00:00.000Z', timeZone: 'UTC' })
+
+  api.conflictCellUpdates = 1
+  await table.getByRole('button', { name: /编辑Legacy/u }).click()
+  await table.getByLabel('Legacy 值').fill('2026-10-12')
+  await table.getByLabel('Legacy 值').press('Enter')
+  await expect(table.getByRole('alert')).toContainText('内容已变化')
+  await expect(table.getByLabel('Legacy 值')).toHaveValue('2026-10-12')
+  await table.getByRole('button', { name: '保存', exact: true }).click()
+  await expect.poll(() => api.records[0]?.properties[legacy.id]).toBe('2026-10-12')
+
+  const widths = await page.evaluate(() => ({ document: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth }))
+  expect(widths.document).toBeLessThanOrEqual(widths.viewport)
+  await page.reload()
+  await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('2026-10-03 → 2026-10-05')
+  await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('America/New_York')
+  await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('2026-10-06 → 2026-10-06')
+  await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('2026-10-08 00:00 UTC (UTC)')
+  expect(errors.filter(error => !error.includes('409 (Conflict)') && !error.includes('net::ERR_FAILED'))).toEqual([])
 })

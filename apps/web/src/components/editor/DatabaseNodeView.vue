@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DatabasePropertyResponse, DatabasePropertyTypeChangeRequest, DatabaseRecordCellUpdateRequest, DatabaseViewRecordsResponse, DatabaseViewCreateRequest, DatabaseViewResponse, DatabaseResponse } from '@eotion/contracts'
-import { DEFAULT_DATABASE_VIEW_CONFIG, isValidFormulaExpression, validateDatabasePropertyDependencies, validateDatabaseViewConfig, type DatabaseFilter, type DatabaseFilterOperator, type DatabaseViewConfig, type DatabasePropertyType, type DatabasePropertyConfig, type DatabaseFormulaResultType, type FormulaExpression, type DatabaseViewType } from '@eotion/domain/database'
+import { DEFAULT_DATABASE_VIEW_CONFIG, isValidFormulaExpression, validateDatabasePropertyDependencies, validateDatabaseViewConfig, type DatabaseFilter, type DatabaseFilterOperator, type DatabaseViewConfig, type DatabasePropertyType, type DatabasePropertyConfig, type DatabaseFormulaResultType, type FormulaExpression, type DatabaseViewType, type DatabasePropertyValue } from '@eotion/domain/database'
+import { isValidCanonicalUtcInstant, isValidDatabaseDateValue, normalizeDatabaseDateValue } from '@eotion/domain/date'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { createLocalId } from '@eotion/storage'
 import { RouterLink } from 'vue-router'
@@ -264,7 +265,8 @@ const propertyOptionsError = ref('')
 const optionNameDraft = ref('')
 const optionEditId = ref('')
 const optionEditName = ref('')
-const cellEdit = ref<{ recordId: string; propertyId: string; value: string } | null>(null)
+type DateCellDraft = { start: string; end: string; hasEnd: boolean; datetime: boolean; timeZone: string; originalStart: string; originalEnd: string; objectValue: boolean }
+const cellEdit = ref<{ recordId: string; propertyId: string; value: string; date?: DateCellDraft } | null>(null)
 const cellPopover = ref<{ recordId: string; propertyId: string } | null>(null)
 const cellPopoverStyle = ref<Record<string, string>>({})
 const cellDraftError = ref('')
@@ -297,6 +299,13 @@ function formatValue(value: unknown, property: DatabasePropertyResponse): string
   if (property.type === 'relation') return Array.isArray(value) ? `${value.slice(0, 3).map(id => getRelationTitle(property, id)?.title ?? '关联记录').join('、')}${value.length > 3 ? ` +${value.length - 3}` : ''}` : ''
   if (property.type === 'checkbox') return value === true ? '已完成' : '未完成'
   if (property.type === 'select') return property.options?.find(option => option.id === value)?.name ?? ''
+  if (property.type === 'date') {
+    const date = normalizeDatabaseDateValue(value)
+    if (!date) return typeof value === 'string' ? value : ''
+    const label = (item: string) => date.kind === 'date-only' ? item : `${item.slice(0, 16).replace('T', ' ')} UTC`
+    const range = date.end !== undefined ? ` → ${label(date.end)}` : ''
+    return `${label(date.start)}${range}${date.kind === 'datetime' ? ` (${date.timeZone})` : ''}`
+  }
   return String(value)
 }
 function relationTitleKey(property: DatabasePropertyResponse, recordId: string): string {
@@ -1264,8 +1273,17 @@ function startCellEdit(record: TableRecord, property: DatabasePropertyResponse):
   cellPopover.value = null
   cellDraftError.value = ''
   const current = getCellValue(record, property.id)
-  cellEdit.value = { recordId: record.id, propertyId: property.id, value: current == null ? '' : String(current) }
-  void nextTick(() => cellInput.value?.focus())
+  if (property.type === 'date') {
+    const normalized = normalizeDatabaseDateValue(current)
+    const date: DateCellDraft = normalized?.kind === 'datetime'
+      ? { start: normalized.start.slice(0, 23), end: normalized.end?.slice(0, 23) ?? '', hasEnd: normalized.end !== undefined, datetime: true, timeZone: normalized.timeZone, originalStart: normalized.start, originalEnd: normalized.end ?? '', objectValue: true }
+      : { start: normalized?.start ?? '', end: normalized?.end ?? '', hasEnd: normalized?.end !== undefined, datetime: false, timeZone: '', originalStart: normalized?.start ?? '', originalEnd: normalized?.end ?? '', objectValue: typeof current === 'object' && current !== null }
+    cellEdit.value = { recordId: record.id, propertyId: property.id, value: '', date }
+    void nextTick(() => cellInput.value?.focus())
+  } else {
+    cellEdit.value = { recordId: record.id, propertyId: property.id, value: current == null ? '' : String(current) }
+    void nextTick(() => cellInput.value?.focus())
+  }
 }
 function setCellInputRef(element: Element | ComponentPublicInstance | null): void {
   cellInput.value = element instanceof HTMLInputElement ? element : null
@@ -1281,6 +1299,32 @@ function cancelCellEdit(): void {
     if (target?.isConnected) target.focus({ preventScroll: true })
   })
 }
+function dateDraft(record: TableRecord, property: DatabasePropertyResponse): DateCellDraft | null {
+  return isEditingCell(record, property) ? cellEdit.value?.date ?? null : null
+}
+function setDateTimeMode(draft: DateCellDraft, enabled: boolean): void {
+  if (draft.datetime === enabled) return
+  if (enabled) {
+    draft.objectValue = true
+    draft.start = draft.start ? `${draft.start.slice(0, 10)}T00:00` : ''
+    draft.end = draft.hasEnd && draft.end ? `${draft.end.slice(0, 10)}T00:00` : ''
+    draft.timeZone = 'UTC'
+  } else {
+    draft.start = draft.start.slice(0, 10)
+    draft.end = draft.end.slice(0, 10)
+    draft.timeZone = ''
+  }
+  draft.datetime = enabled
+}
+function utcInputToCanonical(input: string, original: string): string | null {
+  if (!input) return null
+  if (original.startsWith(input) && (input.length === 16 || input.length === 23)) return original
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/u.exec(input)
+  if (!match) return null
+  const [, year, month, day, hour, minute, second = '0', fraction = '0'] = match
+  const candidate = `${year}-${month}-${day}T${hour}:${minute}:${second.padStart(2, '0')}.${fraction.padEnd(3, '0')}Z`
+  return isValidCanonicalUtcInstant(candidate) ? candidate : null
+}
 function isEditingCell(record: TableRecord, property: DatabasePropertyResponse): boolean { return cellEdit.value?.recordId === record.id && cellEdit.value?.propertyId === property.id }
 function isOpenSelect(record: TableRecord, property: DatabasePropertyResponse): boolean { return cellPopover.value?.recordId === record.id && cellPopover.value?.propertyId === property.id }
 
@@ -1288,7 +1332,7 @@ async function saveCell(record: TableRecord, property: DatabasePropertyResponse,
   if (savingCell.value || !cellEdit.value || !writable.value) return
   const raw = cellEdit.value.value
   const normalized = raw.trim()
-  let value: string | number | boolean | null = forceNull || normalized === '' ? null : raw
+  let value: DatabasePropertyValue = forceNull || normalized === '' ? null : raw
   if (property.type === 'number' && value !== null) {
     const number = Number(normalized)
     if (!Number.isFinite(number)) { cellDraftError.value = '请输入有效数字。'; return }
@@ -1298,10 +1342,26 @@ async function saveCell(record: TableRecord, property: DatabasePropertyResponse,
     cellDraftError.value = '标题必须为 1–200 个字符。'
     return
   }
-  if (property.type === 'date' && value !== null) {
-    const date = String(value)
-    const parsed = /^\d{4}-\d{2}-\d{2}$/u.test(date) ? new Date(`${date}T00:00:00.000Z`) : null
-    if (!parsed || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) { cellDraftError.value = '请选择有效日期。'; return }
+  if (property.type === 'date') {
+    const draft = cellEdit.value.date
+    if (!draft) { cellDraftError.value = '日期草稿无效，请取消后重试。'; return }
+    if (forceNull) value = null
+    else if (draft.datetime) {
+      const start = utcInputToCanonical(draft.start, draft.originalStart)
+      const end = draft.hasEnd ? utcInputToCanonical(draft.end, draft.originalEnd) : null
+      const dateValue = { start, ...(draft.hasEnd ? { end } : {}), timeZone: draft.timeZone }
+      if (!start || (draft.hasEnd && !end) || !isValidDatabaseDateValue(dateValue)) { cellDraftError.value = '请填写有效的 UTC 日期时间范围和 IANA 时区。'; return }
+      value = dateValue
+    } else {
+      const dateValue = draft.hasEnd ? { start: draft.start, end: draft.end } : draft.objectValue ? { start: draft.start } : draft.start
+      if ((draft.hasEnd && !draft.end) || !isValidDatabaseDateValue(dateValue)) { cellDraftError.value = '请选择有效日期，并确认结束日期不早于开始日期。'; return }
+      value = dateValue
+    }
+    if (typeof getCellValue(record, property.id) === 'string' && typeof value === 'string' && value === getCellValue(record, property.id)) {
+      cellEdit.value = null
+      runDeferredRefresh()
+      return
+    }
   }
   const expectedValue = property.type === 'title' && value !== null ? String(value).trim() : value
   const latestRecord = records.value.find(item => item.id === record.id) ?? record
@@ -1331,7 +1391,12 @@ async function saveCell(record: TableRecord, property: DatabasePropertyResponse,
       await refreshLoadedWindow()
       const refreshed = records.value.find(item => item.id === record.id)
       const confirmedValue = refreshed ? getCellValue(refreshed, property.id) : undefined
-      if (refreshed && (expectedValue === null ? confirmedValue == null : confirmedValue === expectedValue)) {
+      const confirmedDate = property.type === 'date' ? normalizeDatabaseDateValue(confirmedValue) : null
+      const expectedDate = property.type === 'date' ? normalizeDatabaseDateValue(expectedValue) : null
+      const sameValue = property.type === 'date'
+        ? expectedValue === null ? confirmedValue == null : confirmedDate !== null && expectedDate !== null && JSON.stringify(confirmedDate) === JSON.stringify(expectedDate)
+        : (expectedValue === null ? confirmedValue == null : confirmedValue === expectedValue)
+      if (refreshed && sameValue) {
         cellEdit.value = null
         cellDraftError.value = ''
       } else {
@@ -1344,6 +1409,23 @@ function onCellEnter(event: KeyboardEvent, record: TableRecord, property: Databa
   if (event.isComposing || event.keyCode === 229) return
   event.preventDefault()
   void saveCell(record, property)
+}
+function onDateEditorKeydown(event: KeyboardEvent, record: TableRecord, property: DatabasePropertyResponse): void {
+  if (event.key === 'Tab') {
+    event.stopPropagation()
+    const editor = event.currentTarget as HTMLElement
+    const controls = [...editor.querySelectorAll<HTMLElement>('input:not(:disabled), button:not(:disabled)')]
+    const currentIndex = controls.indexOf(document.activeElement as HTMLElement)
+    const nextIndex = currentIndex + (event.shiftKey ? -1 : 1)
+    const nextControl = controls[nextIndex]
+    if (nextControl) {
+      event.preventDefault()
+      nextControl.focus()
+    }
+    return
+  }
+  if (event.key === 'Escape') { event.preventDefault(); cancelCellEdit(); return }
+  if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); void saveCell(record, property) }
 }
 async function toggleCheckbox(record: TableRecord, property: DatabasePropertyResponse): Promise<void> {
   if (!writable.value) return
@@ -1760,12 +1842,23 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
                   <button v-else class="eotion-database-cell-button eotion-database-title-body" type="button" :disabled="!writable" :aria-label="`编辑${displayPropertyName(property)}：${formatValue(getCellValue(record, property.id), property)}`" @click.stop="startCellEdit(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                   <button class="eotion-database-title-detail" type="button" :tabindex="isEditingCell(record, property) ? -1 : 0" :aria-label="`打开记录：${formatValue(getCellValue(record, property.id), property)}`" @pointerdown.stop @mousedown.stop @click.stop="openRecordPage($event, record.pageId)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10" /></svg></button>
                 </div>
-                <input v-else-if="isEditingCell(record, property)" v-model="cellDraft" :ref="setCellInputRef" class="eotion-database-cell-input" :type="property.type === 'date' ? 'date' : 'text'" :inputmode="property.type === 'number' ? 'decimal' : undefined" :aria-label="`${displayPropertyName(property)} 值`" :disabled="savingCell || !writable" @keydown.enter="onCellEnter($event, record, property)" @keydown.tab.stop @keydown.esc.prevent="cancelCellEdit" @blur="saveCell(record, property)">
+                <div v-else-if="isEditingCell(record, property) && property.type === 'date' && dateDraft(record, property)" class="eotion-database-date-editor" @keydown="onDateEditorKeydown($event, record, property)" @keydown.tab.stop>
+                  <label>{{ displayPropertyName(property) }} 值<input :ref="setCellInputRef" class="eotion-database-cell-input" :type="dateDraft(record, property)!.datetime ? 'datetime-local' : 'date'" :step="dateDraft(record, property)!.datetime ? '0.001' : undefined" :aria-label="`${displayPropertyName(property)} 值`" v-model="dateDraft(record, property)!.start" :disabled="savingCell || !writable"></label>
+                  <label v-if="dateDraft(record, property)!.hasEnd">结束<input class="eotion-database-cell-input" :type="dateDraft(record, property)!.datetime ? 'datetime-local' : 'date'" :step="dateDraft(record, property)!.datetime ? '0.001' : undefined" aria-label="结束日期" v-model="dateDraft(record, property)!.end" :disabled="savingCell || !writable"></label>
+                  <label class="eotion-database-date-end-toggle"><input type="checkbox" :checked="dateDraft(record, property)!.hasEnd" :disabled="savingCell || !writable" @change="dateDraft(record, property)!.hasEnd = ($event.target as HTMLInputElement).checked; dateDraft(record, property)!.objectValue = true; !dateDraft(record, property)!.hasEnd && (dateDraft(record, property)!.end = '')">结束日期</label>
+                  <label class="eotion-database-date-end-toggle"><input type="checkbox" :checked="dateDraft(record, property)!.datetime" :disabled="savingCell || !writable" @change="setDateTimeMode(dateDraft(record, property)!, ($event.target as HTMLInputElement).checked)">包含时间</label>
+                  <template v-if="dateDraft(record, property)!.datetime">
+                    <label>时区<input class="eotion-database-cell-input" aria-label="时区" v-model="dateDraft(record, property)!.timeZone" maxlength="128" :disabled="savingCell || !writable"></label>
+                    <small>按 UTC 输入；时区信息会保留，修改时区不会移动时间点。</small>
+                  </template>
+                  <div class="eotion-database-date-actions"><button type="button" :disabled="savingCell || !writable" @click.stop="saveCell(record, property)">保存</button><button type="button" :disabled="savingCell || !writable" @click.stop="saveCell(record, property, true)">清除</button><button type="button" :disabled="savingCell" @click.stop="cancelCellEdit">取消</button></div>
+                </div>
+                <input v-else-if="isEditingCell(record, property)" v-model="cellDraft" :ref="setCellInputRef" class="eotion-database-cell-input" :inputmode="property.type === 'number' ? 'decimal' : undefined" :aria-label="`${displayPropertyName(property)} 值`" :disabled="savingCell || !writable" @keydown.enter="onCellEnter($event, record, property)" @keydown.tab.stop @keydown.esc.prevent="cancelCellEdit" @blur="saveCell(record, property)">
                 <button v-else-if="property.type === 'checkbox'" class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-pressed="getCellValue(record, property.id) === true" @click.stop="toggleCheckbox(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                 <button v-else-if="property.type === 'select'" class="eotion-database-cell-button" type="button" :disabled="!writable" @click.stop="toggleCellPopover(record, property, $event)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                 <button v-else-if="property.type === 'relation'" class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-label="`编辑关联 ${property.name}`" @click.stop="openRelationPicker(record, property, $event)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                 <span v-else-if="property.type === 'rollup' || property.type === 'formula'" class="eotion-database-derived-value" :aria-label="`${property.name}，只读`">{{ formatValue(getCellValue(record, property.id), property) }}</span>
-                <button v-else class="eotion-database-cell-button" type="button" :disabled="!writable" @click.stop="startCellEdit(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
+                <button v-else class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-label="property.type === 'date' ? `编辑${displayPropertyName(property)}：${formatValue(getCellValue(record, property.id), property)}` : undefined" @click.stop="startCellEdit(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
                 <Teleport to="body"><div v-if="isOpenSelect(record, property)" class="eotion-database-popover eotion-database-teleport eotion-database-cell-menu" :style="cellPopoverStyle">
                   <button type="button" @click.stop="chooseSelect(record, property, null)">清除</button>
                   <button v-for="option in property.options ?? []" :key="option.id" type="button" @click.stop="chooseSelect(record, property, option.id)">{{ option.name }}</button>
@@ -1782,8 +1875,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
                   <button v-if="relationNextCursor" type="button" :disabled="relationLoading" @click="loadRelationOptions(true)">加载更多</button>
                   <button type="button" @click="closeRelationPicker">完成</button>
                 </section></Teleport>
-                <button v-if="isEditingCell(record, property)" class="eotion-database-cell-save" type="button" tabindex="-1" :disabled="savingCell || !writable" @pointerdown.prevent @click.stop="saveCell(record, property)">保存</button>
-                <button v-if="isEditingCell(record, property) && property.type === 'date'" class="eotion-database-cell-save" type="button" tabindex="-1" :disabled="savingCell || !writable" @pointerdown.prevent @click.stop="saveCell(record, property, true)">清除</button>
+                <button v-if="isEditingCell(record, property) && property.type !== 'date'" class="eotion-database-cell-save" type="button" tabindex="-1" :disabled="savingCell || !writable" @pointerdown.prevent @click.stop="saveCell(record, property)">保存</button>
                 <small v-if="isEditingCell(record, property) && cellDraftError" class="eotion-database-cell-error" role="alert">{{ cellDraftError }} <button type="button" @click.stop="saveCell(record, property)">重试</button></small>
               </td>
             </tr>
@@ -1883,6 +1975,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-scroll { max-width:100%; overflow-x:auto; overscroll-behavior-inline:contain; border-top:1px solid var(--border-editor); }.eotion-database-table { width:max-content; min-width:100%; border-collapse:collapse; font-size:13px; }.eotion-database-table th,.eotion-database-table td { position:relative; width:180px; min-width:180px; max-width:260px; overflow-wrap:anywhere; border-right:1px solid var(--border-editor); border-bottom:1px solid var(--border-editor); padding:8px 11px; text-align:left; vertical-align:top; }.eotion-database-table th { color:var(--editor-muted); font-size:12px; font-weight:600; }.eotion-database-property-trigger,.eotion-database-cell-button { min-height:28px; border:0; padding:2px 4px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-cell-button { width:100%; }.eotion-database-property-trigger { display:inline-flex; align-items:center; gap:3px; }.eotion-database-cell-input { box-sizing:border-box; width:100%; min-height:32px; border:1px solid var(--border-editor); border-radius:4px; padding:4px 6px; color:inherit; font:inherit; }.eotion-database-cell-error { display:block; color:var(--danger); }
 .eotion-database-popover { z-index:10000; display:grid; min-width:170px; max-width:min(280px,80vw); gap:5px; border:1px solid var(--border-editor); border-radius:8px; padding:8px; background:var(--surface-raised); box-shadow:var(--e-shadow-popover,0 8px 24px #0002); color:var(--editor-text); }.eotion-database-popover button { min-height:32px; border:0; border-radius:4px; padding:5px 8px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-popover button:hover { background:var(--surface-editor-hover); }.eotion-database-popover form,.eotion-database-option-edit { display:flex; align-items:center; gap:4px; }.eotion-database-popover input { min-width:0; width:100%; min-height:32px; }.eotion-database-popover .danger { color:var(--danger); }.eotion-database-cell-save { margin-left:6px; min-height:28px; border:0; background:transparent; color:var(--editor-muted); font:inherit; cursor:pointer; }
 .eotion-database-title-cell { display:flex; align-items:center; gap:4px; min-width:0; }
+.eotion-database-date-editor { display:grid; gap:6px; width:100%; min-width:0; }.eotion-database-date-editor>label { display:grid; gap:3px; min-width:0; font-size:11px; color:var(--editor-muted); }.eotion-database-date-end-toggle { display:flex!important; grid-template-columns:auto 1fr; align-items:center; gap:6px!important; min-height:28px; }.eotion-database-date-end-toggle input { margin:0; }.eotion-database-date-editor small { color:var(--editor-muted); font-size:10px; line-height:1.35; }.eotion-database-date-actions { display:flex; gap:6px; }.eotion-database-date-actions button { min-height:28px; border:1px solid var(--border-editor); border-radius:4px; padding:3px 7px; background:var(--surface-editor-hover); color:inherit; font:inherit; cursor:pointer; }
 .eotion-database-title-cell .eotion-database-cell-input { flex:1 1 auto; width:auto; min-width:0; }
 .eotion-database-title-body { flex:1 1 auto; width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .eotion-database-title-detail { display:inline-flex; flex:0 0 28px; align-items:center; justify-content:center; width:28px; min-width:28px; min-height:28px; border:0; border-radius:5px; padding:0; background:transparent; color:var(--editor-muted); font:inherit; opacity:0; cursor:pointer; }
