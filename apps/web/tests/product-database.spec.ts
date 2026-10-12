@@ -547,7 +547,7 @@ function overlayFooter(content: Locator) {
   return content.locator('xpath=ancestor::dialog[1]').locator('.eotion-product-overlay__footer')
 }
 
-async function openDatabaseSetting(page: Page, table: Locator, name: '筛选' | '排序' | '属性' | '记录打开方式') {
+async function openDatabaseSetting(page: Page, table: Locator, name: '筛选' | '排序' | '属性' | '分组属性' | '记录打开方式') {
   const menu = page.getByRole('menu', { name: '数据库设置' })
   await expect(async () => {
     if (!await menu.isVisible()) await table.getByRole('button', { name: '数据库设置' }).click({ timeout: 1_000 })
@@ -557,7 +557,7 @@ async function openDatabaseSetting(page: Page, table: Locator, name: '筛选' | 
   }).toPass({ timeout: 8_000 })
 }
 
-async function closeDatabaseSetting(page: Page, label: '属性管理' | '记录打开方式') {
+async function closeDatabaseSetting(page: Page, label: '属性管理' | '分组属性' | '记录打开方式') {
   const panel = page.getByRole('group', { name: label })
   await expect(async () => {
     if (await panel.count() === 0) return
@@ -2665,6 +2665,150 @@ test('database view selector creates a Board view through the existing DatabaseV
   })).toEqual({ editorSame: true, databaseSame: true, drawerSame: true, editorComponentSame: true, databaseComponentSame: true })
   await expect(titleDraft).toHaveValue('Board draft survives creation')
   await expect(linkedDatabase.getByRole('button', { name: '切换视图' })).toContainText('表格视图')
+})
+
+test('Board view settings select only local Select properties, preserve config, and share View updates', async ({ page }) => {
+  const boardProperties = [
+    ...rootProperties,
+    property('root-priority', rootDatabase.id, 'Priority', 'select', [{ id: 'priority-high', name: 'High' }, { id: 'priority-low', name: 'Low' }]),
+  ]
+  const sharedConfig: DatabaseViewConfig = {
+    filters: [{ propertyId: 'root-text', operator: 'contains', value: 'keep' }],
+    sorts: [{ propertyId: 'root-number', direction: 'desc' }],
+    visibleProperties: ['root-title', 'root-select', 'root-priority'],
+    propertyOrder: ['root-title', 'root-priority', 'root-select', 'root-number', 'root-text'],
+    options: { groupByPropertyId: 'root-select', futureOption: { keep: true } },
+  }
+  const independentConfig: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: 'root-select' } }
+  const records = [
+    record('board-settings-open', rootDatabase.id, 'board-settings-open-page', { 'root-title': 'Keep open', 'root-text': 'keep', 'root-number': 10, 'root-select': 'status-open', 'root-priority': 'priority-high' }),
+    record('board-settings-done', rootDatabase.id, 'board-settings-done-page', { 'root-title': 'Keep done', 'root-text': 'keep', 'root-number': 20, 'root-select': 'status-done', 'root-priority': 'priority-low' }),
+  ]
+  const api = await installApi(page, [
+    block('board-settings-shared-one', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'board-settings-shared' } }, 100),
+    block('board-settings-shared-two', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'board-settings-shared' } }, 200),
+    block('board-settings-independent', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'board-settings-independent' } }, 300),
+    block('board-settings-table', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'board-settings-table' } }, 400),
+    block('board-settings-list', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'board-settings-list' } }, 500),
+  ], {
+    databases: [rootDatabase],
+    views: [
+      view('board-settings-shared', rootDatabase.id, 'Shared board', sharedConfig, 'board'),
+      view('board-settings-independent', rootDatabase.id, 'Independent board', independentConfig, 'board'),
+      view('board-settings-table', rootDatabase.id, 'Table settings', undefined, 'table'),
+      view('board-settings-list', rootDatabase.id, 'List settings', undefined, 'list'),
+    ],
+    properties: boardProperties,
+    records,
+  })
+  const initialRecords = structuredClone(api.records)
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const sharedOne = page.locator('#database-block-board-settings-shared-one')
+  const sharedTwo = page.locator('#database-block-board-settings-shared-two')
+  const independent = page.locator('#database-block-board-settings-independent')
+  const table = page.locator('#database-block-board-settings-table')
+  const list = page.locator('#database-block-board-settings-list')
+  await expect(sharedOne.getByTestId('database-board')).toBeVisible()
+  await expect(sharedTwo.getByTestId('database-board')).toBeVisible()
+  await expect(independent.getByTestId('database-board')).toBeVisible()
+  await expect(list.getByTestId('database-list')).toBeVisible()
+
+  await sharedOne.getByRole('button', { name: '数据库设置' }).click()
+  const boardMenu = page.getByRole('menu', { name: '数据库设置' })
+  await expect(boardMenu.getByRole('menuitem')).toHaveText(['筛选1', '排序1', '属性', '分组属性', '记录打开方式', '自动化'])
+  await boardMenu.getByRole('menuitem', { name: '分组属性', exact: true }).click()
+  const groupingPanel = page.getByRole('group', { name: '分组属性' })
+  const groupingTrigger = groupingPanel.getByRole('button', { name: '分组属性' })
+  await expect(groupingTrigger).toHaveAttribute('data-value', 'root-select')
+  await groupingTrigger.click()
+  const groupingMenu = page.getByRole('menu', { name: '分组属性' })
+  expect(await groupingMenu.getByRole('menuitem').allTextContents()).toEqual(['未设置', 'Status', 'Priority'])
+  await groupingMenu.getByRole('menuitem', { name: 'Priority', exact: true }).click()
+  await expect(groupingTrigger).toHaveAttribute('data-value', 'root-priority')
+  await overlayFooter(groupingPanel).getByRole('button', { name: '保存分组' }).click()
+
+  await expect.poll(() => api.views.find(item => item.id === 'board-settings-shared')?.config.options).toEqual({ groupByPropertyId: 'root-priority', futureOption: { keep: true } })
+  expect(api.views.find(item => item.id === 'board-settings-shared')?.config.filters).toEqual(sharedConfig.filters)
+  expect(api.views.find(item => item.id === 'board-settings-shared')?.config.sorts).toEqual(sharedConfig.sorts)
+  expect(api.views.find(item => item.id === 'board-settings-shared')?.config.visibleProperties).toEqual(sharedConfig.visibleProperties)
+  expect(api.views.find(item => item.id === 'board-settings-shared')?.config.propertyOrder).toEqual(sharedConfig.propertyOrder)
+  expect(api.records).toEqual(initialRecords)
+  await expect.poll(() => sharedOne.locator('.eotion-database-board-column-name').allTextContents()).toEqual(['High', 'Low', '未分组'])
+  await expect.poll(() => sharedTwo.locator('.eotion-database-board-column-name').allTextContents()).toEqual(['High', 'Low', '未分组'])
+  await expect(independent.locator('.eotion-database-board-column-name')).toHaveText(['Open', 'Done', '未分组'])
+
+  await openDatabaseSetting(page, sharedOne, '分组属性')
+  const clearPanel = page.getByRole('group', { name: '分组属性' })
+  await selectSettingOption(clearPanel, '分组属性', '', '未设置')
+  await overlayFooter(clearPanel).getByRole('button', { name: '保存分组' }).click()
+  await expect.poll(() => api.views.find(item => item.id === 'board-settings-shared')?.config.options).toEqual({ futureOption: { keep: true } })
+  await expect(sharedOne.getByTestId('database-board')).toContainText('尚未配置分组属性')
+  await expect.poll(async () => await sharedTwo.getByTestId('database-board').textContent()).toContain('尚未配置分组属性')
+
+  for (const database of [table, list]) {
+    await database.getByRole('button', { name: '数据库设置' }).click()
+    const menu = page.getByRole('menu', { name: '数据库设置' })
+    await expect(menu.getByRole('menuitem', { name: '分组属性', exact: true })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+  }
+})
+
+test('Board grouping settings remain available without Select properties and read-only offline on phone', async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const numberProperty = property('board-settings-number', rootDatabase.id, 'Estimate', 'number')
+  const api = await installApi(page, [
+    block('board-settings-no-select', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'board-settings-no-select-view' } }, 100),
+  ], {
+    databases: [rootDatabase],
+    views: [view('board-settings-no-select-view', rootDatabase.id, 'No select board', undefined, 'board')],
+    properties: [rootProperties[0]!, numberProperty],
+    records: [],
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-board-settings-no-select')
+  await expect(database.getByTestId('database-board')).toContainText('尚未配置分组属性')
+  await openDatabaseSetting(page, database, '分组属性')
+  const panel = page.getByRole('group', { name: '分组属性' })
+  await expect(page.locator('dialog.eotion-product-overlay--bottom-drawer[open]')).toBeVisible()
+  await expect(panel).toContainText('没有可用的选择属性')
+  const trigger = panel.getByRole('button', { name: '分组属性' })
+  await trigger.click()
+  await expect(page.getByRole('menu', { name: '分组属性' }).getByRole('menuitem')).toHaveText(['未设置'])
+  await closeDatabaseSetting(page, '分组属性')
+  expect(api.properties.filter(item => item.type === 'select')).toHaveLength(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+
+  const viewMutationCount = () => api.requests.filter(({ method, path }) => ['POST', 'PATCH', 'DELETE'].includes(method) && path.includes(`/databases/${rootDatabase.id}/views`)).length
+  const mutationsBeforeOffline = viewMutationCount()
+  await context.setOffline(true)
+  api.offline = true
+  await expect(database.getByRole('button', { name: '数据库设置' })).toBeEnabled()
+  await openDatabaseSetting(page, database, '分组属性')
+  await expect(panel.getByRole('button', { name: '分组属性' })).toBeDisabled()
+  await expect(overlayFooter(panel).getByRole('button', { name: '保存分组' })).toBeDisabled()
+  expect(viewMutationCount()).toBe(mutationsBeforeOffline)
+})
+
+test('Board grouping settings keep the existing View conflict behavior', async ({ page }) => {
+  const api = await installApi(page, [
+    block('board-settings-conflict', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'board-settings-conflict-view' } }, 100),
+  ], {
+    databases: [rootDatabase],
+    views: [view('board-settings-conflict-view', rootDatabase.id, 'Conflict board', undefined, 'board')],
+    properties: rootProperties,
+    records: [basicRecord],
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-board-settings-conflict')
+  await openDatabaseSetting(page, database, '分组属性')
+  const panel = page.getByRole('group', { name: '分组属性' })
+  await selectSettingOption(panel, '分组属性', 'root-select', 'Status')
+  api.databases[0]!.version += 1
+  await overlayFooter(panel).getByRole('button', { name: '保存分组' }).click()
+  await expect(page.getByRole('alert')).toContainText('数据库或视图已变化')
+  expect(api.views.find(item => item.id === 'board-settings-conflict-view')?.config.options).toBeUndefined()
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith('/views/board-settings-conflict-view'))).toHaveLength(1)
 })
 
 test('phone creates a Board view without a Select property and keeps the two-row header in the viewport', async ({ page }) => {

@@ -56,7 +56,7 @@ const viewVersion = ref(1)
 const viewConfig = ref<DatabaseViewConfig>({ ...DEFAULT_DATABASE_VIEW_CONFIG })
 const views = ref<DatabaseViewResponse[]>([])
 const viewMenuOpen = ref(false)
-const viewControlsOpen = ref<'filters' | 'sorts' | 'columns' | 'record-opening' | ''>('')
+const viewControlsOpen = ref<'filters' | 'sorts' | 'columns' | 'grouping' | 'record-opening' | ''>('')
 const settingsMenuOpen = ref(false)
 const viewSubmitting = ref(false)
 const viewBusy = computed(() => !props.editor.isEditable || !online.value || staleReadonly.value || loading.value || loadingMore.value || savingCell.value || creating.value || viewSubmitting.value || scopedViewDeleteState.value?.status === 'pending')
@@ -72,6 +72,15 @@ const orderedProperties = computed(() => {
   const ids = viewConfig.value.propertyOrder ?? []
   return [...ids.map(id => properties.value.find(item => item.id === id)).filter((item): item is DatabasePropertyResponse => Boolean(item)), ...properties.value.filter(item => !ids.includes(item.id))]
 })
+const groupingProperties = computed(() => properties.value.filter(property => property.type === 'select'))
+const currentGroupingPropertyId = computed(() => {
+  const propertyId = viewConfig.value.options?.groupByPropertyId
+  return typeof propertyId === 'string' && groupingProperties.value.some(property => property.id === propertyId) ? propertyId : ''
+})
+const groupingOptions = computed(() => [
+  { value: '', label: '未设置' },
+  ...groupingProperties.value.map(property => ({ value: property.id, label: property.name })),
+])
 const displayProperties = computed(() => {
   const all = properties.value
   const orderedIds = viewConfig.value.propertyOrder ?? []
@@ -81,6 +90,7 @@ const displayProperties = computed(() => {
 })
 const filterDrafts = ref<DatabaseFilter[]>([])
 const sortDrafts = ref<DatabaseViewConfig['sorts']>([])
+const groupingDraft = ref('')
 const columnDraft = ref<{ visible: string[]; order: string[] }>({ visible: [], order: [] })
 const draggingPropertyId = ref('')
 const renameViewDraft = ref('')
@@ -670,15 +680,17 @@ const settingsMenuItems = computed(() => [
   { label: '筛选', icon: IconName.Filter, shortcut: visibleViewCount.value ? String(visibleViewCount.value) : undefined, action: () => openSettings('filters') },
   { label: '排序', icon: IconName.Sort, shortcut: sortViewCount.value ? String(sortViewCount.value) : undefined, action: () => openSettings('sorts') },
   { label: '属性', icon: IconName.Text, action: () => openSettings('columns') },
+  ...(viewType.value === 'board' ? [{ label: '分组属性', icon: IconName.List, action: () => openSettings('grouping') }] : []),
   { label: '记录打开方式', icon: IconName.Settings, action: () => openSettings('record-opening') },
   { label: '自动化', icon: IconName.Agent, disabled: true, action: () => {} },
 ])
-function openSettings(kind: 'filters' | 'sorts' | 'columns' | 'record-opening'): void {
+function openSettings(kind: 'filters' | 'sorts' | 'columns' | 'grouping' | 'record-opening'): void {
   settingsMenuOpen.value = false
   propertyCreatorOpen.value = false
   viewMenuOpen.value = false
   if (kind === 'filters') filterDrafts.value = viewConfig.value.filters.map(filter => ({ ...filter }))
   if (kind === 'sorts') sortDrafts.value = viewConfig.value.sorts.map(sort => ({ ...sort }))
+  if (kind === 'grouping') groupingDraft.value = currentGroupingPropertyId.value
   if (kind === 'columns') columnDraft.value = {
     visible: viewConfig.value.visibleProperties === null ? properties.value.map(property => property.id) : [...viewConfig.value.visibleProperties],
     order: orderedProperties.value.map(property => property.id),
@@ -910,7 +922,7 @@ async function saveViewConfig(next: DatabaseViewConfig): Promise<void> {
       return
     }
   }
-  if (!validateDatabaseViewConfig(next, properties.value)) {
+  if (!validateDatabaseViewConfig(next, properties.value, viewType.value)) {
     viewError.value = '筛选或列设置与属性类型不匹配，请检查后重试。'
     return
   }
@@ -931,6 +943,20 @@ function saveFilters(): void {
 }
 function saveSorts(): void {
   void saveViewConfig({ ...viewConfig.value, sorts: sortDrafts.value.map(sort => ({ ...sort })) })
+}
+function saveGrouping(): void {
+  if (groupingDraft.value && !groupingProperties.value.some(property => property.id === groupingDraft.value)) {
+    viewError.value = '请选择当前数据库中的选择属性。'
+    return
+  }
+  const currentOptions = viewConfig.value.options
+  const nextOptions = { ...(currentOptions ?? {}) }
+  if (groupingDraft.value) nextOptions.groupByPropertyId = groupingDraft.value
+  else delete nextOptions.groupByPropertyId
+  const next = { ...viewConfig.value }
+  if (currentOptions !== undefined || groupingDraft.value) next.options = nextOptions
+  else delete next.options
+  void saveViewConfig(next)
 }
 function toggleColumn(propertyId: string): void {
   const property = properties.value.find(item => item.id === propertyId)
@@ -1594,6 +1620,10 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
           </div>
           <EotionButton class="settings-action" type="button" variant="secondary" :disabled="sortDrafts.length >= 10 || sortDrafts.length >= properties.filter(property => !['relation', 'rollup', 'formula'].includes(property.type)).length" @click.stop="addSort"><EotionIcon :name="IconName.Plus" :size="16" /> 添加排序</EotionButton>
         </section><template #footer><EotionButton variant="primary" type="button" :disabled="viewBusy || !writable" @click.stop="saveSorts">保存排序</EotionButton></template></EotionProductOverlay>
+         <EotionProductOverlay :open="viewControlsOpen === 'grouping'" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'modal'" title="分组属性" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="分组属性" @click.stop>
+           <p v-if="!groupingProperties.length" class="eotion-database-settings-hint">没有可用的选择属性</p>
+           <DatabaseSettingsSelect :model-value="groupingDraft" :options="groupingOptions" label="分组属性" :disabled="!writable" @update:model-value="groupingDraft = $event" />
+         </section><template #footer><EotionButton variant="primary" type="button" :disabled="viewBusy || !writable" @click.stop="saveGrouping">保存分组</EotionButton></template></EotionProductOverlay>
         <EotionProductOverlay :open="viewControlsOpen === 'record-opening'" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'modal'" title="记录打开方式" @update:open="onSettingsOverlayChange"><section class="eotion-database-settings" role="group" aria-label="记录打开方式">
           <DatabaseOpeningChoices target="record" :config="recordOpeningConfig" :current-layout="layoutMode" @change="(layout, mode) => setOpening('record', layout, mode)" />
         </section></EotionProductOverlay>
@@ -1787,6 +1817,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-settings { display:grid; gap:12px; width:100%; max-width:680px; padding:6px 2px; color:var(--editor-text); }
 .eotion-database-property-settings { container-type:inline-size; container-name:database-property-settings; }
 .eotion-database-settings>label { display:grid; gap:5px; color:var(--editor-muted); font-size:12px; }
+.eotion-database-settings-hint { margin:0; color:var(--editor-muted); font-size:12px; }
 .eotion-database-settings select { box-sizing:border-box; min-width:0; min-height:36px; border:1px solid var(--border-editor); border-radius:6px; padding:5px 8px; background:var(--surface-raised); color:var(--editor-text); font:inherit; }
 .eotion-database-settings>button:not(.settings-action),.eotion-database-property-row button:not(.settings-icon-button) { min-height:32px; border:1px solid var(--border-editor); border-radius:5px; padding:5px 9px; background:var(--surface-editor-hover); color:inherit; font:inherit; cursor:pointer; }
 .eotion-database-property-row { display:grid; grid-template-columns:36px 16px minmax(0,1fr) max-content repeat(4,36px); align-items:center; gap:6px; min-width:0; border-bottom:1px solid var(--border-editor); padding:6px 0; }

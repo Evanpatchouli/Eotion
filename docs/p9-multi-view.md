@@ -1,6 +1,6 @@
 # P9 Multi-View
 
-P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation；P9.4B 保护 Board grouping Property 的删除与改型；P9.5A 增加 Board renderer；P9.5B-1 增加显式 Card 分组修改。
+P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation；P9.4B 保护 Board grouping Property 的删除与改型；P9.5A 增加 Board renderer；P9.5B-1 增加显式 Card 分组修改；P9.5C-2 增加 Board grouping settings。
 
 ## P9.1A — Generic View Records Read Foundation
 
@@ -193,3 +193,13 @@ Desktop / Tablet 在 Board 内局部横向滚动，列保持可读宽度；Phone
 本轮只开放创建入口。Grouping settings 与无可用 select Property 的设置 UX 留给 P9.5C-2；不修改 Board config Domain/API、renderer 或 drag，不运行 Full Product、Visual 或 Final Acceptance。
 
 定向验证 9/9 加原有 Table 创建生命周期 1/1，通过（workers=1 / retries=0）。覆盖唯一创建 POST/type/default config、当前 Block 与 linked 引用、数据无复制、Editor/NodeView/Drawer/draft/snapshot、390px 无 select 创建与入口可访问，以及确定性失败和未知结果的跨类型重试保护。Web typecheck、diff 与 UTF-8 无 BOM 检查通过；独立复核无剩余 blocker。
+
+## P9.5C-2 — Board Grouping Settings
+
+基线 `bfe51bf85ada8677b7e26cd504366097d217c12d`。Board 的现有 Database View Settings 新增仅对 `view.type === 'board'` 显示的“分组属性”入口，继续使用现有 `DatabaseSettingsSelect` 与 Overlay；Table / List 的设置菜单不显示该入口，Phone 继续使用既有 `<768px` bottom drawer。
+
+候选属性严格取当前 Database 的 `type === 'select'` Properties，首项为“未设置”。保存复用 `saveViewConfig()` → `updateProductDatabaseView()` 与现有 `expectedDatabaseVersion` / `expectedViewVersion` CAS、409 刷新和 notification flow。写入只更新 `config.options.groupByPropertyId`，展开并保留 `filters`、`sorts`、`visibleProperties`、`propertyOrder` 及未知 options；清除时删除该 key，其他 options 保持不变。保存成功后直接更新当前 View config，Board 使用既有 records 立即按新属性重算列，不修改 Record。
+
+没有 Select Property 时设置仍可打开并显示“没有可用的选择属性”，不会创建 Property；离线时 selector 与保存按钮不可写。共享 `viewId` 的 Block 通过同一 View config 收敛，不同 `viewId` 保持独立。未新增 Board API、settings endpoint、Property mutation、renderer、drag、MCP 或 local-first 能力。
+
+定向验证新增 3/3，并与相邻回归组合 13/13 通过（workers=1 / retries=0）：覆盖候选过滤、View config 字段/unknown options 保留、Status → Priority、清除 grouping、Record 不变、shared/independent View、Table/List 隔离、无 Select、390px/离线只读与 View 409 conflict。Web typecheck 通过；未运行 Full Product、Visual Acceptance 或 Final Acceptance。

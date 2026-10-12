@@ -1,15 +1,14 @@
-# 当前任务：P9.5C-1 — Board View Creation Entry（已完成）
+# 当前任务：P9.5C-2 — Board Grouping Settings（已完成）
 
-基线 `a70c8b9a41de42d3b38ac5997d33df314867edff`；P9.5B-2 PASS / SEALED。目标 8–20 分钟，25 分钟硬停止。
+基线 `bfe51bf85ada8677b7e26cd504366097d217c12d`；P9.5C-1 PASS / SEALED。目标 8–20 分钟，25 分钟硬停止。
 
 | Work Unit | 难度 / 模式 / 角色 | 状态 |
 | --- | --- | --- |
-| 创建、切换与缺省 renderer 定位 | S0 investigate / 主 Agent | 完成 |
-| Board 创建入口与通用默认配置 | S1 execute / 主 Agent | 完成 |
-| targeted 创建/identity/Phone 测试及验证 | S1 execute / fast_worker | 完成；targeted 9/9 + Table 创建 1/1 |
-| 独立复核 | Review / reviewer | 完成；重试错类型已修复，无剩余 blocker |
-| 文档、handoff、聚焦 commit、停止 | S1 execute / 主 Agent | 完成；聚焦提交后停止 |
+| View Settings / 保存链路调查 | S0 investigate / 主 Agent | 完成 |
+| Board-only grouping UI 与 config merge | S1 execute / 主 Agent | 完成 |
+| targeted tests、typecheck 与相邻回归 | S1 verify / 主 Agent | 完成；3/3 + 13/13 |
+| 文档、handoff、diff 与停止 | S1 execute / 主 Agent | 完成 |
 
-Implementation Brief：createView 接受 DatabaseViewType，Board 默认名称看板 N，配置严格沿用 DEFAULT_DATABASE_VIEW_CONFIG，不补 options/groupBy。菜单增加同风格新建看板视图，复用 createProductDatabaseView / existing POST views 与 switchView(created.id, true)。只更新当前引用 viewId；Board 缺省分组进入已有 renderer 显示尚未配置分组属性。禁止 grouping settings/自动groupBy/新Property/API/Domain/drag变更/MCP/local-first；禁止 Full Product/Visual/Final Acceptance。
+Implementation Brief：`DatabaseNodeView` 的既有 Database Settings 菜单只在 Board View 显示“分组属性”，复用 `DatabaseSettingsSelect` 与现有 Overlay；候选严格为当前 Database 的 `type === 'select'` Property，含“未设置”。保存复用 `saveViewConfig()` → `updateProductDatabaseView()` 与双版本 CAS；只增删 `config.options.groupByPropertyId`，保留 filters/sorts/visibleProperties/propertyOrder 与未知 options。`saveViewConfig()` 按当前 `viewType` 校验 Board grouping。清除 grouping 不改 Record；Table/List 不显示入口；无 Select 可打开但不报错；Phone 使用既有 bottom drawer；离线 selector/保存不可写；409 使用既有 conflict refresh。
 
-验证：Web typecheck、diff check、UTF-8 无 BOM 通过；一次独立 review 无剩余 blocker。Board 创建、Phone 无 select、409 与未知结果重试 4 项新增 targeted 加既有回归共 9/9，Table 创建生命周期另 1/1，workers=1 / retries=0。保留 Editor/NodeView/Drawer/draft/snapshot，不复制 Database/Records/Pages/Database Block。未发现已确认的 P9.5C-2 blocker，未实现/验收 grouping settings，未运行 Full Product/Visual/Final Acceptance。实际命令与测试 fixture 修正见 handoff。
+验证：`pnpm --filter @eotion/web typecheck` 通过；新增 grouping targeted 3/3 通过；相邻 View settings / Board / Table/List / Phone / snapshot 回归 13/13 通过（workers=1，retries=0）；`git diff --check` 通过。未运行 Full Product、Visual Acceptance、Final Acceptance；未改 Board renderer/drag、Record mutation、API、Domain、MCP 或 local-first。完成后停止。

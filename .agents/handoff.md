@@ -1,4 +1,16 @@
 # Handoff
+## 2026-10-12 P9.5C-2 Board Grouping Settings（已完成）
+
+基线 `bfe51bf85ada8677b7e26cd504366097d217c12d`；聚焦提交为本节所在 commit。既有 `DatabaseNodeView` Database Settings 菜单仅在 Board View 增加“分组属性”入口，复用 `DatabaseSettingsSelect` 与现有 Overlay；Table/List 不显示。候选严格为当前 Database 的 `type === 'select'` Property，首项为“未设置”；无 Select 时设置仍可打开并显示“没有可用的选择属性”，不会自动创建 Property。Phone 复用现有 `<768px` bottom drawer，离线时 selector 与保存按钮不可写。
+
+保存继续复用 `saveViewConfig()` → `updateProductDatabaseView()` → 既有 View PATCH，携带 `expectedDatabaseVersion` / `expectedViewVersion`，409 继续走 `handleViewMutationError` 的 refresh/conflict 行为。保存时展开 `options`，只增删 `groupByPropertyId`，保留 `filters`、`sorts`、`visibleProperties`、`propertyOrder` 和 unknown options；清除 grouping 只删除该 key（仅剩 unknown options 时保留）。validator 现在传入当前 `viewType`，因此 Board grouping 按 Board 语义校验。
+
+Board 选择 Status → Priority 只改变 View config，不修改任何 Record；同一 `viewId` 的两个 Block 通过共享 View config 收敛，不同 View 保持独立。保存成功后现有 view config / notification / refresh flow 使 Board 立即按新 property 重算，未 reload/remount Editor、NodeView 或 Drawer。未改 Board renderer、drag、Record mutation、API/Domain/MCP/local-first，也未运行 Full Product、Visual Acceptance、Final Acceptance。
+
+修改文件：`apps/web/src/components/editor/DatabaseNodeView.vue`、`apps/web/tests/product-database.spec.ts`、`docs/p9-multi-view.md`、`docs/architecture/architecture.md`、`docs/context/README.md`、`.agents/current-task.md`、`.agents/handoff.md`。
+
+验证：`pnpm --filter @eotion/web typecheck`；新增 grouping targeted 3/3：候选过滤、字段/unknown options 保留、切换/清除、Record 不变、shared/independent View、Table/List、无 Select、390px/离线、409；相邻回归 13/13（workers=1，retries=0）；`git diff --check` 通过。未发现 P9 Multi-View blocker。完成聚焦 commit 后停止。
+
 ## 2026-10-12 P9.5C-1 Board View Creation Entry（已完成）
 
 基线 `a70c8b9a41de42d3b38ac5997d33df314867edff`；聚焦提交为本节所在 commit。DatabaseNodeView 的通用 createView 支持 board，既有菜单增加“新建看板视图”，默认名称“看板 N”。复用 createProductDatabaseView / existing POST views / switchView(created.id, true)，当前 Block 只更新 viewId；不复制 Database、Records、Page 或 Database Block，不 reload/remount。默认配置严格沿用 DEFAULT_DATABASE_VIEW_CONFIG：空 filters/sorts、visibleProperties/propertyOrder null、options 缺省，无自动 groupBy；无 select 也可创建，现有 renderer 显示“尚未配置分组属性”。
