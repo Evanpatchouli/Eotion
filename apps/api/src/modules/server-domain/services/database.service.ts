@@ -127,7 +127,7 @@ export class DatabaseService {
       return this.transact(readSession => this.getViewRecords(userId, workspaceId, databaseId, viewId, input, readSession))
     }
     const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
-    if (!validateDatabaseViewConfig(config, properties)) throw new ConflictException('Database view configuration is invalid; refresh and repair the view before querying it')
+    if (!validateDatabaseViewConfig(config, properties, view.type)) throw new ConflictException('Database view configuration is invalid; refresh and repair the view before querying it')
     const configHash = this.viewConfigHash(config)
     let anchor: DatabaseTableRecord | undefined
     if (input.cursor !== undefined) {
@@ -363,6 +363,7 @@ export class DatabaseService {
             const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
             const nextConfig = { ...config, filters: config.filters.filter(filter => !(filter.propertyId === existing.id && typeof filter.value === 'string' && removed.has(filter.value))) }
             if (nextConfig.filters.length === config.filters.length) continue
+            // Keep property-repair validation generic; repairing Board dependencies is deferred to P9.4B.
             if (!validateDatabaseViewConfig(nextConfig, (await this.properties.list(workspaceId, databaseId, session)))) throw new ConflictException('Database view configuration could not be repaired after deleting a select option')
             if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during option cleanup')
           }
@@ -450,6 +451,7 @@ export class DatabaseService {
           filters: config.filters.filter(filter => filter.propertyId !== propertyId),
           sorts: ['relation', 'rollup', 'formula'].includes(candidate.type) ? config.sorts.filter(sort => sort.propertyId !== propertyId) : config.sorts,
         }
+        // Keep property-repair validation generic; repairing Board dependencies is deferred to P9.4B.
         if (!validateDatabaseViewConfig(nextConfig, candidateProperties)) throw new ConflictException('Database view configuration could not be repaired after changing property type')
         if (nextConfig.filters.length === config.filters.length && nextConfig.sorts.length === config.sorts.length) continue
         if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during property type conversion')
@@ -503,6 +505,7 @@ export class DatabaseService {
         }
         if (JSON.stringify(nextConfig) === JSON.stringify(config)) continue
         const remainingProperties = await this.properties.list(workspaceId, databaseId, session)
+        // Keep property-repair validation generic; repairing Board dependencies is deferred to P9.4B.
         if (!validateDatabaseViewConfig(nextConfig, remainingProperties)) throw new ConflictException('Database view configuration could not be repaired after deleting a property')
         if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during property cleanup')
       }
@@ -651,7 +654,7 @@ export class DatabaseService {
       if ((await this.views.listWindow(workspaceId, databaseId, DATABASE_MAX_VIEWS + 1, session)).length >= DATABASE_MAX_VIEWS) throw new ConflictException(`Database already has the maximum of ${DATABASE_MAX_VIEWS} views`)
       const properties = await this.properties.list(workspaceId, databaseId, session)
       const config = input.config ?? DEFAULT_DATABASE_VIEW_CONFIG
-      if (!validateDatabaseViewConfig(config, properties)) throw new BadRequestException('Invalid database view configuration for this database')
+      if (!validateDatabaseViewConfig(config, properties, input.type)) throw new BadRequestException('Invalid database view configuration for this database')
       const view = await this.views.create({ id: input.id, workspaceId, databaseId, name: input.name, type: input.type, config, version: 1 }, session)
       return { database: bumped, view }
     })
@@ -667,7 +670,7 @@ export class DatabaseService {
       if (!existing || existing.databaseId !== databaseId) throw new NotFoundException('Database view not found')
       const properties = await this.properties.list(workspaceId, databaseId, session)
       const config = input.config ?? existing.config ?? DEFAULT_DATABASE_VIEW_CONFIG
-      if (!validateDatabaseViewConfig(config, properties)) throw new BadRequestException('Invalid database view configuration for this database')
+      if (!validateDatabaseViewConfig(config, properties, existing.type)) throw new BadRequestException('Invalid database view configuration for this database')
       const view = await this.views.update(workspaceId, databaseId, viewId, input.expectedViewVersion, { ...(input.name === undefined ? {} : { name: input.name }), ...(input.config === undefined ? {} : { config }) }, session)
       if (!view) throw new ConflictException('Database view version is stale')
       return { database, view }

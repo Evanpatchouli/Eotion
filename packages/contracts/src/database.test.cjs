@@ -86,6 +86,8 @@ test('database create request schemas enforce exact request shapes', () => {
   assert.deepEqual(DatabaseViewCreateRequestSchema.parse(createView), createView)
   assert.equal(DatabaseViewCreateRequestSchema.safeParse({ ...createView, type: 'calendar' }).success, false)
   for (const type of ['list', 'board']) assert.deepEqual(DatabaseViewCreateRequestSchema.parse({ ...createView, type }).type, type)
+  const boardConfig = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: { groupByPropertyId: 'status-1', futureKey: { keep: true } } }
+  assert.deepEqual(DatabaseViewCreateRequestSchema.parse({ ...createView, type: 'board', config: boardConfig }).config, boardConfig)
   assert.equal(DatabaseViewHttpCreateRequestSchema.safeParse(createView).success, false)
   assert.deepEqual(DatabaseViewHttpCreateRequestSchema.parse({ ...createView, expectedDatabaseVersion: 1 }), { ...createView, expectedDatabaseVersion: 1 })
   assert.equal(DatabaseViewUpdateRequestSchema.safeParse({ expectedDatabaseVersion: 1, expectedViewVersion: 1 }).success, false)
@@ -199,6 +201,27 @@ test('database view records response strictly validates scope, rows, properties,
   assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'board' } }).success, true)
   assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'calendar' } }).success, false)
   assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'table' } }).success, true)
+})
+
+test('board view records require a valid select grouping property while table and list options stay opaque', () => {
+  const select = { id: 'status-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'Status', type: 'select', options: [{ id: 'open', name: 'Open' }], version: 1, createdAt: timestamp, updatedAt: timestamp }
+  const text = { ...property, id: 'notes-1', name: 'Notes', type: 'text' }
+  const boardView = { ...view, type: 'board', config: { ...view.config, options: { groupByPropertyId: 'status-1', futureKey: true } } }
+  const response = { database, view: boardView, properties: [property, select, text], records: [], nextCursor: null }
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse(response).success, true)
+  for (const groupByPropertyId of ['missing', 'notes-1', ' db-1', 'x'.repeat(257), 42, null, undefined]) {
+    const invalid = { ...response, view: { ...boardView, config: { ...boardView.config, options: { groupByPropertyId } } } }
+    assert.equal(DatabaseViewRecordsResponseSchema.safeParse(invalid).success, false)
+  }
+  const foreignSelect = { ...select, databaseId: 'db-2' }
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, properties: [property, foreignSelect] }).success, false)
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, properties: [property, { ...select, workspaceId: 'ws-2' }] }).success, false)
+  const selectWithoutOptions = { ...select, options: undefined }
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, properties: [property, selectWithoutOptions] }).success, false)
+  for (const type of ['table', 'list']) {
+    const opaque = { ...response, view: { ...view, type, config: { ...view.config, options: { groupByPropertyId: 'groupId42' } } } }
+    assert.equal(DatabaseViewRecordsResponseSchema.safeParse(opaque).success, true)
+  }
 })
 
 test('database contracts accept exact property, row, filter, sort, and column-order limits', () => {

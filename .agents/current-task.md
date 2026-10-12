@@ -1,19 +1,20 @@
-# 当前任务：P9.3B-2 — Create List View（已完成）
+# 当前任务：P9.4A — Board Config Foundation（已完成）
 
-基线 `a9217b6496ce3d97f6f3999055c081fab5deb488`；P8 COMPLETE / SEALED，P9.1A、P9.2、P9.3A 与 P9.3B-1 已完成。目标 8–20 分钟，25 分钟硬停止。
+基线 `e15d6d1b9f3519f0cb6d16f937209c98bc0d1370`；P8 COMPLETE / SEALED，P9.1A / P9.2 / P9.3 已完成。目标 8–20 分钟，25 分钟硬停止；开始于 2026-10-12 17:43:55（Asia/Shanghai）。
 
 | Work Unit | 难度 / 模式 / 角色 | 状态 |
 | --- | --- | --- |
-| 检查 DatabaseNodeView、View Selector、DatabaseView API、product service 与既有 create flow | S0 investigate / 主 Agent | 完成 |
-| 确认复用 create DatabaseView API、默认 config 与 block viewId 生命周期 | S1 decide / 主 Agent | 完成 |
-| 增加 Table/List 创建入口并保持 Table 兼容 | S1 execute / 主 Agent | 完成 |
-| targeted product tests、Web typecheck、diff / lifecycle review | S0 verify / 主 Agent | 完成，无 blocker |
-| 文档、handoff、聚焦提交与汇报 | S1 execute / 主 Agent | 完成 |
+| 定位 API View config validation、property repair 和既有测试 | S0 investigate / scout | 完成 |
+| 确定 Board options 类型与 View-aware validator 接口 | S2 decide / 主 Agent | 完成 |
+| Domain / Contracts 类型、validator 与定向回归 | S1 execute / fast_worker | 完成 |
+| API create/update/read 接入与 Board / property repair 回归 | S1 execute / fast_worker | 完成 |
+| 最小测试/类型检查和一次独立 review | S0 verify / scout + reviewer | 完成，无 blocker |
+| 正式文档、handoff、聚焦提交与汇报 | S1 execute / 主 Agent | 完成（本变更单元 commit），随后停止 |
 
-边界：View Selector 保留既有“新建视图”Table 流程，新增“新建列表视图”List 流程。两者均创建新的 DatabaseView，复用 `createProductDatabaseView()` / `POST .../views`，传入 `DEFAULT_DATABASE_VIEW_CONFIG`；不复制 Database、不创建新的 Database Block、不修改 Page Tree、Page snapshot、`databaseId` 或 Database domain。创建成功后只通过既有 `switchView()` 更新当前 block 的 `viewId`，由既有 watch reload 并进入 Table/List renderer。Rename/Delete、View settings、Board、Calendar、Gallery、MCP、Local-first 不在本轮。
+Implementation Brief：保留通用 `DatabaseViewConfig.options?: Record<string, unknown>`，新增可扩展 Board options/config 类型，其中 `groupByPropertyId?: string`。`validateDatabaseViewConfig(config, properties, viewType = 'table')` 只在 `viewType === 'board'` 且 options 自有 groupByPropertyId 时验证稳定 ID、当前 properties 集合中的 select、options 数组存在（允许空数组）。API create 使用请求 type；update/read 和 records response contract 使用持久化 View type。历史 table/list options 保持 opaque，不对未知字段设白名单。Property repair 保留完整 options，包括 groupByPropertyId；仅校验修复后的通用字段，不新增 dependency/conflict/自动清除逻辑，引用生命周期留给 P9.4B。
 
-修改：`apps/web/src/components/editor/DatabaseNodeView.vue` 支持 `type: 'table' | 'list'` 创建并增加 List action；`apps/web/tests/product-database.spec.ts` 让 create mock 保留请求 type，并新增 List create targeted regression；`docs/p9-multi-view.md` 写回本阶段契约。
+边界：只使用既有 POST /views，默认配置与 Database 模型保持；不新增 BoardDatabase / BoardRecord / BoardColumn、renderer、UI、selector、columns、drag、MCP 或 Local-first。不运行 Web Product / Visual / Final Acceptance。API 完整构建的既有 MCP/Zod 环境问题使用已记录的 scoped compile/test 路径验证，不扩大修复范围。
 
-验证：`pnpm --filter @eotion/web typecheck` 通过；View create Table 回归、List create、Table/List selector、Phone selector、List renderer 共 5/5 通过；`git diff --check` 通过。未运行完整 Product、Visual、Final Acceptance；未改 lockfile。
+验证：Domain 35/35、Contracts 24/24；Domain / Contracts / SDK typecheck；API scoped compile 与 Database HTTP/service 13/13、0 skip，全部通过。真实 repair 回归确认 select option cleanup / grouping Property type change / delete 后 View version 递增、通用字段确实修复、groupByPropertyId 与未知 options 保留。首跑仅新增测试 ID 与原 fixture 重复，改为独立 ID 后同组通过；没有修复无关模块或削弱断言。独立 review 无 blocker，diff / UTF-8 无 BOM 检查通过。
 
-完成后停止，不继续实现 Rename/Delete、Board、MCP 或 Local-first。
+Board Domain foundation 未发现 blocker。grouping Property 失效后 Board records 按当前 schema 返回既有 409；dependency/conflict/repair 生命周期留给 P9.4B。本轮完成后停止，不开始 Board UI、renderer、drag 或 MCP。

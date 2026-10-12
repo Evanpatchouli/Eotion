@@ -213,7 +213,7 @@ function isValidDatabaseViewRecordsResponse(value: unknown): value is DatabaseVi
   const properties = table.properties as DatabaseProperty[]
   if (!properties.every(property => property.databaseId === database.id && property.workspaceId === database.workspaceId)) return false
   if (properties.filter(property => property.type === 'title').length !== 1 || new Set(properties.map(property => property.id)).size !== properties.length) return false
-  if (!validateDatabaseViewConfig(view.config, properties)) return false
+  if (!validateDatabaseViewConfig(view.config, properties, view.type)) return false
   if (!Array.isArray(table.records) || table.records.length > DATABASE_MAX_TABLE_ROWS || !table.records.every(record => isValidDatabaseTableRecord(record, properties))) return false
   if (!table.records.every(record => (record as DatabaseTableRecord).databaseId === database.id && (record as DatabaseTableRecord).workspaceId === database.workspaceId)) return false
   return table.nextCursor === null || (typeof table.nextCursor === 'string' && table.nextCursor.length > 0 && table.nextCursor.length <= 16_384 && table.nextCursor.trim() === table.nextCursor)

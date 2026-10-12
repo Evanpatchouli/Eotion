@@ -1,6 +1,6 @@
 # P9 Multi-View
 
-P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A 已完成，P9.2 建立 View 类型与配置扩展边界，Web UI 继续沿用现有 Table。
+P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation，不包含 Board UI 或 renderer。
 
 ## P9.1A — Generic View Records Read Foundation
 
@@ -91,3 +91,44 @@ Selector 打开时通过 product database service 的 `listProductDatabaseViews(
 新建 List 显式传入 `type: 'list'`，使用 `DEFAULT_DATABASE_VIEW_CONFIG`（`filters: []`、`sorts: []`、`visibleProperties: null`、`propertyOrder: null`，不增加 List 专属 options），成功后复用既有创建完成路径，只更新当前 Database Block 的 `viewId`。既有 watch 触发 reload，响应中的 `view.type` 进入 `DatabaseListView`；切回 Table 仍使用原 renderer 与 block reference。Rename/Delete、View settings、Board、Calendar、Gallery、MCP 与 Local-first 仍不在范围内。
 
 定向 Web 验证：Table 创建回归、List 创建（View 数量/type/default config/block viewId/List renderer）、Table/List selector、nested block、Phone selector 共 5/5；Web typecheck 与 `git diff --check` 通过。未运行完整 Product、Visual 或 Final Acceptance；未发现 View CRUD 或 Board blocker。
+
+## P9.4A — Board Config Foundation
+
+基线：`e15d6d1b9f3519f0cb6d16f937209c98bc0d1370`。Board 继续使用同一个 Database / Property / Record 数据域与 `DatabaseView`，通过既有 `POST .../views` 创建 `type: 'board'`；不新增 Board Database、Record、Column 或专属创建 API。
+
+### 配置模型与验证
+
+```ts
+interface DatabaseBoardViewOptions extends Record<string, unknown> {
+  groupByPropertyId?: string
+}
+interface DatabaseBoardViewConfig extends DatabaseViewConfig {
+  options?: DatabaseBoardViewOptions
+}
+
+const boardConfig: DatabaseBoardViewConfig = {
+  filters: [],
+  sorts: [],
+  visibleProperties: null,
+  propertyOrder: null,
+  options: { groupByPropertyId: 'status' },
+}
+```
+
+通用 `DatabaseViewConfig.options?: Record<string, unknown>` 保持可扩展，不限制未来 key 或嵌套字段。Board 可以不带 options，或使用 `options: {}`；本阶段不要求创建时已有 groupBy。`groupByPropertyId` 是 Property 的稳定 ID，不是 option ID 或显示名称。
+
+`validateDatabaseViewConfig(config, properties, viewType = 'table')` 先执行既有 Filter / Sort / 列配置与同库属性校验，再仅对 Board 的自有 `options.groupByPropertyId` 执行分组语义校验：ID 必须是非空、首尾无空白、最长 256 字符的字符串；必须能在当前 Database / Workspace 的 properties 中解析；目标必须为 `select` 且存在合法 options 数组。空 options 数组合法。显式 null、undefined、非法 ID、未知 Property、其它类型或跨库引用拒绝。Table / List 的 options 继续沿用 opaque 语义。
+
+API create 使用请求 type，update 与 generic records read 使用持久化 View type；创建/更新无效配置返回 400，读取已失效的 Board 配置沿用既有 409。Records response contract 同样使用返回的 View type 校验。创建/更新请求的通用 shape contract 不读取 schema；引用语义由 service 按当前库校验。默认 config、历史缺省配置、权限、事务、分页与 cursor fence 保持。
+
+### Property repair 与阶段边界
+
+Property 删除、select option 清理和 type change 的 repair 继续展开已有 config，仅修复原通用 Filter / Sort / 列字段，完整保留 options（含 groupByPropertyId 与未知字段）。本阶段不建立 Board dependency，不新增 delete/type-change conflict，也不自动清除 grouping 引用。
+
+因此删除或改型 grouping Property 后，保存的 grouping ID 仍保留；后续 Board config 写入与 records read 会按当前 schema 拒绝失效引用。该生命周期策略留给 P9.4B，本阶段不声明完整 Board dependency 已完成。Board renderer、Kanban columns、View selector / Create Board UI、drag、MCP 与 Local-first 均未开始；不运行 Web Product、Visual 或 Final Acceptance。
+
+### 定向验证
+
+Domain 35/35、Contracts 24/24 与两包 / SDK typecheck 通过。API Database HTTP/service 两文件及真实依赖闭包 scoped TypeScript compile 通过；真实 Mongo 测试 13/13，0 fail、0 skip。回归覆盖 Board 创建/读取、select grouping、缺省 groupBy、非法 ID / text / number / missing / 跨库属性、PATCH 按持久化 type 校验、无效创建的事务回滚，以及 option cleanup / type change / delete 真实重写 config 后的 View version 与 options 保留。首跑发现新增 Board 测试 ID 与既有 fixture 重复；修正为独立 ID 后同组全通过，未修改产品错误处理或原断言。
+
+独立 review 无 blocker。`git diff --check` 与 UTF-8 无 BOM 检查通过；未运行完整 API build/typecheck（沿用 P9.1A 已记录的 MCP/Zod 环境限制），未运行 Web Product、Visual 或 Final Acceptance。scoped 命令与后续边界见 `.agents/handoff.md`。

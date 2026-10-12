@@ -1,5 +1,23 @@
 # Handoff
 
+## 2026-10-12 P9.4A Board Config Foundation（已完成）
+
+基线 `e15d6d1b9f3519f0cb6d16f937209c98bc0d1370`。P8 COMPLETE / SEALED，P9.1A / P9.2 / P9.3 保持已完成；本轮只建立 Board config/domain foundation。聚焦提交为本节所在 commit。
+
+Domain 新增 `DatabaseBoardViewOptions` / `DatabaseBoardViewConfig`，可选 `groupByPropertyId?: string`；通用 `DatabaseViewConfig.options?: Record<string, unknown>` 继续保留未知 key/value。`validateDatabaseViewConfig(config, properties, viewType = 'table')` 只在 Board 显式提供 grouping ID 时校验稳定 ID、当前库 select 与合法 options 数组（可空）。缺省 options / 空对象合法，Table / List opaque options 兼容。API create / update / records read 分别传请求 / 持久化 View type，records response contract 同样传 view.type；继续使用 `POST .../views`，没有专属 Board API。
+
+Property option cleanup / type change / delete 维持通用 repair 校验与已有 spread，完整保留 options / groupByPropertyId，不新增 Board dependency、delete/type-change conflict 或自动清除策略。真实 HTTP 回归让每条 repair 确实重写配置并递增 View version，确认通用字段修复且 options 深比较保留。grouping Property 自身改型/删除后 ID 保留，records read 按当前 schema 返回既有 409；生命周期留给 P9.4B。
+
+验证：
+
+- `pnpm --filter @eotion/domain test`：35/35；`pnpm --filter @eotion/contracts test`：24/24，0 fail / 0 skip。
+- Domain / Contracts / SDK `typecheck` 通过。
+- API scoped compile：仓库外 `C:\Users\31250\AppData\Local\Temp\eotion-p94a-api-scoped-tsconfig.json` extends `apps/api/tsconfig.json`，仅设置 `incremental: false` 与 include 两个测试文件绝对路径，保留原 strict 等选项与真实依赖闭包。`pnpm --filter @eotion/api exec tsc -p <temporary-config>` 通过。
+- `pnpm --filter @eotion/api exec node --test dist/modules/http-api/database-http.test.js dist/modules/server-domain/database.test.js`：13/13，0 fail / 0 skip。HTTP 包含合法 Board POST/records/type/options、groupBy 缺省、text/number/missing/非法稳定 ID/真实外库 select 拒绝、PATCH 使用持久化 type、invalid create 零写入/version 回滚、三条实际 property repair。首次新增 Board fixture 与原 `generic-board-view` ID 重复，合法 POST 得到 duplicate-key 500；改为独立 `generic-grouped-board-view` 后同组通过，产品代码/错误处理与原断言未变。
+- 一次独立 review 无 blocker；fixture 修正后定向复核同样无 blocker。`git diff --check`、全部修改文件 UTF-8 无 BOM 检查通过。
+
+修改：Domain/Contracts source 与定向测试、API DatabaseService 与 Database HTTP test、`docs/p9-multi-view.md` / architecture / context 索引、current-task 与本 handoff。未改 Mongo schema（P9.2 已支持 board）、Web、SDK source、依赖或 lockfile。完整 API build/typecheck 未执行，继承 P9.1A 的 MCP/Zod 环境限制；本轮仅 scoped compile/test。未运行 Web Product / Visual / Final Acceptance。未发现 P9.4A Board Domain blocker；Board UI、renderer、columns、drag、selector、MCP、Local-first 均未开始。完成一个聚焦 commit 后停止。
+
 ## 2026-10-12 P9.3B-2 Create List View（已完成）
 
 基线 `a9217b6496ce3d97f6f3999055c081fab5deb488`。View Selector 保留既有“新建视图”Table 创建流程，新增“新建列表视图”List 创建入口；两者复用 `createProductDatabaseView()` / `POST .../views`，不复制 Database、不创建新的 Database Block、不修改 Page Tree 或 snapshot。

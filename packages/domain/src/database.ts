@@ -153,8 +153,16 @@ export interface DatabaseViewConfig {
   sorts: DatabaseSort[]
   visibleProperties: string[] | null
   propertyOrder: string[] | null
-  /** Opaque view-specific options; this stage assigns no semantics. */
+  /** Optional extension fields are preserved; view-specific semantics are validated by view type. */
   options?: Record<string, unknown>
+}
+
+export interface DatabaseBoardViewOptions extends Record<string, unknown> {
+  groupByPropertyId?: string
+}
+
+export interface DatabaseBoardViewConfig extends DatabaseViewConfig {
+  options?: DatabaseBoardViewOptions
 }
 
 export const DEFAULT_DATABASE_VIEW_CONFIG: DatabaseViewConfig = {
@@ -199,8 +207,8 @@ export function isValidDatabaseViewConfigShape(value: unknown): value is Databas
   return true
 }
 
-/** Validates both config structure and property-specific filter/operator semantics. */
-export function validateDatabaseViewConfig(value: unknown, properties: readonly DatabaseProperty[]): value is DatabaseViewConfig {
+/** Validates config structure, property-specific filter/operator semantics, and board grouping. */
+export function validateDatabaseViewConfig(value: unknown, properties: readonly DatabaseProperty[], viewType: DatabaseViewType = 'table'): value is DatabaseViewConfig {
   if (!isValidDatabaseViewConfigShape(value) || !Array.isArray(properties)) return false
   const byId = new Map<string, DatabaseProperty>()
   let databaseId: string | undefined
@@ -234,6 +242,12 @@ export function validateDatabaseViewConfig(value: unknown, properties: readonly 
   if (value.sorts.some(sort => !byId.has(sort.propertyId) || ['relation', 'rollup', 'formula'].includes(byId.get(sort.propertyId)!.type))) return false
   for (const ids of [value.visibleProperties, value.propertyOrder]) {
     if (ids !== null && ids.some(id => !byId.has(id))) return false
+  }
+  if (viewType === 'board' && value.options !== undefined && Object.hasOwn(value.options, 'groupByPropertyId')) {
+    const groupByPropertyId: unknown = value.options.groupByPropertyId
+    if (!isStableId(groupByPropertyId)) return false
+    const property = byId.get(groupByPropertyId)
+    if (!property || property.type !== 'select' || !Array.isArray(property.options)) return false
   }
   return value.visibleProperties === null || value.visibleProperties.includes(titleId)
 }
