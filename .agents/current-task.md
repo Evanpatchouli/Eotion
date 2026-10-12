@@ -1,20 +1,28 @@
-# 当前任务：P10 Database MCP Extension（规划完成，尚未实施）
+# 当前任务：P11.1A Temporal Domain Foundation（执行中）
 
-当前正式版本：`0.0.1`，已发布 tag / release。P8 Database 与 P9 Multi-View 已 SEALED；下一独立阶段为 **P10 Database MCP Extension**，目标版本 `0.0.2`。
+当前正式版本：`0.0.1`。P8 Database 与 P9 Multi-View 已封板；P10 Database MCP
+Extension 在当前仓库尚未实施，不得虚报完成。当前只执行 **P11.1A**，目标版本仍为
+`0.0.3`，本轮不修改版本号。
 
-路线图已冻结：
-
-`P10 Database MCP Extension (0.0.2) → P11 Timeline (0.0.3) → P12 Gallery (0.0.4) → P13 Calendar (0.0.5) → P14 Chart (0.0.6) → P15 MCP Full Adaptation (0.1.0)`
-
-P10 只扩展 Database 的 MCP 领域能力，不提前实现 Timeline/Gallery/Calendar/Chart，不引入 renderer-specific MCP tools，不改变 Database online-only / Page-Block local-first 边界。
-
-建议 P10 从以下 Work Unit 开始，实施前允许根据最新代码重新拆分：
+## 当前 Work Units
 
 | Work Unit | 目标 | 状态 |
 | --- | --- | --- |
-| P10.1 Contract + Security Foundation | 冻结 Database MCP DTO、tools/resources 边界、workspace scope、分页/限额、CAS、幂等与 receipts | 未开始 |
-| P10.2 Read Tools | Database / Properties / Views / Records 的有界读取，复用 generic records | 未开始 |
-| P10.3 Write Tools | 必要 Record / Property / View mutation，复用既有领域服务/事务/CAS | 未开始 |
-| P10.4 Final Acceptance | MCP client、权限/越权、限额、CAS/幂等、P6 回归与 Product regression | 未开始 |
+| P11.1A-1 | 在 `docs/p11-timeline.md` 冻结 Date value / normalization / compatibility 契约 | 已完成 |
+| P11.1A-2 | 在 `packages/domain` 实现独立日期类型、严格 validator、纯 normalization helper | 执行中 |
+| P11.1A-3 | Domain 单测、typecheck、相邻回归、diff 检查与独立 review | 未开始 |
 
-正式范围与后续 P11–P15 约束见 `docs/roadmap.md`。P10 Final Acceptance 通过前不要把版本切到 `0.0.2`。
+## 范围与禁止事项
+
+- 继续使用现有 `Database / Property / Record / View`；Date Property 不新增类型。
+- 永久兼容 legacy `YYYY-MM-DD` string；不批量迁移旧数据。
+- 新对象使用 `{ start, end?, timeZone? }`；all-day 不带 timezone，datetime 使用
+  canonical UTC instant + IANA timezone；单点不持久化虚假 `end`；非法混合类型或逆序范围拒绝。
+- 保持现有 `DatabasePropertyValue` 联合类型不变；P11.1B 再协调完整数据链路切换。
+- 不实施 P11.1B–P11.6，不做 Timeline renderer / scroll / drag / dependency UI，不改 MCP、Mongo migration 或版本号。
+
+## 验收与接续
+
+必须通过相关 Domain 单测、typecheck、必要的相邻回归和 `git diff --check`，并提交聚焦
+commit。P11.1B 的接续入口是：在保持 legacy string 可读的前提下，把 normalized date
+value 接入 Property / Record / Contracts / Mongo 完整数据链路，再协调共享值联合类型的正式切换。

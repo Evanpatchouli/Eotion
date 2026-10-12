@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **设计标准已冻结，实施尚未开始**  
+> Status: **P11.1A Temporal Domain Foundation 已冻结；实现进行中；P11.1B–P11.6 尚未实施**  
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -321,8 +321,37 @@ P11.1 冻结 wire shape 时必须满足：
 - 视觉上使用当前 scale 的最小可交互宽度；
 - drag 整体移动仍只修改 start；
 - resize 产生 end 后，该 Record 正式成为 range。
+- 这能让 deadline / milestone 类记录存在于 Timeline 中，同时不伪造持久化时长。
 
-这能让 deadline / milestone 类记录存在于 Timeline 中，同时不伪造持久化时长。
+### 10.4 P11.1A Temporal Domain Foundation 冻结契约
+
+P11.1A 只落地 `packages/domain` 的纯日期领域基础，不切换现有
+`DatabasePropertyValue` 联合类型。后续 P11.1B 负责完整数据链路改造前，既有
+Contracts、Mongo 与 Web 消费者继续只依赖 legacy date value。
+
+- 继续使用现有 `Database / Property / Record / View`；Date Property 仍是现有
+  `date` 类型，不新增 Property 类型或 Timeline 专属实体。
+- legacy `YYYY-MM-DD` string 永久可读，不批量迁移旧数据。新对象统一为
+  `{ start, end?, timeZone? }`，字段严格校验且拒绝未知字段。
+- all-day 值只允许 `YYYY-MM-DD`，不附带 `timeZone`；datetime 值的 `start` /
+  `end` 必须是 canonical UTC instant，并且必须附带可由 `Intl` 识别的 IANA
+  timezone。单点日期或单时间点省略 `end`，不得持久化虚假的 `end`。
+- `start` 与 `end` 必须同为 date-only 或同为 datetime，且顺序满足
+  `start <= end`；非法日期、闰年、UTC instant、时区或混合类型一律拒绝。
+- normalization 通过共享纯函数完成：legacy string 与新对象都归一为带
+  `kind` 的 normalized value，并保留 normalized `start` 供后续 Filter / Sort /
+  Formula 消费；本阶段不改写这些消费者。
+- Timeline date source 后续支持单 Date Property range 与独立 Start / End Date
+  Properties。Dependency 后续复用现有 self Relation，direction / shift policy
+  进入 View config；引用的关键 Property 必须有 lifecycle 409 fence。
+- 不创建 `TimelineRecord`、`TimelineEvent`、`TimelineDependency`，不新增
+  Timeline 专属 mutation API；Database 继续 online-only，不扩展 Page / Block
+  sync。
+
+P11.1A 的 Domain API 与测试是上述契约的可执行标准。P11.1B 的准确接续入口是：
+在不破坏 legacy string 兼容的前提下，将 normalized date value 接入完整
+Property / Record / Contracts / Mongo 数据链路，并协调切换共享值联合类型；在此
+之前不得提前实现 Timeline renderer、mutation、dependency UI 或其他 P11 子阶段。
 
 ## 11. 时间条移动与 Resize
 
