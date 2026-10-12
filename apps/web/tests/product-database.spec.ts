@@ -12,14 +12,14 @@ const pageRecord: PageResponse = { id: 'database-page', workspaceId: workspace.i
 
 type TestDatabase = { id: string; workspaceId: string; name: string; version: number; createdAt: string; updatedAt: string }
 type TestProperty = { id: string; databaseId: string; workspaceId: string; name: string; type: 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'relation' | 'rollup' | 'formula'; version: number; createdAt: string; updatedAt: string; options?: Array<{ id: string; name: string }>; config?: DatabasePropertyConfig }
-type TestView = { id: string; databaseId: string; workspaceId: string; name: string; type: 'table'; config: DatabaseViewConfig; version: number; createdAt: string; updatedAt: string }
+type TestView = { id: string; databaseId: string; workspaceId: string; name: string; type: 'table' | 'list' | 'board'; config: DatabaseViewConfig; version: number; createdAt: string; updatedAt: string }
 type TestRecord = { id: string; databaseId: string; workspaceId: string; pageId: string; properties: Record<string, string | number | boolean | null | string[]>; version: number; pageVersion: string; createdAt: string; updatedAt: string }
 
 function database(id: string, name = 'Projects'): TestDatabase { return { id, workspaceId: workspace.id, name, version: 1, createdAt: now, updatedAt: now } }
 function property(id: string, databaseId: string, name: string, type: TestProperty['type'], options?: TestProperty['options']): TestProperty {
   return { id, databaseId, workspaceId: workspace.id, name, type, version: 1, createdAt: now, updatedAt: now, ...(options ? { options } : {}) }
 }
-function view(id: string, databaseId: string, name = 'Table', config: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG }): TestView { return { id, databaseId, workspaceId: workspace.id, name, type: 'table', config: structuredClone(config), version: 1, createdAt: now, updatedAt: now } }
+function view(id: string, databaseId: string, name = 'Table', config: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG }, type: TestView['type'] = 'table'): TestView { return { id, databaseId, workspaceId: workspace.id, name, type, config: structuredClone(config), version: 1, createdAt: now, updatedAt: now } }
 function record(id: string, databaseId: string, pageId: string, properties: TestRecord['properties']): TestRecord {
   return { id, databaseId, workspaceId: workspace.id, pageId, properties, version: 1, pageVersion: now, createdAt: now, updatedAt: now }
 }
@@ -3085,6 +3085,39 @@ test('filter and sort setting menus are keyboard operable and disable unsupporte
   await expect(sortMenu).toBeVisible()
   await expect(sortMenu.getByRole('menuitem').first()).toBeFocused()
   await expect(sortMenu.getByRole('menuitem', { name: 'Related（暂不支持排序）' })).toBeDisabled()
+})
+
+test('list view renders projected titles and ordered visible properties at desktop and phone widths', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  const listConfig: DatabaseViewConfig = {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-title', 'root-number', 'root-text'],
+    propertyOrder: ['root-title', 'root-text', 'root-number'],
+  }
+  const listView = view('list-view-id', rootDatabase.id, 'List view', listConfig, 'list')
+  const api = await installApi(page, [
+    block('list-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: listView.id } }, 100),
+  ], { databases: [rootDatabase], views: [listView], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Projected page title', orderKey: '0000000000000002', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const list = page.getByTestId('database-list')
+  await expect(list).toBeVisible()
+  await expect(list.locator('.eotion-database-list-title-text')).toHaveText('Projected page title')
+  await expect(list.locator('.eotion-database-list-property dt')).toHaveText(['Notes', 'Points'])
+  await expect(list.locator('.eotion-database-list-property dd')).toHaveText(['Draft ready', '42'])
+  await expect(list.locator('.eotion-database-list-property dt', { hasText: 'Done' })).toHaveCount(0)
+  await expect(list.getByRole('button', { name: '打开记录：Projected page title' })).toBeVisible()
+
+  const desktopColumns = await list.locator('.eotion-database-list-record').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)
+  expect(desktopColumns).toBe(2)
+  await page.setViewportSize({ width: 390, height: 844 })
+  const phoneColumns = await list.locator('.eotion-database-list-record').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)
+  expect(phoneColumns).toBe(1)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+
+  await list.getByRole('button', { name: '打开记录：Projected page title' }).click()
+  await expect(page.getByRole('button', { name: '关闭记录' })).toBeVisible()
 })
 
 test('database tables render and references round-trip at root and under a toggle', async ({ page }) => {

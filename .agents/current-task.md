@@ -1,22 +1,21 @@
-# 当前任务：P9.2 — View Type Foundation（已完成）
+# 当前任务：P9.3A — List View Renderer Foundation（已完成）
 
-master 基线 `8c6a7fe25f5879ad82ac43041ab62cdc06f052fe`；P8 COMPLETE / SEALED，P9.1A 已完成。开始时间 2026-10-12 16:15（Asia/Shanghai），目标 8–20 分钟，16:40 硬停止。
+基线 `3a502aa53725b4e44d392c14ae592cb605513be6`；P8 COMPLETE / SEALED，P9.1A 与 P9.2 已完成。目标 8–20 分钟；本轮在范围内完成并停止。
 
 | Work Unit | 难度 / 模式 / 角色 | 状态 |
 | --- | --- | --- |
-| 精确定位 type / config / mutation / 测试边界 | S0 investigate / scout | 完成 |
-| 确定 type 与 opaque options 最小契约 | S2 decide / 主 Agent | 完成 |
-| Domain / Contracts 和定向测试 | S1 execute / fast_worker | 完成 |
-| API / Mongo 与属性 repair 定向测试 | S1 execute / fast_worker | 完成 |
-| 最小验证与一次独立 review | S0 verify / scout；Review / reviewer | 完成，全部通过，无 blocker |
-| 正式文档、handoff、聚焦提交与汇报 | S1 execute / 主 Agent | 完成；一个聚焦提交，本阶段结束 |
+| 精确定位 DatabaseNodeView / Table / product loading / tests | S0 investigate / 主 Agent | 完成 |
+| List renderer 边界与最小分支设计 | S2 decide / 主 Agent | 完成 |
+| `DatabaseListView` 与 `DatabaseNodeView` 分支 | S1 execute / 主 Agent | 完成 |
+| List / Table / Phone targeted validation | S0 verify / 主 Agent | 完成，无 blocker |
+| 文档、handoff、聚焦提交与汇报 | S1 execute / 主 Agent | 进行中 |
 
-边界：仅支持 `table | list | board` 类型和可选 opaque `options` 扩展点；table 默认、旧 config、generic records 和 legacy Table 兼容。沿用既有 config validator 的 filters / sorts / property reference 校验，Property repair 用 spread 保留扩展字段。不实现 options 语义、groupBy 校验或依赖、Capability Registry、renderer 字段、migration；不修改 Web / Product tests / Visual tests / MCP，不运行 Web Product / Visual / Final Acceptance。一个逻辑变更单元完成并提交后停止，不进入 List 或 Board。
+边界：只实现 List View renderer。复用既有 Database、DatabaseView、Properties、records、Filter/Sort、visibleProperties、propertyOrder、record opening 与 loading/refresh lifecycle；不创建新 Database 模型，不复制 Table inline edit，不实现 View Selector、View creation/management UI、Board、Calendar、Gallery、MCP、Local-first 或 Database domain changes。Table DOM 与交互保持原样，不新增 breakpoint。
 
-最小验证：Domain / Contracts targeted tests 与类型检查；API database HTTP / service tests 的真实依赖闭包 scoped compile 和 Mongo tests。沿用 P9.1A 已记录的 API MCP 环境限制，不扩展到完整 API build。
+最小验证：Web typecheck；List targeted product test；既有 Table root/nested、Phone responsive test。完整 Product / Visual / Final Acceptance 不运行。
 
-Implementation Brief：Domain 单一常量 `DATABASE_VIEW_TYPES` 导出 `DatabaseViewType`，Contracts create enum 与 Mongo enum 共用常量；create type 仍必填，默认数据库创建仍 table，createView 持久化已校验的 input.type。Config `options?: Record<string, unknown>` 只校验 object 形状，未知内部字段原样保留，默认及旧 config 均不补 options。Generic records 移除 table-only guard，沿用已有 config/query/cursor/version 校验；legacy Table 委托关系不变。Property delete 补 `...config`，select-option cleanup / type-change 既有 spread 保持。linkInPage 保留现有 table 限制，等待后续 View UI 接入。
+Implementation Brief：父组件继续负责统一 records load / pagination / refresh / title projection / relation title resolve；成功响应写入 `viewType`，仅在 `list` 时渲染新 `DatabaseListView`。子 renderer 只接收 records/properties/config/formatValue，通过 `visibleProperties` 与 `propertyOrder` 计算 title + detail properties，title click 复用父组件 openRecord handler。`visibleProperties === null` 默认展示最多三个非 title 属性；Phone 只使用既有 `<768px` 断点。
 
-验证：Domain 35/35、Contracts 23/23，两个包及 SDK typecheck 通过；API 两个 Database 测试文件真实依赖闭包 scoped TypeScript compile 通过，HTTP/service 13/13、0 fail、0 skip。首跑新增 Board fixture 导致既有 View 数量期望过时，改为核对三个确切 ID 后同组通过，未削弱其他断言。独立 reviewer 无 blocker；diff/UTF-8 无 BOM 检查通过。完整 API build/typecheck 未运行，继承 P9.1A 已记录的 MCP/Zod 环境限制。
+验证：`pnpm --filter @eotion/web typecheck` 通过；List targeted 1/1；既有 Table root/nested 1/1；Phone Table overflow 1/1；`git diff --check` 通过。首次测试受缺失依赖阻断，按 Web workspace frozen install 恢复后重跑通过；未改 lockfile。未运行完整 Product、Visual、Final Acceptance。
 
-未发现 P9.3 List View 的 foundation blocker。List renderer、Web selector/链接入口接入属于后续阶段；本轮不实施。完成一个聚焦 commit 后停止。
+Table renderer 未重写、未删除、未改 DOM；generic records/product loading flow 复用。未发现 P9.4 Board blocker；本轮完成一个聚焦 commit 后停止。

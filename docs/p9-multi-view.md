@@ -65,3 +65,11 @@ Property 删除、select option 清理和属性类型变更修复 config 时先�
 Domain 35/35、Contracts 23/23 通过；两包与 SDK typecheck 通过。API Database HTTP/service 两文件及真实依赖闭包 scoped TypeScript compile 通过，真实 Mongo 测试 13/13、0 fail、0 skip，独立 review 无 blocker。
 
 回归覆盖 Table 创建/读取、List/Board runtime validation 与 HTTP 创建/列表/records 的 type 保留、非法类型无写入、旧 config 无 options、嵌套未知 options 透传，以及 select option 清理、属性类型变更与属性删除后的 options 保留。首跑的旧 View 数量断言因新增 Board fixture 失效，改为核对三个确切 ID 后同组通过。未运行 Web Product、Visual 或 Final Acceptance；完整 API build/typecheck 沿用 P9.1A 已记录的环境限制，本轮未执行。
+
+## P9.3A — List View Renderer Foundation
+
+List View 在 `apps/web` 中按 `DatabaseView.type === 'list'` 选择独立的 `DatabaseListView` renderer。`DatabaseNodeView` 继续持有既有 loading、分页、刷新、Page.title projection、Filter/Sort、relation title resolve、record opening 和 Table editing 生命周期；List renderer 只负责纵向记录展示与打开记录，不新增 Database 模型或编辑架构。
+
+List 使用既有 records 响应中的 title property（服务端投影自 Page.title），并按 `visibleProperties` 过滤非 title 属性、按 `propertyOrder` 排列。`visibleProperties === null` 时展示 title 之外最多三个已排序属性。Desktop / Tablet 保持 title 与属性横向布局，沿用既有 `<768px` Phone 断点切换为单列记录项。Table renderer 的 DOM 与交互未改。
+
+定向 Web 验证：List renderer targeted product regression 1/1；既有 Table root/nested reference regression 1/1；既有 Phone Table overflow regression 1/1；Web typecheck 通过。未运行完整 Product、Visual 或 Final Acceptance；未实现 View Selector、View creation UI、Board、MCP 或 Local-first。

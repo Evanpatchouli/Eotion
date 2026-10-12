@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-10-12 P9.3A List View Renderer Foundation（已完成）
+
+基线 `3a502aa53725b4e44d392c14ae592cb605513be6`。新增 `apps/web/src/components/editor/DatabaseListView.vue`，由 `DatabaseNodeView` 根据 records 响应中的 `view.type === 'list'` 局部选择；父组件继续持有统一 loading、分页、refresh、Page.title projection、Filter/Sort、relation title resolve、record opening 和 Table editing 生命周期。List 不新增 Database 模型，不复制 inline edit；title 点击复用既有 `openRecordPage`，因此保留 record opening preference / drawer 生命周期。
+
+List 按 `visibleProperties` 过滤非 title 属性、按 `propertyOrder` 排列；`visibleProperties === null` 时 title 外最多展示三个属性。title 使用服务端 Page.title projection，Desktop/Tablet 为横向 title + properties，Phone 沿用既有 `<768px` breakpoint 为单列记录项。Table DOM 和交互没有改动，未实现 View Selector、View creation/management、Board、Calendar、Gallery、MCP 或 Local-first。
+
+验证：`pnpm --filter @eotion/web typecheck`；List targeted product 1/1；既有 Table root/nested 1/1；既有 Phone Table overflow 1/1；`git diff --check`，全部通过。首次 Playwright 因 node_modules 缺失 `morphicons/vue` / `lucide` 失败；按 Web workspace frozen install 恢复依赖后重跑通过，lockfile 未修改。未运行完整 Product、Visual、Final Acceptance。未发现 P9.4 Board blocker。
+
+修改文件：`apps/web/src/components/editor/DatabaseListView.vue`、`apps/web/src/components/editor/DatabaseNodeView.vue`、`apps/web/tests/product-database.spec.ts`、`docs/p9-multi-view.md`、`.agents/current-task.md`、`.agents/handoff.md`。
+
 ## 2026-10-12 P9.2 View Type Foundation（已完成）
 
 基于 master `8c6a7fe25f5879ad82ac43041ab62cdc06f052fe`，P8 保持 COMPLETE / SEALED。Domain 导出单一 `DATABASE_VIEW_TYPES = ['table', 'list', 'board'] as const` 与 `DatabaseViewType`；Domain runtime、Contracts create enum 与 Mongo enum 一致。默认 Database 创建仍 table；createView 持久化请求 type，创建/列表/records 响应保留 type。Generic records 接受三种 View，legacy Table 继续委托；没有修改查询、游标、权限或 version/config fence。

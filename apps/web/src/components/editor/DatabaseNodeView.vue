@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { DatabasePropertyResponse, DatabasePropertyTypeChangeRequest, DatabaseRecordCellUpdateRequest, DatabaseTableResponse, DatabaseViewCreateRequest, DatabaseViewResponse, DatabaseResponse } from '@eotion/contracts'
-import { DEFAULT_DATABASE_VIEW_CONFIG, isValidFormulaExpression, validateDatabasePropertyDependencies, validateDatabaseViewConfig, type DatabaseFilter, type DatabaseFilterOperator, type DatabaseViewConfig, type DatabasePropertyType, type DatabasePropertyConfig, type DatabaseFormulaResultType, type FormulaExpression } from '@eotion/domain/database'
+import type { DatabasePropertyResponse, DatabasePropertyTypeChangeRequest, DatabaseRecordCellUpdateRequest, DatabaseViewRecordsResponse, DatabaseViewCreateRequest, DatabaseViewResponse, DatabaseResponse } from '@eotion/contracts'
+import { DEFAULT_DATABASE_VIEW_CONFIG, isValidFormulaExpression, validateDatabasePropertyDependencies, validateDatabaseViewConfig, type DatabaseFilter, type DatabaseFilterOperator, type DatabaseViewConfig, type DatabasePropertyType, type DatabasePropertyConfig, type DatabaseFormulaResultType, type FormulaExpression, type DatabaseViewType } from '@eotion/domain/database'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { createLocalId } from '@eotion/storage'
 import { RouterLink } from 'vue-router'
@@ -16,6 +16,7 @@ import EotionContextMenu from '../ui/EotionContextMenu.vue'
 import DatabaseOpeningChoices from './DatabaseOpeningChoices.vue'
 import DatabaseSettingsSelect from './DatabaseSettingsSelect.vue'
 import DatabasePropertyMenu from './DatabasePropertyMenu.vue'
+import DatabaseListView from './DatabaseListView.vue'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -38,7 +39,7 @@ const auth = useAuthStore()
 const preferences = usePreferencesStore()
 const databaseContent = useDatabaseContentStore()
 const { layoutMode } = useRuntimeContext()
-type TableRecord = DatabaseTableResponse['records'][number]
+type TableRecord = DatabaseViewRecordsResponse['records'][number]
 const workspaceId = computed(() => String(props.extension.options.workspaceId ?? ''))
 const databaseId = computed(() => String(props.node.attrs.databaseId ?? ''))
 const viewId = computed(() => String(props.node.attrs.viewId ?? ''))
@@ -49,6 +50,7 @@ const scopedViewDeleteState = computed(() => {
 })
 const title = ref('数据库')
 const viewName = ref('表格视图')
+const viewType = ref<DatabaseViewType>('table')
 const viewVersion = ref(1)
 const viewConfig = ref<DatabaseViewConfig>({ ...DEFAULT_DATABASE_VIEW_CONFIG })
 const views = ref<DatabaseViewResponse[]>([])
@@ -352,6 +354,7 @@ async function loadTable(append = false): Promise<void> {
     title.value = result.database.name
     databaseVersion.value = result.database.version
     viewName.value = result.view.name
+    viewType.value = result.view.type
     viewVersion.value = result.view.version
     viewConfig.value = result.view.config ?? { ...DEFAULT_DATABASE_VIEW_CONFIG }
     properties.value = result.properties
@@ -385,6 +388,7 @@ async function refreshLoadedWindow(): Promise<void> {
   let nextDatabaseVersion = databaseVersion.value
   let nextTitle = title.value
   let nextViewName = viewName.value
+  let nextViewType = viewType.value
   let nextViewVersion = viewVersion.value
   let nextViewConfig = viewConfig.value
   let nextProperties = properties.value
@@ -395,6 +399,7 @@ async function refreshLoadedWindow(): Promise<void> {
       nextTitle = result.database.name
       nextDatabaseVersion = result.database.version
       nextViewName = result.view.name
+      nextViewType = result.view.type
       nextViewVersion = result.view.version
       nextViewConfig = result.view.config ?? { ...DEFAULT_DATABASE_VIEW_CONFIG }
       nextProperties = result.properties
@@ -406,6 +411,7 @@ async function refreshLoadedWindow(): Promise<void> {
     title.value = nextTitle
     databaseVersion.value = nextDatabaseVersion
     viewName.value = nextViewName
+    viewType.value = nextViewType
     viewVersion.value = nextViewVersion
     viewConfig.value = nextViewConfig
     if (viewControlsOpen.value === 'columns') {
@@ -1625,7 +1631,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
     <div v-else-if="loadError" class="eotion-database-error" role="alert"><span>{{ loadError }}</span><button type="button" @click.stop="loadTable()">重试加载</button></div>
     <template v-else>
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}</p>
-      <div v-if="properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
+      <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
+      <div v-else-if="properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>
             <th v-for="property in displayProperties" :key="property.id" scope="col">
@@ -1670,8 +1677,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
           </tbody>
         </table>
       </div>
-      <p v-if="records.length === 0" class="eotion-database-state">暂无记录</p>
-      <p v-else-if="!properties.length" class="eotion-database-state">这个数据库还没有可显示的属性。</p>
+      <p v-if="viewType !== 'list' && records.length === 0" class="eotion-database-state">暂无记录</p>
+      <p v-else-if="viewType !== 'list' && !properties.length" class="eotion-database-state">这个数据库还没有可显示的属性。</p>
       <div v-if="moreError" class="eotion-database-error" role="alert"><span>{{ moreError }}</span><button type="button" :disabled="loadingMore" @click.stop="loadTable(true)">重试加载更多</button></div>
       <button v-if="nextCursor" class="eotion-database-more" type="button" :disabled="loadingMore || loading || staleReadonly || !online" @click.stop="loadTable(true)">{{ loadingMore ? '正在加载…' : '加载更多' }}</button>
     </template>
