@@ -54,12 +54,14 @@ const viewName = ref('表格视图')
 const viewType = ref<DatabaseViewType>('table')
 const viewVersion = ref(1)
 const viewConfig = ref<DatabaseViewConfig>({ ...DEFAULT_DATABASE_VIEW_CONFIG })
+const loadedViewIdentity = ref('')
 const views = ref<DatabaseViewResponse[]>([])
 const viewMenuOpen = ref(false)
 const viewControlsOpen = ref<'filters' | 'sorts' | 'columns' | 'grouping' | 'record-opening' | ''>('')
 const settingsMenuOpen = ref(false)
 const viewSubmitting = ref(false)
-const viewBusy = computed(() => !props.editor.isEditable || !online.value || staleReadonly.value || loading.value || loadingMore.value || savingCell.value || creating.value || viewSubmitting.value || scopedViewDeleteState.value?.status === 'pending')
+const viewReady = computed(() => loadedViewIdentity.value === [workspaceId.value, databaseId.value, viewId.value, auth.user?.id ?? ''].join('\u0000'))
+const viewBusy = computed(() => !props.editor.isEditable || !viewReady.value || !online.value || staleReadonly.value || loading.value || loadingMore.value || savingCell.value || creating.value || viewSubmitting.value || scopedViewDeleteState.value?.status === 'pending')
 const visibleViewCount = computed(() => viewConfig.value.filters.length)
 const sortViewCount = computed(() => viewConfig.value.sorts.length)
 const displayViewName = computed(() => viewName.value === 'Table' ? '表格视图' : viewName.value)
@@ -368,6 +370,7 @@ async function loadTable(append = false): Promise<void> {
     viewType.value = result.view.type
     viewVersion.value = result.view.version
     viewConfig.value = result.view.config ?? { ...DEFAULT_DATABASE_VIEW_CONFIG }
+    loadedViewIdentity.value = [workspace, database, view, userId ?? ''].join('\u0000')
     properties.value = result.properties
     if (append) records.value = [...records.value, ...result.records.filter(record => !records.value.some(existing => existing.id === record.id))]
     else records.value = result.records
@@ -425,6 +428,7 @@ async function refreshLoadedWindow(): Promise<void> {
     viewType.value = nextViewType
     viewVersion.value = nextViewVersion
     viewConfig.value = nextViewConfig
+    loadedViewIdentity.value = identity
     if (viewControlsOpen.value === 'columns') {
       const ids = nextProperties.map(property => property.id)
       const idSet = new Set(ids)
@@ -680,11 +684,12 @@ const settingsMenuItems = computed(() => [
   { label: '筛选', icon: IconName.Filter, shortcut: visibleViewCount.value ? String(visibleViewCount.value) : undefined, action: () => openSettings('filters') },
   { label: '排序', icon: IconName.Sort, shortcut: sortViewCount.value ? String(sortViewCount.value) : undefined, action: () => openSettings('sorts') },
   { label: '属性', icon: IconName.Text, action: () => openSettings('columns') },
-  ...(viewType.value === 'board' ? [{ label: '分组属性', icon: IconName.List, action: () => openSettings('grouping') }] : []),
+  ...(viewReady.value && viewType.value === 'board' ? [{ label: '分组属性', icon: IconName.List, action: () => openSettings('grouping') }] : []),
   { label: '记录打开方式', icon: IconName.Settings, action: () => openSettings('record-opening') },
   { label: '自动化', icon: IconName.Agent, disabled: true, action: () => {} },
 ])
 function openSettings(kind: 'filters' | 'sorts' | 'columns' | 'grouping' | 'record-opening'): void {
+  if (kind === 'grouping' && (!viewReady.value || viewType.value !== 'board')) return
   settingsMenuOpen.value = false
   propertyCreatorOpen.value = false
   viewMenuOpen.value = false
@@ -945,6 +950,7 @@ function saveSorts(): void {
   void saveViewConfig({ ...viewConfig.value, sorts: sortDrafts.value.map(sort => ({ ...sort })) })
 }
 function saveGrouping(): void {
+  if (!viewReady.value || viewType.value !== 'board') return
   if (groupingDraft.value && !groupingProperties.value.some(property => property.id === groupingDraft.value)) {
     viewError.value = '请选择当前数据库中的选择属性。'
     return

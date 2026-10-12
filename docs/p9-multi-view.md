@@ -202,4 +202,4 @@ Desktop / Tablet 在 Board 内局部横向滚动，列保持可读宽度；Phone
 
 没有 Select Property 时设置仍可打开并显示“没有可用的选择属性”，不会创建 Property；离线时 selector 与保存按钮不可写。共享 `viewId` 的 Block 通过同一 View config 收敛，不同 `viewId` 保持独立。未新增 Board API、settings endpoint、Property mutation、renderer、drag、MCP 或 local-first 能力。
 
-定向验证新增 3/3，并与相邻回归组合 13/13 通过（workers=1 / retries=0）：覆盖候选过滤、View config 字段/unknown options 保留、Status → Priority、清除 grouping、Record 不变、shared/independent View、Table/List 隔离、无 Select、390px/离线只读与 View 409 conflict。Web typecheck 通过；未运行 Full Product、Visual Acceptance 或 Final Acceptance。
+定向验证新增 5/5，并与相邻回归组合 13/13 通过（workers=1 / retries=0）：覆盖候选过滤、View config 字段/unknown options 保留、Status → Priority、清除 grouping、Record 不变、shared/independent View、Table/List 隔离、无 Select、390px/离线只读、View 409 conflict，以及 Board → Table/List 延迟切换时不显示 grouping 且不发送错误 PATCH。Web typecheck 通过；未运行 Full Product、Visual Acceptance 或 Final Acceptance。

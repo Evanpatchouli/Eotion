@@ -2790,6 +2790,40 @@ test('Board grouping settings remain available without Select properties and rea
   expect(viewMutationCount()).toBe(mutationsBeforeOffline)
 })
 
+for (const targetType of ['table', 'list'] as const) {
+  test(`Board grouping settings stay hidden while switching to a ${targetType} View`, async ({ page }) => {
+    const targetViewId = `board-settings-switch-${targetType}`
+    const targetConfig: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: `opaque-${targetType}`, futureOption: true } }
+    const api = await installApi(page, [
+      block(`board-settings-switch-${targetType}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'board-settings-switch-source' } }, 100),
+    ], {
+      databases: [rootDatabase],
+      views: [
+        view('board-settings-switch-source', rootDatabase.id, 'Board source', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: 'root-select' } }, 'board'),
+        view(targetViewId, rootDatabase.id, `${targetType} target`, targetConfig, targetType),
+      ],
+      properties: rootProperties,
+      records: [basicRecord],
+      tableLoadDelayMs: 300,
+    })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const database = page.locator(`#database-block-board-settings-switch-${targetType}-block`)
+    await expect(database.getByTestId('database-board')).toBeVisible()
+    await database.getByRole('button', { name: '切换视图' }).click()
+    await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: `${targetType} target`, exact: true }).click()
+    await expect.poll(() => api.requests.some(({ method, path }) => method === 'GET' && path.endsWith(`/views/${targetViewId}/table`))).toBe(true)
+
+    await database.getByRole('button', { name: '数据库设置' }).click()
+    const settingsMenu = page.getByRole('menu', { name: '数据库设置' })
+    await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    if (targetType === 'table') await expect(database.locator('tbody')).toBeVisible()
+    else await expect(database.getByTestId('database-list')).toBeVisible()
+    expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/views/${targetViewId}`))).toHaveLength(0)
+    expect(api.views.find(item => item.id === targetViewId)?.config.options).toEqual(targetConfig.options)
+  })
+}
+
 test('Board grouping settings keep the existing View conflict behavior', async ({ page }) => {
   const api = await installApi(page, [
     block('board-settings-conflict', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'board-settings-conflict-view' } }, 100),
