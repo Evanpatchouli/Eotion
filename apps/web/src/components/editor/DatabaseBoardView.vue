@@ -2,6 +2,7 @@
 import type { DatabasePropertyResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { DatabaseViewConfig } from '@eotion/domain/database'
 import { computed } from 'vue'
+import DatabaseSettingsSelect from './DatabaseSettingsSelect.vue'
 
 type BoardRecord = DatabaseViewRecordsResponse['records'][number]
 
@@ -10,10 +11,12 @@ const props = defineProps<{
   properties: DatabasePropertyResponse[]
   config: DatabaseViewConfig
   formatValue: (value: unknown, property: DatabasePropertyResponse) => string
+  writable: boolean
 }>()
 
 const emit = defineEmits<{
   openRecord: [event: MouseEvent, pageId: string]
+  changeGroup: [recordId: string, optionId: string]
 }>()
 
 const titleProperty = computed(() => props.properties.find(property => property.type === 'title'))
@@ -67,6 +70,18 @@ function cellValue(record: BoardRecord, property: DatabasePropertyResponse): str
 function openRecord(event: MouseEvent, pageId: string): void {
   emit('openRecord', event, pageId)
 }
+
+function groupValue(record: BoardRecord, property: DatabasePropertyResponse): string {
+  const value = Object.hasOwn(record.properties, property.id) ? record.properties[property.id] : null
+  return typeof value === 'string' && property.options?.some(option => option.id === value) ? value : ''
+}
+
+function groupOptions(property: DatabasePropertyResponse) {
+  return [
+    { value: '', label: '未分组', disabled: true },
+    ...(property.options ?? []).map(option => ({ value: option.id, label: option.name })),
+  ]
+}
 </script>
 
 <template>
@@ -90,6 +105,15 @@ function openRecord(event: MouseEvent, pageId: string): void {
           >
             {{ titleProperty ? cellValue(record, titleProperty) || '无标题' : '无标题' }}
           </button>
+          <DatabaseSettingsSelect
+            v-if="groupingProperty"
+            class="eotion-database-board-group-select"
+            :model-value="groupValue(record, groupingProperty)"
+            :options="groupOptions(groupingProperty)"
+            label="移动记录分组"
+            :disabled="!writable"
+            @update:model-value="emit('changeGroup', record.id, $event)"
+          />
           <dl v-if="detailProperties.length" class="eotion-database-board-properties">
             <div v-for="property in detailProperties" :key="property.id" class="eotion-database-board-property">
               <dt>{{ property.name }}</dt>
@@ -113,6 +137,7 @@ function openRecord(event: MouseEvent, pageId: string): void {
 .eotion-database-board-card { min-width:0; border:1px solid var(--border-editor); border-radius:6px; padding:10px; background:var(--surface-raised); color:var(--editor-text); }
 .eotion-database-board-card-title { display:block; width:100%; min-height:32px; border:0; padding:4px 0; background:transparent; color:inherit; text-align:left; font:inherit; font-weight:600; overflow-wrap:anywhere; cursor:pointer; }
 .eotion-database-board-card-title:hover,.eotion-database-board-card-title:focus-visible { text-decoration:underline; text-underline-offset:3px; }
+.eotion-database-board-group-select { margin-top:8px; }
 .eotion-database-board-properties { display:grid; gap:7px; min-width:0; margin:7px 0 0; }
 .eotion-database-board-property { display:grid; gap:2px; min-width:0; }
 .eotion-database-board-property dt { color:var(--editor-muted); font-size:11px; }

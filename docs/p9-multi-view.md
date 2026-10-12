@@ -1,6 +1,6 @@
 # P9 Multi-View
 
-P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation；P9.4B 保护 Board grouping Property 的删除与改型；P9.5A 增加只读 Board renderer。
+P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation；P9.4B 保护 Board grouping Property 的删除与改型；P9.5A 增加 Board renderer；P9.5B-1 增加显式 Card 分组修改。
 
 ## P9.1A — Generic View Records Read Foundation
 
@@ -159,3 +159,13 @@ Property 删除以及 `select` → 非 `select` 的类型变更，在现有事�
 Desktop / Tablet 在 Board 内局部横向滚动，列保持可读宽度；Phone 沿用 `<768px` 断点堆叠单列，不使页面横向溢出。没有新增 breakpoint。Board 创建/分组配置 UI、drag/mutation、MCP、Local-first 留待后续阶段。
 
 定向验证：Board 三项（renderer/分组/投影/配置/Filter/Sort/Tablet/Phone/记录打开、Table/List 往返与 Drawer draft、缺省 grouping/空 options）+ 既有 List、Table root/nested、Phone Table、Phone Filter/Sort snapshot draft 共 8/8，通过（workers=1，retries=0）。Web typecheck 通过，独立 reviewer 无 blocker。未运行完整 Product suite、Visual Acceptance 或 Final Acceptance。
+## P9.5B-1 — Board Card Mutation Foundation
+
+基线 `90f8d9d0fe0db4030cbd588881298f0c5d7cab23`。Card 使用共享 select picker 显式选择目标分组，不实现拖拽。仅当当前 Board 的 `groupByPropertyId` 指向 select Property 时开放操作；选择稳定 option ID，未配置或非 select 引用不可 mutation。已确认值是 picker 与列位置的唯一显示来源。
+
+复用 `updateProductDatabaseRecordCell` → SDK `updateDatabaseRecordCell` → `PATCH .../records/:recordId/cells/:propertyId`，携带现有 Database/Record version CAS。修改的是 Record.properties[groupByPropertyId]，不写 View config、不增加 Board/moveCard API。沿用 application service 的在线/auth/workspace gate、数据库 mutation serialization 和成功后的 Database updated 通知；已加载 Views 重读原窗口，继续服务端 Filter/Sort/projection/分页语义。
+
+父 NodeView 在提交前复核当前 View type、分组 Property、Record、option、可编辑/在线状态；提交期间禁用分组操作。成功后通过既有 records refresh 将 Card 放入目标列；失败保留已显示 records/config 并显示错误，错误处提供“刷新记录”入口，用户可明确刷新后重试；409 不自动重读或覆盖当前状态。没有 optimistic update、rollback UI 或离线写入。Page/Block snapshot、LocalStore/oplog、Editor/NodeView identity、Record Drawer 和 draft 生命周期保持。
+
+本轮不实现 Drag、Board position、WIP limit、Card customization、MCP 或后续 mutation 能力。不运行 Full Product、Visual 或 Final Acceptance。
+定向验证：新增 mutation 5/5，既有 Board/Table/List/Phone/snapshot/cell failure 回归 10/10，Web typecheck、diff 与 UTF-8 无 BOM 检查通过。覆盖 select 分组写入/目标列/其他记录与 config 保持、linked Table/List、非 select 不可操作、失败原状态、409 显式刷新与新 CAS 重试，以及 mutation 后 Editor/NodeView/Drawer/draft identity。独立复核无剩余 blocker。

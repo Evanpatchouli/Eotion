@@ -1361,6 +1361,42 @@ async function setRelation(record: TableRecord, property: DatabasePropertyRespon
   } finally { savingCell.value = false }
 }
 
+async function changeBoardGroup(recordId: string, optionId: string): Promise<void> {
+  if (viewType.value !== 'board' || !props.editor.isEditable || !writable.value || loadingMore.value) return
+  const workspace = workspaceId.value
+  const database = databaseId.value
+  const view = viewId.value
+  const user = userId.value
+  const propertyId = viewConfig.value.options?.groupByPropertyId
+  const property = properties.value.find(item => item.id === propertyId && item.type === 'select')
+  const record = records.value.find(item => item.id === recordId)
+  const option = property?.options?.find(item => item.id === optionId)
+  if (!workspace || !database || !view || !property || !record || !option) return
+  if (Object.hasOwn(record.properties, property.id) && record.properties[property.id] === option.id) return
+
+  const isCurrentScope = () => userId.value === user && workspaceId.value === workspace && databaseId.value === database && viewId.value === view
+  savingCell.value = true
+  mutationError.value = ''
+  try {
+    const result = await updateProductDatabaseRecordCell(workspace, database, record.id, property.id, {
+      value: option.id,
+      expectedDatabaseVersion: databaseVersion.value,
+      expectedRecordVersion: record.version,
+    })
+    if (!isCurrentScope()) return
+    databaseVersion.value = result.database.version
+    mutationError.value = 'refreshWarning' in result && result.refreshWarning ? result.refreshWarning : ''
+    externalRefreshPending = false
+    await refreshLoadedWindow()
+  } catch (cause) {
+    if (isCurrentScope()) mutationError.value = cause instanceof ApiError && cause.statusCode === 409
+      ? '记录或数据库已变化，分组未保存；请刷新后重新选择。'
+      : errorMessage(cause, '记录分组未保存，请重试。')
+  } finally {
+    savingCell.value = false
+  }
+}
+
 function onDatabaseChanged(event: Event): void {
   const detail = (event as CustomEvent<DatabaseRecordCreatedDetail | DatabaseUpdatedDetail>).detail
   if (detail?.workspaceId !== workspaceId.value) return
@@ -1634,9 +1670,9 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
     <p v-if="loading" class="eotion-database-state" role="status">正在加载数据库…</p>
     <div v-else-if="loadError" class="eotion-database-error" role="alert"><span>{{ loadError }}</span><button type="button" @click.stop="loadTable()">重试加载</button></div>
     <template v-else>
-      <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}</p>
+      <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
-      <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
+      <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
       <div v-else-if="properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>

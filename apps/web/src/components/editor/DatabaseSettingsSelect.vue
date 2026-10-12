@@ -8,6 +8,7 @@ const props = defineProps<{
   modelValue: string
   options: { value: string; label: string; disabled?: boolean }[]
   label: string
+  disabled?: boolean
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const container = ref<HTMLDivElement | null>(null)
@@ -17,10 +18,10 @@ const selectedLabel = computed(() => props.options.find(option => option.value =
 
 <template>
   <div ref="container" class="database-settings-select">
-    <EotionPopover :label="label" :teleport-to="teleportTo" panel-width="220px">
-      <template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="eotion-database-settings-select-trigger" :aria-label="label" :data-value="modelValue"><span>{{ selectedLabel }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button></template>
+    <EotionPopover :disabled="disabled" :label="label" :teleport-to="teleportTo" panel-width="220px">
+      <template #trigger="{ triggerProps }"><button v-bind="triggerProps" class="eotion-database-settings-select-trigger" :aria-label="label" :data-value="modelValue" :disabled="disabled"><span>{{ selectedLabel }}</span><EotionIcon :name="IconName.ChevronDown" :size="16" /></button></template>
       <template #default="{ close }">
-        <button v-for="option in options" :key="option.value" type="button" role="menuitem" class="eotion-database-settings-select-option" :disabled="option.disabled" :aria-current="modelValue === option.value ? 'true' : undefined" @click="emit('update:modelValue', option.value); close()">{{ option.label }}<EotionIcon v-if="modelValue === option.value" :name="IconName.Check" :size="16" /></button>
+        <button v-for="option in options" :key="option.value" type="button" role="menuitem" class="eotion-database-settings-select-option" :disabled="disabled || option.disabled" :aria-current="modelValue === option.value ? 'true' : undefined" @click="emit('update:modelValue', option.value); close()">{{ option.label }}<EotionIcon v-if="modelValue === option.value" :name="IconName.Check" :size="16" /></button>
       </template>
     </EotionPopover>
   </div>

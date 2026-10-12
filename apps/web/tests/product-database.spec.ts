@@ -3306,6 +3306,219 @@ test('board renderer handles missing grouping and empty select options without t
   await expect(page.locator('.eotion-database table')).toHaveCount(0)
 })
 
+test('board grouping mutation updates the record, keeps linked Table and List in sync, and preserves Table editing', async ({ page }) => {
+  const boardView = view('board-mutation-view', rootDatabase.id, 'Board', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: 'root-select' },
+  }, 'board')
+  const listView = view('board-mutation-list', rootDatabase.id, 'List', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-select'],
+    propertyOrder: ['root-select'],
+  }, 'list')
+  const moved = record('board-mutation-a', rootDatabase.id, 'board-mutation-page-a', { 'root-title': 'Move me', 'root-select': 'status-open' })
+  const other = record('board-mutation-b', rootDatabase.id, 'board-mutation-page-b', { 'root-title': 'Stay here', 'root-select': 'status-open' })
+  const alreadyDone = record('board-mutation-c', rootDatabase.id, 'board-mutation-page-c', { 'root-title': 'Already done', 'root-select': 'status-done' })
+  const api = await installApi(page, [
+    block('board-mutation-board-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+    block('board-mutation-table-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 200),
+    block('board-mutation-list-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: listView.id } }, 300),
+  ], {
+    databases: [rootDatabase],
+    views: [view('view-root-id', rootDatabase.id), boardView, listView],
+    properties: rootProperties,
+    records: [moved, other, alreadyDone],
+  })
+  api.pages.push(
+    ...[moved, other, alreadyDone].map((item, index) => ({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), orderKey: String(index + 2).padStart(16, '0'), role: 'database-record' as const })),
+  )
+  const originalViews = structuredClone(api.views)
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const boardBlock = page.locator('#database-block-board-mutation-board-block')
+  const tableBlock = page.locator('#database-block-board-mutation-table-block')
+  const listBlock = page.locator('#database-block-board-mutation-list-block')
+  const board = boardBlock.getByTestId('database-board')
+  const openColumn = board.locator('[data-option-id="status-open"]')
+  const doneColumn = board.locator('[data-option-id="status-done"]')
+  const movedCard = openColumn.locator('[data-record-id="board-mutation-a"]')
+  await expect(movedCard.getByRole('button', { name: '移动记录分组' })).toHaveAttribute('data-value', 'status-open')
+  await expect(openColumn.locator('.eotion-database-board-card')).toHaveCount(2)
+  await expect(doneColumn.locator('.eotion-database-board-card')).toHaveCount(1)
+  await expect(tableBlock.getByRole('button', { name: '移动记录分组' })).toHaveCount(0)
+  await expect(listBlock.getByRole('button', { name: '移动记录分组' })).toHaveCount(0)
+
+  await movedCard.getByRole('button', { name: '移动记录分组' }).click()
+  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: 'Done', exact: true }).click()
+  const movedDoneCard = doneColumn.locator('[data-record-id="board-mutation-a"]')
+  await expect(movedDoneCard).toBeVisible()
+  await expect(openColumn.locator('[data-record-id="board-mutation-b"]')).toBeVisible()
+  await expect(doneColumn.locator('[data-record-id="board-mutation-c"]')).toBeVisible()
+  await expect(movedDoneCard.getByRole('button', { name: '移动记录分组' })).toHaveAttribute('data-value', 'status-done')
+
+  const cellUpdate = api.requests.find(item => item.method === 'PATCH' && item.path.endsWith(`/records/${moved.id}/cells/root-select`))
+  expect(cellUpdate?.payload).toEqual({ value: 'status-done', expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+  expect(api.records.find(item => item.id === moved.id)?.properties['root-select']).toBe('status-done')
+  expect(api.records.find(item => item.id === other.id)?.properties['root-select']).toBe('status-open')
+  expect(api.views).toEqual(originalViews)
+  expect(api.requests.filter(item => ['POST', 'PATCH', 'DELETE'].includes(item.method) && item.path.includes('/databases/')).map(item => item.path)).toEqual([
+    `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/records/${moved.id}/cells/root-select`,
+  ])
+
+  const tableRow = tableBlock.locator('tbody tr').filter({ hasText: 'Move me' })
+  const listCard = listBlock.getByTestId('database-list').locator('.eotion-database-list-record').filter({ hasText: 'Move me' })
+  await expect(tableRow.getByRole('button', { name: 'Done', exact: true })).toBeVisible()
+  await expect(listCard).toContainText('Done')
+  await expect(listCard.getByRole('button', { name: '移动记录分组' })).toHaveCount(0)
+
+  await movedDoneCard.getByRole('button', { name: '打开记录：Move me' }).click()
+  const drawer = page.locator('[data-overlay-mode="drawer"]')
+  await expect(drawer).toBeVisible()
+  const titleDraft = drawer.getByRole('textbox', { name: '记录标题' })
+  await titleDraft.fill('Draft survives Board mutation')
+  await page.locator('.eotion-editor-content').first().evaluate(element => element.setAttribute('data-board-mutation-lifecycle', 'stable'))
+  await boardBlock.evaluate(element => element.setAttribute('data-board-mutation-lifecycle', 'stable'))
+  await drawer.evaluate(element => element.setAttribute('data-board-mutation-lifecycle', 'stable'))
+  const keyboardPicker = movedDoneCard.getByRole('button', { name: '移动记录分组' })
+  await keyboardPicker.focus()
+  await keyboardPicker.press('Enter')
+  const keyboardMenu = page.getByRole('menu', { name: '移动记录分组' })
+  const keyboardOption = keyboardMenu.getByRole('menuitem', { name: 'Open', exact: true })
+  await keyboardOption.focus()
+  await keyboardOption.press('Enter')
+  await expect(openColumn.locator(`[data-record-id="${moved.id}"]`)).toBeVisible()
+  await expect(drawer).toHaveAttribute('data-board-mutation-lifecycle', 'stable')
+  await expect(boardBlock).toHaveAttribute('data-board-mutation-lifecycle', 'stable')
+  await expect(page.locator('.eotion-editor-content').first()).toHaveAttribute('data-board-mutation-lifecycle', 'stable')
+  await expect(titleDraft).toHaveValue('Draft survives Board mutation')
+
+  await closeRecordSurface(page)
+  const draftRow = tableBlock.locator('tbody tr').filter({ hasText: 'Draft survives Board mutation' })
+  await chooseSelectCell(page, draftRow.getByRole('button', { name: 'Open', exact: true }), 'Done')
+  await expect(draftRow.getByRole('button', { name: 'Done', exact: true })).toBeVisible()
+  await expect.poll(() => api.records.find(item => item.id === moved.id)?.properties['root-select']).toBe('status-done')
+})
+
+test('failed Board grouping mutation keeps the card and selected option unchanged', async ({ page }) => {
+  const boardView = view('board-mutation-failure-view', rootDatabase.id, 'Board', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: 'root-select' },
+  }, 'board')
+  const api = await installApi(page, [
+    block('board-mutation-failure-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+  ], {
+    databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord], failCellUpdates: 1,
+  })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan', role: 'database-record' })
+  const originalRecords = structuredClone(api.records)
+  const originalViews = structuredClone(api.views)
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const board = page.getByTestId('database-board')
+  const openColumn = board.locator('[data-option-id="status-open"]')
+  const openCard = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
+  const picker = openCard.getByRole('button', { name: '移动记录分组' })
+  await picker.click()
+  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: 'Done', exact: true }).click()
+
+  await expect(page.getByRole('alert')).toBeVisible()
+  await expect(openColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
+  await expect(board.locator(`[data-option-id="status-done"] [data-record-id="${basicRecord.id}"]`)).toHaveCount(0)
+  await expect(openCard.getByRole('button', { name: '移动记录分组' })).toHaveAttribute('data-value', 'status-open')
+  expect(api.records).toEqual(originalRecords)
+  expect(api.views).toEqual(originalViews)
+  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.includes('/databases/'))).toHaveLength(1)
+})
+
+test('Board grouping conflict stays stale until refresh, then retries with fresh record versions', async ({ page }) => {
+  const boardView = view('board-mutation-conflict-view', rootDatabase.id, 'Board', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: 'root-select' },
+  }, 'board')
+  const api = await installApi(page, [
+    block('board-mutation-conflict-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+  ], {
+    databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord], conflictCellUpdates: 1,
+  })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const board = page.getByTestId('database-board')
+  const openColumn = board.locator('[data-option-id="status-open"]')
+  const doneColumn = board.locator('[data-option-id="status-done"]')
+  const openCard = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
+  const picker = openCard.getByRole('button', { name: '移动记录分组' })
+  const boardRecordsPath = `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/views/${boardView.id}/table`
+  await picker.click()
+  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: 'Done', exact: true }).click()
+
+  const conflictAlert = page.getByRole('alert')
+  await expect(conflictAlert).toContainText('请刷新后重新选择')
+  await expect(openCard).toBeVisible()
+  await expect(picker).toHaveAttribute('data-value', 'status-open')
+  expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBe('Concurrent edit')
+
+  const readsBeforeManualRefresh = api.requests.filter(item => item.method === 'GET' && item.path === boardRecordsPath).length
+  await conflictAlert.getByRole('button', { name: '刷新记录' }).click()
+  await expect.poll(() => api.requests.filter(item => item.method === 'GET' && item.path === boardRecordsPath).length).toBeGreaterThan(readsBeforeManualRefresh)
+  const unassignedColumn = board.locator('[data-option-id=""]')
+  const refreshedCard = unassignedColumn.locator(`[data-record-id="${basicRecord.id}"]`)
+  await expect(refreshedCard).toBeVisible()
+  const refreshedPicker = refreshedCard.getByRole('button', { name: '移动记录分组' })
+  await expect(refreshedPicker).toHaveAttribute('data-value', '')
+
+  await refreshedPicker.click()
+  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: 'Done', exact: true }).click()
+  await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
+  expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBe('status-done')
+  const cellUpdates = api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))
+  expect(cellUpdates).toHaveLength(2)
+  expect(cellUpdates[0]?.payload).toEqual({ value: 'status-done', expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+  expect(cellUpdates[1]?.payload).toEqual({ value: 'status-done', expectedDatabaseVersion: 2, expectedRecordVersion: 2 })
+})
+
+test('unconfigured Board stays read-only and exposes no grouping mutation control', async ({ page }) => {
+  const boardView = view('board-mutation-unconfigured-view', rootDatabase.id, 'Board', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'board')
+  const api = await installApi(page, [
+    block('board-mutation-unconfigured-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+  ], { databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const board = page.getByTestId('database-board')
+  await expect(board).toContainText('尚未配置分组属性')
+  await expect(board.getByRole('button', { name: '移动记录分组' })).toHaveCount(0)
+  expect(api.requests.filter(item => ['POST', 'PATCH', 'DELETE'].includes(item.method) && item.path.includes('/databases/'))).toHaveLength(0)
+})
+
+test('Board with a non-select grouping property remains read-only', async ({ page }) => {
+  await page.goto('/login')
+  await page.evaluate(async () => {
+    const Vue = await import('/node_modules/.vite/deps/vue.js')
+    const { default: DatabaseBoardView } = await import('/src/components/editor/DatabaseBoardView.vue')
+    const host = document.createElement('div')
+    host.id = 'non-select-board-test'
+    document.body.append(host)
+    const app = Vue.createApp({
+      render: () => Vue.h(DatabaseBoardView, {
+        records: [{ id: 'non-select-record', databaseId: 'database-root-id', workspaceId: 'database-workspace', pageId: 'non-select-page', properties: { 'root-title': 'Read only', 'root-text': 'Text grouping' }, version: 1, pageVersion: '2026-09-30T00:00:00.000Z', createdAt: '2026-09-30T00:00:00.000Z', updatedAt: '2026-09-30T00:00:00.000Z' }],
+        properties: [
+          { id: 'root-title', databaseId: 'database-root-id', workspaceId: 'database-workspace', name: 'Name', type: 'title' },
+          { id: 'root-text', databaseId: 'database-root-id', workspaceId: 'database-workspace', name: 'Notes', type: 'text' },
+        ],
+        config: { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: { groupByPropertyId: 'root-text' } },
+        formatValue: (value: unknown) => value == null ? '' : String(value),
+        writable: true,
+        'onOpenRecord': () => undefined,
+      }),
+    })
+    app.mount(host)
+  })
+
+  const board = page.locator('#non-select-board-test .eotion-database-board')
+  await expect(board).toContainText('尚未配置分组属性')
+  await expect(board.getByRole('button', { name: '移动记录分组' })).toHaveCount(0)
+})
+
 test('list view renders projected titles and ordered visible properties at desktop and phone widths', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   const listConfig: DatabaseViewConfig = {

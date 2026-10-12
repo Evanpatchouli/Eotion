@@ -1,4 +1,16 @@
 # Handoff
+## 2026-10-12 P9.5B-1 Board Card Mutation Foundation（已完成）
+
+基线 `90f8d9d0fe0db4030cbd588881298f0c5d7cab23`；聚焦提交为本节所在 commit。Board Card 新增共享 DatabaseSettingsSelect 分组 picker，只提交当前 select 的稳定 option ID；未配置/非 select 不开放 mutation。父 changeBoardGroup 校验当前 Board/select/Record/option/可写状态与 auth/workspace/database/view identity，复用 updateProductDatabaseRecordCell → SDK cells PATCH，携带原 Database/Record CAS。没有 Board API / endpoint / schema / sync 变更。
+
+提交期间禁用 picker 与已开菜单；成功沿用 DatabaseUpdated 通知刷新 linked Table/List，并明确重读当前已加载窗口，Card 进入目标列。失败不改 records/config，展示错误；409 提示刷新后重选，错误处“刷新记录”复用 refreshLoadedWindow，避免旧版本持续 CAS 失败。无 optimistic update / rollback UI / offline mutation；Editor/NodeView/Drawer/draft 保持。仍只支持目标 option，不提供未分组清空 mutation。
+
+验证：新增 targeted 5/5，命令 `pnpm --filter @eotion/web exec playwright test tests/product-database.spec.ts --grep 'grouping mutation|grouping mutation control|non-select grouping property' --workers=1 --retries=0`。覆盖成功移动/其他卡片与 config 保持/CAS/唯一 cells API、linked Table/List 新值与 Table 继续编辑、Drawer draft/Editor/NodeView identity、失败旧列/旧 picker、未配置、真实非 select 组件、409→显式刷新→新版本重试。
+
+既有定向回归最新代码复跑 10/10：grep `board renderer|list view renders projected|database tables render and references|database table scrolls horizontally|snapshot convergence preserves phone|keeps failed text drafts|409 refreshes the latest record version`，workers=1 / retries=0。Web typecheck、diff check、UTF-8 无 BOM 检查通过。独立 review 提出的旧 CAS 失败恢复入口已修复，复核无剩余 blocker。冲突测试初跑遇到初始后台 GET 计数竞态，改用手动刷新前计数并保留旧 UI 断言，未更改产品逻辑或弱化状态断言。非 select mount 测试 login 出现 auth proxy 未连接日志，测试通过；无 scope-external failure。
+
+未运行 Full Product / Visual / Final Acceptance。未发现当前 record mutation 链路阻碍后续 Drag 的 blocker，但本轮未实现或验证 Drag。没有进入 Drag / optimistic / rollback / MCP；完成聚焦 commit 后停止。
+
 ## 2026-10-12 P9.5A Board Renderer Foundation（已完成）
 
 基线 `73f1762d2c860f1c8d96ff9548cdb569950d8bca`，P8 COMPLETE / SEALED；聚焦提交为本节所在 commit。新增独立只读 DatabaseBoardView，DatabaseNodeView 仅 import + renderer 分支；Table DOM 与 List 不变。Props 沿用 records/properties/config/formatValue，openRecord emit 复用既有 Page prepare/record opening/Drawer。select options 按稳定 ID 生成全部列；保留输入排序，空值/未知值在有记录时进入未分组；Vue key 与真实 option ID 隔离。未配置 grouping 只提示，不推断/写回。title 为 Page.title projection；详情按 visibleProperties（null 全部）与 propertyOrder。
