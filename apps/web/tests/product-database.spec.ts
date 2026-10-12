@@ -852,7 +852,7 @@ test.describe('touch database block controls', () => {
     await page.evaluate(() => { document.documentElement.dataset.theme = 'light' })
 
     await viewTrigger.click()
-    await expect(page.getByRole('group', { name: '数据库视图' })).toBeVisible()
+    await expect(page.getByRole('group', { name: '数据库视图', exact: true })).toBeVisible()
     await page.keyboard.press('Escape')
     await settings.click()
     const moreMenu = page.getByRole('menu', { name: '数据库设置' })
@@ -3260,7 +3260,11 @@ test('database view selector supports accessible inline rename without switching
   expect(await currentRow.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe(await otherRow.evaluate(element => getComputedStyle(element).backgroundColor))
   await expect(menu.getByRole('textbox', { name: '当前视图名称' })).toHaveCount(0)
   await expect(menu.getByRole('button', { name: '保存名称' })).toHaveCount(0)
-  await expect(menu.locator(':scope > button')).toHaveCount(1)
+  const creationGroup = menu.getByRole('group', { name: '新建数据库视图', exact: true })
+  await expect(creationGroup.getByRole('button')).toHaveCount(3)
+  for (const name of ['新建视图', '新建列表视图', '新建看板视图']) {
+    await expect(creationGroup.getByRole('button', { name, exact: true })).toBeVisible()
+  }
   const editCurrent = currentRow.getByRole('button', { name: '编辑视图 表格视图' })
   const deleteCurrent = currentRow.getByRole('button', { name: '删除视图 表格视图' })
   for (const button of [editCurrent, deleteCurrent]) {
