@@ -2696,6 +2696,87 @@ test('database view selector supports accessible inline rename without switching
   await expect(currentRow.locator('.eotion-database-view-name')).toHaveAttribute('aria-current', 'true')
 })
 
+test('database view selector lists Table and List, switches only viewId, and preserves nested editor state', async ({ page }) => {
+  const listView = view('selector-list-view', rootDatabase.id, 'List view', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'list')
+  const api = await installApi(page, [
+    block('selector-root-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+    block('selector-toggle', 'toggle', { type: 'eotionToggle', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Nested database' }] }] }, 200),
+    block('selector-nested-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100, 'selector-toggle'),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id), listView], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Selector record', orderKey: '0000000000000002', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const root = page.locator('#database-block-selector-root-block')
+  const nested = page.locator('#database-block-selector-nested-block')
+  const editor = page.locator('.eotion-editor-content')
+  await expect(root.locator('tbody')).toBeVisible()
+  await expect(nested.locator('tbody')).toBeVisible()
+  const lifecycleMarker = await root.evaluate((element) => {
+    element.setAttribute('data-view-selector-lifecycle', 'stable')
+    return 'stable'
+  })
+  await editor.evaluate((element) => {
+    element.setAttribute('data-view-selector-lifecycle', 'stable')
+  })
+
+  await root.getByRole('button', { name: '切换视图' }).click()
+  const menu = page.getByRole('group', { name: '数据库视图', exact: true })
+  await expect(menu.locator('.eotion-database-view-row')).toHaveCount(2)
+  await expect(menu.locator('.eotion-database-view-name')).toHaveText(['表格视图', 'List view'])
+  await expect(menu.locator('.eotion-database-view-row.is-selected .eotion-database-view-name')).toHaveText('表格视图')
+
+  await menu.getByRole('button', { name: 'List view', exact: true }).click()
+  await expect(root.getByTestId('database-list')).toBeVisible()
+  await expect(root.locator('table')).toHaveCount(0)
+  await expect.poll(() => ((api.blocks.find(item => item.id === 'selector-root-block')?.props as { node?: { attrs?: { databaseId?: string; viewId?: string } } })?.node?.attrs)).toEqual({ databaseId: rootDatabase.id, viewId: listView.id })
+  await expect(nested.locator('tbody')).toBeVisible()
+  await expect(nested.getByRole('button', { name: '切换视图' })).toContainText('表格视图')
+  await expect.poll(() => ((api.blocks.find(item => item.id === 'selector-nested-block')?.props as { node?: { attrs?: { databaseId?: string; viewId?: string } } })?.node?.attrs)).toEqual({ databaseId: rootDatabase.id, viewId: 'view-root-id' })
+  await expect(root).toHaveAttribute('data-view-selector-lifecycle', lifecycleMarker)
+  await expect(editor).toHaveAttribute('data-view-selector-lifecycle', lifecycleMarker)
+
+  await root.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '表格视图', exact: true }).click()
+  await expect(root.locator('tbody')).toBeVisible()
+  await expect(root.getByTestId('database-list')).toHaveCount(0)
+  await expect.poll(() => ((api.blocks.find(item => item.id === 'selector-root-block')?.props as { node?: { attrs?: { databaseId?: string; viewId?: string } } })?.node?.attrs)).toEqual({ databaseId: rootDatabase.id, viewId: 'view-root-id' })
+})
+
+test('phone view selector keeps the existing two-row header while switching to List', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const listView = view('phone-selector-list-view', rootDatabase.id, 'List view', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'list')
+  const api = await installApi(page, [
+    block('phone-selector-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id), listView], properties: [rootProperties[0]!], records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const database = page.locator('#database-block-phone-selector-database')
+  const header = database.locator('.eotion-database-header')
+  const title = header.locator('.eotion-database-copy')
+  const selector = header.getByRole('button', { name: '切换视图' })
+  const add = header.getByRole('button', { name: '新建记录' })
+  const settings = header.getByRole('button', { name: '数据库设置' })
+  const [titleBox, selectorBox, addBox, settingsBox] = await Promise.all([title.boundingBox(), selector.boundingBox(), add.boundingBox(), settings.boundingBox()])
+  expect(titleBox && selectorBox && addBox && settingsBox).toBeTruthy()
+  expect(titleBox!.y + titleBox!.height).toBeLessThanOrEqual(selectorBox!.y)
+  expect(Math.abs(selectorBox!.y - addBox!.y)).toBeLessThanOrEqual(4)
+  expect(Math.abs(selectorBox!.y - settingsBox!.y)).toBeLessThanOrEqual(4)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+
+  await selector.click()
+  const menu = page.getByRole('group', { name: '数据库视图', exact: true })
+  await expect(menu.locator('.eotion-database-view-row')).toHaveCount(2)
+  await menu.getByRole('button', { name: 'List view', exact: true }).click()
+  await expect(database.getByTestId('database-list')).toBeVisible()
+  await expect.poll(() => ((api.blocks.find(item => item.id === 'phone-selector-database')?.props as { node?: { attrs?: { databaseId?: string; viewId?: string } } })?.node?.attrs?.viewId)).toBe(listView.id)
+  const [afterTitleBox, afterSelectorBox, afterAddBox, afterSettingsBox] = await Promise.all([title.boundingBox(), selector.boundingBox(), add.boundingBox(), settings.boundingBox()])
+  expect(afterTitleBox && afterSelectorBox && afterAddBox && afterSettingsBox).toBeTruthy()
+  expect(afterTitleBox!.y + afterTitleBox!.height).toBeLessThanOrEqual(afterSelectorBox!.y)
+  expect(Math.abs(afterSelectorBox!.y - afterAddBox!.y)).toBeLessThanOrEqual(4)
+  expect(Math.abs(afterSelectorBox!.y - afterSettingsBox!.y)).toBeLessThanOrEqual(4)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+})
+
 test('linked views keep independent server filters, multi-sort order and column layout', async ({ page, context }) => {
   test.setTimeout(60_000)
   const records = [

@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-10-12 P9.3B-1 View Selector Integration（已完成）
+
+基线 `38b3ac54c43b30cef918641b8afa7599f81441b8`。本轮确认并固化既有 View Selector 与 P9.3A Table/List renderer 的集成契约，没有新增产品 renderer 或 Database domain 逻辑：selector 打开时经 `listProductDatabaseViews()` 读取 server DatabaseView entity；当前项由 Block attrs `viewId` 高亮；点击通过既有 `switchView()` 只更新 `{ viewId }`，不修改 `databaseId`、Page tree、Page snapshot 或创建新的 Database Block。
+
+新的 viewId 由 `DatabaseNodeView` 既有 watch 触发 records reload，records 响应的 `view.type` 继续选择 Table 或 `DatabaseListView`。Table DOM/interaction、nested Database Block、Editor/NodeView identity 和 Phone `<768px` 两行 header 均保持。P8 已有 Create/Rename/Delete 代码与测试未改动，本轮不扩展其范围；Board/Calendar/Gallery/MCP/Local-first/Database domain 未开始。
+
+新增 targeted UX 回归覆盖：Database 同时有 Table + List 时显示两项且当前高亮；Table → List → Table renderer 往返；只改变所选 block 的 viewId；nested block 不受影响；Editor identity 保持；Phone selector 不破坏两行 header 与 viewport。`product-database.spec.ts` targeted 5/5、`pnpm --filter @eotion/web typecheck`、`git diff --check` 通过。未运行完整 Product、Visual、Final Acceptance；未改 lockfile；未发现 Create View 或 Board blocker。
+
+修改文件：`apps/web/tests/product-database.spec.ts`、`docs/p9-multi-view.md`、`.agents/current-task.md`、`.agents/handoff.md`。聚焦提交 SHA 以当前 `HEAD` 为准。
+
 ## 2026-10-12 P9.3A List View Renderer Foundation（已完成）
 
 基线 `3a502aa53725b4e44d392c14ae592cb605513be6`。新增 `apps/web/src/components/editor/DatabaseListView.vue`，由 `DatabaseNodeView` 根据 records 响应中的 `view.type === 'list'` 局部选择；父组件继续持有统一 loading、分页、refresh、Page.title projection、Filter/Sort、relation title resolve、record opening 和 Table editing 生命周期。List 不新增 Database 模型，不复制 inline edit；title 点击复用既有 `openRecordPage`，因此保留 record opening preference / drawer 生命周期。

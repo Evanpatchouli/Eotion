@@ -1,21 +1,21 @@
-# 当前任务：P9.3A — List View Renderer Foundation（已完成）
+# 当前任务：P9.3B-1 — View Selector Integration（已完成）
 
-基线 `3a502aa53725b4e44d392c14ae592cb605513be6`；P8 COMPLETE / SEALED，P9.1A 与 P9.2 已完成。目标 8–20 分钟；本轮在范围内完成并停止。
+基线 `38b3ac54c43b30cef918641b8afa7599f81441b8`；P8 COMPLETE / SEALED，P9.1A、P9.2 与 P9.3A 已完成。目标 8–20 分钟，25 分钟硬停止。
 
 | Work Unit | 难度 / 模式 / 角色 | 状态 |
 | --- | --- | --- |
-| 精确定位 DatabaseNodeView / Table / product loading / tests | S0 investigate / 主 Agent | 完成 |
-| List renderer 边界与最小分支设计 | S2 decide / 主 Agent | 完成 |
-| `DatabaseListView` 与 `DatabaseNodeView` 分支 | S1 execute / 主 Agent | 完成 |
-| List / Table / Phone targeted validation | S0 verify / 主 Agent | 完成，无 blocker |
-| 文档、handoff、聚焦提交与汇报 | S1 execute / 主 Agent | 进行中 |
+| 精确定位 View Selector / DatabaseView API / product service / UX tests | S0 investigate / 主 Agent | 完成 |
+| 判断既有 selector 与 P9.3A renderer 的最小集成边界 | S1 decide / 主 Agent | 完成 |
+| Table + List selector / block reference / nested / Phone targeted tests | S1 execute / 主 Agent | 完成 |
+| targeted product tests、Web typecheck、diff / lifecycle review | S0 verify / 主 Agent | 完成，无 blocker |
+| 文档、handoff、聚焦提交与汇报 | S1 execute / 主 Agent | 完成 |
 
-边界：只实现 List View renderer。复用既有 Database、DatabaseView、Properties、records、Filter/Sort、visibleProperties、propertyOrder、record opening 与 loading/refresh lifecycle；不创建新 Database 模型，不复制 Table inline edit，不实现 View Selector、View creation/management UI、Board、Calendar、Gallery、MCP、Local-first 或 Database domain changes。Table DOM 与交互保持原样，不新增 breakpoint。
+边界：只接入既有 View Selector 与 P9.3A Table/List renderer。复用 `listDatabaseViews` 的 server DatabaseView 列表、既有 `viewId` block reference、`DatabaseNodeView` loading/refresh lifecycle 和 Phone header breakpoint；不创建/删除/重命名 View，不创建新 Database Block，不修改 `databaseId`、Page tree、Page snapshot、Database domain、Board、Calendar、Gallery、MCP 或 Local-first。Table DOM 与交互保持原样。
 
-最小验证：Web typecheck；List targeted product test；既有 Table root/nested、Phone responsive test。完整 Product / Visual / Final Acceptance 不运行。
+最小验证：View Selector targeted product tests（Table + List、nested、Phone、lifecycle）；Web typecheck；`git diff --check`。完整 Product / Visual / Final Acceptance 不运行。
 
-Implementation Brief：父组件继续负责统一 records load / pagination / refresh / title projection / relation title resolve；成功响应写入 `viewType`，仅在 `list` 时渲染新 `DatabaseListView`。子 renderer 只接收 records/properties/config/formatValue，通过 `visibleProperties` 与 `propertyOrder` 计算 title + detail properties，title click 复用父组件 openRecord handler。`visibleProperties === null` 默认展示最多三个非 title 属性；Phone 只使用既有 `<768px` 断点。
+Implementation Brief：View Selector 继续从 `listProductDatabaseViews()` 读取 server DatabaseView entity，当前项由 block attrs `viewId` 高亮；点击只调用现有 `switchView()` 更新该 Database Block 的 `viewId`，不改变 `databaseId` 或页面结构。新的 viewId 由既有 watch 触发 records reload，响应中的 `view.type` 决定 Table/List renderer；selector 关闭、Editor/NodeView identity 与 nested sibling 保持。Phone 继续使用既有两行 header，不新增 breakpoint。
 
-验证：`pnpm --filter @eotion/web typecheck` 通过；List targeted 1/1；既有 Table root/nested 1/1；Phone Table overflow 1/1；`git diff --check` 通过。首次测试受缺失依赖阻断，按 Web workspace frozen install 恢复后重跑通过；未改 lockfile。未运行完整 Product、Visual、Final Acceptance。
+验证：View Selector integration、Phone selector、既有 View lifecycle、List renderer、long-name Phone header 共 5/5 通过；`pnpm --filter @eotion/web typecheck` 通过；`git diff --check` 通过。未运行完整 Product、Visual、Final Acceptance；未改 lockfile。
 
-Table renderer 未重写、未删除、未改 DOM；generic records/product loading flow 复用。未发现 P9.4 Board blocker；本轮完成一个聚焦 commit 后停止。
+P9.3A 历史 Context：List renderer 已按 `view.type === 'list'` 局部渲染，Table renderer 未重写、未删除、未改 DOM；本轮不重复实现。P9.3B-1 只验证并固化既有 selector 集成，不开始 Create/Rename/Delete 或 Board。完成一个聚焦 commit 后停止。

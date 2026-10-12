@@ -73,3 +73,13 @@ List View 在 `apps/web` 中按 `DatabaseView.type === 'list'` 选择独立的 `
 List 使用既有 records 响应中的 title property（服务端投影自 Page.title），并按 `visibleProperties` 过滤非 title 属性、按 `propertyOrder` 排列。`visibleProperties === null` 时展示 title 之外最多三个已排序属性。Desktop / Tablet 保持 title 与属性横向布局，沿用既有 `<768px` Phone 断点切换为单列记录项。Table renderer 的 DOM 与交互未改。
 
 定向 Web 验证：List renderer targeted product regression 1/1；既有 Table root/nested reference regression 1/1；既有 Phone Table overflow regression 1/1；Web typecheck 通过。未运行完整 Product、Visual 或 Final Acceptance；未实现 View Selector、View creation UI、Board、MCP 或 Local-first。
+
+## P9.3B-1 — View Selector Integration
+
+基线：`38b3ac54c43b30cef918641b8afa7599f81441b8`。本阶段接入既有 Database Block View Selector 与 P9.3A 的 Table/List renderer，不新增 View 管理能力。
+
+Selector 打开时通过 product database service 的 `listProductDatabaseViews()` 读取 server `DatabaseView` entity；不在前端维护 view registry，也不从 renderer 推断 View。列表中的当前项由 Block attrs 的 `viewId` 高亮。点击 View 只执行 `updateAttributes({ viewId })`，保留 `databaseId`、Block identity、Page tree 与 Page snapshot 结构不变；已有 standalone Database route 的 `onViewChange` 路由入口保持原行为。
+
+新的 `viewId` 由 `DatabaseNodeView` 既有 watch 触发 records reload，records 响应中的 `view.type` 继续选择现有 Table renderer 或 `DatabaseListView`。Selector 关闭、Table/List 切换、nested Database Block 与 Editor/NodeView identity 均复用既有 lifecycle；Phone 继续使用既有 `<768px` 两行 header，不新增 breakpoint。Create/Rename/Delete、Board、Calendar、Gallery、MCP、Local-first 与 Database domain 均不在本阶段。
+
+定向 Web 验证：View Selector integration（Table + List、当前高亮、`viewId` 往返、nested block、Editor identity）1/1；Phone selector breakpoint 1/1；既有 View lifecycle 1/1；List renderer 1/1；long-name Phone header 1/1；共 5/5。Web typecheck 与 `git diff --check` 通过。未运行完整 Product、Visual 或 Final Acceptance；未发现 Create View 或 Board blocker。
