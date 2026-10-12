@@ -9,6 +9,7 @@ import {
   DATABASE_MAX_PROPERTIES,
   DATABASE_MAX_VIEWS,
   DATABASE_MAX_TABLE_ROWS,
+  DATABASE_VIEW_TYPES,
   isValidDatabaseRecord,
   isValidDatabaseView,
   isValidDatabaseViewConfigShape,
@@ -359,7 +360,7 @@ export type DatabaseRelationTitlesResponse = z.infer<typeof DatabaseRelationTitl
 export const DatabaseViewCreateRequestSchema = z.object({
   id: databaseStableIdSchema,
   name: databaseNameSchema,
-  type: z.literal('table'),
+  type: z.enum(DATABASE_VIEW_TYPES),
   config: DatabaseViewConfigSchema.optional(),
   expectedDatabaseVersion: z.number().int().positive().safe().optional(),
 }).strict()

@@ -120,7 +120,7 @@ export class DatabaseService {
     this.validateTableWindow(input)
     const database = await this.requireDatabase(userId, workspaceId, databaseId, false, session)
     const view = await this.views.findInWorkspace(workspaceId, viewId, session)
-    if (!view || view.databaseId !== database.id || view.type !== 'table') throw new NotFoundException('Database view not found')
+    if (!view || view.databaseId !== database.id) throw new NotFoundException('Database view not found')
     const properties = await this.properties.listLimited(workspaceId, databaseId, DATABASE_MAX_PROPERTIES + 1, session)
     if (properties.length > DATABASE_MAX_PROPERTIES) throw new BadRequestException(`Database exceeds the maximum of ${DATABASE_MAX_PROPERTIES} properties`)
     if (!session && properties.some(property => property.type === 'rollup' || property.type === 'formula')) {
@@ -495,6 +495,7 @@ export class DatabaseService {
       for (const view of await this.views.list(workspaceId, databaseId, session)) {
         const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
         const nextConfig: DatabaseViewConfig = {
+          ...config,
           filters: config.filters.filter(filter => filter.propertyId !== propertyId),
           sorts: config.sorts.filter(sort => sort.propertyId !== propertyId),
           visibleProperties: config.visibleProperties?.filter(id => id !== propertyId) ?? null,
@@ -651,7 +652,7 @@ export class DatabaseService {
       const properties = await this.properties.list(workspaceId, databaseId, session)
       const config = input.config ?? DEFAULT_DATABASE_VIEW_CONFIG
       if (!validateDatabaseViewConfig(config, properties)) throw new BadRequestException('Invalid database view configuration for this database')
-      const view = await this.views.create({ id: input.id, workspaceId, databaseId, name: input.name, type: 'table', config, version: 1 }, session)
+      const view = await this.views.create({ id: input.id, workspaceId, databaseId, name: input.name, type: input.type, config, version: 1 }, session)
       return { database: bumped, view }
     })
   }

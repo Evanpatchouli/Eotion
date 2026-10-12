@@ -6,6 +6,8 @@ const {
   isValidDatabaseProperty,
   isValidDatabaseRecord,
   isValidDatabaseView,
+  DATABASE_VIEW_TYPES,
+  DEFAULT_DATABASE_VIEW_CONFIG,
   isValidDatabaseViewConfigShape,
   validateDatabaseRecordValues,
   validateDatabaseViewConfig,
@@ -49,6 +51,9 @@ test('database entities require exact fields and valid stable metadata', () => {
   assert.equal(isValidDatabaseProperty({ ...properties[1], options: [] }), false)
   assert.equal(isValidDatabaseProperty({ ...properties[4], options: undefined }), false)
   assert.equal(isValidDatabaseView({ id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All', type: 'table', version: 1, createdAt: timestamp, updatedAt: timestamp }), true)
+  assert.deepEqual(DATABASE_VIEW_TYPES, ['table', 'list', 'board'])
+  for (const type of ['list', 'board']) assert.equal(isValidDatabaseView({ id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All', type, version: 1, createdAt: timestamp, updatedAt: timestamp }), true)
+  for (const type of ['calendar', 'kanban', null]) assert.equal(isValidDatabaseView({ id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All', type, version: 1, createdAt: timestamp, updatedAt: timestamp }), false)
 })
 
 test('record values strictly follow definitions and require the unique non-empty title', () => {
@@ -93,6 +98,13 @@ test('record values strictly follow definitions and require the unique non-empty
 test('view config shape and property-aware validation enforce strict operators and scopes', () => {
   const base = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null }
   assert.equal(validateDatabaseViewConfig(base, properties), true)
+  const opaqueOptions = { unknownKey: { nested: ['value'] }, groupByPropertyId: 42 }
+  const configWithOptions = { ...base, options: opaqueOptions }
+  assert.equal(Object.hasOwn(DEFAULT_DATABASE_VIEW_CONFIG, 'options'), false)
+  assert.equal(isValidDatabaseViewConfigShape(configWithOptions), true)
+  assert.equal(validateDatabaseViewConfig(configWithOptions, properties), true)
+  assert.deepEqual(configWithOptions.options, opaqueOptions)
+  for (const options of [null, [], 'opaque', 1, true]) assert.equal(isValidDatabaseViewConfigShape({ ...base, options }), false)
   assert.equal(validateDatabaseViewConfig({ ...base, filters: [{ propertyId: 'prop-checkbox', operator: 'checked' }] }, properties), true)
   assert.equal(isValidDatabaseViewConfigShape({ ...base, filters: [{ propertyId: 'prop-checkbox', operator: 'unchecked', value: false }] }), false)
   assert.equal(isValidDatabaseViewConfigShape({ ...base, filters: [{ propertyId: 'prop-text', operator: 'is_empty', value: '' }] }), false)

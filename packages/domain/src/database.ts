@@ -18,6 +18,8 @@ export const DATABASE_MAX_VIEWS = 100
 export const DATABASE_MAX_TABLE_ROWS = 100
 export const DATABASE_VIEW_MAX_FILTERS = 20
 export const DATABASE_VIEW_MAX_SORTS = 10
+export const DATABASE_VIEW_TYPES = ['table', 'list', 'board'] as const
+export type DatabaseViewType = typeof DATABASE_VIEW_TYPES[number]
 export const DATABASE_RELATION_MAX_LINKS = 50
 export const DATABASE_RELATION_SEARCH_MAX_RECORDS = 5_000
 export const DATABASE_DERIVED_MAX_RECORDS = 100
@@ -127,7 +129,7 @@ export interface DatabaseView {
   databaseId: string
   workspaceId: string
   name: string
-  type: 'table'
+  type: DatabaseViewType
   /** Absent on legacy stored views; repositories project the default config. */
   config?: DatabaseViewConfig
   version: number
@@ -151,6 +153,8 @@ export interface DatabaseViewConfig {
   sorts: DatabaseSort[]
   visibleProperties: string[] | null
   propertyOrder: string[] | null
+  /** Opaque view-specific options; this stage assigns no semantics. */
+  options?: Record<string, unknown>
 }
 
 export const DEFAULT_DATABASE_VIEW_CONFIG: DatabaseViewConfig = {
@@ -173,7 +177,8 @@ const FILTERS_BY_TYPE: Record<DatabasePropertyType, readonly string[]> = {
 
 /** Checks the strict wire shape without needing the referenced database properties. */
 export function isValidDatabaseViewConfigShape(value: unknown): value is DatabaseViewConfig {
-  if (!isObject(value) || !hasExactFields(value, ['filters', 'sorts', 'visibleProperties', 'propertyOrder'])) return false
+  if (!isObject(value) || !hasExactFields(value, ['filters', 'sorts', 'visibleProperties', 'propertyOrder'], ['options'])) return false
+  if (Object.hasOwn(value, 'options') && !isObject(value.options)) return false
   if (!Array.isArray(value.filters) || value.filters.length > DATABASE_VIEW_MAX_FILTERS || !Array.isArray(value.sorts) || value.sorts.length > DATABASE_VIEW_MAX_SORTS) return false
   for (const filter of value.filters) {
     if (!isObject(filter) || !hasExactFields(filter, ['propertyId', 'operator'], ['value'])
@@ -630,7 +635,8 @@ export function isValidDatabaseView(value: unknown): value is DatabaseView {
     && isStableId(value.databaseId)
     && isStableId(value.workspaceId)
     && isName(value.name)
-    && value.type === 'table'
+    && typeof value.type === 'string'
+    && DATABASE_VIEW_TYPES.includes(value.type as DatabaseViewType)
     && (!Object.hasOwn(value, 'config') || isValidDatabaseViewConfigShape(value.config))
     && isVersion(value.version)
     && isIsoTimestamp(value.createdAt)

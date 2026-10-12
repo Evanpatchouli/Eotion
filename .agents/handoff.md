@@ -1,5 +1,23 @@
 # Handoff
 
+## 2026-10-12 P9.2 View Type Foundation（已完成）
+
+基于 master `8c6a7fe25f5879ad82ac43041ab62cdc06f052fe`，P8 保持 COMPLETE / SEALED。Domain 导出单一 `DATABASE_VIEW_TYPES = ['table', 'list', 'board'] as const` 与 `DatabaseViewType`；Domain runtime、Contracts create enum 与 Mongo enum 一致。默认 Database 创建仍 table；createView 持久化请求 type，创建/列表/records 响应保留 type。Generic records 接受三种 View，legacy Table 继续委托；没有修改查询、游标、权限或 version/config fence。
+
+`DatabaseViewConfig.options?: Record<string, unknown>` 为可选 opaque 对象，只验证非 null、非数组 object，内部未知 key/value 不丢失。既有 filters/sorts/列与 Property reference validation 保持。Property delete repair 补上 `...config`，select option cleanup/type-change 原有 spread 保持；真实 mutation 回归确认嵌套 options 在三条路径后均保留。没有 groupBy 校验、Board dependency、Capability Registry 或 renderer 字段；旧 table/config 不补 options，无 migration/批量更新。
+
+验证与复用命令：
+
+- `pnpm --filter @eotion/domain test`：35/35；`pnpm --filter @eotion/contracts test`：23/23。
+- Domain / Contracts / SDK `typecheck` 通过；`git diff --check` 和全部修改文件 UTF-8 无 BOM 检查通过。
+- API scoped compile：仓库外临时 tsconfig extends `apps/api/tsconfig.json`，`incremental: false`，include 仅 `src/modules/http-api/database-http.test.ts`、`src/modules/server-domain/database.test.ts`，TS 跟随真实依赖闭包。`pnpm --filter @eotion/api exec tsc -p <temporary-config>` 通过。临时 config 位于 `C:\Users\31250\AppData\Local\Temp\eotion-p92-api-scoped-148e51481c1f4686a2e7a30718413303.json`。
+- `pnpm --filter @eotion/api exec node --test dist/modules/http-api/database-http.test.js dist/modules/server-domain/database.test.js`：13/13、0 fail、0 skip。首次运行仅旧 fixture View 数量期望失效；改为明确核对原两个 Table + 新增 Board 的三个 ID 后同组通过，原其余断言保持。
+- 独立 reviewer 无 blocker；未发现 P9.3 List View foundation blocker。
+
+完整 API build/typecheck 未运行，继承 P9.1A 已记录的 MCP/Zod 环境限制；未修复 MCP/依赖。未改 Web、Product/Visual tests、Database Block 引用形状或 P8 文档；未运行 Web Product、Visual、Final Acceptance。`linkInPage` 暂保留 table-only，Web List renderer、selector/链接入口接入是后续 P9.3 工作，不在本轮执行。
+
+本节所在聚焦 commit 完成后停止，不开始 List/Board/Capability Registry/Web/MCP。
+
 ## 2026-10-12 P9.1A Generic View Records Read Foundation（已完成）
 
 基于 master `13053793ffa4683e3ffdb6d7f1f512f270ebc499`，P8 保持 COMPLETE / SEALED。新增 `GET /api/workspaces/:workspaceId/databases/:databaseId/views/:viewId/records`、`DatabaseViewRecordsQuery/Response` 及 schemas、SDK `getDatabaseViewRecords()`。唯一读取体为 `DatabaseService.getViewRecords()`；legacy `/table` / `getTable()` 委托 generic 方法，原 Table contracts、SDK 路径和结构保留。查询、权限、title/derived projection、transaction、bounded query 与 cursor scope/version/config fence 未复制或削弱。正式设计见 `docs/p9-multi-view.md`。

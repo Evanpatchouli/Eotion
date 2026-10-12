@@ -150,6 +150,23 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
 
     current = await table()
     const selectRoute = routeForProperty(selectId)
+    const opaqueViewOptions = { grouping: { propertyId: selectId, future: { nested: ['keep', { value: 7 }] } } }
+    const initialViewConfig = await request(baseUrl, `${databaseRoute}/views/${viewId}`, 'PATCH', {
+      cookie,
+      body: {
+        config: {
+          filters: [{ propertyId: selectId, operator: 'is', value: 'open' }],
+          sorts: [{ propertyId: 'db-http-estimate', direction: 'asc' }],
+          visibleProperties: [titlePropertyId, 'db-http-notes'],
+          propertyOrder: ['db-http-notes'],
+          options: opaqueViewOptions,
+        },
+        expectedDatabaseVersion: current.database.version,
+        expectedViewVersion: current.view.version,
+      },
+    })
+    assert.equal(initialViewConfig.status, 200)
+    current = await table()
     const rename = await request(baseUrl, selectRoute, 'PATCH', { cookie, body: { name: 'State', expectedDatabaseVersion: current.database.version, expectedPropertyVersion: current.properties.find((p: any) => p.id === selectId).version } })
     assert.equal(rename.status, 200)
     assert.equal(rename.body.property.name, 'State')
@@ -161,6 +178,7 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
     })
     assert.equal(updateOptions.status, 200)
     assert.deepEqual(updateOptions.body.property.options.map((option: any) => option.id), ['todo', 'done'])
+    assert.deepEqual((await table()).view.config.options, opaqueViewOptions, 'select option cleanup preserves opaque view options')
 
     current = await table()
     const getCell = (data: any, propertyId: string) => ({ expectedDatabaseVersion: data.database.version, expectedRecordVersion: data.records[0].version })
@@ -292,6 +310,22 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
     assert.equal(attackerOriginCell.status, 403)
 
     current = await table()
+    const beforeTypeViewConfig = await request(baseUrl, `${databaseRoute}/views/${viewId}`, 'PATCH', {
+      cookie,
+      body: {
+        config: {
+          filters: [{ propertyId: 'db-http-estimate', operator: 'gt', value: 2 }],
+          sorts: [{ propertyId: 'db-http-estimate', direction: 'asc' }],
+          visibleProperties: [titlePropertyId, 'db-http-notes'],
+          propertyOrder: ['db-http-notes'],
+          options: opaqueViewOptions,
+        },
+        expectedDatabaseVersion: current.database.version,
+        expectedViewVersion: current.view.version,
+      },
+    })
+    assert.equal(beforeTypeViewConfig.status, 200)
+    current = await table()
     const mutationRoute = `${routeForProperty('db-http-estimate')}/type`
     const mutationBody = (data: any, targetType: string) => ({ targetType, expectedDatabaseVersion: data.database.version, expectedPropertyVersion: data.properties.find((p: any) => p.id === 'db-http-estimate').version })
     assert.equal((await request(baseUrl, mutationRoute, 'PATCH', { body: mutationBody(current, 'text') })).status, 401)
@@ -311,11 +345,14 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
     assert.equal(typeChanged.body.database.version, current.database.version + 1)
     assert.equal(typeChanged.body.convertedRecordCount, 1)
     assert.equal((await recordCollection.findOne({ id: recordId }))?.properties['db-http-estimate'], '5')
+    assert.deepEqual((await table()).view.config.options, opaqueViewOptions, 'property type repair preserves opaque view options')
     assert.equal((await request(baseUrl, mutationRoute, 'PATCH', { cookie, body: mutationBody(current, 'number') })).status, 409)
     current = await table()
     const notesDelete = await request(baseUrl, deleteRoute, 'DELETE', { cookie, body: { expectedDatabaseVersion: current.database.version, expectedPropertyVersion: current.properties.find((p: any) => p.id === 'db-http-notes').version } })
     assert.equal(notesDelete.status, 200)
-    assert.equal((await table()).properties.some((property: any) => property.id === 'db-http-notes'), false)
+    const afterNotesDelete = await table()
+    assert.equal(afterNotesDelete.properties.some((property: any) => property.id === 'db-http-notes'), false)
+    assert.deepEqual(afterNotesDelete.view.config.options, opaqueViewOptions, 'property deletion repair preserves opaque view options')
 
     await t.test('generic records and legacy table share pagination, filters, multi-sort and cursor fences', async () => {
       const id = 'generic-db'
@@ -337,6 +374,36 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
         cookie, body: { id: scoreId, name: 'Score', type: 'number', expectedDatabaseVersion: created.body.database.version },
       })
       assert.equal(score.status, 201)
+      const viewsRoute = `${route}/views`
+      const opaqueOptions = { layout: { futureFlag: true, nested: { keep: ['unknown', 3] } } }
+      const createView = async (id: string, type: string) => request(baseUrl, viewsRoute, 'POST', {
+        cookie,
+        body: { id, name: `${type} view`, type, config: { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: opaqueOptions }, expectedDatabaseVersion: (await read()).database.version },
+      })
+      for (const type of ['list', 'board']) {
+        const response = await createView(`generic-${type}-view`, type)
+        assert.equal(response.status, 201)
+        const viewRecords = await request(baseUrl, `${route}/views/generic-${type}-view/records`, 'GET', { cookie })
+        assert.equal(viewRecords.status, 200)
+        assert.equal(viewRecords.body.view.type, type)
+        assert.deepEqual(viewRecords.body.view.config.options, opaqueOptions)
+      }
+      const listedViews = await request(baseUrl, viewsRoute, 'GET', { cookie })
+      assert.equal(listedViews.status, 200)
+      for (const type of ['list', 'board']) {
+        const listedView = listedViews.body.find((item: any) => item.id === `generic-${type}-view`)
+        assert.equal(listedView.type, type)
+        assert.deepEqual(listedView.config.options, opaqueOptions)
+      }
+      const viewsCollection = connection!.db!.collection('database_views')
+      const viewsBeforeInvalid = await viewsCollection.countDocuments({ databaseId: id })
+      const invalidType = await request(baseUrl, viewsRoute, 'POST', {
+        cookie,
+        body: { id: 'generic-invalid-view', name: 'Invalid view', type: 'calendar', expectedDatabaseVersion: (await read()).database.version },
+      })
+      assert.equal(invalidType.status, 400)
+      assert.equal(await viewsCollection.countDocuments({ databaseId: id }), viewsBeforeInvalid, 'invalid view type must not create a record')
+
       for (const [suffix, title, value] of [['a', 'Zulu', 2], ['b', 'Alpha', 1], ['c', 'Beta', 1], ['d', 'Skip', 0]] as const) {
         const record = await request(baseUrl, `${route}/records`, 'POST', {
           cookie, body: { id: `generic-${suffix}`, pageId: `generic-page-${suffix}`, title, orderKey: suffix },
@@ -351,6 +418,8 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
 
       const first = await read('records', '?limit=2')
       assert.deepEqual(first, await read('table', '?limit=2'))
+      assert.equal(first.view.type, 'table')
+      assert.equal(Object.hasOwn(first.view.config, 'options'), false, 'legacy config without options remains readable')
       assert.deepEqual(first.records.map((row: any) => row.id), ['generic-a', 'generic-b'])
       assert.ok(first.nextCursor)
       const nextQuery = `?limit=2&cursor=${encodeURIComponent(first.nextCursor)}`

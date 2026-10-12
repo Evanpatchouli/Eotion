@@ -52,6 +52,8 @@ test('database entity schemas reuse the strict domain validators', () => {
   assert.deepEqual(DatabaseSchema.parse(database), database)
   assert.deepEqual(DatabasePropertySchema.parse(property), property)
   assert.deepEqual(DatabaseViewSchema.parse(view), view)
+  for (const type of ['list', 'board']) assert.deepEqual(DatabaseViewSchema.parse({ ...view, type }).type, type)
+  for (const type of ['calendar', 'kanban', null]) assert.equal(DatabaseViewSchema.safeParse({ ...view, type }).success, false)
   assert.deepEqual(databaseRecordSchema([property]).parse({
     id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: {},
     version: 1, createdAt: timestamp, updatedAt: timestamp,
@@ -82,13 +84,17 @@ test('database create request schemas enforce exact request shapes', () => {
 
   const createView = { id: 'view-1', name: 'All tasks', type: 'table' }
   assert.deepEqual(DatabaseViewCreateRequestSchema.parse(createView), createView)
-  assert.equal(DatabaseViewCreateRequestSchema.safeParse({ ...createView, type: 'board' }).success, false)
+  assert.equal(DatabaseViewCreateRequestSchema.safeParse({ ...createView, type: 'calendar' }).success, false)
+  for (const type of ['list', 'board']) assert.deepEqual(DatabaseViewCreateRequestSchema.parse({ ...createView, type }).type, type)
   assert.equal(DatabaseViewHttpCreateRequestSchema.safeParse(createView).success, false)
   assert.deepEqual(DatabaseViewHttpCreateRequestSchema.parse({ ...createView, expectedDatabaseVersion: 1 }), { ...createView, expectedDatabaseVersion: 1 })
   assert.equal(DatabaseViewUpdateRequestSchema.safeParse({ expectedDatabaseVersion: 1, expectedViewVersion: 1 }).success, false)
   assert.deepEqual(DatabaseViewDeleteRequestSchema.parse({ expectedDatabaseVersion: 1, expectedViewVersion: 1 }), { expectedDatabaseVersion: 1, expectedViewVersion: 1 })
   assert.equal(DatabaseViewConfigSchema.safeParse({ filters: [{ propertyId: 'p', operator: 'checked' }], sorts: [], visibleProperties: null, propertyOrder: null }).success, true)
   assert.equal(DatabaseViewConfigSchema.safeParse({ filters: [{ propertyId: 'p', operator: 'checked', value: true }], sorts: [], visibleProperties: null, propertyOrder: null }).success, false)
+  const opaqueOptions = { futureKey: { nested: [1, { keep: true }] }, groupByPropertyId: 123 }
+  assert.deepEqual(DatabaseViewConfigSchema.parse({ filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: opaqueOptions }).options, opaqueOptions)
+  for (const options of [null, [], 'opaque', 1, true]) assert.equal(DatabaseViewConfigSchema.safeParse({ filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options }).success, false)
 })
 
 test('database create request schemas reject unstable or oversized ids and names without trimming input', () => {
@@ -189,8 +195,9 @@ test('database view records response strictly validates scope, rows, properties,
     assert.equal(DatabaseViewRecordsResponseSchema.safeParse(invalid).success, false)
     assert.equal(DatabaseTableResponseSchema.safeParse(invalid).success, false)
   }
-  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'list' } }).success, false)
-  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'board' } }).success, false)
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'list' } }).success, true)
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'board' } }).success, true)
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'calendar' } }).success, false)
   assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'table' } }).success, true)
 })
 
