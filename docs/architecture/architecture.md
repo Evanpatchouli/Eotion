@@ -105,7 +105,7 @@ P3 reconnect 依赖持久 oplog，以稳定 operation id 至少一次投递；�
 
 P8.1 Database 作为独立 server-domain 数据域存在：Database / Property / Record / View 使用独立 Mongo 集合，Database Block 只携带稳定 databaseId/viewId 引用。Record 的正文继续由同 Workspace 的既有 Page/Block 承载；移除 Block 引用不删除 Database。Database 原子创建要求 Mongo 多文档事务，权限复用 WorkspacePermissionService。Database 数据尚不进入 LocalStore / Page-Block oplog；实体 ID、version 与后续 sync 边界见 [P8 Database](../p8-database.md)。
 
-P9.1A 提供统一的 View records 读取入口：`GET .../views/:viewId/records` → `DatabaseService.getViewRecords()`。Legacy `/table` / `getTable()` 委托同一查询流程，继续共享权限、Filter/Sort、有界分页、cursor/version/config fence 与 Page.title/derived projection。`DatabaseViewType` 支持 table/list/board，默认创建仍 table；P9.3 Web 支持 Table / List。P9.4A 为 Board 的可扩展 options 定义可选 `groupByPropertyId`，按实际 View type 校验其引用本库 select Property 与 options 数组。Property repair 保留完整 options；Board dependency 留给 P9.4B，Board UI / renderer 未实现。Contract / SDK 与兼容边界见 [P9 Multi-View](../p9-multi-view.md)。
+P9.1A 提供统一的 View records 读取入口：`GET .../views/:viewId/records` → `DatabaseService.getViewRecords()`。Legacy `/table` / `getTable()` 委托同一查询流程，继续共享权限、Filter/Sort、有界分页、cursor/version/config fence 与 Page.title/derived projection。`DatabaseViewType` 支持 table/list/board，默认创建仍 table；P9.3 Web 支持 Table / List。P9.4A 为 Board 的可扩展 options 定义可选 `groupByPropertyId`，按实际 View type 校验其引用本库 select Property 与 options 数组。Property repair 保留完整 options；P9.4B 在现有 Property delete / type mutation 事务内直接查询同库 Board grouping 引用，保护依赖属性的删除及 select → 非 select，返回 409 且不自动改写 View。Select option 删除及 Record value cleanup 保持；Board UI / renderer 未实现。Contract / SDK 与兼容边界见 [P9 Multi-View](../p9-multi-view.md)。
 
 ## 6. 编辑器方向
 

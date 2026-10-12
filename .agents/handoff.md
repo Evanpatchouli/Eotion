@@ -1,5 +1,22 @@
 # Handoff
 
+## 2026-10-12 P9.4B Board Property Dependency（已完成）
+
+基线 `a344268135e45f49d06d230222dc0a6cf1df5cd7`。本轮仅实现 Board grouping Property 生命周期保护；聚焦提交为本节所在 commit。P8 COMPLETE / SEALED，P9.4A config foundation 保持。
+
+`DatabaseViewRepository.hasBoardGroupingProperty()` 沿用存在性查询模式，filter 同时限定 workspaceId、databaseId、type: board 与 config.options.groupByPropertyId，使用同一个事务 session。`DatabaseService.assertNoBoardGroupingDependency()` 在 delete 事务首次写入前，以及 select → 非 select 改型的版本校验/no-op 后、candidate dependency/fence 写入前执行。命中返回明确 409：`Property is used as Board grouping property.`。不自动清空 groupByPropertyId，不新增 Entity/表/API/registry；用户可通过既有 View update 显式迁移或移除分组后再修改 Property。既有 Database CAS/snapshot 事务保持。
+
+Select option mutation、Record value cleanup、Property rename、同类型 no-op 与全部通用 View repair 保持。Table/List 的同名 options 是 opaque，不构成 Board dependency；未知 options 完整保留。新增实际 HTTP targeted 子测覆盖 A–F、多个 Board 引用、拒绝前后 Database/Property/Record/View/version/config/fences 深比较不变、Doing value 先真实写入再清理、迁移全部分组后改型/删除成功。P9.4A generic 回归也改为先明确拒绝、再显式迁移 grouping 后验证原 repair，Board records 保持可读。
+
+验证与复用命令：
+
+- 仓库外 `C:\Users\31250\AppData\Local\Temp\eotion-p94b-api-scoped-tsconfig.json` extends `apps/api/tsconfig.json`，只设置 incremental: false、include 两份 Database 测试文件绝对路径，保留真实 strict 配置与依赖闭包。`pnpm --filter @eotion/api exec tsc -p <temporary-config>` 通过。
+- `pnpm --filter @eotion/api exec node --test dist/modules/http-api/database-http.test.js dist/modules/server-domain/database.test.js`：14/14，0 fail、0 skip/cancelled；包含原 11 个 service tests、HTTP 父测试及 Board/generic 两个子测。第二轮日志位于 Temp `eotion-p94b-scoped-tsc-r2.log`、`eotion-p94b-scoped-api-tests-r2.log`。
+- 首轮 compile 通过；HTTP 新 fixture 在 RecordPage POST 携带额外 properties 返回400，另一处迁移后 options 仍断言旧 grouping ID。通过合法 POST + 既有 cell PATCH 明确写入 Doing，以及比较显式迁移后的 options 修正；同组第二轮全通过。首轮日志保留，没有 scope-external failure 或无关修复。
+- 一次独立 reviewer 最终无 blocker，主 Agent 复核最终 diff；git diff --check 与 UTF-8 无 BOM 检查通过。
+
+修改文件：API database service、repository、Database HTTP test，`docs/p9-multi-view.md`、architecture/context 索引、current-task 与本 handoff。未修改 Domain/Contracts/SDK/Mongo schema/Web/依赖/lockfile。未执行完整 API build/typecheck（既有 MCP/Zod 环境限制），未运行 Web Product、Visual 或 Final Acceptance。未发现依赖/API 层的 Board renderer blocker；renderer/UI/drag/MCP 没有检查或实现。完成一个聚焦 commit 后停止。
+
 ## 2026-10-12 P9.4A Board Config Foundation（已完成）
 
 基线 `e15d6d1b9f3519f0cb6d16f937209c98bc0d1370`。P8 COMPLETE / SEALED，P9.1A / P9.2 / P9.3 保持已完成；本轮只建立 Board config/domain foundation。聚焦提交为本节所在 commit。

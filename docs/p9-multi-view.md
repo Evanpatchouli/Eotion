@@ -1,6 +1,6 @@
 # P9 Multi-View
 
-P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation，不包含 Board UI 或 renderer。
+P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation；P9.4B 保护 Board grouping Property 的删除与改型，不包含 Board UI 或 renderer。
 
 ## P9.1A — Generic View Records Read Foundation
 
@@ -132,3 +132,16 @@ Property 删除、select option 清理和 type change 的 repair 继续展开已
 Domain 35/35、Contracts 24/24 与两包 / SDK typecheck 通过。API Database HTTP/service 两文件及真实依赖闭包 scoped TypeScript compile 通过；真实 Mongo 测试 13/13，0 fail、0 skip。回归覆盖 Board 创建/读取、select grouping、缺省 groupBy、非法 ID / text / number / missing / 跨库属性、PATCH 按持久化 type 校验、无效创建的事务回滚，以及 option cleanup / type change / delete 真实重写 config 后的 View version 与 options 保留。首跑发现新增 Board 测试 ID 与既有 fixture 重复；修正为独立 ID 后同组全通过，未修改产品错误处理或原断言。
 
 独立 review 无 blocker。`git diff --check` 与 UTF-8 无 BOM 检查通过；未运行完整 API build/typecheck（沿用 P9.1A 已记录的 MCP/Zod 环境限制），未运行 Web Product、Visual 或 Final Acceptance。scoped 命令与后续边界见 `.agents/handoff.md`。
+
+## P9.4B — Board Property Dependency
+
+基线：`a344268135e45f49d06d230222dc0a6cf1df5cd7`。Board 分组依赖直接使用既有 `DatabaseView.config.options.groupByPropertyId`，不增加 Entity、Column、Group、dependency 表或 API。
+
+Property 删除以及 `select` → 非 `select` 的类型变更，在现有事务内查询相同 Workspace / Database 下 `type === 'board'` 且 grouping ID 等于 Property ID 的 View。命中返回 `409 Conflict`，错误为 `Property is used as Board grouping property.`。检查早于 Database version / reference fence / Property / Record / View 写入；拒绝时原有实体、版本与 config 保持。不会自动清空 grouping ID，用户可先通过现有 View update 显式更换或移除分组，再修改 Property。View 创建/更新与 Property mutation 继续共用 Database version CAS 和 snapshot transaction。
+
+同类型 no-op、Property 重命名以及 select option mutation 继续沿用已有行为。删除 select option 仍清理引用该 option ID 的 Record value，并修复受影响的 Filter；grouping ID、Sort、列配置与未知 options 保持。Record 值缺失的分组呈现留给后续 Board renderer。
+
+没有 Board dependency 的 Property delete/type mutation 保持原行为；Table / List 的同名 `options.groupByPropertyId` 仍是 opaque 字段，不参与保护。既有 Property repair 保留 `filters`、`sorts`、`visibleProperties`、`propertyOrder` 与 `options` 的既定修复规则。依赖判断采用 scope 内的存在性查询，不枚举 View 或增加额外数量上限。
+
+本阶段只处理依赖生命周期；Board renderer / UI / drag / MCP 均未开始。不运行 Web Product、Visual 或 Final Acceptance。
+定向验证：API Database HTTP/service 真实依赖闭包 scoped TypeScript compile 通过，真实 Mongo 测试 14/14、0 fail、0 skip。新增回归覆盖 Board delete/type 409 与无写入、多个 Board 引用、显式释放依赖、无依赖 mutation 成功、Doing option 删除后的 Record cleanup 与 Board records 可读、Table/List opaque options 及原 View repair。一次独立 review 无 blocker；diff / UTF-8 无 BOM 检查通过。未执行完整 API build/typecheck（继承既有 MCP/Zod 环境限制），未运行 Web Product、Visual 或 Final Acceptance。

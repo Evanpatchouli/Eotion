@@ -363,7 +363,7 @@ export class DatabaseService {
             const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
             const nextConfig = { ...config, filters: config.filters.filter(filter => !(filter.propertyId === existing.id && typeof filter.value === 'string' && removed.has(filter.value))) }
             if (nextConfig.filters.length === config.filters.length) continue
-            // Keep property-repair validation generic; repairing Board dependencies is deferred to P9.4B.
+            // Preserve opaque Board extension options; grouping dependencies are guarded on type changes and deletion.
             if (!validateDatabaseViewConfig(nextConfig, (await this.properties.list(workspaceId, databaseId, session)))) throw new ConflictException('Database view configuration could not be repaired after deleting a select option')
             if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during option cleanup')
           }
@@ -384,6 +384,7 @@ export class DatabaseService {
       if (currentDatabase.version !== input.expectedDatabaseVersion || existing.version !== input.expectedPropertyVersion) throw new ConflictException('Database or property version is stale')
       if (existing.type === 'title') throw new BadRequestException('The title property cannot change type')
       if (existing.type === input.targetType) return { database: currentDatabase, property: existing, convertedRecordCount: 0, clearedRecordCount: 0, repairedViewCount: 0 }
+      if (existing.type === 'select' && input.targetType !== 'select') await this.assertNoBoardGroupingDependency(workspaceId, databaseId, propertyId, session)
 
       const candidate: DatabaseProperty = {
         ...existing,
@@ -451,7 +452,7 @@ export class DatabaseService {
           filters: config.filters.filter(filter => filter.propertyId !== propertyId),
           sorts: ['relation', 'rollup', 'formula'].includes(candidate.type) ? config.sorts.filter(sort => sort.propertyId !== propertyId) : config.sorts,
         }
-        // Keep property-repair validation generic; repairing Board dependencies is deferred to P9.4B.
+        // Preserve opaque Board extension options; grouping dependencies are guarded on type changes and deletion.
         if (!validateDatabaseViewConfig(nextConfig, candidateProperties)) throw new ConflictException('Database view configuration could not be repaired after changing property type')
         if (nextConfig.filters.length === config.filters.length && nextConfig.sorts.length === config.sorts.length) continue
         if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during property type conversion')
@@ -467,6 +468,7 @@ export class DatabaseService {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabasePropertyDeleteRequestSchema, input)
     return this.transact(async session => {
+      await this.assertNoBoardGroupingDependency(workspaceId, databaseId, propertyId, session)
       const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
       if (!database) throw new ConflictException('Database version is stale')
       await this.touchAdvanced(workspaceId, [databaseId], session)
@@ -505,7 +507,7 @@ export class DatabaseService {
         }
         if (JSON.stringify(nextConfig) === JSON.stringify(config)) continue
         const remainingProperties = await this.properties.list(workspaceId, databaseId, session)
-        // Keep property-repair validation generic; repairing Board dependencies is deferred to P9.4B.
+        // Preserve opaque Board extension options; grouping dependencies are guarded on type changes and deletion.
         if (!validateDatabaseViewConfig(nextConfig, remainingProperties)) throw new ConflictException('Database view configuration could not be repaired after deleting a property')
         if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during property cleanup')
       }
@@ -697,6 +699,12 @@ export class DatabaseService {
   private async touchAdvanced(workspaceId: string, ids: readonly string[], session: ClientSession): Promise<void> {
     for (const id of [...new Set(ids)].sort()) {
       if (!await this.databases.touchAdvancedReferenceFence(workspaceId, id, session)) throw new ConflictException('Referenced database changed; refresh and retry')
+    }
+  }
+
+  private async assertNoBoardGroupingDependency(workspaceId: string, databaseId: string, propertyId: string, session: ClientSession): Promise<void> {
+    if (await this.views.hasBoardGroupingProperty(workspaceId, databaseId, propertyId, session)) {
+      throw new ConflictException('Property is used as Board grouping property.')
     }
   }
 

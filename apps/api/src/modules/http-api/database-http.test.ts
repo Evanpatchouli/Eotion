@@ -354,6 +354,154 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
     assert.equal(afterNotesDelete.properties.some((property: any) => property.id === 'db-http-notes'), false)
     assert.deepEqual(afterNotesDelete.view.config.options, opaqueViewOptions, 'property deletion repair preserves opaque view options')
 
+    await t.test('Board grouping property guards preserve state and release after Board config changes', async () => {
+      const id = 'group-guard-db'
+      const titleId = 'group-guard-title'
+      const baseViewId = 'group-guard-table'
+      const route = `/api/workspaces/${workspace}/databases/${id}`
+      const viewsRoute = `${route}/views`
+      const created = await request(baseUrl, `/api/workspaces/${workspace}/pages/db-http-home/databases`, 'POST', {
+        cookie, body: { id, name: 'Grouping guard', titlePropertyId: titleId, viewId: baseViewId, blockId: 'group-guard-block', orderKey: 'e', parentBlockId: null },
+      })
+      assert.equal(created.status, 201)
+      const read = async () => {
+        const result = await request(baseUrl, `${route}/views/${baseViewId}/records`, 'GET', { cookie })
+        assert.equal(result.status, 200)
+        return result.body
+      }
+      const propertyId = 'group-guard-select'
+      const createProperty = async (property: any) => request(baseUrl, `${route}/properties`, 'POST', {
+        cookie, body: { ...property, expectedDatabaseVersion: (await read()).database.version },
+      })
+      const group = await createProperty({ id: propertyId, name: 'Status', type: 'select', options: [{ id: 'doing', name: 'Doing' }, { id: 'open', name: 'Open' }] })
+      assert.equal(group.status, 201)
+      const nextGroupId = 'group-guard-next-select'
+      assert.equal((await createProperty({ id: nextGroupId, name: 'Next', type: 'select', options: [{ id: 'next', name: 'Next' }] })).status, 201)
+      const opaqueOptions = { groupByPropertyId: propertyId, future: { keep: ['opaque', 9] } }
+      const config = {
+        filters: [{ propertyId, operator: 'is', value: 'doing' }],
+        sorts: [{ propertyId, direction: 'asc' }], visibleProperties: [titleId, propertyId], propertyOrder: [propertyId],
+        options: opaqueOptions,
+      }
+      const createView = async (viewId: string, type: string, viewConfig = config) => request(baseUrl, viewsRoute, 'POST', {
+        cookie, body: { id: viewId, name: `${type} fixture`, type, config: viewConfig, expectedDatabaseVersion: (await read()).database.version },
+      })
+      const boardIds = ['group-guard-board-a', 'group-guard-board-b']
+      for (const boardId of boardIds) assert.equal((await createView(boardId, 'board')).status, 201)
+      const tableId = 'group-guard-opaque-table'
+      const listId = 'group-guard-opaque-list'
+      assert.equal((await createView(tableId, 'table')).status, 201)
+      assert.equal((await createView(listId, 'list')).status, 201)
+      const recordId = 'group-guard-record'
+      const createdRecord = await request(baseUrl, `${route}/records`, 'POST', {
+        cookie, body: { id: recordId, pageId: 'group-guard-page', title: 'Active work', orderKey: 'a' },
+      })
+      assert.equal(createdRecord.status, 201)
+      const recordData = await read()
+      const setDoing = await request(baseUrl, `${route}/records/${recordId}/cells/${propertyId}`, 'PATCH', {
+        cookie, body: { value: 'doing', expectedDatabaseVersion: recordData.database.version, expectedRecordVersion: createdRecord.body.record.version },
+      })
+      assert.equal(setDoing.status, 200)
+      assert.equal(setDoing.body.record.properties[propertyId], 'doing')
+
+      const viewCollection = connection!.db!.collection('database_views')
+      const snapshot = async () => ({
+        data: await read(),
+        views: (await request(baseUrl, viewsRoute, 'GET', { cookie })).body,
+        rawDatabase: await connection!.db!.collection('databases').findOne({ id }).then((doc: any) => ({ version: doc?.version, advancedReferenceFence: doc?.advancedReferenceFence })),
+        rawViews: await viewCollection.find({ databaseId: id }).sort({ id: 1 }).toArray().then((docs: any[]) => docs.map(doc => ({ id: doc.id, version: doc.version, referenceFence: doc.referenceFence, config: doc.config }))),
+      })
+      let beforeReject = await snapshot()
+      const deleteBlocked = await request(baseUrl, `${route}/properties/${propertyId}`, 'DELETE', {
+        cookie, body: { expectedDatabaseVersion: beforeReject.data.database.version, expectedPropertyVersion: beforeReject.data.properties.find((property: any) => property.id === propertyId).version },
+      })
+      assert.equal(deleteBlocked.status, 409)
+      assert.equal(deleteBlocked.body.message, 'Property is used as Board grouping property.')
+      assert.deepEqual(await snapshot(), beforeReject, 'delete rejection preserves Database, Property, Record, View, version, config, and fence state')
+
+      beforeReject = await snapshot()
+      const typeBlocked = await request(baseUrl, `${route}/properties/${propertyId}/type`, 'PATCH', {
+        cookie, body: { targetType: 'text', expectedDatabaseVersion: beforeReject.data.database.version, expectedPropertyVersion: beforeReject.data.properties.find((property: any) => property.id === propertyId).version },
+      })
+      assert.equal(typeBlocked.status, 409)
+      assert.equal(typeBlocked.body.message, 'Property is used as Board grouping property.')
+      assert.deepEqual(await snapshot(), beforeReject, 'type rejection preserves Database, Property, Record, View, version, config, and fence state')
+
+      let data = await read()
+      const property = () => data.properties.find((item: any) => item.id === propertyId)
+      const noop = await request(baseUrl, `${route}/properties/${propertyId}/type`, 'PATCH', {
+        cookie, body: { targetType: 'select', expectedDatabaseVersion: data.database.version, expectedPropertyVersion: property().version },
+      })
+      assert.equal(noop.status, 200)
+      data = await read()
+      const rename = await request(baseUrl, `${route}/properties/${propertyId}`, 'PATCH', {
+        cookie, body: { name: 'Work status', expectedDatabaseVersion: data.database.version, expectedPropertyVersion: property().version },
+      })
+      assert.equal(rename.status, 200)
+
+      data = await read()
+      const removeDoing = await request(baseUrl, `${route}/properties/${propertyId}`, 'PATCH', {
+        cookie, body: { options: [{ id: 'open', name: 'Open' }], expectedDatabaseVersion: data.database.version, expectedPropertyVersion: data.properties.find((item: any) => item.id === propertyId).version },
+      })
+      assert.equal(removeDoing.status, 200)
+      data = await read()
+      assert.equal(Object.hasOwn(data.records.find((record: any) => record.id === recordId).properties, propertyId), false)
+      const viewsAfterOptionCleanup = (await request(baseUrl, viewsRoute, 'GET', { cookie })).body
+      for (const boardId of boardIds) {
+        const repaired = viewsAfterOptionCleanup.find((item: any) => item.id === boardId)
+        assert.deepEqual(repaired.config.filters, [])
+        assert.deepEqual(repaired.config.options, opaqueOptions)
+        assert.deepEqual(repaired.config.sorts, config.sorts)
+        assert.deepEqual(repaired.config.visibleProperties, config.visibleProperties)
+        assert.deepEqual(repaired.config.propertyOrder, config.propertyOrder)
+        const records = await request(baseUrl, `${route}/views/${boardId}/records`, 'GET', { cookie })
+        assert.equal(records.status, 200)
+      }
+
+      const patchGrouping = async (boardId: string, groupByPropertyId: string) => {
+        const persisted = (await request(baseUrl, viewsRoute, 'GET', { cookie })).body.find((item: any) => item.id === boardId)
+        return request(baseUrl, `${viewsRoute}/${boardId}`, 'PATCH', {
+          cookie, body: { config: { ...persisted.config, options: { ...persisted.config.options, groupByPropertyId } }, expectedDatabaseVersion: (await read()).database.version, expectedViewVersion: persisted.version },
+        })
+      }
+      assert.equal((await patchGrouping(boardIds[0]!, nextGroupId)).status, 200)
+      data = await read()
+      const stillBlocked = await request(baseUrl, `${route}/properties/${propertyId}/type`, 'PATCH', {
+        cookie, body: { targetType: 'text', expectedDatabaseVersion: data.database.version, expectedPropertyVersion: data.properties.find((item: any) => item.id === propertyId).version },
+      })
+      assert.equal(stillBlocked.status, 409, 'another Board reference keeps the grouping property protected')
+      assert.equal((await patchGrouping(boardIds[1]!, nextGroupId)).status, 200)
+
+      // Table and List options stay opaque and do not count as Board grouping dependencies.
+      const changedType = await request(baseUrl, `${route}/properties/${propertyId}/type`, 'PATCH', {
+        cookie, body: { targetType: 'text', expectedDatabaseVersion: (await read()).database.version, expectedPropertyVersion: (await read()).properties.find((item: any) => item.id === propertyId).version },
+      })
+      assert.equal(changedType.status, 200)
+      const typeViews = (await request(baseUrl, viewsRoute, 'GET', { cookie })).body
+      for (const viewId of [tableId, listId]) {
+        const view = typeViews.find((item: any) => item.id === viewId)
+        assert.deepEqual(view.config.options, opaqueOptions)
+        assert.deepEqual(view.config.sorts, config.sorts)
+        assert.deepEqual(view.config.visibleProperties, config.visibleProperties)
+        assert.deepEqual(view.config.propertyOrder, config.propertyOrder)
+      }
+      data = await read()
+      const deleted = await request(baseUrl, `${route}/properties/${propertyId}`, 'DELETE', {
+        cookie, body: { expectedDatabaseVersion: data.database.version, expectedPropertyVersion: data.properties.find((item: any) => item.id === propertyId).version },
+      })
+      assert.equal(deleted.status, 200)
+      const finalViews = (await request(baseUrl, viewsRoute, 'GET', { cookie })).body
+      for (const viewId of [tableId, listId]) {
+        const view = finalViews.find((item: any) => item.id === viewId)
+        assert.deepEqual(view.config.filters, [])
+        assert.deepEqual(view.config.sorts, [])
+        assert.deepEqual(view.config.visibleProperties, [titleId])
+        assert.deepEqual(view.config.propertyOrder, [])
+        assert.deepEqual(view.config.options, opaqueOptions)
+      }
+      for (const boardId of boardIds) assert.equal((await request(baseUrl, `${route}/views/${boardId}/records`, 'GET', { cookie })).status, 200)
+    })
+
     await t.test('generic records and legacy table share pagination, filters, multi-sort and cursor fences', async () => {
       const id = 'generic-db'
       const titleId = 'generic-title'
@@ -448,7 +596,7 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
       assert.equal(validBoardPatch.body.view.type, 'board')
       assert.deepEqual(validBoardPatch.body.view.config.options, { ...boardConfig.options, patched: true })
 
-      // P9.4A preserves groupByPropertyId through property repairs; dangling group repair is deferred to P9.4B.
+      // Grouping dependencies block type changes and deletion until the Board points elsewhere.
       const configuredBoard = validBoardPatch.body.view
       const clearOptions = await request(baseUrl, `${route}/properties/${groupId}`, 'PATCH', {
         cookie, body: { options: [], expectedDatabaseVersion: (await read()).database.version, expectedPropertyVersion: group.body.property.version },
@@ -470,29 +618,61 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
       assert.equal(groupEmptyFilter.status, 200)
       repairedBoard = groupEmptyFilter.body.view
       const afterCleanup = await read()
+      const rejectedSnapshot = async () => ({
+        database: (await read()).database,
+        properties: (await read()).properties,
+        views: (await request(baseUrl, viewsRoute, 'GET', { cookie })).body,
+        rawDatabase: await connection!.db!.collection('databases').findOne({ id }).then((doc: any) => ({ version: doc?.version, advancedReferenceFence: doc?.advancedReferenceFence })),
+        rawViews: await viewsCollection.find({ databaseId: id }).sort({ id: 1 }).toArray().then((docs: any[]) => docs.map(doc => ({ id: doc.id, version: doc.version, referenceFence: doc.referenceFence, config: doc.config }))),
+      })
+      const beforeTypeReject = await rejectedSnapshot()
       const changedGroupType = await request(baseUrl, `${route}/properties/${groupId}/type`, 'PATCH', {
         cookie, body: { targetType: 'text', expectedDatabaseVersion: afterCleanup.database.version, expectedPropertyVersion: clearOptions.body.property.version },
       })
-      assert.equal(changedGroupType.status, 200)
+      assert.equal(changedGroupType.status, 409)
+      assert.equal(changedGroupType.body.message, 'Property is used as Board grouping property.')
+      assert.deepEqual(await rejectedSnapshot(), beforeTypeReject, 'rejected type changes leave versions, configs, and fences unchanged')
+      const beforeDeleteReject = await rejectedSnapshot()
+      const rejectedDelete = await request(baseUrl, `${route}/properties/${groupId}`, 'DELETE', {
+        cookie, body: { expectedDatabaseVersion: beforeDeleteReject.database.version, expectedPropertyVersion: beforeDeleteReject.properties.find((property: any) => property.id === groupId).version },
+      })
+      assert.equal(rejectedDelete.status, 409)
+      assert.equal(rejectedDelete.body.message, 'Property is used as Board grouping property.')
+      assert.deepEqual(await rejectedSnapshot(), beforeDeleteReject, 'rejected Board dependency mutations leave versions, configs, and fences unchanged')
+
+      const nextGroupId = 'generic-group-next'
+      const nextGroup = await request(baseUrl, `${route}/properties`, 'POST', {
+        cookie, body: { id: nextGroupId, name: 'Next group', type: 'select', options: [{ id: 'next', name: 'Next' }], expectedDatabaseVersion: (await read()).database.version },
+      })
+      assert.equal(nextGroup.status, 201)
+      const moveGrouping = await request(baseUrl, `${route}/views/${configuredBoard.id}`, 'PATCH', {
+        cookie, body: { config: { ...repairedBoard.config, options: { ...configuredBoard.config.options, groupByPropertyId: nextGroupId } }, expectedDatabaseVersion: (await read()).database.version, expectedViewVersion: repairedBoard.version },
+      })
+      assert.equal(moveGrouping.status, 200)
+      const afterRelease = await read()
+      const changedGroupTypeSuccess = await request(baseUrl, `${route}/properties/${groupId}/type`, 'PATCH', {
+        cookie, body: { targetType: 'text', expectedDatabaseVersion: afterRelease.database.version, expectedPropertyVersion: clearOptions.body.property.version },
+      })
+      assert.equal(changedGroupTypeSuccess.status, 200)
       let typeRepairedBoard = (await request(baseUrl, `${route}/views`, 'GET', { cookie })).body.find((item: any) => item.id === configuredBoard.id)
-      assert.equal(typeRepairedBoard.version, repairedBoard.version + 1)
+      assert.equal(typeRepairedBoard.version, moveGrouping.body.view.version + 1)
       assert.deepEqual(typeRepairedBoard.config.filters, [])
-      assert.deepEqual(typeRepairedBoard.config.options, configuredBoard.config.options)
+      assert.deepEqual(typeRepairedBoard.config.options, moveGrouping.body.view.config.options)
       assert.deepEqual(typeRepairedBoard.config.sorts, configuredBoard.config.sorts)
       assert.deepEqual(typeRepairedBoard.config.visibleProperties, configuredBoard.config.visibleProperties)
       assert.deepEqual(typeRepairedBoard.config.propertyOrder, configuredBoard.config.propertyOrder)
       const afterTypeChange = await read()
       const deletedGroup = await request(baseUrl, `${route}/properties/${groupId}`, 'DELETE', {
-        cookie, body: { expectedDatabaseVersion: afterTypeChange.database.version, expectedPropertyVersion: changedGroupType.body.property.version },
+        cookie, body: { expectedDatabaseVersion: afterTypeChange.database.version, expectedPropertyVersion: changedGroupTypeSuccess.body.property.version },
       })
       assert.equal(deletedGroup.status, 200)
       const boardAfterDelete = (await request(baseUrl, `${route}/views`, 'GET', { cookie })).body.find((item: any) => item.id === configuredBoard.id)
       assert.equal(boardAfterDelete.version, typeRepairedBoard.version + 1)
-      assert.deepEqual(boardAfterDelete.config.options, configuredBoard.config.options)
+      assert.deepEqual(boardAfterDelete.config.options, { ...configuredBoard.config.options, groupByPropertyId: nextGroupId })
       assert.deepEqual(boardAfterDelete.config.sorts, [])
       assert.deepEqual(boardAfterDelete.config.visibleProperties, [titleId])
       assert.deepEqual(boardAfterDelete.config.propertyOrder, [])
-      assert.equal((await request(baseUrl, `${route}/views/${configuredBoard.id}/records`, 'GET', { cookie })).status, 409)
+      assert.equal((await request(baseUrl, `${route}/views/${configuredBoard.id}/records`, 'GET', { cookie })).status, 200)
       const listedViews = await request(baseUrl, viewsRoute, 'GET', { cookie })
       assert.equal(listedViews.status, 200)
       for (const type of ['list', 'board']) {
