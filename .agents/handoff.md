@@ -1,4 +1,19 @@
 # Handoff
+
+## 2026-10-13 P9 Multi-View Final Acceptance（已通过）
+
+Acceptance baseline：`52af49bb2b1b9ee22ececd6d3d31e8b6e0796a57`，初始 master 工作区干净。P8 Database 保持 SEALED；P9.1–P9.6 implementation COMPLETE，独立最终验收正式 **P9 FINAL PASS**。测试适配 commit `a8d05132407fa550c6b5c6004b15fd7f02bf7a0f`；收口文档 commit 为本节所在 commit，没有产品源码、identity fence、依赖、模型/API/sync/storage/MCP/breakpoint 改动。
+
+Domain 35/35、Contracts 24/24、SDK 23/23；三包 typecheck、API full typecheck/build 与 Web typecheck/build 均通过。真实临时 Mongo replica set：Database HTTP/service 14/14、API domain 13/13、HTTP/Database HTTP 4/4、sync 1/1、file 24/24、P6 MCP 完整30/30，0 fail/skip。旧 API MCP/Zod 编译 blocker 本轮未复现；仅进程覆盖 URI，没有 .env/依赖/service 改动，临时 Mongo 已停止、27709 无监听。
+
+最终 fresh 完整 Product 367/367，workers=1/retries=0，0 fail/skip/flaky，exit0，17.3分钟，367个trace。首轮363/367中两项 P9 selector 测试结构过时稳定复现，test-only适配后targeted2/2；第二轮366/367唯一Workspace403初始加载失败隔离通过；最终完整suite包含所有这些用例并通过。前轮Settings/Table/Sync失败保留证据，运行时根因未确认，不称为已知flaky，不修改无关产品或降低断言。
+
+P9 临时补验同一最终源65/65（54项三尺寸/主题场景矩阵 +11项List/Board状态、分页/重试、CRUD、离线、真实Record正文/LocalStore与identity/snapshot），既有visual7/7，不更新baseline。17张有效截图人工检查覆盖9类场景/3尺寸/Light-Dark；保留54矩阵+10Phone逐viewport截图，另2张被裁剪调试图不用于PASS。三renderer文档无横溢；Board桌/板内部横滚、Phone单列picker。host Block fixture对齐不预拷Record正文；解除同步门禁后观察到POST、snapshot revision/semantic comparison与最终正文，DOM/Vue引用、title/body草稿保持，没有绕过push-before-pull。独立review无确定P1/P2。
+
+完整报告与命令/计数/边界见 `docs/p9-final-acceptance.md`。核心/Mongo证据在 `E:/Temp/eotion-p9-final-20261013-52af49b/`；Web/full-final与supplement证据在 `C:/Users/evanpatchouli/AppData/Local/Temp/eotion-p9-final-20261013-52af49b/`。临时harness为ignored test-results，不新增依赖；Vite已停止，7173无监听。build仍有>500KB chunk提示；临时脚本的独立TypeScript诊断如实记在报告，不冒充产品typecheck结果。
+
+本轮完成后停止；没有进入Release Acceptance、版本0.0.1、tag或Database MCP extension。后续只按新的明确用户指令行动。
+
 ## 2026-10-13 P9.6B Multi-View Verification Closure（已闭合）
 
 基线 `f83d188`。本轮完成 P9.6B 定向验证，不进入 P9 Final Acceptance。List 空标题保持可见“无标题”与 accessible name 一致；`saveViewConfig` 在请求返回时同时校验捕获的 user/workspace/database/view、loaded identity、组件局部 scope epoch、当前 NodeView/DOM 与 Editor Block attrs，并在 View tuple 变化或卸载时先使旧请求失效，避免旧 View PATCH 的 success/409/error 跨作用域落地。成功响应沿用既有 database-level notification，但只允许当前 scope 安全刷新。没有 API/model/renderer/依赖/breakpoint 变更。

@@ -166,7 +166,7 @@ P8 Database UX 收敛：✅ **PASS（2026-10-11）**。仅重构既有 Table Vie
 
 ## P9 - Multi-View
 
-P9.1A Generic View Records Read Foundation：已完成（2026-10-12）。新增 View-agnostic records API / contract / SDK，legacy Table API 委托同一读取流程；Contracts/SDK、定向 API 编译与 HTTP/service 回归通过。完整 API build/typecheck 受既有 MCP 依赖/类型环境问题阻断，详见 handoff。当前 View.type 仍只有 table；不修改 Web，不开始 List/Board。设计和阶段边界见 [P9 Multi-View](p9-multi-view.md)。
+P9.1–P9.6 implementation COMPLETE（2026-10-13）：同一 Database 模型上的 Table / List / Board、generic records 与 legacy Table 兼容、Select 分组设置/修改、Desktop drag、CAS 与响应生命周期保护均已交付。独立 Final Acceptance：✅ **P9 FINAL PASS**。完整 Product 367/367（workers=1/retries=0）、P9 补验 65/65、既有 visual 7/7，核心 Domain/Contracts/SDK/API/MCP 与 typecheck/build 全部通过，独立复核无确定 P1/P2。本轮旧 API MCP/Zod 编译 blocker 未复现。阶段契约见 [P9 Multi-View](p9-multi-view.md)，最终验收证据见 [P9 Final Acceptance](p9-final-acceptance.md)。
 
 ## 后续 - 异步基础设施
 

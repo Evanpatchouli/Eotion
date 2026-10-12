@@ -1,6 +1,6 @@
 # P9 Multi-View
 
-P8 Database 已 COMPLETE / SEALED。P9 在同一 Database 数据模型上增加呈现能力；P9.1A / P9.2 / P9.3 已完成，Web 支持 Table / List。P9.4A 建立 Board config/domain foundation；P9.4B 保护 Board grouping Property 的删除与改型；P9.5A 增加 Board renderer；P9.5B-1 增加显式 Card 分组修改；P9.5C-2 增加 Board grouping settings。
+P8 Database 已 COMPLETE / SEALED。P9.1–P9.6 implementation COMPLETE：同一 Database 模型支持 Table / List / Board、通用 records、Select 分组配置、显式 picker / Desktop drag 与响应生命周期保护。2026-10-13 独立 Final Acceptance 已通过，**P9 FINAL PASS**；完整 Product 367/367、P9 补验 65/65、既有 visual 7/7，无确定 P1/P2。证据与结论见 [P9 Final Acceptance](p9-final-acceptance.md)。
 
 ## P9.1A — Generic View Records Read Foundation
 
