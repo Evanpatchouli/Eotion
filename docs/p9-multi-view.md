@@ -181,3 +181,15 @@ Desktop / Tablet 在 Board 内局部横向滚动，列保持可读宽度；Phone
 本轮仅 Drag foundation；不运行 Full Product、Visual Acceptance、Final Acceptance，不进入 Board settings、动画、reorder、MCP 或 Database local-first。
 
 定向验证：最终组合 15/15（workers=1 / retries=0），Web typecheck、diff 与 UTF-8 无 BOM 检查通过，独立 review 无 blocker。实际请求计数覆盖唯一 cells PATCH、正常成功只增加一次 Board records GET；暂停成功后的 records GET 并发送 external event，验证读取完成后继续补刷和新值显示。另覆盖原生 drag、pending、不分组 null/picker、同列 no-op、失败/409重试、linked Table/List、Phone layout/picker、Editor/NodeView/Drawer/draft 与 snapshot。中间一次 draft 断言出现原标题，后续单独及最终组合通过，原断言保持。
+
+## P9.5C-1 — Board View Creation Entry
+
+基线 `a70c8b9a41de42d3b38ac5997d33df314867edff`。既有 View Selector 创建区域新增“新建看板视图”，沿用 Table/List 的 `createView(type)`、`createProductDatabaseView()` 与 `POST .../views`，提交 `type: 'board'`。默认名称为“看板 N”，配置严格使用 `DEFAULT_DATABASE_VIEW_CONFIG`：`filters: []`、`sorts: []`、`visibleProperties: null`、`propertyOrder: null`，不补 options 或 groupBy，不猜测已有 select Property。
+
+成功后复用 `switchView(created.id, true)`，当前 Database Block 仅更新 `viewId`；既有 watch 重读 records 并进入 `DatabaseBoardView`，显示“尚未配置分组属性”。无 select Property 也允许创建。Database、Records、Page、Block 不复制；Editor/NodeView 与记录 Drawer 生命周期沿用已有流程。Table/List 创建语义保持，Phone 复用原 View menu 与两行 header。
+
+确定性 4xx 创建失败清除待创建请求，后续点击按当前选择的类型重新创建；提交结果未知时保留原 ID 的同类型重试，阻止改点其它类型误用旧请求，并提示先重试原类型视图。
+
+本轮只开放创建入口。Grouping settings 与无可用 select Property 的设置 UX 留给 P9.5C-2；不修改 Board config Domain/API、renderer 或 drag，不运行 Full Product、Visual 或 Final Acceptance。
+
+定向验证 9/9 加原有 Table 创建生命周期 1/1，通过（workers=1 / retries=0）。覆盖唯一创建 POST/type/default config、当前 Block 与 linked 引用、数据无复制、Editor/NodeView/Drawer/draft/snapshot、390px 无 select 创建与入口可访问，以及确定性失败和未知结果的跨类型重试保护。Web typecheck、diff 与 UTF-8 无 BOM 检查通过；独立复核无剩余 blocker。

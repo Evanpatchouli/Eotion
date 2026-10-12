@@ -259,7 +259,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     if (viewsPath && request.method() === 'GET') return json(route, 200, api.views.filter((item) => item.databaseId === viewsPath[1]))
     if (viewsPath && request.method() === 'POST') {
       const databaseItem = api.databases.find(item => item.id === viewsPath[1])
-      const input = payload as { id: string; name: string; type: 'table' | 'list'; config?: DatabaseViewConfig; expectedDatabaseVersion: number }
+      const input = payload as { id: string; name: string; type: 'table' | 'list' | 'board'; config?: DatabaseViewConfig; expectedDatabaseVersion: number }
       if (!databaseItem) return json(route, 404, { statusCode: 404, message: 'Database not found' })
       if (input.expectedDatabaseVersion !== databaseItem.version) return json(route, 409, { statusCode: 409, message: 'Database version conflict' })
       const created = view(input.id, databaseItem.id, input.name, input.config, input.type)
@@ -2572,6 +2572,221 @@ test('database view selector creates a List view through the existing DatabaseVi
   await menu.getByRole('button', { name: '表格视图', exact: true }).click()
   await expect(database.locator('tbody')).toBeVisible()
   await expect(database.getByTestId('database-list')).toHaveCount(0)
+})
+
+test('database view selector creates a Board view through the existing DatabaseView API', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  const api = await installApi(page, [
+    block('create-board-view-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+    block('create-board-linked-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 200),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Board record', orderKey: '0000000000000002', role: 'database-record' })
+  const initialPages = structuredClone(api.pages)
+  const initialBlocks = structuredClone(api.blocks)
+  const initialDatabaseBlockIds = initialBlocks.filter(item => item.type === 'database').map(item => item.id)
+  const initialDatabases = structuredClone(api.databases)
+  const initialRecords = structuredClone(api.records)
+  const initialViewCount = api.views.length
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const database = page.locator('#database-block-create-board-view-block')
+  const linkedDatabase = page.locator('#database-block-create-board-linked-block')
+  await expect(database.locator('tbody')).toBeVisible()
+  await database.getByRole('button', { name: '打开记录：Board record' }).click()
+  const drawer = page.locator('[data-overlay-mode="drawer"]')
+  await expect(drawer).toBeVisible()
+  const titleDraft = drawer.getByRole('textbox', { name: '记录标题' })
+  await titleDraft.fill('Board draft survives creation')
+  await database.getByRole('button', { name: '切换视图' }).click()
+  const menu = page.getByRole('group', { name: '数据库视图', exact: true })
+  await expect(menu.getByRole('button', { name: '新建看板视图' })).toBeVisible()
+
+  await page.evaluate(() => {
+    const editor = document.querySelector('.eotion-editor')
+    const database = document.querySelector('#database-block-create-board-view-block')
+    const drawer = document.querySelector('[data-overlay-mode="drawer"]')
+    if (!editor || !database || !drawer) throw new Error('Expected editor, target Database NodeView, and record drawer')
+    ;(window as Window & { __boardCreateIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__boardCreateIdentity = {
+      editor,
+      database,
+      drawer,
+      editorComponent: (editor as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+      databaseComponent: (database as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+    }
+  })
+
+  await menu.getByRole('button', { name: '新建看板视图' }).click()
+
+  const board = database.getByTestId('database-board')
+  await expect(board).toBeVisible()
+  await expect(board).toContainText('尚未配置分组属性')
+  await expect(board.locator('.eotion-database-board-column')).toHaveCount(0)
+  await expect(titleDraft).toHaveValue('Board draft survives creation')
+  await expect.poll(() => api.views).toHaveLength(initialViewCount + 1)
+  const created = api.views.find(item => item.id !== 'view-root-id')!
+  expect(created.type).toBe('board')
+  expect(created.config).toEqual(DEFAULT_DATABASE_VIEW_CONFIG)
+  expect(created.config.propertyOrder).toBeNull()
+  expect(created.config.options).toBeUndefined()
+  expect(created.config.filters).toEqual([])
+  expect(created.config.sorts).toEqual([])
+  const viewCreateRequests = api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`))
+  expect(viewCreateRequests).toHaveLength(1)
+  expect(viewCreateRequests[0]?.payload).toMatchObject({ type: 'board', config: DEFAULT_DATABASE_VIEW_CONFIG })
+  expect(viewCreateRequests[0]?.payload.config).not.toHaveProperty('options')
+  const databaseMutations = api.requests.filter(({ method, path }) => ['POST', 'PATCH', 'DELETE'].includes(method) && path.includes(`/databases/${rootDatabase.id}/`))
+  expect(databaseMutations).toEqual(viewCreateRequests)
+  await expect.poll(() => api.blocks.find(item => item.id === 'create-board-view-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: created.id })
+  expect(api.blocks.find(item => item.id === 'create-board-linked-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: 'view-root-id' })
+  expect(api.blocks.filter(item => item.type === 'database').map(item => item.id)).toEqual(initialDatabaseBlockIds)
+  expect(api.pages.map(item => item.id)).toEqual(initialPages.map(item => item.id))
+  expect(api.databases.map(({ id }) => id)).toEqual(initialDatabases.map(({ id }) => id))
+  expect(api.records).toEqual(initialRecords)
+  expect(api.properties.map(({ id }) => id)).toEqual(rootProperties.map(({ id }) => id))
+
+  await expect(page.locator('.product-sync-status')).toContainText('已同步')
+  await installLocalBlockReader(page)
+  await alignServerBlocksWithLocal(page, api)
+  expect(await requestSnapshotHydration(page)).toBe(true)
+  await expect(titleDraft).toHaveValue('Board draft survives creation')
+
+  await expect.poll(() => page.evaluate(() => {
+    const before = (window as Window & { __boardCreateIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__boardCreateIdentity!
+    const editor = document.querySelector('.eotion-editor')
+    const database = document.querySelector('#database-block-create-board-view-block')
+    const drawer = document.querySelector('[data-overlay-mode="drawer"]')
+    return {
+      editorSame: editor === before.editor,
+      databaseSame: database === before.database,
+      drawerSame: drawer === before.drawer,
+      editorComponentSame: (editor as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.editorComponent,
+      databaseComponentSame: (database as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.databaseComponent,
+    }
+  })).toEqual({ editorSame: true, databaseSame: true, drawerSame: true, editorComponentSame: true, databaseComponentSame: true })
+  await expect(titleDraft).toHaveValue('Board draft survives creation')
+  await expect(linkedDatabase.getByRole('button', { name: '切换视图' })).toContainText('表格视图')
+})
+
+test('phone creates a Board view without a Select property and keeps the two-row header in the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const api = await installApi(page, [
+    block('phone-create-board-view-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [rootProperties[0]!], records: [] })
+  const initialPageCount = api.pages.length
+  const initialDatabaseBlockIds = api.blocks.filter(item => item.type === 'database').map(item => item.id)
+  const initialDatabaseCount = api.databases.length
+  const initialRecordCount = api.records.length
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const database = page.locator('#database-block-phone-create-board-view-block')
+  const header = database.locator('.eotion-database-header')
+  const title = header.locator('.eotion-database-copy')
+  const selector = header.getByRole('button', { name: '切换视图' })
+  const add = header.getByRole('button', { name: '新建记录' })
+  const settings = header.getByRole('button', { name: '数据库设置' })
+  const [titleBox, selectorBox, addBox, settingsBox] = await Promise.all([title.boundingBox(), selector.boundingBox(), add.boundingBox(), settings.boundingBox()])
+  expect(titleBox && selectorBox && addBox && settingsBox).toBeTruthy()
+  expect(titleBox!.y + titleBox!.height).toBeLessThanOrEqual(selectorBox!.y)
+  expect(Math.abs(selectorBox!.y - addBox!.y)).toBeLessThanOrEqual(4)
+  expect(Math.abs(selectorBox!.y - settingsBox!.y)).toBeLessThanOrEqual(4)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  await database.getByRole('button', { name: '切换视图' }).click()
+  const menu = page.getByRole('group', { name: '数据库视图', exact: true })
+  const createBoardButton = menu.getByRole('button', { name: '新建看板视图' })
+  const createBoardBox = await createBoardButton.boundingBox()
+  expect(createBoardBox).toBeTruthy()
+  expect(createBoardBox!.x).toBeGreaterThanOrEqual(0)
+  expect(createBoardBox!.y).toBeGreaterThanOrEqual(0)
+  expect(createBoardBox!.x + createBoardBox!.width).toBeLessThanOrEqual(390)
+  expect(createBoardBox!.y + createBoardBox!.height).toBeLessThanOrEqual(844)
+  await createBoardButton.click()
+
+  const board = database.getByTestId('database-board')
+  await expect(board).toBeVisible()
+  await expect(board).toContainText('尚未配置分组属性')
+  await expect.poll(() => api.views.find(item => item.id !== 'view-root-id')).toMatchObject({ type: 'board', config: DEFAULT_DATABASE_VIEW_CONFIG })
+  const createdView = api.views.find(item => item.id !== 'view-root-id')!
+  expect(createdView.config.options).toBeUndefined()
+  await expect.poll(() => api.blocks.find(item => item.id === 'phone-create-board-view-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: createdView.id })
+  expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`))).toHaveLength(1)
+  expect(api.pages).toHaveLength(initialPageCount)
+  expect(api.blocks.filter(item => item.type === 'database').map(item => item.id)).toEqual(initialDatabaseBlockIds)
+  expect(api.databases).toHaveLength(initialDatabaseCount)
+  expect(api.records).toHaveLength(initialRecordCount)
+  expect(api.properties.map(({ id }) => id)).toEqual([rootProperties[0]!.id])
+
+  const [afterTitleBox, afterSelectorBox, afterAddBox, afterSettingsBox] = await Promise.all([title.boundingBox(), selector.boundingBox(), add.boundingBox(), settings.boundingBox()])
+  expect(afterTitleBox && afterSelectorBox && afterAddBox && afterSettingsBox).toBeTruthy()
+  expect(afterTitleBox!.y + afterTitleBox!.height).toBeLessThanOrEqual(afterSelectorBox!.y)
+  expect(Math.abs(afterSelectorBox!.y - afterAddBox!.y)).toBeLessThanOrEqual(4)
+  expect(Math.abs(afterSelectorBox!.y - afterSettingsBox!.y)).toBeLessThanOrEqual(4)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+})
+
+test('a 409 while creating a List view clears the pending type before creating a Board view', async ({ page }) => {
+  const api = await installApi(page, [
+    block('retry-board-view-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-retry-board-view-block')
+  const selector = database.getByRole('button', { name: '切换视图' })
+  await expect(selector).toBeVisible()
+  await selector.click()
+  const menu = page.getByRole('group', { name: '数据库视图', exact: true })
+
+  api.databases[0]!.version += 1
+  await menu.getByRole('button', { name: '新建列表视图' }).click()
+  await expect(page.getByRole('alert')).toContainText('数据库或视图已变化')
+  expect(api.views).toHaveLength(1)
+  expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`)).map(item => item.payload?.type)).toEqual(['list'])
+
+  if (!await menu.isVisible()) await selector.click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '新建看板视图' }).click()
+  await expect(database.getByTestId('database-board')).toContainText('尚未配置分组属性')
+  expect(api.views.filter(item => item.type === 'board')).toHaveLength(1)
+  expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`)).map(item => item.payload?.type)).toEqual(['list', 'board'])
+})
+
+test('an unconfirmed List creation blocks a cross-type Board retry without another POST', async ({ page }) => {
+  const api = await installApi(page, [
+    block('uncertain-board-view-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [] })
+  let interrupted = false
+  const interruptedCreateAttempts: Array<{ id: string; type: string }> = []
+  await page.route(url => url.pathname.endsWith(`/databases/${rootDatabase.id}/views`), async route => {
+    if (!interrupted && route.request().method() === 'POST') {
+      interrupted = true
+      interruptedCreateAttempts.push(route.request().postDataJSON() as { id: string; type: string })
+      return route.abort('failed')
+    }
+    return route.fallback()
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-uncertain-board-view-block')
+  const selector = database.getByRole('button', { name: '切换视图' })
+  await expect(selector).toBeVisible()
+  await selector.click()
+  const menu = page.getByRole('group', { name: '数据库视图', exact: true })
+  await menu.getByRole('button', { name: '新建列表视图' }).click()
+  await expect(page.getByRole('alert')).toContainText('视图创建结果暂未确认')
+  const createRequests = () => api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`))
+  expect(interruptedCreateAttempts.map(item => item.type)).toEqual(['list'])
+  expect(interruptedCreateAttempts[0]?.id).toBeTruthy()
+  expect(createRequests()).toHaveLength(0)
+
+  if (!await menu.isVisible()) await selector.click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '新建看板视图' }).click()
+  await expect(page.getByRole('alert')).toContainText('上次视图创建结果暂未确认，请先重试原类型视图。')
+  expect(interruptedCreateAttempts.map(item => item.type)).toEqual(['list'])
+  expect(createRequests()).toHaveLength(0)
+  await expect(database.getByTestId('database-board')).toHaveCount(0)
+
+  if (!await menu.isVisible()) await selector.click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '新建列表视图' }).click()
+  await expect(database.getByTestId('database-list')).toBeVisible()
+  expect(createRequests().map(item => item.payload?.type)).toEqual(['list'])
+  expect(createRequests()[0]?.payload?.id).toBe(interruptedCreateAttempts[0]?.id)
+  expect(api.views.filter(item => item.type === 'list')).toHaveLength(1)
 })
 
 test('database view selector supports accessible inline rename without switching on rename or delete', async ({ page }) => {

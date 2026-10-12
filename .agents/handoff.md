@@ -1,4 +1,17 @@
 # Handoff
+## 2026-10-12 P9.5C-1 Board View Creation Entry（已完成）
+
+基线 `a70c8b9a41de42d3b38ac5997d33df314867edff`；聚焦提交为本节所在 commit。DatabaseNodeView 的通用 createView 支持 board，既有菜单增加“新建看板视图”，默认名称“看板 N”。复用 createProductDatabaseView / existing POST views / switchView(created.id, true)，当前 Block 只更新 viewId；不复制 Database、Records、Page 或 Database Block，不 reload/remount。默认配置严格沿用 DEFAULT_DATABASE_VIEW_CONFIG：空 filters/sorts、visibleProperties/propertyOrder null、options 缺省，无自动 groupBy；无 select 也可创建，现有 renderer 显示“尚未配置分组属性”。
+
+独立 review 发现旧 pendingCreateView 跨类型重试会错用旧 type，已最小修复：确定性 4xx 清 pending；未知结果保留原类型/ID，跨类型提示先重试原类型，不发送 POST。新增回归验证 409 后 List→Board、未知结果不跨类型写入、原类型同 ID 重试只创建一个 View。Table/List 正常创建保持。
+
+定向验证 9/9 + 原有 Table 创建生命周期 1/1（workers=1 / retries=0）：
+`pnpm --filter @eotion/web exec playwright test tests/product-database.spec.ts --grep "creates a Board view|phone creates a Board view|a 409 while creating a List|an unconfirmed List creation|creates a List view|board renderer switches with Table and List|phone view selector keeps|snapshot convergence preserves phone" --workers=1 --retries=0`
+`pnpm --filter @eotion/web exec playwright test tests/product-database.spec.ts --grep "database views create, rename, switch, delete and persist the selected reference" --workers=1 --retries=0`
+Web typecheck、diff check、UTF-8 无 BOM 通过，独立复核无剩余 blocker。覆盖请求唯一/type/default config、当前/linked Block、无数据复制、Editor/NodeView DOM/component、Drawer/title draft、snapshot hydration、390px 无 select 与入口 bounds/两行 header。新增失败测试首跑因空 records 等待隐藏 tbody、前置 abort 未进入 fixture 计数失败，修正等待 selector 与独立拦截请求计数后通过；无产品范围外 failure。Table 回归有一条 ResizeObserver 通知警告，测试通过。
+
+未发现已确认的 P9.5C-2 grouping settings blocker；该设置能力及无可用 select 的设置 UX 未实现或验收。未运行 Full Product/Visual/Final Acceptance，未改 grouping/renderer/drag/Domain/API/MCP/local-first。聚焦提交后停止。
+
 ## 2026-10-12 P9.5B-2 Board Drag Mutation Foundation（已完成）
 
 基线 `23f3b0a1c0a232309611709632633f4a817d7545`；聚焦提交为本节所在 commit。Desktop 采用原生 HTML5 drag/drop，组件内保存 drag record identity，DataTransfer 仅携带标记；事件阻止冒泡至 Tiptap，数据/配置/可写状态变化清理 drag session。列提供目标高亮，未分组列始终可用，Phone 保持既有 <768px 单列和 picker。

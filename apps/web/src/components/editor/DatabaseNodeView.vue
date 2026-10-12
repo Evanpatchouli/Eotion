@@ -723,13 +723,17 @@ function switchView(targetId: string, force = false): void {
   viewControlsOpen.value = ''
   props.updateAttributes({ viewId: targetId })
 }
-async function createView(type: Extract<DatabaseViewType, 'table' | 'list'> = 'table'): Promise<void> {
+async function createView(type: DatabaseViewType = 'table'): Promise<void> {
   if (viewBusy.value) return
   const workspace = workspaceId.value
   const database = databaseId.value
   const userId = auth.user?.id
   if (!userId) return
-  pendingCreateView.value ??= { id: createLocalId(), name: `${type === 'list' ? '列表' : '表格'} ${views.value.length + 1}`, type, config: { ...DEFAULT_DATABASE_VIEW_CONFIG }, expectedDatabaseVersion: databaseVersion.value }
+  if (pendingCreateView.value && pendingCreateView.value.type !== type) {
+    viewError.value = '上次视图创建结果暂未确认，请先重试原类型视图。'
+    return
+  }
+  pendingCreateView.value ??= { id: createLocalId(), name: `${type === 'board' ? '看板' : type === 'list' ? '列表' : '表格'} ${views.value.length + 1}`, type, config: { ...DEFAULT_DATABASE_VIEW_CONFIG }, expectedDatabaseVersion: databaseVersion.value }
   viewSubmitting.value = true
   viewError.value = ''
   try {
@@ -742,7 +746,7 @@ async function createView(type: Extract<DatabaseViewType, 'table' | 'list'> = 't
         created = result.view
       } catch (cause) {
         const uncertain = !(cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500)
-        if (!uncertain) throw cause
+        if (!uncertain) { pendingCreateView.value = null; throw cause }
         const confirmed = await listProductDatabaseViews(workspace, database)
         if (auth.user?.id !== userId || workspaceId.value !== workspace || databaseId.value !== database) throw new Error('登录状态或工作区已切换，请刷新后重试。')
         created = confirmed.find(item => item.id === pendingCreateView.value?.id)
@@ -1558,6 +1562,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
             <div class="eotion-database-view-create-group" role="group" aria-label="新建数据库视图">
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('table')"><EotionIcon :name="IconName.Plus" :size="16" /> 新建视图</EotionButton>
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create-list" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('list')"><EotionIcon :name="IconName.List" :size="16" /> 新建列表视图</EotionButton>
+              <EotionButton type="button" variant="ghost" class="eotion-database-view-create-board" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('board')"><EotionIcon :name="IconName.Plus" :size="16" /> 新建看板视图</EotionButton>
             </div>
           </section>
         </EotionPopover>
@@ -1770,8 +1775,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 .eotion-database-view-name[contenteditable="true"] { cursor:text; outline:none; text-overflow:clip; }
 .eotion-database-view-action { flex:none; width:32px; padding:6px!important; opacity:0; pointer-events:none; }
 .eotion-database-view-row:hover .eotion-database-view-action,.eotion-database-view-row:focus-within .eotion-database-view-action { opacity:1; pointer-events:auto; }
-.eotion-database-view-create,.eotion-database-view-create-list { justify-content:flex-start; color:var(--e-color-text-muted); }
-.eotion-database-view-create:hover:not(:disabled),.eotion-database-view-create:focus-visible,.eotion-database-view-create-list:hover:not(:disabled),.eotion-database-view-create-list:focus-visible { color:var(--e-color-text-primary); }
+.eotion-database-view-create,.eotion-database-view-create-list,.eotion-database-view-create-board { justify-content:flex-start; color:var(--e-color-text-muted); }
+.eotion-database-view-create:hover:not(:disabled),.eotion-database-view-create:focus-visible,.eotion-database-view-create-list:hover:not(:disabled),.eotion-database-view-create-list:focus-visible,.eotion-database-view-create-board:hover:not(:disabled),.eotion-database-view-create-board:focus-visible { color:var(--e-color-text-primary); }
 .eotion-database-view-create-group { display:grid; gap:2px; }
 .eotion-database-view-hint { color:var(--editor-muted); font-size:12px; }
 .eotion-database-view-error { color:var(--danger); }
