@@ -1,15 +1,16 @@
-# 当前任务：P9.5B-1 — Board Card Mutation Foundation（已完成）
+# 当前任务：P9.5B-2 — Board Drag Mutation Foundation（已完成）
 
-基线 `90f8d9d0fe0db4030cbd588881298f0c5d7cab23`；P8 COMPLETE / SEALED。仅显式修改 Card grouping select value，目标 8–20 分钟，25 分钟硬停止。
+基线 `23f3b0a1c0a232309611709632633f4a817d7545`；P9.5B-1 PASS / SEALED。目标 8–20 分钟，25 分钟硬停止。
 
 | Work Unit | 难度 / 模式 / 角色 | 状态 |
 | --- | --- | --- |
-| 既有 record mutation、renderer、local/sync 边界定位 | S0 investigate / 主 Agent | 完成 |
-| 显式 picker、成功 refresh 与失败保留方案 | S2 decide / 主 Agent | 完成，执行降级 S1 |
-| Board picker 与既有 cell mutation 接线 | S1 execute / fast_worker | 完成 |
-| A–F targeted tests | S1 execute / fast_worker | 完成 |
-| targeted 验证与一次独立 review | S0 verify / 主 Agent + reviewer | 完成 |
-| 文档、handoff、聚焦 commit 与停止 | S1 execute / 主 Agent | 完成 |
+| mutation / event / renderer 行为定位 | S0 investigate / 主 Agent | 完成 |
+| nullable grouping 与 deferred refresh 方案 | S2 decide / 主 Agent | 完成，执行降级 S1 |
+| HTML5 drag、picker null、refresh 合并 | S1 execute / fast_worker | 完成；Web typecheck 通过 |
+| targeted 请求计数与产品回归 | S1 execute / fast_worker | 完成，最终组合 15/15 |
+| 一次独立复核与必要验证 | Review / reviewer + S0 | 完成；无 blocker，typecheck/diff/UTF-8 通过 |
+| 文档、handoff、聚焦 commit、停止 | S1 execute / 主 Agent | 完成，聚焦提交后停止 |
 
-Implementation Brief：复用 DatabaseSettingsSelect，受控显示已确认 select option ID；emit record ID/option ID 由父组件复核当前 Board/select/option/writable/scope。只调用 updateProductDatabaseRecordCell，携带 Database/Record CAS。成功复用数据库更新事件与已加载窗口 refresh；失败保持 records/config，显示 mutationError。保持 Editor/NodeView/Drawer/draft identity。禁止 Drag、optimistic/rollback、offline mutation、Board API、position/WIP/customization/MCP；不跑 Full Product/Visual/Final Acceptance。
-验证：新增 mutation targeted 5/5，既有 Board/Table/List/Phone/snapshot/cell failure targeted 10/10（最新代码复跑）；Web typecheck、diff check、UTF-8 无 BOM 通过。独立复核的旧 CAS 重试问题已用显式刷新入口修复，并有409→刷新→新版本重试覆盖；无剩余 blocker。没有 scope-external failure，未运行 Full Product/Visual/Final Acceptance。完成一个聚焦 commit 后停止。
+Implementation Brief：Board 组件只保存本组件 drag session 与目标高亮；总是提供未分组 drop target。Drag 与 picker 都 emit recordId / string|null；父组件验证 Board/select/option/Record/可写状态、规范化当前分组做 no-op。复用 updateProductDatabaseRecordCell / cells PATCH / Database+Record CAS / scope identity。Board savingCell 期间 database events deferred；成功显式 refresh 前消费已有 pending，刷新期间的新事件完成后 drain。失败不改 records，不自动覆盖409。禁止 optimistic/rollback、position/reorder、新 API/依赖/全局事件、MCP/local-first；不运行 Full Product/Visual/Final Acceptance。
+
+验证：最终 targeted 15/15，workers=1 / retries=0；原生 drag、唯一 cells PATCH/CAS、pending 原列保留/null/no-op、失败409显式刷新重试、正常成功只增加一次 Board records GET、读取期间 external event 继续补刷、linked Table/List、Phone picker/layout、Editor/NodeView/Drawer/title draft 与 snapshot 均覆盖。独立 review 无 blocker。中间一次 draft 断言出现原标题，随后单独及最终组合通过，原断言保持；测试 route 计数时机和 URL matcher 已修正，无产品范围外修改。未运行 Full Product/Visual/Final Acceptance。

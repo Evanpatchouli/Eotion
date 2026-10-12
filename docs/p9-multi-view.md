@@ -169,3 +169,15 @@ Desktop / Tablet 在 Board 内局部横向滚动，列保持可读宽度；Phone
 
 本轮不实现 Drag、Board position、WIP limit、Card customization、MCP 或后续 mutation 能力。不运行 Full Product、Visual 或 Final Acceptance。
 定向验证：新增 mutation 5/5，既有 Board/Table/List/Phone/snapshot/cell failure 回归 10/10，Web typecheck、diff 与 UTF-8 无 BOM 检查通过。覆盖 select 分组写入/目标列/其他记录与 config 保持、linked Table/List、非 select 不可操作、失败原状态、409 显式刷新与新 CAS 重试，以及 mutation 后 Editor/NodeView/Drawer/draft identity。独立复核无剩余 blocker。
+
+## P9.5B-2 — Board Drag Mutation Foundation
+
+基线 `23f3b0a1c0a232309611709632633f4a817d7545`。Desktop Card 使用原生 HTML5 drag/drop；drag session 仅属于当前 Board 组件，列提供目标高亮。Select option ID 是目标值，“未分组”列始终可见（含空列），目标值为 null。Phone 继续通过共享显式 picker 完整修改分组，沿用既有 `<768px` 布局，没有 touch drag framework 或新 breakpoint。
+
+拖拽与 picker 共用 `changeBoardGroup(recordId, optionId: string | null)`，仅将目标转成已有 grouping Property 的 cells PATCH，携带 Database/Record CAS。非 null 必须匹配当前 select option；当前缺失/null/未知 option 值归为未分组，同分组 drop 为 no-op。没有 Board API、position、ordering、optimistic move 或 rollback；pending 禁用操作，成功 records refresh 后移动，失败/409 留在原列并提供显式刷新重试。
+
+本地 Board cell mutation 期间将数据库通知延后；成功主动 refresh 前消费已有通知，避免 self-notify 触发第二次完整窗口刷新。刷新期间收到的新通知在 mutation 完成后继续处理，linked Table/List 和真正的 external update 保持可刷新。异步写回仍检查 user/workspace/database/view scope，不重建 Page、Editor、NodeView 或 Drawer。
+
+本轮仅 Drag foundation；不运行 Full Product、Visual Acceptance、Final Acceptance，不进入 Board settings、动画、reorder、MCP 或 Database local-first。
+
+定向验证：最终组合 15/15（workers=1 / retries=0），Web typecheck、diff 与 UTF-8 无 BOM 检查通过，独立 review 无 blocker。实际请求计数覆盖唯一 cells PATCH、正常成功只增加一次 Board records GET；暂停成功后的 records GET 并发送 external event，验证读取完成后继续补刷和新值显示。另覆盖原生 drag、pending、不分组 null/picker、同列 no-op、失败/409重试、linked Table/List、Phone layout/picker、Editor/NodeView/Drawer/draft 与 snapshot。中间一次 draft 断言出现原标题，后续单独及最终组合通过，原断言保持。

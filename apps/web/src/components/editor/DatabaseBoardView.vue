@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DatabasePropertyResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { DatabaseViewConfig } from '@eotion/domain/database'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import DatabaseSettingsSelect from './DatabaseSettingsSelect.vue'
 
 type BoardRecord = DatabaseViewRecordsResponse['records'][number]
@@ -16,8 +16,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   openRecord: [event: MouseEvent, pageId: string]
-  changeGroup: [recordId: string, optionId: string]
+  changeGroup: [recordId: string, optionId: string | null]
 }>()
+
+const draggedRecordId = ref<string | null>(null)
+const draggedGroupPropertyId = ref<string | null>(null)
+const dropTargetId = ref<string | null>(null)
+const hasDropTarget = ref(false)
+const boardCardTransferType = 'application/x-eotion-board-card'
 
 const titleProperty = computed(() => props.properties.find(property => property.type === 'title'))
 const orderedProperties = computed(() => {
@@ -58,9 +64,18 @@ const columns = computed(() => {
     return value === null || typeof value !== 'string' || !assigned.has(value)
   })
 
-  if (unassigned.length) groups.push({ id: null, name: '未分组', records: unassigned })
+  groups.push({ id: null, name: '未分组', records: unassigned })
   return groups
 })
+
+watch(() => [props.records, props.properties, props.config, props.writable], clearDragState, { deep: true })
+
+function clearDragState(): void {
+  draggedRecordId.value = null
+  draggedGroupPropertyId.value = null
+  dropTargetId.value = null
+  hasDropTarget.value = false
+}
 
 function cellValue(record: BoardRecord, property: DatabasePropertyResponse): string {
   const value = Object.hasOwn(record.properties, property.id) ? record.properties[property.id] : null
@@ -78,14 +93,72 @@ function groupValue(record: BoardRecord, property: DatabasePropertyResponse): st
 
 function groupOptions(property: DatabasePropertyResponse) {
   return [
-    { value: '', label: '未分组', disabled: true },
+    { value: '', label: '未分组' },
     ...(property.options ?? []).map(option => ({ value: option.id, label: option.name })),
   ]
+}
+
+function onCardDragStart(event: DragEvent, record: BoardRecord): void {
+  event.stopPropagation()
+  const propertyId = groupingProperty.value?.id
+  if (!props.writable || !propertyId || !event.dataTransfer) {
+    event.preventDefault()
+    clearDragState()
+    return
+  }
+  draggedRecordId.value = record.id
+  draggedGroupPropertyId.value = propertyId
+  dropTargetId.value = null
+  hasDropTarget.value = false
+  event.dataTransfer.effectAllowed = 'move'
+  // The transferred value is only a marker. The record identity stays in this component.
+  event.dataTransfer.setData(boardCardTransferType, 'card')
+}
+
+function onCardDragEnd(event: DragEvent): void {
+  event.stopPropagation()
+  clearDragState()
+}
+
+function onColumnDragOver(event: DragEvent, optionId: string | null): void {
+  event.stopPropagation()
+  if (!props.writable || !draggedRecordId.value || !event.dataTransfer?.types.includes(boardCardTransferType)) return
+  event.preventDefault()
+  event.dataTransfer.dropEffect = 'move'
+  hasDropTarget.value = true
+  dropTargetId.value = optionId
+}
+
+function onColumnDragLeave(event: DragEvent, optionId: string | null): void {
+  event.stopPropagation()
+  const nextTarget = event.relatedTarget
+  if (nextTarget instanceof Node && (event.currentTarget as HTMLElement).contains(nextTarget)) return
+  if (hasDropTarget.value && dropTargetId.value === optionId) {
+    hasDropTarget.value = false
+    dropTargetId.value = null
+  }
+}
+
+function onColumnDrop(event: DragEvent, optionId: string | null): void {
+  event.stopPropagation()
+  event.preventDefault()
+  const recordId = draggedRecordId.value
+  const propertyId = groupingProperty.value?.id
+  const validTransfer = event.dataTransfer?.getData(boardCardTransferType) === 'card'
+  const recordExists = recordId !== null && props.records.some(record => record.id === recordId)
+  if (props.writable && validTransfer && recordExists && propertyId && draggedGroupPropertyId.value === propertyId) {
+    emit('changeGroup', recordId, optionId)
+  }
+  clearDragState()
+}
+
+function updateGroup(recordId: string, value: string): void {
+  emit('changeGroup', recordId, value === '' ? null : value)
 }
 </script>
 
 <template>
-  <div class="eotion-database-board" data-testid="database-board" @pointerdown.stop>
+  <div class="eotion-database-board" data-testid="database-board" @pointerdown.stop @dragstart.stop @dragover.stop @drop.stop>
     <p v-if="!groupingProperty" class="eotion-database-state">尚未配置分组属性</p>
     <div v-else-if="columns.length" class="eotion-database-board-columns">
       <section
@@ -94,9 +167,13 @@ function groupOptions(property: DatabasePropertyResponse) {
         class="eotion-database-board-column"
         :data-option-id="column.id ?? ''"
         :aria-label="column.name"
+        :class="{ 'is-drop-target': hasDropTarget && dropTargetId === column.id }"
+        @dragover="onColumnDragOver($event, column.id)"
+        @dragleave="onColumnDragLeave($event, column.id)"
+        @drop="onColumnDrop($event, column.id)"
       >
         <h3 class="eotion-database-board-column-title"><span class="eotion-database-board-column-name">{{ column.name }}</span><span>{{ column.records.length }}</span></h3>
-        <article v-for="record in column.records" :key="record.id" class="eotion-database-board-card" :data-record-id="record.id">
+        <article v-for="record in column.records" :key="record.id" class="eotion-database-board-card" :data-record-id="record.id" :draggable="writable" @dragstart="onCardDragStart($event, record)" @dragend="onCardDragEnd">
           <button
             class="eotion-database-board-card-title"
             type="button"
@@ -112,7 +189,7 @@ function groupOptions(property: DatabasePropertyResponse) {
             :options="groupOptions(groupingProperty)"
             label="移动记录分组"
             :disabled="!writable"
-            @update:model-value="emit('changeGroup', record.id, $event)"
+            @update:model-value="updateGroup(record.id, $event)"
           />
           <dl v-if="detailProperties.length" class="eotion-database-board-properties">
             <div v-for="property in detailProperties" :key="property.id" class="eotion-database-board-property">
@@ -130,11 +207,14 @@ function groupOptions(property: DatabasePropertyResponse) {
 <style scoped>
 .eotion-database-board { min-width:0; max-width:100%; overflow:hidden; border-top:1px solid var(--border-editor); }
 .eotion-database-board-columns { display:flex; align-items:flex-start; gap:12px; max-width:100%; min-width:0; overflow-x:auto; padding:12px; overscroll-behavior-inline:contain; }
-.eotion-database-board-column { box-sizing:border-box; display:grid; flex:0 0 260px; gap:8px; min-width:240px; max-width:320px; border:1px solid var(--border-editor); border-radius:8px; padding:8px; background:var(--surface-editor-hover); }
+.eotion-database-board-column { box-sizing:border-box; display:grid; flex:0 0 260px; gap:8px; min-width:240px; max-width:320px; min-height:96px; border:1px solid var(--border-editor); border-radius:8px; padding:8px; background:var(--surface-editor-hover); transition:border-color .12s ease,background-color .12s ease; }
+.eotion-database-board-column.is-drop-target { border-color:var(--e-color-focus); background:color-mix(in srgb,var(--e-color-focus) 9%,var(--surface-editor-hover)); }
 .eotion-database-board-column-title { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; margin:0; padding:3px 2px 7px; color:var(--editor-text); font-size:13px; font-weight:600; }
 .eotion-database-board-column-title span { color:var(--editor-muted); font-size:12px; font-weight:400; }
 .eotion-database-board-column-title .eotion-database-board-column-name { min-width:0; overflow-wrap:anywhere; color:inherit; font-size:inherit; font-weight:inherit; }
 .eotion-database-board-card { min-width:0; border:1px solid var(--border-editor); border-radius:6px; padding:10px; background:var(--surface-raised); color:var(--editor-text); }
+.eotion-database-board-card[draggable="true"] { cursor:grab; }
+.eotion-database-board-card[draggable="true"]:active { cursor:grabbing; }
 .eotion-database-board-card-title { display:block; width:100%; min-height:32px; border:0; padding:4px 0; background:transparent; color:inherit; text-align:left; font:inherit; font-weight:600; overflow-wrap:anywhere; cursor:pointer; }
 .eotion-database-board-card-title:hover,.eotion-database-board-card-title:focus-visible { text-decoration:underline; text-underline-offset:3px; }
 .eotion-database-board-group-select { margin-top:8px; }

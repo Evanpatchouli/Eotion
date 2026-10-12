@@ -1,4 +1,19 @@
 # Handoff
+## 2026-10-12 P9.5B-2 Board Drag Mutation Foundation（已完成）
+
+基线 `23f3b0a1c0a232309611709632633f4a817d7545`；聚焦提交为本节所在 commit。Desktop 采用原生 HTML5 drag/drop，组件内保存 drag record identity，DataTransfer 仅携带标记；事件阻止冒泡至 Tiptap，数据/配置/可写状态变化清理 drag session。列提供目标高亮，未分组列始终可用，Phone 保持既有 <768px 单列和 picker。
+
+Drag/picker 共用 nullable changeBoardGroup；合法 option.id 或 null 转到 existing cells PATCH，保留 Database/Record CAS、auth/workspace/database/view guard。当前缺失/null/未知 option 归为未分组，同列/null-null no-op。pending 禁用，成功服务端 records refresh 后才移动，失败409留原列并显式刷新重试。无 optimistic/rollback、Board API/model/position/reorder、依赖、MCP/local-first 变更。
+
+Board savingCell 期间 notification deferred；成功显式 refresh 前消费已有 pending，避免 self notify 双刷新；读取期间新 external notification 在 finally 补刷。Table/List renderer semantics 未改，linked 新值与 Editor/NodeView/Drawer/title draft/snapshot 保持。shared picker、productDatabases、databaseEvents 已检查，无需修改。
+
+验证：最终 targeted 15/15，workers=1 / retries=0：
+`pnpm --filter @eotion/web exec playwright test tests/product-database.spec.ts --grep "Board drag|board grouping mutation|failed Board drag|Board drag conflict|board renderer|Board grouping picker|unconfigured Board|Board with a non-select|list view renders projected titles|phone view selector keeps|snapshot convergence reloads the editor|keeps failed text drafts" --workers=1 --retries=0`
+Web typecheck、diff check、UTF-8 无 BOM 通过，一次独立 review 无 blocker。请求计数验证普通成功只一次完整 Board records refresh；GET barrier + external event 验证读取期间的新通知仍补刷并显示新值。覆盖 PATCH唯一/CAS、真实drag/pending、null/no-op、失败409重试、linked Table/List/Phone picker/layout、identity/draft/snapshot。
+
+中间测试失败：pending gate 在 fallback 前错误读取 mock 请求计数，及 records GET matcher 未匹配 URL，已修正为拦截请求 payload 与 pathname predicate；初次并发验证导致测试 server 连接拒绝，已由单一验证 Agent 串行复跑。一次 Drawer draft 断言期望草稿但显示原标题，后续单独及最终组合均通过，未削弱断言或修改相关产品代码。无确认的 scope-external blocker，未继续扩大范围。
+
+未运行 Full Product、Visual 或 Final Acceptance。未发现已确认的后续 Board blocker；Phone touch drag、Board settings、动画/reorder/MCP 均未实现或验收。修改两个 Board/NodeView 组件、product-database.spec.ts、P9/architecture/context、current-task/handoff；聚焦提交后停止。
 ## 2026-10-12 P9.5B-1 Board Card Mutation Foundation（已完成）
 
 基线 `90f8d9d0fe0db4030cbd588881298f0c5d7cab23`；聚焦提交为本节所在 commit。Board Card 新增共享 DatabaseSettingsSelect 分组 picker，只提交当前 select 的稳定 option ID；未配置/非 select 不开放 mutation。父 changeBoardGroup 校验当前 Board/select/Record/option/可写状态与 auth/workspace/database/view identity，复用 updateProductDatabaseRecordCell → SDK cells PATCH，携带原 Database/Record CAS。没有 Board API / endpoint / schema / sync 变更。

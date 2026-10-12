@@ -3234,10 +3234,11 @@ test('board renderer groups generic records by option IDs with projected titles 
   expect(await board.locator('[data-option-id=""] .eotion-database-board-card').evaluateAll(elements => elements.map(element => element.getAttribute('data-record-id')))).toEqual(['board-e', 'board-d'])
   const card = board.locator('[data-record-id="board-a"]')
   await expect(card.getByRole('button', { name: '打开记录：Projected board-a' })).toBeVisible()
+  await expect(card).toHaveAttribute('draggable', 'true')
   await expect(card.locator('dt')).toHaveText(['Notes', 'Points'])
   await expect(card.locator('dd')).toHaveText(['First', '20'])
   await expect(board.getByText('Stale copy', { exact: true })).toHaveCount(0)
-  await expect(board.locator('input, [contenteditable="true"], [draggable="true"]')).toHaveCount(0)
+  await expect(board.locator('input, [contenteditable="true"]')).toHaveCount(0)
   expect(api.requests.some(item => item.method === 'GET' && item.path.endsWith(`/views/${boardView.id}/table`))).toBe(true)
   expect({ records: api.records, properties: api.properties, views: api.views }).toEqual(original)
 
@@ -3302,8 +3303,129 @@ test('board renderer handles missing grouping and empty select options without t
   await page.goto('/#/app/database-workspace/page/database-page')
   await expect(page.getByTestId('database-board')).toHaveCount(2)
   await expect(page.locator('#database-block-board-unconfigured-block')).toContainText('尚未配置分组属性')
-  await expect(page.locator('#database-block-board-empty-block .eotion-database-board-column')).toHaveCount(0)
+  await expect(page.locator('#database-block-board-empty-block .eotion-database-board-column')).toHaveCount(1)
   await expect(page.locator('.eotion-database table')).toHaveCount(0)
+})
+
+test('Board drag preserves the current column while the cell update is pending', async ({ page }) => {
+  const boardView = view('board-drag-pending-view', rootDatabase.id, 'Board', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: 'root-select' },
+  }, 'board')
+  const api = await installApi(page, [
+    block('board-drag-pending-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+  ], { databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan', role: 'database-record' })
+  let signalPatchStarted!: () => void
+  let releasePatch!: () => void
+  let pendingPatch: { method: string; payload: unknown } | undefined
+  let holdBoardRefresh = false
+  let signalBoardRefreshStarted!: () => void
+  let releaseBoardRefresh!: () => void
+  const patchStarted = new Promise<void>(resolve => { signalPatchStarted = resolve })
+  const patchGate = new Promise<void>(resolve => { releasePatch = resolve })
+  const boardRefreshStarted = new Promise<void>(resolve => { signalBoardRefreshStarted = resolve })
+  const boardRefreshGate = new Promise<void>(resolve => { releaseBoardRefresh = resolve })
+  await page.route(`**/records/${basicRecord.id}/cells/root-select`, async route => {
+    pendingPatch = { method: route.request().method(), payload: route.request().postDataJSON() }
+    signalPatchStarted()
+    await patchGate
+    await route.fallback()
+  })
+  await page.route(url => url.pathname.endsWith(`/views/${boardView.id}/table`), async route => {
+    if (!holdBoardRefresh) return route.fallback()
+    holdBoardRefresh = false
+    signalBoardRefreshStarted()
+    await boardRefreshGate
+    await route.fallback()
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const board = page.getByTestId('database-board')
+  const openColumn = board.locator('[data-option-id="status-open"]')
+  const doneColumn = board.locator('[data-option-id="status-done"]')
+  const card = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
+  const picker = card.getByRole('button', { name: '移动记录分组' })
+  try {
+    await card.dragTo(doneColumn)
+    await patchStarted
+    await expect(openColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
+    await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toHaveCount(0)
+    await expect(card).toHaveAttribute('draggable', 'false')
+    await expect(picker).toBeDisabled()
+    expect(pendingPatch).toEqual({ method: 'PATCH', payload: { value: 'status-done', expectedDatabaseVersion: 1, expectedRecordVersion: 1 } })
+    expect(api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/views/${boardView.id}/table`))).toHaveLength(1)
+  } finally {
+    holdBoardRefresh = true
+    releasePatch()
+  }
+  try {
+    await boardRefreshStarted
+    expect(api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/views/${boardView.id}/table`))).toHaveLength(1)
+    api.records.find(item => item.id === basicRecord.id)!.properties['root-text'] = 'Changed during refresh'
+    await page.evaluate(({ workspaceId, databaseId }) => window.dispatchEvent(new CustomEvent('eotion:database-updated', { detail: { workspaceId, databaseId } })), { workspaceId: workspace.id, databaseId: rootDatabase.id })
+  } finally {
+    releaseBoardRefresh()
+  }
+  await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
+  await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toContainText('Changed during refresh')
+  await expect.poll(() => api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`)).length).toBe(1)
+  await expect.poll(() => api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/views/${boardView.id}/table`)).length).toBe(3)
+  const update = api.requests.find(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))
+  expect(update?.payload).toEqual({ value: 'status-done', expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+})
+
+test('Board drag to the ungrouped column stores null and a same-column drop does nothing', async ({ page }) => {
+  const boardView = view('board-drag-null-view', rootDatabase.id, 'Board', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: 'root-select' },
+  }, 'board')
+  const api = await installApi(page, [
+    block('board-drag-null-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+  ], { databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const board = page.getByTestId('database-board')
+  const openColumn = board.locator('[data-option-id="status-open"]')
+  const ungroupedColumn = board.locator('[data-option-id=""]')
+  const card = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
+  await card.dragTo(openColumn)
+  await expect(card).toBeVisible()
+  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.includes('/cells/'))).toHaveLength(0)
+
+  await card.dragTo(ungroupedColumn)
+  const ungroupedCard = ungroupedColumn.locator(`[data-record-id="${basicRecord.id}"]`)
+  await expect(ungroupedCard).toBeVisible()
+  const updates = api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))
+  expect(updates).toHaveLength(1)
+  expect(updates[0]?.payload).toEqual({ value: null, expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+  expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBeNull()
+  await ungroupedCard.dragTo(ungroupedColumn)
+  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))).toHaveLength(1)
+})
+
+test('Board grouping picker clears a value on a 390px viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const boardView = view('board-picker-null-view', rootDatabase.id, 'Board', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: 'root-select' },
+  }, 'board')
+  const api = await installApi(page, [
+    block('board-picker-null-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
+  ], { databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const board = page.getByTestId('database-board')
+  const openColumn = board.locator('[data-option-id="status-open"]')
+  const card = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
+  await card.getByRole('button', { name: '移动记录分组' }).click()
+  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: '未分组', exact: true }).click()
+  await expect(board.locator(`[data-option-id=""] [data-record-id="${basicRecord.id}"]`)).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))).toHaveLength(1)
+  expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBeNull()
 })
 
 test('board grouping mutation updates the record, keeps linked Table and List in sync, and preserves Table editing', async ({ page }) => {
@@ -3348,10 +3470,12 @@ test('board grouping mutation updates the record, keeps linked Table and List in
   await expect(tableBlock.getByRole('button', { name: '移动记录分组' })).toHaveCount(0)
   await expect(listBlock.getByRole('button', { name: '移动记录分组' })).toHaveCount(0)
 
-  await movedCard.getByRole('button', { name: '移动记录分组' }).click()
-  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: 'Done', exact: true }).click()
+  const boardRecordsPath = `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/views/${boardView.id}/table`
+  const boardReadsBeforeDrag = api.requests.filter(item => item.method === 'GET' && item.path === boardRecordsPath).length
+  await movedCard.dragTo(doneColumn)
   const movedDoneCard = doneColumn.locator('[data-record-id="board-mutation-a"]')
   await expect(movedDoneCard).toBeVisible()
+  await expect.poll(() => api.requests.filter(item => item.method === 'GET' && item.path === boardRecordsPath).length).toBe(boardReadsBeforeDrag + 1)
   await expect(openColumn.locator('[data-record-id="board-mutation-b"]')).toBeVisible()
   await expect(doneColumn.locator('[data-record-id="board-mutation-c"]')).toBeVisible()
   await expect(movedDoneCard.getByRole('button', { name: '移动记录分组' })).toHaveAttribute('data-value', 'status-done')
@@ -3399,7 +3523,7 @@ test('board grouping mutation updates the record, keeps linked Table and List in
   await expect.poll(() => api.records.find(item => item.id === moved.id)?.properties['root-select']).toBe('status-done')
 })
 
-test('failed Board grouping mutation keeps the card and selected option unchanged', async ({ page }) => {
+test('failed Board drag keeps the card and selected option unchanged', async ({ page }) => {
   const boardView = view('board-mutation-failure-view', rootDatabase.id, 'Board', {
     ...DEFAULT_DATABASE_VIEW_CONFIG,
     options: { groupByPropertyId: 'root-select' },
@@ -3417,9 +3541,8 @@ test('failed Board grouping mutation keeps the card and selected option unchange
   const board = page.getByTestId('database-board')
   const openColumn = board.locator('[data-option-id="status-open"]')
   const openCard = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
-  const picker = openCard.getByRole('button', { name: '移动记录分组' })
-  await picker.click()
-  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: 'Done', exact: true }).click()
+  const doneColumn = board.locator('[data-option-id="status-done"]')
+  await openCard.dragTo(doneColumn)
 
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(openColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
@@ -3430,7 +3553,7 @@ test('failed Board grouping mutation keeps the card and selected option unchange
   expect(api.requests.filter(item => item.method === 'PATCH' && item.path.includes('/databases/'))).toHaveLength(1)
 })
 
-test('Board grouping conflict stays stale until refresh, then retries with fresh record versions', async ({ page }) => {
+test('Board drag conflict stays stale until refresh, then retries with fresh record versions', async ({ page }) => {
   const boardView = view('board-mutation-conflict-view', rootDatabase.id, 'Board', {
     ...DEFAULT_DATABASE_VIEW_CONFIG,
     options: { groupByPropertyId: 'root-select' },
@@ -3449,8 +3572,7 @@ test('Board grouping conflict stays stale until refresh, then retries with fresh
   const openCard = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
   const picker = openCard.getByRole('button', { name: '移动记录分组' })
   const boardRecordsPath = `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/views/${boardView.id}/table`
-  await picker.click()
-  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: 'Done', exact: true }).click()
+  await openCard.dragTo(doneColumn)
 
   const conflictAlert = page.getByRole('alert')
   await expect(conflictAlert).toContainText('请刷新后重新选择')
@@ -3467,8 +3589,7 @@ test('Board grouping conflict stays stale until refresh, then retries with fresh
   const refreshedPicker = refreshedCard.getByRole('button', { name: '移动记录分组' })
   await expect(refreshedPicker).toHaveAttribute('data-value', '')
 
-  await refreshedPicker.click()
-  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: 'Done', exact: true }).click()
+  await refreshedCard.dragTo(doneColumn)
   await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
   expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBe('status-done')
   const cellUpdates = api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))

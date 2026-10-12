@@ -1361,7 +1361,7 @@ async function setRelation(record: TableRecord, property: DatabasePropertyRespon
   } finally { savingCell.value = false }
 }
 
-async function changeBoardGroup(recordId: string, optionId: string): Promise<void> {
+async function changeBoardGroup(recordId: string, optionId: string | null): Promise<void> {
   if (viewType.value !== 'board' || !props.editor.isEditable || !writable.value || loadingMore.value) return
   const workspace = workspaceId.value
   const database = databaseId.value
@@ -1370,22 +1370,26 @@ async function changeBoardGroup(recordId: string, optionId: string): Promise<voi
   const propertyId = viewConfig.value.options?.groupByPropertyId
   const property = properties.value.find(item => item.id === propertyId && item.type === 'select')
   const record = records.value.find(item => item.id === recordId)
-  const option = property?.options?.find(item => item.id === optionId)
-  if (!workspace || !database || !view || !property || !record || !option) return
-  if (Object.hasOwn(record.properties, property.id) && record.properties[property.id] === option.id) return
+  const option = optionId === null ? null : property?.options?.find(item => item.id === optionId) ?? null
+  if (!workspace || !database || !view || !property || !record || (optionId !== null && !option)) return
+  const currentValue = Object.hasOwn(record.properties, property.id) ? record.properties[property.id] : null
+  const currentOptionId = typeof currentValue === 'string' && property.options?.some(item => item.id === currentValue) ? currentValue : null
+  const nextOptionId = option?.id ?? null
+  if (currentOptionId === nextOptionId) return
 
   const isCurrentScope = () => userId.value === user && workspaceId.value === workspace && databaseId.value === database && viewId.value === view
   savingCell.value = true
   mutationError.value = ''
   try {
     const result = await updateProductDatabaseRecordCell(workspace, database, record.id, property.id, {
-      value: option.id,
+      value: nextOptionId,
       expectedDatabaseVersion: databaseVersion.value,
       expectedRecordVersion: record.version,
     })
     if (!isCurrentScope()) return
     databaseVersion.value = result.database.version
     mutationError.value = 'refreshWarning' in result && result.refreshWarning ? result.refreshWarning : ''
+    // This refresh includes notifications received during the mutation, including our own.
     externalRefreshPending = false
     await refreshLoadedWindow()
   } catch (cause) {
@@ -1394,6 +1398,7 @@ async function changeBoardGroup(recordId: string, optionId: string): Promise<voi
       : errorMessage(cause, '记录分组未保存，请重试。')
   } finally {
     savingCell.value = false
+    if (isCurrentScope()) runDeferredRefresh()
   }
 }
 
@@ -1401,13 +1406,14 @@ function onDatabaseChanged(event: Event): void {
   const detail = (event as CustomEvent<DatabaseRecordCreatedDetail | DatabaseUpdatedDetail>).detail
   if (detail?.workspaceId !== workspaceId.value) return
   if (detail.databaseId !== databaseId.value && !properties.value.some(property => property.type === 'relation' && (property.config as { targetDatabaseId: string }).targetDatabaseId === detail.databaseId)) return
-  if (cellPopover.value || cellEdit.value || relationPicker.value || propertyConfigType.value || typeChangeTarget.value || settingsMenuOpen.value || viewControlsOpen.value) {
+  if (cellPopover.value || cellEdit.value || relationPicker.value || propertyConfigType.value || typeChangeTarget.value || settingsMenuOpen.value || viewControlsOpen.value || (viewType.value === 'board' && savingCell.value)) {
     externalRefreshPending = true
     return
   }
   void refreshLoadedWindow()
 }
 function runDeferredRefresh(): void {
+  if (viewType.value === 'board' && savingCell.value) return
   if (!externalRefreshPending) return
   externalRefreshPending = false
   void refreshLoadedWindow()
