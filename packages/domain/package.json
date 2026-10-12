@@ -23,6 +23,13 @@
       "require": "./dist/database.js",
       "default": "./dist/database.js"
     },
+    "./date": {
+      "types": "./src/date.ts",
+      "node": "./dist/date.js",
+      "import": "./src/date.ts",
+      "require": "./dist/date.js",
+      "default": "./dist/date.js"
+    },
     "./order": {
       "types": "./src/order.ts",
       "import": "./src/order.ts",

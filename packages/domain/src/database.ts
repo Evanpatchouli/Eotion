@@ -1,3 +1,5 @@
+import { isValidDateOnly } from './date'
+
 export type DatabasePropertyType = 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'relation' | 'rollup' | 'formula'
 export type DatabaseBasePropertyType = Exclude<DatabasePropertyType, 'relation' | 'rollup' | 'formula'>
 export type DatabaseFormulaResultType = 'string' | 'number' | 'boolean' | 'date' | 'null'
@@ -389,12 +391,6 @@ export function isValidFormulaExpression(value: unknown): value is FormulaExpres
     return false
   }
   return walk(value, 1)
-}
-
-function isValidDateOnly(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false
-  const [year, month, day] = value.split('-').map(Number) as [number, number, number]
-  return isCalendarDate(year, month, day, value)
 }
 
 function isValidPropertyValue(value: unknown, property: DatabaseProperty): boolean {

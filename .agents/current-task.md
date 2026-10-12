@@ -1,4 +1,4 @@
-# 当前任务：P11.1A Temporal Domain Foundation（执行中）
+# 当前任务：P11.1A Temporal Domain Foundation（已完成，停在此处）
 
 当前正式版本：`0.0.1`。P8 Database 与 P9 Multi-View 已封板；P10 Database MCP
 Extension 在当前仓库尚未实施，不得虚报完成。当前只执行 **P11.1A**，目标版本仍为
@@ -9,8 +9,8 @@ Extension 在当前仓库尚未实施，不得虚报完成。当前只执行 **P
 | Work Unit | 目标 | 状态 |
 | --- | --- | --- |
 | P11.1A-1 | 在 `docs/p11-timeline.md` 冻结 Date value / normalization / compatibility 契约 | 已完成 |
-| P11.1A-2 | 在 `packages/domain` 实现独立日期类型、严格 validator、纯 normalization helper | 执行中 |
-| P11.1A-3 | Domain 单测、typecheck、相邻回归、diff 检查与独立 review | 未开始 |
+| P11.1A-2 | 在 `packages/domain` 实现独立日期类型、严格 validator、纯 normalization helper | 已完成 |
+| P11.1A-3 | Domain 单测、typecheck、相邻回归、diff 检查与独立 review | 已完成；API Mongo 集成测试因本机无 27017 未执行完成 |
 
 ## 范围与禁止事项
 
@@ -23,6 +23,7 @@ Extension 在当前仓库尚未实施，不得虚报完成。当前只执行 **P
 
 ## 验收与接续
 
-必须通过相关 Domain 单测、typecheck、必要的相邻回归和 `git diff --check`，并提交聚焦
-commit。P11.1B 的接续入口是：在保持 legacy string 可读的前提下，把 normalized date
+已通过相关 Domain 单测、typecheck、Contracts/Storage 回归、API build、`git diff --check`
+与独立 review，并提交聚焦 commit。API Domain 集成测试需要本机 MongoDB（默认
+`mongodb://127.0.0.1:27017`），本轮因无监听服务而停止，未将其误报为通过。P11.1B 的接续入口是：在保持 legacy string 可读的前提下，把 normalized date
 value 接入 Property / Record / Contracts / Mongo 完整数据链路，再协调共享值联合类型的正式切换。

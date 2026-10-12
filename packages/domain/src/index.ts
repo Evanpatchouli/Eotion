@@ -12,6 +12,22 @@ export interface PageSummary {
 import type { BlockType } from './block-types'
 
 export {
+  isValidDateOnly,
+  isValidCanonicalUtcInstant,
+  isValidIanaTimeZone,
+  isValidDatabaseDateRangeValue,
+  isValidDatabaseDateValue,
+  normalizeDatabaseDateValue,
+} from './date'
+export type {
+  DatabaseDateValue,
+  DatabaseDateRangeValue,
+  NormalizedDatabaseDateOnlyValue,
+  NormalizedDatabaseDateTimeValue,
+  NormalizedDatabaseDateValue,
+} from './date'
+
+export {
   BLOCK_CAPABILITIES,
   BLOCK_COMMANDS,
   BLOCK_NODE_NAMES,

@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1A Temporal Domain Foundation 已冻结；实现进行中；P11.1B–P11.6 尚未实施**  
+> Status: **P11.1A Temporal Domain Foundation 已冻结并实施；P11.1B–P11.6 尚未实施**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -337,7 +337,8 @@ Contracts、Mongo 与 Web 消费者继续只依赖 legacy date value。
   `end` 必须是 canonical UTC instant，并且必须附带可由 `Intl` 识别的 IANA
   timezone。单点日期或单时间点省略 `end`，不得持久化虚假的 `end`。
 - `start` 与 `end` 必须同为 date-only 或同为 datetime，且顺序满足
-  `start <= end`；非法日期、闰年、UTC instant、时区或混合类型一律拒绝。
+  `start <= end`；相等的 `end` 表示显式零长度 range，仍与省略 `end` 的单点语义
+  区分；非法日期、闰年、UTC instant、时区或混合类型一律拒绝。
 - normalization 通过共享纯函数完成：legacy string 与新对象都归一为带
   `kind` 的 normalized value，并保留 normalized `start` 供后续 Filter / Sort /
   Formula 消费；本阶段不改写这些消费者。
