@@ -216,7 +216,7 @@ Timeline 是 0.0.2 后最高优先级的 Database View。
 - P11.4 Responsive + Lifecycle：Desktop/Tablet 提供横向时间轴；Phone 提供合理的窄屏交互，不破坏 Editor/NodeView/Drawer/snapshot identity。
 - P11.5 Final Acceptance：日期边界、跨区间、空日期、筛选/排序/分页、CAS、linked views、三尺寸、Light/Dark、P8/P9 回归。
 
-P11.1 未冻结日期范围模型前，不提前实现 Calendar；Calendar 必须复用这里形成的日期语义。
+P11.1 未冻结日期范围模型前，不提前实现 Calendar；Calendar 必须复用这里形成的日期语义。Timeline 的产品结构、Today 红线、水平滚动、时间条 mutation、Frozen Table 与 Dependency 等 Notion parity 标准见 [P11 Timeline](p11-timeline.md)。
 
 ## P12 - Gallery（目标版本 0.0.4）
 

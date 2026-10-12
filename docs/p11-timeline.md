@@ -1,0 +1,713 @@
+# P11 Timeline — Notion Parity Product Standard
+
+> Status: **设计标准已冻结，实施尚未开始**  
+> Target release: **0.0.3**  
+> Stage: **P11**  
+> Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
+
+## 1. 目标
+
+P11 的目标不是“做一个能画横条的甘特图”，而是实现一个真正可作为 Eotion Database 第四种正式 View 的 Timeline。
+
+产品验收应以以下体验为基准：
+
+- 同一批 Database Records 在横向时间坐标上按日期范围绘制。
+- 时间轴可以连续水平滚动，底部存在真实可操作的水平滚动条。
+- 当前日期在可视窗口内时，绘制一条贯穿时间网格的竖直红色“今天线”。
+- 顶部提供时间尺度切换、上一段 / 今天 / 下一段导航。
+- Record 以横向时间条显示，可移动整段、拖动左右边缘修改长度。
+- 标题与选定属性直接显示在时间条中。
+- 可显示 / 隐藏左侧冻结表格。
+- 可从视口外记录的方向提示快速跳到对应时间位置。
+- 支持加载更多、新建记录、打开 Record Page、Filter / Sort / Property visibility。
+- 支持 Notion 式 dependency 可视连接与依赖日期联动。
+- Linked View、CAS、snapshot/lifecycle、online-only Database 边界继续成立。
+
+本规范描述的是 **P11 的产品与结构标准**。实现细节可以不同，但不得通过削弱行为来规避这些标准。
+
+## 2. 参考基准
+
+本规范基于：
+
+1. 用户提供的 Notion Timeline 实际截图（2026-10-13）。
+2. 用户补充确认：
+   - 今天位置存在贯穿时间轴的竖直红线；
+   - Timeline 主区域可水平滚动，底部存在横向滚动条。
+3. Notion 官方 Timeline Help 当前公开行为：
+   - 时间尺度可从小时扩展到年份；
+   - Today 可跳回当前日期；
+   - 时间条左右边缘可拖动调整时长；
+   - 可显示 / 隐藏左侧 table；
+   - 可切换用于绘制 Timeline 的 Date Property；
+   - 可使用单一 Date range，也可使用独立 Start / End Date Properties；
+   - 可控制 timeline property visibility、load limit、row reorder。
+4. Notion 官方 Tasks / Dependencies 行为：
+   - Timeline 可显示 dependency；
+   - dependency 基于 relation 连接记录；
+   - 可配置“仅重叠时偏移 / 保持间隔偏移 / 不自动偏移”；
+   - 可选避免周末。
+
+外部参考：
+- https://www.notion.com/help/timelines
+- https://www.notion.com/help/tasks-and-dependencies
+
+## 3. 页面结构
+
+Timeline 仍然位于现有 Database Block / Database Page Shell 中。Database 标题、View Selector、Settings、Create View、Record opening 等通用能力不在 Timeline 中复制。
+
+建议结构：
+
+```text
+DatabaseNodeView / DatabasePage
+└─ TimelineView
+   ├─ TimelineHeader
+   │  ├─ MajorPeriodLabel
+   │  ├─ CalendarIntegrationSlot
+   │  └─ TimelineNavigation
+   │     ├─ ScaleSelect
+   │     ├─ PreviousButton
+   │     ├─ TodayButton
+   │     └─ NextButton
+   ├─ TimelineBody
+   │  ├─ FrozenTablePane?          # 可显示 / 隐藏
+   │  └─ TimelineViewport          # overflow-x: auto
+   │     └─ TimelineCanvas
+   │        ├─ TimeRuler           # sticky top
+   │        ├─ GridBackground
+   │        ├─ TodayLine
+   │        ├─ TimelineRows
+   │        │  └─ TimelineItemBar
+   │        └─ DependencyLayer
+   ├─ HorizontalScrollbar
+   └─ TimelineFooter
+      ├─ LoadMore
+      ├─ MoreActions
+      └─ NewRecord
+```
+
+关键结构约束：
+
+- Timeline 的横向滚动必须只作用于时间区域；不能让整个页面产生 document-level 横向溢出。
+- 左侧 table 展开时保持冻结，不能跟随时间轴横向滚动。
+- Table rows 与 Timeline rows 必须严格共用行高和纵向顺序。
+- 默认不引入第二个纵向滚动容器；inline Database 应继续由页面负责纵向滚动，Timeline 只负责横向滚动。
+- Time ruler 在 Timeline 自身滚动时保持与横向坐标同步，并在页面纵向滚动经过 Timeline 时按既有产品 Shell 策略保持可读。
+
+## 4. 顶部 Header / 导航
+
+### 4.1 Major Period Label
+
+截图左上方的“一月”属于当前可视区的主时间段标签，而不是 View 名称。
+
+行为：
+
+- 标签随横向 viewport 改变而更新。
+- Month scale 下显示当前主月份。
+- Week / Quarter / Year 等尺度使用与尺度匹配的主周期标签。
+- 当 viewport 跨两个主周期时，优先显示当前左侧主周期，下一主周期标签在 ruler 对应位置自然出现。
+- 主周期标签与下方细粒度 tick 形成两层时间标尺。
+
+### 4.2 Scale Select
+
+截图中的“月度”是 Timeline zoom / timeframe selector。
+
+P11 至少支持：
+
+```text
+Hour
+Day
+Week
+Bi-week
+Month
+Quarter
+Year
+```
+
+要求：
+
+- 切换 scale 只改变时间坐标与可视粒度，不修改任何 Record 日期。
+- 当前 viewport 的语义中心尽量保持稳定，避免每次切换后跳到无关日期。
+- Time ruler、网格宽度、today line、bar position、drag snapping 全部使用同一个 time-scale transform。
+- 如果 P11 实施时当前 Notion 已稳定提供更大尺度（例如 5 years），可以作为加性 scale 增加，但不得改变已有 scale 的存储语义。
+
+### 4.3 Previous / Today / Next
+
+截图右上方为：
+
+```text
+[Scale]   ‹   Today   ›
+```
+
+行为：
+
+- Previous / Next 按当前 scale 的主要 viewport 单位平移。
+- Today 将 viewport 跳回当前日期；空间允许时让今天线落在视口中部附近，而不是贴边。
+- Today 不修改选择中的 Record，不改变 filter/sort。
+- 键盘 focus、aria-label 与 44px touch target 继续遵循 Eotion UI 标准。
+
+### 4.4 “在日历中管理”
+
+截图顶部存在 Notion Calendar 集成入口。它属于 Notion 外部 Calendar 产品集成，不属于 Timeline 核心坐标系统。
+
+Eotion 标准：
+
+- P11 在结构上保留 `CalendarIntegrationSlot`，避免未来 P13 Calendar 接入时重新改 Timeline header。
+- P11 不显示一个无法工作的假入口。
+- P13 Calendar 完成后，该 slot 可以提供“在日历中管理 / 打开日历视图”等真实能力，但必须由实际 Calendar capability 驱动。
+- 不因为视觉复刻而制造无后端语义的 dead control。
+
+这是 P11 对 Notion 唯一明确允许的阶段性可见差异。
+
+## 5. Time Ruler
+
+Time ruler 是 Timeline 的坐标基准，不是普通 header 文本。
+
+截图在 Month scale 下表现为：
+
+```text
+一月
+31  1  2  3  4  5  6  7  8 ...
+```
+
+结构要求：
+
+- 第一层：主周期（Month / Quarter / Year 等）。
+- 第二层：当前 scale 下的细粒度 tick。
+- tick 必须与下方 grid line / item position 使用完全同一 x 坐标。
+- 周末 / 非工作日可以采用轻微 surface 差异，但不能喧宾夺主。
+- 跨月、跨季度、跨年边界必须连续，不允许用分页切断时间轴。
+- locale 决定月份、日期、星期等标签格式。
+- 周起始日遵循产品 locale / preference，而不是写死 Sunday 或 Monday。
+
+## 6. 横向滚动模型
+
+Timeline 是一个近似无限的横向时间空间。
+
+硬要求：
+
+- `TimelineViewport` 使用真实 `overflow-x: auto` / 等价原生滚动能力。
+- 底部显示可用的水平 scrollbar；不能只依赖 Shift+Wheel 或手势。
+- 鼠标滚轮 + Shift、触控板横移、拖动 scrollbar 都应生效。
+- 桌面 / 平板保持横向时间轴模型。
+- 不允许 Timeline 横向滚动推动 Sidebar、Page、Topbar 或整个 document。
+- viewport 横移后，ruler、grid、bars、dependencies、today line 必须保持像素级同步。
+- 大时间跨度不能渲染无界 DOM；需要 windowed / virtualized time canvas 或可证明有界的等价实现。
+- 不能通过把所有日期一次性扩成几十万像素永久 DOM 来“实现无限滚动”。
+
+建议 coordinate model：
+
+```text
+timestamp/date  <->  logical time coordinate  <->  x pixel
+```
+
+所有视觉层只消费同一个 transform，不允许 ruler / bars / dependency 各自计算一套日期位置。
+
+## 7. Today Line
+
+用户明确要求与 Notion 一致：
+
+- 当“今天”落在当前可视时间范围内，显示一条竖直红色轴线。
+- 红线从时间标尺下沿贯穿 Timeline canvas 的所有可见 rows。
+- 红线不参与 hit testing，不遮挡 Record bar 交互。
+- 红线位置必须基于用户当前 timezone / locale 的“今天”，不能使用服务器 UTC 日期直接决定。
+- 日期跨日后，在应用存活状态下也要更新，不要求刷新页面才能变化。
+- Today button 跳转后，红线应立即进入 viewport。
+- Dark mode 仍使用高可识别的 danger/red semantic token，但保持 Quiet Studio 的低饱和度，不使用刺眼荧光红。
+
+今天线是 P11 Visual Acceptance 的必测项。
+
+## 8. Timeline Rows
+
+每个可绘制 Database Record 占一个逻辑 row。
+
+规则：
+
+- row 的纵向顺序来自当前 View 的排序 / 手动顺序语义。
+- Filter 在服务端 generic records 查询阶段完成。
+- Timeline 不能对当前分页结果重新做一套会改变业务结果的 filter/sort。
+- row 高度在同一 View 中稳定；Table pane 打开时左右两侧完全对齐。
+- Bar 可以跨越多个时间 tick，但不改变 row 高度。
+- 多条 Record 不共享一个 row，因此不需要在单 row 内做事件碰撞排版。
+
+Notion 支持拖动 Timeline item 上下调整顺序。P11 将此行为列为 parity requirement，但持久化必须设计成 **generic View row ordering**，不能创建 TimelineRecord / TimelineRow 实体。若 P11.1 需要新增 View-record order persistence，应设计成未来 List/Gallery 等也可复用的通用能力。
+
+## 9. Timeline Item Bar
+
+截图中每个 Record 表现为白色 / raised surface 的圆角横条。
+
+### 9.1 内容
+
+默认顺序：
+
+```text
+Page.title   [visible property 1] [visible property 2] ...
+```
+
+要求：
+
+- Page.title 继续是 Record title 唯一来源。
+- 复用 `visibleProperties` / `propertyOrder`。
+- Select 等属性可按现有产品样式显示为 pill。
+- 内容超宽时截断，不撑开 bar 的真实时间宽度。
+- 点击标题 / bar 主区域按既有 Record opening preference 打开 Drawer / Modal / Page。
+
+### 9.2 宽度
+
+Bar 左边界 = resolved start。  
+Bar 右边界 = resolved end。
+
+- duration 决定 bar 几何长度。
+- 不能因为标题更长而偷偷扩大日期范围。
+- 当视觉宽度不足以显示标题时，只裁剪内容。
+- 最小命中宽度可以大于真实几何宽度，但视觉日期范围不能被篡改。
+
+### 9.3 Hover / Selection
+
+hover 时提供：
+
+- move cursor / drag affordance；
+- 左右 resize affordance；
+- dependency connector（启用 dependencies 时）；
+- 必要的 date tooltip。
+
+Focus / keyboard 状态必须与 hover 有等价可感知反馈。
+
+## 10. 日期来源与 Date Range
+
+当前 Eotion Date Property 的存储值本质上仍是 date-only string；这不足以完整承载 Notion Timeline。
+
+P11.1 必须先扩展 Date 语义，再进入 renderer。
+
+### 10.1 支持两种 Timeline date source
+
+与 Notion 对齐：
+
+**A. 单一 Date Property 内保存 range**
+
+```text
+DateProperty
+start = 2026-01-05
+end   = 2026-01-10
+```
+
+**B. 分离的 Start / End Date Properties**
+
+```text
+startPropertyId = plannedStart
+endPropertyId   = plannedEnd
+```
+
+View config 必须明确记录 source mode 与稳定 Property ID，不能靠 Property name 猜测。
+
+### 10.2 Date value 演进约束
+
+P11.1 冻结 wire shape 时必须满足：
+
+- legacy `YYYY-MM-DD` Date value 继续可读，不做破坏性 migration；
+- 新模型能表达 `start` + optional `end`；
+- 为 Hour scale 保留 date-time 能力，不能永远锁死 date-only；
+- timezone / all-day 语义必须明确；
+- `start <= end`；
+- Property delete / Date → non-Date type mutation 若被 Timeline 使用必须 409 fail-closed；
+- 与 P8/P9 一样，不静默清除 View config 引用。
+
+具体 TypeScript wire shape留给 P11.1 在真实代码上冻结，但上述语义不可降级。
+
+### 10.3 单点日期
+
+若 Record 只有 start 而没有 end：
+
+- 解析为 zero-duration / single-point item；
+- 视觉上使用当前 scale 的最小可交互宽度；
+- drag 整体移动仍只修改 start；
+- resize 产生 end 后，该 Record 正式成为 range。
+
+这能让 deadline / milestone 类记录存在于 Timeline 中，同时不伪造持久化时长。
+
+## 11. 时间条移动与 Resize
+
+Timeline item 需要三种核心 mutation：
+
+### Move
+
+拖动 bar 主体：
+
+- start 和 end 同量平移；
+- duration 保持不变；
+- 拖动时按当前 scale 对齐合理时间刻度；
+- pointer move 期间只做 ephemeral preview；
+- pointer up / drop 才调用通用 Record cell mutation；
+- server success 后确认；
+- 409 / failure 回到服务端真实值并显示冲突反馈。
+
+### Resize Start
+
+拖动左边缘：
+
+- 只修改 start；
+- 不允许 start > end；
+- 允许把 single-point item 拉成 range。
+
+### Resize End
+
+拖动右边缘：
+
+- 只修改 end；
+- 不允许 end < start。
+
+拖动期间显示日期提示，避免用户必须只靠网格猜日期。
+
+不得新增 `moveTimelineItem` 之类 Timeline-specific HTTP endpoint；最终仍应落到通用 Date Property mutation + CAS。
+
+## 12. 离屏记录提示
+
+Notion Timeline 对落在当前 viewport 左侧或右侧的项目提供方向箭头。
+
+Eotion parity：
+
+- Record row 在当前查询结果中，但 bar 完全位于 viewport 外时，在对应 row 左 / 右边缘显示轻量方向提示。
+- 点击后横向滚动到该 Record。
+- 若 Record 本身跨越 viewport，只显示能够表达缺失范围的方向提示。
+- 提示是导航，不改变 Record 日期。
+- 不应为尚未加载的下一页 Record 伪造箭头。
+
+## 13. 左侧 Frozen Table
+
+Notion Timeline 可显示 / 隐藏左侧 table。
+
+Eotion 必须支持：
+
+- 默认状态可按 View config 保存。
+- 展开后 table 固定在左侧；Timeline 横向滚动不影响它。
+- 收起后 Timeline 使用完整可用宽度。
+- table 至少包含 title，并允许从当前 Database Properties 中选择额外列。
+- table property visibility/order 与 Timeline bar property visibility 是两个不同 projection；不能强制完全相同。
+- table column resize / reorder 若实现，应复用通用 View config 能力。
+- 左右区域 row 高度、hover、selection、open record 状态同步。
+- `<<` / `>>` 或 Eotion 等价 Quiet Studio affordance 必须清晰可发现。
+
+## 14. Dependency Layer
+
+用户截图中的 item 右侧 connector 以及当前 Notion Timeline 都要求 Dependency 进入 P11 结构标准。
+
+### 14.1 数据模型
+
+不得创建 TimelineDependency 实体。
+
+优先复用 Eotion 已有 Relation Property：
+
+- dependency 是同一 Database 的 self-relation；
+- Database / View config 标识哪个 self-relation 被解释为 dependency；
+- 依赖方向必须明确（blocked by / blocking），不能只保存无方向集合后在 UI 猜测。
+
+若现有单向 Relation 不足以表达稳定反向 projection，P11.1 应扩展 generic Relation / dependency domain，而不是把逻辑塞进 renderer。
+
+### 14.2 视觉
+
+- 启用 dependency 后，hover bar 出现 connector handle。
+- 用户可从一个 item 拖出连接到另一个 item。
+- 已有 dependency 用细线 / 箭头跨 rows 绘制。
+- dependency layer 与 time canvas 同步横移。
+- line 不参与 bar width 计算。
+- 大量依赖时要避免 O(n²) DOM/路径计算。
+
+### 14.3 日期联动策略
+
+目标 parity：
+
+```text
+shift_when_overlapping
+shift_and_keep_gap
+no_auto_shift
+```
+
+并支持：
+
+```text
+avoid_weekends: boolean
+```
+
+这些规则属于 Database / dependency domain，不属于 CSS / renderer。
+
+自动 shift 必须：
+
+- 在服务端事务内验证；
+- 有界地处理 dependency chain；
+- 检测 cycle；
+- 使用 CAS / version fence；
+- 失败原子回滚；
+- 不产生部分记录已移动、部分失败的状态。
+
+## 15. Property Visibility
+
+Timeline bar 与 Frozen Table 均可以投影属性。
+
+Bar：
+
+- 复用 View 的 `visibleProperties` / `propertyOrder` 作为基础。
+- 标题永远来自 Page.title。
+- 属性在 bar 内按 compact form 呈现。
+
+Frozen Table：
+
+- 需要独立 table projection options，避免“为了 Timeline bar 显示一个 Status”就强制左表也出现同一列。
+- View config 中新增字段必须位于 `options` 并保持 unknown future options。
+
+## 16. Load More / New
+
+截图底部明确存在：
+
+```text
+↓ 加载更多   ...
++ 新建
+```
+
+要求：
+
+- 沿用 generic records cursor。
+- “加载更多”增加整个 View 的 records 集合，不做按时间片单独分页。
+- 加载新页后保持当前横向 scrollLeft，不把用户拉回 today / start。
+- 新建 Record 继续使用现有 Database record creation flow。
+- 若新建记录没有 Timeline date source，记录可以存在但进入“未排期 / 未安排”状态，不应被偷偷赋今天。
+- 可以提供显式“安排到时间轴”入口，但日期必须由用户动作产生。
+
+## 17. 未排期 Records
+
+完整 Timeline 需要处理没有可解析 date range 的 Records。
+
+标准：
+
+- 不从主时间 canvas 静默丢失且完全不可发现。
+- 提供“未排期 / No date”区域或可达入口。
+- 用户可以从未排期区域把记录拖入某个时间位置，从而写入 start/date。
+- Filter 仍在 server-side 执行。
+- 未排期区域的存在不能改变分页语义。
+
+最终呈现位置可以在 P11 Visual Design 时微调，但“无日期记录可发现、可安排”是硬要求。
+
+## 18. Filter / Sort / Group
+
+### Filter / Sort
+
+完全复用 P9 generic records：
+
+- server-side filter；
+- server-side multi-sort；
+- cursor / bounded result；
+- renderer 不重新解释业务查询。
+
+### Group
+
+Notion Timeline 支持按属性分组。Eotion P11 若实现 grouping，必须做成可复用的 generic View grouping，而不是 TimelineGroup entity。
+
+由于截图基准未展示 group，本能力可以在 P11 主 renderer 稳定后实施，但 **P11 Final Acceptance 前是否要求 full Notion grouping parity，应在 P11.1 scope freeze 时明确记录，不得默默遗漏。**
+
+## 19. Responsive
+
+### Desktop >= 1200
+
+- 完整 Timeline；
+- 横向 scrollbar；
+- Frozen Table 可展开；
+- mouse drag / resize / dependency；
+- scale + prev/today/next 常驻。
+
+### Tablet 768–1199
+
+- 保留横向 Timeline，不降级成 List；
+- Toolbar 可压缩但核心 scale / today/navigation 必须可达；
+- Frozen Table 可以默认收起；
+- touch drag target 放大。
+
+### Phone < 768
+
+Phone 不应把 Timeline 假装成普通 List。
+
+标准：
+
+- 仍然是横向时间轴；
+- 支持触摸横向滚动；
+- Today 可跳转；
+- scale selector 可达；
+- Record 可打开；
+- 日期修改可使用更适合 touch 的 picker / sheet 作为拖拽替代或补充；
+- dependency 创建可进入明确的 touch flow，不强求细小 connector 拖动；
+- document 仍不得产生全页横向 overflow。
+
+P11 Visual Acceptance 至少覆盖 1440×900、约 834px tablet、390×844 phone，Light / Dark。
+
+## 20. Lifecycle / Concurrency
+
+P9 的 identity fence 继续是硬边界：
+
+- Timeline / Table / List / Board 切换不能 remount Editor / NodeView。
+- 横向 scroll、scale、table visibility 等纯 View UI state 变化不能关闭 Record Drawer 或丢 title/body draft。
+- semantically equal Page snapshot 不重建 Timeline component。
+- in-flight Date / View config mutation 返回时必须验证当前 user/workspace/database/view/block identity。
+- A → B → A 仍要防旧响应污染。
+- 409 不覆盖当前新 View state。
+
+不要为了 Timeline 重构已封板的 P9 identity fence，除非有稳定可复现 blocker。
+
+## 21. View Config 目标语义
+
+最终字段名由 P11.1 在代码中冻结，但语义上至少需要：
+
+```ts
+interface TimelineViewOptions {
+  dateSourceMode?: 'range-property' | 'separate-properties'
+  datePropertyId?: string
+  endDatePropertyId?: string
+
+  scale?: 'hour' | 'day' | 'week' | 'biweek' | 'month' | 'quarter' | 'year'
+
+  tableVisible?: boolean
+  tableVisibleProperties?: string[]
+  tablePropertyOrder?: string[]
+
+  dependencyPropertyId?: string
+  dependencyShiftMode?: 'shift_when_overlapping' | 'shift_and_keep_gap' | 'no_auto_shift'
+  dependencyAvoidWeekends?: boolean
+
+  // future fields must remain preservable
+  [key: string]: unknown
+}
+```
+
+这只是 **语义草案**，不是当前代码 API。P11.1 可以调整字段名 / shape，但不能丢掉相应能力。
+
+不应持久化：
+
+- 当前 `scrollLeft`；
+- hover item；
+- drag preview；
+- today line x；
+- 临时 tooltip；
+- viewport pixel width。
+
+这些是 device-local / ephemeral UI state，不属于共享 View config。
+
+## 22. 与现有 Eotion 架构的边界
+
+继续保持：
+
+- Database / Property / Record / View 是唯一持久领域。
+- Timeline 是 `DatabaseView.type = 'timeline'` 的 renderer，不是新 Database。
+- generic records 是读取基础。
+- Page.title 是 Record title 唯一来源。
+- Linked View 共享同一 Database；同 viewId 共享 Timeline config，不同 viewId 独立。
+- Database online read/write、offline readonly。
+- Page / Block local-first oplog 不接管 Database mutation。
+- Date drag / dependency shift 仍经过 server authorization / transaction / CAS。
+- 不创建 TimelineRecord / TimelineRow / TimelineDatabase / TimelineDate API。
+- 不为了 Timeline 引入 Kafka/Redis。
+
+## 23. P11 分阶段建议
+
+### P11.1 Timeline Domain + Date Range Foundation
+
+先解决：
+
+- `DatabaseViewType += timeline`
+- Date range / datetime / legacy Date compatibility
+- Timeline view options validator
+- referenced Date Property dependency fence
+- optional separate Start / End Properties
+- dependency domain minimum contract
+- generic row ordering strategy（若要达到 reorder parity）
+
+没有这些，不进入大规模 UI。
+
+### P11.2 Timeline Read Renderer
+
+只读完成：
+
+- ruler / grid
+- horizontal scrolling + scrollbar
+- scale
+- today red line
+- rows / bars
+- properties
+- offscreen indicators
+- pagination
+- unplanned records
+- Table/List/Board switching
+
+### P11.3 Timeline Mutation
+
+完成：
+
+- move range
+- resize start/end
+- date picker fallback
+- CAS / 409
+- server-confirmed persistence
+- snapshot/lifecycle
+
+### P11.4 Frozen Table + Dependencies
+
+完成：
+
+- show/hide table
+- independent table projection
+- row alignment
+- dependency connector / lines
+- dependency relation mutation
+- bounded automatic date shift
+
+### P11.5 Responsive + Visual Polish
+
+完成：
+
+- desktop/tablet/phone
+- Light/Dark
+- touch behavior
+- loading/empty/error/offline
+- Quiet Studio visual convergence
+
+### P11.6 Final Acceptance
+
+独立验收后才允许版本切到 `0.0.3`。
+
+## 24. Final Acceptance 最低矩阵
+
+P11 FINAL PASS 前必须覆盖：
+
+| Area | Must pass |
+| --- | --- |
+| Domain | Timeline type/options、Date range、legacy Date、dependency fence |
+| Generic records | filter/sort/pagination 与 Table/List/Board 一致 |
+| Ruler | Hour→Year、跨月/季/年、locale |
+| Today | 红色竖线、跨日更新、Today jump、timezone |
+| Scroll | 原生水平滚动、底部 scrollbar、无 document overflow |
+| Bar | title/property projection、range geometry、open record |
+| Mutation | move、resize left/right、single→range、409 |
+| Offscreen | left/right indicator + jump |
+| Frozen Table | show/hide、row sync、independent projection |
+| Dependency | connect、render、cycle、shift modes、rollback |
+| Unplanned | 无日期可见、可安排 |
+| Lifecycle | switch/snapshot/draft/Drawer/ABA |
+| Responsive | Desktop/Tablet/Phone |
+| Theme | Light/Dark |
+| Compatibility | old Table/List/Board / P8/P9 data no migration regression |
+| MCP | P10 Database MCP 不因 Timeline 破坏；P15 full adaptation 仍后置 |
+| Product | full Product suite workers=1/retries=0 |
+
+## 25. 明确禁止的“伪 Timeline”
+
+以下实现即使“看起来像甘特图”，也不能通过 P11：
+
+- 只画静态横条，没有真实 Date mutation。
+- 没有底部水平 scrollbar，只靠缩放塞进固定宽度。
+- Today 只有按钮，没有当前日期红线。
+- scale selector 只是视觉按钮，坐标不真正变化。
+- bar 宽度由标题长度决定。
+- drag 只改 DOM，不写回 Record Date。
+- 当前分页数据在客户端重新 filter/sort，导致结果不完整。
+- 左 table 与 Timeline 各有自己的 row list，滚动后错位。
+- dependency 只画线，不存在领域关系 / CAS / transaction。
+- 为 Timeline 新建 TimelineRecord / TimelineDatabase。
+- 通过 remount Editor / NodeView 简化 View 切换。
+- 为复刻 Notion 放一个没有真实行为的“在日历中管理”按钮。
+
+P11 的标准是 **真实 Database View + Notion Timeline 级交互**，而不是视觉 mock。

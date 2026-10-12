@@ -1,5 +1,14 @@
 # Handoff
 
+## 2026-10-13 P11 Timeline Notion Parity 标准已冻结（仅文档）
+
+用户提供 Notion Timeline 实际截图并要求后续 Timeline 产品结构/交互直接按 Notion 复刻；另补充两个截图外硬要求：当前日期存在贯穿时间网格的竖直红线；Timeline 主区域可水平滚动且底部有滚动条。已新增 `docs/p11-timeline.md` 作为 P11 source of truth。标准覆盖双层 ruler、Hour/Day/Week/Bi-week/Month/Quarter/Year scale、prev/today/next、横向原生滚动、Today red line、Record bar 属性投影、整体拖动、左右 resize、离屏 jump、Frozen Table、Load more/New、未排期记录、single Date range 与 separate Start/End source、Dependency relation/connector/自动 shift、三尺寸/Light-Dark、P9 identity/CAS/lifecycle 继承与 Final Acceptance 矩阵。
+
+当前 Eotion Date Property 仍主要以 date-only string 保存，不能直接满足完整 range/hour-scale；P11.1 必须先做向后兼容的 Date range/datetime foundation。Dependency 必须复用/扩展 generic Relation/domain，不创建 TimelineDependency；日期拖动最终落到 generic Record Date mutation + CAS，不新增 Timeline-specific mutation API。截图中的“在日历中管理”属于 Notion Calendar 外部集成；P11 只保留结构 slot，不放无行为假按钮，待 P13 Calendar 有真实 capability 后接入。
+
+当前执行阶段仍是 P10 Database MCP Extension；本次仅提前冻结 P11 产品标准，没有开始 P11 代码、没有改版本或产品行为。
+
+
 ## 2026-10-13 0.0.1 已发布 / P10–P15 Roadmap 冻结
 
 用户已发布 Eotion `0.0.1` tag 与 GitHub Release；仓库当前 package version 为 `0.0.1`。后续阶段顺序正式固定为：P10 Database MCP Extension（目标 0.0.2）→ P11 Timeline（0.0.3）→ P12 Gallery（0.0.4）→ P13 Calendar（0.0.5）→ P14 Chart（0.0.6）→ P15 MCP Full Adaptation（0.1.0）。每项都是独立阶段，独立 Final Acceptance；通过后才切对应版本，P15 后再做 0.1.0 Release Acceptance/tag/release。
