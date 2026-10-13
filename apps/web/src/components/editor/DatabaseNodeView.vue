@@ -20,6 +20,7 @@ import DatabasePropertyMenu from './DatabasePropertyMenu.vue'
 import DatabaseListView from './DatabaseListView.vue'
 import DatabaseBoardView from './DatabaseBoardView.vue'
 import DatabaseTimelineView from './DatabaseTimelineView.vue'
+import { resolveFrozenTableProperties } from './timeline/frozenTable'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -329,7 +330,13 @@ async function resolveVisibleRelationTitles(): Promise<void> {
   if (!online.value) return
   const grouped = new Map<string, string[]>()
   let budget = 500
-  for (const property of displayProperties.value.filter(item => item.type === 'relation')) {
+  const relationProperties = new Map(displayProperties.value.filter(item => item.type === 'relation').map(property => [property.id, property]))
+  if (viewType.value === 'timeline') {
+    for (const property of resolveFrozenTableProperties(properties.value, viewConfig.value)) {
+      if (property.type === 'relation' && !relationProperties.has(property.id)) relationProperties.set(property.id, property)
+    }
+  }
+  for (const property of relationProperties.values()) {
     const targetId = (property.config as { targetDatabaseId: string }).targetDatabaseId
     for (const record of records.value) for (const id of Array.isArray(getCellValue(record, property.id)) ? (getCellValue(record, property.id) as string[]).slice(0, 3) : []) {
       const ids = grouped.get(targetId) ?? []
