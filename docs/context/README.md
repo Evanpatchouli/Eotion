@@ -103,7 +103,10 @@ P11.1C 检索入口：`DATABASE_VIEW_TYPES`、`TimelineViewOptions` /
 方向和三种 shift 策略。结构验证复用原 Create/Update DTO；outer options 未知字段保留，
 Property 引用语义仅 Timeline 应用。CRUD/generic records/版本 cursor fence 复用，Web
 selector 可切 Timeline 并明确占位，无创建入口或 renderer。
-P11.1D 仍需从 `DatabaseService.updateProperty/changePropertyType/deleteProperty`
-事务内 View repair 与 `DatabaseViewRepository.hasBoardGroupingProperty` 所在 fence
-模式接续：hard reference 409、soft reference 修复、真实 view.type、事务/CAS/并发。
-`linkInPage` 保持 Table-only；不能把 generic records fail-closed 当作 lifecycle 已完成。
+P11.1D 生命周期实现入口：`DatabaseService.assertViewPropertyDependencies` 与内部
+`DatabaseViewPropertyDependency`，统一 Board/select、Timeline dateSource/date 与
+dependency/self-relation 硬引用409。deleteProperty独立修复Frozen Table visible/order，
+updateProperty/changePropertyType/deleteProperty全部按真实view.type校验候选schema；
+共享Database CAS与Property/View CAS保护事务/并发，旧Board专用repository查询已移除。
+证据见[P11.1D验收](../verification/p11-1d-property-lifecycle-fence.md)。`linkInPage`
+继续Table-only；下一步P11.2需新的明确指令，从Web Timeline占位与generic records接入。

@@ -1,5 +1,31 @@
 # Handoff
 
+## 2026-10-13 P11.1D Property Lifecycle Fence（PASS，停在此处）
+
+基线e0238a3，工作树开始时干净；master实现提交16da8cfdb7753e7a26bc0fc2d491a9b95517d754，
+验收/交接收口为本节所在commit。版本仍0.0.1，P11目标0.0.3，未进入P11.2。
+
+统一DatabaseViewPropertyDependency硬引用：Board grouping/select、Timeline单Date或
+start/end/date、dependency/self-relation。delete/type/retarget破坏引用409，空Relation也保护；
+rename合法。Frozen Table visibleProperties/propertyOrder删除ID软修复，保留Title、
+dateSource/dependency和未知outer options。三个Property mutation事务内读取当前Views，
+候选schema最终验证传真实view.type；共享DB CAS防引用phantom，Property/View repair CAS
+失败全回滚。旧Board专用repository查询已移除。无新API/实体/集合/迁移/MCP/版本变更。
+新建非法非self View config保持C的400输入契约；既有dependency的Relation retarget409。
+
+Domain48/48、Contracts25/25、SDK23/23、API22/22（Database14、HTTP Database5、通用HTTP1、
+server-domain2）、MCP30/30，合计148项，0fail/skip；D定向1/1是子集。相关typecheck、API build、
+diff/UTF-8无BOM通过，独立review0blocker。Mongo8.2.3新临时dbpath，replSet p111dAcceptance、
+27713；PRIMARY/真实transaction probe通过，最终admin shutdown、PID43988退出、端口关闭。
+日志C:/Users/31250/AppData/Local/Temp/eotion-p111d-e8af2b28a6cd41cdb4614e4f8edc314c，
+含final-validation-summary.txt与api-mongo-four-files-final.log。没有使用真实27017数据或改.env。
+
+正式证据docs/verification/p11-1d-property-lifecycle-fence.md，契约docs/p11-timeline.md§21.5。
+未执行完整Web Product/Database/E2E/Visual、原生真机、performance、sync/file全套及P11 Final。
+P11.2需新明确指令；从Web DatabaseNodeView现有Timeline占位、options.timeline与generic
+records接入只读ruler/grid/scale/scrollbar/today/rows/bars/unplanned/pagination。linkInPage仍
+Table-only；Linked Timeline需后续单独接入和HTTP/Block identity测试。完成D后停止。
+
 ## 2026-10-13 P11.1C Timeline View Config Foundation（PASS，停在此处）
 
 基线 `320d2bd930d288a0a33bec5cae62021e15967771`（P11.1B PASS）。初始目录工作树干净，
