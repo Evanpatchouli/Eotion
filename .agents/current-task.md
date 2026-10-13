@@ -1,47 +1,37 @@
-# 当前任务：P11.2.0 Timeline Renderer Architecture Design（PASS，已完成并停止）
+# 当前任务：P11.2A Timeline Shell + Coordinate Engine（范围验收 PASS，完成并停止）
 
-基线：25bd279585772bfdce43799de71fb3c3f5ba5436（P11.1D PASS），master，开始时工作树干净。
-本轮聚焦提交为包含本文件的 commit。正式版本仍 0.0.1，P11 目标 0.0.3。
-只交付 architecture / 文档，没有实现 renderer，也没有进入 P11.2A。
+基线：7b93617（P11.2.0 Architecture PASS），开始时 master 工作树干净。
+工作分支：codex/p11-2a-timeline-shell。版本保持 0.0.1；P11 目标版本 0.0.3。
+冻结设计：docs/architecture/timeline-renderer.md；只读空间 shell，完成后停止，不进入 P11.2B。
 
 | Work Unit | 模式 / 难度 / 角色 | 目标 | 状态 |
 | --- | --- | --- | --- |
-| R0-1 | investigate / S0 scout | Date / View config / generic records / P11.1A–D Evidence Pack | 完成 |
-| R0-2 | investigate / S0 scout | routing / P9 identity / opening / CSS scroll Evidence Pack | 完成，确认 standalone B1 |
-| R0-3 | decide / S2 主 Agent | projection / coordinate / scale / viewport / rows / state / 接续边界 | 完成；调查后文档执行降至 S1 |
-| R0-4 | execute / S1 fast_worker | 按 Brief 写正式架构和 P11 摘要，仅文档 | 完成；主 Agent 按 review 修正接线细节 |
-| R0-5 | verify/review / S0 scout + reviewer | 文档范围/链接/编码、设计验算、独立 review | 完成，62 checks PASS，0 确定文档 blocker |
-| R0-6 | execute / S1 主 Agent | metadata、最终 diff、聚焦 commit 与报告 | 完成，提交后停止 |
+| A1 | investigate / S0 scout | routing、P9 fence、standalone B1 与测试入口 Evidence Pack | 完成，确认 B1 |
+| A2 | decide / S2 worker + 主 Agent | 冻结设计内的纯函数 API / IANA resolver 与组件接线 Brief | 完成，执行已降到 S1 |
+| A3 | execute / S1 fast_worker | coordinates/scale/ruler/viewport 与数学回归测试 | 完成，数学14/14 |
+| A4 | execute / S1 fast_worker + 主 Agent | 六组件、单一 viewport adapter、真实 Timeline routing；B1 最小修复 | 完成，Web定向5/5，P9回归3/3 |
+| A5 | verify/review / S0 scout + reviewer | 数学/Web/identity/390px、typecheck/build 与最终独立 review | 完成，review 0 blocker；完整相关167/172，失败基线对照已记录 |
+| A6 | execute / S1 主 Agent | 正式验收/索引/current-task/handoff、diff 复核与逻辑单元提交 | 完成，纯引擎20ac1eb、Shell接线1ea6eb4；文档为本文件所在commit |
 
-## 冻结结果
+## 实施边界
 
-完整 17 项决策、源码证据和拟实施接口：docs/architecture/timeline-renderer.md。
-产品标准摘要与视觉 end 规则：docs/p11-timeline.md §9.2 / P11.2 Renderer Architecture。
-流程：generic records -> projection -> coordinates/layout -> read-only renderer。
-线性 logical UTC instant -> pixel；date-only 通过 display-zone 日初边界，datetime 保留 UTC instant。
-七尺度、有界 native canvas/rebase、统一 row 高度、page-host virtualization、独立 Frozen projection。
-all-day inclusive 只生成 visualEndExclusive；原 end / 显式零 duration 不变，point 不补 end。
-configuredScale 仍共享保存；本实例 effectiveScale 临时 override，A selector 0 PATCH / 0 records GET。
-未排期保持主 row 和服务端顺序，完整 read-bars 提供 footer 导航索引，不二次分页/重排行。
+- configuredScale 来自 options.timeline.scale，默认 month；selector 只改本实例 local override，0 PATCH / 0 records GET。
+- 统一 logical UTC instant ↔ content pixel；date-only 使用 display-zone 当地日界，datetime 保持 UTC instant。
+- 七种密度严格按 P11.2.0；有界 native canvas、同帧 rebase、ruler/grid/Today 共用 transform。
+- 唯一横向 scroller、有限 overscan ticks、page-host ruler pin；resize/navigation 保留 center。
+- records/loading/cursor/footer、通用 title/open 与 Record Host 继续父层持有。A 不读 raw Date 或分类 records。
+- B1 按冻结最小修复：同库 route View change 不销毁 loading subtree，稳定 Editor key，原地更新 block viewId。
+- 不实现 projection/bar/range/milestone/Frozen Table/dependency/drag/resize/date mutation/专用 records loader。
+- 不改 MCP/schema/API/sync/version/dependencies/linkInPage Table-only 门禁。
 
-## 验证与已知 gate
+## 验证目标
 
-六份 Markdown 范围、链接、UTF-8 strict/无 BOM/CRLF、git diff --check 通过；独立 reviewer 0 blocker。
-临时给定 instant / 数学不变量脚本 62 checks PASS（Node24.21.0 / ICU78.3 / tz2026c）。
-日志：C:/Users/31250/AppData/Local/Temp/eotion-p1120-604cc99c231949ad915b085346732f75/coordinate-design-check.log。
-仅验证七密度的 inverse/rebase/center 和给定 DST 样例；未实现/验证 calendarBoundary、renderer、
-browser scroll/page pin/ABA、benchmark，未跑产品/typecheck/build/Mongo/E2E/Visual/真机/P11 Final。
-
-B1：DatabasePageView 同库 View switch 因 loading subtree + viewId Editor key 会重建 Editor/NodeView。
-只记录最小修复建议；standalone lifecycle 完整验收前另单元修复。原 inline P9 fence 继续复用。
-Frozen 独立 Relation 列需后续联合可见列预取/缓存/epoch；A 不做。linkInPage 仍 Table-only。
-
-## 精确接续（未开始）
-
-新明确任务下执行 P11.2A Timeline Shell + Coordinate Engine，详见架构 §16。
-拟接入 DatabaseNodeView，占位替换为 editor/DatabaseTimelineView.vue；timeline/ 内 Header/Viewport/
-Ruler/Grid/Today、types/coordinates/scale/ruler/viewport/useTimelineViewport 与定向验收。
-A 只 shell/grid/ruler/scale/local zoom/viewport/native bottom scrollbar/today/Prev-Today-Next。
-通用所有 loaded records title/open 入口，不提前 Date source projection 或 unscheduled 分类。
-不实现 bar/Frozen Table/Record mutation/dependency/创建按钮；不改 schema/API/MCP/sync/version/dependencies。
-P11.2.0 Architecture PASS 不等于 P11.2 Read Renderer PASS。本轮结束，不自动进入 A。
+数学：round trip、七 scale、时区日界/午夜 gap/fold/半小时 DST/整日跳过/0/99/闰年/月末、tick 有界、rebase/center。
+Web：真实 Timeline、无 Table fallback、七 scale、Today/Prev/Next、原生横滚、390px 无页面溢出、Table/List/Board 回归、P9 identity/draft/ABA、清理与跨日刷新。
+数学14/14、Web定向5/5、P9ABA/snapshot3/3与typecheck已通过，四张Light/Dark desktop/390px截图已视检。
+最终完整相关suite172项：167通过、5失败（Database110/113、Editor43/45、数学14/14），0skip/retries。
+五个失败单独复跑3通过/2失败；未改动7b93617隔离基线同样3通过/2失败，另外三项完整运行时序尚未定性。
+最终Web build/vue-tsc/SW通过；659.30kB已有chunk提示保留。未顺手修改既有失败流程或弱化断言。
+本轮判定P11.2A范围验收PASS，不声明完整Product全绿。正式证据见docs/verification/p11-2a-timeline-shell.md。
+日志：C:/Users/31250/AppData/Local/Temp/eotion-p112a-full-final-640611811d8546368decd60033346a59。
+未运行Mongo/API/MCP、完整Product、native真机、5000bars性能或P11 Final。本轮完成后停止，不进入P11.2B。

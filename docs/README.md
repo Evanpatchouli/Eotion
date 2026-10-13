@@ -16,6 +16,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `architecture/timeline-renderer.md` | P11.2.0 Renderer 架构：投影、统一坐标、七种 scale、有界 canvas、行布局与 P11.2A 接续 |
 | `verification/p11-1c-timeline-view-config.md` | P11.1C 配置基础验收：实际 options.timeline、真实 CRUD/CAS/cursor、Web 占位与 P11.1D 接续边界 |
 | `verification/p11-1d-property-lifecycle-fence.md` | P11.1D 生命周期保护：统一硬引用、Frozen Table 软修复、真实 Mongo/HTTP/CAS/回滚与并发 |
+| `verification/p11-2a-timeline-shell.md` | P11.2A Shell / 坐标与七种 scale、原生横滚、Today、standalone B1 生命周期及验证边界 |
 | `context/README.md` | RAG 检索入口、模块索引和 Context Pack 规则 |
 | `specs/` | 产品行为、协议和验收契约 |
 | `decisions/` | ADR：为什么做出重要技术/架构决策 |

@@ -1,12 +1,12 @@
 # P11.2 Timeline Renderer 架构
 
-> 状态：**P11.2.0 PASS**（2026-10-13，仅架构；renderer 尚未实施）
+> 架构状态：**P11.2.0 PASS**（2026-10-13，以下基线记录来自架构阶段；P11.2A 实施状态见 §20）
 > 基线：`25bd279585772bfdce43799de71fb3c3f5ba5436`（`master`），P11.1D PASS 之后。
 > 版本背景：当前版本 `0.0.1`，P11 目标版本 `0.0.3`。P11.2.0 在本架构审查后结束。本轮不改产品代码、依赖、API、schema、sync、MCP 或版本。
 
 ## 1. 目的与实施状态
 
-本文冻结 P11.2 只读 renderer 的设计，说明拟议接口、模块、组件边界、状态、算法和后续验收。**本文出现的所有 `Timeline*` 接口和 renderer 文件均为拟实施内容；在本基线中都尚不存在。** 当前 `DatabaseNodeView.vue` 中的 Timeline 分支仍是占位实现。本文不声称 renderer 已实现，也不声称相关测试已通过。
+本文冻结 P11.2 只读 renderer 的设计，说明接口、模块、组件边界、状态、算法和后续验收。**P11.2.0 基线中的所有 `Timeline*` 接口和 renderer 文件均为拟实施内容，Timeline 分支当时仍是占位。** P11.2A 后已存在的 Shell / 坐标模块与实际验证见 §20；projection、bar、Frozen Table、dependency 仍属后续实施。P11.2.0 的架构验算不代表新 renderer 已通过测试。
 
 P11.2 读取已有 `DatabaseView`、options、generic records 响应及完整 Record properties；不增加持久化实体、endpoint、Database mutation、同步路径、package dependency 或 MCP surface。P11.2A 是首个实现单元；本次 P11.2.0 只完成架构文档，不启动实现。
 
@@ -412,3 +412,25 @@ A 提供所有已加载 records 的通用只读 title/open 入口，并明确提
 本轮未执行产品测试、typecheck/build、Mongo、E2E/Visual、真机或 P11 Final Acceptance；无产品代码变更，不能沿用历史 P9/P11.1 验收来宣称 renderer PASS。异常时区解析、真实滚动/rebase/page pin、异步 observer/ABA 及性能实测由 P11.2A 和后续 renderer 阶段完成。
 
 结论为 **P11.2.0 Architecture PASS**，不代表 P11.2 Read Renderer PASS。本轮提交后停止，只有后续明确任务才执行 §16 的 P11.2A。
+
+## 20. P11.2A 实施记录
+
+2026-10-13，**P11.2A 范围验收 PASS**。P11.2A 已按上述冻结设计建立六个 Vue 组件和纯函数模块，
+DatabaseNodeView 的 Timeline 分支进入真实 Shell，Table 路由也显式判断 view.type。
+实际 API、浏览器接线、测试结果和停止边界见
+[P11.2A 验证](../verification/p11-2a-timeline-shell.md)。完整相关回归167/172通过；两项基线可复现失败，
+另外三项复跑通过，尚未定性完整运行时序。完整边界以验证页为准，不代表整个P11或Product全绿。
+
+- coordinates/scale/ruler/viewport 为纯函数；共享 Date validator 通过 Domain date 子路径读取，
+  scale 常量通过 database 子路径读取。没有 raw Record 日期解析或新的共享领域实体。
+- date-only 使用显示时区日初，datetime 保持 UTC instant。轴端点包含合法 UTC instant 与
+  显示时区年 0000–9999 的 date-only 日界并集；年 10000 只可作内部 exclusive 边界。
+- local zoom 不保存、不请求 records；有限 tick bucket、统一 transform 和 native horizontal
+  scroller 为后续 bars 保留空间。浏览器原生像素取整通过同一纯坐标快照校准，保留语义中心。
+- §14 的 standalone B1 已按最小前置边界修复：稳定 workspace/database Editor key，
+  已有文档不被 loading 子树销毁，受保护 synthetic Database reference 原地更新 viewId；
+  protected document 仍拒绝结构/正文修改。P9 scope fence 与全局 Record Host 保留。
+- 已加载 View 重新联网复用原有 generic window refresh，避免 loading 卸载 renderer；
+  首次/失败加载仍使用原 load path。不增加 Timeline 专用 loader。
+- 未实现 projection/layout/bar/Frozen/dependency/mutation、Linked Timeline 创建或 schema/API/MCP/版本变更。
+  本轮完成后停止，P11.2B 需用户另行启动。

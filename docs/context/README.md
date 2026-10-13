@@ -115,12 +115,22 @@ P11.2.0 Renderer Architecture 检索入口：
 [Timeline Renderer Architecture](../architecture/timeline-renderer.md)，产品标准摘要见
 [P11 Timeline](../p11-timeline.md) 的「P11.2 Renderer Architecture」章节。
 拟实施模块位于 `apps/web/src/components/editor/timeline/`：projection、coordinates、scale、
-ruler、layout、viewport；本轮仅文档，以上模块尚未创建。坐标统一为 renderer logical instant
+ruler、layout、viewport；P11.2.0 当时仅文档，P11.2A 已创建 Shell/坐标模块，projection/layout 仍未实施。坐标统一为 renderer logical instant
 → pixel，date-only 使用显示时区的日历日边界；all-day inclusive end 只生成独立视觉边界，
 不改变原 end / 显式零长度 range。generic records / cursor / View config / P9 fence 保持。
 `configuredScale` 是原共享配置，`effectiveScale` 可由实例临时 override 改变；P11.2A zoom
 不 PATCH、不触发 records 重拉，只有未来显式共享配置保存复用原 CAS/通知/cursor fence。
-下一轮 P11.2A 仅 Shell + Coordinate Engine：ruler/grid/native horizontal scrollbar/today/
-navigation，不实现 bar、Frozen Table、mutation、dependency。独立 `DatabasePageView.vue`
-的 View 切换会因 loading 分支及含 viewId 的 Editor key 重建 Editor/NodeView；架构 B1
-记录最小修复边界，独立 route 生命周期验收前必须处理，本轮未改实现。
+P11.2A 仅 Shell + Coordinate Engine：ruler/grid/native horizontal scrollbar/today/
+navigation，不实现 bar、Frozen Table、mutation、dependency。P11.2.0 基线的独立 `DatabasePageView.vue`
+会因 loading 分支及含 viewId 的 Editor key 重建 Editor/NodeView；架构 B1 的最小前置修复
+已在 P11.2A 实施，生命周期验收结果见下文验证入口。
+
+P11.2A 实施检索入口：`apps/web/src/components/editor/DatabaseTimelineView.vue` 与
+`timeline/` 的 coordinates/scale/ruler/viewport/useTimelineViewport、Header/Viewport/Ruler/Grid/TodayLine。
+`timeToX` / `xToTime` / `calendarBoundary` / `timelineInstantBounds` / `alignViewportScroll` 统一时间、
+日界、端点和原生像素取整；子组件只消费 tick/位置与父层 title links。configuredScale 与 local
+zoom 分开，selector 0 PATCH / 0 records GET；scroll/width/origin/timer 为实例临时状态。
+standalone B1 已建立稳定 Editor key 与受保护 viewId 原地更新；正式结果见
+[P11.2A 验证](../verification/p11-2a-timeline-shell.md)，数学/Web 回归入口为
+`tests/timeline-coordinate.spec.ts` 与 `tests/product-database.spec.ts`。
+projection/bar/range/milestone/Frozen/dependency/Date mutation 未实施，下一阶段为 P11.2B，需另行启动。

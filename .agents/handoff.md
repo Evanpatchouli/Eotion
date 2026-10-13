@@ -1,5 +1,45 @@
 # Handoff
 
+## 2026-10-13 P11.2A Timeline Shell + Coordinate Engine（范围验收 PASS，完成并停止）
+
+基线 7b93617（P11.2.0 Architecture PASS），开始时 master 工作树干净；
+工作分支 codex/p11-2a-timeline-shell。版本保持0.0.1，P11目标0.0.3。
+纯引擎提交20ac1eb、Shell接线与B1提交1ea6eb4；文档收口为本节所在commit。
+正式证据：docs/verification/p11-2a-timeline-shell.md；冻结架构：docs/architecture/timeline-renderer.md §20。
+
+真实Timeline renderer已替换placeholder，Table/List/Board/Timeline明确分支。
+新增DatabaseTimelineView、TimelineHeader/Viewport/Ruler/Grid/TodayLine及timeline/纯函数模块。
+统一instant↔content/screen像素；date-only使用display-zone首有效日界，DST/fold/gap/skipped日诊断有界。
+axis范围覆盖合法UTCinstant及显示时区年0000–9999日期边界并集；10000只作内部exclusive边界。
+七种scale集中定义，默认month；configuredScale保持共享配置，local override只改实例zoom，0PATCH/0recordsGET。
+
+单一native水平scroller与有限canvas/rebase，ruler独立mask/page-host pin；自然高度留给未来bars。
+resize/zoom/navigation保center，Vue DOM flush后才提交native scroll，纯align helper补偿浏览器像素取整。
+同bucket普通scroll不重建ticks；80个ticks的绘制预算，日期/formatter/zone cache LRU≤1024。
+Today独立红线以用户display-zone日初定位，分钟heartbeat/日界/focus/pageshow/visibility重查。
+像素/observer/RAF/timer都属local ephemeral，epoch/serial/generation/DOM连接拒绝stale callbacks。
+
+standalone B1已按冻结最小边界修复：workspace/database稳定Editor key，同库loading不销毁已加载document，
+唯一synthetic Database reference原地切viewId；受保护Editor仍拒绝正文/结构编辑。
+已ready的通用View reconnect复用原refreshLoadedWindow，保已加载深度/renderer状态；首次失败仍loadTable。
+父层generic records/cursor/confirmed config/P9 identity fence/Record Host/draft归属保持。
+
+已通过数学14/14、Web定向5/5、P9 ABA/snapshot3/3、typecheck；独立review0剩余确定blocker。
+1440×900与390×844 Light/Dark四图已主agent视检，证据在Codex visualizations当前任务timeline-shell目录。
+完整相关suite172项167通过/5失败（Database110/113、Editor43/45、坐标14/14），0skip/retries。
+五个失败复跑3通过/2失败；未改动7b93617基线隔离对照同样3通过/2失败。
+稳定失败为Slash创建数据库dialog及选区格式浮层；另三项完整运行时序尚未定性，未扩大范围修复。
+最终Web build/vue-tsc/SW通过，保留659.30kB chunk提示；本轮范围PASS不等于完整Product全绿。
+日志与基线错误上下文：C:/Users/31250/AppData/Local/Temp/eotion-p112a-full-final-640611811d8546368decd60033346a59。
+基线worktree已归档，临时依赖junction安全移除，未动主工作区依赖。
+未运行Mongo/API/MCP、完整Product、native真机、5000bars性能或P11 Final。
+
+停止边界：不实现Record/dateSource projection、bar/range/milestone、Frozen Table、dependency、drag/resize、
+Date mutation或专用Record loader；没有API/schema/MCP/sync/version/dependency改动。linkInPage仍Table-only。
+P11.2B从timeline/已有transform/tick/viewport与未来layer slot接projection.ts/layout.ts/read-bars，
+共享Domain normalizer、generic顺序与P9 fence；Frozen/dependency/mutation继续后置。
+本轮完成后停止，不自动进入P11.2B。
+
 ## 2026-10-13 P11.2.0 Timeline Renderer Architecture（PASS，已停止，未实施 renderer）
 
 基线 `25bd279585772bfdce43799de71fb3c3f5ba5436`（P11.1D PASS），master，开始时工作树干净。

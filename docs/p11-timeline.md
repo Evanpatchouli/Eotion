@@ -771,7 +771,7 @@ P11.1C 冻结本节 §21 的 View 配置契约；P11.1D 已补完整 Property li
 
 #### P11.2 Renderer Architecture（P11.2.0 PASS）
 
-本轮仅冻结 renderer 架构，不代表产品实现或验收。正式设计见[Timeline Renderer Architecture](architecture/timeline-renderer.md)。文档列明基线代码证据、17 项冻结决策、统一时间坐标与时区规则、viewport/ruler/rows 状态边界、P9 identity fence、已知 standalone Database Page blocker B1，以及风险和后续验证目标。P11.2A scale selector 只改变本实例 ephemeral zoom，不 PATCH、不请求 records；`options.timeline.scale` 仍是共享保存配置，仅未来通用 View Settings 显式保存时才走既有 CAS 和 refresh。文中 `Timeline*` 类型与 renderer 文件均为拟实施接口/路径，当前不存在。
+P11.2.0 仅冻结 renderer 架构，不代表产品实现或验收。正式设计见[Timeline Renderer Architecture](architecture/timeline-renderer.md)。文档列明基线代码证据、17 项冻结决策、统一时间坐标与时区规则、viewport/ruler/rows 状态边界、P9 identity fence、standalone Database Page blocker B1，以及风险和后续验证目标。P11.2A scale selector 只改变本实例 ephemeral zoom，不 PATCH、不请求 records；`options.timeline.scale` 仍是共享保存配置，仅未来通用 View Settings 显式保存时才走既有 CAS 和 refresh。架构阶段的 `Timeline*` 类型/文件当时为拟实施内容；P11.2A 的 Shell/坐标模块现已建立，实际验证与 B1 修复见[P11.2A 验证](verification/p11-2a-timeline-shell.md)，不代表完整 read-bars 已实施。
 
 P11.2.0 只变更架构、产品标准摘要及任务/检索文档；不改产品代码、依赖、API/schema/sync/MCP 或版本。17 项决策已冻结，独立复核 0 个确定文档 blocker；文档范围/链接/UTF-8 无 BOM/diff 检查与 62 项给定 instant 和公式验算通过，限制见[本轮验证](architecture/timeline-renderer.md#19-p1120-验证与停止点)。未运行产品、浏览器滚动或性能验收。本阶段提交后停止；经明确启动后，P11.2A 才可按架构文档 §16 实施。
 
