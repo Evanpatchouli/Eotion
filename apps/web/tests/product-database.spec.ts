@@ -2533,6 +2533,14 @@ test('standalone database route keeps editor, NodeView, and record drafts across
   const drawer = page.locator('[data-overlay-mode="drawer"]')
   const titleDraft = drawer.getByRole('textbox', { name: '记录标题' })
   const bodyDraft = drawer.locator('.eotion-editor-content .tiptap')
+  const recordHostIdentity = await drawer.evaluate(element => {
+      let current = (element as Element & { __vueParentComponent?: { parent?: unknown } }).__vueParentComponent as ({ parent?: any; type?: { __name?: string } } | undefined)
+      while (current && current.type?.__name !== 'DatabaseRecordHost') current = current.parent
+      if (!current) throw new Error('Expected the existing DatabaseRecordHost component')
+      ;(window as Window & { __standaloneRecordHost?: unknown }).__standaloneRecordHost = current
+      return true
+    })
+  expect(recordHostIdentity).toBe(true)
   await expect(bodyDraft).toBeVisible()
   await titleDraft.fill('Title draft across route')
   await bodyDraft.fill('Body draft across route')
@@ -2540,11 +2548,16 @@ test('standalone database route keeps editor, NodeView, and record drafts across
     const editor = document.querySelector('.eotion-editor')
     const database = document.querySelector('.eotion-database')
     const drawer = document.querySelector('[data-overlay-mode="drawer"]')
-    if (!editor || !database || !drawer) throw new Error('Expected standalone editor, Database NodeView, and record drawer')
-    ;(window as Window & { __standaloneIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__standaloneIdentity = {
-      editor, database, drawer,
+    if (!editor || !database || !drawer || !database.id.startsWith('database-block-')) throw new Error('Expected standalone editor, identified Database NodeView block, and record drawer')
+    const bodyEditor = (drawer as Element).querySelector('.eotion-editor')
+    const bodyEditorComponent = (bodyEditor as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent
+    if (!bodyEditor || !bodyEditorComponent) throw new Error('Expected the stable standalone Block and record body Editor component')
+    ;(window as Window & { __standaloneIdentity?: { editor: Element; block: Element; blockId: string; drawer: Element; bodyEditor: Element; editorComponent: unknown; blockComponent: unknown; recordHostComponent: unknown; bodyEditorComponent: unknown } }).__standaloneIdentity = {
+      editor, block: database, blockId: database.id, drawer, bodyEditor,
       editorComponent: (editor as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
-      databaseComponent: (database as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+      blockComponent: (database as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+      recordHostComponent: (window as Window & { __standaloneRecordHost?: unknown }).__standaloneRecordHost,
+      bodyEditorComponent,
     }
   })
 
@@ -2557,15 +2570,23 @@ test('standalone database route keeps editor, NodeView, and record drafts across
   await listViewsStarted
   await expect(page).toHaveURL(new RegExp(`/database/${rootDatabase.id}\\?view=${listView.id}$`, 'u'))
   await expect.poll(() => page.evaluate(() => {
-    const before = (window as Window & { __standaloneIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__standaloneIdentity!
+    const before = (window as Window & { __standaloneIdentity?: { editor: Element; block: Element; blockId: string; drawer: Element; bodyEditor: Element; editorComponent: unknown; blockComponent: unknown; recordHostComponent: unknown; bodyEditorComponent: unknown } }).__standaloneIdentity!
     return {
       editorSame: document.querySelector('.eotion-editor') === before.editor,
-      databaseSame: document.querySelector('.eotion-database') === before.database,
+      blockSame: document.querySelector('.eotion-database') === before.block,
+      blockIdSame: (document.querySelector('.eotion-database') as HTMLElement | null)?.id === before.blockId,
       drawerSame: document.querySelector('[data-overlay-mode="drawer"]') === before.drawer,
       editorComponentSame: (document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.editorComponent,
-      databaseComponentSame: (document.querySelector('.eotion-database') as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.databaseComponent,
+      blockComponentSame: (document.querySelector('.eotion-database') as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.blockComponent,
+      recordHostComponentSame: (() => {
+        let current = ((document.querySelector('[data-overlay-mode="drawer"]') as (Element & { __vueParentComponent?: { parent?: any } }) | null)?.__vueParentComponent as ({ parent?: any; type?: { __name?: string } } | undefined))
+        while (current && current.type?.__name !== 'DatabaseRecordHost') current = current.parent
+        return current === before.recordHostComponent
+      })(),
+      bodyEditorSame: (document.querySelector('[data-overlay-mode="drawer"]') as Element | null)?.querySelector('.eotion-editor') === before.bodyEditor,
+      bodyEditorComponentSame: ((document.querySelector('[data-overlay-mode="drawer"]') as Element | null)?.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.bodyEditorComponent,
     }
-  })).toEqual({ editorSame: true, databaseSame: true, drawerSame: true, editorComponentSame: true, databaseComponentSame: true })
+  })).toEqual({ editorSame: true, blockSame: true, blockIdSame: true, drawerSame: true, editorComponentSame: true, blockComponentSame: true, recordHostComponentSame: true, bodyEditorSame: true, bodyEditorComponentSame: true })
   await expect(titleDraft).toHaveValue('Title draft across route')
   await expect(bodyDraft).toContainText('Body draft across route')
   releaseListViews()
@@ -2575,6 +2596,9 @@ test('standalone database route keeps editor, NodeView, and record drafts across
     { target: timelineView, label: 'Timeline D', renderer: 'timeline' as const },
     { target: boardView, label: 'Board C', renderer: 'board' as const },
     { target: tableView, label: 'Table A', renderer: 'table' as const },
+    { target: timelineView, label: 'Timeline D', renderer: 'timeline' as const },
+    { target: boardView, label: 'Board C', renderer: 'board' as const },
+    { target: timelineView, label: 'Timeline D', renderer: 'timeline' as const },
   ]
   for (const transition of transitions) {
     if (transition.target.id !== listView.id) {
@@ -2593,17 +2617,24 @@ test('standalone database route keeps editor, NodeView, and record drafts across
     await expect(titleDraft).toHaveValue('Title draft across route')
     await expect(bodyDraft).toContainText('Body draft across route')
     await expect.poll(() => page.evaluate(() => {
-      const before = (window as Window & { __standaloneIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__standaloneIdentity!
+      const before = (window as Window & { __standaloneIdentity?: { editor: Element; block: Element; blockId: string; drawer: Element; bodyEditor: Element; editorComponent: unknown; blockComponent: unknown; recordHostComponent: unknown; bodyEditorComponent: unknown } }).__standaloneIdentity!
       const editor = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null
-      const node = document.querySelector('.eotion-database') as (Element & { __vueParentComponent?: unknown }) | null
+      const block = document.querySelector('.eotion-database') as (Element & { __vueParentComponent?: unknown }) | null
+      const bodyEditor = (document.querySelector('[data-overlay-mode="drawer"]') as Element | null)?.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null
+      let recordHost = ((document.querySelector('[data-overlay-mode="drawer"]') as (Element & { __vueParentComponent?: { parent?: any } }) | null)?.__vueParentComponent as ({ parent?: any; type?: { __name?: string } } | undefined))
+      while (recordHost && recordHost.type?.__name !== 'DatabaseRecordHost') recordHost = recordHost.parent
       return {
         editorSame: editor === before.editor,
-        databaseSame: node === before.database,
+        blockSame: block === before.block,
+        blockIdSame: block?.id === before.blockId,
         drawerSame: document.querySelector('[data-overlay-mode="drawer"]') === before.drawer,
         editorComponentSame: editor?.__vueParentComponent === before.editorComponent,
-        databaseComponentSame: node?.__vueParentComponent === before.databaseComponent,
+        blockComponentSame: block?.__vueParentComponent === before.blockComponent,
+        recordHostComponentSame: recordHost === before.recordHostComponent,
+        bodyEditorSame: bodyEditor === before.bodyEditor,
+        bodyEditorComponentSame: bodyEditor?.__vueParentComponent === before.bodyEditorComponent,
       }
-    })).toEqual({ editorSame: true, databaseSame: true, drawerSame: true, editorComponentSame: true, databaseComponentSame: true })
+    })).toEqual({ editorSame: true, blockSame: true, blockIdSame: true, drawerSame: true, editorComponentSame: true, blockComponentSame: true, recordHostComponentSame: true, bodyEditorSame: true, bodyEditorComponentSame: true })
   }
   expect(api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/databases/${rootDatabase.id}/views`)).length).toBeGreaterThanOrEqual(5)
 })
@@ -3421,6 +3452,293 @@ test('Timeline shell keeps local zoom, exposes the seven scales, and has no tabl
   }
 })
 
+test.describe('P11.2D Timeline acceptance', () => {
+  test.use({ timezoneId: 'UTC' })
+
+  test('validates scales, coordinates, cached projections, network silence, and empty screenshots', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+    const timelineView = view('p112d-acceptance-view', rootDatabase.id, 'P11.2D Timeline', {
+      ...DEFAULT_DATABASE_VIEW_CONFIG,
+      visibleProperties: ['root-title'], propertyOrder: ['root-title'],
+      options: { timeline: {
+        dateSource: { mode: 'date-property', propertyId: 'root-date' },
+        frozenTable: { visible: true, visibleProperties: ['root-title'], propertyOrder: ['root-title'] },
+      } },
+    }, 'timeline')
+    const emptyDatabase = database('p112d-empty-database', 'Empty timeline')
+    const emptyView = view('p112d-empty-view', emptyDatabase.id, 'Empty Timeline', {
+      ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'p112d-empty-date' } } },
+    }, 'timeline')
+    const unscheduledDatabase = database('p112d-unscheduled-database', 'Unscheduled timeline')
+    const unscheduledView = view('p112d-unscheduled-view', unscheduledDatabase.id, 'Unscheduled Timeline', {
+      ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'p112d-unscheduled-date' } } },
+    }, 'timeline')
+    const records = [
+      record('p112d-datetime-point', rootDatabase.id, 'p112d-point-page', { 'root-title': 'UTC datetime point', 'root-date': { start: '2026-10-13T00:30:00.000Z', timeZone: 'America/New_York' } }),
+      record('p112d-datetime-range', rootDatabase.id, 'p112d-range-page', { 'root-title': 'UTC datetime range', 'root-date': { start: '2026-10-12T00:15:00.000Z', end: '2026-10-20T01:45:00.000Z', timeZone: 'America/New_York' } }),
+      record('p112d-date-only', rootDatabase.id, 'p112d-date-page', { 'root-title': 'Date-only milestone', 'root-date': '2026-10-13' }),
+    ]
+    const api = await installApi(page, [
+      block('p112d-acceptance-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
+      block('p112d-empty-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: emptyDatabase.id, viewId: emptyView.id } }, 200),
+      block('p112d-unscheduled-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: unscheduledDatabase.id, viewId: unscheduledView.id } }, 300),
+    ], {
+      databases: [rootDatabase, emptyDatabase, unscheduledDatabase],
+      views: [timelineView, emptyView, unscheduledView],
+      properties: [
+        ...rootProperties,
+        property('p112d-empty-title', emptyDatabase.id, 'Name', 'title'),
+        property('p112d-empty-date', emptyDatabase.id, 'Date', 'date'),
+        property('p112d-unscheduled-title', unscheduledDatabase.id, 'Name', 'title'),
+        property('p112d-unscheduled-date', unscheduledDatabase.id, 'Date', 'date'),
+      ],
+      records: [...records, record('p112d-unscheduled-record', unscheduledDatabase.id, 'p112d-unscheduled-page', { 'p112d-unscheduled-title': 'No date scheduled' })],
+    })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const databaseBlock = page.locator('#database-block-p112d-acceptance-block')
+    const timeline = databaseBlock.getByTestId('database-timeline')
+    await expect(timeline).toBeVisible()
+    await expect(databaseBlock.getByTestId('timeline-frozen-table')).toBeVisible()
+    const scroller = timeline.getByTestId('timeline-scroll')
+    await expect.poll(async () => (await timelineViewport(scroller)).width).toBeGreaterThan(0)
+    await expect.poll(() => timeline.evaluate(root => (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState?.projectedItems?.length)).toBe(3)
+    const tablePath = `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/views/${timelineView.id}/table`
+    const readsBeforeScaleChanges = api.requests.filter(request => request.method === 'GET' && request.path === tablePath).length
+    const writesBeforeScaleChanges = api.requests.filter(request => ['POST', 'PATCH', 'DELETE'].includes(request.method) && request.path.includes(`/databases/${rootDatabase.id}/views`)).length
+    const viewPatchesBeforeScaleChanges = api.requests.filter(request => request.method === 'PATCH' && request.path.includes(`/databases/${rootDatabase.id}/views`)).length
+    const recordPatchesBeforeScaleChanges = api.requests.filter(request => request.method === 'PATCH' && request.path.includes(`/databases/${rootDatabase.id}/records/`)).length
+    const allPatchesBeforeScaleChanges = api.requests.filter(request => request.method === 'PATCH').length
+    await timeline.evaluate(root => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      const viewport = setup?.viewport
+      if (!setup || !viewport?.state?.value || !Array.isArray(setup.projectedItems) || !(setup.temporalMap instanceof Map) || !(setup.frozenDisplayMap instanceof Map)) throw new Error('Timeline acceptance state is unavailable')
+      ;(window as Window & { __p112dIdentity?: { component: unknown; projectedItems: unknown; temporalMap: unknown; frozenDisplayMap: unknown } }).__p112dIdentity = {
+        component: (root as HTMLElement & { __vueParentComponent?: unknown }).__vueParentComponent,
+        projectedItems: setup.projectedItems, temporalMap: setup.temporalMap, frozenDisplayMap: setup.frozenDisplayMap,
+      }
+    })
+    const centerOf = async () => {
+      const viewport = await timelineViewport(scroller)
+      return (viewport.start + viewport.end) / 2
+    }
+    const scales = ['hour', 'day', 'week', 'biweek', 'month', 'quarter', 'year'] as const
+    const samples: Array<Record<string, unknown>> = []
+    const assertGeometry = async (phase: string, scale: typeof scales[number]) => {
+      const sample = await timeline.evaluate(root => {
+        const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+        const viewport = setup?.viewport
+        const state = viewport?.state?.value
+        const rawTicks = viewport?.ticks?.value
+        const rulerTicks = viewport?.rulerTicks?.value
+        const rows = setup?.rowGeometry
+        const temporalMap = setup?.temporalMap
+        if (!state || !Array.isArray(rawTicks) || !Array.isArray(rulerTicks) || !Array.isArray(rows) || !(temporalMap instanceof Map)) throw new Error('Timeline acceptance projection is unavailable')
+        const bars = rows.map((row: any) => {
+          const temporal = temporalMap.get(row.item.recordId)
+          const element = root.querySelector<HTMLElement>(`[data-testid="timeline-bar"][data-record-id="${row.item.recordId}"]`)
+          return temporal ? {
+            recordId: row.item.recordId, kind: row.item.kind,
+            startMs: temporal.startMs, visualEndMs: temporal.visualEndMs,
+            sourceTimeZone: row.item.start?.sourceTimeZone ?? null,
+            endSourceTimeZone: row.item.end?.sourceTimeZone ?? null,
+            rawX: row.geometry?.rawX ?? null, rawWidth: row.geometry?.rawWidth ?? null,
+            x: row.geometry?.x ?? null, width: row.geometry?.width ?? null,
+            clippedLeft: row.geometry?.clippedLeft ?? false, clippedRight: row.geometry?.clippedRight ?? false,
+            marker: row.geometry?.marker ?? false, offscreen: row.geometry?.offscreen ?? null,
+            domLeft: element ? Number.parseFloat(element.style.left) : null,
+            domWidth: element && !row.geometry?.marker ? Number.parseFloat(element.style.width) : null,
+          } : null
+        }).filter(Boolean)
+        const rulerDom = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-ruler-tick')].map(element => ({ left: Number.parseFloat(element.style.left), label: element.querySelector('.eotion-timeline-ruler-label')?.textContent ?? '', level: element.classList.contains('eotion-timeline-ruler-tick--major') ? 'major' : 'minor' }))
+        const gridDom = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-grid-line')].map(element => Number.parseFloat(element.style.left))
+        const today = root.querySelector<HTMLElement>('[data-testid="timeline-today-line"]')
+        return {
+          originMs: state.originMs, visibleStartMs: state.visibleStartMs, visibleEndMs: state.visibleEndMs,
+          overscanStartMs: state.overscanStartMs, overscanEndMs: state.overscanEndMs,
+          width: state.width, scrollLeft: state.scrollLeft, generation: state.generation,
+          nativeScrollLeft: root.querySelector<HTMLElement>('[data-testid="timeline-scroll"]')?.scrollLeft ?? null,
+          scale: state.scale, displayTimeZone: viewport.displayTimeZone?.value,
+          projectedCount: setup.projectedItems.length, temporalCount: temporalMap.size,
+          rawTicks: rawTicks.map((tick: any) => ({ unit: tick.unit, level: tick.level, boundaryMs: tick.boundaryMs, spanEndMs: tick.spanEndMs, label: tick.label })),
+          rulerTicks: rulerTicks.map((tick: any) => ({ unit: tick.unit, level: tick.level, boundaryMs: tick.boundaryMs, x: tick.x, label: tick.label })),
+          rulerDom, gridDom, todayMs: viewport.todayMs?.value ?? null, todayX: viewport.todayX?.value ?? null,
+          todayDomLeft: today ? Number.parseFloat(today.style.left) : null,
+          bars,
+        }
+      })
+      const expectedPxPerHour: Record<typeof scale, number> = {
+        hour: 48, day: 16, week: 4, biweek: 8 / 3, month: 1.5, quarter: 0.5, year: 1 / 12,
+      }
+      const rate = expectedPxPerHour[scale] / 3_600_000
+      const expectedById = new Map([
+        ['p112d-datetime-point', { start: Date.parse('2026-10-13T00:30:00.000Z'), end: null }],
+        ['p112d-datetime-range', { start: Date.parse('2026-10-12T00:15:00.000Z'), end: Date.parse('2026-10-20T01:45:00.000Z') }],
+        ['p112d-date-only', { start: Date.parse('2026-10-13T00:00:00.000Z'), end: null }],
+      ])
+      expect(sample.displayTimeZone).toBe('UTC')
+      expect(sample.scale).toBe(scale)
+      expect(Math.abs(sample.nativeScrollLeft - sample.scrollLeft)).toBeLessThanOrEqual(1)
+      expect(sample.rawTicks.length).toBeLessThanOrEqual(80)
+      expect(sample.rawTicks.length).toBeGreaterThan(0)
+      const unitSignature = sample.rawTicks.map(tick => `${tick.level}:${tick.unit}`)
+      const expectedUnits: Record<typeof scale, { major: string; minor: string }> = {
+        hour: { major: 'day', minor: 'hour' }, day: { major: 'day', minor: 'hour' },
+        week: { major: 'week', minor: 'day' }, biweek: { major: 'week', minor: 'day' },
+        month: { major: 'month', minor: 'day' }, quarter: { major: 'quarter', minor: 'week' }, year: { major: 'year', minor: 'month' },
+      }
+      expect(unitSignature).toContain(`major:${expectedUnits[scale].major}`)
+      expect(unitSignature).toContain(`minor:${expectedUnits[scale].minor}`)
+      expect(sample.rawTicks.every(tick => tick.spanEndMs > tick.boundaryMs && tick.label.length > 0)).toBe(true)
+      for (const tick of sample.rulerTicks) {
+        const expectedX = (tick.boundaryMs - sample.originMs) * rate - sample.scrollLeft
+        expect(Math.abs(tick.x - expectedX)).toBeLessThanOrEqual(0.5)
+      }
+      expect(sample.rulerDom.length).toBe(sample.rulerTicks.length)
+      expect(sample.rulerDom.every((tick, index) => Math.abs(tick.left - sample.rulerTicks[index]!.x) <= 0.5 && tick.label.length > 0)).toBe(true)
+      expect(sample.gridDom.length).toBe(sample.rawTicks.length)
+      expect(sample.gridDom.every((left, index) => Math.abs(left - (sample.rawTicks[index]!.boundaryMs - sample.originMs) * rate) <= 0.5)).toBe(true)
+      expect(sample.rawTicks.every(tick => {
+        const date = new Date(tick.boundaryMs)
+        const midnight = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0 && date.getUTCMilliseconds() === 0
+        if (tick.unit === 'hour') return date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0 && date.getUTCMilliseconds() === 0
+        if (tick.unit === 'day' || tick.unit === 'week') return midnight
+        if (tick.unit === 'month') return midnight && date.getUTCDate() === 1
+        if (tick.unit === 'quarter') return midnight && date.getUTCDate() === 1 && [0, 3, 6, 9].includes(date.getUTCMonth())
+        return midnight && date.getUTCDate() === 1 && date.getUTCMonth() === 0
+      })).toBe(true)
+      const minorHourTicks = sample.rawTicks.filter(tick => tick.level === 'minor' && tick.unit === 'hour')
+      if (scale === 'hour') expect(minorHourTicks.every(tick => new Date(tick.boundaryMs).getUTCMinutes() === 0)).toBe(true)
+      if (scale === 'day') expect(minorHourTicks.every(tick => new Date(tick.boundaryMs).getUTCHours() % 6 === 0)).toBe(true)
+      const todayMs = Date.parse('2026-10-13T00:00:00.000Z')
+      const todayIsInOverscan = todayMs >= sample.overscanStartMs && todayMs <= sample.overscanEndMs
+      if (todayIsInOverscan) {
+        const todayX = (todayMs - sample.originMs) * rate
+        expect(sample.todayMs).toBe(todayMs)
+        expect(sample.todayX).toBeCloseTo(todayX, 1)
+        expect(sample.todayDomLeft).toBeCloseTo(todayX, 1)
+      } else {
+        expect(sample.todayX).toBeNull()
+        expect(sample.todayDomLeft).toBeNull()
+      }
+      expect(sample.bars).toHaveLength(3)
+      for (const bar of sample.bars) {
+        const expected = expectedById.get(bar.recordId)!
+        expect(bar.startMs).toBe(expected.start)
+        expect(bar.visualEndMs).toBe(expected.end)
+        if (bar.recordId === 'p112d-datetime-point' || bar.recordId === 'p112d-datetime-range') {
+          expect(bar.sourceTimeZone).toBe('America/New_York')
+          if (bar.recordId === 'p112d-datetime-range') expect(bar.endSourceTimeZone).toBe('America/New_York')
+        }
+        expect(bar.rawX).toBeCloseTo((expected.start - sample.originMs) * rate, 1)
+        const expectedRawWidth = expected.end === null ? 0 : (expected.end - expected.start) * rate
+        expect(bar.rawWidth).toBeCloseTo(expectedRawWidth, 1)
+        const expectedX = expected.end === null ? bar.rawX : Math.max(sample.scrollLeft, bar.rawX)
+        const expectedRight = expected.end === null ? bar.rawX : Math.min(sample.scrollLeft + sample.width, bar.rawX + bar.rawWidth)
+        expect(bar.x).toBeCloseTo(expectedX, 1)
+        expect(bar.width).toBeCloseTo(expected.end === null ? 0 : Math.max(0, expectedRight - expectedX), 1)
+        if (bar.domLeft !== null) expect(bar.domLeft).toBeCloseTo(bar.x, 1)
+        if (bar.domWidth !== null) expect(bar.domWidth).toBeCloseTo(bar.width, 1)
+        if (bar.offscreen === null) expect(bar.domLeft).not.toBeNull()
+        else expect(bar.domLeft).toBeNull()
+        if (phase === 'scale' && scale === 'hour' && bar.recordId === 'p112d-datetime-range') {
+          expect(bar.clippedLeft).toBe(true)
+          expect(bar.clippedRight).toBe(true)
+        }
+        if (bar.recordId === 'p112d-datetime-range') expect(bar.marker).toBe(false)
+        if (bar.recordId !== 'p112d-datetime-range') expect(bar.marker).toBe(true)
+      }
+      const unchanged = await timeline.evaluate(root => {
+        const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+        const before = (window as Window & { __p112dIdentity?: { component: unknown; projectedItems: unknown; temporalMap: unknown; frozenDisplayMap: unknown } }).__p112dIdentity!
+        return (root as HTMLElement & { __vueParentComponent?: unknown }).__vueParentComponent === before.component
+          && setup?.projectedItems === before.projectedItems
+          && setup?.temporalMap === before.temporalMap
+          && setup?.frozenDisplayMap === before.frozenDisplayMap
+      })
+      expect(unchanged).toBe(true)
+      return {
+        phase, ...sample,
+        labelSignature: [...new Set(sample.rulerTicks.map(tick => `${tick.level}:${tick.unit}:${tick.label}`))],
+        labelDensity: { major: sample.rulerTicks.filter(tick => tick.level === 'major').length, minor: sample.rulerTicks.filter(tick => tick.level === 'minor').length },
+        rawTickCount: sample.rawTicks.length,
+        cacheRefsUnchanged: unchanged,
+      }
+    }
+
+    let previousCenter = await centerOf()
+    for (const scale of scales) {
+      await timeline.getByLabel('时间轴刻度').selectOption(scale)
+      await expect(timeline).toHaveAttribute('data-scale', scale)
+      const center = await centerOf()
+      const viewport = await timelineViewport(scroller)
+      const centerDeltaMs = Math.abs(center - previousCenter)
+      expect(centerDeltaMs).toBeLessThanOrEqual(Math.max(1, (viewport.end - viewport.start) / viewport.width / 2))
+      previousCenter = center
+      samples.push({ ...(await assertGeometry('scale', scale)), centerDeltaMs })
+    }
+    expect(new Set(samples.slice(0, scales.length).map(sample => JSON.stringify(sample.labelSignature))).size).toBeGreaterThan(1)
+
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+    const beforeScroll = await timelineViewport(scroller)
+    const scrollLeftBefore = await scroller.evaluate(element => (element as HTMLElement).scrollLeft)
+    await scroller.evaluate(element => { (element as HTMLElement).scrollLeft += 180 })
+    await expect.poll(() => scroller.evaluate(element => (element as HTMLElement).scrollLeft)).toBeGreaterThan(scrollLeftBefore)
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+    expect((await timelineViewport(scroller)).scrollLeft).toBeGreaterThan(beforeScroll.scrollLeft)
+    samples.push(await assertGeometry('ordinary-scroll', 'year'))
+    const beforeRebase = await timelineViewport(scroller)
+    const target = await scroller.evaluate(element => {
+      const node = element as HTMLElement
+      node.scrollLeft = Math.round((node.scrollWidth - node.clientWidth) * 0.9)
+      return node.scrollLeft
+    })
+    expect(target).toBeGreaterThan(beforeRebase.width)
+    await expect.poll(async () => (await timelineViewport(scroller)).generation).toBeGreaterThan(beforeRebase.generation)
+    samples.push(await assertGeometry('rebase', 'year'))
+    await timeline.getByRole('button', { name: '今天', exact: true }).click()
+    await expect(timeline.getByTestId('timeline-today-line')).toBeVisible()
+    await expect(timeline.locator('[data-testid="timeline-bar"][data-record-id="p112d-datetime-point"]')).toBeAttached()
+    await expect.poll(async () => {
+      const viewport = await timelineViewport(scroller)
+      return Math.abs((viewport.start + viewport.end) / 2 - Date.parse('2026-10-13T00:00:00.000Z'))
+    }).toBeLessThan(1)
+    samples.push(await assertGeometry('today-recentered', 'year'))
+
+    expect(api.requests.filter(request => request.method === 'GET' && request.path === tablePath)).toHaveLength(readsBeforeScaleChanges)
+    expect(api.requests.filter(request => ['POST', 'PATCH', 'DELETE'].includes(request.method) && request.path.includes(`/databases/${rootDatabase.id}/views`))).toHaveLength(writesBeforeScaleChanges)
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes(`/databases/${rootDatabase.id}/views`))).toHaveLength(viewPatchesBeforeScaleChanges)
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes(`/databases/${rootDatabase.id}/records/`))).toHaveLength(recordPatchesBeforeScaleChanges)
+    expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(allPatchesBeforeScaleChanges)
+    for (const [blockId, screenshotName] of [['p112d-empty-block', 'p112d-timeline-empty'], ['p112d-unscheduled-block', 'p112d-timeline-all-unscheduled']] as const) {
+      const targetTimeline = page.locator(`#database-block-${blockId}`).getByTestId('database-timeline')
+      await targetTimeline.scrollIntoViewIfNeeded()
+      if (blockId === 'p112d-empty-block') await expect(targetTimeline.getByText('暂无记录', { exact: true })).toBeVisible()
+      else await expect(targetTimeline.locator('[data-testid="timeline-unscheduled-row"]')).toContainText('No date scheduled')
+      const screenshotPath = testInfo.outputPath(`${screenshotName}.png`)
+      await page.screenshot({ path: screenshotPath, animations: 'disabled' })
+      await testInfo.attach(`${screenshotName}.png`, { path: screenshotPath, contentType: 'image/png' })
+    }
+    const artifact = {
+      browserVersion: page.context().browser()?.version() ?? 'unknown',
+      viewport: page.viewportSize(),
+      displayTimeZone: 'UTC',
+      readsBeforeScaleChanges, readsAfterScaleChanges: api.requests.filter(request => request.method === 'GET' && request.path === tablePath).length,
+      writesBeforeScaleChanges, writesAfterScaleChanges: api.requests.filter(request => ['POST', 'PATCH', 'DELETE'].includes(request.method) && request.path.includes(`/databases/${rootDatabase.id}/views`)).length,
+      viewPatchesBeforeScaleChanges, viewPatchesAfterScaleChanges: api.requests.filter(request => request.method === 'PATCH' && request.path.includes(`/databases/${rootDatabase.id}/views`)).length,
+      recordPatchesBeforeScaleChanges, recordPatchesAfterScaleChanges: api.requests.filter(request => request.method === 'PATCH' && request.path.includes(`/databases/${rootDatabase.id}/records/`)).length,
+      allPatchesBeforeScaleChanges, allPatchesAfterScaleChanges: api.requests.filter(request => request.method === 'PATCH').length,
+      samples,
+    }
+    const samplePath = testInfo.outputPath('p112d-timeline-scale-dom-cache-samples.json')
+    const sampleJson = JSON.stringify(artifact, null, 2)
+    await writeFile(samplePath, sampleJson, 'utf8')
+    await testInfo.attach('p112d-timeline-scale-dom-cache-samples.json', { path: samplePath, contentType: 'application/json' })
+  })
+})
+
 test('Timeline generic records project date sources, retain unscheduled order, and open the selected record read-only', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
@@ -4188,11 +4506,13 @@ for (const total of [100, 500] as const) {
       expect(relationResolveRequests.filter(request => request.payload.recordIds.includes(`frozen-target-${total}-499`))).toHaveLength(focusedRelationRequestCounts.frozen)
     }
 
-    const samples = await page.evaluate(projectionIdentityPreserved => {
+    const samples = await page.evaluate(({ projectionIdentityPreserved, total }) => {
       const host = document.querySelector('.document-wrap') as HTMLElement
       const timeline = document.querySelector('[data-testid="database-timeline"]') as HTMLElement
       const body = timeline.querySelector('[data-row-window-first]') as HTMLElement
       const data = body.dataset
+      const setup = (timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      const viewport = setup?.viewport
       return {
         observedAt: new Date().toISOString(),
         elapsedSincePagingStartedMs: performance.now(),
@@ -4207,6 +4527,8 @@ for (const total of [100, 500] as const) {
         temporalGeometryCount: (timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent?.setupState?.temporalMap instanceof Map
           ? ((timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent!.setupState!.temporalMap as Map<unknown, unknown>).size
           : null,
+        rawTickCount: Array.isArray(viewport?.ticks?.value) ? viewport.ticks.value.length : null,
+        rulerTickCount: Array.isArray(viewport?.rulerTicks?.value) ? viewport.rulerTicks.value.length : null,
         renderedRows: timeline.querySelectorAll('[data-timeline-row]').length,
         renderedFrozenRows: document.querySelectorAll('[data-timeline-frozen-row]').length,
         frozenDisplayCount: (timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent?.setupState?.frozenDisplayMap instanceof Map
@@ -4233,10 +4555,15 @@ for (const total of [100, 500] as const) {
         rowWindow: { first: Number(data.rowWindowFirst), last: Number(data.rowWindowLast), height: Number(data.rowWindowHeight), totalHeight: Number(data.rowWindowTotalHeight) },
         pageScroll: { top: host.scrollTop, scrollHeight: host.scrollHeight, clientHeight: host.clientHeight },
         domRowsWithinBound: timeline.querySelectorAll('[data-timeline-row]').length <= 40 && document.querySelectorAll('[data-timeline-frozen-row]').length <= 40,
+        virtualizationExpected: total >= 200,
         projectionAndTemporalIdentityPreserved: projectionIdentityPreserved,
         frozenDisplayIdentityPreserved: projectionIdentityPreserved,
       }
-    }, projectionIdentityPreserved)
+    }, { projectionIdentityPreserved, total })
+    expect(samples.rawTickCount).toBeLessThanOrEqual(80)
+    expect(samples.rulerTickCount).toBeLessThanOrEqual(80)
+    expect(samples.virtualizationExpected).toBe(total >= 200)
+    if (samples.virtualizationExpected) expect(samples.renderedRows).toBeLessThanOrEqual(40)
     samples.elapsedSincePagingStartedMs = (await page.evaluate(() => performance.now())) - startedAt
     samples.tableRequestTimings = tableRequestTimings
     samples.relationResolutionBatches = api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith('/record-options/resolve'))
