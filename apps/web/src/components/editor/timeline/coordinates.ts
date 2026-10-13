@@ -172,6 +172,11 @@ export function calendarBoundary(date: string, zone: string): { instantMs: numbe
   return dateBoundary(parseDate(date), zone)
 }
 
+/** Resolves the first valid instant of the calendar day after `date`. */
+export function nextCalendarBoundary(date: string, zone: string): { instantMs: number; calendarDaySkipped: boolean } {
+  return dateBoundary(addDays({ ...parseDate(date), hour: 0, minute: 0, second: 0 }, 1), zone)
+}
+
 function addDays(fields: ZonedFields, amount: number): ZonedFields {
   const date = new Date(utcMs({ ...fields, hour: 0, minute: 0, second: 0 }) + amount * DAY)
   return { ...fields, year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate() }
