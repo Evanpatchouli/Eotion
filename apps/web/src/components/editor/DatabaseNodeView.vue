@@ -19,6 +19,7 @@ import DatabaseSettingsSelect from './DatabaseSettingsSelect.vue'
 import DatabasePropertyMenu from './DatabasePropertyMenu.vue'
 import DatabaseListView from './DatabaseListView.vue'
 import DatabaseBoardView from './DatabaseBoardView.vue'
+import DatabaseTimelineView from './DatabaseTimelineView.vue'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -222,6 +223,15 @@ const columnDraftProperties = computed(() => columnDraft.value.order
   .map(id => properties.value.find(property => property.id === id))
   .filter((property): property is DatabasePropertyResponse => Boolean(property)))
 const records = ref<TableRecord[]>([])
+const timelineScope = computed(() => [auth.user?.id ?? '', workspaceId.value, databaseId.value, viewId.value, blockId.value].join('\u0000'))
+const timelineRecordLinks = computed(() => {
+  const titleProperty = properties.value.find(property => property.type === 'title')
+  return records.value.map(record => ({
+    id: record.id,
+    pageId: record.pageId,
+    title: titleProperty ? formatValue(record.properties[titleProperty.id], titleProperty) || '无标题' : '无标题',
+  }))
+})
 const nextCursor = ref<string | null>(null)
 const loading = ref(false)
 const loadingMore = ref(false)
@@ -1576,6 +1586,7 @@ function onRecordCreated(event: Event): void { onDatabaseChanged(event) }
 function onOnlineChange(): void {
   online.value = navigator.onLine
   if (!online.value) { propertyCreatorOpen.value = false; cellPopover.value = null; closeRelationPicker(); viewMenuOpen.value = false; settingsMenuOpen.value = false; viewControlsOpen.value = '' }
+  else if (viewReady.value && !loadError.value) void refreshLoadedWindow()
   else void loadTable()
 }
 function onEscape(event: KeyboardEvent): void {
@@ -1827,8 +1838,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <p v-else-if="viewType === 'timeline'" class="eotion-database-state" role="status">时间轴视图暂未实现</p>
-      <div v-else-if="properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :scope="timelineScope" :config="viewConfig" :record-links="timelineRecordLinks" @open-record="openRecordPage" />
+      <div v-else-if="viewType === 'table' && properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>
             <th v-for="property in displayProperties" :key="property.id" scope="col">

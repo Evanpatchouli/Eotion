@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
+import { expect, test, type Locator, type Page, type Route, type TestInfo } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain/database'
 
@@ -529,6 +529,25 @@ async function screenshot(page: Page, name: string) {
   if (!directory) return
   await mkdir(directory, { recursive: true })
   await page.screenshot({ path: path.join(directory, `${name}.png`), animations: 'disabled', fullPage: true })
+}
+
+async function timelineScreenshot(page: Page, testInfo: TestInfo, name: string) {
+  const screenshotPath = testInfo.outputPath(`${name}.png`)
+  await mkdir(path.dirname(screenshotPath), { recursive: true })
+  await page.screenshot({ path: screenshotPath, animations: 'disabled' })
+}
+
+async function timelineViewport(scroller: Locator) {
+  return scroller.evaluate(element => {
+    const node = element as HTMLElement
+    const data = node.dataset
+    return {
+      start: Number(data.visibleStart), end: Number(data.visibleEnd), origin: Number(data.originMs),
+      generation: Number(data.generation), width: node.clientWidth, scrollLeft: node.scrollLeft,
+      scrollWidth: node.scrollWidth, scrollHeight: node.scrollHeight, clientHeight: node.clientHeight,
+      overflowY: getComputedStyle(node).overflowY,
+    }
+  })
 }
 
 async function expectButtonIconCentered(button: Locator, includeLabel = false) {
@@ -2443,21 +2462,124 @@ test('page tree shows databases under their host page, excludes records, and kee
   await expect(page.getByRole('tree', { name: '页面树' })).not.toContainText('Hidden record page')
 })
 
-test('standalone database route switches views through routing without blanking the table', async ({ page }) => {
-  const secondView = view('standalone-second-view', rootDatabase.id, '第二视图')
-  await installApi(page, [], {
-    databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id), secondView],
+test('standalone database route keeps editor, NodeView, and record drafts across delayed Table/List/Board/Timeline A-B-A switches', async ({ page }) => {
+  const tableView = view('standalone-table-a', rootDatabase.id, 'Table A', undefined, 'table')
+  const listView = view('standalone-list-b', rootDatabase.id, 'List B', undefined, 'list')
+  const boardView = view('standalone-board-c', rootDatabase.id, 'Board C', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: 'root-select' } }, 'board')
+  const timelineView = view('standalone-timeline-d', rootDatabase.id, 'Timeline D', undefined, 'timeline')
+  const api = await installApi(page, [], {
+    databases: [rootDatabase], views: [tableView, listView, boardView, timelineView],
     properties: rootProperties, records: [basicRecord],
   })
-  await page.goto('/#/app/database-workspace/database/database-root-id?view=view-root-id')
-  const table = page.getByLabel('数据库页面').locator('.eotion-database')
-  await expect(table).toContainText('Launch plan')
-  await table.getByRole('button', { name: '切换视图' }).click()
-  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '第二视图', exact: true }).click()
-  await expect(page).toHaveURL(/\/database\/database-root-id\?view=standalone-second-view$/u)
-  await expect(table.getByRole('button', { name: '切换视图' })).toContainText('第二视图')
-  await expect(table).toContainText('Launch plan')
-  await expect(table.getByRole('region', { name: '数据库记录' })).toBeVisible()
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Standalone record', role: 'database-record' })
+  api.blocks.push({ ...block('standalone-record-body', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Body before route switch' }] }, 100), pageId: basicRecord.pageId })
+  let holdListViews = false
+  let signalListViewsStarted!: () => void
+  let releaseListViews!: () => void
+  const listViewsStarted = new Promise<void>(resolve => { signalListViewsStarted = resolve })
+  const listViewsGate = new Promise<void>(resolve => { releaseListViews = resolve })
+  await page.route(url => url.pathname.endsWith(`/databases/${rootDatabase.id}/views`) && url.search === '' && url.href.includes('/api/'), async route => {
+    if (!holdListViews || route.request().method() !== 'GET') return route.fallback()
+    holdListViews = false
+    signalListViewsStarted()
+    await listViewsGate
+    await route.fallback()
+  })
+
+  await page.goto(`/#/app/database-workspace/database/${rootDatabase.id}?view=${tableView.id}`)
+  const editor = page.locator('.eotion-editor')
+  const database = page.getByLabel('数据库页面').locator('.eotion-database')
+  await expect(database.locator('tbody')).toBeVisible()
+  await page.evaluate(() => {
+    const root = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null
+    const exposed = root?.__vueParentComponent?.exposed?.editor
+    const editor = exposed?.commands ? exposed : exposed?.value
+    if (!editor?.view) throw new Error('Expected protected standalone Tiptap editor')
+    const before = JSON.stringify(editor.state.doc.toJSON())
+    editor.commands.insertContent('protected synthetic document')
+    editor.view.dispatch(editor.state.tr.delete(0, editor.state.doc.content.size))
+    ;(window as Window & { __protectedDocumentUnchanged?: boolean }).__protectedDocumentUnchanged = JSON.stringify(editor.state.doc.toJSON()) === before
+  })
+  expect(await page.evaluate(() => (window as Window & { __protectedDocumentUnchanged?: boolean }).__protectedDocumentUnchanged)).toBe(true)
+  await expect(database).toBeVisible()
+  expect(api.requests.filter(item => item.path === '/api/sync/operations' && item.method === 'POST' && item.kind === 'block.upsert')).toHaveLength(0)
+  await database.getByRole('button', { name: '打开记录：Standalone record' }).click()
+  const drawer = page.locator('[data-overlay-mode="drawer"]')
+  const titleDraft = drawer.getByRole('textbox', { name: '记录标题' })
+  const bodyDraft = drawer.locator('.eotion-editor-content .tiptap')
+  await expect(bodyDraft).toBeVisible()
+  await titleDraft.fill('Title draft across route')
+  await bodyDraft.fill('Body draft across route')
+  await page.evaluate(() => {
+    const editor = document.querySelector('.eotion-editor')
+    const database = document.querySelector('.eotion-database')
+    const drawer = document.querySelector('[data-overlay-mode="drawer"]')
+    if (!editor || !database || !drawer) throw new Error('Expected standalone editor, Database NodeView, and record drawer')
+    ;(window as Window & { __standaloneIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__standaloneIdentity = {
+      editor, database, drawer,
+      editorComponent: (editor as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+      databaseComponent: (database as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+    }
+  })
+
+  await database.getByRole('button', { name: '切换视图' }).focus()
+  await database.getByRole('button', { name: '切换视图' }).press('Enter')
+  const viewMenu = page.getByRole('group', { name: '数据库视图', exact: true })
+  await expect(viewMenu.getByRole('button', { name: 'List B', exact: true })).toBeVisible()
+  holdListViews = true
+  await viewMenu.getByRole('button', { name: 'List B', exact: true }).click()
+  await listViewsStarted
+  await expect(page).toHaveURL(new RegExp(`/database/${rootDatabase.id}\\?view=${listView.id}$`, 'u'))
+  await expect.poll(() => page.evaluate(() => {
+    const before = (window as Window & { __standaloneIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__standaloneIdentity!
+    return {
+      editorSame: document.querySelector('.eotion-editor') === before.editor,
+      databaseSame: document.querySelector('.eotion-database') === before.database,
+      drawerSame: document.querySelector('[data-overlay-mode="drawer"]') === before.drawer,
+      editorComponentSame: (document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.editorComponent,
+      databaseComponentSame: (document.querySelector('.eotion-database') as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.databaseComponent,
+    }
+  })).toEqual({ editorSame: true, databaseSame: true, drawerSame: true, editorComponentSame: true, databaseComponentSame: true })
+  await expect(titleDraft).toHaveValue('Title draft across route')
+  await expect(bodyDraft).toContainText('Body draft across route')
+  releaseListViews()
+
+  const transitions = [
+    { target: listView, label: 'List B', renderer: 'list' as const },
+    { target: timelineView, label: 'Timeline D', renderer: 'timeline' as const },
+    { target: boardView, label: 'Board C', renderer: 'board' as const },
+    { target: tableView, label: 'Table A', renderer: 'table' as const },
+  ]
+  for (const transition of transitions) {
+    if (transition.target.id !== listView.id) {
+      await page.evaluate(({ targetDatabaseId, targetViewId }) => {
+        const url = new URL(window.location.href)
+        url.hash = `/app/database-workspace/database/${targetDatabaseId}?view=${targetViewId}`
+        window.history.pushState({}, '', url)
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      }, { targetDatabaseId: rootDatabase.id, targetViewId: transition.target.id })
+    }
+    await expect(page).toHaveURL(new RegExp(`/database/${rootDatabase.id}\\?view=${transition.target.id}$`, 'u'))
+    if (transition.renderer === 'timeline') await expect(database.getByTestId('database-timeline')).toBeVisible()
+    if (transition.renderer === 'list') await expect(database.getByTestId('database-list')).toBeVisible()
+    if (transition.renderer === 'board') await expect(database.getByTestId('database-board')).toBeVisible()
+    if (transition.renderer === 'table') await expect(database.locator('tbody')).toBeVisible()
+    await expect(titleDraft).toHaveValue('Title draft across route')
+    await expect(bodyDraft).toContainText('Body draft across route')
+    await expect.poll(() => page.evaluate(() => {
+      const before = (window as Window & { __standaloneIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__standaloneIdentity!
+      const editor = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null
+      const node = document.querySelector('.eotion-database') as (Element & { __vueParentComponent?: unknown }) | null
+      return {
+        editorSame: editor === before.editor,
+        databaseSame: node === before.database,
+        drawerSame: document.querySelector('[data-overlay-mode="drawer"]') === before.drawer,
+        editorComponentSame: editor?.__vueParentComponent === before.editorComponent,
+        databaseComponentSame: node?.__vueParentComponent === before.databaseComponent,
+      }
+    })).toEqual({ editorSame: true, databaseSame: true, drawerSame: true, editorComponentSame: true, databaseComponentSame: true })
+  }
+  expect(api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/databases/${rootDatabase.id}/views`)).length).toBeGreaterThanOrEqual(5)
 })
 
 test('first pointer focus beside a trailing Database block keeps ProseMirror selection current', async ({ page }) => {
@@ -3074,7 +3196,7 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
   const independentDatabase = page.locator('#database-block-matrix-independent-block')
   await expect(independentDatabase.locator('tbody')).toBeVisible()
   const initialTimeline = page.locator('#database-block-matrix-initial-timeline-block')
-  await expect(initialTimeline.getByRole('status')).toHaveText('时间轴视图暂未实现')
+  await expect(initialTimeline.getByTestId('database-timeline')).toBeVisible()
   await expect(initialTimeline.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
   await page.evaluate(() => {
     const editor = document.querySelector('.eotion-editor')
@@ -3111,7 +3233,7 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
       await expect(database.locator('.eotion-database-board-column-name')).toHaveText(['Open', 'Done', '未分组'])
     }
     if (transition.renderer === 'timeline') {
-      await expect(database.getByRole('status')).toHaveText('时间轴视图暂未实现')
+      await expect(database.getByTestId('database-timeline')).toBeVisible()
       await expect(database.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
       await expect(database.getByRole('button', { name: '新建记录' })).toBeVisible()
       await expect.poll(() => api.blocks.find(item => item.id === 'matrix-independent-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: tableView.id })
@@ -3150,34 +3272,267 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
   await database.getByRole('button', { name: '切换视图' }).click()
   await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Timeline D', exact: true }).click()
   await page.setViewportSize({ width: 390, height: 844 })
-  await expect(database.getByRole('status')).toHaveText('时间轴视图暂未实现')
+  await expect(database.getByTestId('database-timeline')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   const selectorBounds = await database.getByRole('button', { name: '切换视图' }).boundingBox()
   expect(selectorBounds).toBeTruthy()
   expect(selectorBounds!.x + selectorBounds!.width).toBeLessThanOrEqual(390)
 })
 
-test('empty unconfigured Timeline has no renderer fallback and Table keeps its empty state', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  const timelineView = view('empty-timeline-view', rootDatabase.id, 'Timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'timeline')
-  const tableView = view('empty-table-view', rootDatabase.id, 'Table', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'table')
-  await installApi(page, [
-    block('empty-timeline-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
-  ], { databases: [rootDatabase], views: [timelineView, tableView], properties: rootProperties, records: [] })
+test('Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback', async ({ page, context }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const defaultTimeline = view('shell-default-timeline', rootDatabase.id, 'Timeline default', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'timeline')
+  const configuredTimeline = view('shell-configured-timeline', rootDatabase.id, 'Timeline configured', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG, options: { timeline: { scale: 'week' } },
+  }, 'timeline')
+  const emptyDatabase = database('shell-empty-database', 'Empty database')
+  const emptyTimeline = view('shell-empty-timeline', emptyDatabase.id, 'Empty Timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'timeline')
+  const tableView = view('shell-empty-table', emptyDatabase.id, 'Empty Table', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'table')
+  const api = await installApi(page, [
+    block('shell-default-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: defaultTimeline.id } }, 100),
+    block('shell-peer-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: defaultTimeline.id } }, 200),
+    block('shell-configured-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: configuredTimeline.id } }, 300),
+    block('shell-empty-timeline-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: emptyDatabase.id, viewId: emptyTimeline.id } }, 400),
+    block('shell-empty-table-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: emptyDatabase.id, viewId: tableView.id } }, 500),
+  ], {
+    databases: [rootDatabase, emptyDatabase], views: [defaultTimeline, configuredTimeline, emptyTimeline, tableView],
+    properties: [...rootProperties, property('shell-empty-title', emptyDatabase.id, 'Name', 'title')], records: [basicRecord],
+  })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Timeline shell record', role: 'database-record' })
   await page.goto('/#/app/database-workspace/page/database-page')
 
-  const databaseBlock = page.locator('#database-block-empty-timeline-block')
-  await expect(databaseBlock.getByRole('status')).toHaveText('时间轴视图暂未实现')
-  await expect(databaseBlock.locator('.eotion-database-state')).toHaveCount(1)
-  await expect(databaseBlock.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
-  await screenshot(page, 'p111c-timeline-placeholder-phone-390')
+  const defaultDatabase = page.locator('#database-block-shell-default-block')
+  const peerDatabase = page.locator('#database-block-shell-peer-block')
+  const configuredDatabase = page.locator('#database-block-shell-configured-block')
+  const emptyTimelineDatabase = page.locator('#database-block-shell-empty-timeline-block')
+  const defaultShell = defaultDatabase.getByTestId('database-timeline')
+  const peerShell = peerDatabase.getByTestId('database-timeline')
+  const configuredShell = configuredDatabase.getByTestId('database-timeline')
+  const emptyTimelineShell = emptyTimelineDatabase.getByTestId('database-timeline')
+  const scaleSelect = defaultShell.getByLabel('时间轴刻度')
+  const peerScaleSelect = peerShell.getByLabel('时间轴刻度')
+  const configuredScaleSelect = configuredShell.getByLabel('时间轴刻度')
+  await expect(defaultShell).toBeVisible()
+  await expect(defaultShell).toHaveAttribute('data-scale', 'month')
+  await expect(defaultShell).toHaveAttribute('data-configured-scale', 'month')
+  await expect(peerShell).toHaveAttribute('data-scale', 'month')
+  await expect(configuredShell).toHaveAttribute('data-scale', 'week')
+  await expect(configuredShell).toHaveAttribute('data-configured-scale', 'week')
+  await expect(defaultDatabase.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
+  await expect(emptyTimelineShell).toBeVisible()
+  await expect(emptyTimelineShell.locator('details')).toHaveCount(0)
+  await expect(emptyTimelineDatabase.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
+  await expect(emptyTimelineShell.getByText('暂无记录', { exact: true })).toBeVisible()
+  await expect(defaultShell.getByText('记录（1）', { exact: true })).toBeVisible()
+  const recordsDisclosure = defaultShell.locator('details')
+  await expect(recordsDisclosure).toHaveCount(1)
+  await recordsDisclosure.locator('summary').click()
+  await defaultShell.getByRole('button', { name: '打开记录：Timeline shell record' }).click()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await page.getByRole('button', { name: '关闭记录' }).click()
 
-  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  const scaleIds = ['hour', 'day', 'week', 'biweek', 'month', 'quarter', 'year']
+  await expect(scaleSelect.locator('option')).toHaveCount(scaleIds.length)
+  expect(await scaleSelect.locator('option').evaluateAll(options => options.map(option => (option as HTMLOptionElement).value))).toEqual(scaleIds)
+  const recordReadsBeforeZoom = api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/views/${defaultTimeline.id}/table`)).length
+  const viewWritesBeforeZoom = api.requests.filter(item => ['POST', 'PATCH', 'DELETE'].includes(item.method) && item.path.includes(`/databases/${rootDatabase.id}/views`)).length
+  for (const scale of scaleIds) {
+    await scaleSelect.selectOption(scale)
+    await expect(defaultShell).toHaveAttribute('data-scale', scale)
+    await expect(peerShell).toHaveAttribute('data-scale', 'month')
+    await expect(peerScaleSelect).toHaveValue('month')
+    await expect(configuredShell).toHaveAttribute('data-scale', 'week')
+    await expect(configuredScaleSelect).toHaveValue('week')
+  }
+  expect(api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/views/${defaultTimeline.id}/table`))).toHaveLength(recordReadsBeforeZoom)
+  expect(api.requests.filter(item => ['POST', 'PATCH', 'DELETE'].includes(item.method) && item.path.includes(`/databases/${rootDatabase.id}/views`))).toHaveLength(viewWritesBeforeZoom)
+
+  const onlineTimelineScroller = defaultShell.getByTestId('timeline-scroll')
+  const beforeOffline = await timelineViewport(onlineTimelineScroller)
+  const tableReadsBeforeOffline = api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/views/${defaultTimeline.id}/table`)).length
+  await page.evaluate(() => {
+    const timeline = document.querySelector('#database-block-shell-default-block [data-testid="database-timeline"]')
+    if (!timeline) throw new Error('Expected Timeline before going offline')
+    ;(window as Window & { __onlineTimelineIdentity?: { timeline: Element; component: unknown } }).__onlineTimelineIdentity = {
+      timeline, component: (timeline as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+    }
+  })
+  api.offline = true
+  await context.setOffline(true)
+  await expect(defaultDatabase.locator('.eotion-database-offline')).toContainText('离线')
+  api.offline = false
+  await context.setOffline(false)
+  await expect.poll(() => api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/views/${defaultTimeline.id}/table`)).length).toBe(tableReadsBeforeOffline + 2)
+  await expect(defaultShell).toHaveAttribute('data-scale', 'year')
+  const afterOnline = await timelineViewport(onlineTimelineScroller)
+  expect(Math.abs((afterOnline.start + afterOnline.end) / 2 - (beforeOffline.start + beforeOffline.end) / 2)).toBeLessThan(2)
+  expect(await page.evaluate(() => {
+    const before = (window as Window & { __onlineTimelineIdentity?: { timeline: Element; component: unknown } }).__onlineTimelineIdentity!
+    const current = document.querySelector('#database-block-shell-default-block [data-testid="database-timeline"]') as (Element & { __vueParentComponent?: unknown }) | null
+    return current === before.timeline && current?.__vueParentComponent === before.component
+  })).toBe(true)
+
+  const emptyTable = page.locator('#database-block-shell-empty-table-block')
+  await expect(emptyTable.locator('table')).toBeVisible()
+  await expect(emptyTable.getByText('暂无记录', { exact: true })).toBeVisible()
+  await expect(emptyTable.getByTestId('database-timeline')).toHaveCount(0)
+
+  for (const [width, height, suffix] of [[1440, 900, 'desktop'], [390, 844, 'phone']] as const) {
+    await page.setViewportSize({ width, height })
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+      if (width === 390) {
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+        for (const name of ['上一个时间段', '今天', '下一个时间段']) {
+          const button = defaultShell.getByRole('button', { name })
+          await expect(button).toBeVisible()
+          const bounds = await button.boundingBox()
+          expect(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width).toBe(true)
+        }
+        const selectBounds = await scaleSelect.boundingBox()
+        expect(selectBounds && selectBounds.x >= 0 && selectBounds.x + selectBounds.width <= width).toBe(true)
+      }
+      await timelineScreenshot(page, testInfo, `p112a-timeline-shell-${suffix}-${theme}`)
+    }
+  }
+})
+
+test('Timeline keeps the viewport centered across navigation, rebase, resize, locale, and local-day updates', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.install({ time: new Date('2026-10-13T12:00:00.000Z') })
+  const timelineView = view('viewport-timeline', rootDatabase.id, 'Timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'timeline')
+  const tableView = view('viewport-table', rootDatabase.id, 'Table', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'table')
+  const pageErrors: string[] = []
+  page.on('pageerror', error => pageErrors.push(error.message))
+  await installApi(page, [block('viewport-timeline-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView, tableView], properties: rootProperties, records: [],
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  await page.clock.runFor(100)
+  const database = page.locator('#database-block-viewport-timeline-block')
+  const timeline = database.getByTestId('database-timeline')
+  const scroller = timeline.getByTestId('timeline-scroll')
+  await expect(timeline).toBeVisible()
+  await page.clock.runFor(100)
+  await expect.poll(() => scroller.evaluate(element => Number((element as HTMLElement).dataset.visibleStart))).toBeGreaterThan(0)
+
+  const today = Number(await timeline.getAttribute('data-today-ms'))
+  const initial = await timelineViewport(scroller)
+  expect(Math.abs((initial.start + initial.end) / 2 - today)).toBeLessThan(1)
+  const todayLine = timeline.getByTestId('timeline-today-line')
+  await expect(todayLine).toBeVisible()
+  const todayLineStyle = await todayLine.evaluate(element => {
+    const style = getComputedStyle(element)
+    return { borderWidth: style.borderLeftWidth, borderStyle: style.borderLeftStyle, borderColor: style.borderLeftColor, pointerEvents: style.pointerEvents }
+  })
+  expect(todayLineStyle.borderWidth).toBe('2px')
+  expect(todayLineStyle.borderStyle).toBe('solid')
+  expect(todayLineStyle.borderColor).not.toBe('rgba(0, 0, 0, 0)')
+  expect(todayLineStyle.pointerEvents).toBe('none')
+  await timeline.getByRole('button', { name: '上一个时间段' }).click()
+  const previous = await timelineViewport(scroller)
+  const previousExpected = await page.evaluate(instant => {
+    const date = new Date(instant)
+    date.setMonth(date.getMonth() - 1)
+    return date.getTime()
+  }, today)
+  const monthHalfPixelMs = (previous.end - previous.start) / previous.width / 2
+  expect(Math.abs((previous.start + previous.end) / 2 - previousExpected)).toBeLessThanOrEqual(monthHalfPixelMs)
+  await timeline.getByRole('button', { name: '下一个时间段' }).click()
+  const returnedAfterNext = await timelineViewport(scroller)
+  expect(Math.abs((returnedAfterNext.start + returnedAfterNext.end) / 2 - (initial.start + initial.end) / 2)).toBeLessThanOrEqual((returnedAfterNext.end - returnedAfterNext.start) / returnedAfterNext.width / 2)
+
+  const afterNavigation = await timelineViewport(scroller)
+  await scroller.evaluate(element => { (element as HTMLElement).scrollLeft = (element as HTMLElement).scrollWidth * 0.05 })
+  await expect.poll(async () => (await timelineViewport(scroller)).generation).toBeGreaterThan(afterNavigation.generation)
+  await timeline.getByRole('button', { name: '今天', exact: true }).click()
+  const returnedByToday = await timelineViewport(scroller)
+  expect(Math.abs((returnedByToday.start + returnedByToday.end) / 2 - (initial.start + initial.end) / 2)).toBeLessThanOrEqual((returnedByToday.end - returnedByToday.start) / returnedByToday.width / 2)
+  await timeline.getByLabel('时间轴刻度').selectOption('year')
+  await expect(timeline).toHaveAttribute('data-scale', 'year')
+  const beforeRebase = await timelineViewport(scroller)
+  expect(beforeRebase.scrollWidth).toBeGreaterThan(beforeRebase.width)
+  expect(beforeRebase.scrollHeight).toBeLessThanOrEqual(beforeRebase.clientHeight)
+  expect(['auto', 'scroll']).not.toContain(beforeRebase.overflowY)
+  const rebaseInput = await scroller.evaluate(element => {
+    const node = element as HTMLElement
+    const target = Math.round((node.scrollWidth - node.clientWidth) * 0.9)
+    node.scrollLeft = target
+    return { target: node.scrollLeft, width: node.clientWidth }
+  })
+  const rebaseExpectedStart = beforeRebase.origin + rebaseInput.target * (beforeRebase.end - beforeRebase.start) / beforeRebase.width
+  await expect.poll(async () => (await timelineViewport(scroller)).generation).toBeGreaterThan(beforeRebase.generation)
+  const afterRebase = await timelineViewport(scroller)
+  expect(Math.abs(afterRebase.start - rebaseExpectedStart)).toBeLessThanOrEqual((beforeRebase.end - beforeRebase.start) / beforeRebase.width / 2)
+  expect(afterRebase.scrollLeft).toBeGreaterThan(afterRebase.width)
+  expect(afterRebase.scrollLeft).toBeLessThan(afterRebase.scrollWidth - afterRebase.width)
+
+  const beforeResize = await timelineViewport(scroller)
+  await page.setViewportSize({ width: 900, height: 820 })
+  await expect.poll(async () => (await timelineViewport(scroller)).width).toBeLessThan(beforeResize.width)
+  await expect.poll(async () => (await timelineViewport(scroller)).generation).toBeGreaterThan(beforeResize.generation)
+  const afterResize = await timelineViewport(scroller)
+  expect(Math.abs((afterResize.start + afterResize.end) / 2 - (beforeResize.start + beforeResize.end) / 2)).toBeLessThanOrEqual((afterResize.end - afterResize.start) / afterResize.width / 2)
+
+  await timeline.getByLabel('时间轴刻度').selectOption('week')
+  await page.evaluate(() => { document.documentElement.lang = 'zh-CN' })
+  const chineseWeekStarts = await timeline.getByTestId('timeline-ruler').locator('.eotion-timeline-ruler-tick--major').evaluateAll(elements => elements.map(element => Number.parseFloat((element as HTMLElement).style.left)))
+  const beforeLocale = await timelineViewport(scroller)
+  await page.evaluate(() => { document.documentElement.lang = 'en-US' })
+  await expect.poll(() => timeline.getByTestId('timeline-ruler').locator('.eotion-timeline-ruler-tick--major').evaluateAll(elements => elements.map(element => Number.parseFloat((element as HTMLElement).style.left)))).not.toEqual(chineseWeekStarts)
+  const englishWeekStarts = await timeline.getByTestId('timeline-ruler').locator('.eotion-timeline-ruler-tick--major').evaluateAll(elements => elements.map(element => Number.parseFloat((element as HTMLElement).style.left)))
+  expect(chineseWeekStarts.length).toBeGreaterThan(1)
+  expect(englishWeekStarts.length).toBeGreaterThan(1)
+  const afterLocale = await timelineViewport(scroller)
+  expect(Math.abs((afterLocale.start + afterLocale.end) / 2 - (beforeLocale.start + beforeLocale.end) / 2)).toBeLessThanOrEqual((afterLocale.end - afterLocale.start) / afterLocale.width / 2)
+  await expect(timeline).toHaveAttribute('data-scale', 'week')
+
+  const localTomorrow = await page.evaluate(() => {
+    const next = new Date(Date.now())
+    next.setHours(24, 0, 0, 0)
+    return next.getTime()
+  })
+  await page.clock.setSystemTime(new Date(localTomorrow - 1000))
+  await page.clock.runFor(61_000)
+  const afterMidnight = Number(await timeline.getAttribute('data-today-ms'))
+  expect(afterMidnight).toBeGreaterThanOrEqual(localTomorrow)
+  expect(afterMidnight).toBeLessThan(localTomorrow + 60_000)
+  const localDayStart = (instant: number) => page.evaluate(value => {
+    const date = new Date(value)
+    date.setHours(0, 0, 0, 0)
+    return date.getTime()
+  }, instant)
+  const tomorrowAfterWake = await page.evaluate(() => {
+    const next = new Date(Date.now())
+    next.setHours(24, 0, 0, 0)
+    return next.getTime()
+  })
+  await page.clock.setSystemTime(new Date(tomorrowAfterWake + 1000))
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect.poll(async () => Number(await timeline.getAttribute('data-today-ms'))).toBe(await localDayStart(tomorrowAfterWake + 1000))
+  const followingDay = await page.evaluate(() => {
+    const next = new Date(Date.now())
+    next.setHours(24, 0, 0, 0)
+    return next.getTime()
+  })
+  await page.clock.setSystemTime(new Date(followingDay + 1000))
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+  await expect.poll(async () => Number(await timeline.getAttribute('data-today-ms'))).toBe(await localDayStart(followingDay + 1000))
+
+  await database.getByRole('button', { name: '切换视图' }).click()
   await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '表格视图', exact: true }).click()
-  await expect(databaseBlock.locator('table')).toBeVisible()
-  await expect(databaseBlock.getByText('暂无记录', { exact: true })).toBeVisible()
-  await expect(databaseBlock.getByRole('status')).toHaveCount(0)
+  await expect(database.locator('table')).toBeVisible()
+  await expect(database.getByText('暂无记录', { exact: true })).toBeVisible()
+  await page.evaluate(() => {
+    document.documentElement.lang = 'zh-CN'
+    window.dispatchEvent(new Event('focus'))
+    window.dispatchEvent(new Event('pageshow'))
+    document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(new Event('resize'))
+  })
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await expect(database.getByTestId('database-timeline')).toHaveCount(0)
+  expect(pageErrors).toEqual([])
 })
 
 test('phone creates a Board view without a Select property and keeps the two-row header in the viewport', async ({ page }) => {
@@ -4011,19 +4366,45 @@ test('board renderer switches with Table and List without replacing editor or re
   await expect(drawer).toBeVisible()
   await drawer.evaluate(element => element.setAttribute('data-board-lifecycle', 'stable'))
   const title = drawer.getByRole('textbox', { name: '记录标题' })
+  const body = drawer.locator('.eotion-editor-content .tiptap')
   await title.fill('Board draft survives')
+  await body.fill('Timeline view switch body draft')
+  await page.evaluate(() => {
+    const editor = document.querySelector('.eotion-editor')
+    const database = document.querySelector('#database-block-board-lifecycle')
+    const drawer = document.querySelector('[data-overlay-mode="drawer"]')
+    if (!editor || !database || !drawer) throw new Error('Expected editor, database NodeView, and record drawer')
+    ;(window as Window & { __boardLifecycleIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__boardLifecycleIdentity = {
+      editor, database, drawer,
+      editorComponent: (editor as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+      databaseComponent: (database as Element & { __vueParentComponent?: unknown }).__vueParentComponent,
+    }
+  })
   for (const [name, renderer] of [['表格视图', 'table'], ['List', '[data-testid="database-list"]'], ['Timeline', 'timeline'], ['Board', '[data-testid="database-board"]']] as const) {
     await database.getByRole('button', { name: '切换视图' }).focus()
     await database.getByRole('button', { name: '切换视图' }).press('Enter')
     await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name, exact: true }).click()
     if (renderer === 'timeline') {
-      await expect(database.getByRole('status')).toHaveText('时间轴视图暂未实现')
+      await expect(database.getByTestId('database-timeline')).toBeVisible()
       await expect(database.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
     } else await expect(database.locator(renderer)).toBeVisible()
     await expect(database).toHaveAttribute('data-board-lifecycle', 'stable')
     await expect(page.locator('.eotion-editor-content').first()).toHaveAttribute('data-board-lifecycle', 'stable')
     await expect(drawer).toHaveAttribute('data-board-lifecycle', 'stable')
     await expect(title).toHaveValue('Board draft survives')
+    await expect(body).toContainText('Timeline view switch body draft')
+    await expect.poll(() => page.evaluate(() => {
+      const before = (window as Window & { __boardLifecycleIdentity?: { editor: Element; database: Element; drawer: Element; editorComponent: unknown; databaseComponent: unknown } }).__boardLifecycleIdentity!
+      const editor = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null
+      const database = document.querySelector('#database-block-board-lifecycle') as (Element & { __vueParentComponent?: unknown }) | null
+      return {
+        editorSame: editor === before.editor,
+        databaseSame: database === before.database,
+        drawerSame: document.querySelector('[data-overlay-mode="drawer"]') === before.drawer,
+        editorComponentSame: editor?.__vueParentComponent === before.editorComponent,
+        databaseComponentSame: database?.__vueParentComponent === before.databaseComponent,
+      }
+    })).toEqual({ editorSame: true, databaseSame: true, drawerSame: true, editorComponentSame: true, databaseComponentSame: true })
   }
   await expect.poll(() => ((api.blocks.find(item => item.id === 'board-lifecycle')?.props as { node?: { attrs?: { viewId?: string } } })?.node?.attrs?.viewId)).toBe(boardView.id)
   expect(api.blocks.filter(item => item.type === 'database')).toHaveLength(1)

@@ -70,9 +70,22 @@ const ProductLink = Link.extend({
     return { href: attributes?.href ?? { default: null } }
   },
 }).configure({ openOnClick: false, autolink: false, linkOnPaste: false, isAllowedUri: isSafeLinkHref })
+let databaseViewChangeInProgress = false
+
+function isDatabaseViewOnlyChange(before: ProseMirrorNode, after: ProseMirrorNode): boolean {
+  if (!before.sameMarkup(after) || before.childCount !== 1 || after.childCount !== 1) return false
+  const previous = before.child(0)
+  const next = after.child(0)
+  if (previous.type.name !== 'eotionDatabase' || next.type !== previous.type) return false
+  return previous.eq(next.type.create({ ...next.attrs, viewId: previous.attrs.viewId }, next.content, next.marks))
+}
+
 const ProtectedDocument = Extension.create({
   name: 'protectedDocument',
-  addProseMirrorPlugins: () => [new Plugin({ filterTransaction: transaction => !transaction.docChanged })],
+  addProseMirrorPlugins: () => [new Plugin({
+    filterTransaction: transaction => !transaction.docChanged
+      || (databaseViewChangeInProgress && isDatabaseViewOnlyChange(transaction.before, transaction.doc)),
+  })],
 })
 const compositionWaiters = new Set<() => void>()
 const keyboardInset = ref(0)
@@ -595,7 +608,24 @@ function outdentSelection(): void {
   if (editor.value && !composing.value) outdentBlock(editor.value, false)
 }
 
-defineExpose({ editor })
+// Standalone Database pages change the synthetic reference in place. The
+// protected document still rejects every structural/content editing transaction.
+function switchDatabaseView(databaseId: string, viewId: string): boolean {
+  const current = editor.value
+  if (!props.protectDocument || !current || current.isDestroyed || !viewId || current.state.doc.childCount !== 1) return false
+  const reference = current.state.doc.child(0)
+  if (reference.type.name !== 'eotionDatabase' || reference.attrs.databaseId !== databaseId) return false
+  if (reference.attrs.viewId === viewId) return true
+  databaseViewChangeInProgress = true
+  try {
+    current.view.dispatch(current.state.tr.setNodeMarkup(0, undefined, { ...reference.attrs, viewId }))
+  } finally {
+    databaseViewChangeInProgress = false
+  }
+  return current.state.doc.child(0).attrs.viewId === viewId
+}
+
+defineExpose({ editor, switchDatabaseView })
 </script>
 
 <template>
