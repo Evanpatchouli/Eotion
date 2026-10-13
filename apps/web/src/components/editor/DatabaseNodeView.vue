@@ -1827,6 +1827,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
+      <p v-else-if="viewType === 'timeline'" class="eotion-database-state" role="status">时间轴视图暂未实现</p>
       <div v-else-if="properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>
@@ -1882,8 +1883,8 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
           </tbody>
         </table>
       </div>
-      <p v-if="viewType !== 'list' && records.length === 0" class="eotion-database-state">暂无记录</p>
-      <p v-else-if="viewType !== 'list' && !properties.length" class="eotion-database-state">这个数据库还没有可显示的属性。</p>
+      <p v-if="viewType !== 'list' && viewType !== 'timeline' && records.length === 0" class="eotion-database-state">暂无记录</p>
+      <p v-else-if="viewType !== 'list' && viewType !== 'timeline' && !properties.length" class="eotion-database-state">这个数据库还没有可显示的属性。</p>
       <div v-if="moreError" class="eotion-database-error" role="alert"><span>{{ moreError }}</span><button type="button" :disabled="loadingMore" @click.stop="loadTable(true)">重试加载更多</button></div>
       <button v-if="nextCursor" class="eotion-database-more" type="button" :disabled="loadingMore || loading || staleReadonly || !online" @click.stop="loadTable(true)">{{ loadingMore ? '正在加载…' : '加载更多' }}</button>
     </template>

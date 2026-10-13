@@ -12,7 +12,7 @@ const pageRecord: PageResponse = { id: 'database-page', workspaceId: workspace.i
 
 type TestDatabase = { id: string; workspaceId: string; name: string; version: number; createdAt: string; updatedAt: string }
 type TestProperty = { id: string; databaseId: string; workspaceId: string; name: string; type: 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'relation' | 'rollup' | 'formula'; version: number; createdAt: string; updatedAt: string; options?: Array<{ id: string; name: string }>; config?: DatabasePropertyConfig }
-type TestView = { id: string; databaseId: string; workspaceId: string; name: string; type: 'table' | 'list' | 'board'; config: DatabaseViewConfig; version: number; createdAt: string; updatedAt: string }
+type TestView = { id: string; databaseId: string; workspaceId: string; name: string; type: 'table' | 'list' | 'board' | 'timeline'; config: DatabaseViewConfig; version: number; createdAt: string; updatedAt: string }
 type TestRecord = { id: string; databaseId: string; workspaceId: string; pageId: string; properties: Record<string, DatabasePropertyValue>; version: number; pageVersion: string; createdAt: string; updatedAt: string }
 
 function database(id: string, name = 'Projects'): TestDatabase { return { id, workspaceId: workspace.id, name, version: 1, createdAt: now, updatedAt: now } }
@@ -3061,13 +3061,21 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
   const tableView = view('matrix-table-view', rootDatabase.id, 'Table A', { ...DEFAULT_DATABASE_VIEW_CONFIG, visibleProperties: ['root-title'] }, 'table')
   const listView = view('matrix-list-view', rootDatabase.id, 'List B', { ...DEFAULT_DATABASE_VIEW_CONFIG, visibleProperties: ['root-title'] }, 'list')
   const boardView = view('matrix-board-view', rootDatabase.id, 'Board C', { ...DEFAULT_DATABASE_VIEW_CONFIG, visibleProperties: ['root-title'], options: { groupByPropertyId: 'root-select' } }, 'board')
+  const timelineView = view('matrix-timeline-view', rootDatabase.id, 'Timeline D', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'timeline')
   const api = await installApi(page, [
     block('matrix-view-switch-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: tableView.id } }, 100),
-  ], { databases: [rootDatabase], views: [tableView, listView, boardView], properties: rootProperties, records: [basicRecord] })
+    block('matrix-independent-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: tableView.id } }, 200),
+    block('matrix-initial-timeline-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 300),
+  ], { databases: [rootDatabase], views: [tableView, listView, boardView, timelineView], properties: rootProperties, records: [basicRecord] })
   api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Matrix record', role: 'database-record' })
   await page.goto('/#/app/database-workspace/page/database-page')
   const database = page.locator('#database-block-matrix-view-switch-block')
   await expect(database.locator('tbody')).toBeVisible()
+  const independentDatabase = page.locator('#database-block-matrix-independent-block')
+  await expect(independentDatabase.locator('tbody')).toBeVisible()
+  const initialTimeline = page.locator('#database-block-matrix-initial-timeline-block')
+  await expect(initialTimeline.getByRole('status')).toHaveText('时间轴视图暂未实现')
+  await expect(initialTimeline.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
   await page.evaluate(() => {
     const editor = document.querySelector('.eotion-editor')
     const database = document.querySelector('#database-block-matrix-view-switch-block')
@@ -3081,6 +3089,7 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
   })
 
   const transitions = [
+    { target: timelineView, name: 'Timeline D', renderer: 'timeline' as const },
     { target: listView, name: 'List B', renderer: 'list' as const },
     { target: tableView, name: 'Table A', renderer: 'table' as const },
     { target: boardView, name: 'Board C', renderer: 'board' as const },
@@ -3101,6 +3110,12 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
       await expect(database.getByTestId('database-board')).toBeVisible()
       await expect(database.locator('.eotion-database-board-column-name')).toHaveText(['Open', 'Done', '未分组'])
     }
+    if (transition.renderer === 'timeline') {
+      await expect(database.getByRole('status')).toHaveText('时间轴视图暂未实现')
+      await expect(database.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
+      await expect(database.getByRole('button', { name: '新建记录' })).toBeVisible()
+      await expect.poll(() => api.blocks.find(item => item.id === 'matrix-independent-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: tableView.id })
+    }
     await expect(database.getByRole('button', { name: '切换视图' })).toContainText(transition.name)
     await expect.poll(() => api.blocks.find(item => item.id === 'matrix-view-switch-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: transition.target.id })
     await expect.poll(() => page.evaluate(() => {
@@ -3114,12 +3129,55 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
         databaseComponentSame: (database as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent === before.databaseComponent,
       }
     })).toEqual({ editorSame: true, databaseSame: true, editorComponentSame: true, databaseComponentSame: true })
+    if (transition.renderer === 'timeline') {
+      await database.getByRole('button', { name: '切换视图' }).click()
+      const viewMenu = page.getByRole('group', { name: '数据库视图', exact: true })
+      await expect(viewMenu.getByRole('group', { name: '新建数据库视图' }).getByRole('button')).toHaveText(['新建视图', '新建列表视图', '新建看板视图'])
+      await expect(viewMenu.getByRole('button', { name: '编辑视图 Timeline D' })).toBeVisible()
+      await expect(viewMenu.getByRole('button', { name: '删除视图 Timeline D' })).toBeVisible()
+      await page.keyboard.press('Escape')
+    }
     await database.getByRole('button', { name: '数据库设置' }).click()
     const settingsMenu = page.getByRole('menu', { name: '数据库设置' })
     if (transition.renderer === 'board') await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toBeVisible()
     else await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toHaveCount(0)
+    if (transition.renderer === 'timeline') {
+      await expect(settingsMenu.getByRole('menuitem', { name: '筛选', exact: true })).toBeVisible()
+      await expect(settingsMenu.getByRole('menuitem', { name: '排序', exact: true })).toBeVisible()
+    }
     await page.keyboard.press('Escape')
   }
+  await database.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Timeline D', exact: true }).click()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(database.getByRole('status')).toHaveText('时间轴视图暂未实现')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  const selectorBounds = await database.getByRole('button', { name: '切换视图' }).boundingBox()
+  expect(selectorBounds).toBeTruthy()
+  expect(selectorBounds!.x + selectorBounds!.width).toBeLessThanOrEqual(390)
+})
+
+test('empty unconfigured Timeline has no renderer fallback and Table keeps its empty state', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const timelineView = view('empty-timeline-view', rootDatabase.id, 'Timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'timeline')
+  const tableView = view('empty-table-view', rootDatabase.id, 'Table', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'table')
+  await installApi(page, [
+    block('empty-timeline-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
+  ], { databases: [rootDatabase], views: [timelineView, tableView], properties: rootProperties, records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const databaseBlock = page.locator('#database-block-empty-timeline-block')
+  await expect(databaseBlock.getByRole('status')).toHaveText('时间轴视图暂未实现')
+  await expect(databaseBlock.locator('.eotion-database-state')).toHaveCount(1)
+  await expect(databaseBlock.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  await screenshot(page, 'p111c-timeline-placeholder-phone-390')
+
+  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '表格视图', exact: true }).click()
+  await expect(databaseBlock.locator('table')).toBeVisible()
+  await expect(databaseBlock.getByText('暂无记录', { exact: true })).toBeVisible()
+  await expect(databaseBlock.getByRole('status')).toHaveCount(0)
 })
 
 test('phone creates a Board view without a Select property and keeps the two-row header in the viewport', async ({ page }) => {
@@ -3937,9 +3995,10 @@ test('board renderer switches with Table and List without replacing editor or re
   await page.setViewportSize({ width: 1440, height: 1000 })
   const boardView = view('board-lifecycle-view', rootDatabase.id, 'Board', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: 'root-select' } }, 'board')
   const listView = view('board-list-view', rootDatabase.id, 'List', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'list')
+  const timelineView = view('board-timeline-view', rootDatabase.id, 'Timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'timeline')
   const api = await installApi(page, [
     block('board-lifecycle', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
-  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id), listView, boardView], properties: rootProperties, records: [basicRecord] })
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id), listView, boardView, timelineView], properties: rootProperties, records: [basicRecord] })
   api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Board record', orderKey: '0000000000000002', role: 'database-record' })
   await page.goto('/#/app/database-workspace/page/database-page')
   const database = page.locator('#database-block-board-lifecycle')
@@ -3953,11 +4012,14 @@ test('board renderer switches with Table and List without replacing editor or re
   await drawer.evaluate(element => element.setAttribute('data-board-lifecycle', 'stable'))
   const title = drawer.getByRole('textbox', { name: '记录标题' })
   await title.fill('Board draft survives')
-  for (const [name, renderer] of [['表格视图', 'table'], ['List', '[data-testid="database-list"]'], ['Board', '[data-testid="database-board"]']] as const) {
+  for (const [name, renderer] of [['表格视图', 'table'], ['List', '[data-testid="database-list"]'], ['Timeline', 'timeline'], ['Board', '[data-testid="database-board"]']] as const) {
     await database.getByRole('button', { name: '切换视图' }).focus()
     await database.getByRole('button', { name: '切换视图' }).press('Enter')
     await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name, exact: true }).click()
-    await expect(database.locator(renderer)).toBeVisible()
+    if (renderer === 'timeline') {
+      await expect(database.getByRole('status')).toHaveText('时间轴视图暂未实现')
+      await expect(database.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
+    } else await expect(database.locator(renderer)).toBeVisible()
     await expect(database).toHaveAttribute('data-board-lifecycle', 'stable')
     await expect(page.locator('.eotion-editor-content').first()).toHaveAttribute('data-board-lifecycle', 'stable')
     await expect(drawer).toHaveAttribute('data-board-lifecycle', 'stable')
