@@ -1,6 +1,6 @@
 # P11.2 Timeline Renderer 架构
 
-> 架构状态：**P11.2.0 PASS；P11.2C Frozen Table Scope PASS**（2026-10-13；P11.2A/B/C 实施记录见 §20–§22）
+> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS**（2026-10-13；实施/验收记录见 §20–§23）
 > 基线：`25bd279585772bfdce43799de71fb3c3f5ba5436`（`master`），P11.1D PASS 之后。
 > 版本背景：当前版本 `0.0.1`，P11 目标版本 `0.0.3`。§1–§19 保留 P11.2.0 的架构基线；该阶段仅修改文档。P11.2A/B/C 的产品实施与验证见 §20–§22，API、schema、sync、MCP、依赖与版本保持。
 
@@ -480,3 +480,12 @@ indicator/jump 留给后续完整 read parity；本轮不建立 Timeline 专属�
 - 根容器使用同一 Web 主 UI 的 container query：700px 及以下隐藏非 Title 列并把 Title 前置；Frozen 桌面宽度约 32%，上限 480px 与根宽 45%，窄屏不超过 `min(120px, 40%)`，Timeline 保持可收缩并继续横滚。
 
 不包含列编辑、Date/Property mutation、drag/resize、dependency、Timeline 设置 UI 或独立 Frozen View；不改 API、schema、Domain/wire、MCP、sync、版本、依赖、coordinate/projection 算法或 row model。P11.2C 完成后停止；P11.2D 需要另行明确授权和范围。此 Scope PASS 不等同 P11 Final PASS。
+
+## 23. P11.2D 核心 Read 最终验收
+
+2026-10-13，P11.2D按明确授权完成Acceptance，**核心Read PASS**；正式矩阵、fresh失败基线
+对照、截图/样本与限制见[P11.2D Read Acceptance](../verification/p11-2d-timeline-read-acceptance.md)。
+本轮只补测试与文档，不改上述坐标、投影、组件或领域契约。完成Shell/Coordinates/七Scale/
+Ruler/Grid/Today/Read-only bars/Frozen八项，保generic records、Host identity与scroll ownership。
+完全离屏scheduled indicator/jump仍是未实现parity；mutation/dependency/Calendar/Chart均不包含。
+核心PASS不表示全Notion parity、全Product或P11 Final完成；完成后停止，不进入P11.3。

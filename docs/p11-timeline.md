@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1A/B/C/D、P11.2.0 已完成；P11.2A/B/C 范围验收 PASS；P11.2D 与后续阶段尚未实施**
+> Status: **P11.1A/B/C/D、P11.2.0 已完成；P11.2A/B/C 范围验收 PASS；P11.2D 核心 Read Acceptance PASS；已停止，P11.3 未开始**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -808,6 +808,28 @@ P11.2 Read Renderer 全量完成条件（C 只完成 Frozen Table 子范围；�
 - pagination
 - unplanned records
 - Table/List/Board switching
+
+#### P11.2D 本轮授权的 Read Acceptance
+
+2026-10-13，**P11.2D 核心 Read Acceptance PASS**；本轮只补必要测试与文档，无产品实现修复。
+基线 `916de4a` 包含 P11.2C，开始时工作树干净。正式验收入口为
+[P11.2D Timeline Read Acceptance](verification/p11-2d-timeline-read-acceptance.md)。
+
+本轮核心完成范围为：Timeline shell、Coordinate engine、七种 Scale、Ruler、Grid、Today line、
+Read-only bars、Frozen Table。验收同时覆盖 Date-only/Datetime/Date Range/Datetime Range/
+Unscheduled/Invalid、指定 Table→Timeline→Board→Timeline 的 identity/draft、单一 scroll ownership、
+Desktop/390px 与100/500缓存/行窗口观察。真实 Domain、Contracts、SDK、Mongo API 和相关 Web
+测试分别记录；历史失败必须与未改动基线对照，不以独立复跑通过隐藏完整运行失败。
+
+该核心 Read Acceptance 与上面的完整 read parity 清单区分：完全离屏 scheduled 的方向
+indicator/jump 尚未实施，仍作为后续 parity 待办保留。本轮不宣称全部 Notion parity、P11 Final
+或完整 Product suite 全绿。Mutation、Drag、Resize、Dependency、Calendar、Chart 均不包含。
+正式版本保持 `0.0.1`，目标版本仍 `0.0.3`；P11.2D 收口后停止，不自动进入 P11.3。
+
+最终Domain48/48、Contracts25/25、SDK23/23、真实Mongo API22/22及相关typecheck/build通过。
+相关Web231项228PASS/3FAIL/0skip/0flaky；三失败完全属于fresh未改动基线230项的四失败集合，
+最终独立复跑2PASS/1FAIL。所有Timeline/Frozen/指定切换/100与500检查通过，完整失败对照与
+截图、样本、停止边界以正式验收页为准，不宣称完整Product或P11 Final全绿。
 
 ### P11.3 Timeline Mutation
 

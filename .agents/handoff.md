@@ -1,5 +1,45 @@
 # Handoff
 
+## 2026-10-13 P11.2D Timeline Read Renderer Final Acceptance（核心 PASS，已完成并停止）
+
+基线 `916de4a37cea108497d6d76fa4fe8c24ac1961e7` 已含P11.2C，开始时master工作树干净；
+分支 `codex/p11-2d-read-acceptance`。正式版本保持 `0.0.1`，P11目标 `0.0.3`。
+最终独立review完成，0个可证明blocker；root完成截图/样本、diff、链接与strict UTF-8无BOM检查。
+测试提交 `ba1f6008f45f1679b4ab1d9e357629c86e0d0cc0`；验收/交接文档独立提交，收口commit即包含本节的提交。
+正式证据：[P11.2D Read Acceptance](../docs/verification/p11-2d-timeline-read-acceptance.md)。
+
+本轮用户明确的八项核心只读范围完成：Shell、Coordinate engine、七Scale、Ruler、Grid、Today、
+Read-only bars、Frozen Table。Config/generic records→projection→temporal/row layout→共享Frozen/
+Viewport→Bars/Today真实接入；不新增loader、selection store、Record Host或日期解析规则。
+无产品实现/API/model/sync/MCP/版本/依赖diff；只补测试和文档。
+Mutation/Drag/Resize/Dependency/Calendar/Chart均不包含；完全离屏scheduled的indicator/jump仍是
+既有deferred parity，不据本轮核心Read PASS宣称全Notion parity或P11 Final完成。
+
+七Scale通过独立固定密度表与真实DOM检查，原始tick25/17/16/20/31/16/20，均≤80；center
+偏差0ms，generic GET1→1、View/Record/所有PATCH0→0，projection/temporal/Frozen refs保持。
+普通scroll、rebase和Today回置、六Record类型、精确UTC时间/无fake end、Frozen48px行/56px
+header/shared rows/双向hover/Host selection、单Timeline横滚/page-host纵滚均PASS。
+指定Table→Timeline→Board→Timeline保Editor/NodeView/Block DOM+ID/Host/Drawer/Record Editor
+组件身份与draft；既有inline/ABA/snapshot PASS。Desktop/390px Light-Dark与empty/all-unscheduled
+fresh截图已主Agent视检；无页面横溢，Title保留。原生宿主真机与全Product未运行。
+
+Domain48/48、Contracts25/25、SDK23/23、独立Mongo8.2.3 replica set API22/22，全0fail/skip；
+相关typecheck/build PASS，临时Mongo27714已停止。既有EotionEditor677.89kB提示保持。
+fresh基线Web230项226PASS/4FAIL，独立3PASS/1FAIL；最终231项228PASS/3FAIL，独立2PASS/1FAIL。
+最终三失败完全是基线失败子集：Slash创建DB、linksharedDB dialog、selectiontoolbar；前两独立PASS，
+toolbar仍FAIL，完整运行时序根因未定性。基线另有Board创建前title draft失败，最终完整PASS。
+不隐藏失败，不声明全Product全绿；所有Timeline/identity/Frozen/100与500最终运行PASS。
+
+100/500分页4/20GET、DOM100/17行（两侧相同）、ticks21/ruler10；500窗口[483,500)、总高24000px，
+projection/temporal/Frozen缓存不变；操作累计1733/4113ms含分页/UI/Relation，不是帧率benchmark。
+日志：Temp下`eotion-p112d-baseline-916de4a/`、`eotion-p112d-final/`、`eotion-p112d-mongo-acceptance/logs/`；
+六PNG/三JSON副本位于`C:/Users/31250/.codex/visualizations/2026/10/13/01a134d6-cd35-72e2-b646-f87384ed627b/timeline-read-acceptance/`。
+
+完成后停止，**P11.3未开始**。经新明确任务启动时，从P11 §23的Mutation小节、renderer architecture、
+DatabaseTimelineView及projection/geometry/layout/TimelineBar、既有generic Date service/SDK/CAS接续。
+不得把all-day视觉exclusive边界写回end；保持point缺end/显式零长、UTC instant、Host/P9 fence。
+P11.5待优化标签密度、Frozen多列截断、短条/marker可读性、触摸与空态视觉；不自动实现。
+
 ## 2026-10-13 P11.2C Frozen Table（Scope PASS，完成并停止）
 
 基线 `84c0758`，分支 `codex/p11-2c-frozen-table`；正式版本保持 `0.0.1`，P11 目标 `0.0.3`。

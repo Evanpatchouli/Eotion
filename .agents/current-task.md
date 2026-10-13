@@ -1,51 +1,54 @@
-# 当前任务：P11.2C Frozen Table（Scope PASS，已完成并停止）
+# 当前任务：P11.2D Timeline Read Renderer Final Acceptance（核心 PASS，已完成并停止）
 
-基线 `84c0758`，开始时 master 工作树干净；分支 `codex/p11-2c-frozen-table`。
-仅完成 P11.2C，版本保持 0.0.1，P11 目标 0.0.3；完成后停止，不进入 P11.2D。
+基线 `916de4a37cea108497d6d76fa4fe8c24ac1961e7`，包含 P11.2C；开始时 master 工作树干净。
+工作分支 `codex/p11-2d-read-acceptance`；正式版本保持 `0.0.1`，P11 目标 `0.0.3`。
+只验收已授权的 P11.2 Read Renderer，补齐必要测试/文档及范围内 blocker；完成后停止，不进入 P11.3。
 
 ## 工作单元
 
 | 单元 | 认知模式 / 评级 / 角色 | 验收输出 | 状态 |
 | --- | --- | --- | --- |
-| C1 | investigate / S0 scout | 现有 display/Host 与 Timeline layout/scroll/test Evidence Pack | 完成，两份不重叠 Evidence Pack |
-| C2 | decide / S2 主 Agent | 最小 Implementation Brief：列投影、共享 rows、header、响应式与 cache 边界 | 完成，后续执行已降级 |
-| C3 | execute / S1 fast_worker | Frozen 列/display 投影与 Relation 窗口 cache 接线及逻辑用例 | 完成；最终逻辑 6/6 PASS |
-| C4 | execute / S1 fast_worker | FrozenPane 与共享 rowGeometry/window，hover、selection、scroll ownership、窄屏 | 完成；UI 行为由最终 Web 定向 suite 验收 |
-| C5 | execute / S1 fast_worker | 补充 product-database Web fixtures/assertions | 完成；未改无关断言 |
-| C6 | verify / S0 scout | 运行逻辑与 product-database 定向 suite、typecheck/build、100/500 取样 | 完成；147 项 144 PASS / 3 FAIL，范围内检查通过 |
-| C7 | review / reviewer | 独立复核 blocker 与已修正项 | 完成；最终 0 blocker |
-| C8 | execute / S1 fast_worker | 验收文档、检索入口、current-task 与 handoff 回填 | 完成；见 P11.2C 验收页 |
+| D1 | investigate / S0 scout | 链路与既有测试覆盖、必要缺口 Evidence Pack | 完成；仅需补同屏坐标与指定切换序列证据 |
+| D2 | verify / S0 scout | Domain / Contracts / SDK / 真实 API / typecheck / build 统计 | 完成；48+25+23+22 全 PASS，相关 typecheck/build PASS |
+| D3 | decide / S2 主 Agent | 验收矩阵与必要补测/修复 Brief | 完成；无已知范围内 blocker，后续执行降为 S1 |
+| D4 | execute / S1 fast_worker | 必要且有行为意义的验收补测；若有 blocker 则单独聚焦修复 | 完成，测试提交 ba1f600；无产品实现修复 |
+| D5 | verify / S0 主 Agent | Web Product、identity、浏览器视觉/响应式/scroll/100与500样本、失败基线对照 | 完成；基线230项226PASS/4FAIL，最终231项228PASS/3FAIL，最终独立2PASS/1FAIL；六PNG/三JSON已视检/存档 |
+| D6 | review / reviewer | 一次最终独立复核、真实 blocker 与证据一致性 | 完成；最终0 blocker |
+| D7 | execute / S1 主 Agent | P11 状态、验收页、current-task、handoff 与独立文档 commit | 完成；文档收口commit即包含本文件的提交 |
 
-## 不变量与禁止事项
+## 不变量与停止边界
 
-- Frozen Table 只是 Timeline 左侧只读投影，不创建新的 Table View/loader/store/row model。
-- 两侧消费同一个 `layoutTimelineItems` 结果、rowIndex/top/height 与 page-host row window；不重复测量行。
-- 独立读取 `options.timeline.frozenTable`，null 默认全列/默认顺序；稳定 ID、去重、忽略缺失 ID、Title 始终保留；不写回/改坏未知字段。
-- 复用 Database 现有 formatter/Relation title cache；bar 与 Frozen 列可见 Relation 去重。
-- TimelineViewport 唯一 horizontal scroll owner；现有 page host 唯一 vertical scroll owner。
-- Header 共用 56px/同一 pinY；selection 来自 Record Host pageId，hover 用 recordId 临时状态。
-- 不实现 column editor、property/date mutation、drag/resize、dependency、Timeline settings UI、Frozen 独立 View。
-- 不重新设计 projection/coordinate/row layout，不改公共 API、schema、sync、MCP、版本或依赖。
+- 全链路必须由既有 generic records/config 接入，复用 projection/coordinates/layout/Record Host。
+- 七 scale local override：0 PATCH / 0 records GET、保 viewport anchor；ruler/grid/bar/today 同 transform。
+- 保留 point/range/UTC instant/date-only 语义，unscheduled/invalid fail closed 且保导航。
+- Frozen 与 Timeline 共用 row geometry/window/height、Host selection；只 Timeline 横滚、page host 纵滚。
+- 验证 Table→Timeline→Board→Timeline 的 Editor/NodeView/Block/Drawer/Host identity 和草稿。
+- Desktop 与390px，100/500 cache/window/tick 样本；观察不是最终 benchmark。
+- 历史失败完整记录，与未改动基线比较；不跳过、不削弱断言、不隐藏失败。
+- 不新增编辑、mutation/drag/resize/dependency/Calendar/Chart，不改数据模型/API/sync/版本/依赖。
+- 测试/修复与 acceptance 文档分别聚焦提交；完成后停止，不自动进入 P11.3。
 
-## 验收结论
+## 起点证据
 
-- 纯逻辑 28/28 PASS；完整相关 Playwright suite 147 项为 144 PASS / 3 FAIL / 0 skip / 0 flaky。三项失败是数据库 dialog 时序问题，不属于 Frozen 行为，未修改断言；逐条复跑 2 PASS / 1 FAIL，详见[验收页](../docs/verification/p11-2c-frozen-table.md)。
-- Web typecheck/build、390px/desktop Light/Dark 视检、100/500 cache/window samples 与独立最终 review 完成；review 最终 0 blocker。
-- 本阶段结论仅为 P11.2C Scope PASS。最终样本、失败与限制见[验收页](../docs/verification/p11-2c-frozen-table.md)。完成后停止，不进入 P11.2D。
+- HEAD `916de4a` 为 P11.2C 文档收口，包含 `0ed6d0f` Frozen 投影和 `2dfc8b7` UI 接线。
+- A/B/C 均为各自范围 PASS；此前完整相关 suite 有 Slash/dialog 和 selection toolbar 失败。
+- 三份历史验收已读取，最终结果由本轮 fresh 验证与基线对照决定。
 
-## 已冻结 Implementation Brief
+## 验收 Brief（已决定，执行 S1）
 
-- 缺省或 `frozenTable.visible !== true` 隐藏；显示时只使用嵌套列配置。列 resolver 保留 schema 顺序/部分排序，去重忽略缺失 ID，Title 无条件保留；不 PATCH 或补写默认值。
-- `frozenTable.ts` 只提供列选择与 recordId→propertyId→displayText map，不建立第二行列表；Title 直接用 Timeline item.title。
-- parent `frozenColumns` / `frozenDisplayMap` computed 独立于 scroll/hover/zoom；两侧组件都消费同一 `rowGeometry`、window、bodyHeight。
-- `FrozenTablePane` 并列于 `TimelineViewport`，header 共用 56px/pinY；cell 仅读 displayText，Title 点开共享 Record Host。
-- Timeline 实例只新增 recordId 临时 hover；focus island 跨左右保留，selection 始终由 Host pageId 派生。
-- Frozen 宽度限制在整体 45% 与约 480px 内；窄容器隐藏非 Title，Title 即使配置顺序靠后仍存在，Timeline min-width:0 继续横滚。
-- NodeView 对 bar/Frozen 可见 Relation 取并集，仍使用原缓存、epoch、500 IDs/50 条批次与 10 batches 预算。
-- 并行编辑边界：C3 仅 NodeView/frozenTable.ts/logic spec；C4 仅 Timeline UI/layout 常量；C5 仅 product-database.spec.ts。
+- 扩展 `product-database.spec.ts`：七 scale 的 ruler/grid/bar/today 统一 DOM 坐标、80 tick 预算、零网络与 center anchor；普通 scroll/rebase 后复验。
+- 保留原 delayed ABA，并明确加入 Table→Timeline→Board→Timeline；保主 Editor、NodeView、Block、Record Host/Drawer/Record editor identity 与草稿。
+- 100/500 样本补生产 tick 数；空库/全未排期状态保存新截图，四尺寸/主题组合依现有用例复验。
+- 不改产品实现；完全离屏 scheduled 的 indicator/jump 是已记录的未实现 parity，未在本轮八项核心只读范围中新增。
+- `docs/p11-timeline.md` 已区分本轮核心 Read Acceptance 与完整 P11 parity，保留所有 deferred 项，不虚报 P11 Final。
 
-## 实现、验收与停止状态（2026-10-13）
+## 最终验收证据
 
-- 纯逻辑列投影提交 `0ed6d0f0a472b629acf2bc3e2f4270007a370a3b`（当时 5 个逻辑用例）；UI、Relation window/cache/pending 修补与最终测试提交 `2dfc8b723271d846d13a5da660e15304cbe26732`（最终 logic 6/6 PASS）。
-- Frozen 配置 opt-in、共享 rows/window、56px/pinY、Host selection/open、recordID hover、单 page-host scroll 与 <=700px Title-only 规则已写入组件；`visibleRecords(scope, recordIds)` 以当前 `rowGeometry` 窗口通知 Relation cache。
-- Relation pending request single-instance 去重、窗口优先/缺失缓存补取与 scope fence 已纳入最终验收。当前正式证据见[P11.2C Frozen Table](../docs/verification/p11-2c-frozen-table.md)。本阶段完成后停止，不进入 P11.2D；后续需新授权与具体范围定义。
+- 核心八项完成：Shell、Coordinate、七Scale、Ruler、Grid、Today、Read-only bars、Frozen。
+- 指定Table→Timeline→Board→Timeline保Editor/NodeView/Block ID/Host/Drawer/RecordEditor身份与draft；六Record矩阵、48px共享行/双向hover/Host selection、scroll ownership、Desktop/390px均PASS。
+- 独立密度表验证七Scale DOM，center偏差0ms、GET1→1、View/Record/所有PATCH0→0；tick25/17/16/20/31/16/20，production预算≤80；cache refs保持。
+- Domain48/48、Contracts25/25、SDK23/23、真实隔离Mongo API22/22、相关typecheck/build通过；临时Mongo27714已停止。
+- 最终相关Web231项228PASS/3FAIL/0skip/0flaky；Database118/120、Editor44/45、Overlay38/38、Timeline logic28/28。最终失败为fresh基线四失败子集，完整记录于验收页；不能宣称全Product全绿。
+- 100/500全部按25条分页，GET4/20、两侧DOM100/17、tick21/ruler10、500窗口[483,500)/总高24000px；累计1733/4113ms含分页/UI/Relation，非最终benchmark。
+- 正式记录：`docs/verification/p11-2d-timeline-read-acceptance.md`；测试commit `ba1f6008f45f1679b4ab1d9e357629c86e0d0cc0`。文档收口commit即包含本文件的提交。
+- 完成后停止，P11.3未开始。下一轮从P11 Mutation小节、renderer architecture、generic Date service/SDK/CAS接续；不得写回all-day视觉exclusive end或伪造end。

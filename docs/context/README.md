@@ -158,3 +158,15 @@ P11.2C Frozen Table（2026-10-13，Scope PASS）检索入口为 `timeline/frozen
 row window、page-host vertical scroll 与 Record Host selection/open。窄容器规则位于
 `DatabaseTimelineView.vue` 的 root container query。实现边界与范围验收证据见
 [P11.2C 验证](../verification/p11-2c-frozen-table.md)。此阶段完成后停止，不代表全量 Product 或 P11 Final PASS；P11.2D 需新的明确授权和范围定义。
+
+P11.2D Final Acceptance（2026-10-13）：**核心Read PASS，已停止，P11.3未开始**。正式入口为
+[P11.2D Read Acceptance](../verification/p11-2d-timeline-read-acceptance.md)。本轮只补
+`product-database.spec.ts`验收证据和文档，无产品实现/模型/API改动；完成Shell/Coordinates/
+七Scale/Ruler/Grid/Today/只读Bars/Frozen。检索新增`P11.2D Timeline acceptance`，其独立
+固定密度表核对真实DOM transform、80tick预算、center与projection/temporal/Frozen refs、
+零records GET/所有PATCH；standalone指定Table→Timeline→Board→Timeline核对当前
+Host/RecordEditor/Editor/NodeView/Block DOM+ID与draft。100/500样本新增tick计数。
+Domain48/48、Contracts25/25、SDK23/23、真实Mongo API22/22和相关typecheck/build PASS；
+fresh基线230项226PASS/4FAIL，最终231项228PASS/3FAIL，最终失败为基线子集，详见验收页。
+完全离屏scheduled indicator/jump仍属deferred parity；Mutation/Drag/Resize/Dependency/
+Calendar/Chart未实施，不据核心PASS宣称P11 Final或全Product全绿。
