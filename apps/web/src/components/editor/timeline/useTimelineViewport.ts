@@ -2,6 +2,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, ty
 import { floorCalendar, timeToScreenX, timeToX, addCalendar } from './coordinates'
 import { generateTimelineTicks, timelineTickBucket } from './ruler'
 import { getWeekStart } from './scale'
+import { TIMELINE_ROW_HEIGHT, timelineRowWindow, type TimelineRowWindow } from './layout'
 import type { TimelineScaleId, TimelineTick, TimelineViewportState, Transform } from './types'
 import { alignViewportScroll, canvasWidth, centerViewport, createViewport, stepViewport, updateViewport, viewportTransform } from './viewport'
 
@@ -12,6 +13,8 @@ type Options = {
   body: Ref<HTMLElement | null>
   scope: MaybeRefOrGetter<string>
   configuredScale: MaybeRefOrGetter<TimelineScaleId>
+  rowCount: MaybeRefOrGetter<number>
+  focusedRowIndex?: MaybeRefOrGetter<number | null>
 }
 
 function readLocale(): string {
@@ -38,6 +41,14 @@ export function useTimelineViewport(options: Options) {
   const displayTimeZone = ref(readTimeZone())
   const todayMs = ref<number | null>(null)
   const pinY = ref(0)
+  const visibleTop = ref(0)
+  const visibleBottom = ref(0)
+  const rowWindow = computed<TimelineRowWindow>(() => timelineRowWindow({
+    count: toValue(options.rowCount),
+    visibleTop: visibleTop.value,
+    visibleBottom: visibleBottom.value,
+    focusedRowIndex: options.focusedRowIndex ? toValue(options.focusedRowIndex) : null,
+  }))
   const canvasWidthPx = computed(() => state.value ? canvasWidth(state.value.width) : 0)
   const rawTicks = ref<TimelineTick[]>([])
   const rawTickBucket = ref('')
@@ -194,14 +205,14 @@ export function useTimelineViewport(options: Options) {
     const ruler = options.rulerAnchor.value
     const bodyElement = options.body.value
     const host = activeHost
-    if (!root?.isConnected || !ruler?.isConnected || !bodyElement?.isConnected || !host?.isConnected) { pinY.value = 0; return }
+    if (!root?.isConnected || !ruler?.isConnected || !bodyElement?.isConnected || !host?.isConnected) { pinY.value = 0; visibleTop.value = 0; visibleBottom.value = 0; return }
     const hostRect = host.getBoundingClientRect()
     const rootRect = root.getBoundingClientRect()
     const rulerRect = ruler.getBoundingClientRect()
     const bodyRect = bodyElement.getBoundingClientRect()
     const viewportTop = Math.max(0, hostRect.top, rootRect.top)
     const viewportBottom = Math.min(window.innerHeight, hostRect.bottom, rootRect.bottom)
-    if (viewportBottom <= viewportTop) { pinY.value = 0; return }
+    if (viewportBottom <= viewportTop) { pinY.value = 0; visibleTop.value = 0; visibleBottom.value = 0; return }
     const hostScrollTop = host.scrollTop
     const hostVisibleTop = viewportTop - hostRect.top + hostScrollTop
     const rulerNaturalTop = rulerRect.top - hostRect.top + hostScrollTop - pinY.value
@@ -209,6 +220,8 @@ export function useTimelineViewport(options: Options) {
     const timelineBottom = bodyRect.bottom - hostRect.top + hostScrollTop
     const maxPin = Math.max(0, timelineBottom - rulerHeight - rulerNaturalTop)
     pinY.value = Math.min(maxPin, Math.max(0, hostVisibleTop - rulerNaturalTop))
+    visibleTop.value = Math.max(0, viewportTop - bodyRect.top)
+    visibleBottom.value = Math.max(visibleTop.value, viewportBottom - bodyRect.top)
   }
 
   function measure(capturedEpoch = epoch): boolean {
@@ -413,6 +426,40 @@ export function useTimelineViewport(options: Options) {
     queueFrame()
   }
 
+  async function revealRow(rowIndex: number): Promise<boolean> {
+    const capturedEpoch = epoch
+    const capturedScope = toValue(options.scope)
+    const root = options.root.value
+    const bodyElement = options.body.value
+    const host = activeHost
+    const count = toValue(options.rowCount)
+    const isCurrent = () => !stopped && capturedEpoch === epoch && capturedScope === toValue(options.scope)
+      && root === options.root.value && root?.isConnected === true
+      && bodyElement === options.body.value && bodyElement?.isConnected === true
+      && host !== null && host === activeHost && host.isConnected
+    if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= count || !root || !bodyElement || !host || !isCurrent()) return false
+
+    const bodyRect = bodyElement.getBoundingClientRect()
+    const hostRect = host.getBoundingClientRect()
+    const rowTopInHost = bodyRect.top - hostRect.top + host.scrollTop + rowIndex * TIMELINE_ROW_HEIGHT
+    const rulerHeight = options.rulerAnchor.value?.offsetHeight ?? 56
+    const usableHeight = Math.max(TIMELINE_ROW_HEIGHT, host.clientHeight - rulerHeight)
+    const targetOffset = rulerHeight + Math.max(0, (usableHeight - TIMELINE_ROW_HEIGHT) / 2)
+    const maxScrollTop = Math.max(0, host.scrollHeight - host.clientHeight)
+    host.scrollTop = Math.max(0, Math.min(maxScrollTop, rowTopInHost - targetOffset))
+    updatePin()
+    queueFrame(capturedEpoch)
+
+    await nextTick()
+    if (!isCurrent()) return false
+    const row = bodyElement.querySelector<HTMLElement>(`[data-row-index="${rowIndex}"]`)
+    const target = row?.querySelector<HTMLButtonElement>('button')
+    if (!target?.isConnected || !isCurrent()) return false
+    target.focus({ preventScroll: true })
+    updatePin()
+    return isCurrent() && document.activeElement === target
+  }
+
   watch(() => toValue(options.scope), (nextScope, previousScope) => {
     if (previousScope === undefined || nextScope === previousScope) return
     const capturedEpoch = ++epoch
@@ -458,8 +505,8 @@ export function useTimelineViewport(options: Options) {
   })
 
   return {
-    state, effectiveScale, locale, displayTimeZone, ticks: rawTicks, screenTicks, rulerTicks, todayMs, todayX, pinY, periodLabel,
+    state, effectiveScale, locale, displayTimeZone, ticks: rawTicks, screenTicks, rulerTicks, todayMs, todayX, pinY, periodLabel, rowWindow,
     canvasWidthPx,
-    previous, next, today, selectScale, bindScroller, bindRulerAnchor, bindBody,
+    previous, next, today, selectScale, revealRow, bindScroller, bindRulerAnchor, bindBody,
   }
 }

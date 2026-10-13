@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TimelineTick, TimelineViewportState } from './types'
+import type { TimelineRowGeometry, TimelineRowWindow } from './layout'
+import type { TimelineUnscheduledReason } from './projection'
 import TimelineGrid from './TimelineGrid.vue'
 import TimelineRuler from './TimelineRuler.vue'
 import TimelineTodayLine from './TimelineTodayLine.vue'
+import TimelineBar from './TimelineBar.vue'
 
 const props = defineProps<{
   state: TimelineViewportState | null
@@ -12,15 +15,31 @@ const props = defineProps<{
   todayX: number | null
   pinY: number
   canvasWidthPx: number
+  bodyHeight: number
+  rowWindow: TimelineRowWindow
+  rows: TimelineRowGeometry[]
+  selectedPageId: string | null
 }>()
 
 const rulerAnchorStyle = computed(() => ({ transform: `translateY(${props.pinY}px)` }))
 const canvasStyle = computed(() => ({ width: props.state ? `${props.canvasWidthPx}px` : '100%' }))
+const bodyStyle = computed(() => ({ width: props.state ? `${props.canvasWidthPx}px` : '100%', height: `${props.bodyHeight}px`, minHeight: `${props.bodyHeight}px` }))
+const overlayStyle = computed(() => ({
+  top: `${props.rowWindow.top}px`,
+  height: `${props.rowWindow.totalHeight === 0 ? 240 : props.rowWindow.height}px`,
+  width: `${props.state ? props.canvasWidthPx : 0}px`,
+}))
+const unscheduledStyle = computed(() => ({
+  left: `${props.state?.scrollLeft ?? 0}px`,
+  width: `${props.state?.width ?? 0}px`,
+}))
 
 const emit = defineEmits<{
   scrollerRef: [element: HTMLElement | null]
   rulerRef: [element: HTMLElement | null]
   bodyRef: [element: HTMLElement | null]
+  openRecord: [event: MouseEvent, pageId: string]
+  focusRow: [rowIndex: number]
 }>()
 
 function setScroller(element: unknown): void {
@@ -33,6 +52,16 @@ function setRulerAnchor(element: unknown): void {
 
 function setBody(element: unknown): void {
   emit('bodyRef', typeof HTMLElement !== 'undefined' && element instanceof HTMLElement ? element : null)
+}
+
+function reasonLabel(reason: TimelineUnscheduledReason): string {
+  switch (reason) {
+    case 'unconfigured-source': return '未配置日期来源'
+    case 'missing-start': return '缺少开始日期'
+    case 'invalid-date': return '日期无效'
+    case 'incompatible-kinds': return '起止日期精度不同'
+    case 'end-before-start': return '结束日期早于开始日期'
+  }
 }
 </script>
 
@@ -63,11 +92,47 @@ function setBody(element: unknown): void {
       <div class="eotion-timeline-canvas" :style="canvasStyle">
         <div
           class="eotion-timeline-body"
+          :style="bodyStyle"
           data-testid="timeline-canvas-body"
+          :data-row-window-first="rowWindow.first"
+          :data-row-window-last="rowWindow.last"
+          :data-row-window-height="rowWindow.height"
+          :data-row-window-total-height="rowWindow.totalHeight"
+          :data-rendered-row-count="rows.length"
           :ref="setBody"
         >
-          <TimelineGrid :ticks="gridTicks" />
-          <TimelineTodayLine :x="todayX" />
+          <div class="eotion-timeline-draw-window" :style="overlayStyle" aria-hidden="true">
+            <TimelineGrid :ticks="gridTicks" />
+            <TimelineTodayLine :x="todayX" />
+          </div>
+          <div
+            v-for="row in rows"
+            :key="row.item.recordId"
+            class="eotion-timeline-row"
+            :class="{ 'eotion-timeline-row--unscheduled': row.item.kind === 'unscheduled' }"
+            :style="{ top: `${row.top}px`, height: `${row.height}px` }"
+            data-timeline-row
+            :data-row-index="row.rowIndex"
+            :data-record-id="row.item.recordId"
+          >
+            <div class="eotion-timeline-row-content" :style="row.item.kind === 'unscheduled' ? unscheduledStyle : undefined">
+              <TimelineBar
+                v-if="row.geometry && !row.geometry.offscreen"
+                :geometry="row.geometry"
+                :title="row.item.title"
+                :date-label="row.item.dateLabel"
+                :visible-properties="row.item.visibleProperties"
+                :selected="selectedPageId === row.item.pageId"
+                @focus-row="emit('focusRow', row.rowIndex)"
+                @click="emit('openRecord', $event, row.item.pageId)"
+              />
+              <div v-else-if="row.item.kind === 'unscheduled'" class="eotion-timeline-unscheduled" data-testid="timeline-unscheduled-row" :data-record-id="row.item.recordId">
+                <span class="eotion-timeline-unscheduled-title">{{ row.item.title || '无标题' }}</span>
+                <span class="eotion-timeline-unscheduled-reason">{{ row.item.kind === 'unscheduled' ? reasonLabel(row.item.reason) : '暂无排期' }}</span>
+                <button type="button" :aria-label="`打开记录：${row.item.title || '无标题'}`" @focus="emit('focusRow', row.rowIndex)" @click="emit('openRecord', $event, row.item.pageId)">打开</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -82,5 +147,14 @@ function setBody(element: unknown): void {
 .eotion-timeline-scroll:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:-2px; }
 .eotion-timeline-canvas { position:relative; min-width:100%; min-height:240px; }
 .eotion-timeline-body { position:relative; width:100%; min-height:240px; isolation:isolate; }
+.eotion-timeline-draw-window { position:absolute; z-index:0; left:0; overflow:hidden; pointer-events:none; }
+.eotion-timeline-row { position:absolute; z-index:2; left:0; width:100%; }
+.eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; }
+.eotion-timeline-row--unscheduled { z-index:3; }
+.eotion-timeline-unscheduled { display:flex; width:100%; height:100%; align-items:center; gap:8px; overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); padding:0 8px; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; }
+.eotion-timeline-unscheduled-title { min-width:0; overflow:hidden; color:var(--e-color-text-primary, var(--editor-text)); font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+.eotion-timeline-unscheduled-reason { flex:0 0 auto; }
+.eotion-timeline-unscheduled button { flex:0 0 auto; min-height:32px; border:0; border-radius:var(--e-radius-control, 6px); padding:0 8px; background:transparent; color:var(--e-color-accent, var(--editor-accent)); font:inherit; cursor:pointer; }
+.eotion-timeline-unscheduled button:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
 @media (prefers-reduced-motion: reduce) { .eotion-timeline-ruler-anchor { will-change:auto; } }
 </style>

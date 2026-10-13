@@ -1,8 +1,9 @@
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Locator, type Page, type Route, type TestInfo } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain/database'
+import { pxPerMs } from '../src/components/editor/timeline/scale'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -3323,10 +3324,8 @@ test('Timeline shell keeps local zoom, exposes the seven scales, and has no tabl
   await expect(emptyTimelineShell.locator('details')).toHaveCount(0)
   await expect(emptyTimelineDatabase.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
   await expect(emptyTimelineShell.getByText('暂无记录', { exact: true })).toBeVisible()
-  await expect(defaultShell.getByText('记录（1）', { exact: true })).toBeVisible()
-  const recordsDisclosure = defaultShell.locator('details')
-  await expect(recordsDisclosure).toHaveCount(1)
-  await recordsDisclosure.locator('summary').click()
+  await expect(defaultShell.getByText('未排期（1）', { exact: true })).toBeVisible()
+  await expect(defaultShell.getByTestId('timeline-unscheduled-row')).toContainText('Timeline shell record')
   await defaultShell.getByRole('button', { name: '打开记录：Timeline shell record' }).click()
   await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
   await page.getByRole('button', { name: '关闭记录' }).click()
@@ -3396,6 +3395,393 @@ test('Timeline shell keeps local zoom, exposes the seven scales, and has no tabl
     }
   }
 })
+
+test('Timeline generic records project date sources, retain unscheduled order, and open the selected record read-only', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+  const singleView = view('generic-single-timeline', rootDatabase.id, 'Single date', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-title', 'root-text'],
+    propertyOrder: ['root-title', 'root-text'],
+    options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'root-date' } } },
+  }, 'timeline')
+  const alternateSingleView = view('generic-single-timeline-alternate', rootDatabase.id, 'Single date alternate', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-title', 'root-text'],
+    propertyOrder: ['root-title', 'root-text'],
+    options: { timeline: { scale: 'week', dateSource: { mode: 'date-property', propertyId: 'root-date' } } },
+  }, 'timeline')
+  const startEndView = view('generic-start-end-timeline', rootDatabase.id, 'Start and end', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-title', 'root-text'],
+    propertyOrder: ['root-title', 'root-text'],
+    options: { timeline: { dateSource: { mode: 'start-end', startPropertyId: 'timeline-start', endPropertyId: 'timeline-end' } } },
+  }, 'timeline')
+  const datetimeView = view('generic-datetime-timeline', rootDatabase.id, 'Date and time', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-title', 'root-text'],
+    propertyOrder: ['root-title', 'root-text'],
+    options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'timeline-datetime' } } },
+  }, 'timeline')
+  const items = [
+    record('generic-01-single-range', rootDatabase.id, 'generic-page-01', { 'root-title': 'Single range', 'root-date': { start: '2026-10-12', end: '2026-10-15' } }),
+    record('generic-02-single-point', rootDatabase.id, 'generic-page-02', { 'root-title': 'Single milestone', 'root-date': '2026-10-13' }),
+    record('generic-03-start-range', rootDatabase.id, 'generic-page-03', { 'root-title': 'Separated range', 'timeline-start': { start: '2026-10-12', end: '2026-10-30' }, 'timeline-end': { start: '2026-10-15', end: '2026-11-05' } }),
+    record('generic-04-start-point', rootDatabase.id, 'generic-page-04', { 'root-title': 'Separated milestone', 'timeline-start': '2026-10-14' }),
+    record('generic-05-start-missing', rootDatabase.id, 'generic-page-05', { 'root-title': 'Missing start', 'timeline-end': '2026-10-16' }),
+    record('generic-06-start-invalid', rootDatabase.id, 'generic-page-06', { 'root-title': 'Invalid start', 'timeline-start': 'not-a-date', 'timeline-end': '2026-10-16' }),
+    record('generic-07-start-reversed', rootDatabase.id, 'generic-page-07', { 'root-title': 'Reversed range', 'timeline-start': '2026-10-17', 'timeline-end': '2026-10-16' }),
+    record('generic-08-start-incompatible', rootDatabase.id, 'generic-page-08', { 'root-title': 'Incompatible range', 'timeline-start': '2026-10-13', 'timeline-end': { start: '2026-10-13T15:45:00.000Z', timeZone: 'America/New_York' } }),
+    record('generic-09-datetime-point', rootDatabase.id, 'generic-page-09', { 'root-title': 'Date time milestone', 'timeline-datetime': { start: '2026-10-13T11:30:00.000Z', timeZone: 'America/New_York' } }),
+    record('generic-10-datetime-range', rootDatabase.id, 'generic-page-10', { 'root-title': 'Date time range', 'timeline-datetime': { start: '2026-10-13T12:00:00.000Z', end: '2026-10-13T15:45:00.000Z', timeZone: 'America/New_York' } }),
+  ]
+  const api = await installApi(page, [
+    block('generic-timeline-single', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: singleView.id } }, 100),
+    block('generic-timeline-start-end', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: startEndView.id } }, 200),
+    block('generic-timeline-datetime', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: datetimeView.id } }, 300),
+  ], {
+    databases: [rootDatabase], views: [singleView, alternateSingleView, startEndView, datetimeView],
+    properties: [
+      ...rootProperties,
+      property('timeline-start', rootDatabase.id, 'Hidden start', 'date'),
+      property('timeline-end', rootDatabase.id, 'Hidden end', 'date'),
+      property('timeline-datetime', rootDatabase.id, 'Hidden date and time', 'date'),
+    ], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const single = page.locator('#database-block-generic-timeline-single').getByTestId('database-timeline')
+  const startEnd = page.locator('#database-block-generic-timeline-start-end').getByTestId('database-timeline')
+  const datetime = page.locator('#database-block-generic-timeline-datetime').getByTestId('database-timeline')
+  for (const timeline of [single, startEnd, datetime]) await expect(timeline).toBeVisible()
+
+  const rowIds = (timeline: Locator) => timeline.locator('[data-timeline-row]').evaluateAll(elements => elements.map(element => {
+    const row = element as HTMLElement
+    return row.querySelector<HTMLElement>('[data-record-id]')?.dataset.recordId ?? row.dataset.recordId ?? ''
+  }))
+  const barIds = (timeline: Locator) => timeline.getByTestId('timeline-bar').evaluateAll(elements => elements.map(element => (element as HTMLElement).dataset.recordId ?? ''))
+  const unscheduledIds = (timeline: Locator) => timeline.getByTestId('timeline-unscheduled-row').evaluateAll(elements => elements.map(element => (element as HTMLElement).dataset.recordId ?? ''))
+  const allIds = items.map(item => item.id)
+  await expect.poll(() => rowIds(single)).toEqual(allIds)
+  await expect.poll(() => rowIds(startEnd)).toEqual(allIds)
+  await expect.poll(() => rowIds(datetime)).toEqual(allIds)
+  await expect.poll(() => barIds(single)).toEqual(['generic-01-single-range', 'generic-02-single-point'])
+  await expect.poll(() => barIds(startEnd)).toEqual(['generic-03-start-range', 'generic-04-start-point'])
+  await expect.poll(() => barIds(datetime)).toEqual(['generic-09-datetime-point', 'generic-10-datetime-range'])
+  await expect.poll(() => unscheduledIds(startEnd)).toEqual(['generic-01-single-range', 'generic-02-single-point', 'generic-05-start-missing', 'generic-06-start-invalid', 'generic-07-start-reversed', 'generic-08-start-incompatible', 'generic-09-datetime-point', 'generic-10-datetime-range'])
+  await expect(startEnd.locator('[data-timeline-row][data-record-id="generic-05-start-missing"] [data-testid="timeline-unscheduled-row"]')).toContainText('缺少开始日期')
+  await expect(startEnd.locator('[data-timeline-row][data-record-id="generic-06-start-invalid"] [data-testid="timeline-unscheduled-row"]')).toContainText('日期无效')
+  await expect(startEnd.locator('[data-timeline-row][data-record-id="generic-07-start-reversed"] [data-testid="timeline-unscheduled-row"]')).toContainText('结束日期早于开始日期')
+  await expect(startEnd.locator('[data-timeline-row][data-record-id="generic-08-start-incompatible"] [data-testid="timeline-unscheduled-row"]')).toContainText('起止日期精度不同')
+  await expect(single).not.toContainText('Hidden date')
+  await expect(startEnd).not.toContainText('Hidden start')
+  await expect(startEnd).not.toContainText('Hidden end')
+  await expect(datetime).not.toContainText('Hidden date and time')
+
+  await expect(single.locator('[data-testid="timeline-bar"][data-record-id="generic-01-single-range"]')).toHaveAttribute('data-marker', 'false')
+  await expect(single.locator('[data-testid="timeline-bar"][data-record-id="generic-02-single-point"]')).toHaveAttribute('data-marker', 'true')
+  await expect(startEnd.locator('[data-testid="timeline-bar"][data-record-id="generic-03-start-range"]')).toHaveAttribute('data-marker', 'false')
+  await expect(startEnd.locator('[data-testid="timeline-bar"][data-record-id="generic-04-start-point"]')).toHaveAttribute('data-marker', 'true')
+  await expect(datetime.locator('[data-testid="timeline-bar"][data-record-id="generic-09-datetime-point"]')).toHaveAttribute('data-marker', 'true')
+  await expect(datetime.locator('[data-testid="timeline-bar"][data-record-id="generic-10-datetime-range"]')).toHaveAttribute('data-marker', 'false')
+
+  const rangeTooltip = await single.locator('[data-testid="timeline-bar"][data-record-id="generic-01-single-range"]').getAttribute('title')
+  expect(rangeTooltip).toBe('Single range · 2026-10-12 → 2026-10-15')
+  const separatedTooltip = await startEnd.locator('[data-testid="timeline-bar"][data-record-id="generic-03-start-range"]').getAttribute('title')
+  expect(separatedTooltip).toBe('Separated range · 2026-10-12 – 2026-10-15')
+  expect(separatedTooltip).not.toContain('2026-10-30')
+  expect(separatedTooltip).not.toContain('2026-11-05')
+  const datetimeTooltip = await datetime.locator('[data-testid="timeline-bar"][data-record-id="generic-10-datetime-range"]').getAttribute('title')
+  expect(datetimeTooltip).toBe('Date time range · 2026-10-13 12:00 UTC → 2026-10-13 15:45 UTC (America/New_York)')
+
+  const datetimeGeometry = await datetime.evaluate(root => {
+    const component = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent
+    const setup = component?.setupState
+    const row = setup?.rowGeometry?.find((item: any) => item.item.recordId === 'generic-10-datetime-range')
+    const temporal = setup?.temporalMap?.get('generic-10-datetime-range')
+    const viewport = setup?.viewport?.state?.value
+    const element = root.querySelector<HTMLElement>('[data-testid="timeline-bar"][data-record-id="generic-10-datetime-range"]')
+    if (!row || !temporal || !viewport || !element) throw new Error('Expected datetime range geometry, viewport, and rendered bar')
+    return {
+      startMs: temporal.startMs,
+      visualEndMs: temporal.visualEndMs,
+      originMs: viewport.originMs,
+      scale: viewport.scale,
+      geometryX: row.geometry.x,
+      geometryWidth: row.geometry.width,
+      renderedLeft: Number.parseFloat(element.style.left),
+      renderedWidth: Number.parseFloat(element.style.width),
+    }
+  })
+  expect(datetimeGeometry.startMs).toBe(Date.parse('2026-10-13T12:00:00.000Z'))
+  expect(datetimeGeometry.visualEndMs).toBe(Date.parse('2026-10-13T15:45:00.000Z'))
+  expect(Math.abs(datetimeGeometry.geometryX - (datetimeGeometry.startMs - datetimeGeometry.originMs) * pxPerMs(datetimeGeometry.scale))).toBeLessThanOrEqual(0.5)
+  expect(Math.abs(datetimeGeometry.geometryWidth - (datetimeGeometry.visualEndMs! - datetimeGeometry.startMs) * pxPerMs(datetimeGeometry.scale))).toBeLessThanOrEqual(0.5)
+  expect(Math.abs(datetimeGeometry.renderedLeft - datetimeGeometry.geometryX)).toBeLessThanOrEqual(0.5)
+  expect(Math.abs(datetimeGeometry.renderedWidth - datetimeGeometry.geometryWidth)).toBeLessThanOrEqual(0.5)
+
+  const markerGeometry = await single.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    const row = setup?.rowGeometry?.find((item: any) => item.item.recordId === 'generic-02-single-point')
+    const temporal = setup?.temporalMap?.get('generic-02-single-point')
+    const viewport = setup?.viewport?.state?.value
+    const element = root.querySelector<HTMLElement>('[data-testid="timeline-bar"][data-record-id="generic-02-single-point"]')
+    if (!row || !temporal || !viewport || !element) throw new Error('Expected point geometry, viewport, and rendered marker')
+    return {
+      startMs: temporal.startMs,
+      originMs: viewport.originMs,
+      scale: viewport.scale,
+      geometryX: row.geometry.x,
+      renderedLeft: Number.parseFloat(element.style.left),
+      marker: row.geometry.marker,
+      markerShapeCount: element.querySelectorAll('[data-testid="timeline-marker"]').length,
+    }
+  })
+  expect(markerGeometry.marker).toBe(true)
+  expect(markerGeometry.markerShapeCount).toBe(1)
+  expect(Math.abs(markerGeometry.geometryX - (markerGeometry.startMs - markerGeometry.originMs) * pxPerMs('month'))).toBeLessThanOrEqual(0.5)
+  expect(Math.abs(markerGeometry.renderedLeft - markerGeometry.geometryX)).toBeLessThanOrEqual(0.5)
+
+  const selectedBar = single.locator('[data-testid="timeline-bar"][data-record-id="generic-01-single-range"]')
+  await selectedBar.click()
+  const drawer = page.locator('[data-overlay-mode="drawer"]')
+  await expect(drawer).toBeVisible()
+  await expect(drawer.getByRole('textbox', { name: '记录标题' })).toHaveValue('Single range')
+  await expect(selectedBar).toHaveAttribute('aria-pressed', 'true')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.includes('/records/'))).toHaveLength(0)
+  await page.getByRole('button', { name: '关闭记录' }).click()
+
+  const singleDatabase = page.locator('#database-block-generic-timeline-single')
+  const singleDetails = single.locator('details')
+  await expect(singleDetails).toHaveCount(1)
+  await singleDetails.locator('summary').click()
+  await expect(singleDetails.getByRole('button', { name: '打开记录：Missing start' })).toBeVisible()
+  await singleDatabase.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Single date alternate', exact: true }).click()
+  await expect(singleDatabase.getByTestId('database-timeline')).toHaveAttribute('data-configured-scale', 'week')
+  const alternateDetails = singleDatabase.getByTestId('database-timeline').locator('details')
+  await expect(alternateDetails).not.toHaveAttribute('open', '')
+  await alternateDetails.locator('summary').click()
+  await expect(alternateDetails.getByRole('button', { name: '打开记录：Missing start' })).toBeVisible()
+  await singleDatabase.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Single date', exact: true }).click()
+  await expect(singleDatabase.getByTestId('database-timeline')).toHaveAttribute('data-configured-scale', 'month')
+  await expect(singleDatabase.getByTestId('database-timeline').locator('details')).not.toHaveAttribute('open', '')
+
+  for (const [width, height, suffix] of [[1440, 900, 'desktop'], [390, 844, 'phone']] as const) {
+    await page.setViewportSize({ width, height })
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+      await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+      await page.evaluate(() => {
+        const host = document.querySelector('.document-wrap') as HTMLElement
+        const firstTimelineBlock = document.querySelector('#database-block-generic-timeline-single') as HTMLElement
+        const hostBounds = host.getBoundingClientRect()
+        const blockBounds = firstTimelineBlock.getBoundingClientRect()
+        host.scrollTop = blockBounds.top - hostBounds.top + host.scrollTop
+      })
+      await expect(single.locator('[data-testid="timeline-bar"][data-record-id="generic-01-single-range"]')).toBeInViewport()
+      await expect(single.locator('[data-testid="timeline-bar"][data-record-id="generic-02-single-point"]')).toBeInViewport()
+      if (width === 390) await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+      await timelineScreenshot(page, testInfo, `p112b-generic-timeline-${suffix}-${theme}`)
+    }
+  }
+})
+
+for (const total of [100, 500] as const) {
+  test(`Timeline loads all ${total} generic records in 25-record pages and virtualizes without reprojecting`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+    const timelineView = view(`timeline-page-${total}-view`, rootDatabase.id, `Timeline ${total}`, {
+      ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'root-date' } } },
+    }, 'timeline')
+    const records = Array.from({ length: total }, (_, index) => {
+      const number = String(index + 1).padStart(3, '0')
+      return record(`timeline-${total}-${number}`, rootDatabase.id, `timeline-${total}-page-${number}`, {
+        'root-title': `Timeline record ${number}`,
+        ...(total === 500 && index === total - 1 ? {} : { 'root-date': '2026-10-13' }),
+      })
+    })
+    const api = await installApi(page, [
+      block(`timeline-page-${total}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
+    ], { databases: [rootDatabase], views: [timelineView], properties: [rootProperties[0]!, rootProperties[5]!], records })
+    if (total === 500) {
+      const lastRecord = records.at(-1)!
+      api.pages.push({ ...pageRecord, id: lastRecord.pageId, title: 'Timeline record 500', role: 'database-record' })
+    }
+    const tablePath = `/views/${timelineView.id}/table`
+    const tableRequestTimings: Array<{ startTime: number; responseEndMs: number }> = []
+    page.on('requestfinished', request => {
+      if (!request.url().includes(tablePath)) return
+      const timing = request.timing()
+      tableRequestTimings.push({ startTime: timing.startTime, responseEndMs: timing.responseEnd })
+    })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const database = page.locator(`#database-block-timeline-page-${total}-block`)
+    const timeline = database.getByTestId('database-timeline')
+    await expect(timeline).toBeVisible()
+    const startedAt = await page.evaluate(() => performance.now())
+    const projectedCount = () => page.evaluate(() => {
+      const timeline = document.querySelector('[data-testid="database-timeline"]') as (HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }) | null
+      const items = timeline?.__vueParentComponent?.setupState?.projectedItems
+      if (!Array.isArray(items)) throw new Error('Timeline projectedItems is not available for loaded-record verification')
+      return items.length
+    })
+    await expect.poll(projectedCount).toBe(25)
+    let loaded = await projectedCount()
+    const loadMoreButton = database.getByRole('button', { name: '加载更多' })
+    while (loaded < total) {
+      await expect.poll(() => loadMoreButton.count(), { message: `Timeline should expose the cursor after the first 25 of ${total} records; requests=${JSON.stringify(api.requests.filter(({ path }) => path.endsWith(tablePath)))}` }).toBe(1)
+      await loadMoreButton.click()
+      const nextLoaded = Math.min(loaded + 25, total)
+      await expect.poll(projectedCount).toBe(nextLoaded)
+      loaded = nextLoaded
+    }
+    await expect(database.getByRole('button', { name: '加载更多' })).toHaveCount(0)
+    expect(loaded).toBe(total)
+    const recordReads = api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(tablePath))
+    expect(recordReads).toHaveLength(total / 25)
+    expect(recordReads.every(({ search }) => new URLSearchParams(search).get('limit') === '25')).toBe(true)
+    expect(tableRequestTimings).toHaveLength(total / 25)
+
+    const captureProjectionIdentity = () => page.evaluate(() => {
+      const timeline = document.querySelector('[data-testid="database-timeline"]') as (HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }) | null
+      const component = timeline?.__vueParentComponent
+      const items = component?.setupState?.projectedItems
+      if (!component || !Array.isArray(items)) throw new Error('Timeline projection component is unavailable')
+      const temporalMap = component.setupState?.temporalMap
+      if (!(temporalMap instanceof Map)) throw new Error('Timeline temporalMap is not available for identity verification')
+      ;(window as Window & { __timelineProjectionProbe?: { component: unknown; items: unknown; temporalMap: unknown } }).__timelineProjectionProbe = { component, items, temporalMap }
+      return items.length
+    })
+    expect(await captureProjectionIdentity()).toBe(total)
+    await expect.poll(() => timeline.evaluate(root => {
+      const map = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent?.setupState?.temporalMap
+      return map instanceof Map ? map.size : -1
+    })).toBe(total === 500 ? 499 : total)
+    const projectionSame = () => page.evaluate(() => {
+      const before = (window as Window & { __timelineProjectionProbe?: { component: unknown; items: unknown; temporalMap: unknown } }).__timelineProjectionProbe!
+      const timeline = document.querySelector('[data-testid="database-timeline"]') as (HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }) | null
+      return timeline?.__vueParentComponent === before.component
+        && timeline.__vueParentComponent?.setupState?.projectedItems === before.items
+        && timeline.__vueParentComponent?.setupState?.temporalMap === before.temporalMap
+    })
+    const bodyWindow = timeline.locator('[data-row-window-first]').first()
+    await expect(bodyWindow).toBeAttached()
+    const initialWindow = await bodyWindow.evaluate(element => {
+      const data = (element as HTMLElement).dataset
+      return { first: Number(data.rowWindowFirst), last: Number(data.rowWindowLast), height: Number(data.rowWindowHeight), totalHeight: Number(data.rowWindowTotalHeight) }
+    })
+    const renderedRows = timeline.locator('[data-timeline-row]')
+    const initialRenderedCount = await renderedRows.count()
+    expect(initialRenderedCount).toBeLessThanOrEqual(total < 200 ? total : 40)
+    expect(initialWindow.totalHeight).toBe(total * 48)
+
+    const hostState = await page.evaluate(() => {
+      const host = document.querySelector('.document-wrap') as HTMLElement | null
+      if (!host) throw new Error('Expected the existing page scroll host')
+      return { scrollHeight: host.scrollHeight, clientHeight: host.clientHeight, overflowY: getComputedStyle(host).overflowY }
+    })
+    expect(hostState.scrollHeight).toBeGreaterThan(hostState.clientHeight)
+    expect(['auto', 'scroll']).toContain(hostState.overflowY)
+    const scroller = timeline.getByTestId('timeline-scroll')
+    await expect.poll(() => scroller.evaluate(element => getComputedStyle(element).overflowY)).not.toMatch(/^(auto|scroll)$/u)
+
+    if (total === 500) {
+      const focusedIndex = total - 2
+      const focusedNumber = String(focusedIndex + 1).padStart(3, '0')
+      await page.evaluate(index => {
+        const host = document.querySelector('.document-wrap') as HTMLElement
+        const timeline = document.querySelector('[data-testid="database-timeline"]')!
+        const body = timeline.querySelector('[data-row-window-first]')!
+        const hostBounds = host.getBoundingClientRect()
+        const bodyBounds = body.getBoundingClientRect()
+        const bodyOffset = bodyBounds.top - hostBounds.top + host.scrollTop
+        host.scrollTop = bodyOffset + index * 48 - host.clientHeight / 2
+      }, focusedIndex)
+      const focusedBar = timeline.locator(`[data-testid="timeline-bar"][data-record-id="timeline-${total}-${focusedNumber}"]`)
+      await expect(focusedBar).toBeVisible()
+      await focusedBar.focus()
+      await page.evaluate(() => { (document.querySelector('.document-wrap') as HTMLElement).scrollTop = 0 })
+      await expect.poll(() => page.evaluate(() => (document.querySelector('.document-wrap') as HTMLElement).scrollTop)).toBe(0)
+      const focusedRow = timeline.locator(`[data-timeline-row][data-row-index="${focusedIndex}"]`)
+      await expect(focusedRow).toBeAttached()
+      await expect.poll(() => bodyWindow.evaluate(element => Number((element as HTMLElement).dataset.rowWindowLast))).toBeLessThan(focusedIndex)
+      expect(await renderedRows.count()).toBeLessThanOrEqual(40)
+
+      const unscheduled = timeline.locator('details')
+      await expect(unscheduled.locator('summary')).toHaveText('未排期（1）')
+      await unscheduled.locator('summary').click()
+      const footerEntry = unscheduled.getByRole('button', { name: '打开记录：Timeline record 500' })
+      await expect(footerEntry).toBeVisible()
+      const targetRow = timeline.locator(`[data-timeline-row][data-record-id="timeline-${total}-500"]`)
+      await page.evaluate(targetRecordId => document.addEventListener('focusin', event => {
+        const row = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-timeline-row]')
+        if (row?.dataset.recordId === targetRecordId) {
+          ;(window as Window & { __timelineFooterTargetFocused?: boolean }).__timelineFooterTargetFocused = true
+        }
+      }, { once: false, capture: true }), `timeline-${total}-500`)
+      await footerEntry.click()
+      const drawer = page.locator('[data-overlay-mode="drawer"]')
+      await expect(drawer).toBeVisible()
+      await expect(drawer.getByRole('textbox', { name: '记录标题' })).toHaveValue('Timeline record 500')
+      expect(await page.evaluate(() => (window as Window & { __timelineFooterTargetFocused?: boolean }).__timelineFooterTargetFocused)).toBe(true)
+      await expect(targetRow).toBeInViewport()
+      await page.getByRole('button', { name: '关闭记录' }).click()
+      await expect(targetRow).toBeInViewport()
+      await expect(targetRow).toHaveAttribute('data-record-id', `timeline-${total}-500`)
+      const pageReadsBeforeModifiedClick = api.requests.filter(({ method, path }) => method === 'GET' && path === `/api/workspaces/${workspace.id}/pages/timeline-${total}-page-500`).length
+      await footerEntry.click({ modifiers: ['Shift'] })
+      await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+      expect(api.requests.filter(({ method, path }) => method === 'GET' && path === `/api/workspaces/${workspace.id}/pages/timeline-${total}-page-500`)).toHaveLength(pageReadsBeforeModifiedClick)
+    }
+
+    const readsBeforeViewportChanges = api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(tablePath)).length
+    await timeline.getByLabel('时间轴刻度').selectOption('year')
+    await expect(timeline).toHaveAttribute('data-scale', 'year')
+    await scroller.evaluate(element => { (element as HTMLElement).scrollLeft += 500 })
+    await page.evaluate(() => { (document.querySelector('.document-wrap') as HTMLElement).scrollTop += 120 })
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+    const projectionIdentityPreserved = await projectionSame()
+    expect(projectionIdentityPreserved).toBe(true)
+    expect(api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(tablePath))).toHaveLength(readsBeforeViewportChanges)
+
+    const samples = await page.evaluate(projectionIdentityPreserved => {
+      const host = document.querySelector('.document-wrap') as HTMLElement
+      const timeline = document.querySelector('[data-testid="database-timeline"]') as HTMLElement
+      const body = timeline.querySelector('[data-row-window-first]') as HTMLElement
+      const data = body.dataset
+      return {
+        observedAt: new Date().toISOString(),
+        elapsedSincePagingStartedMs: performance.now(),
+        tableResources: performance.getEntriesByType('resource')
+          .filter(entry => entry.name.includes('/table'))
+          .map(entry => ({ name: entry.name, durationMs: entry.duration, transferSize: (entry as PerformanceResourceTiming).transferSize })),
+        browserResourceSamples: performance.getEntriesByType('resource').slice(-30)
+          .map(entry => ({ name: entry.name, initiatorType: entry.initiatorType, durationMs: entry.duration })),
+        loadedRecords: Array.isArray((timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent?.setupState?.projectedItems)
+          ? ((timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent!.setupState!.projectedItems as unknown[]).length
+          : null,
+        temporalGeometryCount: (timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent?.setupState?.temporalMap instanceof Map
+          ? ((timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent!.setupState!.temporalMap as Map<unknown, unknown>).size
+          : null,
+        renderedRows: timeline.querySelectorAll('[data-timeline-row]').length,
+        rowWindow: { first: Number(data.rowWindowFirst), last: Number(data.rowWindowLast), height: Number(data.rowWindowHeight), totalHeight: Number(data.rowWindowTotalHeight) },
+        pageScroll: { top: host.scrollTop, scrollHeight: host.scrollHeight, clientHeight: host.clientHeight },
+        projectionAndTemporalIdentityPreserved: projectionIdentityPreserved,
+      }
+    }, projectionIdentityPreserved)
+    samples.elapsedSincePagingStartedMs = (await page.evaluate(() => performance.now())) - startedAt
+    samples.tableRequestTimings = tableRequestTimings
+    const samplePath = testInfo.outputPath(`timeline-${total}-browser-samples.json`)
+    const sampleJson = JSON.stringify(samples, null, 2)
+    await mkdir(path.dirname(samplePath), { recursive: true })
+    await writeFile(samplePath, sampleJson, 'utf8')
+    await testInfo.attach(`timeline-${total}-browser-samples.json`, { path: samplePath, contentType: 'application/json' })
+  })
+}
 
 test('Timeline keeps the viewport centered across navigation, rebase, resize, locale, and local-day updates', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
