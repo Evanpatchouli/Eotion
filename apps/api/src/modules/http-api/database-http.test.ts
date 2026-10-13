@@ -878,6 +878,14 @@ test('P11.1B HTTP Record create, cell patch, and GET preserve all Date wire shap
       { start: '2026-10-13T01:00:00.000Z', end: '2026-10-14T01:00:00.000Z', timeZone: 'Asia/Tokyo' },
     ] as const
     const recordIds: string[] = []
+    // P11.3A moves reuse this exact cell endpoint, not a Timeline endpoint.
+    const movedValues = [
+      '2026-10-14',
+      { start: '2026-10-15' },
+      { start: '2026-10-16', end: '2026-10-17' },
+      { start: '2026-10-15T23:00:00.000Z', timeZone: 'Asia/Tokyo' },
+      { start: '2026-10-16T01:00:00.000Z', end: '2026-10-17T01:00:00.000Z', timeZone: 'Asia/Tokyo' },
+    ] as const
     for (const [index, value] of wireValues.entries()) {
       const id = `p11b-http-record-${index}`
       recordIds.push(id)
@@ -895,6 +903,21 @@ test('P11.1B HTTP Record create, cell patch, and GET preserve all Date wire shap
       assert.deepEqual(read?.properties[dueId], value, `GET preserves Date wire shape ${index}`)
       if (index === 3) assert.equal(read?.properties['p11b-http-formula'], '2026-10-12')
       if (index === 4) assert.equal(read?.properties['p11b-http-formula'], '2026-10-13', 'Formula uses UTC start day and ignores end')
+      const moved = await request(baseUrl, `${route}/records/${id}/cells/${dueId}`, 'PATCH', { cookie, body: {
+        value: movedValues[index], expectedDatabaseVersion: after.database.version, expectedRecordVersion: read.version,
+      } })
+      assert.equal(moved.status, 200, JSON.stringify(moved.body))
+      assert.equal(moved.body.database.version, after.database.version + 1, 'one move commits one Database CAS')
+      assert.equal(moved.body.record.version, read.version + 1, 'one move commits one Record CAS')
+      const confirmed = await table()
+      assert.deepEqual(confirmed.records.find((row: any) => row.id === id)?.properties[dueId], movedValues[index], 'moved value survives generic GET')
+      const stale = await request(baseUrl, `${route}/records/${id}/cells/${dueId}`, 'PATCH', { cookie, body: {
+        value, expectedDatabaseVersion: confirmed.database.version, expectedRecordVersion: read.version,
+      } })
+      assert.equal(stale.status, 409, 'stale drag snapshot must conflict without retry')
+      const afterConflict = await table()
+      assert.equal(afterConflict.database.version, confirmed.database.version, 'transaction rolls back Database bump on Record CAS failure')
+      assert.deepEqual(afterConflict.records, confirmed.records, 'conflict leaves canonical records untouched')
     }
 
     const records = connection!.db!.collection('database_records')
