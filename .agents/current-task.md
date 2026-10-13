@@ -1,50 +1,51 @@
-# 当前任务：P11.2B Read-only Timeline Bars（范围验收 PASS，完成并停止）
+# 当前任务：P11.2C Frozen Table（Scope PASS，已完成并停止）
 
-基线03138bc（P11.2A完成后的最新HEAD），开始时master工作树干净。
-分支codex/p11-2b-read-only-bars。正式版本保持0.0.1；P11目标0.0.3。
-只完成P11.2B严格范围，不进入P11.2C。正式证据docs/verification/p11-2b-read-only-bars.md。
+基线 `84c0758`，开始时 master 工作树干净；分支 `codex/p11-2c-frozen-table`。
+仅完成 P11.2C，版本保持 0.0.1，P11 目标 0.0.3；完成后停止，不进入 P11.2D。
 
-| Work Unit | 模式 / 难度 / 角色 | 目标 | 状态 |
+## 工作单元
+
+| 单元 | 认知模式 / 评级 / 角色 | 验收输出 | 状态 |
 | --- | --- | --- | --- |
-| B1 | investigate / S0 scout | Date/generic records/Host与测试Evidence Pack | 完成 |
-| B2 | decide / S2 主Agent | 冻结设计内纯接口/窗口/接线Brief | 完成，执行降为S1 |
-| B3 | execute / S1 fast_worker | projection/geometry/layout与纯逻辑回归 | 完成，22/22 PASS，47d675c |
-| B4 | execute / S1 fast_worker | Bar/未排期/单viewport virtualization/Host接线 | 完成，含review要求的reveal与details保护，71e72f9 |
-| B5 | execute / S1 fast_worker | Web/100/500/identity/390px/截图 | 完成，新3/3与既有定向8/8 PASS |
-| B6 | verify/review / S0 scout + reviewer | 最小充分验证、完整相关suite、独立review | 完成，179/183，失败复跑2/4 PASS；0剩余产品blocker |
-| B7 | execute / S1 主Agent | 验收/索引/handoff与逻辑单元提交 | 完成，正式文档为本文件所在commit |
+| C1 | investigate / S0 scout | 现有 display/Host 与 Timeline layout/scroll/test Evidence Pack | 完成，两份不重叠 Evidence Pack |
+| C2 | decide / S2 主 Agent | 最小 Implementation Brief：列投影、共享 rows、header、响应式与 cache 边界 | 完成，后续执行已降级 |
+| C3 | execute / S1 fast_worker | Frozen 列/display 投影与 Relation 窗口 cache 接线及逻辑用例 | 完成；最终逻辑 6/6 PASS |
+| C4 | execute / S1 fast_worker | FrozenPane 与共享 rowGeometry/window，hover、selection、scroll ownership、窄屏 | 完成；UI 行为由最终 Web 定向 suite 验收 |
+| C5 | execute / S1 fast_worker | 补充 product-database Web fixtures/assertions | 完成；未改无关断言 |
+| C6 | verify / S0 scout | 运行逻辑与 product-database 定向 suite、typecheck/build、100/500 取样 | 完成；147 项 144 PASS / 3 FAIL，范围内检查通过 |
+| C7 | review / reviewer | 独立复核 blocker 与已修正项 | 完成；最终 0 blocker |
+| C8 | execute / S1 fast_worker | 验收文档、检索入口、current-task 与 handoff 回填 | 完成；见 P11.2C 验收页 |
 
-## 实施结果
+## 不变量与禁止事项
 
-- generic records→projectTimelineRecords→resolveTimelineTemporalGeometry/layoutTimelineItems→TimelineBar。
-- normalizer验证完整raw，单Date用start/end，独立Start/End各取normalized start；不补end或修改Record。
-- 投影保recordId/pageId/Title/rowIndex/display；point/range/unscheduled保原顺序，invalid/缺start/混合/逆序不丢行。
-- date-only显示时区日界/inclusive视觉end复用引擎，datetime精确instant；薄nextCalendarBoundary支持原date次日与内部year10000。
-- 48px row/32px bar，统一content X/raw/cropped width/clip/offscreen；零宽marker12px，desktop/touch hit24/44px。
-- 200条起现有page host虚拟化，上下5行overscan与按recordID的focus island；scroll/zoom不重projection/temporalMap。
-- Grid/Today按窗口绘制，未排期原row透明背景保Today贯穿；footer索引reveal/focus后走已有Record Host。
-- epoch/scope/DOM拒绝stale/ABA导航，details按scope重建并拒绝旧节点toggle。selection来自原Host pageId。
-- 父generic loader/cursor/P9 fence与Editor/NodeView/Drawer draft保持，没有第二scroll container/renderer-specific loader。
+- Frozen Table 只是 Timeline 左侧只读投影，不创建新的 Table View/loader/store/row model。
+- 两侧消费同一个 `layoutTimelineItems` 结果、rowIndex/top/height 与 page-host row window；不重复测量行。
+- 独立读取 `options.timeline.frozenTable`，null 默认全列/默认顺序；稳定 ID、去重、忽略缺失 ID、Title 始终保留；不写回/改坏未知字段。
+- 复用 Database 现有 formatter/Relation title cache；bar 与 Frozen 列可见 Relation 去重。
+- TimelineViewport 唯一 horizontal scroll owner；现有 page host 唯一 vertical scroll owner。
+- Header 共用 56px/同一 pinY；selection 来自 Record Host pageId，hover 用 recordId 临时状态。
+- 不实现 column editor、property/date mutation、drag/resize、dependency、Timeline settings UI、Frozen 独立 View。
+- 不重新设计 projection/coordinate/row layout，不改公共 API、schema、sync、MCP、版本或依赖。
 
-## 验证与限制
+## 验收结论
 
-- 纯逻辑22/22（coordinate14、projection3、layout5）、新Web3/3、既有Timeline/identity定向8/8通过。
-- 完整相关183项179PASS/4FAIL，Database113/116、Editor44/45、coordinate14/14、layout5/5、projection3/3；0skip/retries。
-- 完整运行Timeline/standalone/identity9项PASS，四ViewABA/草稿/Date source/100/500/390px通过。
-- 4项失败仅既有Slash dialog/selection bubble，独立复跑2PASS/2FAIL；两个稳定失败有P11.2A未改基线同样失败的历史证据，
-  本轮未新建baseline，其余两项完整运行时序尚未定性。不声明完整Product全绿。
-- 最终Web typecheck/build/SW PASS，已有671.81kB chunk提示；独立review0剩余确定产品blocker；diff/UTF8无BOM/CRLF/范围通过。
-- 主Agent视检1440/390 Light/Dark四图，里程碑/范围/未排期/Today与页面overflow检查通过。
-- 100/500全部按25条分页（4/20GET）加载，DOM样本100/17行；500总高24000px、窗口[483,500)、1未排期。
-  projection/temporal对象身份保持；538/3849ms为mock分页与后续UI累计观察，不是正式帧率/真实服务端benchmark。
-- 日志C:/Users/31250/AppData/Local/Temp/eotion-p112b-validation-2cb1500948374b7992879f2db76c68f0。
-- 最终截图/JSON副本C:/Users/31250/.codex/visualizations/2026/10/13/01a1343c-863d-7130-8bdb-469850cfebf5/timeline-bars/。
+- 纯逻辑 28/28 PASS；完整相关 Playwright suite 147 项为 144 PASS / 3 FAIL / 0 skip / 0 flaky。三项失败是数据库 dialog 时序问题，不属于 Frozen 行为，未修改断言；逐条复跑 2 PASS / 1 FAIL，详见[验收页](../docs/verification/p11-2c-frozen-table.md)。
+- Web typecheck/build、390px/desktop Light/Dark 视检、100/500 cache/window samples 与独立最终 review 完成；review 最终 0 blocker。
+- 本阶段结论仅为 P11.2C Scope PASS。最终样本、失败与限制见[验收页](../docs/verification/p11-2c-frozen-table.md)。完成后停止，不进入 P11.2D。
 
-## 提交与停止点
+## 已冻结 Implementation Brief
 
-纯逻辑47d675ccbb34734fce5dc3215efafd4487ba47d0；只读接线/Web71e72f90676424d3fc359afefbb493d1e22cba65；文档为本文件所在commit。
-未实现Frozen Table/dependency/drag/resize/Date mutation/Record edit shortcut/auto shift/Calendar/config UI，
-完全离屏scheduled保原row/offscreen geometry，方向indicator/jump留后续完整read parity，不作为严格B的blocker。
-没有domain/wire/shared config/API/MCP/sync/version/dependency变更，linkInPage仍Table-only。
-未运行真实Mongo/API/MCP、完整Product全量、native真机、5000bars或P11 Final；本轮只声明P11.2B Scope PASS。
-P11.2C入口与待定范围已写handoff；完成后停止，不自动推进下一阶段。
+- 缺省或 `frozenTable.visible !== true` 隐藏；显示时只使用嵌套列配置。列 resolver 保留 schema 顺序/部分排序，去重忽略缺失 ID，Title 无条件保留；不 PATCH 或补写默认值。
+- `frozenTable.ts` 只提供列选择与 recordId→propertyId→displayText map，不建立第二行列表；Title 直接用 Timeline item.title。
+- parent `frozenColumns` / `frozenDisplayMap` computed 独立于 scroll/hover/zoom；两侧组件都消费同一 `rowGeometry`、window、bodyHeight。
+- `FrozenTablePane` 并列于 `TimelineViewport`，header 共用 56px/pinY；cell 仅读 displayText，Title 点开共享 Record Host。
+- Timeline 实例只新增 recordId 临时 hover；focus island 跨左右保留，selection 始终由 Host pageId 派生。
+- Frozen 宽度限制在整体 45% 与约 480px 内；窄容器隐藏非 Title，Title 即使配置顺序靠后仍存在，Timeline min-width:0 继续横滚。
+- NodeView 对 bar/Frozen 可见 Relation 取并集，仍使用原缓存、epoch、500 IDs/50 条批次与 10 batches 预算。
+- 并行编辑边界：C3 仅 NodeView/frozenTable.ts/logic spec；C4 仅 Timeline UI/layout 常量；C5 仅 product-database.spec.ts。
+
+## 实现、验收与停止状态（2026-10-13）
+
+- 纯逻辑列投影提交 `0ed6d0f0a472b629acf2bc3e2f4270007a370a3b`（当时 5 个逻辑用例）；UI、Relation window/cache/pending 修补与最终测试提交 `2dfc8b723271d846d13a5da660e15304cbe26732`（最终 logic 6/6 PASS）。
+- Frozen 配置 opt-in、共享 rows/window、56px/pinY、Host selection/open、recordID hover、单 page-host scroll 与 <=700px Title-only 规则已写入组件；`visibleRecords(scope, recordIds)` 以当前 `rowGeometry` 窗口通知 Relation cache。
+- Relation pending request single-instance 去重、窗口优先/缺失缓存补取与 scope fence 已纳入最终验收。当前正式证据见[P11.2C Frozen Table](../docs/verification/p11-2c-frozen-table.md)。本阶段完成后停止，不进入 P11.2D；后续需新授权与具体范围定义。

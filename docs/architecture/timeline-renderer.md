@@ -1,12 +1,12 @@
 # P11.2 Timeline Renderer 架构
 
-> 架构状态：**P11.2.0 PASS**（2026-10-13，以下基线记录来自架构阶段；P11.2A 实施状态见 §20）
+> 架构状态：**P11.2.0 PASS；P11.2C Frozen Table Scope PASS**（2026-10-13；P11.2A/B/C 实施记录见 §20–§22）
 > 基线：`25bd279585772bfdce43799de71fb3c3f5ba5436`（`master`），P11.1D PASS 之后。
-> 版本背景：当前版本 `0.0.1`，P11 目标版本 `0.0.3`。P11.2.0 在本架构审查后结束。本轮不改产品代码、依赖、API、schema、sync、MCP 或版本。
+> 版本背景：当前版本 `0.0.1`，P11 目标版本 `0.0.3`。§1–§19 保留 P11.2.0 的架构基线；该阶段仅修改文档。P11.2A/B/C 的产品实施与验证见 §20–§22，API、schema、sync、MCP、依赖与版本保持。
 
 ## 1. 目的与实施状态
 
-本文冻结 P11.2 只读 renderer 的设计，说明接口、模块、组件边界、状态、算法和后续验收。**P11.2.0 基线中的所有 `Timeline*` 接口和 renderer 文件均为拟实施内容，Timeline 分支当时仍是占位。** P11.2A 的 Shell / 坐标模块见 §20；P11.2B 的 projection/layout/bar 实施见 §21。Frozen Table、dependency 等完整 P11 parity 仍属后续实施。P11.2.0 的架构验算不代表新 renderer 已通过测试。
+本文冻结 P11.2 只读 renderer 的设计，说明接口、模块、组件边界、状态、算法和后续验收。**P11.2.0 基线中的所有 `Timeline*` 接口和 renderer 文件均为拟实施内容，Timeline 分支当时仍是占位。** P11.2A 的 Shell / 坐标模块见 §20；P11.2B 的 projection/layout/bar 实施见 §21；P11.2C Frozen Table Scope PASS 见 §22。Dependency、Date mutation 等完整 P11 parity 仍属后续实施。P11.2.0 的架构验算不代表完整 renderer 或 P11 Final 已通过测试。
 
 P11.2 读取已有 `DatabaseView`、options、generic records 响应及完整 Record properties；不增加持久化实体、endpoint、Database mutation、同步路径、package dependency 或 MCP surface。P11.2A 是首个实现单元；本次 P11.2.0 只完成架构文档，不启动实现。
 
@@ -462,7 +462,21 @@ DatabaseNodeView 的 Timeline 分支进入真实 Shell，Table 路由也显式�
 - selection 来自同 workspace/database 的 singleton Record Host pageId，点击仍由父层
   openRecordPage 处理。generic loader/cursor/P9 fence、Editor 与 Drawer draft 归属保持。
 
-本轮未实现 Frozen Table、dependency、drag/resize、Date mutation、Record edit shortcut、
-auto shift、Calendar 或配置 UI。完全离屏 scheduled row 保留及 offscreen geometry 已建立，
-方向 indicator/jump 留给后续完整 read parity；本轮不建立 Timeline 专属打开逻辑。
-P11.2C 从本节列出的 projection/geometry/layout/viewport 接续，须另行明确授权范围。
+本轮未实现 dependency、drag/resize、Date mutation、Record edit shortcut、auto shift、
+Calendar 或配置 UI。完全离屏 scheduled row 保留及 offscreen geometry 已建立，方向
+indicator/jump 留给后续完整 read parity；本轮不建立 Timeline 专属打开逻辑。Frozen Table
+后由 P11.2C 接续，见 §22。
+
+## 22. P11.2C Frozen Table 实施记录
+
+2026-10-13，按独立授权实施 P11.2C，**Frozen Table 范围验收 PASS**；这不代表完整 Product suite 全绿、P11.2 Read 完成或 P11 Final PASS。正式验收入口为[P11.2C Frozen Table](../verification/p11-2c-frozen-table.md)。版本保持 `0.0.1`，P11 目标仍为 `0.0.3`。
+
+- `timeline/frozenTable.ts` 的 `resolveFrozenTableProperties(properties, config)` 仅解析 Timeline 内嵌的 Frozen Table 配置；只有 `visible === true` 才显示。列 ID 缺省/null 使用 schema 默认顺序，部分 order 采用稳定去重并忽略缺失 ID，Title 始终保留。不改写配置或未知 outer options。
+- `projectFrozenTableDisplay(records, columns, formatValue)` 生成非 Title 的 recordId → propertyId → displayText 投影；Title 从现有 Timeline item 的 `title` 读取。格式化继续复用 DatabaseNodeView 注入的 formatter。
+- `DatabaseTimelineView` 的 Frozen 与 Timeline 组件消费同一 `rowGeometry`、同一 row window / focus island 和同一 body height；Frozen 不创建第二 row model、loader 或行测量。
+- `FrozenTablePane` 是 `TimelineViewport` 的水平 sibling。水平滚动仍由 TimelineViewport 唯一持有，垂直滚动仍由现有 `.document-wrap` / page host 持有。两个 header 共用 `TIMELINE_HEADER_HEIGHT`（56px）与 `pinY`，Timeline ruler 仍沿用现有 viewport anchor。
+- Host `selectedPageId` 负责选择态，实例内 record ID hover 同步两侧；focus island 可跨两侧保留。scope 变化和虚拟行移除会清理相应状态。Title button 复用现有 `openRecord`。
+- Frozen row 的 `v-memo` 只依赖 item、top/height、当前 record display map、该行 selected/hovered boolean。可见 Relation 属性由 NodeView 与 Timeline 共用窗口信号并复用既有 formatter/cache/budget；当前窗口优先、缺失缓存按窗口补取、scope fence 与 pending request single-instance 去重已通过本轮定向验收。正常分页仍执行既有强制标题刷新。
+- 根容器使用同一 Web 主 UI 的 container query：700px 及以下隐藏非 Title 列并把 Title 前置；Frozen 桌面宽度约 32%，上限 480px 与根宽 45%，窄屏不超过 `min(120px, 40%)`，Timeline 保持可收缩并继续横滚。
+
+不包含列编辑、Date/Property mutation、drag/resize、dependency、Timeline 设置 UI 或独立 Frozen View；不改 API、schema、Domain/wire、MCP、sync、版本、依赖、coordinate/projection 算法或 row model。P11.2C 完成后停止；P11.2D 需要另行明确授权和范围。此 Scope PASS 不等同 P11 Final PASS。

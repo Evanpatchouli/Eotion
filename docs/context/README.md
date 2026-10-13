@@ -149,3 +149,12 @@ scroll/zoom 复用 projection 与 temporal map，不新增每 Bar scroll listene
 [P11.2B 验证](../verification/p11-2b-read-only-bars.md)。
 Frozen/dependency/mutation/配置 UI 与离屏方向 indicator/jump 仍未实施；本轮结束后停止，
 P11.2C 需另行明确授权范围，不据 B 的范围结果宣称完整 P11.2 / P11 Final 已通过。
+
+P11.2C Frozen Table（2026-10-13，Scope PASS）检索入口为 `timeline/frozenTable.ts`、
+`FrozenTablePane.vue`、`DatabaseTimelineView.vue` 的 `frozenColumns` / `frozenDisplayMap` /
+`rowGeometry` / `visibleRecords`，`TimelineViewport.vue` 的 shared rows/hover 与
+`DatabaseNodeView.vue` 的 Relation title cache/window budget。只有
+`options.timeline.frozenTable.visible === true` 才显示；Frozen 与 bars 使用同一 row geometry、
+row window、page-host vertical scroll 与 Record Host selection/open。窄容器规则位于
+`DatabaseTimelineView.vue` 的 root container query。实现边界与范围验收证据见
+[P11.2C 验证](../verification/p11-2c-frozen-table.md)。此阶段完成后停止，不代表全量 Product 或 P11 Final PASS；P11.2D 需新的明确授权和范围定义。

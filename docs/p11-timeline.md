@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1A/B/C/D 已完成；P11.2.0 Renderer Architecture PASS（仅架构，renderer 未实施）；P11.2A–P11.6 尚未实施**
+> Status: **P11.1A/B/C/D、P11.2.0 已完成；P11.2A/B/C 范围验收 PASS；P11.2D 与后续阶段尚未实施**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -789,7 +789,14 @@ P11.2B 已从 P11.2A 最新 HEAD 接入 projection → temporal geometry/layout 
 [Renderer 架构 §21](architecture/timeline-renderer.md#21-p112b-只读时间条实施)。
 P11.2B 完成后停止，不自动进入 P11.2C，也不等同于下列完整 read 清单或 P11 FINAL PASS。
 
-只读完成：
+P11.2C Frozen Table 已按独立授权完成并 **Scope PASS**。Frozen 列通过
+`options.timeline.frozenTable` 独立投影，opt-in 显示；与 Timeline 共用 row geometry/window、
+page-host 纵向滚动、Host selection 和 Record opening。完整 Web、390px、100/500、Relation
+cache、截图与 review 结果见[P11.2C 验证](verification/p11-2c-frozen-table.md)。本结果只覆盖
+C 范围，不代表完整 Product 全绿、P11.2 read 或 P11 FINAL 完成。Dependency、mutation、offscreen
+indicator/jump 等仍按后续阶段边界处理；C 完成后停止，不自动进入 P11.2D。
+
+P11.2 Read Renderer 全量完成条件（C 只完成 Frozen Table 子范围；不能据此整体标记 P11.2 Read PASS）：
 
 - ruler / grid
 - horizontal scrolling + scrollbar

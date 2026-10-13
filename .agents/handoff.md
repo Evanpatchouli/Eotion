@@ -1,5 +1,29 @@
 # Handoff
 
+## 2026-10-13 P11.2C Frozen Table（Scope PASS，完成并停止）
+
+基线 `84c0758`，分支 `codex/p11-2c-frozen-table`；正式版本保持 `0.0.1`，P11 目标 `0.0.3`。
+纯逻辑列投影提交 `0ed6d0f0a472b629acf2bc3e2f4270007a370a3b`（当时 5 logic）；UI、Relation
+window/cache/pending 修补及最终测试提交 `2dfc8b723271d846d13a5da660e15304cbe26732`，最终 logic 6/6 PASS。
+正式验收入口为
+[`docs/verification/p11-2c-frozen-table.md`](../docs/verification/p11-2c-frozen-table.md)，实现入口为
+[`docs/architecture/timeline-renderer.md` §22](../docs/architecture/timeline-renderer.md#22-p112c-frozen-table-实施记录)。
+
+当前实现只读 opt-in Frozen Table：配置缺省/false 隐藏，独立列投影与 display map；Title 复用
+Timeline item.title；Frozen/Timeline 共用同一 row geometry/window/focus island。TimelineViewport
+仍是唯一 horizontal scroll owner，现有 `.document-wrap` / page host 是唯一 vertical owner；两侧
+header 共用 56px/pinY，selection/open 复用 singleton Record Host，hover 按 record ID 临时同步。
+窄容器保留 Title、隐藏其余列，身份不因 Frozen layout 改变。`visibleRecords(scope, recordIds)`
+从当前 window rows 发出 Relation 可视记录 ID，NodeView 复用既有 formatter/cache/budget；当前窗口优先、
+缺失缓存按窗口补取、scope fence 与 pending request single-instance 去重通过定向验收。
+
+最终验证为逻辑 28/28 PASS，相关 Playwright 147 项 144 PASS / 3 FAIL / 0 skip / 0 flaky；3 个
+数据库 dialog 时序失败不属于 Frozen 范围，见验收页。Web typecheck/build、100/500 样本、四张
+1440×900/390×844 Light/Dark 图与最终独立 review 已完成，review 0 blocker。只声明 P11.2C Scope PASS，
+不宣称全 Product suite 全绿或 P11 Final PASS。本阶段完成后停止。P11.2D 尚未授权，具体范围未定义，
+不得猜测并开始实现；后续可能的 offscreen indicator/jump、Date mutation、dependency 与其他 parity
+仍遵循既有 P11 分阶段边界。
+
 ## 2026-10-13 P11.2B Read-only Timeline Bars（范围验收 PASS，完成并停止）
 
 基线03138bc（P11.2A后最新HEAD），开始时master工作树干净。
