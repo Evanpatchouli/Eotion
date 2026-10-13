@@ -886,6 +886,13 @@ test('P11.1B HTTP Record create, cell patch, and GET preserve all Date wire shap
       { start: '2026-10-15T23:00:00.000Z', timeZone: 'Asia/Tokyo' },
       { start: '2026-10-16T01:00:00.000Z', end: '2026-10-17T01:00:00.000Z', timeZone: 'Asia/Tokyo' },
     ] as const
+    const resizedValues = [
+      null,
+      null,
+      { start: '2026-10-16', end: '2026-10-18' },
+      null,
+      { start: '2026-10-16T01:00:00.000Z', end: '2026-10-18T01:00:00.000Z', timeZone: 'Asia/Tokyo' },
+    ] as const
     for (const [index, value] of wireValues.entries()) {
       const id = `p11b-http-record-${index}`
       recordIds.push(id)
@@ -911,13 +918,28 @@ test('P11.1B HTTP Record create, cell patch, and GET preserve all Date wire shap
       assert.equal(moved.body.record.version, read.version + 1, 'one move commits one Record CAS')
       const confirmed = await table()
       assert.deepEqual(confirmed.records.find((row: any) => row.id === id)?.properties[dueId], movedValues[index], 'moved value survives generic GET')
+      let staleBase = confirmed
+      let staleRecordBase = read
+      if (resizedValues[index]) {
+        const current = confirmed.records.find((row: any) => row.id === id)
+        const resized = await request(baseUrl, `${route}/records/${id}/cells/${dueId}`, 'PATCH', { cookie, body: {
+          value: resizedValues[index], expectedDatabaseVersion: confirmed.database.version, expectedRecordVersion: current.version,
+        } })
+        assert.equal(resized.status, 200, JSON.stringify(resized.body))
+        assert.deepEqual(resized.body.record.properties[dueId], resizedValues[index], 'resize writes the complete Date range through the generic cell validator')
+        assert.equal(resized.body.database.version, confirmed.database.version + 1, 'one resize commits one Database CAS')
+        assert.equal(resized.body.record.version, current.version + 1, 'one resize commits one Record CAS')
+        staleBase = await table()
+        staleRecordBase = current
+        assert.deepEqual(staleBase.records.find((row: any) => row.id === id)?.properties[dueId], resizedValues[index], 'resized range survives generic GET')
+      }
       const stale = await request(baseUrl, `${route}/records/${id}/cells/${dueId}`, 'PATCH', { cookie, body: {
-        value, expectedDatabaseVersion: confirmed.database.version, expectedRecordVersion: read.version,
+        value, expectedDatabaseVersion: staleBase.database.version, expectedRecordVersion: staleRecordBase.version,
       } })
-      assert.equal(stale.status, 409, 'stale drag snapshot must conflict without retry')
+      assert.equal(stale.status, 409, 'stale drag/resize snapshot must conflict without retry')
       const afterConflict = await table()
-      assert.equal(afterConflict.database.version, confirmed.database.version, 'transaction rolls back Database bump on Record CAS failure')
-      assert.deepEqual(afterConflict.records, confirmed.records, 'conflict leaves canonical records untouched')
+      assert.equal(afterConflict.database.version, staleBase.database.version, 'transaction rolls back Database bump on Record CAS failure')
+      assert.deepEqual(afterConflict.records, staleBase.records, 'conflict leaves canonical records untouched')
     }
 
     const records = connection!.db!.collection('database_records')

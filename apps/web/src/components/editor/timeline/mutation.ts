@@ -1,9 +1,19 @@
 import { normalizeDatabaseDateValue } from '@eotion/domain/date'
 import type { DatabaseDateValue } from '@eotion/domain/date'
+import type { TimelineDateSource } from '@eotion/domain/database'
 import { calendarBoundary, nextCalendarBoundary, timeToX, xToTime, zonedFields } from './coordinates'
+import { dateOnlyBoundary, inclusiveDateBeforeBoundary, snapTimelineEndpoint } from './snap'
 import type { Transform } from './types'
 
 const DAY_MS = 86_400_000
+const MIN_DATETIME_MS = Date.parse('0000-01-01T00:00:00.000Z')
+const MAX_DATETIME_MS = Date.parse('9999-12-31T23:59:59.999Z')
+
+function canonicalInstant(ms: number): string | null {
+  if (!Number.isSafeInteger(ms) || ms < MIN_DATETIME_MS || ms > MAX_DATETIME_MS) return null
+  try { return new Date(ms).toISOString() }
+  catch { return null }
+}
 
 export type TimelineTemporalOffset =
   | { kind: 'date-only'; days: number }
@@ -17,6 +27,12 @@ export interface TimelineMoveCommand {
   expectedRecordVersion: number
   originalValue: DatabaseDateValue
   value: DatabaseDateValue
+}
+
+export function isWritableTimelineDateSource(
+  source: TimelineDateSource | undefined,
+): source is Extract<TimelineDateSource, { mode: 'date-property' }> {
+  return source?.mode === 'date-property'
 }
 
 function utcOrdinal(date: string): number | null {
@@ -135,5 +151,76 @@ export function offsetTimelineDateValue(
     }
     result = { ...value, start, ...(hasEnd ? { end } : {}) }
   }
+  return normalizeDatabaseDateValue(result) ? result : null
+}
+
+function dateAtBoundary(ms: number, displayTimeZone: string): string | null {
+  try {
+    const fields = zonedFields(ms, displayTimeZone)
+    const date = `${String(fields.year).padStart(4, '0')}-${String(fields.month).padStart(2, '0')}-${String(fields.day).padStart(2, '0')}`
+    return normalizeDatabaseDateValue(date)?.kind === 'date-only' ? date : null
+  } catch { return null }
+}
+
+/** Resize one endpoint while preserving the existing generic Date wire shape. */
+export function resizeTimelineDateValueFromX(
+  value: DatabaseDateValue,
+  endpoint: 'start' | 'end',
+  deltaX: number,
+  transform: Transform,
+  displayTimeZone: string,
+): DatabaseDateValue | null {
+  const normalized = normalizeDatabaseDateValue(value)
+  if (!normalized || !Number.isFinite(deltaX)) return null
+  if (!normalized.end && endpoint === 'start') return null
+  if (deltaX === 0) return value
+  if (!Number.isFinite(transform.originMs) || !Number.isFinite(transform.pxPerMs) || transform.pxPerMs <= 0) return null
+
+  const dateOnly = normalized.kind === 'date-only'
+  const isPoint = normalized.end === undefined
+  const endpointValue = endpoint === 'start' ? normalized.start : normalized.end ?? normalized.start
+  const originMs = dateOnly
+    ? dateOnlyBoundary(endpointValue, displayTimeZone, endpoint === 'end' && !isPoint)
+    : Date.parse(endpointValue)
+  if (originMs === null || !Number.isSafeInteger(originMs)) return null
+  let targetMs: number
+  try { targetMs = xToTime(timeToX(originMs, transform) + deltaX, transform) }
+  catch { return null }
+  if (!Number.isFinite(targetMs) || !Number.isSafeInteger(Math.round(targetMs))) return null
+  const snapped = snapTimelineEndpoint(originMs, Math.round(targetMs), transform.scale, displayTimeZone, dateOnly)
+  if (snapped === null) return null
+
+  if (dateOnly) {
+    let nextValue: string | null
+    if (endpoint === 'end') nextValue = inclusiveDateBeforeBoundary(snapped, displayTimeZone)
+    else nextValue = dateAtBoundary(snapped, displayTimeZone)
+    if (!nextValue) return null
+    if (isPoint) {
+      if (endpoint !== 'end' || snapped <= originMs || nextValue < normalized.start) return null
+      const result = typeof value === 'string' ? { start: value, end: nextValue } : { ...value, end: nextValue }
+      return normalizeDatabaseDateValue(result) ? result : null
+    }
+    const start = endpoint === 'start' ? nextValue : normalized.start
+    const end = endpoint === 'end' ? nextValue : normalized.end!
+    const clamped = endpoint === 'start' && start > end ? end : endpoint === 'end' && end < start ? start : nextValue
+    const result = typeof value === 'string'
+      ? clamped
+      : { ...value, [endpoint]: clamped }
+    return normalizeDatabaseDateValue(result) ? result : null
+  }
+
+  if (isPoint) {
+    if (endpoint !== 'end' || snapped <= originMs || snapped <= Date.parse(normalized.start)) return null
+    const snappedValue = canonicalInstant(snapped)
+    if (!snappedValue) return null
+    const result = typeof value === 'string' ? { start: value, end: snappedValue } : { ...value, end: snappedValue }
+    return normalizeDatabaseDateValue(result) ? result : null
+  }
+  const startMs = endpoint === 'start' ? snapped : Date.parse(normalized.start)
+  const endMs = endpoint === 'end' ? snapped : Date.parse(normalized.end!)
+  const clamped = endpoint === 'start' && startMs > endMs ? endMs : endpoint === 'end' && endMs < startMs ? startMs : snapped
+  const clampedValue = canonicalInstant(clamped)
+  if (!clampedValue) return null
+  const result = typeof value === 'string' ? clampedValue : { ...value, [endpoint]: clampedValue }
   return normalizeDatabaseDateValue(result) ? result : null
 }
