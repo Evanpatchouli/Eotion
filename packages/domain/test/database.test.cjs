@@ -51,8 +51,8 @@ test('database entities require exact fields and valid stable metadata', () => {
   assert.equal(isValidDatabaseProperty({ ...properties[1], options: [] }), false)
   assert.equal(isValidDatabaseProperty({ ...properties[4], options: undefined }), false)
   assert.equal(isValidDatabaseView({ id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All', type: 'table', version: 1, createdAt: timestamp, updatedAt: timestamp }), true)
-  assert.deepEqual(DATABASE_VIEW_TYPES, ['table', 'list', 'board'])
-  for (const type of ['list', 'board']) assert.equal(isValidDatabaseView({ id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All', type, version: 1, createdAt: timestamp, updatedAt: timestamp }), true)
+  assert.deepEqual(DATABASE_VIEW_TYPES, ['table', 'list', 'board', 'timeline'])
+  for (const type of ['list', 'board', 'timeline']) assert.equal(isValidDatabaseView({ id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All', type, version: 1, createdAt: timestamp, updatedAt: timestamp }), true)
   for (const type of ['calendar', 'kanban', null]) assert.equal(isValidDatabaseView({ id: 'view-1', databaseId: 'db-1', workspaceId: 'ws-1', name: 'All', type, version: 1, createdAt: timestamp, updatedAt: timestamp }), false)
 })
 

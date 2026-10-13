@@ -21,8 +21,10 @@ export const DATABASE_MAX_VIEWS = 100
 export const DATABASE_MAX_TABLE_ROWS = 100
 export const DATABASE_VIEW_MAX_FILTERS = 20
 export const DATABASE_VIEW_MAX_SORTS = 10
-export const DATABASE_VIEW_TYPES = ['table', 'list', 'board'] as const
+export const DATABASE_VIEW_TYPES = ['table', 'list', 'board', 'timeline'] as const
 export type DatabaseViewType = typeof DATABASE_VIEW_TYPES[number]
+export const DEFAULT_TIMELINE_VIEW_SCALE = 'month' as const
+export const TIMELINE_VIEW_SCALES = ['hour', 'day', 'week', 'biweek', 'month', 'quarter', 'year'] as const
 export const DATABASE_RELATION_MAX_LINKS = 50
 export const DATABASE_RELATION_SEARCH_MAX_RECORDS = 5_000
 export const DATABASE_DERIVED_MAX_RECORDS = 100
@@ -168,6 +170,40 @@ export interface DatabaseBoardViewConfig extends DatabaseViewConfig {
   options?: DatabaseBoardViewOptions
 }
 
+export type TimelineDateSource =
+  | { mode: 'date-property'; propertyId: string }
+  | { mode: 'start-end'; startPropertyId: string; endPropertyId: string }
+
+export type TimelineShiftMode = 'shift_when_overlapping' | 'shift_and_keep_gap' | 'no_auto_shift'
+
+export interface TimelineFrozenTableOptions {
+  visible: boolean
+  visibleProperties: string[] | null
+  propertyOrder: string[] | null
+}
+
+export interface TimelineDependencyOptions {
+  propertyId: string
+  direction: 'depends-on' | 'blocks'
+  shiftMode: TimelineShiftMode
+  avoidWeekends: boolean
+}
+
+export interface TimelineViewOptions {
+  dateSource?: TimelineDateSource
+  scale?: typeof TIMELINE_VIEW_SCALES[number]
+  frozenTable?: TimelineFrozenTableOptions
+  dependency?: TimelineDependencyOptions
+}
+
+export interface DatabaseTimelineViewOptions extends Record<string, unknown> {
+  timeline?: TimelineViewOptions
+}
+
+export interface DatabaseTimelineViewConfig extends DatabaseViewConfig {
+  options?: DatabaseTimelineViewOptions
+}
+
 export const DEFAULT_DATABASE_VIEW_CONFIG: DatabaseViewConfig = {
   filters: [], sorts: [], visibleProperties: null, propertyOrder: null,
 }
@@ -190,6 +226,7 @@ const FILTERS_BY_TYPE: Record<DatabasePropertyType, readonly string[]> = {
 export function isValidDatabaseViewConfigShape(value: unknown): value is DatabaseViewConfig {
   if (!isObject(value) || !hasExactFields(value, ['filters', 'sorts', 'visibleProperties', 'propertyOrder'], ['options'])) return false
   if (Object.hasOwn(value, 'options') && !isObject(value.options)) return false
+  if (Object.hasOwn(value.options ?? {}, 'timeline') && !isValidTimelineViewOptions((value.options as Record<string, unknown>).timeline)) return false
   if (!Array.isArray(value.filters) || value.filters.length > DATABASE_VIEW_MAX_FILTERS || !Array.isArray(value.sorts) || value.sorts.length > DATABASE_VIEW_MAX_SORTS) return false
   for (const filter of value.filters) {
     if (!isObject(filter) || !hasExactFields(filter, ['propertyId', 'operator'], ['value'])
@@ -208,6 +245,43 @@ export function isValidDatabaseViewConfigShape(value: unknown): value is Databas
     if (ids !== null && (!Array.isArray(ids) || ids.length > DATABASE_MAX_PROPERTIES || !ids.every(isStableId) || new Set(ids).size !== ids.length)) return false
   }
   return true
+}
+
+/** Strictly validates the known Timeline options namespace while leaving outer extensions opaque. */
+export function isValidTimelineViewOptions(value: unknown): value is TimelineViewOptions {
+  if (!isObject(value) || !hasExactFields(value, [], ['dateSource', 'scale', 'frozenTable', 'dependency'])) return false
+  if (Object.hasOwn(value, 'scale') && !TIMELINE_VIEW_SCALES.includes(value.scale as typeof TIMELINE_VIEW_SCALES[number])) return false
+  if (Object.hasOwn(value, 'dateSource')) {
+    const source = value.dateSource
+    if (!isObject(source)) return false
+    if (source.mode === 'date-property') {
+      if (!hasExactFields(source, ['mode', 'propertyId']) || !isStableId(source.propertyId)) return false
+    } else if (source.mode === 'start-end') {
+      if (!hasExactFields(source, ['mode', 'startPropertyId', 'endPropertyId'])
+        || !isStableId(source.startPropertyId) || !isStableId(source.endPropertyId)
+        || source.startPropertyId === source.endPropertyId) return false
+    } else return false
+  }
+  if (Object.hasOwn(value, 'frozenTable')) {
+    const frozen = value.frozenTable
+    if (!isObject(frozen) || !hasExactFields(frozen, ['visible', 'visibleProperties', 'propertyOrder'])
+      || typeof frozen.visible !== 'boolean'
+      || !isValidTimelinePropertyIds(frozen.visibleProperties) || !isValidTimelinePropertyIds(frozen.propertyOrder)) return false
+  }
+  if (Object.hasOwn(value, 'dependency')) {
+    const dependency = value.dependency
+    if (!isObject(dependency) || !hasExactFields(dependency, ['propertyId', 'direction', 'shiftMode', 'avoidWeekends'])
+      || !isStableId(dependency.propertyId)
+      || (dependency.direction !== 'depends-on' && dependency.direction !== 'blocks')
+      || !['shift_when_overlapping', 'shift_and_keep_gap', 'no_auto_shift'].includes(dependency.shiftMode as string)
+      || typeof dependency.avoidWeekends !== 'boolean') return false
+  }
+  return true
+}
+
+function isValidTimelinePropertyIds(ids: unknown): ids is string[] | null {
+  return ids === null || Array.isArray(ids) && ids.length <= DATABASE_MAX_PROPERTIES
+    && ids.every(isStableId) && new Set(ids).size === ids.length
 }
 
 /** Validates config structure, property-specific filter/operator semantics, and board grouping. */
@@ -246,6 +320,10 @@ export function validateDatabaseViewConfig(value: unknown, properties: readonly 
   for (const ids of [value.visibleProperties, value.propertyOrder]) {
     if (ids !== null && ids.some(id => !byId.has(id))) return false
   }
+  if (viewType === 'timeline' && Object.hasOwn(value.options ?? {}, 'timeline')) {
+    const timeline = (value.options as Record<string, unknown>).timeline as TimelineViewOptions
+    if (!validateTimelinePropertySemantics(timeline, byId, titleId, databaseId!)) return false
+  }
   if (viewType === 'board' && value.options !== undefined && Object.hasOwn(value.options, 'groupByPropertyId')) {
     const groupByPropertyId: unknown = value.options.groupByPropertyId
     if (!isStableId(groupByPropertyId)) return false
@@ -253,6 +331,28 @@ export function validateDatabaseViewConfig(value: unknown, properties: readonly 
     if (!property || property.type !== 'select' || !Array.isArray(property.options)) return false
   }
   return value.visibleProperties === null || value.visibleProperties.includes(titleId)
+}
+
+function validateTimelinePropertySemantics(
+  options: TimelineViewOptions,
+  byId: ReadonlyMap<string, DatabaseProperty>,
+  titleId: string,
+  databaseId: string,
+): boolean {
+  const dateProperty = (id: string): boolean => byId.get(id)?.type === 'date'
+  if (options.dateSource?.mode === 'date-property' && !dateProperty(options.dateSource.propertyId)) return false
+  if (options.dateSource?.mode === 'start-end'
+    && (!dateProperty(options.dateSource.startPropertyId) || !dateProperty(options.dateSource.endPropertyId))) return false
+  if (options.frozenTable) {
+    const { visibleProperties, propertyOrder } = options.frozenTable
+    for (const ids of [visibleProperties, propertyOrder]) if (ids !== null && ids.some(id => !byId.has(id))) return false
+    if (visibleProperties !== null && !visibleProperties.includes(titleId)) return false
+  }
+  if (options.dependency) {
+    const property = byId.get(options.dependency.propertyId)
+    if (property?.type !== 'relation' || (property.config as { targetDatabaseId: string }).targetDatabaseId !== databaseId) return false
+  }
+  return true
 }
 
 const PROPERTY_TYPES: readonly string[] = ['title', 'text', 'number', 'checkbox', 'select', 'date', 'relation', 'rollup', 'formula']

@@ -52,7 +52,7 @@ test('database entity schemas reuse the strict domain validators', () => {
   assert.deepEqual(DatabaseSchema.parse(database), database)
   assert.deepEqual(DatabasePropertySchema.parse(property), property)
   assert.deepEqual(DatabaseViewSchema.parse(view), view)
-  for (const type of ['list', 'board']) assert.deepEqual(DatabaseViewSchema.parse({ ...view, type }).type, type)
+  for (const type of ['list', 'board', 'timeline']) assert.deepEqual(DatabaseViewSchema.parse({ ...view, type }).type, type)
   for (const type of ['calendar', 'kanban', null]) assert.equal(DatabaseViewSchema.safeParse({ ...view, type }).success, false)
   assert.deepEqual(databaseRecordSchema([property]).parse({
     id: 'record-1', databaseId: 'db-1', workspaceId: 'ws-1', pageId: 'page-1', properties: {},
@@ -109,9 +109,15 @@ test('database create request schemas enforce exact request shapes', () => {
   const createView = { id: 'view-1', name: 'All tasks', type: 'table' }
   assert.deepEqual(DatabaseViewCreateRequestSchema.parse(createView), createView)
   assert.equal(DatabaseViewCreateRequestSchema.safeParse({ ...createView, type: 'calendar' }).success, false)
-  for (const type of ['list', 'board']) assert.deepEqual(DatabaseViewCreateRequestSchema.parse({ ...createView, type }).type, type)
+  for (const type of ['list', 'board', 'timeline']) assert.deepEqual(DatabaseViewCreateRequestSchema.parse({ ...createView, type }).type, type)
   const boardConfig = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: { groupByPropertyId: 'status-1', futureKey: { keep: true } } }
   assert.deepEqual(DatabaseViewCreateRequestSchema.parse({ ...createView, type: 'board', config: boardConfig }).config, boardConfig)
+  const timelineConfig = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: { timeline: { scale: 'week' }, futureKey: { keep: true } } }
+  assert.deepEqual(DatabaseViewCreateRequestSchema.parse({ ...createView, type: 'timeline', config: timelineConfig }).config, timelineConfig)
+  assert.deepEqual(DatabaseViewUpdateRequestSchema.parse({ config: timelineConfig, expectedDatabaseVersion: 1, expectedViewVersion: 1 }).config, timelineConfig)
+  const invalidTimelineConfig = { ...timelineConfig, options: { timeline: { scale: 'week', unsupported: true } } }
+  assert.equal(DatabaseViewCreateRequestSchema.safeParse({ ...createView, type: 'timeline', config: invalidTimelineConfig }).success, false)
+  assert.equal(DatabaseViewUpdateRequestSchema.safeParse({ config: invalidTimelineConfig, expectedDatabaseVersion: 1, expectedViewVersion: 1 }).success, false)
   assert.equal(DatabaseViewHttpCreateRequestSchema.safeParse(createView).success, false)
   assert.deepEqual(DatabaseViewHttpCreateRequestSchema.parse({ ...createView, expectedDatabaseVersion: 1 }), { ...createView, expectedDatabaseVersion: 1 })
   assert.equal(DatabaseViewUpdateRequestSchema.safeParse({ expectedDatabaseVersion: 1, expectedViewVersion: 1 }).success, false)
@@ -247,6 +253,7 @@ test('database view records response strictly validates scope, rows, properties,
   }
   assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'list' } }).success, true)
   assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'board' } }).success, true)
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'timeline' } }).success, true)
   assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'calendar' } }).success, false)
   assert.equal(DatabaseViewRecordsResponseSchema.safeParse({ ...response, view: { ...view, type: 'table' } }).success, true)
 })
@@ -270,6 +277,18 @@ test('board view records require a valid select grouping property while table an
     const opaque = { ...response, view: { ...view, type, config: { ...view.config, options: { groupByPropertyId: 'groupId42' } } } }
     assert.equal(DatabaseViewRecordsResponseSchema.safeParse(opaque).success, true)
   }
+})
+
+test('timeline view responses validate timeline property semantics using the actual view type', () => {
+  const due = { ...property, id: 'due-1', name: 'Due', type: 'date' }
+  const timelineConfig = { ...view.config, options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'due-1' } } } }
+  const timelineView = { ...view, type: 'timeline', config: timelineConfig }
+  const response = { database, view: timelineView, properties: [property, due], records: [], nextCursor: null }
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse(response).success, true)
+  const invalidTimeline = { ...response, view: { ...timelineView, config: { ...timelineConfig, options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'missing' } } } } } }
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse(invalidTimeline).success, false)
+  const sameConfigBoard = { ...response, view: { ...timelineView, type: 'board' } }
+  assert.equal(DatabaseViewRecordsResponseSchema.safeParse(sameConfigBoard).success, true)
 })
 
 test('database contracts accept exact property, row, filter, sort, and column-order limits', () => {

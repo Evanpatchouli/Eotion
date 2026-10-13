@@ -79,6 +79,9 @@ export {
   DATABASE_VIEW_MAX_FILTERS,
   DATABASE_VIEW_MAX_SORTS,
   DATABASE_VIEW_TYPES,
+  DEFAULT_TIMELINE_VIEW_SCALE,
+  TIMELINE_VIEW_SCALES,
+  isValidTimelineViewOptions,
   DATABASE_RELATION_MAX_LINKS,
   DATABASE_RELATION_SEARCH_MAX_RECORDS,
   DATABASE_DERIVED_MAX_RECORDS,
@@ -115,6 +118,13 @@ export type {
   DatabaseSort,
   DatabaseSortDirection,
   DatabaseViewConfig,
+  DatabaseTimelineViewOptions,
+  DatabaseTimelineViewConfig,
+  TimelineViewOptions,
+  TimelineDateSource,
+  TimelineShiftMode,
+  TimelineFrozenTableOptions,
+  TimelineDependencyOptions,
 } from './database'
 export {
   blockDepthMap,

@@ -624,43 +624,98 @@ P9 的 identity fence 继续是硬边界：
 
 不要为了 Timeline 重构已封板的 P9 identity fence，除非有稳定可复现 blocker。
 
-## 21. View Config 目标语义
+## 21. View Config 实际契约（P11.1C 冻结）
 
-最终字段名由 P11.1 在代码中冻结，但语义上至少需要：
+Timeline 是现有 `DatabaseView.type = 'timeline'` 的第四种 View，复用既有
+Database / Property / Record / View、View CRUD、generic records、事务与 CAS。
+没有 Timeline 专属实体、API、DTO 或 Mongo 集合。实际配置位于现有
+`DatabaseViewConfig.options.timeline`：
 
 ```ts
 interface TimelineViewOptions {
-  dateSourceMode?: 'range-property' | 'separate-properties'
-  datePropertyId?: string
-  endDatePropertyId?: string
+  dateSource?:
+    | { mode: 'date-property'; propertyId: string }
+    | { mode: 'start-end'; startPropertyId: string; endPropertyId: string }
 
   scale?: 'hour' | 'day' | 'week' | 'biweek' | 'month' | 'quarter' | 'year'
 
-  tableVisible?: boolean
-  tableVisibleProperties?: string[]
-  tablePropertyOrder?: string[]
+  frozenTable?: {
+    visible: boolean
+    visibleProperties: string[] | null
+    propertyOrder: string[] | null
+  }
 
-  dependencyPropertyId?: string
-  dependencyShiftMode?: 'shift_when_overlapping' | 'shift_and_keep_gap' | 'no_auto_shift'
-  dependencyAvoidWeekends?: boolean
-
-  // future fields must remain preservable
-  [key: string]: unknown
+  dependency?: {
+    propertyId: string
+    direction: 'depends-on' | 'blocks'
+    shiftMode: 'shift_when_overlapping' | 'shift_and_keep_gap' | 'no_auto_shift'
+    avoidWeekends: boolean
+  }
 }
 ```
 
-这只是 **语义草案**，不是当前代码 API。P11.1 可以调整字段名 / shape，但不能丢掉相应能力。
+### 21.1 结构与默认值
 
-不应持久化：
+- `options`、`options.timeline` 和其四个字段均可省略；`timeline: {}` 合法。
+  `DEFAULT_DATABASE_VIEW_CONFIG` 保持原样，不要求 options，不自动选择 Date Property。
+- scale 缺省的有效值为 `month`（`DEFAULT_TIMELINE_VIEW_SCALE`）；不将默认值补写入
+  持久配置。七种 scale 只控制显示粒度，不改 Record 日期。
+- Timeline 内层对象严格校验：拒绝未知字段、null、显式 undefined、错误类型和枚举。
+  `frozenTable` 一旦出现必须有三个字段，`dependency` 一旦出现必须有四个字段。
+  dateSource 必须是上述两种完整分支之一，不能混用两个分支的字段。
+- `options.timeline` 是已知命名空间，出现时就进行结构验证，因此原 Create/Update
+  Zod config 入口会拒绝坏结构；不新增 Timeline 专属 DTO。`config.options` 外层
+  未知未来字段继续原样保存、返回，校验不会删除或改写配置。
+- 需要 Properties 的引用语义仅应用于 `view.type === 'timeline'`；Table/List 不应用
+  Timeline/Board 引用语义，Board grouping 继续独立校验。本轮不改变旧三种 View 的行为。
 
-- 当前 `scrollLeft`；
-- hover item；
-- drag preview；
-- today line x；
-- 临时 tooltip；
-- viewport pixel width。
+### 21.2 日期来源
 
-这些是 device-local / ephemeral UI state，不属于共享 View config。
+- 引用稳定 Property ID，必须属于当前 Database 和 Workspace，且 `type === 'date'`。
+  只接受可写入原生 Date，不接受 Formula 的 date 结果或 Rollup。
+- `date-property` 使用该 Property 的 normalized start/end；end 省略仍是单点。
+- `start-end` 的两个 ID 必须不同，各取对应 Property 值的 normalized start；各自
+  对象中的 end 不充当该模式的边界。
+- config 合法性不依赖 Record 是否已填值；未配置 dateSource 的 Timeline 合法。
+  缺值的 Record 保持存在，后续 renderer 处理未排期状态，不能偷偷赋日期。
+- 本轮仅冻结引用和语义，不新增 Record 的 Timeline 日期解析或写入行为。
+
+### 21.3 Frozen Table 独立投影
+
+- 顶层 `visibleProperties` / `propertyOrder` 继续代表 bar projection。
+  frozenTable 内两个数组独立保存，不要求与 bar 相等，也不会互相覆盖。
+- 数组为 null 时使用全部属性 / 默认顺序；非 null 数组遵循现有限额（最多 100）、
+  稳定合法 ID 和无重复规则，所有 ID 必须属于当前 schema。
+- 非 null `visibleProperties` 必须包含唯一 Title；即使 `visible === false` 也保留
+  这些有效列。`propertyOrder` 沿用现有部分排序规则，不强制重复列出所有可见属性。
+- 隐藏不清空已配置的列，不持久化像素/滚动位置；本轮不实现冻结表格 UI。
+
+### 21.4 Dependency 配置
+
+- 只引用当前 Database/Workspace 的原生 Relation，且
+  `config.targetDatabaseId === 当前 Database ID`，即 self-relation。
+- `depends-on` 表示当前 Record 依赖 Relation 值中列出的 Records；`blocks` 表示
+  当前 Record 阻塞列出的 Records。方向必须显式保存，不从名称推断。
+- 三种 shiftMode 沿用 §14.3，avoidWeekends 只保存显式 boolean。
+  本轮不实现依赖图、反向 projection、连线、cycle mutation 或自动日期联动。
+
+### 21.5 本轮边界与后续入口
+
+同一 View ID 共享配置，不同 View ID 独立；改变 options 不复制、改写或重排 Records。
+generic records 继续执行已有过滤、排序、分页及配置/版本 cursor fence。
+Web 可选择已有 Timeline View，显示明确的暂未实现状态，不回退 Table；创建入口、
+时间网格、时间条和 Timeline 专用设置留待后续。
+
+`DatabaseService.linkInPage` 仍保持 Table-only 规则；后续 Linked Timeline 的接入点
+是该方法的 View 类型门禁与对应 HTTP/Block identity 验收，本轮没有提前放宽。
+
+**P11.1D 未实施：**Date source / dependency 的删除、类型变更、Relation retarget hard
+reference 409；Frozen Table soft reference 修复；Property mutation 的真实 view.type
+校验、事务检查/回滚/CAS 和并发竞态仍需 D 完成。当前 generic records 对悬空 Timeline
+配置 fail-closed，不能代替 mutation lifecycle fence，不能据此宣称生命周期保护已完成。
+
+`scrollLeft`、hover item、drag preview、today line x、tooltip、viewport pixel width
+均为 device-local / ephemeral 状态，不属于此共享配置；Timeline 内层不接受这些字段。
 
 ## 22. 与现有 Eotion 架构的边界
 
@@ -680,6 +735,10 @@ interface TimelineViewOptions {
 ## 23. P11 分阶段建议
 
 ### P11.1 Timeline Domain + Date Range Foundation
+
+当前细分：P11.1A 日期领域基础 PASS；P11.1B 通用 Date 数据链路 PASS；
+P11.1C 冻结本节 §21 的 View 配置契约。完整 Property lifecycle 防护独立留给 P11.1D；
+不能以 C 的 config/reference 校验代替 D 的 mutation fence。P11.1C 完成后停止。
 
 先解决：
 
