@@ -1,5 +1,40 @@
 # Handoff
 
+## 2026-10-13 P11.2.0 Timeline Renderer Architecture（PASS，已停止，未实施 renderer）
+
+基线 `25bd279585772bfdce43799de71fb3c3f5ba5436`（P11.1D PASS），master，开始时工作树干净。
+本轮仅正式架构与任务/检索文档；正式版本仍 0.0.1，P11 目标 0.0.3。收口提交为包含本节的 commit。
+详细冻结决策与基线证据见 [Timeline Renderer Architecture](../docs/architecture/timeline-renderer.md)，
+产品标准摘要见 `docs/p11-timeline.md` 的 P11.2 Renderer Architecture 章节；原 P11.1A/B/C/D 数据模型未改。
+
+流程：generic records -> read projection -> coordinates/layout -> read-only renderer。
+统一 logical instant -> pixel；date-only 是显示时区日初边界，datetime 保持 UTC instant，
+所有 ruler/grid/item/today/offscreen 共用 transform。all-day 显式 end 用独立次日日初视觉右界，
+原 end/零 duration 语义保留；point 不补 end。七种 scale、有界 native canvas/rebase、page-host
+row virtualization 与 Frozen Table 共用行高/顺序已设计。未排期仍占原主 row，footer 提供导航索引。
+
+configuredScale 仍来自共享 options.timeline.scale；本实例 effectiveScale 使用临时 override。
+P11.2A selector 不 PATCH / 不重拉 records；仅未来显式保存共享配置走已有 CAS/通知/cursor fence。
+既有共享配置保存会触发已加载窗口重拉，5000 条约 200 页；本轮未改查询或通知协议。
+
+已证实 B1：独立 `DatabasePageView.vue` 的 query reload/selectedView 清空/loading 分支，及
+含 viewId 的 Editor key，会在同库 View 切换时重建 Editor/NodeView。记录了最小建议修复边界；
+本轮未修。inline 已有 P9 fence 继续复用；独立 route 完整 lifecycle PASS 前必须另单元处理 B1。
+`linkInPage` 仍 Table-only；不自动接入 Linked Timeline，不设计 manual row order/grouping 持久化。
+
+临时公式/给定 instant 样例验算：62 checks PASS，Node 24.21.0 / ICU 78.3 / tzdata 2026c；
+日志 `C:/Users/31250/AppData/Local/Temp/eotion-p1120-604cc99c231949ad915b085346732f75/coordinate-design-check.log`。
+仅验证七种密度的 inverse/rebase/center 与给定 23/25/23.5h 边界，未实现 calendarBoundary，
+未执行产品测试、typecheck/build、Mongo、browser scrolling、benchmark、真机或 P11 Final。
+17 项决策已冻结，独立 reviewer 最终 0 个确定文档 blocker；六份 Markdown 的范围、相对链接、
+UTF-8 strict/无 BOM/CRLF 与 `git diff --check` 通过。完整边界见架构 §19，不代表 renderer PASS。
+
+下一轮仅明确启动后执行 **P11.2A Timeline Shell + Coordinate Engine**：替换 NodeView 占位，
+新增 DatabaseTimelineView 与 timeline/ 中的 Header/Viewport/Ruler/Grid/Today、types/coordinates/
+scale/ruler/viewport/useTimelineViewport；精确接口/路径/未来验证见架构 §16。
+不实现 bar/Frozen Table/Record mutation/dependency/创建按钮，不改 API/schema/MCP/sync/版本/依赖。
+本轮完成后停止，不自动执行 P11.2A。
+
 ## 2026-10-13 P11.1D Property Lifecycle Fence（PASS，停在此处）
 
 基线e0238a3，工作树开始时干净；master实现提交16da8cfdb7753e7a26bc0fc2d491a9b95517d754，

@@ -109,4 +109,18 @@ dependency/self-relation 硬引用409。deleteProperty独立修复Frozen Table v
 updateProperty/changePropertyType/deleteProperty全部按真实view.type校验候选schema；
 共享Database CAS与Property/View CAS保护事务/并发，旧Board专用repository查询已移除。
 证据见[P11.1D验收](../verification/p11-1d-property-lifecycle-fence.md)。`linkInPage`
-继续Table-only；下一步P11.2需新的明确指令，从Web Timeline占位与generic records接入。
+继续Table-only；P11.2.0 架构与下一轮接续见下文。
+
+P11.2.0 Renderer Architecture 检索入口：
+[Timeline Renderer Architecture](../architecture/timeline-renderer.md)，产品标准摘要见
+[P11 Timeline](../p11-timeline.md) 的「P11.2 Renderer Architecture」章节。
+拟实施模块位于 `apps/web/src/components/editor/timeline/`：projection、coordinates、scale、
+ruler、layout、viewport；本轮仅文档，以上模块尚未创建。坐标统一为 renderer logical instant
+→ pixel，date-only 使用显示时区的日历日边界；all-day inclusive end 只生成独立视觉边界，
+不改变原 end / 显式零长度 range。generic records / cursor / View config / P9 fence 保持。
+`configuredScale` 是原共享配置，`effectiveScale` 可由实例临时 override 改变；P11.2A zoom
+不 PATCH、不触发 records 重拉，只有未来显式共享配置保存复用原 CAS/通知/cursor fence。
+下一轮 P11.2A 仅 Shell + Coordinate Engine：ruler/grid/native horizontal scrollbar/today/
+navigation，不实现 bar、Frozen Table、mutation、dependency。独立 `DatabasePageView.vue`
+的 View 切换会因 loading 分支及含 viewId 的 Editor key 重建 Editor/NodeView；架构 B1
+记录最小修复边界，独立 route 生命周期验收前必须处理，本轮未改实现。

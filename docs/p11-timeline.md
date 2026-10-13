@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1A/B/C/D 已完成；P11.2–P11.6 尚未实施；P11.1D 验收见专门报告**
+> Status: **P11.1A/B/C/D 已完成；P11.2.0 Renderer Architecture PASS（仅架构，renderer 未实施）；P11.2A–P11.6 尚未实施**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -253,13 +253,13 @@ Page.title   [visible property 1] [visible property 2] ...
 
 ### 9.2 宽度
 
-Bar 左边界 = resolved start。  
-Bar 右边界 = resolved end。
+Bar 左边界 = resolved start。datetime 的视觉右边界 = 精确 resolved end；有显式 end 的 all-day 日期范围，其视觉右边界 = display time zone 中 end 次日的日初，因此包含结束日期。显式 `start == end` 仍遵守 P11.1 零 duration；all-day 覆盖一天只是视觉表现。没有 end 的 item 仍是 point。详细 renderer-only 约定见[Timeline Renderer 架构 §12](architecture/timeline-renderer.md#12-三种-item-geometry-与-all-day-视觉范围)。
 
-- duration 决定 bar 几何长度。
+- duration 决定 datetime range 的真实几何长度；all-day 显式 end 按上面的结束日视觉规则计算。
 - 不能因为标题更长而偷偷扩大日期范围。
 - 当视觉宽度不足以显示标题时，只裁剪内容。
-- 最小命中宽度可以大于真实几何宽度，但视觉日期范围不能被篡改。
+- 最小命中区域可以大于真实几何宽度，但视觉日期范围不能被篡改。
+- point、显式零长度 datetime range，以及时区整日跳过导致视觉区间宽度为零的 item，都必须显示可见 marker，提供独立命中区域、键盘 focus 和 Record open 入口；range 仍保留 range kind 与 end，跳过日期须保留诊断信息。
 
 ### 9.3 Hover / Selection
 
@@ -768,6 +768,12 @@ P11.1C 冻结本节 §21 的 View 配置契约；P11.1D 已补完整 Property li
 没有这些，不进入大规模 UI。
 
 ### P11.2 Timeline Read Renderer
+
+#### P11.2 Renderer Architecture（P11.2.0 PASS）
+
+本轮仅冻结 renderer 架构，不代表产品实现或验收。正式设计见[Timeline Renderer Architecture](architecture/timeline-renderer.md)。文档列明基线代码证据、17 项冻结决策、统一时间坐标与时区规则、viewport/ruler/rows 状态边界、P9 identity fence、已知 standalone Database Page blocker B1，以及风险和后续验证目标。P11.2A scale selector 只改变本实例 ephemeral zoom，不 PATCH、不请求 records；`options.timeline.scale` 仍是共享保存配置，仅未来通用 View Settings 显式保存时才走既有 CAS 和 refresh。文中 `Timeline*` 类型与 renderer 文件均为拟实施接口/路径，当前不存在。
+
+P11.2.0 只变更架构、产品标准摘要及任务/检索文档；不改产品代码、依赖、API/schema/sync/MCP 或版本。17 项决策已冻结，独立复核 0 个确定文档 blocker；文档范围/链接/UTF-8 无 BOM/diff 检查与 62 项给定 instant 和公式验算通过，限制见[本轮验证](architecture/timeline-renderer.md#19-p1120-验证与停止点)。未运行产品、浏览器滚动或性能验收。本阶段提交后停止；经明确启动后，P11.2A 才可按架构文档 §16 实施。
 
 只读完成：
 
