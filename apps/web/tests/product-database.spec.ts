@@ -167,19 +167,30 @@ type DatabaseApi = {
   databaseCreateResponseGate: Promise<void>
   signalDatabaseCreateResponseStarted: () => void
   releaseDatabaseCreateResponse: () => void
+  holdCellUpdateResponse: boolean
+  cellUpdateResponseStarted: Promise<void>
+  cellUpdateResponseGate: Promise<void>
+  signalCellUpdateResponseStarted: () => void
+  releaseCellUpdateResponse: () => void
+  failCellUpdateStatus: 400 | 500
+  conflictCellUpdateValue: DatabasePropertyValue
   offline: boolean
   failRelationCandidates: number
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'abortCellUpdatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'abortCellUpdatesAfterCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'holdCellUpdateResponse' | 'failCellUpdateStatus' | 'conflictCellUpdateValue' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
   let releaseDatabaseCreateResponse!: () => void
+  let signalCellUpdateResponseStarted!: () => void
+  let releaseCellUpdateResponse!: () => void
   const recordCreateResponseStarted = new Promise<void>((resolve) => { signalRecordCreateResponseStarted = resolve })
   const recordCreateResponseGate = new Promise<void>((resolve) => { releaseRecordCreateResponse = resolve })
   const databaseCreateResponseStarted = new Promise<void>((resolve) => { signalDatabaseCreateResponseStarted = resolve })
   const databaseCreateResponseGate = new Promise<void>((resolve) => { releaseDatabaseCreateResponse = resolve })
+  const cellUpdateResponseStarted = new Promise<void>((resolve) => { signalCellUpdateResponseStarted = resolve })
+  const cellUpdateResponseGate = new Promise<void>((resolve) => { releaseCellUpdateResponse = resolve })
   const api: DatabaseApi = {
     pages: [{ ...pageRecord }], blocks: [...seed], databases: (options.databases ?? []).map((item) => ({ ...item })), views: (options.views ?? []).map((item) => ({ ...item })),
     properties: (options.properties ?? []).map((item) => ({ ...item, ...(item.options ? { options: [...item.options] } : {}) })), records: (options.records ?? []).map((item) => ({ ...item, properties: { ...item.properties } })), requests: [],
@@ -208,6 +219,12 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     databaseCreateResponseStarted, databaseCreateResponseGate,
     signalDatabaseCreateResponseStarted: () => signalDatabaseCreateResponseStarted(),
     releaseDatabaseCreateResponse: () => releaseDatabaseCreateResponse(),
+    holdCellUpdateResponse: options.holdCellUpdateResponse ?? false,
+    cellUpdateResponseStarted, cellUpdateResponseGate,
+    signalCellUpdateResponseStarted: () => signalCellUpdateResponseStarted(),
+    releaseCellUpdateResponse: () => releaseCellUpdateResponse(),
+    failCellUpdateStatus: options.failCellUpdateStatus ?? 400,
+    conflictCellUpdateValue: options.conflictCellUpdateValue ?? 'Concurrent edit',
     offline: options.offline ?? false, failRelationCandidates: options.failRelationCandidates ?? 0,
   }
   const initialRecordCount = api.records.length
@@ -473,14 +490,18 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     }
     const cellPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/records/([^/]+)/cells/([^/]+)$`, 'u').exec(pathname)
     if (cellPath && request.method() === 'PATCH') {
-      if (api.failCellUpdates > 0) { api.failCellUpdates -= 1; return json(route, 400, { statusCode: 400, message: 'Cell update rejected' }) }
+      if (api.holdCellUpdateResponse) {
+        api.signalCellUpdateResponseStarted()
+        await api.cellUpdateResponseGate
+      }
+      if (api.failCellUpdates > 0) { api.failCellUpdates -= 1; return json(route, api.failCellUpdateStatus, { statusCode: api.failCellUpdateStatus, message: 'Cell update rejected' }) }
       const databaseItem = api.databases.find((item) => item.id === cellPath[1])!
       const recordItem = api.records.find((item) => item.id === cellPath[2])!
       const prop = api.properties.find((item) => item.id === cellPath[3])!
       const input = payload as { value: DatabasePropertyValue; expectedDatabaseVersion: number; expectedRecordVersion: number; expectedPageUpdatedAt?: string }
       if (api.conflictCellUpdates > 0) {
         api.conflictCellUpdates -= 1
-        recordItem.properties[prop.id] = 'Concurrent edit'
+        recordItem.properties[prop.id] = api.conflictCellUpdateValue
         recordItem.version += 1; databaseItem.version += 1
         return json(route, 409, { statusCode: 409, message: 'Record version conflict' })
       }
@@ -7367,3 +7388,573 @@ test('P11.1B formats, edits, validates, and reloads date values without losing r
   await expect(page.locator('.eotion-editor-content .eotion-database')).toContainText('2026-10-08 00:00 UTC (UTC)')
   expect(errors.filter(error => !error.includes('409 (Conflict)') && !error.includes('net::ERR_FAILED'))).toEqual([])
 })
+
+test('P11.3A Timeline date-property drag previews locally and commits one CAS update without changing date wire shape', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const runtimeErrors: string[] = []
+  page.on('pageerror', error => runtimeErrors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') runtimeErrors.push(message.text()) })
+  const date = property('p113a-date', rootDatabase.id, 'Date', 'date')
+  const timelineView = view('p113a-date-view', rootDatabase.id, 'Drag dates', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: {
+      scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id },
+      frozenTable: { visible: true, visibleProperties: ['root-title', date.id], propertyOrder: ['root-title', date.id] },
+    } },
+  }, 'timeline')
+  const tableView = view('p113a-date-table-view', rootDatabase.id, 'Date table')
+  const items = [
+    record('p113a-date-string', rootDatabase.id, 'p113a-date-page', { 'root-title': 'Date string', [date.id]: '2026-10-13' }),
+    record('p113a-date-start', rootDatabase.id, 'p113a-start-page', { 'root-title': 'Date start object', [date.id]: { start: '2026-10-14' } }),
+    record('p113a-date-range', rootDatabase.id, 'p113a-range-page', { 'root-title': 'Inclusive date range', [date.id]: { start: '2026-10-15', end: '2026-10-17' } }),
+  ]
+  const api = await installApi(page, [block('p113a-date-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView, tableView], properties: [...rootProperties, date], records: items, holdCellUpdateResponse: true,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const databaseBlock = page.locator('#database-block-p113a-date-block')
+  const timeline = databaseBlock.getByTestId('database-timeline')
+  const barFor = (id: string) => timeline.locator(`[data-testid="timeline-bar"][data-record-id="${id}"]`)
+  await expect(barFor(items[0]!.id)).toBeVisible()
+  await expect(databaseBlock.getByTestId('timeline-frozen-table')).toBeVisible()
+  const dayPixels = pxPerMs('month') * 86_400_000
+  const initialBar = barFor(items[0]!.id)
+  const initialBounds = await initialBar.boundingBox()
+  if (!initialBounds) throw new Error('Expected the date bar to have visible geometry')
+  await page.mouse.move(initialBounds.x + initialBounds.width / 2, initialBounds.y + initialBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(initialBounds.x + initialBounds.width / 2 + dayPixels, initialBounds.y + initialBounds.height / 2, { steps: 4 })
+  await expect(initialBar).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(initialBar).toHaveAttribute('data-preview-date', '2026-10-14')
+  await screenshot(page, 'p113a-date-drag-preview-desktop')
+  expect(api.records[0]?.properties[date.id]).toBe('2026-10-13')
+  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.includes(`/records/${items[0]!.id}/cells/`))).toHaveLength(0)
+  const previewBounds = await initialBar.boundingBox()
+  expect(previewBounds?.x).toBeCloseTo(initialBounds.x + dayPixels, 0)
+
+  await page.mouse.up()
+  await expect(initialBar).toHaveAttribute('data-drag-state', 'saving')
+  await api.cellUpdateResponseStarted
+  const firstPatch = api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${items[0]!.id}/cells/${date.id}`))
+  expect(firstPatch).toHaveLength(1)
+  expect(firstPatch[0]?.payload).toEqual({ value: '2026-10-14', expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+  expect(api.records[0]?.properties[date.id]).toBe('2026-10-13')
+  await expect(initialBar).toHaveAttribute('data-preview-date', '2026-10-14')
+  api.releaseCellUpdateResponse()
+  api.holdCellUpdateResponse = false
+  await expect.poll(() => api.records[0]?.properties[date.id]).toBe('2026-10-14')
+  await expect.poll(() => barFor(items[0]!.id).count()).toBe(1)
+  await expect(initialBar).toHaveAttribute('data-drag-state', 'idle')
+  await expect(databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="${items[0]!.id}"] [data-property-id="${date.id}"]`)).toContainText('2026-10-14')
+  await screenshot(page, 'p113a-date-drag-committed-desktop')
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+
+  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Date table', exact: true }).click()
+  const table = databaseBlock.locator('table')
+  await expect(table.locator('tbody tr').filter({ hasText: 'Date string' })).toContainText('2026-10-14')
+  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Drag dates', exact: true }).click()
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  const mobileBar = barFor(items[0]!.id)
+  const mobileBounds = await mobileBar.boundingBox()
+  if (!mobileBounds) throw new Error('Expected the date bar to be visible at the 390px viewport')
+  const mobileX = mobileBounds.x + mobileBounds.width / 2
+  const mobileY = mobileBounds.y + mobileBounds.height / 2
+  await page.mouse.move(mobileX, mobileY)
+  await page.mouse.down()
+  await page.mouse.move(mobileX + dayPixels, mobileY, { steps: 4 })
+  await expect(mobileBar).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(mobileBar).toHaveAttribute('data-preview-date', '2026-10-15')
+  await screenshot(page, 'p113a-date-drag-preview-mobile390')
+  await page.mouse.up()
+  await expect.poll(() => api.records[0]?.properties[date.id]).toBe('2026-10-15')
+  await screenshot(page, 'p113a-date-drag-committed-mobile390')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+  await page.setViewportSize({ width: 1440, height: 900 })
+
+  const dragOneDay = async (id: string) => {
+    const bar = barFor(id)
+    await bar.scrollIntoViewIfNeeded()
+    const bounds = await bar.boundingBox()
+    if (!bounds) throw new Error(`Expected visible Timeline bar ${id}`)
+    const x = bounds.x + bounds.width / 2
+    const y = bounds.y + bounds.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x + dayPixels, y, { steps: 4 })
+    await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+    await page.mouse.up()
+    await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  }
+  for (const item of items.slice(1)) {
+    const previous = structuredClone(item.properties[date.id])
+    await dragOneDay(item.id)
+    const expected = item.id === 'p113a-date-start'
+      ? { start: '2026-10-15' }
+      : { start: '2026-10-16', end: '2026-10-18' }
+    await expect.poll(() => api.records.find(record => record.id === item.id)?.properties[date.id]).toEqual(expected)
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`))).toHaveLength(1)
+    expect(previous).not.toEqual(expected)
+  }
+  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.includes('/cells/'))).toHaveLength(4)
+  await page.reload()
+  await expect(barFor(items[0]!.id)).not.toHaveAttribute('data-preview-date', /.+/u)
+  await expect(timeline).toContainText('2026-10-15')
+  await expect(timeline).toContainText('2026-10-15')
+  await expect(timeline).toContainText('2026-10-16 → 2026-10-18')
+  expect(runtimeErrors.filter(error => !error.includes('net::ERR_FAILED'))).toEqual([])
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0)
+})
+
+test('P11.3A Timeline datetime drag preserves timezone, milliseconds, and range duration; start-end bars stay read-only', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+  const datetime = property('p113a-datetime', rootDatabase.id, 'When', 'date')
+  const start = property('p113a-start', rootDatabase.id, 'Start', 'date')
+  const end = property('p113a-end', rootDatabase.id, 'End', 'date')
+  const datetimeView = view('p113a-datetime-view', rootDatabase.id, 'Datetime drag', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'day', dateSource: { mode: 'date-property', propertyId: datetime.id } } },
+  }, 'timeline')
+  const startEndView = view('p113a-start-end-view', rootDatabase.id, 'Start-end read-only', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'day', dateSource: { mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id } } },
+  }, 'timeline')
+  const items = [
+    record('p113a-datetime-point', rootDatabase.id, 'p113a-datetime-point-page', { 'root-title': 'Timed point', [datetime.id]: { start: '2026-10-13T12:30:12.345Z', timeZone: 'America/New_York' }, [start.id]: { start: '2026-10-13T12:30:12.345Z', timeZone: 'America/New_York' } }),
+    record('p113a-datetime-range', rootDatabase.id, 'p113a-datetime-range-page', { 'root-title': 'Timed range', [datetime.id]: { start: '2026-10-13T13:15:12.345Z', end: '2026-10-13T14:45:45.678Z', timeZone: 'America/New_York' }, [start.id]: { start: '2026-10-13T13:15:12.345Z', timeZone: 'America/New_York' }, [end.id]: { start: '2026-10-13T14:45:45.678Z', timeZone: 'America/New_York' } }),
+  ]
+  const api = await installApi(page, [
+    block('p113a-datetime-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: datetimeView.id } }, 100),
+    block('p113a-start-end-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: startEndView.id } }, 200),
+  ], { databases: [rootDatabase], views: [datetimeView, startEndView], properties: [...rootProperties, datetime, start, end], records: items })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-p113a-datetime-block').getByTestId('database-timeline')
+  const readonlyTimeline = page.locator('#database-block-p113a-start-end-block').getByTestId('database-timeline')
+  const hourPixels = pxPerMs('day') * 3_600_000
+  const moveByHour = async (id: string) => {
+    const bar = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${id}"]`)
+    const bounds = await bar.boundingBox()
+    if (!bounds) throw new Error(`Expected visible datetime bar ${id}`)
+    const x = bounds.x + bounds.width / 2
+    const y = bounds.y + bounds.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x + hourPixels, y, { steps: 4 })
+    await expect(bar).toHaveAttribute('data-preview-date', /2026-10-13 /u)
+    await page.mouse.up()
+    await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  }
+  await moveByHour(items[0]!.id)
+  await moveByHour(items[1]!.id)
+  expect(api.records.find(item => item.id === items[0]!.id)?.properties[datetime.id]).toEqual({ start: '2026-10-13T13:30:12.345Z', timeZone: 'America/New_York' })
+  expect(api.records.find(item => item.id === items[1]!.id)?.properties[datetime.id]).toEqual({ start: '2026-10-13T14:15:12.345Z', end: '2026-10-13T15:45:45.678Z', timeZone: 'America/New_York' })
+  await expect(readonlyTimeline.locator('[data-testid="timeline-bar"][data-record-id="p113a-datetime-point"]')).toHaveAttribute('data-draggable', 'false')
+  const readonlyBar = readonlyTimeline.locator('[data-testid="timeline-bar"][data-record-id="p113a-datetime-point"]')
+  const readonlyBounds = await readonlyBar.boundingBox()
+  if (!readonlyBounds) throw new Error('Expected start-end bar to remain visible')
+  await page.mouse.move(readonlyBounds.x + 10, readonlyBounds.y + 12)
+  await page.mouse.down()
+  await page.mouse.move(readonlyBounds.x + 10 + hourPixels, readonlyBounds.y + 12, { steps: 4 })
+  await expect(readonlyBar).toHaveAttribute('data-drag-state', 'idle')
+  await page.mouse.up()
+  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.includes('/cells/'))).toHaveLength(2)
+  await page.reload()
+  await expect(timeline).toContainText('America/New_York')
+  expect(api.records.find(item => item.id === items[1]!.id)?.properties[datetime.id]).toEqual({ start: '2026-10-13T14:15:12.345Z', end: '2026-10-13T15:45:45.678Z', timeZone: 'America/New_York' })
+})
+
+test('P11.3A Timeline rolls back failed and conflicted drags without retrying, and cancellation/no-op/offline stays write-free', async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const date = property('p113a-failure-date', rootDatabase.id, 'Date', 'date')
+  const tableView = view('p113a-failure-table-view', rootDatabase.id, 'Failure table')
+  const timelineView = view('p113a-failure-view', rootDatabase.id, 'Failed drags', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } },
+  }, 'timeline')
+  const item = record('p113a-failure-record', rootDatabase.id, 'p113a-failure-page', { 'root-title': 'Failure row', [date.id]: '2026-10-13' })
+  const api = await installApi(page, [block('p113a-failure-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView, tableView], properties: [...rootProperties, date], records: [item],
+    conflictCellUpdateValue: '2026-10-15',
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Failure row', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-p113a-failure-block').getByTestId('database-timeline')
+  const bar = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${item.id}"]`)
+  const dayPixels = pxPerMs('month') * 86_400_000
+  const drag = async (deltaX = dayPixels) => {
+    const bounds = await bar.boundingBox()
+    if (!bounds) throw new Error('Expected failure test bar to be visible')
+    const x = bounds.x + bounds.width / 2
+    const y = bounds.y + bounds.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x + deltaX, y, { steps: 4 })
+    await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+    await page.mouse.up()
+    await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  }
+
+  // Bump the server record after pointerdown has captured its expected version.
+  const staleBounds = await bar.boundingBox()
+  if (!staleBounds) throw new Error('Expected failure test bar before stale-CAS drag')
+  const staleX = staleBounds.x + staleBounds.width / 2
+  const staleY = staleBounds.y + staleBounds.height / 2
+  api.holdCellUpdateResponse = true
+  await page.mouse.move(staleX, staleY)
+  await page.mouse.down()
+  await expect(bar).toHaveAttribute('data-drag-state', 'armed')
+  const capturedRecordVersion = api.records[0]!.version
+  await page.mouse.move(staleX + dayPixels, staleY, { steps: 4 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  await page.mouse.up()
+  await api.cellUpdateResponseStarted
+  api.records[0]!.version += 1
+  api.releaseCellUpdateResponse()
+  api.holdCellUpdateResponse = false
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  await expect.poll(() => api.records[0]?.properties[date.id]).toBe('2026-10-13')
+  await expect(bar).not.toHaveAttribute('data-preview-date', /.+/u)
+  await expect(bar).toHaveAttribute('title', /2026-10-13/u)
+  const stalePatch = api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`))
+  expect(stalePatch).toHaveLength(1)
+  expect(stalePatch[0]?.payload.expectedRecordVersion).toBe(capturedRecordVersion)
+
+  api.conflictCellUpdates = 1
+  await drag()
+  await expect.poll(() => api.records[0]?.properties[date.id]).toBe('2026-10-15')
+  await expect(bar).not.toHaveAttribute('data-preview-date', /.+/u)
+  await screenshot(page, 'p113a-date-drag-rollback-desktop')
+  await expect(bar).toHaveAttribute('title', /2026-10-15/u)
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`))).toHaveLength(2)
+
+  for (const status of [400, 500] as const) {
+    api.failCellUpdates = 1
+    api.failCellUpdateStatus = status
+    await drag()
+    await expect.poll(() => api.records[0]?.properties[date.id]).toBe('2026-10-15')
+    await expect(bar).not.toHaveAttribute('data-preview-date', /.+/u)
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`))).toHaveLength(status === 400 ? 3 : 4)
+  }
+
+  const patchesBeforeNoOps = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`)).length
+  const beforeNoOps = patchesBeforeNoOps()
+  const bounds = await bar.boundingBox()
+  if (!bounds) throw new Error('Expected failure test bar to remain visible')
+  const x = bounds.x + bounds.width / 2
+  const y = bounds.y + bounds.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.up()
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await page.getByRole('button', { name: '关闭记录' }).click()
+
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + dayPixels, y, { steps: 3 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  await page.keyboard.press('Escape')
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  await page.mouse.up()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + dayPixels, y, { steps: 3 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  await bar.evaluate(element => element.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, pointerId: 1 })))
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  await page.mouse.up()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  expect(patchesBeforeNoOps()).toBe(beforeNoOps)
+
+  const clickBar = async () => {
+    const clickBounds = await bar.boundingBox()
+    if (!clickBounds) throw new Error('Expected the bar to stay visible for click suppression checks')
+    await page.mouse.click(clickBounds.x + clickBounds.width / 2, clickBounds.y + clickBounds.height / 2)
+  }
+  await clickBar()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await page.getByRole('button', { name: '关闭记录' }).click()
+  await bar.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await page.getByRole('button', { name: '关闭记录' }).click()
+
+  const scroller = timeline.getByTestId('timeline-scroll')
+  const scrollBounds = await bar.boundingBox()
+  if (!scrollBounds) throw new Error('Expected bar geometry for the same-task scroll fence')
+  const scrollX = scrollBounds.x + scrollBounds.width / 2
+  const scrollY = scrollBounds.y + scrollBounds.height / 2
+  await page.mouse.move(scrollX, scrollY)
+  await page.mouse.down()
+  await page.mouse.move(scrollX + dayPixels, scrollY, { steps: 3 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  const beforeScrollFence = patchesBeforeNoOps()
+  await page.evaluate(() => {
+    const timeline = document.querySelector('#database-block-p113a-failure-block [data-testid="database-timeline"]')!
+    const scroller = timeline.querySelector<HTMLElement>('[data-testid="timeline-scroll"]')!
+    const bar = timeline.querySelector<HTMLElement>('[data-testid="timeline-bar"][data-record-id="p113a-failure-record"]')!
+    const bounds = bar.getBoundingClientRect()
+    scroller.scrollLeft += 40
+    bar.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1, button: 0, isPrimary: true, clientX: bounds.x + bounds.width / 2, clientY: bounds.y + bounds.height / 2 }))
+  })
+  await page.mouse.up()
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  expect(patchesBeforeNoOps()).toBe(beforeScrollFence)
+
+  await context.setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+  await expect(bar).toHaveAttribute('data-draggable', 'false')
+  const offlineBounds = await bar.boundingBox()
+  if (!offlineBounds) throw new Error('Expected offline bar to remain visible')
+  await page.mouse.move(offlineBounds.x + 10, offlineBounds.y + 12)
+  await page.mouse.down()
+  await page.mouse.move(offlineBounds.x + 10 + dayPixels, offlineBounds.y + 12, { steps: 3 })
+  await page.mouse.up()
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  expect(patchesBeforeNoOps()).toBe(beforeNoOps)
+  expect(api.records[0]?.properties[date.id]).toBe('2026-10-15')
+})
+
+test('P11.3A drag preserves the open record editor draft and Page/Editor/NodeView identity without opening a second drawer', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const date = property('p113a-identity-date', rootDatabase.id, 'Date', 'date')
+  const timelineView = view('p113a-identity-view', rootDatabase.id, 'Identity Timeline', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: {
+      scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id },
+      frozenTable: { visible: true, visibleProperties: ['root-title', date.id], propertyOrder: ['root-title', date.id] },
+    } },
+  }, 'timeline')
+  const item = record('p113a-identity-record', rootDatabase.id, 'p113a-identity-page', { 'root-title': 'Identity row', [date.id]: '2026-10-13' })
+  const api = await installApi(page, [block('p113a-identity-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: [item],
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Identity row', role: 'database-record' })
+  const bodyBlock = block('p113a-identity-body', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Identity body' }] }, 100)
+  bodyBlock.pageId = item.pageId
+  api.blocks.push(bodyBlock)
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const databaseBlock = page.locator('#database-block-p113a-identity-block')
+  const timeline = databaseBlock.getByTestId('database-timeline')
+  const frozenTitle = databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="${item.id}"] [data-property-id="root-title"] button`)
+  await frozenTitle.click()
+  const drawer = page.locator('[data-overlay-mode="drawer"]')
+  const titleDraft = drawer.getByRole('textbox', { name: '记录标题' })
+  await expect(titleDraft).toHaveValue('Identity row')
+  await titleDraft.fill('Edited record title')
+  await titleDraft.press('Tab')
+  await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Edited record title')
+  const bodyDraft = drawer.locator('.eotion-editor-content .tiptap')
+  await expect(bodyDraft).toContainText('Identity body')
+  await bodyDraft.fill('Unsaved body draft')
+  await expect(bodyDraft).toContainText('Unsaved body draft')
+  const bar = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${item.id}"]`)
+  await bar.scrollIntoViewIfNeeded()
+  await expect(bar).toBeVisible()
+  const drawerLeft = await drawer.evaluate(element => element.getBoundingClientRect().left)
+  await timeline.getByTestId('timeline-scroll').evaluate((element, drawerLeftEdge) => {
+    const scroller = element as HTMLElement
+    const bar = scroller.querySelector<HTMLElement>('[data-testid="timeline-bar"][data-record-id="p113a-identity-record"]')!
+    const bounds = bar.getBoundingClientRect()
+    if (bounds.x + bounds.width / 2 >= drawerLeftEdge - 24) scroller.scrollLeft += bounds.x + bounds.width / 2 - drawerLeftEdge + 96
+  }, drawerLeft)
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await page.evaluate(() => {
+    const drawer = document.querySelector('[data-overlay-mode="drawer"]')
+    const recordEditor = drawer?.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null
+    let host = (drawer as (Element & { __vueParentComponent?: { parent?: any } }) | null)?.__vueParentComponent as ({ parent?: any; type?: { __name?: string; setupState?: any } } | undefined)
+    while (host && host.type?.__name !== 'DatabaseRecordHost') host = host.parent
+    const getTiptap = (node: Element | null) => {
+      const component = (node as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null)?.__vueParentComponent
+      const candidate = component?.exposed?.editor
+      const editor = candidate?.view ? candidate : candidate?.value
+      return editor?.view ? editor : null
+    }
+    const record = host?.setupState?.content?.record
+    const pageTiptap = getTiptap(document.querySelector('.document-wrap .eotion-editor'))
+    const recordTiptap = getTiptap(recordEditor)
+    const identity = {
+      nodes: [
+        document.querySelector('.document-wrap'), document.querySelector('.eotion-editor-content'),
+        document.querySelector('#database-block-p113a-identity-block'),
+        document.querySelector('#database-block-p113a-identity-block [data-testid="database-timeline"]'),
+        drawer, recordEditor,
+        document.querySelector('[data-testid="timeline-bar"][data-record-id="p113a-identity-record"]'),
+      ],
+      components: [
+        (document.querySelector('.eotion-editor-content') as Element & { __vueParentComponent?: unknown } | null)?.__vueParentComponent,
+        (document.querySelector('#database-block-p113a-identity-block') as Element & { __vueParentComponent?: unknown } | null)?.__vueParentComponent,
+        (recordEditor as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent,
+        host,
+      ],
+      record, pageId: record?.pageId, pageTiptap, recordTiptap,
+    }
+    if (identity.nodes.some(node => !node) || identity.components.some(component => !component) || !record || !identity.pageId || !pageTiptap?.view || !recordTiptap?.view) throw new Error('Expected Page, Editor, NodeView, Drawer, RecordEditor, RecordHost record/pageId, and Tiptap identities')
+    ;(window as Window & { __p113aIdentity?: typeof identity }).__p113aIdentity = identity
+  })
+  const bounds = await bar.boundingBox()
+  if (!bounds) throw new Error('Expected identity Timeline bar geometry')
+  const x = bounds.x + bounds.width / 2
+  const y = bounds.y + bounds.height / 2
+  expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="timeline-bar"]')?.getAttribute('data-record-id'), { x, y })).toBe(item.id)
+  const dayPixels = pxPerMs('month') * 86_400_000
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + dayPixels, y, { steps: 4 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(bar).toHaveAttribute('data-preview-date', '2026-10-14')
+  const expectIdentityPreserved = async () => expect.poll(() => page.evaluate(() => {
+    const before = (window as Window & { __p113aIdentity?: { nodes: Element[]; components: unknown[]; record: unknown; pageId: unknown; pageTiptap: any; recordTiptap: any } }).__p113aIdentity
+    const drawer = document.querySelector('[data-overlay-mode="drawer"]')
+    const recordEditor = drawer?.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null
+    let host = (drawer as (Element & { __vueParentComponent?: { parent?: any } }) | null)?.__vueParentComponent as ({ parent?: any; type?: { __name?: string } } | undefined)
+    while (host && host.type?.__name !== 'DatabaseRecordHost') host = host.parent
+    const getTiptap = (node: Element | null) => {
+      const component = (node as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null)?.__vueParentComponent
+      const candidate = component?.exposed?.editor
+      const editor = candidate?.view ? candidate : candidate?.value
+      return editor?.view ? editor : null
+    }
+    const record = (host as any)?.setupState?.content?.record
+    const currentNodes = [
+      document.querySelector('.document-wrap'), document.querySelector('.eotion-editor-content'),
+      document.querySelector('#database-block-p113a-identity-block'),
+      document.querySelector('#database-block-p113a-identity-block [data-testid="database-timeline"]'),
+      drawer, recordEditor,
+      document.querySelector('[data-testid="timeline-bar"][data-record-id="p113a-identity-record"]'),
+    ]
+    const currentComponents = [
+      (document.querySelector('.eotion-editor-content') as Element & { __vueParentComponent?: unknown } | null)?.__vueParentComponent,
+      (document.querySelector('#database-block-p113a-identity-block') as Element & { __vueParentComponent?: unknown } | null)?.__vueParentComponent,
+      recordEditor?.__vueParentComponent, host,
+    ]
+    return Boolean(before && currentNodes.every((node, index) => node === before.nodes[index])
+      && currentComponents.every((component, index) => component === before.components[index])
+      && record === before.record && record?.pageId === before.pageId
+      && getTiptap(document.querySelector('.document-wrap .eotion-editor')) === before.pageTiptap
+      && getTiptap(recordEditor) === before.recordTiptap)
+  })).toBe(true)
+  await expectIdentityPreserved()
+  await expect(titleDraft).toHaveValue('Edited record title')
+  await expect(bodyDraft).toContainText('Unsaved body draft')
+  expect(api.records[0]?.properties[date.id]).toBe('2026-10-13')
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(0)
+  await page.mouse.up()
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  await expect.poll(() => api.records[0]?.properties[date.id]).toBe('2026-10-14')
+  await expect(databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="${item.id}"] [data-property-id="${date.id}"]`)).toContainText('2026-10-14')
+  await expectIdentityPreserved()
+  await expect(drawer).toBeVisible()
+  await expect(titleDraft).toHaveValue('Edited record title')
+  await expect(bodyDraft).toContainText('Unsaved body draft')
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`))).toHaveLength(1)
+  await page.getByRole('button', { name: '关闭记录' }).click()
+})
+
+for (const total of [100, 500] as const) {
+test(`P11.3A drag preview does not rebuild ${total}-row Timeline projections or mutate unrelated bars`, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const date = property('p113a-500-date', rootDatabase.id, 'Date', 'date')
+  const timelineView = view(`p113a-${total}-view`, rootDatabase.id, `${total} drag rows`, {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: {
+      scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id },
+      frozenTable: { visible: true, visibleProperties: ['root-title', date.id], propertyOrder: ['root-title', date.id] },
+    } },
+  }, 'timeline')
+  const items = Array.from({ length: total }, (_, index) => record(`p113a-${total}-${String(index).padStart(3, '0')}`, rootDatabase.id, `p113a-${total}-page-${index}`, {
+    'root-title': `Row ${index}`, [date.id]: '2026-10-13',
+  }))
+  const api = await installApi(page, [block(`p113a-${total}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const databaseBlock = page.locator(`#database-block-p113a-${total}-block`)
+  const timeline = databaseBlock.getByTestId('database-timeline')
+  const projectedCount = () => timeline.evaluate(root => (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState?.projectedItems?.length)
+  await expect.poll(projectedCount).toBe(25)
+  let loaded = 25
+  const loadMore = databaseBlock.getByRole('button', { name: '加载更多' })
+  while (loaded < total) {
+    await expect.poll(() => loadMore.count()).toBe(1)
+    await loadMore.click()
+    loaded = Math.min(loaded + 25, total)
+    await expect.poll(projectedCount).toBe(loaded)
+  }
+  await expect(loadMore).toHaveCount(0)
+  await page.evaluate(() => { (document.querySelector('.document-wrap') as HTMLElement).scrollTop = 0 })
+  await expect.poll(() => timeline.locator('[data-row-window-first]').getAttribute('data-row-window-first')).toBe('0')
+  const target = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${items[0]!.id}"]`)
+  await expect(target).toBeVisible()
+  const targetRecordId = await target.getAttribute('data-record-id')
+  if (!targetRecordId) throw new Error('Expected visible Timeline bar to identify its record')
+  const bounds = await target.boundingBox()
+  if (!bounds) throw new Error('Expected first 500-row Timeline bar to be visible')
+  const x = bounds.x + bounds.width / 2
+  const y = bounds.y + bounds.height / 2
+  await page.mouse.move(x, y)
+  await target.hover()
+  const stableBounds = await target.boundingBox()
+  if (!stableBounds) throw new Error('Expected the hovered preview bar to remain visible')
+  const stableX = stableBounds.x + stableBounds.width / 2
+  const stableY = stableBounds.y + stableBounds.height / 2
+  await page.mouse.move(stableX, stableY)
+  expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="timeline-bar"]')?.getAttribute('data-record-id'), { x: stableX, y: stableY })).toBe(items[0]!.id)
+  await page.mouse.down()
+  await expect(target).toHaveAttribute('data-drag-state', 'armed')
+  await timeline.evaluate((root, targetRecordId) => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    const bars = [...root.querySelectorAll<HTMLElement>('[data-testid="timeline-bar"]')]
+    const otherBars = bars.filter(bar => bar.dataset.recordId !== targetRecordId)
+    if (!setup || !Array.isArray(setup.projectedItems) || !(setup.temporalMap instanceof Map) || !Array.isArray(setup.rowGeometry) || !(setup.frozenDisplayMap instanceof Map) || !otherBars.length) throw new Error('Expected complete Timeline projections and multiple mounted bars')
+    const mutationState = { count: 0, updatedHooks: 0 }
+    const otherComponents = otherBars.map(bar => (bar as HTMLElement & { __vueParentComponent?: { u?: Array<() => void> } }).__vueParentComponent)
+    if (otherComponents.some(component => !component)) throw new Error('Expected every unrelated bar to expose its Vue instance for update-hook evidence')
+    for (const component of otherComponents) component!.u = [...(component!.u ?? []), () => { mutationState.updatedHooks += 1 }]
+    const observer = new MutationObserver(mutations => { mutationState.count += mutations.length })
+    for (const bar of otherBars) observer.observe(bar, { attributes: true, childList: true, subtree: true, characterData: true })
+    ;(window as Window & { __p113aPreviewSnapshot?: Record<string, unknown> }).__p113aPreviewSnapshot = {
+      projectedItems: setup.projectedItems, temporalMap: setup.temporalMap, rowGeometry: setup.rowGeometry,
+      frozenDisplayMap: setup.frozenDisplayMap, otherBars, otherComponents, observer, mutationState,
+    }
+  }, targetRecordId)
+  await page.mouse.move(stableX + pxPerMs('month') * 86_400_000, stableY, { steps: 4 })
+  await expect(target).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(target).toHaveAttribute('data-preview-date', '2026-10-14')
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())))
+  const unchanged = await timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    const before = (window as Window & { __p113aPreviewSnapshot?: Record<string, any> }).__p113aPreviewSnapshot
+    if (!setup || !before) throw new Error('Expected stored 500-row Timeline preview snapshot')
+    const mutations = before.observer.takeRecords()
+    before.observer.disconnect()
+    return {
+      projectedItems: setup.projectedItems === before.projectedItems,
+      temporalMap: setup.temporalMap === before.temporalMap,
+      rowGeometry: setup.rowGeometry === before.rowGeometry,
+      frozenDisplayMap: setup.frozenDisplayMap === before.frozenDisplayMap,
+      unrelatedBarMutations: mutations.length + before.mutationState.count,
+      unrelatedBarUpdatedHooks: before.mutationState.updatedHooks,
+      unrelatedBarComponentsSame: before.otherBars.every((bar: HTMLElement, index: number) => bar.__vueParentComponent === before.otherComponents[index]),
+    }
+  })
+  expect(unchanged).toMatchObject({ projectedItems: true, temporalMap: true, rowGeometry: true, frozenDisplayMap: true, unrelatedBarMutations: 0, unrelatedBarUpdatedHooks: 0, unrelatedBarComponentsSame: true })
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(0)
+  expect(api.records.find(item => item.id === targetRecordId)?.properties[date.id]).toBe('2026-10-13')
+  await page.keyboard.press('Escape')
+  await page.mouse.up()
+  await expect(target).toHaveAttribute('data-drag-state', 'idle')
+})
+}

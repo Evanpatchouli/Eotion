@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { DatabasePropertyResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { DatabaseTimelineViewOptions, DatabaseViewConfig } from '@eotion/domain/database'
+import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
+import type { TimelineMoveCommand } from './timeline/mutation'
 import { computed, ref, watch } from 'vue'
 
 import { IconName } from '../ui/icons'
@@ -24,6 +26,10 @@ const props = defineProps<{
   properties: readonly DatabasePropertyResponse[]
   formatValue: (value: unknown, property: DatabasePropertyResponse) => string
   selectedPageId: string | null
+  writable: boolean
+  databaseVersion: number
+  prepareDrag: (recordId: string) => TimelineBarDragSession | null
+  moveRecord: (command: TimelineMoveCommand) => Promise<boolean>
 }>()
 
 const emit = defineEmits<{
@@ -41,6 +47,9 @@ const focusedRecordId = ref<string | null>(null)
 const hoveredRecordId = ref<string | null>(null)
 const timelineOptions = computed(() => (props.config.options as DatabaseTimelineViewOptions | undefined)?.timeline)
 const configuredScale = computed(() => timelineOptions.value?.scale ?? 'month')
+const barDraggable = computed(() => props.writable && timelineOptions.value?.dateSource?.mode === 'date-property')
+const barTransform = computed(() => viewport.state.value ? viewportTransform(viewport.state.value) : null)
+const recordVersionById = computed(() => new Map(props.records.map(record => [record.id, record.version])))
 const frozenColumns = computed(() => resolveFrozenTableProperties(props.properties, props.config))
 const frozenTableVisible = computed(() => timelineOptions.value?.frozenTable?.visible === true)
 const frozenDisplayMap = computed(() => frozenTableVisible.value
@@ -91,6 +100,30 @@ function onFocusOut(event: FocusEvent): void {
 
 function focusRow(rowIndex: number): void {
   focusedRecordId.value = projectedItems.value[rowIndex]?.recordId ?? null
+}
+
+function prepareTimelineDrag(recordId: string): TimelineBarDragSession | null {
+  if (!barDraggable.value) return null
+  const session = props.prepareDrag(recordId)
+  return session?.expectedDatabaseVersion === props.databaseVersion ? session : null
+}
+
+function isBarViewportCurrent(snapshot: NonNullable<typeof barTransform.value>): boolean {
+  const element = scroller.value
+  const current = viewport.state.value
+  if (!element?.isConnected || !current) return false
+  const transform = viewportTransform(current)
+  return Math.abs(element.scrollLeft - snapshot.scrollLeft) <= 0.5
+    && Math.abs(element.clientWidth - snapshot.width) <= 0.5
+    && Math.abs(transform.scrollLeft - snapshot.scrollLeft) <= 0.5
+    && Math.abs(transform.width - snapshot.width) <= 0.5
+    && transform.originMs === snapshot.originMs
+    && transform.pxPerMs === snapshot.pxPerMs
+    && transform.scale === snapshot.scale
+    && transform.generation === snapshot.generation
+    && transform.displayTimeZone === snapshot.displayTimeZone
+    && viewport.effectiveScale.value === snapshot.scale
+    && viewport.displayTimeZone.value === snapshot.displayTimeZone
 }
 
 function onUnscheduledToggle(event: Event): void {
@@ -161,6 +194,14 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
         :rows="rowGeometry"
         :selected-page-id="selectedPageId"
         :hovered-record-id="hoveredRecordId"
+        :scope="scope"
+        :transform="barTransform"
+        :display-time-zone="viewport.displayTimeZone.value"
+        :draggable="barDraggable"
+        :record-version-by-id="recordVersionById"
+        :prepare-drag="prepareTimelineDrag"
+        :commit-drag="moveRecord"
+        :is-viewport-current="isBarViewportCurrent"
         @scroller-ref="viewport.bindScroller"
         @ruler-ref="viewport.bindRulerAnchor"
         @body-ref="viewport.bindBody"

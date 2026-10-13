@@ -68,7 +68,7 @@ function visibleIndices(items: readonly TimelineItemProjection[], window: Timeli
   return indices.sort((a, b) => a - b)
 }
 
-function itemGeometry(item: ScheduledTimelineItem, temporal: TimelineTemporalGeometry, rowIndex: number, state: Transform): TimelineItemGeometry {
+export function layoutTimelineItem(item: ScheduledTimelineItem, temporal: TimelineTemporalGeometry, rowIndex: number, state: Transform): TimelineItemGeometry {
   const rawX = timeToX(temporal.startMs, state)
   const rawEndX = temporal.visualEndMs === null ? rawX : timeToX(temporal.visualEndMs, state)
   const rawWidth = Math.max(0, rawEndX - rawX)
@@ -111,7 +111,7 @@ export function layoutTimelineItems(items: readonly TimelineItemProjection[], te
       rowIndex,
       top,
       height: TIMELINE_ROW_HEIGHT,
-      geometry: item.kind === 'unscheduled' || !temporal ? null : itemGeometry(item, temporal, rowIndex, state),
+      geometry: item.kind === 'unscheduled' || !temporal ? null : layoutTimelineItem(item, temporal, rowIndex, state),
     }
   })
 }

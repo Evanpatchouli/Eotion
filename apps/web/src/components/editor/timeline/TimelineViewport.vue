@@ -3,6 +3,9 @@ import { computed } from 'vue'
 import type { TimelineTick, TimelineViewportState } from './types'
 import type { TimelineRowGeometry, TimelineRowWindow } from './layout'
 import type { TimelineUnscheduledReason } from './projection'
+import type { TimelineBarDragSession } from './useTimelineBarDrag'
+import type { TimelineMoveCommand } from './mutation'
+import type { Transform } from './types'
 import TimelineGrid from './TimelineGrid.vue'
 import TimelineRuler from './TimelineRuler.vue'
 import TimelineTodayLine from './TimelineTodayLine.vue'
@@ -20,6 +23,14 @@ const props = defineProps<{
   rows: TimelineRowGeometry[]
   selectedPageId: string | null
   hoveredRecordId: string | null
+  scope: string
+  transform: Transform | null
+  displayTimeZone: string
+  draggable: boolean
+  recordVersionById: ReadonlyMap<string, number>
+  prepareDrag: (recordId: string) => TimelineBarDragSession | null
+  commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
+  isViewportCurrent: (snapshot: Transform) => boolean
 }>()
 
 const rulerAnchorStyle = computed(() => ({ transform: `translateY(${props.pinY}px)` }))
@@ -123,11 +134,20 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
               <TimelineBar
                 v-if="row.geometry && !row.geometry.offscreen"
                 :geometry="row.geometry"
+                :item="row.item"
                 :title="row.item.title"
                 :date-label="row.item.dateLabel"
                 :visible-properties="row.item.visibleProperties"
                 :selected="selectedPageId === row.item.pageId"
                 :hovered="hoveredRecordId === row.item.recordId"
+                :scope="scope"
+                :transform="transform"
+                :display-time-zone="displayTimeZone"
+                :record-version="recordVersionById.get(row.item.recordId)"
+                :draggable="draggable && row.item.kind !== 'unscheduled'"
+                :prepare-drag="prepareDrag"
+                :commit-drag="commitDrag"
+                :is-viewport-current="isViewportCurrent"
                 @focus-row="emit('focusRow', row.rowIndex)"
                 @click="emit('openRecord', $event, row.item.pageId)"
               />
@@ -154,6 +174,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-body { position:relative; width:100%; min-height:240px; isolation:isolate; }
 .eotion-timeline-draw-window { position:absolute; z-index:0; left:0; overflow:hidden; pointer-events:none; }
 .eotion-timeline-row { position:absolute; z-index:2; left:0; width:100%; }
+.eotion-timeline-row:has(.eotion-timeline-bar[data-drag-state="dragging"]), .eotion-timeline-row:has(.eotion-timeline-bar[data-drag-state="saving"]) { z-index:6; }
 .eotion-timeline-row.is-hovered { background:color-mix(in srgb, var(--e-color-hover, var(--editor-hover)) 48%, transparent); }
 .eotion-timeline-row.is-selected { background:color-mix(in srgb, var(--e-color-selected, var(--editor-selected)) 56%, transparent); }
 .eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DatabasePropertyResponse, DatabasePropertyTypeChangeRequest, DatabaseRecordCellUpdateRequest, DatabaseViewRecordsResponse, DatabaseViewCreateRequest, DatabaseViewResponse, DatabaseResponse } from '@eotion/contracts'
-import { DEFAULT_DATABASE_VIEW_CONFIG, isValidFormulaExpression, validateDatabasePropertyDependencies, validateDatabaseViewConfig, type DatabaseFilter, type DatabaseFilterOperator, type DatabaseViewConfig, type DatabasePropertyType, type DatabasePropertyConfig, type DatabaseFormulaResultType, type FormulaExpression, type DatabaseViewType, type DatabasePropertyValue } from '@eotion/domain/database'
+import { DEFAULT_DATABASE_VIEW_CONFIG, isValidFormulaExpression, validateDatabasePropertyDependencies, validateDatabaseViewConfig, type DatabaseFilter, type DatabaseFilterOperator, type DatabaseViewConfig, type DatabasePropertyType, type DatabasePropertyConfig, type DatabaseFormulaResultType, type FormulaExpression, type DatabaseViewType, type DatabasePropertyValue, type DatabaseTimelineViewOptions } from '@eotion/domain/database'
 import { isValidCanonicalUtcInstant, isValidDatabaseDateValue, normalizeDatabaseDateValue } from '@eotion/domain/date'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
 import { createLocalId } from '@eotion/storage'
@@ -21,6 +21,8 @@ import DatabaseListView from './DatabaseListView.vue'
 import DatabaseBoardView from './DatabaseBoardView.vue'
 import DatabaseTimelineView from './DatabaseTimelineView.vue'
 import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTitleColumn } from './timeline/frozenTable'
+import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
+import type { TimelineMoveCommand } from './timeline/mutation'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -225,6 +227,7 @@ const columnDraftProperties = computed(() => columnDraft.value.order
   .map(id => properties.value.find(property => property.id === id))
   .filter((property): property is DatabasePropertyResponse => Boolean(property)))
 const records = ref<TableRecord[]>([])
+const recordsById = computed(() => new Map(records.value.map(record => [record.id, record])))
 const timelineScope = computed(() => [auth.user?.id ?? '', workspaceId.value, databaseId.value, viewId.value, blockId.value].join('\u0000'))
 const timelineVisibleRecordIds = ref<string[]>([])
 const timelineSelectedPageId = computed(() => {
@@ -325,6 +328,94 @@ function getRelationTitle(property: DatabasePropertyResponse, recordId: string):
 }
 function getCellValue(record: TableRecord, propertyId: string): unknown {
   return Object.hasOwn(record.properties, propertyId) ? record.properties[propertyId] : undefined
+}
+
+function prepareTimelineBarDrag(recordId: string): TimelineBarDragSession | null {
+  const source = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline?.dateSource
+  if (!props.editor.isEditable || !writable.value || !viewReady.value || viewType.value !== 'timeline' || source?.mode !== 'date-property') return null
+  const property = properties.value.find(item => item.id === source.propertyId)
+  const record = recordsById.value.get(recordId)
+  const rawValue = record ? getCellValue(record, source.propertyId) : undefined
+  if (!property || property.type !== 'date' || !record || !isValidDatabaseDateValue(rawValue)) return null
+  const originalValue = typeof rawValue === 'string' ? rawValue : { ...rawValue }
+  const viewRoot = document.getElementById(`database-block-${blockId.value}`)
+  return Object.freeze({
+    scope: timelineScope.value,
+    recordId,
+    propertyId: property.id,
+    expectedDatabaseVersion: databaseVersion.value,
+    expectedRecordVersion: record.version,
+    originalValue,
+    viewIdentityEpoch,
+    viewRoot,
+  })
+}
+
+async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean> {
+  const capturedEpoch = (command as TimelineMoveCommand & { viewIdentityEpoch?: number }).viewIdentityEpoch
+  const capturedRoot = (command as TimelineMoveCommand & { viewRoot?: HTMLElement | null }).viewRoot
+  const isCurrent = (): boolean => {
+    if (capturedEpoch !== viewIdentityEpoch || command.scope !== timelineScope.value || !capturedRoot || !capturedRoot.isConnected) return false
+    const currentRoot = document.getElementById(`database-block-${blockId.value}`)
+    if (currentRoot !== capturedRoot || currentRoot.getAttribute('data-view-id') !== viewId.value || currentRoot.getAttribute('data-view-ready') !== 'true') return false
+    let currentEditorViewId = ''
+    props.editor.state.doc.descendants(node => {
+      if (node.type.name === 'eotionDatabase' && node.attrs.blockId === blockId.value) currentEditorViewId = String(node.attrs.viewId ?? '')
+    })
+    return currentEditorViewId === viewId.value && viewReady.value && props.editor.isEditable
+  }
+  if (!isCurrent() || !writable.value || command.expectedDatabaseVersion !== databaseVersion.value || viewType.value !== 'timeline') return false
+  const timeline = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline
+  if (timeline?.dateSource?.mode !== 'date-property' || timeline.dateSource.propertyId !== command.propertyId) return false
+  const property = properties.value.find(item => item.id === command.propertyId)
+  const record = recordsById.value.get(command.recordId)
+  if (!property || property.type !== 'date' || !record || record.version !== command.expectedRecordVersion) return false
+  const currentValue = getCellValue(record, property.id)
+  if (!isValidDatabaseDateValue(currentValue) || JSON.stringify(currentValue) !== JSON.stringify(command.originalValue) || !isValidDatabaseDateValue(command.value)) return false
+  if (JSON.stringify(normalizeDatabaseDateValue(currentValue)) === JSON.stringify(normalizeDatabaseDateValue(command.value))) return false
+
+  savingCell.value = true
+  mutationError.value = ''
+  try {
+    const result = await updateProductDatabaseRecordCell(workspaceId.value, databaseId.value, record.id, property.id, {
+      value: command.value,
+      expectedDatabaseVersion: command.expectedDatabaseVersion,
+      expectedRecordVersion: command.expectedRecordVersion,
+    })
+    if (!isCurrent()) return false
+    databaseVersion.value = result.database.version
+    if (recordsById.value.has(result.record.id)) records.value = records.value.map(item => item.id === result.record.id ? result.record : item)
+    mutationError.value = 'refreshWarning' in result && result.refreshWarning ? result.refreshWarning : ''
+    externalRefreshPending = false
+    await refreshLoadedWindow()
+    if (!isCurrent()) return false
+    return true
+  } catch (cause) {
+    if (!isCurrent()) return false
+    externalRefreshPending = false
+    if (cause instanceof ApiError && cause.statusCode === 409) {
+      await refreshLoadedWindow()
+      if (!isCurrent()) return false
+      mutationError.value = '记录或数据库已变化，日期未移动；已刷新当前记录。'
+      return false
+    }
+    if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) {
+      mutationError.value = errorMessage(cause, '日期未移动，请重试。')
+      return false
+    }
+    await refreshLoadedWindow()
+    if (!isCurrent()) return false
+    const canonical = recordsById.value.get(command.recordId)
+    const canonicalValue = canonical ? getCellValue(canonical, property.id) : undefined
+    const confirmed = isValidDatabaseDateValue(canonicalValue) && JSON.stringify(normalizeDatabaseDateValue(canonicalValue)) === JSON.stringify(normalizeDatabaseDateValue(command.value))
+    mutationError.value = confirmed ? '日期已更新，提交响应暂未确认；当前记录已与目标一致。' : '提交结果暂未确认，已刷新当前记录。'
+    return confirmed
+  } finally {
+    if (isCurrent()) {
+      savingCell.value = false
+      runDeferredRefresh()
+    }
+  }
 }
 
 async function resolveVisibleRelationTitles(windowOnly = false): Promise<void> {
@@ -1599,14 +1690,14 @@ function onDatabaseChanged(event: Event): void {
   const detail = (event as CustomEvent<DatabaseRecordCreatedDetail | DatabaseUpdatedDetail>).detail
   if (detail?.workspaceId !== workspaceId.value) return
   if (detail.databaseId !== databaseId.value && !properties.value.some(property => property.type === 'relation' && (property.config as { targetDatabaseId: string }).targetDatabaseId === detail.databaseId)) return
-  if (cellPopover.value || cellEdit.value || relationPicker.value || propertyConfigType.value || typeChangeTarget.value || settingsMenuOpen.value || viewControlsOpen.value || (viewType.value === 'board' && savingCell.value)) {
+  if (cellPopover.value || cellEdit.value || relationPicker.value || propertyConfigType.value || typeChangeTarget.value || settingsMenuOpen.value || viewControlsOpen.value || ((viewType.value === 'board' || viewType.value === 'timeline') && savingCell.value)) {
     externalRefreshPending = true
     return
   }
   void refreshLoadedWindow()
 }
 function runDeferredRefresh(): void {
-  if (viewType.value === 'board' && savingCell.value) return
+  if ((viewType.value === 'board' || viewType.value === 'timeline') && savingCell.value) return
   if (!externalRefreshPending) return
   externalRefreshPending = false
   void refreshLoadedWindow()
@@ -1734,16 +1825,20 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
   if (current.some((value, index) => value !== previous[index])) {
     viewIdentityEpoch += 1
     loadedViewIdentity.value = ''
+    savingCell.value = false
   }
   void loadTable()
 })
 watch([timelineScope, viewType], ([scope], [previousScope]) => {
   timelineVisibleRecordIds.value = []
   if (scope !== previousScope) {
+    viewIdentityEpoch += 1
+    savingCell.value = false
+    externalRefreshPending = false
     relationTitleEpoch += 1
     pendingRelationTitleKeys.clear()
   }
-})
+}, { flush: 'sync' })
 </script>
 
 <template>
@@ -1891,7 +1986,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :move-record="moveTimelineRecord" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
       <div v-else-if="viewType === 'table' && properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>
