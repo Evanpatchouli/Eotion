@@ -443,6 +443,31 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       if (input.expectedDatabaseVersion !== databaseItem.version || input.expectedPropertyVersion !== propertyItem.version) return json(route, 409, { statusCode: 409, message: 'Property version conflict' })
       api.properties = api.properties.filter((item) => item.id !== propertyItem.id)
       for (const item of api.records) { delete item.properties[propertyItem.id]; item.version += 1 }
+      for (const item of api.views.filter(item => item.databaseId === databaseItem.id)) {
+        const nextConfig = { ...item.config }
+        let repaired = false
+        if (nextConfig.visibleProperties !== null && nextConfig.visibleProperties.includes(propertyItem.id)) {
+          nextConfig.visibleProperties = nextConfig.visibleProperties.filter(id => id !== propertyItem.id)
+          repaired = true
+        }
+        if (nextConfig.propertyOrder !== null && nextConfig.propertyOrder.includes(propertyItem.id)) {
+          nextConfig.propertyOrder = nextConfig.propertyOrder.filter(id => id !== propertyItem.id)
+          repaired = true
+        }
+        const timeline = nextConfig.options?.timeline
+        if (item.type === 'timeline' && timeline && typeof timeline === 'object') {
+          const frozen = (timeline as { frozenTable?: { visibleProperties?: string[] | null; propertyOrder?: string[] | null } }).frozenTable
+          if (frozen) {
+            const visibleProperties = frozen.visibleProperties?.filter(id => id !== propertyItem.id) ?? null
+            const propertyOrder = frozen.propertyOrder?.filter(id => id !== propertyItem.id) ?? null
+            if (visibleProperties?.length !== frozen.visibleProperties?.length || propertyOrder?.length !== frozen.propertyOrder?.length) {
+              nextConfig.options = { ...nextConfig.options, timeline: { ...timeline, frozenTable: { ...frozen, visibleProperties, propertyOrder } } }
+              repaired = true
+            }
+          }
+        }
+        if (repaired) { item.config = nextConfig; item.version += 1 }
+      }
       databaseItem.version += 1
       return json(route, 200, { database: databaseItem })
     }
@@ -3589,24 +3614,351 @@ test('Timeline generic records project date sources, retain unscheduled order, a
   }
 })
 
+test('Timeline Frozen Table resolves independent columns, formats shared properties, and opens the existing Record Host', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const relationDatabase = database('frozen-relation-database', 'Related records')
+  const relationProperty = { ...property('frozen-relation', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: relationDatabase.id } } as TestProperty
+  const formulaProperty = { ...property('frozen-formula', rootDatabase.id, 'Estimate', 'formula'), config: { expression: { kind: 'literal', value: 1 }, resultType: 'number' } } as TestProperty
+  const timelineConfig = {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-title', 'root-text'],
+    propertyOrder: ['root-text', 'root-title'],
+    options: {
+      unknownOuterSetting: { retained: true },
+      timeline: {
+        dateSource: { mode: 'date-property', propertyId: 'root-date' },
+        frozenTable: {
+          visible: true,
+          // Defensive HTTP fixture bypasses API validation for Title/stale-ID handling; the server still validates Title.
+          visibleProperties: ['frozen-relation', 'root-date', 'frozen-formula', 'root-select', 'root-text', 'frozen-relation', 'deleted-frozen-property'],
+          propertyOrder: ['frozen-relation', 'root-date', 'frozen-formula', 'root-select', 'root-text', 'root-title', 'frozen-relation', 'deleted-frozen-property'],
+        },
+      },
+    },
+  } as unknown as DatabaseViewConfig
+  const nullConfig = {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { frozenTable: { visible: true, visibleProperties: null, propertyOrder: null } } },
+  } as unknown as DatabaseViewConfig
+  const hiddenConfig = {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'root-date' } } },
+  } as unknown as DatabaseViewConfig
+  const disabledConfig = {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { frozenTable: { visible: false, visibleProperties: null, propertyOrder: null } } },
+  } as unknown as DatabaseViewConfig
+  const timelineView = view('frozen-projection-view', rootDatabase.id, 'Frozen projection', timelineConfig, 'timeline')
+  const nullView = view('frozen-null-view', rootDatabase.id, 'Frozen null defaults', nullConfig, 'timeline')
+  const hiddenView = view('frozen-hidden-view', rootDatabase.id, 'Frozen hidden', hiddenConfig, 'timeline')
+  const disabledView = view('frozen-disabled-view', rootDatabase.id, 'Frozen disabled', disabledConfig, 'timeline')
+  const records = [
+    record('frozen-record-a', rootDatabase.id, 'frozen-page-a', {
+      'root-title': 'Frozen A', 'root-text': 'Shared notes A', 'root-select': 'status-open',
+      'root-date': { start: '2026-10-13', end: '2026-10-14' }, 'frozen-formula': 12,
+      'frozen-relation': ['related-record-a', 'related-record-a'],
+    }),
+    record('frozen-record-b', rootDatabase.id, 'frozen-page-b', {
+      'root-title': 'Frozen B', 'root-text': 'Shared notes B', 'root-select': 'status-done',
+      'root-date': '2026-10-15', 'frozen-formula': 24, 'frozen-relation': ['related-record-a'],
+    }),
+  ]
+  const api = await installApi(page, [
+    block('frozen-projection-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
+  ], {
+    databases: [rootDatabase, relationDatabase], views: [timelineView, nullView, hiddenView, disabledView],
+    properties: [...rootProperties, relationProperty, formulaProperty], records,
+  })
+  api.pages.push(
+    { ...pageRecord, id: 'frozen-page-a', title: 'Frozen A', role: 'database-record' },
+    { ...pageRecord, id: 'frozen-page-b', title: 'Frozen B', role: 'database-record' },
+    { ...pageRecord, id: 'related-page-a', title: 'Resolved relation title', role: 'database-record' },
+  )
+  api.records.push(record('related-record-a', relationDatabase.id, 'related-page-a', { 'related-title': 'Resolved relation title' }))
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const databaseBlock = page.locator('#database-block-frozen-projection-block')
+  const timeline = databaseBlock.getByTestId('database-timeline')
+  const frozen = databaseBlock.getByTestId('timeline-frozen-table')
+  await expect(timeline).toBeVisible()
+  await expect(frozen).toBeVisible()
+  const frozenHeaderIds = () => frozen.getByTestId('timeline-frozen-header').locator('[data-property-id]').evaluateAll(elements => elements.map(element => (element as HTMLElement).dataset.propertyId ?? ''))
+  await expect.poll(frozenHeaderIds).toEqual(['frozen-relation', 'root-date', 'frozen-formula', 'root-select', 'root-text', 'root-title'])
+  await expect(frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="root-title"]')).toContainText('Frozen A')
+  await expect(frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="root-text"]')).toContainText('Shared notes A')
+  await expect(frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="root-select"]')).toContainText('Open')
+  await expect(frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="frozen-formula"]')).toContainText('12')
+  await expect(frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="root-date"]')).toContainText('2026-10-13 → 2026-10-14')
+  await expect.poll(() => frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="frozen-relation"]').innerText()).toContain('Resolved relation title')
+  await expect(timeline.getByTestId('timeline-bar').first()).toContainText('Shared notes A')
+  await expect(frozen.locator('[data-property-id="frozen-relation"]')).toHaveCount(3)
+  const relationResolutions = api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith('/record-options/resolve'))
+  expect(relationResolutions.filter(({ path }) => path.endsWith(`/${relationDatabase.id}/record-options/resolve`))).toHaveLength(1)
+  expect(relationResolutions.find(({ path }) => path.endsWith(`/${relationDatabase.id}/record-options/resolve`))?.payload.recordIds).toEqual(['related-record-a'])
+
+  const topLevelProjection = await timeline.evaluate(root => {
+    const component = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent
+    const items = component?.setupState?.projectedItems
+    if (!Array.isArray(items)) throw new Error('Expected Timeline projection')
+    return {
+      title: items[0]?.title,
+      visibleProperties: items[0]?.visibleProperties?.map((item: { propertyId: string }) => item.propertyId),
+    }
+  })
+  expect(topLevelProjection).toEqual({ title: 'Frozen A', visibleProperties: ['root-text'] })
+
+  const titleButton = frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="root-title"] button')
+  await titleButton.click()
+  const drawer = page.locator('[data-overlay-mode="drawer"]')
+  await expect(drawer).toBeVisible()
+  await expect(drawer.getByRole('textbox', { name: '记录标题' })).toHaveValue('Frozen A')
+  await expect(titleButton).toHaveAttribute('aria-pressed', 'true')
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.includes('/records/'))).toHaveLength(0)
+  expect(api.requests.filter(({ method, path }) => ['POST', 'PATCH', 'DELETE'].includes(method) && path.includes('/properties/'))).toHaveLength(0)
+  await page.getByRole('button', { name: '关闭记录' }).click()
+
+  const switchView = async (name: string) => {
+    await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+    await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name, exact: true }).click()
+  }
+  await switchView('Frozen null defaults')
+  await expect(frozen).toBeVisible()
+  await expect.poll(() => frozen.getByTestId('timeline-frozen-header').locator('[data-property-id]').evaluateAll(elements => elements.map(element => (element as HTMLElement).dataset.propertyId))).toEqual(rootProperties.map(item => item.id).concat(['frozen-relation', 'frozen-formula']))
+  await switchView('Frozen hidden')
+  await expect(frozen).toHaveCount(0)
+  await switchView('Frozen disabled')
+  await expect(frozen).toHaveCount(0)
+  await switchView('Frozen projection')
+  await expect(frozen).toBeVisible()
+  expect(timelineView.config.options?.unknownOuterSetting).toEqual({ retained: true })
+  await page.evaluate(() => {
+    const editor = document.querySelector('.eotion-editor')
+    const databaseBlock = document.querySelector('#database-block-frozen-projection-block')
+    const timeline = databaseBlock?.querySelector('[data-testid="database-timeline"]')
+    const frozen = databaseBlock?.querySelector('[data-testid="timeline-frozen-table"]')
+    if (!editor || !databaseBlock || !timeline || !frozen) throw new Error('Expected stable Editor, NodeView, Timeline, and Frozen Table')
+    ;(window as Window & { __frozenResponsiveIdentity?: Element[] }).__frozenResponsiveIdentity = [
+      editor, databaseBlock, timeline, frozen,
+      (editor as Element & { __vueParentComponent?: unknown }).__vueParentComponent as Element,
+      (databaseBlock as Element & { __vueParentComponent?: unknown }).__vueParentComponent as Element,
+      (timeline as Element & { __vueParentComponent?: unknown }).__vueParentComponent as Element,
+      (frozen as Element & { __vueParentComponent?: unknown }).__vueParentComponent as Element,
+    ]
+  })
+
+  for (const [width, height, suffix] of [[1440, 900, 'desktop'], [390, 844, 'phone']] as const) {
+    await page.setViewportSize({ width, height })
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+      await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+      expect(await page.evaluate(() => {
+        const before = (window as Window & { __frozenResponsiveIdentity?: Element[] }).__frozenResponsiveIdentity
+        const editor = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null
+        const databaseBlock = document.querySelector('#database-block-frozen-projection-block') as (Element & { __vueParentComponent?: unknown }) | null
+        const timeline = databaseBlock?.querySelector('[data-testid="database-timeline"]') as (Element & { __vueParentComponent?: unknown }) | null
+        const frozen = databaseBlock?.querySelector('[data-testid="timeline-frozen-table"]') as (Element & { __vueParentComponent?: unknown }) | null
+        return Boolean(before && editor && databaseBlock && timeline && frozen
+          && editor === before[0] && databaseBlock === before[1] && timeline === before[2] && frozen === before[3]
+          && editor.__vueParentComponent === before[4] && databaseBlock.__vueParentComponent === before[5]
+          && timeline.__vueParentComponent === before[6] && frozen.__vueParentComponent === before[7])
+      })).toBe(true)
+      if (width === 390) {
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+        await expect(frozen.getByTestId('timeline-frozen-header').locator('[data-property-id="root-title"]')).toBeVisible()
+        await expect(frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="root-title"]')).toBeVisible()
+        await expect.poll(() => frozen.locator('.eotion-timeline-frozen-cell:not(.is-title)').evaluateAll(cells => cells.every(cell => cell.getClientRects().length === 0))).toBe(true)
+        const paneWidth = await frozen.evaluate(element => element.getBoundingClientRect().width)
+        expect(paneWidth).toBeGreaterThan(0)
+        expect(paneWidth).toBeLessThanOrEqual(120)
+        const timeScroller = timeline.getByTestId('timeline-scroll')
+        await expect.poll(() => timeScroller.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
+      }
+      await timelineScreenshot(page, testInfo, `p112c-frozen-projection-${suffix}-${theme}`)
+    }
+  }
+})
+
+test('Timeline Frozen rows share row geometry, hover, selection, and page-host scroll with the time canvas', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const timelineView = view('frozen-geometry-view', rootDatabase.id, 'Frozen geometry', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'root-date' }, frozenTable: { visible: true, visibleProperties: ['root-title'], propertyOrder: ['root-title'] } } },
+  }, 'timeline')
+  const records = Array.from({ length: 30 }, (_, index) => record(`frozen-geometry-${index}`, rootDatabase.id, `frozen-geometry-page-${index}`, {
+    'root-title': `Geometry ${index}`, 'root-date': '2026-10-13',
+  }))
+  const api = await installApi(page, [block('frozen-geometry-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [rootProperties[0]!, rootProperties[5]!], records,
+  })
+  for (const item of records) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const databaseBlock = page.locator('#database-block-frozen-geometry-block')
+  const timeline = databaseBlock.getByTestId('database-timeline')
+  const frozen = databaseBlock.getByTestId('timeline-frozen-table')
+  const scroller = timeline.getByTestId('timeline-scroll')
+  await expect(frozen).toBeVisible()
+  await expect.poll(async () => {
+    const frozenRows = await frozen.locator('[data-timeline-frozen-row]').evaluateAll(elements => elements.map(element => (element as HTMLElement).dataset.recordId))
+    const timelineRows = await timeline.locator('[data-timeline-row]').evaluateAll(elements => elements.map(element => (element as HTMLElement).dataset.recordId))
+    return frozenRows.length > 0 && JSON.stringify(frozenRows) === JSON.stringify(timelineRows)
+  }).toBe(true)
+  const rowPairs = await page.evaluate(() => {
+    const root = document.querySelector('#database-block-frozen-geometry-block')!
+    const left = [...root.querySelectorAll<HTMLElement>('[data-timeline-frozen-row]')]
+    const right = [...root.querySelectorAll<HTMLElement>('[data-timeline-row]')]
+    return left.map(row => {
+      const peer = right.find(item => item.dataset.recordId === row.dataset.recordId)
+      if (!peer) throw new Error(`Missing Timeline row for ${row.dataset.recordId}`)
+      const a = row.getBoundingClientRect()
+      const b = peer.getBoundingClientRect()
+      return { recordId: row.dataset.recordId, leftIndex: row.dataset.rowIndex, rightIndex: peer.dataset.rowIndex, topDelta: Math.abs(a.top - b.top), heightDelta: Math.abs(a.height - b.height) }
+    })
+  })
+  expect(rowPairs.length).toBeGreaterThan(0)
+  expect(rowPairs.every(row => row.leftIndex === row.rightIndex && row.topDelta <= 0.5 && row.heightDelta <= 0.5)).toBe(true)
+  const headerGeometry = async () => page.evaluate(() => {
+    const root = document.querySelector('#database-block-frozen-geometry-block')!
+    const left = root.querySelector<HTMLElement>('[data-testid="timeline-frozen-header"]')!
+    const right = root.querySelector<HTMLElement>('[data-testid="timeline-ruler"]')!
+    const a = left.getBoundingClientRect()
+    const b = right.getBoundingClientRect()
+    return { leftTop: a.top, rightTop: b.top, topDelta: Math.abs(a.top - b.top), heightDelta: Math.abs(a.height - b.height) }
+  })
+  expect((await headerGeometry()).topDelta).toBeLessThanOrEqual(0.5)
+  expect((await headerGeometry()).heightDelta).toBeLessThanOrEqual(0.5)
+
+  const leftRow = frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-geometry-0"]')
+  const rightRow = timeline.locator('[data-timeline-row][data-record-id="frozen-geometry-0"]')
+  await leftRow.hover()
+  await expect(leftRow).toHaveClass(/is-hovered/u)
+  await expect(rightRow).toHaveClass(/is-hovered/u)
+  await rightRow.hover()
+  await expect(leftRow).toHaveClass(/is-hovered/u)
+  await expect(rightRow).toHaveClass(/is-hovered/u)
+  await page.locator('body').hover({ position: { x: 1, y: 1 } })
+  await expect(leftRow).not.toHaveClass(/is-hovered/u)
+  await expect(rightRow).not.toHaveClass(/is-hovered/u)
+  const titleButton = leftRow.locator('[data-property-id="root-title"] button')
+  await titleButton.click()
+  await expect(titleButton).toHaveAttribute('aria-pressed', 'true')
+  await expect(leftRow).toHaveClass(/is-selected/u)
+  await expect(rightRow).toHaveClass(/is-selected/u)
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.includes('/records/'))).toHaveLength(0)
+  await page.getByRole('button', { name: '关闭记录' }).click()
+  await expect(titleButton).toHaveAttribute('aria-pressed', 'false')
+  await expect(leftRow).not.toHaveClass(/is-selected/u)
+  await expect(rightRow).not.toHaveClass(/is-selected/u)
+
+  const frozenX = await frozen.evaluate(element => element.getBoundingClientRect().x)
+  const beforeHorizontal = await scroller.evaluate(element => (element as HTMLElement).scrollLeft)
+  await scroller.evaluate(element => { (element as HTMLElement).scrollLeft += 160 })
+  await expect.poll(() => scroller.evaluate(element => (element as HTMLElement).scrollLeft)).toBeGreaterThan(beforeHorizontal)
+  expect(await frozen.evaluate(element => element.getBoundingClientRect().x)).toBe(frozenX)
+
+  const host = page.locator('.document-wrap')
+  const beforeVertical = await host.evaluate(element => (element as HTMLElement).scrollTop)
+  await host.evaluate(element => { (element as HTMLElement).scrollTop += 80 })
+  await expect.poll(() => host.evaluate(element => (element as HTMLElement).scrollTop)).toBeGreaterThan(beforeVertical)
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  const afterScrollPairs = await page.evaluate(() => {
+    const root = document.querySelector('#database-block-frozen-geometry-block')!
+    const left = [...root.querySelectorAll<HTMLElement>('[data-timeline-frozen-row]')]
+    const right = [...root.querySelectorAll<HTMLElement>('[data-timeline-row]')]
+    return left.map(row => {
+      const peer = right.find(item => item.dataset.recordId === row.dataset.recordId)!
+      return Math.abs(row.getBoundingClientRect().top - peer.getBoundingClientRect().top) <= 0.5
+    })
+  })
+  expect(afterScrollPairs.length).toBeGreaterThan(0)
+  expect(afterScrollPairs.every(Boolean)).toBe(true)
+  const pinnedHeader = await headerGeometry()
+  expect(pinnedHeader.topDelta).toBeLessThanOrEqual(0.5)
+  expect(pinnedHeader.heightDelta).toBeLessThanOrEqual(0.5)
+  await expect.poll(() => scroller.evaluate(element => getComputedStyle(element).overflowY)).not.toMatch(/^(auto|scroll)$/u)
+})
+
+test('Timeline Frozen columns disappear after the server repairs a deleted property reference', async ({ page }) => {
+  const timelineView = view('frozen-repair-view', rootDatabase.id, 'Frozen repair', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: {
+      dateSource: { mode: 'date-property', propertyId: 'root-date' },
+      frozenTable: { visible: true, visibleProperties: ['root-text', 'deleted-frozen-property'], propertyOrder: ['root-text', 'root-title', 'deleted-frozen-property'] },
+    } },
+  }, 'timeline')
+  const api = await installApi(page, [block('frozen-repair-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: rootProperties,
+    records: [record('frozen-repair-record', rootDatabase.id, 'frozen-repair-page', { 'root-title': 'Repair target', 'root-text': 'Delete this visible property', 'root-date': '2026-10-13' })],
+  })
+  api.pages.push({ ...pageRecord, id: 'frozen-repair-page', title: 'Repair target', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const databaseBlock = page.locator('#database-block-frozen-repair-block')
+  const frozen = databaseBlock.getByTestId('timeline-frozen-table')
+  await expect(frozen).toBeVisible()
+  await expect(frozen.getByTestId('timeline-frozen-header').locator('[data-property-id="root-text"]')).toBeAttached()
+  await expect(frozen.locator('[data-property-id="deleted-frozen-property"]')).toHaveCount(0)
+
+  await openDatabaseSetting(page, databaseBlock, '属性')
+  const settings = page.getByRole('group', { name: '属性管理' })
+  await settings.getByRole('button', { name: '属性设置 Notes' }).click()
+  await page.getByRole('menu', { name: '属性设置: Notes' }).getByRole('menuitem', { name: '删除' }).click()
+  const dialog = page.getByRole('dialog', { name: '删除属性“Notes”' })
+  await dialog.getByRole('button', { name: '删除属性' }).click()
+  await expect.poll(() => api.properties.some(item => item.id === 'root-text')).toBe(false)
+  await expect.poll(() => {
+    const timeline = api.views.find(item => item.id === timelineView.id)?.config.options?.timeline as { frozenTable?: { visibleProperties?: string[] | null } } | undefined
+    return timeline?.frozenTable?.visibleProperties
+  }).toEqual(['deleted-frozen-property'])
+  await expect(frozen.locator('[data-property-id="root-text"]')).toHaveCount(0)
+  await expect(frozen.getByTestId('timeline-frozen-header').locator('[data-property-id="root-text"]')).toHaveCount(0)
+  await expect(frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-repair-record"] [data-property-id="root-text"]')).toHaveCount(0)
+  await expect(frozen.getByTestId('timeline-frozen-header').locator('[data-property-id="root-title"]')).toBeVisible()
+  expect(api.requests.filter(({ method, path }) => method === 'DELETE' && path.endsWith('/properties/root-text'))).toHaveLength(1)
+})
+
 for (const total of [100, 500] as const) {
   test(`Timeline loads all ${total} generic records in 25-record pages and virtualizes without reprojecting`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+    const barRelationDatabase = database(`timeline-${total}-bar-relations`, 'Bar relation targets')
+    const frozenRelationDatabase = database(`timeline-${total}-frozen-relations`, 'Frozen relation targets')
+    const barRelationProperty = { ...property(`timeline-${total}-bar-relation`, rootDatabase.id, 'Bar relation', 'relation'), config: { targetDatabaseId: barRelationDatabase.id } } as TestProperty
+    const frozenRelationProperty = { ...property(`timeline-${total}-frozen-relation`, rootDatabase.id, 'Frozen relation', 'relation'), config: { targetDatabaseId: frozenRelationDatabase.id } } as TestProperty
     const timelineView = view(`timeline-page-${total}-view`, rootDatabase.id, `Timeline ${total}`, {
       ...DEFAULT_DATABASE_VIEW_CONFIG,
-      options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'root-date' } } },
+      visibleProperties: ['root-title', barRelationProperty.id],
+      propertyOrder: ['root-title', barRelationProperty.id],
+      options: { timeline: {
+        dateSource: { mode: 'date-property', propertyId: 'root-date' },
+        frozenTable: { visible: true, visibleProperties: ['root-title', frozenRelationProperty.id], propertyOrder: ['root-title', frozenRelationProperty.id] },
+      } },
     }, 'timeline')
     const records = Array.from({ length: total }, (_, index) => {
       const number = String(index + 1).padStart(3, '0')
       return record(`timeline-${total}-${number}`, rootDatabase.id, `timeline-${total}-page-${number}`, {
         'root-title': `Timeline record ${number}`,
+        [barRelationProperty.id]: [`bar-target-${total}-${number}`, `bar-target-${total}-${String((index + 1) % total + 1).padStart(3, '0')}`],
+        [frozenRelationProperty.id]: [`frozen-target-${total}-${number}`, `frozen-target-${total}-${String((index + 1) % total + 1).padStart(3, '0')}`],
         ...(total === 500 && index === total - 1 ? {} : { 'root-date': '2026-10-13' }),
       })
     })
     const api = await installApi(page, [
       block(`timeline-page-${total}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
-    ], { databases: [rootDatabase], views: [timelineView], properties: [rootProperties[0]!, rootProperties[5]!], records })
+    ], { databases: [rootDatabase, barRelationDatabase, frozenRelationDatabase], views: [timelineView], properties: [rootProperties[0]!, rootProperties[5]!, barRelationProperty, frozenRelationProperty], records })
+    const relationTargets = [
+      ...Array.from({ length: total }, (_, index) => {
+        const number = String(index + 1).padStart(3, '0')
+        return record(`bar-target-${total}-${number}`, barRelationDatabase.id, `bar-target-page-${total}-${number}`, {})
+      }),
+      ...Array.from({ length: total }, (_, index) => {
+        const number = String(index + 1).padStart(3, '0')
+        return record(`frozen-target-${total}-${number}`, frozenRelationDatabase.id, `frozen-target-page-${total}-${number}`, {})
+      }),
+    ]
+    api.records.push(...relationTargets)
+    for (const target of relationTargets) {
+      const title = target.id.startsWith('bar-target-') ? `Bar title ${target.id.split('-').at(-1)}` : `Frozen title ${target.id.split('-').at(-1)}`
+      api.pages.push({ ...pageRecord, id: target.pageId, title, role: 'database-record' })
+    }
     if (total === 500) {
       const lastRecord = records.at(-1)!
       api.pages.push({ ...pageRecord, id: lastRecord.pageId, title: 'Timeline record 500', role: 'database-record' })
@@ -3619,8 +3971,9 @@ for (const total of [100, 500] as const) {
       tableRequestTimings.push({ startTime: timing.startTime, responseEndMs: timing.responseEnd })
     })
     await page.goto('/#/app/database-workspace/page/database-page')
-    const database = page.locator(`#database-block-timeline-page-${total}-block`)
-    const timeline = database.getByTestId('database-timeline')
+    const databaseBlock = page.locator(`#database-block-timeline-page-${total}-block`)
+    const timeline = databaseBlock.getByTestId('database-timeline')
+    const frozen = databaseBlock.getByTestId('timeline-frozen-table')
     await expect(timeline).toBeVisible()
     const startedAt = await page.evaluate(() => performance.now())
     const projectedCount = () => page.evaluate(() => {
@@ -3631,7 +3984,7 @@ for (const total of [100, 500] as const) {
     })
     await expect.poll(projectedCount).toBe(25)
     let loaded = await projectedCount()
-    const loadMoreButton = database.getByRole('button', { name: '加载更多' })
+    const loadMoreButton = databaseBlock.getByRole('button', { name: '加载更多' })
     while (loaded < total) {
       await expect.poll(() => loadMoreButton.count(), { message: `Timeline should expose the cursor after the first 25 of ${total} records; requests=${JSON.stringify(api.requests.filter(({ path }) => path.endsWith(tablePath)))}` }).toBe(1)
       await loadMoreButton.click()
@@ -3639,12 +3992,27 @@ for (const total of [100, 500] as const) {
       await expect.poll(projectedCount).toBe(nextLoaded)
       loaded = nextLoaded
     }
-    await expect(database.getByRole('button', { name: '加载更多' })).toHaveCount(0)
+    await expect(databaseBlock.getByRole('button', { name: '加载更多' })).toHaveCount(0)
     expect(loaded).toBe(total)
     const recordReads = api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(tablePath))
     expect(recordReads).toHaveLength(total / 25)
     expect(recordReads.every(({ search }) => new URLSearchParams(search).get('limit') === '25')).toBe(true)
     expect(tableRequestTimings).toHaveLength(total / 25)
+    const frozenDisplayText = (recordId: string) => timeline.evaluate((root, input) => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent?.setupState
+      const display = setup?.frozenDisplayMap
+      if (!(display instanceof Map)) throw new Error('Timeline frozenDisplayMap is unavailable')
+      const values = display.get(input.recordId)
+      return values instanceof Map ? String(values.get(input.propertyId) ?? '') : ''
+    }, { recordId, propertyId: frozenRelationProperty.id })
+    await expect.poll(() => frozenDisplayText(`timeline-${total}-001`)).toContain('Frozen title 001')
+    const visibleFrozenRecordIds = await frozen.locator('[data-timeline-frozen-row]').evaluateAll(elements => elements.map(element => (element as HTMLElement).dataset.recordId ?? ''))
+    expect(visibleFrozenRecordIds.length).toBeGreaterThan(0)
+    for (const recordId of visibleFrozenRecordIds) {
+      const ordinal = recordId.split('-').at(-1)!
+      await expect.poll(() => frozenDisplayText(recordId)).toContain(`Frozen title ${ordinal}`)
+      await expect.poll(() => frozen.locator(`[data-timeline-frozen-row][data-record-id="${recordId}"] [data-property-id="${frozenRelationProperty.id}"]`).innerText()).toContain(`Frozen title ${ordinal}`)
+    }
 
     const captureProjectionIdentity = () => page.evaluate(() => {
       const timeline = document.querySelector('[data-testid="database-timeline"]') as (HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }) | null
@@ -3653,7 +4021,18 @@ for (const total of [100, 500] as const) {
       if (!component || !Array.isArray(items)) throw new Error('Timeline projection component is unavailable')
       const temporalMap = component.setupState?.temporalMap
       if (!(temporalMap instanceof Map)) throw new Error('Timeline temporalMap is not available for identity verification')
-      ;(window as Window & { __timelineProjectionProbe?: { component: unknown; items: unknown; temporalMap: unknown } }).__timelineProjectionProbe = { component, items, temporalMap }
+      const frozen = document.querySelector('[data-testid="timeline-frozen-table"]') as (HTMLElement & { __vueParentComponent?: { props?: Record<string, unknown> } }) | null
+      const viewport = document.querySelector('[data-testid="timeline-viewport"]') as (HTMLElement & { __vueParentComponent?: { props?: Record<string, unknown> } }) | null
+      if (!frozen?.__vueParentComponent || !viewport?.__vueParentComponent) throw new Error('Frozen Table or Timeline viewport component is unavailable')
+      const rows = component.setupState?.rowGeometry
+      const frozenDisplayMap = component.setupState?.frozenDisplayMap
+      if (!Array.isArray(rows) || !(frozenDisplayMap instanceof Map)) throw new Error('Frozen row geometry or display projection is unavailable')
+      if (frozen.__vueParentComponent.props?.rows !== viewport.__vueParentComponent.props?.rows) throw new Error('Frozen Table and Timeline viewport do not share the same rows array')
+      if (frozen.__vueParentComponent.props?.rows !== rows) throw new Error('Frozen Table rows do not reuse Timeline rowGeometry')
+      ;(window as Window & { __timelineProjectionProbe?: { component: unknown; items: unknown; temporalMap: unknown; rows: unknown; frozenDisplayMap: unknown; frozen: unknown; viewport: unknown } }).__timelineProjectionProbe = {
+        component, items, temporalMap, rows, frozenDisplayMap,
+        frozen: frozen.__vueParentComponent, viewport: viewport.__vueParentComponent,
+      }
       return items.length
     })
     expect(await captureProjectionIdentity()).toBe(total)
@@ -3662,11 +4041,20 @@ for (const total of [100, 500] as const) {
       return map instanceof Map ? map.size : -1
     })).toBe(total === 500 ? 499 : total)
     const projectionSame = () => page.evaluate(() => {
-      const before = (window as Window & { __timelineProjectionProbe?: { component: unknown; items: unknown; temporalMap: unknown } }).__timelineProjectionProbe!
+      const before = (window as Window & { __timelineProjectionProbe?: { component: unknown; items: unknown; temporalMap: unknown; rows: unknown; frozenDisplayMap: unknown; frozen: unknown; viewport: unknown } }).__timelineProjectionProbe!
       const timeline = document.querySelector('[data-testid="database-timeline"]') as (HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }) | null
+      const frozen = document.querySelector('[data-testid="timeline-frozen-table"]') as (HTMLElement & { __vueParentComponent?: { props?: Record<string, unknown> } }) | null
+      const viewport = document.querySelector('[data-testid="timeline-viewport"]') as (HTMLElement & { __vueParentComponent?: { props?: Record<string, unknown> } }) | null
+      const currentRows = timeline?.__vueParentComponent?.setupState?.rowGeometry
       return timeline?.__vueParentComponent === before.component
         && timeline.__vueParentComponent?.setupState?.projectedItems === before.items
         && timeline.__vueParentComponent?.setupState?.temporalMap === before.temporalMap
+        && timeline.__vueParentComponent?.setupState?.frozenDisplayMap === before.frozenDisplayMap
+        && frozen?.__vueParentComponent === before.frozen
+        && viewport?.__vueParentComponent === before.viewport
+        && Array.isArray(currentRows)
+        && frozen?.__vueParentComponent?.props?.rows === viewport?.__vueParentComponent?.props?.rows
+        && frozen?.__vueParentComponent?.props?.rows === currentRows
     })
     const bodyWindow = timeline.locator('[data-row-window-first]').first()
     await expect(bodyWindow).toBeAttached()
@@ -3677,6 +4065,29 @@ for (const total of [100, 500] as const) {
     const renderedRows = timeline.locator('[data-timeline-row]')
     const initialRenderedCount = await renderedRows.count()
     expect(initialRenderedCount).toBeLessThanOrEqual(total < 200 ? total : 40)
+    const frozenRows = databaseBlock.getByTestId('timeline-frozen-table').locator('[data-timeline-frozen-row]')
+    expect(await frozenRows.count()).toBe(initialRenderedCount)
+    const visibleRowGeometry = await page.evaluate(() => {
+      const frozen = [...document.querySelectorAll<HTMLElement>('[data-timeline-frozen-row]')]
+      const timeline = [...document.querySelectorAll<HTMLElement>('[data-timeline-row]')]
+      return frozen.map(row => {
+        const peer = timeline.find(item => item.dataset.recordId === row.dataset.recordId)
+        if (!peer) throw new Error(`Missing Timeline row for Frozen row ${row.dataset.recordId}`)
+        const left = row.getBoundingClientRect()
+        const right = peer.getBoundingClientRect()
+        return {
+          recordId: row.dataset.recordId,
+          frozenIndex: row.dataset.rowIndex,
+          timelineIndex: peer.dataset.rowIndex,
+          frozenTop: left.top,
+          timelineTop: right.top,
+          frozenHeight: left.height,
+          timelineHeight: right.height,
+        }
+      })
+    })
+    expect(visibleRowGeometry.length).toBe(initialRenderedCount)
+    expect(visibleRowGeometry.every(row => row.frozenIndex === row.timelineIndex && Math.abs(row.frozenTop - row.timelineTop) <= 0.5 && Math.abs(row.frozenHeight - row.timelineHeight) <= 0.5)).toBe(true)
     expect(initialWindow.totalHeight).toBe(total * 48)
 
     const hostState = await page.evaluate(() => {
@@ -3689,6 +4100,7 @@ for (const total of [100, 500] as const) {
     const scroller = timeline.getByTestId('timeline-scroll')
     await expect.poll(() => scroller.evaluate(element => getComputedStyle(element).overflowY)).not.toMatch(/^(auto|scroll)$/u)
 
+    let focusedRelationRequestCounts: { bar: number; frozen: number } | null = null
     if (total === 500) {
       const focusedIndex = total - 2
       const focusedNumber = String(focusedIndex + 1).padStart(3, '0')
@@ -3708,8 +4120,22 @@ for (const total of [100, 500] as const) {
       await expect.poll(() => page.evaluate(() => (document.querySelector('.document-wrap') as HTMLElement).scrollTop)).toBe(0)
       const focusedRow = timeline.locator(`[data-timeline-row][data-row-index="${focusedIndex}"]`)
       await expect(focusedRow).toBeAttached()
+      const frozenFocusedRow = databaseBlock.locator(`[data-timeline-frozen-row][data-row-index="${focusedIndex}"]`)
+      await expect(frozenFocusedRow).toBeAttached()
+      await expect.poll(() => frozenFocusedRow.locator(`[data-property-id="${frozenRelationProperty.id}"]`).innerText()).toContain('Frozen title 499')
+      const focusedBarRowLocator = focusedRow.getByTestId('timeline-bar')
+      await expect.poll(() => focusedBarRowLocator.locator('.eotion-timeline-bar-properties').innerText()).toContain('Bar title 499')
+      const focusedBarId = `bar-target-${total}-499`
+      const focusedFrozenId = `frozen-target-${total}-499`
+      const relationResolveRequests = () => api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith('/record-options/resolve'))
+      expect(relationResolveRequests().every(request => Array.isArray(request.payload.recordIds) && request.payload.recordIds.length <= 50)).toBe(true)
+      const countRequestsContaining = (id: string) => relationResolveRequests().filter(request => request.payload.recordIds.includes(id)).length
+      expect(countRequestsContaining(focusedBarId)).toBeGreaterThan(0)
+      expect(countRequestsContaining(focusedFrozenId)).toBeGreaterThan(0)
+      focusedRelationRequestCounts = { bar: countRequestsContaining(focusedBarId), frozen: countRequestsContaining(focusedFrozenId) }
       await expect.poll(() => bodyWindow.evaluate(element => Number((element as HTMLElement).dataset.rowWindowLast))).toBeLessThan(focusedIndex)
       expect(await renderedRows.count()).toBeLessThanOrEqual(40)
+      expect(await frozenRows.count()).toBeLessThanOrEqual(40)
 
       const unscheduled = timeline.locator('details')
       await expect(unscheduled.locator('summary')).toHaveText('未排期（1）')
@@ -3717,6 +4143,7 @@ for (const total of [100, 500] as const) {
       const footerEntry = unscheduled.getByRole('button', { name: '打开记录：Timeline record 500' })
       await expect(footerEntry).toBeVisible()
       const targetRow = timeline.locator(`[data-timeline-row][data-record-id="timeline-${total}-500"]`)
+      const frozenTargetRow = databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="timeline-${total}-500"]`)
       await page.evaluate(targetRecordId => document.addEventListener('focusin', event => {
         const row = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-timeline-row]')
         if (row?.dataset.recordId === targetRecordId) {
@@ -3729,6 +4156,12 @@ for (const total of [100, 500] as const) {
       await expect(drawer.getByRole('textbox', { name: '记录标题' })).toHaveValue('Timeline record 500')
       expect(await page.evaluate(() => (window as Window & { __timelineFooterTargetFocused?: boolean }).__timelineFooterTargetFocused)).toBe(true)
       await expect(targetRow).toBeInViewport()
+      await expect(frozenTargetRow).toBeAttached()
+      await expect.poll(() => frozenTargetRow.locator(`[data-property-id="${frozenRelationProperty.id}"]`).innerText()).toContain('Frozen title 500')
+      const targetGeometry = await Promise.all([targetRow.boundingBox(), frozenTargetRow.boundingBox()])
+      expect(targetGeometry[0] && targetGeometry[1]).toBeTruthy()
+      expect(Math.abs(targetGeometry[0]!.y - targetGeometry[1]!.y)).toBeLessThanOrEqual(0.5)
+      expect(Math.abs(targetGeometry[0]!.height - targetGeometry[1]!.height)).toBeLessThanOrEqual(0.5)
       await page.getByRole('button', { name: '关闭记录' }).click()
       await expect(targetRow).toBeInViewport()
       await expect(targetRow).toHaveAttribute('data-record-id', `timeline-${total}-500`)
@@ -3738,6 +4171,8 @@ for (const total of [100, 500] as const) {
       expect(api.requests.filter(({ method, path }) => method === 'GET' && path === `/api/workspaces/${workspace.id}/pages/timeline-${total}-page-500`)).toHaveLength(pageReadsBeforeModifiedClick)
     }
 
+    // Relation titles can invalidate display projection; capture after focused targets settle.
+    expect(await captureProjectionIdentity()).toBe(total)
     const readsBeforeViewportChanges = api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(tablePath)).length
     await timeline.getByLabel('时间轴刻度').selectOption('year')
     await expect(timeline).toHaveAttribute('data-scale', 'year')
@@ -3747,6 +4182,11 @@ for (const total of [100, 500] as const) {
     const projectionIdentityPreserved = await projectionSame()
     expect(projectionIdentityPreserved).toBe(true)
     expect(api.requests.filter(({ method, path }) => method === 'GET' && path.endsWith(tablePath))).toHaveLength(readsBeforeViewportChanges)
+    if (focusedRelationRequestCounts) {
+      const relationResolveRequests = api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith('/record-options/resolve'))
+      expect(relationResolveRequests.filter(request => request.payload.recordIds.includes(`bar-target-${total}-499`))).toHaveLength(focusedRelationRequestCounts.bar)
+      expect(relationResolveRequests.filter(request => request.payload.recordIds.includes(`frozen-target-${total}-499`))).toHaveLength(focusedRelationRequestCounts.frozen)
+    }
 
     const samples = await page.evaluate(projectionIdentityPreserved => {
       const host = document.querySelector('.document-wrap') as HTMLElement
@@ -3768,13 +4208,39 @@ for (const total of [100, 500] as const) {
           ? ((timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent!.setupState!.temporalMap as Map<unknown, unknown>).size
           : null,
         renderedRows: timeline.querySelectorAll('[data-timeline-row]').length,
+        renderedFrozenRows: document.querySelectorAll('[data-timeline-frozen-row]').length,
+        frozenDisplayCount: (timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent?.setupState?.frozenDisplayMap instanceof Map
+          ? ((timeline as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent!.setupState!.frozenDisplayMap as Map<unknown, unknown>).size
+          : null,
+        frozenAndTimelineRowsShareGeometry: (() => {
+          const frozen = document.querySelector('[data-testid="timeline-frozen-table"]') as (HTMLElement & { __vueParentComponent?: { props?: Record<string, unknown> } }) | null
+          const viewport = document.querySelector('[data-testid="timeline-viewport"]') as (HTMLElement & { __vueParentComponent?: { props?: Record<string, unknown> } }) | null
+          return Boolean(frozen?.__vueParentComponent?.props?.rows && frozen.__vueParentComponent.props.rows === viewport?.__vueParentComponent?.props?.rows)
+        })(),
+        resolvedRelationTitleCount: (() => {
+          const databaseBlock = document.querySelector('[id^="database-block-timeline-page-"]') as (HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }) | null
+          const titles = databaseBlock?.__vueParentComponent?.setupState?.relationTitles
+          return titles instanceof Map ? titles.size : null
+        })(),
+        rowIndexPairsAligned: (() => {
+          const frozen = [...document.querySelectorAll<HTMLElement>('[data-timeline-frozen-row]')]
+          const timelineRows = [...timeline.querySelectorAll<HTMLElement>('[data-timeline-row]')]
+          return frozen.every(row => {
+            const peer = timelineRows.find(item => item.dataset.recordId === row.dataset.recordId)
+            return Boolean(peer && row.dataset.rowIndex === peer.dataset.rowIndex)
+          })
+        })(),
         rowWindow: { first: Number(data.rowWindowFirst), last: Number(data.rowWindowLast), height: Number(data.rowWindowHeight), totalHeight: Number(data.rowWindowTotalHeight) },
         pageScroll: { top: host.scrollTop, scrollHeight: host.scrollHeight, clientHeight: host.clientHeight },
+        domRowsWithinBound: timeline.querySelectorAll('[data-timeline-row]').length <= 40 && document.querySelectorAll('[data-timeline-frozen-row]').length <= 40,
         projectionAndTemporalIdentityPreserved: projectionIdentityPreserved,
+        frozenDisplayIdentityPreserved: projectionIdentityPreserved,
       }
     }, projectionIdentityPreserved)
     samples.elapsedSincePagingStartedMs = (await page.evaluate(() => performance.now())) - startedAt
     samples.tableRequestTimings = tableRequestTimings
+    samples.relationResolutionBatches = api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith('/record-options/resolve'))
+      .map(({ path, payload }) => ({ path, targetCount: Array.isArray(payload.recordIds) ? payload.recordIds.length : null }))
     const samplePath = testInfo.outputPath(`timeline-${total}-browser-samples.json`)
     const sampleJson = JSON.stringify(samples, null, 2)
     await mkdir(path.dirname(samplePath), { recursive: true })
@@ -4736,7 +5202,10 @@ test('board renderer switches with Table and List without replacing editor or re
   await page.setViewportSize({ width: 1440, height: 1000 })
   const boardView = view('board-lifecycle-view', rootDatabase.id, 'Board', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: 'root-select' } }, 'board')
   const listView = view('board-list-view', rootDatabase.id, 'List', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'list')
-  const timelineView = view('board-timeline-view', rootDatabase.id, 'Timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'timeline')
+  const timelineView = view('board-timeline-view', rootDatabase.id, 'Timeline', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { frozenTable: { visible: true, visibleProperties: ['root-title'], propertyOrder: ['root-title'] } } },
+  }, 'timeline')
   const api = await installApi(page, [
     block('board-lifecycle', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
   ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id), listView, boardView, timelineView], properties: rootProperties, records: [basicRecord] })
@@ -4772,6 +5241,7 @@ test('board renderer switches with Table and List without replacing editor or re
     await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name, exact: true }).click()
     if (renderer === 'timeline') {
       await expect(database.getByTestId('database-timeline')).toBeVisible()
+      await expect(database.getByTestId('timeline-frozen-table')).toBeVisible()
       await expect(database.locator('table, [data-testid="database-list"], [data-testid="database-board"]')).toHaveCount(0)
     } else await expect(database.locator(renderer)).toBeVisible()
     await expect(database).toHaveAttribute('data-board-lifecycle', 'stable')

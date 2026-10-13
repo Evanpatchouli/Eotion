@@ -49,3 +49,35 @@ export function projectFrozenTableDisplay(
   }
   return displayByRecord
 }
+
+export type RelationTitleColumn = { propertyId: string; targetDatabaseId: string }
+
+/** Collects unique relation IDs in record-first order so one column cannot exhaust the shared budget. */
+export function collectRelationTitleIds(
+  records: readonly TimelineRecordInput[],
+  columns: readonly RelationTitleColumn[],
+  maxIds = 500,
+  cachedKeys?: ReadonlySet<string>,
+): Map<string, string[]> {
+  const grouped = new Map<string, string[]>()
+  const seen = new Set<string>()
+  let remaining = Math.max(0, Math.floor(maxIds))
+  for (const record of records) {
+    for (const column of columns) {
+      const value = record.properties[column.propertyId]
+      if (!Array.isArray(value)) continue
+      for (const id of value.slice(0, 3)) {
+        if (typeof id !== 'string' || !id) continue
+        const cacheKey = `${column.targetDatabaseId}\u0000${id}`
+        if (seen.has(cacheKey) || cachedKeys?.has(cacheKey)) continue
+        if (remaining === 0) return grouped
+        seen.add(cacheKey)
+        const ids = grouped.get(column.targetDatabaseId) ?? []
+        ids.push(id)
+        grouped.set(column.targetDatabaseId, ids)
+        remaining -= 1
+      }
+    }
+  }
+  return grouped
+}

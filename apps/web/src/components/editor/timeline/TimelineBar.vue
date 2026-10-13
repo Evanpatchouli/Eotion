@@ -7,6 +7,7 @@ const props = defineProps<{
   dateLabel?: string
   visibleProperties: readonly { propertyId: string; propertyType: string; displayText: string }[]
   selected: boolean
+  hovered?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -24,7 +25,7 @@ function tooltip(): string {
 <template>
   <button
     class="eotion-timeline-bar"
-    :class="{ 'eotion-timeline-bar--marker': geometry.marker, 'is-selected': selected }"
+    :class="{ 'eotion-timeline-bar--marker': geometry.marker, 'is-selected': selected, 'is-hovered': hovered }"
     :style="{
       left: `${geometry.x}px`,
       top: `${geometry.top - geometry.rowTop + (geometry.marker ? geometry.height / 2 : 0)}px`,
@@ -76,6 +77,7 @@ function tooltip(): string {
 }
 .eotion-timeline-bar:hover { background: var(--e-color-hover, var(--editor-hover)); }
 .eotion-timeline-bar.is-selected { border-color: var(--e-color-focus, var(--editor-focus)); background: var(--e-color-selected, var(--editor-selected)); }
+.eotion-timeline-bar.is-hovered:not(.is-selected) { background: var(--e-color-hover, var(--editor-hover)); }
 .eotion-timeline-bar:focus-visible { z-index: 5; outline: var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset: 1px; }
 .eotion-timeline-bar-shape { position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--e-color-accent, var(--editor-accent)); }
 .eotion-timeline-bar-shape.is-range { width: 100%; opacity: .12; }

@@ -19,6 +19,7 @@ const props = defineProps<{
   rowWindow: TimelineRowWindow
   rows: TimelineRowGeometry[]
   selectedPageId: string | null
+  hoveredRecordId: string | null
 }>()
 
 const rulerAnchorStyle = computed(() => ({ transform: `translateY(${props.pinY}px)` }))
@@ -40,6 +41,7 @@ const emit = defineEmits<{
   bodyRef: [element: HTMLElement | null]
   openRecord: [event: MouseEvent, pageId: string]
   focusRow: [rowIndex: number]
+  hoverRecord: [recordId: string | null]
 }>()
 
 function setScroller(element: unknown): void {
@@ -109,11 +111,13 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
             v-for="row in rows"
             :key="row.item.recordId"
             class="eotion-timeline-row"
-            :class="{ 'eotion-timeline-row--unscheduled': row.item.kind === 'unscheduled' }"
+            :class="{ 'eotion-timeline-row--unscheduled': row.item.kind === 'unscheduled', 'is-hovered': hoveredRecordId === row.item.recordId, 'is-selected': selectedPageId === row.item.pageId }"
             :style="{ top: `${row.top}px`, height: `${row.height}px` }"
             data-timeline-row
             :data-row-index="row.rowIndex"
             :data-record-id="row.item.recordId"
+            @pointerenter="emit('hoverRecord', row.item.recordId)"
+            @pointerleave="emit('hoverRecord', null)"
           >
             <div class="eotion-timeline-row-content" :style="row.item.kind === 'unscheduled' ? unscheduledStyle : undefined">
               <TimelineBar
@@ -123,6 +127,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
                 :date-label="row.item.dateLabel"
                 :visible-properties="row.item.visibleProperties"
                 :selected="selectedPageId === row.item.pageId"
+                :hovered="hoveredRecordId === row.item.recordId"
                 @focus-row="emit('focusRow', row.rowIndex)"
                 @click="emit('openRecord', $event, row.item.pageId)"
               />
@@ -141,14 +146,16 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 
 <style scoped>
 .eotion-timeline-viewport { position:relative; min-width:0; max-width:100%; overflow:clip; }
-.eotion-timeline-ruler-slot { position:relative; z-index:2; height:56px; }
-.eotion-timeline-ruler-anchor { position:absolute; top:0; left:0; width:100%; height:56px; overflow:hidden; background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
+.eotion-timeline-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); }
+.eotion-timeline-ruler-anchor { position:absolute; top:0; left:0; width:100%; height:var(--timeline-header-height, 56px); overflow:hidden; background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
 .eotion-timeline-scroll { width:100%; min-width:0; max-width:100%; min-height:240px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; }
 .eotion-timeline-scroll:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:-2px; }
 .eotion-timeline-canvas { position:relative; min-width:100%; min-height:240px; }
 .eotion-timeline-body { position:relative; width:100%; min-height:240px; isolation:isolate; }
 .eotion-timeline-draw-window { position:absolute; z-index:0; left:0; overflow:hidden; pointer-events:none; }
 .eotion-timeline-row { position:absolute; z-index:2; left:0; width:100%; }
+.eotion-timeline-row.is-hovered { background:color-mix(in srgb, var(--e-color-hover, var(--editor-hover)) 48%, transparent); }
+.eotion-timeline-row.is-selected { background:color-mix(in srgb, var(--e-color-selected, var(--editor-selected)) 56%, transparent); }
 .eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; }
 .eotion-timeline-row--unscheduled { z-index:3; }
 .eotion-timeline-unscheduled { display:flex; width:100%; height:100%; align-items:center; gap:8px; overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); padding:0 8px; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; }

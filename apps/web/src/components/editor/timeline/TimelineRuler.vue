@@ -19,7 +19,7 @@ const positionedTicks = computed(() => props.ticks.map(tick => ({
 </template>
 
 <style scoped>
-.eotion-timeline-ruler { position:relative; width:100%; height:56px; overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); background:var(--e-color-canvas, var(--editor-canvas)); }
+.eotion-timeline-ruler { position:relative; width:100%; height:var(--timeline-header-height, 56px); overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); background:var(--e-color-canvas, var(--editor-canvas)); }
 .eotion-timeline-ruler-tick { position:absolute; top:0; height:100%; box-sizing:border-box; border-left:1px solid; }
 .eotion-timeline-ruler-tick--major { border-color:color-mix(in srgb,var(--e-color-border-strong, var(--border-editor)) 75%,transparent); }
 .eotion-timeline-ruler-tick--minor { border-color:color-mix(in srgb,var(--e-color-border, var(--border-editor)) 55%,transparent); }

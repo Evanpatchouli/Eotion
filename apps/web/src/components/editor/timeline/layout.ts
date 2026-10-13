@@ -5,6 +5,7 @@ import type { TimelineItemProjection } from './projection'
 
 export const TIMELINE_ROW_HEIGHT = 48
 export const TIMELINE_BAR_HEIGHT = 32
+export const TIMELINE_HEADER_HEIGHT = 56
 const ROW_OVERSCAN = 5
 
 export type TimelineRowWindow = {

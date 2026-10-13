@@ -7,7 +7,9 @@ import { IconName } from '../ui/icons'
 import EotionIcon from '../ui/EotionIcon.vue'
 import TimelineHeader from './timeline/TimelineHeader.vue'
 import TimelineViewport from './timeline/TimelineViewport.vue'
-import { layoutTimelineItems } from './timeline/layout'
+import FrozenTablePane from './timeline/FrozenTablePane.vue'
+import { projectFrozenTableDisplay, resolveFrozenTableProperties } from './timeline/frozenTable'
+import { layoutTimelineItems, TIMELINE_HEADER_HEIGHT } from './timeline/layout'
 import { projectTimelineRecords } from './timeline/projection'
 import { resolveTimelineTemporalGeometry } from './timeline/geometry'
 import { viewportTransform } from './timeline/viewport'
@@ -26,6 +28,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   openRecord: [event: MouseEvent, pageId: string]
+  visibleRecords: [scope: string, recordIds: readonly string[]]
 }>()
 
 const recordsExpanded = ref(false)
@@ -35,8 +38,14 @@ const scroller = ref<HTMLElement | null>(null)
 const rulerAnchor = ref<HTMLElement | null>(null)
 const body = ref<HTMLElement | null>(null)
 const focusedRecordId = ref<string | null>(null)
+const hoveredRecordId = ref<string | null>(null)
 const timelineOptions = computed(() => (props.config.options as DatabaseTimelineViewOptions | undefined)?.timeline)
 const configuredScale = computed(() => timelineOptions.value?.scale ?? 'month')
+const frozenColumns = computed(() => resolveFrozenTableProperties(props.properties, props.config))
+const frozenTableVisible = computed(() => timelineOptions.value?.frozenTable?.visible === true)
+const frozenDisplayMap = computed(() => frozenTableVisible.value
+  ? projectFrozenTableDisplay(props.records, frozenColumns.value, props.formatValue)
+  : new Map())
 const projectedItems = computed(() => projectTimelineRecords({
   records: props.records,
   properties: props.properties,
@@ -47,7 +56,7 @@ const rowIndexByRecordId = computed(() => new Map(projectedItems.value.map(item 
 const focusedRowIndex = computed(() => focusedRecordId.value === null ? null : rowIndexByRecordId.value.get(focusedRecordId.value) ?? null)
 const unscheduledItems = computed(() => projectedItems.value.filter(item => item.kind === 'unscheduled'))
 watch(() => unscheduledItems.value.length, count => { if (count === 0) recordsExpanded.value = false })
-watch(() => props.scope, () => { focusedRecordId.value = null; recordsExpanded.value = false }, { flush: 'sync' })
+watch(() => props.scope, () => { focusedRecordId.value = null; hoveredRecordId.value = null; recordsExpanded.value = false }, { flush: 'sync' })
 const viewport = useTimelineViewport({
   root,
   scroller,
@@ -64,11 +73,19 @@ const rowGeometry = computed(() => {
   if (!state) return []
   return layoutTimelineItems(projectedItems.value, temporalMap.value, viewportTransform(state), viewport.rowWindow.value)
 })
+watch(
+  [() => props.scope, () => rowGeometry.value.map(row => row.item.recordId).join('\u0000')],
+  ([scope]) => emit('visibleRecords', scope, rowGeometry.value.map(row => row.item.recordId)),
+  { flush: 'post', immediate: true },
+)
 const bodyHeight = computed(() => Math.max(240, viewport.rowWindow.value.totalHeight))
+watch(rowGeometry, rows => {
+  if (hoveredRecordId.value && !rows.some(row => row.item.recordId === hoveredRecordId.value)) hoveredRecordId.value = null
+})
 
 function onFocusOut(event: FocusEvent): void {
   const next = event.relatedTarget
-  if (next instanceof Element && next.closest('[data-timeline-row]') && root.value?.contains(next)) return
+  if (next instanceof Element && next.closest('[data-timeline-row], [data-timeline-frozen-row]') && root.value?.contains(next)) return
   focusedRecordId.value = null
 }
 
@@ -102,6 +119,7 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
   <section
     ref="root"
     class="eotion-database-timeline"
+    :style="{ '--timeline-header-height': `${TIMELINE_HEADER_HEIGHT}px` }"
     data-testid="database-timeline"
     :data-scale="viewport.effectiveScale.value"
     :data-configured-scale="configuredScale"
@@ -117,23 +135,40 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
       @next="viewport.next"
       @select-scale="viewport.selectScale"
     />
-    <TimelineViewport
-      :state="viewport.state.value"
-      :ruler-ticks="viewport.rulerTicks.value"
-      :grid-ticks="viewport.ticks.value"
-      :today-x="viewport.todayX.value"
-      :pin-y="viewport.pinY.value"
-      :canvas-width-px="viewport.canvasWidthPx.value"
-      :body-height="bodyHeight"
-      :row-window="viewport.rowWindow.value"
-      :rows="rowGeometry"
-      :selected-page-id="selectedPageId"
-      @scroller-ref="viewport.bindScroller"
-      @ruler-ref="viewport.bindRulerAnchor"
-      @body-ref="viewport.bindBody"
-      @open-record="(event, pageId) => emit('openRecord', event, pageId)"
-      @focus-row="focusRow"
-    />
+    <div class="eotion-timeline-content" data-testid="timeline-content">
+      <FrozenTablePane
+        v-if="frozenTableVisible"
+        :columns="frozenColumns"
+        :display-map="frozenDisplayMap"
+        :rows="rowGeometry"
+        :body-height="bodyHeight"
+        :pin-y="viewport.pinY.value"
+        :selected-page-id="selectedPageId"
+        :hovered-record-id="hoveredRecordId"
+        @open-record="(event, pageId) => emit('openRecord', event, pageId)"
+        @hover-record="hoveredRecordId = $event"
+        @focus-row="focusRow"
+      />
+      <TimelineViewport
+        :state="viewport.state.value"
+        :ruler-ticks="viewport.rulerTicks.value"
+        :grid-ticks="viewport.ticks.value"
+        :today-x="viewport.todayX.value"
+        :pin-y="viewport.pinY.value"
+        :canvas-width-px="viewport.canvasWidthPx.value"
+        :body-height="bodyHeight"
+        :row-window="viewport.rowWindow.value"
+        :rows="rowGeometry"
+        :selected-page-id="selectedPageId"
+        :hovered-record-id="hoveredRecordId"
+        @scroller-ref="viewport.bindScroller"
+        @ruler-ref="viewport.bindRulerAnchor"
+        @body-ref="viewport.bindBody"
+        @open-record="(event, pageId) => emit('openRecord', event, pageId)"
+        @focus-row="focusRow"
+        @hover-record="hoveredRecordId = $event"
+      />
+    </div>
     <p v-if="records.length === 0" class="eotion-database-timeline-empty">暂无记录</p>
     <details v-if="unscheduledItems.length > 0" :key="scope" class="eotion-database-timeline-records" @toggle="onUnscheduledToggle">
       <summary>未排期（{{ unscheduledItems.length }}）</summary>
@@ -162,7 +197,15 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
   min-width: 0;
   max-width: 100%;
   overflow: clip;
+  container: eotion-timeline-root / inline-size;
   color: var(--e-color-text-primary, var(--editor-text));
+}
+.eotion-timeline-content { display:flex; width:100%; min-width:0; max-width:100%; align-items:stretch; overflow:clip; }
+.eotion-timeline-content > :deep(.eotion-timeline-viewport) { flex:1 1 0; width:auto; min-width:0; }
+@container eotion-timeline-root (max-width:700px) {
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen) { flex:0 0 min(120px, 40%); width:min(120px, 40%); min-width:0; max-width:40%; }
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-cell:not(.is-title)) { display:none; }
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-cell.is-title) { order:-1; flex:1 1 0; }
 }
 .eotion-database-timeline-records { margin-top: 10px; border-top: 1px solid var(--e-color-border, var(--border-editor)); }
 .eotion-database-timeline-records summary { min-height: 40px; padding: 10px 2px; color: var(--e-color-text-secondary, var(--editor-muted)); cursor: pointer; }

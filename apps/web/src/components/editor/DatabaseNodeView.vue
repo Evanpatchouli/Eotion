@@ -20,7 +20,7 @@ import DatabasePropertyMenu from './DatabasePropertyMenu.vue'
 import DatabaseListView from './DatabaseListView.vue'
 import DatabaseBoardView from './DatabaseBoardView.vue'
 import DatabaseTimelineView from './DatabaseTimelineView.vue'
-import { resolveFrozenTableProperties } from './timeline/frozenTable'
+import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTitleColumn } from './timeline/frozenTable'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -216,6 +216,7 @@ const relationLoading = ref(false)
 const relationError = ref('')
 const relationTitleError = ref('')
 const relationTitles = ref(new Map<string, RelationOption>())
+const pendingRelationTitleKeys = new Set<string>()
 let relationRequestEpoch = 0
 let relationTitleEpoch = 0
 let selectedTitleEpoch = 0
@@ -225,6 +226,7 @@ const columnDraftProperties = computed(() => columnDraft.value.order
   .filter((property): property is DatabasePropertyResponse => Boolean(property)))
 const records = ref<TableRecord[]>([])
 const timelineScope = computed(() => [auth.user?.id ?? '', workspaceId.value, databaseId.value, viewId.value, blockId.value].join('\u0000'))
+const timelineVisibleRecordIds = ref<string[]>([])
 const timelineSelectedPageId = computed(() => {
   const record = databaseContent.record
   return record && record.workspaceId === workspaceId.value && record.databaseId === databaseId.value ? record.pageId : null
@@ -325,35 +327,75 @@ function getCellValue(record: TableRecord, propertyId: string): unknown {
   return Object.hasOwn(record.properties, propertyId) ? record.properties[propertyId] : undefined
 }
 
-async function resolveVisibleRelationTitles(): Promise<void> {
-  const epoch = ++relationTitleEpoch
-  if (!online.value) return
-  const grouped = new Map<string, string[]>()
-  let budget = 500
-  const relationProperties = new Map(displayProperties.value.filter(item => item.type === 'relation').map(property => [property.id, property]))
+async function resolveVisibleRelationTitles(windowOnly = false): Promise<void> {
+  if (windowOnly && viewType.value !== 'timeline') return
+  if (!windowOnly && !online.value) { relationTitleEpoch += 1; pendingRelationTitleKeys.clear(); return }
+  if (windowOnly && !online.value) return
+  const isTimeline = viewType.value === 'timeline'
+  const relationProperties = new Map<string, RelationTitleColumn>()
+  for (const property of displayProperties.value) {
+    if (property.type === 'relation') relationProperties.set(property.id, { propertyId: property.id, targetDatabaseId: (property.config as { targetDatabaseId: string }).targetDatabaseId })
+  }
   if (viewType.value === 'timeline') {
     for (const property of resolveFrozenTableProperties(properties.value, viewConfig.value)) {
-      if (property.type === 'relation' && !relationProperties.has(property.id)) relationProperties.set(property.id, property)
+      if (property.type === 'relation' && !relationProperties.has(property.id)) relationProperties.set(property.id, { propertyId: property.id, targetDatabaseId: (property.config as { targetDatabaseId: string }).targetDatabaseId })
     }
   }
-  for (const property of relationProperties.values()) {
-    const targetId = (property.config as { targetDatabaseId: string }).targetDatabaseId
-    for (const record of records.value) for (const id of Array.isArray(getCellValue(record, property.id)) ? (getCellValue(record, property.id) as string[]).slice(0, 3) : []) {
-      const ids = grouped.get(targetId) ?? []
-      if (!ids.includes(id) && budget > 0) { ids.push(id); grouped.set(targetId, ids); budget -= 1 }
+  let grouped: Map<string, string[]>
+  if (isTimeline) {
+    const visibleIds = new Set(timelineVisibleRecordIds.value)
+    const recordsById = new Map(records.value.map(record => [record.id, record]))
+    const visibleRecords = timelineVisibleRecordIds.value.flatMap(id => {
+      const record = recordsById.get(id)
+      return record ? [record] : []
+    })
+    const requestRecords = windowOnly
+      ? visibleRecords
+      : [...visibleRecords, ...records.value.filter(record => !visibleIds.has(record.id))]
+    grouped = collectRelationTitleIds(requestRecords, [...relationProperties.values()], 500, windowOnly ? new Set(relationTitles.value.keys()) : undefined)
+  } else {
+    grouped = new Map()
+    let budget = 500
+    for (const property of relationProperties.values()) {
+      for (const record of records.value) {
+        const value = getCellValue(record, property.propertyId)
+        for (const id of Array.isArray(value) ? value.slice(0, 3) as string[] : []) {
+          const ids = grouped.get(property.targetDatabaseId) ?? []
+          if (!ids.includes(id) && budget > 0) { ids.push(id); grouped.set(property.targetDatabaseId, ids); budget -= 1 }
+        }
+      }
     }
   }
-  relationTitleError.value = ''
   const batches = [...grouped].flatMap(([targetId, ids]) => Array.from({ length: Math.ceil(ids.length / 50) }, (_, index) => ({ targetId, ids: ids.slice(index * 50, index * 50 + 50) }))).slice(0, 10)
-  for (let index = 0; index < batches.length; index += 3) {
-    await Promise.all(batches.slice(index, index + 3).map(async ({ targetId, ids }) => {
-      try {
-        const result = await resolveProductRelationTitles(workspaceId.value, targetId, ids)
-        if (epoch !== relationTitleEpoch) return
-        for (const item of result.items) relationTitles.value.set(`${targetId}\u0000${item.recordId}`, item)
-      } catch (cause) { if (epoch === relationTitleEpoch) relationTitleError.value = errorMessage(cause, '关联标题加载失败，请重试。') }
-    }))
+  if (windowOnly && batches.length === 0) return
+  const batchKeys = new Set(batches.flatMap(({ targetId, ids }) => ids.map(id => `${targetId}\u0000${id}`)))
+  if (windowOnly && [...batchKeys].every(key => pendingRelationTitleKeys.has(key))) return
+  const epoch = ++relationTitleEpoch
+  pendingRelationTitleKeys.clear()
+  for (const key of batchKeys) pendingRelationTitleKeys.add(key)
+  relationTitleError.value = ''
+  try {
+    for (let index = 0; index < batches.length; index += 3) {
+      if (epoch !== relationTitleEpoch) return
+      await Promise.all(batches.slice(index, index + 3).map(async ({ targetId, ids }) => {
+        try {
+          const result = await resolveProductRelationTitles(workspaceId.value, targetId, ids)
+          if (epoch !== relationTitleEpoch) return
+          for (const item of result.items) relationTitles.value.set(`${targetId}\u0000${item.recordId}`, item)
+        } catch (cause) { if (epoch === relationTitleEpoch) relationTitleError.value = errorMessage(cause, '关联标题加载失败，请重试。') }
+      }))
+    }
+  } finally {
+    if (epoch === relationTitleEpoch) pendingRelationTitleKeys.clear()
   }
+}
+function onTimelineVisibleRecords(scope: string, recordIds: readonly string[]): void {
+  if (scope !== timelineScope.value || viewType.value !== 'timeline' || !viewReady.value) return
+  const availableIds = new Set(records.value.map(record => record.id))
+  const nextIds = [...new Set(recordIds.filter(id => typeof id === 'string' && availableIds.has(id)))]
+  if (nextIds.length === timelineVisibleRecordIds.value.length && nextIds.every((id, index) => id === timelineVisibleRecordIds.value[index])) return
+  timelineVisibleRecordIds.value = nextIds
+  void resolveVisibleRelationTitles(true)
 }
 async function resolveSelectedRelationTitles(record: TableRecord, property: DatabasePropertyResponse): Promise<void> {
   const ids = getCellValue(record, property.id)
@@ -1644,6 +1686,7 @@ onBeforeUnmount(() => {
   requestEpoch += 1
   relationRequestEpoch += 1
   relationTitleEpoch += 1
+  pendingRelationTitleKeys.clear()
   selectedTitleEpoch += 1
   window.removeEventListener(DATABASE_RECORD_CREATED_EVENT, onRecordCreated)
   window.removeEventListener(DATABASE_UPDATED_EVENT, onDatabaseChanged)
@@ -1693,6 +1736,13 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
     loadedViewIdentity.value = ''
   }
   void loadTable()
+})
+watch([timelineScope, viewType], ([scope], [previousScope]) => {
+  timelineVisibleRecordIds.value = []
+  if (scope !== previousScope) {
+    relationTitleEpoch += 1
+    pendingRelationTitleKeys.clear()
+  }
 })
 </script>
 
@@ -1841,7 +1891,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" @open-record="openRecordPage" />
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
       <div v-else-if="viewType === 'table' && properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>

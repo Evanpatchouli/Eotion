@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import type { DatabaseProperty, DatabaseRecord, DatabaseTimelineViewConfig } from '@eotion/domain/database'
-import { projectFrozenTableDisplay, resolveFrozenTableProperties } from '../src/components/editor/timeline/frozenTable'
+import { collectRelationTitleIds, projectFrozenTableDisplay, resolveFrozenTableProperties } from '../src/components/editor/timeline/frozenTable'
 import { projectTimelineRecords, type TimelineRecordInput } from '../src/components/editor/timeline/projection'
 import { resolveTimelineTemporalGeometry } from '../src/components/editor/timeline/geometry'
 import { layoutTimelineItems, timelineRowWindow, TIMELINE_ROW_HEIGHT } from '../src/components/editor/timeline/layout'
@@ -122,4 +122,26 @@ test('Frozen display follows the same projected layout rows, including an unsche
   expect(rows.find(row => row.rowIndex === 0)?.item.kind).toBe('point')
   expect(rows.find(row => row.rowIndex === 101)?.item.kind).toBe('unscheduled')
   expect(frozenDisplay.has('layout-101')).toBe(true)
+})
+
+test('relation title budget visits each record before the next record and window collection skips cached titles', () => {
+  const relationColumns = [
+    { propertyId: 'bar-relation', targetDatabaseId: 'bar-target' },
+    { propertyId: 'frozen-relation', targetDatabaseId: 'frozen-target' },
+  ]
+  const records = Array.from({ length: 300 }, (_, index) => record(`fair-${index}`, {
+    'bar-relation': [`bar-${index}`],
+    'frozen-relation': [`frozen-${index}`],
+  }))
+  const requests = collectRelationTitleIds(records, relationColumns, 500)
+  expect(requests.get('bar-target')).toHaveLength(250)
+  expect(requests.get('frozen-target')).toHaveLength(250)
+
+  const windowRequests = collectRelationTitleIds(
+    [records[0]!],
+    relationColumns,
+    500,
+    new Set(['bar-target\u0000bar-0']),
+  )
+  expect(windowRequests).toEqual(new Map([['frozen-target', ['frozen-0']]]))
 })
