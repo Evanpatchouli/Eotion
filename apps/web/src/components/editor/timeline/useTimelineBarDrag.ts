@@ -1,8 +1,8 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { DatabaseDateValue } from '@eotion/domain/date'
 import { normalizeDatabaseDateValue } from '@eotion/domain/date'
-import type { TimelineMoveCommand, TimelineTemporalOffset } from './mutation'
-import { offsetTimelineDateValue, temporalOffsetFromX } from './mutation'
+import type { TimelineMoveCommand } from './mutation'
+import { offsetTimelineDateValue, resizeTimelineDateValueFromX, temporalOffsetFromX } from './mutation'
 import { resolveTimelineTemporalGeometry } from './geometry'
 import { layoutTimelineItem, type TimelineItemGeometry } from './layout'
 import type { TimelineItemProjection, TimelineTemporalPoint } from './projection'
@@ -34,7 +34,8 @@ type Options = {
 
 type ActiveDrag = {
   pointerId: number
-  target: HTMLButtonElement
+  target: HTMLElement
+  mode: 'move' | 'start' | 'end'
   startX: number
   startY: number
   transform: Transform
@@ -56,11 +57,34 @@ function shiftedPoint(value: DatabaseDateValue, endpoint: 'start' | 'end'): Time
 
 function shiftedItem(item: TimelineItemProjection, value: DatabaseDateValue): TimelineItemProjection | null {
   if (item.kind === 'unscheduled') return null
+  const normalized = normalizeDatabaseDateValue(value)
+  if (!normalized) return null
   const start = shiftedPoint(value, 'start')
   if (!start) return null
-  if (item.kind === 'point') return { ...item, start }
+  const base = {
+    recordId: item.recordId,
+    pageId: item.pageId,
+    title: item.title,
+    dateLabel: item.dateLabel,
+    rowIndex: item.rowIndex,
+    visibleProperties: item.visibleProperties,
+  }
+  if (!normalized.end) return { ...base, kind: 'point', start, end: null }
   const end = shiftedPoint(value, 'end')
-  return end ? { ...item, start, end } : null
+  return end ? {
+    ...base,
+    kind: 'range',
+    start,
+    end,
+    precision: normalized.kind,
+    explicitZeroDuration: normalized.start === normalized.end,
+  } : null
+}
+
+function normalizedValuesEqual(left: DatabaseDateValue, right: DatabaseDateValue): boolean {
+  const normalizedLeft = normalizeDatabaseDateValue(left)
+  const normalizedRight = normalizeDatabaseDateValue(right)
+  return !!normalizedLeft && !!normalizedRight && JSON.stringify(normalizedLeft) === JSON.stringify(normalizedRight)
 }
 
 function previewDate(value: DatabaseDateValue | null): string {
@@ -77,6 +101,7 @@ export function useTimelineBarDrag(options: Options) {
   const previewValue = ref<DatabaseDateValue | null>(null)
   const state = ref<'idle' | 'armed' | 'dragging' | 'saving'>('idle')
   const active = ref<ActiveDrag | null>(null)
+  const activeMode = computed(() => active.value?.mode ?? null)
   const pending = ref<{ session: TimelineBarDragSession; transform: Transform } | null>(null)
   const suppressNextClick = ref(false)
   let epoch = 0
@@ -106,7 +131,8 @@ export function useTimelineBarDrag(options: Options) {
     else if (!preserveReleaseClick) suppressNextClick.value = false
   }
 
-  function begin(event: PointerEvent): void {
+  function begin(event: PointerEvent, mode: 'move' | 'start' | 'end' = 'move'): void {
+    if (active.value || pending.value) return
     suppressNextClick.value = false
     if (!options.enabled() || event.button !== 0 || event.isPrimary === false || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
     const transform = options.transform()
@@ -114,11 +140,13 @@ export function useTimelineBarDrag(options: Options) {
     const session = options.prepareDrag(options.item().recordId)
     if (!session || session.scope !== options.scope() || session.expectedRecordVersion !== options.recordVersion()) return
     const target = event.currentTarget
-    if (!(target instanceof HTMLButtonElement)) return
+    if (!(target instanceof HTMLElement)) return
+    if (mode !== 'move') { event.preventDefault(); event.stopPropagation() }
     epoch += 1
     active.value = {
       pointerId: event.pointerId,
       target,
+      mode,
       startX: event.clientX,
       startY: event.clientY,
       transform: { ...transform },
@@ -151,14 +179,16 @@ export function useTimelineBarDrag(options: Options) {
     event.preventDefault()
     current.moved = true
     state.value = 'dragging'
-    const offset = temporalOffsetFromX(current.session.originalValue, deltaX, current.transform, current.zone)
-    if (!offset) {
-      previewGeometry.value = null
-      previewValue.value = null
-      return
-    }
-    const value = offsetTimelineDateValue(current.session.originalValue, offset)
+    const value = computeValue(current, deltaX)
     updatePreview(value, current)
+  }
+
+  function computeValue(current: ActiveDrag, deltaX: number): DatabaseDateValue | null {
+    if (current.mode === 'move') {
+      const offset = temporalOffsetFromX(current.session.originalValue, deltaX, current.transform, current.zone)
+      return offset ? offsetTimelineDateValue(current.session.originalValue, offset) : null
+    }
+    return resizeTimelineDateValueFromX(current.session.originalValue, current.mode, deltaX, current.transform, current.zone)
   }
 
   async function finish(event: PointerEvent): Promise<void> {
@@ -167,14 +197,11 @@ export function useTimelineBarDrag(options: Options) {
     if (!options.isViewportCurrent(current.transform)) { cancel(); return }
     const deltaX = event.clientX - current.startX
     const didMove = current.moved || Math.abs(deltaX) >= 4 && Math.abs(deltaX) >= Math.abs(event.clientY - current.startY)
-    const offset: TimelineTemporalOffset | null = didMove
-      ? temporalOffsetFromX(current.session.originalValue, deltaX, current.transform, current.zone)
-      : null
-    const value = offset ? offsetTimelineDateValue(current.session.originalValue, offset) : null
+    const value = didMove ? computeValue(current, deltaX) : null
     clearActive()
     if (!didMove) return
     suppressNextClick.value = true
-    if (!offset || !value || offset.kind === 'date-only' && offset.days === 0 || offset.kind === 'datetime' && offset.milliseconds === 0) {
+    if (!value || normalizedValuesEqual(current.session.originalValue, value)) {
       previewGeometry.value = null
       previewValue.value = null
       return
@@ -235,5 +262,5 @@ export function useTimelineBarDrag(options: Options) {
 
   onBeforeUnmount(() => { cancel(); suppressNextClick.value = false; window.removeEventListener('blur', onWindowBlur) })
 
-  return { geometry, previewDate: date, state, begin, move, finish, cancel, click, onKeydown, onLostPointerCapture }
+  return { geometry, previewDate: date, state, activeMode, begin, move, finish, cancel, click, onKeydown, onLostPointerCapture }
 }

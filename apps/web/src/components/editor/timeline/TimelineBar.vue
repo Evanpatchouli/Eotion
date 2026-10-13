@@ -49,6 +49,38 @@ const previewLabelStyle = computed(() => {
   const left = Math.max(transform.scrollLeft, Math.min(drag.geometry.value.x, visibleRight - 120))
   return { left: `${left}px`, top: '1px', maxWidth: `${Math.max(0, Math.min(180, visibleRight - left))}px` }
 })
+const barGeometry = computed(() => drag.geometry.value)
+const showStartHandle = computed(() => props.draggable && props.item.kind === 'range' && (!barGeometry.value.clippedLeft || drag.activeMode.value === 'start'))
+const showEndHandle = computed(() => props.draggable && (!barGeometry.value.clippedRight || drag.activeMode.value === 'end'))
+const handleCenters = computed(() => {
+  const geometry = barGeometry.value
+  const viewport = props.transform
+  const hasBounds = viewport && Number.isFinite(viewport.scrollLeft) && Number.isFinite(viewport.width)
+  const minCenter = hasBounds ? viewport.scrollLeft + 6 : Number.NEGATIVE_INFINITY
+  const maxCenter = hasBounds ? viewport.scrollLeft + Math.max(6, viewport.width - 6) : Number.POSITIVE_INFINITY
+  const clamp = (center: number) => Math.min(maxCenter, Math.max(minCenter, center))
+  const range = props.item.kind === 'range'
+  const startAnchor = geometry.marker ? geometry.rawX - 18 : geometry.rawX - 6
+  const endAnchor = geometry.marker ? geometry.rawX + 18 : geometry.rawX + geometry.rawWidth + 6
+  let start = clamp(startAnchor)
+  let end = clamp(endAnchor)
+  if (range && end - start < 12) {
+    const separation = Math.min(12, Math.max(0, maxCenter - minCenter))
+    end = Math.min(maxCenter, start + separation)
+    if (end - start < separation) start = Math.max(minCenter, end - separation)
+  }
+  return { start, end, startClamped: start !== startAnchor, endClamped: end !== endAnchor }
+})
+const startHandleStyle = computed(() => ({
+  left: `${handleCenters.value.start}px`,
+  top: `${barGeometry.value.top - barGeometry.value.rowTop - (handleCenters.value.startClamped && (barGeometry.value.marker || barGeometry.value.width < 24) ? 8 : 0)}px`,
+}))
+const endHandleStyle = computed(() => ({
+  left: `${handleCenters.value.end}px`,
+  top: `${barGeometry.value.top - barGeometry.value.rowTop - (handleCenters.value.endClamped && (barGeometry.value.marker || barGeometry.value.width < 24) ? 8 : 0)}px`,
+}))
+const startHandleCompact = computed(() => handleCenters.value.startClamped && (barGeometry.value.marker || barGeometry.value.width < 24))
+const endHandleCompact = computed(() => handleCenters.value.endClamped && (barGeometry.value.marker || barGeometry.value.width < 24))
 
 function tooltip(): string {
   const details = props.visibleProperties.filter(property => property.displayText).map(property => property.displayText)
@@ -56,12 +88,18 @@ function tooltip(): string {
   const date = drag.previewDate.value ? `预览日期 ${drag.previewDate.value}` : props.dateLabel
   return [props.title || '无标题', date, diagnostic, ...details].filter(Boolean).join(' · ')
 }
+
+function handleClick(event: MouseEvent): void {
+  event.preventDefault()
+  event.stopPropagation()
+  drag.click(event)
+}
 </script>
 
 <template>
   <button
     class="eotion-timeline-bar"
-    :class="{ 'eotion-timeline-bar--marker': geometry.marker, 'is-selected': selected, 'is-hovered': hovered, 'is-draggable': draggable, 'is-dragging': drag.state.value === 'dragging' || drag.state.value === 'saving' }"
+    :class="{ 'eotion-timeline-bar--marker': drag.geometry.value.marker, 'is-selected': selected, 'is-hovered': hovered, 'is-draggable': draggable, 'is-dragging': drag.state.value === 'dragging' || drag.state.value === 'saving' }"
     :style="{
       left: `${drag.geometry.value.x}px`,
       top: `${drag.geometry.value.top - drag.geometry.value.rowTop + (drag.geometry.value.marker ? drag.geometry.value.height / 2 : 0)}px`,
@@ -72,7 +110,7 @@ function tooltip(): string {
     :aria-label="tooltip() || title || '无标题'"
     :aria-pressed="selected"
     data-testid="timeline-bar"
-    :data-record-id="geometry.recordId"
+    :data-record-id="drag.geometry.value.recordId"
     :data-kind="drag.geometry.value.kind"
     :data-marker="drag.geometry.value.marker ? 'true' : 'false'"
     :data-drag-state="drag.state.value"
@@ -88,7 +126,7 @@ function tooltip(): string {
     @keydown="drag.onKeydown"
     @click="!drag.click($event) && emit('click', $event)"
   >
-    <span class="eotion-timeline-bar-shape" :class="{ 'is-range': !geometry.marker }" :data-testid="geometry.marker ? 'timeline-marker' : undefined" aria-hidden="true" />
+    <span class="eotion-timeline-bar-shape" :class="{ 'is-range': !drag.geometry.value.marker }" :data-testid="drag.geometry.value.marker ? 'timeline-marker' : undefined" aria-hidden="true" />
     <span class="eotion-timeline-bar-content">
       <span class="eotion-timeline-bar-title">{{ title || '无标题' }}</span>
       <span v-if="visibleProperties.some(property => property.displayText)" class="eotion-timeline-bar-properties">
@@ -98,6 +136,44 @@ function tooltip(): string {
       </span>
     </span>
   </button>
+  <button
+    v-if="showStartHandle"
+    class="eotion-timeline-resize-handle eotion-timeline-resize-handle--start"
+    :class="{ 'is-hovered': hovered, 'is-selected': selected, 'is-compact': startHandleCompact }"
+    :style="startHandleStyle"
+    :aria-label="`调整开始日期：${title || '无标题'}`"
+    :title="`调整开始日期：${title || '无标题'}`"
+    :data-record-id="drag.geometry.value.recordId"
+    data-testid="timeline-resize-start"
+    type="button"
+    @focus="emit('focusRow')"
+    @pointerdown.stop.prevent="drag.begin($event, 'start')"
+    @pointermove.stop="drag.move"
+    @pointerup.stop="drag.finish"
+    @pointercancel.stop="drag.cancel"
+    @lostpointercapture="drag.onLostPointerCapture"
+    @keydown="drag.onKeydown"
+    @click="handleClick"
+  ><span aria-hidden="true" /></button>
+  <button
+    v-if="showEndHandle"
+    class="eotion-timeline-resize-handle eotion-timeline-resize-handle--end"
+    :class="{ 'is-hovered': hovered, 'is-selected': selected, 'is-compact': endHandleCompact }"
+    :style="endHandleStyle"
+    :aria-label="`调整结束日期：${title || '无标题'}`"
+    :title="`调整结束日期：${title || '无标题'}`"
+    :data-record-id="drag.geometry.value.recordId"
+    data-testid="timeline-resize-end"
+    type="button"
+    @focus="emit('focusRow')"
+    @pointerdown.stop.prevent="drag.begin($event, 'end')"
+    @pointermove.stop="drag.move"
+    @pointerup.stop="drag.finish"
+    @pointercancel.stop="drag.cancel"
+    @lostpointercapture="drag.onLostPointerCapture"
+    @keydown="drag.onKeydown"
+    @click="handleClick"
+  ><span aria-hidden="true" /></button>
   <div
     v-if="drag.previewDate.value"
     class="eotion-timeline-drag-preview"
@@ -148,5 +224,14 @@ function tooltip(): string {
 .eotion-timeline-bar--marker:hover .eotion-timeline-bar-shape { background: var(--e-color-accent, var(--editor-accent)); }
 .eotion-timeline-bar--marker.is-selected .eotion-timeline-bar-shape { background: var(--e-color-accent, var(--editor-accent)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--e-color-accent, var(--editor-accent)) 24%, transparent); }
 .eotion-timeline-bar--marker:focus-visible .eotion-timeline-bar-shape { box-shadow: 0 0 0 3px color-mix(in srgb, var(--e-color-focus, var(--editor-focus)) 28%, transparent); }
+.eotion-timeline-resize-handle { position:absolute; z-index:6; width:12px; height:32px; transform:translateX(-50%); border:0; border-radius:4px; padding:0; background:transparent; opacity:0; cursor:ew-resize; touch-action:none; }
+.eotion-timeline-resize-handle span { display:block; width:2px; height:18px; margin:auto; border-radius:2px; background:var(--e-color-accent, var(--editor-accent)); box-shadow:0 0 0 2px var(--e-color-surface, var(--editor-surface)); }
+.eotion-timeline-resize-handle.is-compact { height:16px; }
+.eotion-timeline-resize-handle.is-compact span { height:12px; pointer-events:none; }
+.eotion-timeline-resize-handle.is-hovered, .eotion-timeline-resize-handle.is-selected, .eotion-timeline-resize-handle:hover, .eotion-timeline-resize-handle:focus-visible { opacity:1; }
+.eotion-timeline-resize-handle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
+.eotion-timeline-bar:focus-visible ~ .eotion-timeline-resize-handle { opacity:1; }
+.eotion-timeline-row.is-hovered .eotion-timeline-resize-handle, .eotion-timeline-row.is-selected .eotion-timeline-resize-handle { opacity:1; }
 @media (pointer:coarse) { .eotion-timeline-bar--marker { width:44px; height:44px; } }
+@media (pointer:coarse) { .eotion-timeline-resize-handle { opacity:1; width:10px; } }
 </style>

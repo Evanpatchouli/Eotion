@@ -3,6 +3,7 @@ import type { DatabasePropertyResponse, DatabaseViewRecordsResponse } from '@eot
 import type { DatabaseTimelineViewOptions, DatabaseViewConfig } from '@eotion/domain/database'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import type { TimelineMoveCommand } from './timeline/mutation'
+import { isWritableTimelineDateSource } from './timeline/mutation'
 import { computed, ref, watch } from 'vue'
 
 import { IconName } from '../ui/icons'
@@ -47,7 +48,7 @@ const focusedRecordId = ref<string | null>(null)
 const hoveredRecordId = ref<string | null>(null)
 const timelineOptions = computed(() => (props.config.options as DatabaseTimelineViewOptions | undefined)?.timeline)
 const configuredScale = computed(() => timelineOptions.value?.scale ?? 'month')
-const barDraggable = computed(() => props.writable && timelineOptions.value?.dateSource?.mode === 'date-property')
+const barDraggable = computed(() => props.writable && isWritableTimelineDateSource(timelineOptions.value?.dateSource))
 const barTransform = computed(() => viewport.state.value ? viewportTransform(viewport.state.value) : null)
 const recordVersionById = computed(() => new Map(props.records.map(record => [record.id, record.version])))
 const frozenColumns = computed(() => resolveFrozenTableProperties(props.properties, props.config))

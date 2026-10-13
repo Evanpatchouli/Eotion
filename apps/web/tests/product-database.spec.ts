@@ -3,7 +3,7 @@ import path from 'node:path'
 import { expect, test, type Locator, type Page, type Route, type TestInfo } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain/database'
-import { pxPerMs } from '../src/components/editor/timeline/scale'
+import { getTimelineScale, pxPerMs } from '../src/components/editor/timeline/scale'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -68,6 +68,209 @@ function block(id: string, type: BlockResponse['type'], node: Record<string, unk
     orderKey: String(order).padStart(16, '0'), props: { node }, createdAt: now, updatedAt: now,
   }
 }
+
+function p113bSnapDeltaMs(endpoint: string, scale: Parameters<typeof getTimelineScale>[0], direction: -1 | 1 = 1): number {
+  const target = new Date(endpoint)
+  if (!Number.isFinite(target.getTime())) throw new Error(`Invalid P11.3B snap endpoint: ${endpoint}`)
+  const { unit, amount } = getTimelineScale(scale).futureSnapUnit
+  const step = amount * direction
+  if (unit === 'minute') target.setUTCMinutes(target.getUTCMinutes() + step)
+  else if (unit === 'hour') target.setUTCHours(target.getUTCHours() + step)
+  else if (unit === 'day') target.setUTCDate(target.getUTCDate() + step)
+  else if (unit === 'week') target.setUTCDate(target.getUTCDate() + step * 7)
+  else if (unit === 'month') target.setUTCMonth(target.getUTCMonth() + step)
+  else if (unit === 'quarter') target.setUTCMonth(target.getUTCMonth() + step * 3)
+  else target.setUTCFullYear(target.getUTCFullYear() + step)
+  return target.getTime() - Date.parse(endpoint)
+}
+
+async function p113bResize(page: Page, bar: Locator, handle: Locator, scale: Parameters<typeof getTimelineScale>[0], endpoint: string, direction: -1 | 1 = 1): Promise<void> {
+  await bar.scrollIntoViewIfNeeded()
+  const bounds = await handle.boundingBox()
+  if (!bounds) throw new Error('Expected visible P11.3B resize handle')
+  const deltaX = pxPerMs(scale) * p113bSnapDeltaMs(endpoint, scale, direction)
+  const x = bounds.x + bounds.width / 2
+  const y = bounds.y + bounds.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + deltaX, y, { steps: 4 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  await page.mouse.up()
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+}
+
+test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, and promotes legacy points to ranges', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const runtimeErrors: string[] = []
+  page.on('pageerror', error => runtimeErrors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') runtimeErrors.push(message.text()) })
+  const date = property('p113b-date', rootDatabase.id, 'Date', 'date')
+  const timelineView = view('p113b-date-view', rootDatabase.id, 'Resize dates', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id }, frozenTable: { visible: true, visibleProperties: ['root-title', date.id], propertyOrder: ['root-title', date.id] } } },
+  }, 'timeline')
+  const tableView = view('p113b-date-table-view', rootDatabase.id, 'Resize table')
+  const standaloneView = view('p113b-date-start-end-view', rootDatabase.id, 'Independent Start End', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'start-end', startPropertyId: 'p113b-start', endPropertyId: 'p113b-end' } } },
+  }, 'timeline')
+  const items = [
+    record('p113b-range', rootDatabase.id, 'p113b-range-page', { 'root-title': 'Range', [date.id]: { start: '2026-10-13', end: '2026-10-15' } }),
+    record('p113b-string-point', rootDatabase.id, 'p113b-string-page', { 'root-title': 'Legacy string', [date.id]: '2026-10-18' }),
+    record('p113b-object-point', rootDatabase.id, 'p113b-object-page', { 'root-title': 'Legacy object', [date.id]: { start: '2026-10-16' } }),
+    record('p113b-standalone', rootDatabase.id, 'p113b-standalone-page', { 'root-title': 'Independent Start End', 'p113b-start': '2026-10-13', 'p113b-end': '2026-10-15' }),
+  ]
+  const api = await installApi(page, [block('p113b-date-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100), block('p113b-start-end-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: standaloneView.id } }, 200)], {
+    databases: [rootDatabase], views: [timelineView, tableView, standaloneView], properties: [...rootProperties, date, property('p113b-start', rootDatabase.id, 'Start', 'date'), property('p113b-end', rootDatabase.id, 'End', 'date')], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const databaseBlock = page.locator('#database-block-p113b-date-block')
+  const timeline = databaseBlock.getByTestId('database-timeline')
+  const barFor = (id: string) => timeline.locator(`[data-testid="timeline-bar"][data-record-id="${id}"]`)
+  const rangeBar = barFor('p113b-range')
+  const startHandle = timeline.locator('[data-testid="timeline-resize-start"][data-record-id="p113b-range"]')
+  const endHandle = timeline.locator('[data-testid="timeline-resize-end"][data-record-id="p113b-range"]')
+  expect(await startHandle.evaluate(element => element.closest('[data-testid="timeline-bar"]'))).toBeNull()
+  expect(await endHandle.evaluate(element => element.closest('[data-testid="timeline-bar"]'))).toBeNull()
+  await expect(startHandle).toHaveAccessibleName('调整开始日期：Range')
+  await expect(endHandle).toHaveAccessibleName('调整结束日期：Range')
+  const beforePatchCount = () => api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/')).length
+  const patchesBeforeStart = beforePatchCount()
+  const startDate = await startHandle.boundingBox()
+  if (!startDate) throw new Error('Expected date range start resize handle')
+  await page.mouse.move(startDate.x + startDate.width / 2, startDate.y + startDate.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(startDate.x + startDate.width / 2 - pxPerMs('month') * 86_400_000, startDate.y + startDate.height / 2, { steps: 4 })
+  await expect(rangeBar).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(rangeBar).toHaveAttribute('data-preview-date', /2026-10-12/u)
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  expect(beforePatchCount()).toBe(patchesBeforeStart)
+  expect(api.records.find(item => item.id === 'p113b-range')?.properties[date.id]).toEqual({ start: '2026-10-13', end: '2026-10-15' })
+  await page.mouse.up()
+  await expect.poll(() => api.records.find(item => item.id === 'p113b-range')?.properties[date.id]).toEqual({ start: '2026-10-12', end: '2026-10-15' })
+  expect(beforePatchCount()).toBe(patchesBeforeStart + 1)
+  await expect(databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="p113b-range"] [data-property-id="${date.id}"]`)).toContainText('2026-10-12 → 2026-10-15')
+
+  const endBounds = await endHandle.boundingBox()
+  if (!endBounds) throw new Error('Expected date range end resize handle after start commit')
+  const patchesBeforeEnd = beforePatchCount()
+  await page.mouse.move(endBounds.x + endBounds.width / 2, endBounds.y + endBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(endBounds.x + endBounds.width / 2 + pxPerMs('month') * 86_400_000, endBounds.y + endBounds.height / 2, { steps: 4 })
+  await expect(rangeBar).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(rangeBar).toHaveAttribute('data-preview-date', /2026-10-16/u)
+  expect(beforePatchCount()).toBe(patchesBeforeEnd)
+  await page.mouse.up()
+  await expect.poll(() => api.records.find(item => item.id === 'p113b-range')?.properties[date.id]).toEqual({ start: '2026-10-12', end: '2026-10-16' })
+  expect(beforePatchCount()).toBe(patchesBeforeEnd + 1)
+
+  for (const [id, start] of [['p113b-string-point', '2026-10-18'], ['p113b-object-point', '2026-10-16']] as const) {
+    const bar = barFor(id)
+    const handle = timeline.locator(`[data-testid="timeline-resize-end"][data-record-id="${id}"]`)
+    await expect(timeline.locator(`[data-testid="timeline-resize-start"][data-record-id="${id}"]`)).toHaveCount(0)
+    const count = beforePatchCount()
+    const bounds = await handle.boundingBox()
+    if (!bounds) throw new Error(`Expected legacy point end handle for ${id}`)
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(bounds.x + bounds.width / 2 + pxPerMs('month') * 86_400_000, bounds.y + bounds.height / 2, { steps: 4 })
+    await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+    await expect(bar).toHaveAttribute('data-preview-date', new RegExp(start, 'u'))
+    await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+    expect(beforePatchCount()).toBe(count)
+    await page.mouse.up()
+    await expect.poll(() => api.records.find(item => item.id === id)?.properties[date.id]).toEqual({ start, end: start })
+    expect(beforePatchCount()).toBe(count + 1)
+    await expect(timeline.locator(`[data-testid="timeline-resize-start"][data-record-id="${id}"]`)).toHaveCount(1)
+    const reverseHandle = timeline.locator(`[data-testid="timeline-resize-end"][data-record-id="${id}"]`)
+    const reverseCount = beforePatchCount()
+    const reverseBounds = await reverseHandle.boundingBox()
+    if (!reverseBounds) throw new Error(`Expected promoted date range end handle for ${id}`)
+    await page.mouse.move(reverseBounds.x + reverseBounds.width / 2, reverseBounds.y + reverseBounds.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(reverseBounds.x + reverseBounds.width / 2 - pxPerMs('month') * 86_400_000, reverseBounds.y + reverseBounds.height / 2, { steps: 4 })
+    await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+    await page.mouse.up()
+    await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+    await expect.poll(() => api.records.find(item => item.id === id)?.properties[date.id]).toEqual({ start, end: start })
+    expect(beforePatchCount()).toBe(reverseCount)
+  }
+
+  const standaloneTimeline = page.locator('#database-block-p113b-start-end-block').getByTestId('database-timeline')
+  const standalone = standaloneTimeline.locator('[data-testid="timeline-bar"][data-record-id="p113b-standalone"]')
+  await expect(standalone).toBeVisible()
+  await expect(standaloneTimeline.locator('[data-testid="timeline-resize-start"][data-record-id="p113b-standalone"]')).toHaveCount(0)
+  await expect(standaloneTimeline.locator('[data-testid="timeline-resize-end"][data-record-id="p113b-standalone"]')).toHaveCount(0)
+  expect(beforePatchCount()).toBe(4)
+  const noOpCount = beforePatchCount()
+  const noOpBounds = await endHandle.boundingBox()
+  if (!noOpBounds) throw new Error('Expected date range end handle for no-op verification')
+  await page.mouse.move(noOpBounds.x + noOpBounds.width / 2, noOpBounds.y + noOpBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.up()
+  expect(beforePatchCount()).toBe(noOpCount)
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  await screenshot(page, 'p113b-date-endpoints-desktop-light')
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await screenshot(page, 'p113b-date-endpoints-desktop-dark')
+  await page.setViewportSize({ width: 390, height: 844 })
+  for (const theme of ['light', 'dark'] as const) {
+    await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+    await startHandle.focus()
+    await expect(startHandle).toBeFocused()
+    if (theme === 'light') {
+      const beforePhoneResize = beforePatchCount()
+      const phoneHandleBounds = await startHandle.boundingBox()
+      if (!phoneHandleBounds) throw new Error('Expected focused 390px start resize handle')
+      const x = phoneHandleBounds.x + phoneHandleBounds.width / 2
+      const y = phoneHandleBounds.y + phoneHandleBounds.height / 2
+      await page.mouse.move(x, y)
+      await page.mouse.down()
+      await page.mouse.move(x - pxPerMs('month') * 86_400_000, y, { steps: 4 })
+      await expect(rangeBar).toHaveAttribute('data-drag-state', 'dragging')
+      await expect(rangeBar).toHaveAttribute('data-preview-date', /2026-10-11/u)
+      expect(beforePatchCount()).toBe(beforePhoneResize)
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+      await screenshot(page, 'p113b-date-resize-preview-phone-390-light')
+      await page.keyboard.press('Escape')
+      await page.mouse.up()
+      await expect(rangeBar).toHaveAttribute('data-drag-state', 'idle')
+      await expect.poll(() => api.records.find(item => item.id === 'p113b-range')?.properties[date.id]).toEqual({ start: '2026-10-12', end: '2026-10-16' })
+      expect(beforePatchCount()).toBe(beforePhoneResize)
+      await startHandle.focus()
+    }
+    await screenshot(page, `p113b-date-endpoints-phone-${theme}`)
+  }
+  const switchView = async (name: string) => {
+    await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+    await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name, exact: true }).click()
+  }
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  const beforeTableBounds = await barFor('p113b-range').boundingBox()
+  if (!beforeTableBounds) throw new Error('Expected resized Timeline geometry before switching to Table')
+  await switchView('Resize table')
+  await expect(databaseBlock.locator('table')).toBeVisible()
+  await expect(databaseBlock.locator('table')).toContainText('2026-10-12')
+  await switchView('Resize dates')
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  const afterTableBounds = await barFor('p113b-range').boundingBox()
+  if (!afterTableBounds) throw new Error('Expected Timeline geometry after returning from Table')
+  expect(Math.abs(afterTableBounds.width - beforeTableBounds.width)).toBeLessThanOrEqual(1)
+  const beforeReloadBounds = afterTableBounds
+  await page.reload()
+  await expect.poll(() => api.records.find(item => item.id === 'p113b-range')?.properties[date.id]).toEqual({ start: '2026-10-12', end: '2026-10-16' })
+  await expect(barFor('p113b-range')).toBeVisible()
+  const afterReloadBounds = await barFor('p113b-range').boundingBox()
+  if (!afterReloadBounds) throw new Error('Expected Timeline geometry after reload')
+  expect(Math.abs(afterReloadBounds.x - beforeReloadBounds.x)).toBeLessThanOrEqual(1)
+  expect(Math.abs(afterReloadBounds.width - beforeReloadBounds.width)).toBeLessThanOrEqual(1)
+  await expect(databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="p113b-range"] [data-property-id="${date.id}"]`)).toContainText('2026-10-12 → 2026-10-16')
+  expect(runtimeErrors).toEqual([])
+})
 
 async function installLocalBlockReader(page: Page): Promise<void> {
   await page.evaluate(async () => {
@@ -4597,6 +4800,70 @@ for (const total of [100, 500] as const) {
   })
 }
 
+test('P11.3B resize handles remain hittable at the native Timeline viewport edges', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const date = property('p113b-edge-date', rootDatabase.id, 'Date', 'date')
+  const timelineView = view('p113b-edge-view', rootDatabase.id, 'Resize edge handles', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } },
+  }, 'timeline')
+  const item = record('p113b-edge-record', rootDatabase.id, 'p113b-edge-page', { 'root-title': 'Edge range', [date.id]: { start: '2026-10-13', end: '2026-10-14' } })
+  const api = await installApi(page, [block('p113b-edge-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: [item],
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Edge range', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-p113b-edge-block').getByTestId('database-timeline')
+  const scroller = timeline.getByTestId('timeline-scroll')
+  const bar = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${item.id}"]`)
+  await expect(bar).toBeVisible()
+  const alignAtEdge = async (handle: Locator, edge: 'left' | 'right') => {
+    const viewport = await scroller.boundingBox()
+    const before = await handle.boundingBox()
+    if (!viewport || !before) throw new Error(`Expected ${edge} resize handle before native-scroll alignment`)
+    const edgeX = edge === 'left' ? viewport.x + 1 : viewport.x + viewport.width - 1
+    const centerX = before.x + before.width / 2
+    await scroller.evaluate((element, shift) => { (element as HTMLElement).scrollLeft += shift }, centerX - edgeX)
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+    const aligned = await handle.boundingBox()
+    if (!aligned) throw new Error(`Expected ${edge} resize handle after scrolling its endpoint to the viewport edge`)
+    const x = aligned.x + aligned.width / 2
+    const y = aligned.y + aligned.height / 2
+    const expectedHitCenter = edge === 'left' ? viewport.x + 6 : viewport.x + viewport.width - 6
+    expect(Math.abs(x - expectedHitCenter)).toBeLessThanOrEqual(2)
+    const hit = await page.evaluate(({ x, y, testId }) => Boolean(testId && document.elementFromPoint(x, y)?.closest(`[data-testid="${testId}"]`)), { x, y, testId: await handle.getAttribute('data-testid') })
+    expect(hit).toBe(true)
+    return { x, y }
+  }
+  const startHandle = timeline.locator(`[data-testid="timeline-resize-start"][data-record-id="${item.id}"]`)
+  const endHandle = timeline.locator(`[data-testid="timeline-resize-end"][data-record-id="${item.id}"]`)
+  const patches = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`)).length
+  const beforeEdgeResize = patches()
+  const start = await alignAtEdge(startHandle, 'left')
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  await page.mouse.move(start.x - pxPerMs('month') * 86_400_000, start.y, { steps: 4 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(bar).toHaveAttribute('data-preview-date', /2026-10-12/u)
+  expect(patches()).toBe(beforeEdgeResize)
+  await page.mouse.up()
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  await expect.poll(() => api.records[0]?.properties[date.id]).toEqual({ start: '2026-10-12', end: '2026-10-14' })
+  expect(patches()).toBe(beforeEdgeResize + 1)
+
+  const end = await alignAtEdge(endHandle, 'right')
+  await page.mouse.move(end.x, end.y)
+  await page.mouse.down()
+  await page.mouse.move(end.x + pxPerMs('month') * 86_400_000, end.y, { steps: 4 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(bar).toHaveAttribute('data-preview-date', /2026-10-15/u)
+  expect(patches()).toBe(beforeEdgeResize + 1)
+  await page.mouse.up()
+  await expect.poll(() => api.records[0]?.properties[date.id]).toEqual({ start: '2026-10-12', end: '2026-10-15' })
+  expect(patches()).toBe(beforeEdgeResize + 2)
+})
+
 test('Timeline keeps the viewport centered across navigation, rebase, resize, locale, and local-day updates', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.clock.install({ time: new Date('2026-10-13T12:00:00.000Z') })
@@ -7957,4 +8224,314 @@ test(`P11.3A drag preview does not rebuild ${total}-row Timeline projections or 
   await page.mouse.up()
   await expect(target).toHaveAttribute('data-drag-state', 'idle')
 })
+}
+
+test('P11.3B datetime resize snaps from the dragged endpoint on every scale and preserves timezone and milliseconds', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const scales = ['hour', 'day', 'week', 'biweek', 'month', 'quarter', 'year'] as const
+  const dateProperties = scales.map(scale => property(`p113b-${scale}-date`, rootDatabase.id, `${scale} Date`, 'date'))
+  const timelineViews = scales.map((scale, index) => view(`p113b-${scale}-view`, rootDatabase.id, `${scale} resize`, {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale, dateSource: { mode: 'date-property', propertyId: dateProperties[index]!.id } } },
+  }, 'timeline'))
+  const items = scales.map((scale, index) => record(`p113b-${scale}-record`, rootDatabase.id, `p113b-${scale}-page`, {
+    'root-title': `${scale} datetime`, [dateProperties[index]!.id]: { start: '2026-10-13T10:15:30.123Z', end: '2026-10-13T10:30:30.123Z', timeZone: 'America/New_York' },
+  }))
+  items.push(record('p113b-zero-datetime', rootDatabase.id, 'p113b-zero-datetime-page', {
+    'root-title': 'Zero duration datetime', [dateProperties[1]!.id]: { start: '2026-10-13T10:15:30.123Z', end: '2026-10-13T10:15:30.123Z', timeZone: 'America/New_York' },
+  }))
+  const blocks = scales.map((scale, index) => block(`p113b-${scale}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineViews[index]!.id } }, 100 + index * 100))
+  const api = await installApi(page, blocks, { databases: [rootDatabase], views: timelineViews, properties: [...rootProperties, ...dateProperties], records: items })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  for (let index = 0; index < scales.length; index += 1) {
+    const scale = scales[index]!
+    const date = dateProperties[index]!
+    const item = items[index]!
+    const canonical = api.records.find(candidate => candidate.id === item.id)!
+    await page.locator(`#database-block-p113b-${scale}-block`).scrollIntoViewIfNeeded()
+    const timeScroller = page.locator(`#database-block-p113b-${scale}-block [data-testid="timeline-scroll"]`)
+    if (scale === 'hour') await timeScroller.evaluate(element => { (element as HTMLElement).scrollLeft += 600 })
+    const bar = page.locator(`#database-block-p113b-${scale}-block [data-testid="timeline-bar"][data-record-id="${item.id}"]`)
+    const original = item.properties[date.id] as { start: string; end: string; timeZone: string }
+    const firstEndDelta = p113bSnapDeltaMs(original.end, scale)
+    const afterRight = { ...original, end: new Date(Date.parse(original.end) + firstEndDelta).toISOString() }
+    const beforeRightPatchCount = api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`)).length
+    await p113bResize(page, bar, page.locator(`#database-block-p113b-${scale}-block [data-testid="timeline-resize-end"][data-record-id="${item.id}"]`), scale, original.end)
+    await expect.poll(() => canonical.properties[date.id]).toEqual(afterRight)
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`))).toHaveLength(beforeRightPatchCount + 1)
+    const startDelta = p113bSnapDeltaMs(original.start, scale, -1)
+    const afterLeft = { ...afterRight, start: new Date(Date.parse(original.start) + startDelta).toISOString() }
+    const beforeLeftPatchCount = api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`)).length
+    await p113bResize(page, bar, page.locator(`#database-block-p113b-${scale}-block [data-testid="timeline-resize-start"][data-record-id="${item.id}"]`), scale, original.start, -1)
+    await expect.poll(() => canonical.properties[date.id]).toEqual(afterLeft)
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`))).toHaveLength(beforeLeftPatchCount + 1)
+    expect(canonical.properties[date.id]).toMatchObject({ timeZone: 'America/New_York' })
+    expect(Date.parse((canonical.properties[date.id] as { start: string }).start) % 1000).toBe(123)
+    expect(Date.parse((canonical.properties[date.id] as { end: string }).end) % 1000).toBe(123)
+  }
+  const zero = api.records.find(candidate => candidate.id === 'p113b-zero-datetime')!
+  const zeroDate = dateProperties[1]!
+  const zeroBar = page.locator('#database-block-p113b-day-block [data-testid="timeline-bar"][data-record-id="p113b-zero-datetime"]')
+  const zeroStartHandle = page.locator('#database-block-p113b-day-block [data-testid="timeline-resize-start"][data-record-id="p113b-zero-datetime"]')
+  const zeroEndHandle = page.locator('#database-block-p113b-day-block [data-testid="timeline-resize-end"][data-record-id="p113b-zero-datetime"]')
+  const zeroPatchCount = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${zero.id}/cells/${zeroDate.id}`)).length
+  const beforeClamp = zeroPatchCount()
+  await zeroBar.scrollIntoViewIfNeeded()
+  const zeroScroller = page.locator('#database-block-p113b-day-block [data-testid="timeline-scroll"]')
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const marker = await zeroBar.boundingBox()
+    const viewport = await zeroScroller.boundingBox()
+    if (!marker || !viewport) throw new Error('Expected zero-duration marker and native Timeline viewport during edge alignment')
+    const shift = marker.x - viewport.x
+    if (Math.abs(shift) < 0.5) break
+    await zeroScroller.evaluate((element, delta) => { (element as HTMLElement).scrollLeft += delta }, shift)
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  }
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  const markerAtEdge = await zeroBar.boundingBox()
+  const startHandleAtEdge = await zeroStartHandle.boundingBox()
+  const endHandleAtEdge = await zeroEndHandle.boundingBox()
+  const edgeViewport = await zeroScroller.boundingBox()
+  if (!markerAtEdge || !startHandleAtEdge || !endHandleAtEdge || !edgeViewport) throw new Error('Expected zero-duration marker and resize handles after native-scroll alignment')
+  const markerBodyPoint = { x: markerAtEdge.x + 6, y: markerAtEdge.y + markerAtEdge.height / 2 }
+  const startHandlePoint = { x: startHandleAtEdge.x + startHandleAtEdge.width / 2, y: startHandleAtEdge.y + startHandleAtEdge.height / 2 }
+  expect(Math.abs(markerAtEdge.x - edgeViewport.x)).toBeLessThanOrEqual(2)
+  expect(Math.abs(startHandlePoint.x - (edgeViewport.x + 6))).toBeLessThanOrEqual(2)
+  expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="timeline-bar"]')?.getAttribute('data-record-id'), markerBodyPoint)).toBe(zero.id)
+  expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="timeline-resize-start"]')?.getAttribute('data-record-id'), startHandlePoint)).toBe(zero.id)
+  await page.mouse.click(markerBodyPoint.x, markerBodyPoint.y)
+  const markerDrawer = page.locator('[data-overlay-mode="drawer"]')
+  await expect(markerDrawer).toBeVisible()
+  expect(zeroPatchCount()).toBe(beforeClamp)
+  await page.keyboard.press('Escape')
+  await expect(markerDrawer).toBeHidden()
+  await p113bResize(page, zeroBar, zeroStartHandle, 'day', '2026-10-13T10:15:30.123Z')
+  await expect.poll(() => zero.properties[zeroDate.id]).toEqual({ start: '2026-10-13T10:15:30.123Z', end: '2026-10-13T10:15:30.123Z', timeZone: 'America/New_York' })
+  expect(zeroPatchCount()).toBe(beforeClamp)
+  await expect(zeroBar).toHaveAttribute('data-drag-state', 'idle')
+  await p113bResize(page, zeroBar, zeroStartHandle, 'day', '2026-10-13T10:15:30.123Z', -1)
+  await expect.poll(() => zero.properties[zeroDate.id]).toEqual({ start: '2026-10-13T09:15:30.123Z', end: '2026-10-13T10:15:30.123Z', timeZone: 'America/New_York' })
+  expect(zeroPatchCount()).toBe(beforeClamp + 1)
+})
+
+test('P11.3B 409, 400, and 500 resize failures restore canonical endpoints with one request and no retry', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const date = property('p113b-failure-date', rootDatabase.id, 'Date', 'date')
+  const timelineView = view('p113b-failure-view', rootDatabase.id, 'Resize failures', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } },
+  }, 'timeline')
+  const item = record('p113b-failure-record', rootDatabase.id, 'p113b-failure-page', { 'root-title': 'Failure range', [date.id]: { start: '2026-10-13', end: '2026-10-15' } })
+  const api = await installApi(page, [block('p113b-failure-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: [item],
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Failure range', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const bar = page.locator('#database-block-p113b-failure-block [data-testid="timeline-bar"][data-record-id="p113b-failure-record"]')
+  const handle = page.locator('#database-block-p113b-failure-block [data-testid="timeline-resize-end"][data-record-id="p113b-failure-record"]')
+  const requestsForCell = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`))
+  api.conflictCellUpdates = 1
+  api.conflictCellUpdateValue = { start: '2026-10-13', end: '2026-10-18' }
+  const beforeConflict = requestsForCell().length
+  await p113bResize(page, bar, handle, 'month', '2026-10-15')
+  await expect.poll(() => api.records.find(candidate => candidate.id === item.id)?.properties[date.id]).toEqual(api.conflictCellUpdateValue)
+  await expect(bar).not.toHaveAttribute('data-preview-date', /.+/u)
+  await expect(bar).toHaveAttribute('title', /2026-10-18/u)
+  expect(requestsForCell()).toHaveLength(beforeConflict + 1)
+
+  for (const status of [400, 500] as const) {
+    const canonicalBefore = structuredClone(api.records.find(candidate => candidate.id === item.id)!.properties[date.id])
+    api.failCellUpdates = 1
+    api.failCellUpdateStatus = status
+    const before = requestsForCell().length
+    await p113bResize(page, bar, handle, 'month', '2026-10-18')
+    await expect.poll(() => api.records.find(candidate => candidate.id === item.id)?.properties[date.id]).toEqual(canonicalBefore)
+    await expect(bar).not.toHaveAttribute('data-preview-date', /.+/u)
+    expect(requestsForCell()).toHaveLength(before + 1)
+  }
+})
+
+test('P11.3B resizing preserves the open Record Host, Drawer, Page Editor, and NodeView identities and drafts', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const date = property('p113b-identity-date', rootDatabase.id, 'Date', 'date')
+  const timelineView = view('p113b-identity-view', rootDatabase.id, 'Identity resize', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id }, frozenTable: { visible: true, visibleProperties: ['root-title', date.id], propertyOrder: ['root-title', date.id] } } },
+  }, 'timeline')
+  const item = record('p113b-identity-record', rootDatabase.id, 'p113b-identity-page', { 'root-title': 'Identity range', [date.id]: { start: '2026-10-13', end: '2026-10-15' } })
+  const api = await installApi(page, [block('p113b-identity-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: [item],
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Identity range', role: 'database-record' })
+  const bodyBlock = block('p113b-identity-body', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Identity body' }] }, 200)
+  bodyBlock.pageId = item.pageId
+  api.blocks.push(bodyBlock)
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const databaseBlock = page.locator('#database-block-p113b-identity-block')
+  const timeline = databaseBlock.getByTestId('database-timeline')
+  await databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="${item.id}"] [data-property-id="root-title"] button`).click()
+  const drawer = page.locator('[data-overlay-mode="drawer"]')
+  const titleDraft = drawer.getByRole('textbox', { name: '记录标题' })
+  await expect(titleDraft).toHaveValue('Identity range')
+  const bodyDraft = drawer.locator('.eotion-editor-content .tiptap')
+  await expect(bodyDraft).toContainText('Identity body')
+  await bodyDraft.fill('Unsaved resize draft')
+  const bar = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${item.id}"]`)
+  await bar.scrollIntoViewIfNeeded()
+  const drawerLeft = await drawer.evaluate(element => element.getBoundingClientRect().left)
+  await timeline.getByTestId('timeline-scroll').evaluate((element, left) => {
+    const scroller = element as HTMLElement
+    const handle = element.closest('[data-testid="database-timeline"]')?.querySelector<HTMLElement>('[data-testid="timeline-resize-end"][data-record-id="p113b-identity-record"]')!
+    const bounds = handle.getBoundingClientRect()
+    if (bounds.x + bounds.width / 2 >= left - 24) scroller.scrollLeft += bounds.x + bounds.width / 2 - left + 96
+  }, drawerLeft)
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await page.evaluate(() => {
+    const drawer = document.querySelector('[data-overlay-mode="drawer"]') as (Element & { __vueParentComponent?: { parent?: any } }) | null
+    const recordEditor = drawer?.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null
+    let host = drawer?.__vueParentComponent as ({ parent?: any; type?: { __name?: string; setupState?: any } } | undefined)
+    while (host && host.type?.__name !== 'DatabaseRecordHost') host = host.parent
+    const getTiptap = (node: Element | null) => {
+      const candidate = (node as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null)?.__vueParentComponent?.exposed?.editor
+      const editor = candidate?.view ? candidate : candidate?.value
+      return editor?.view ? editor : null
+    }
+    const record = host?.setupState?.content?.record
+    const nodes = [document.querySelector('.document-wrap'), document.querySelector('.eotion-editor-content'), document.querySelector('#database-block-p113b-identity-block'), document.querySelector('#database-block-p113b-identity-block [data-testid="database-timeline"]'), document.querySelector('[data-testid="timeline-frozen-table"]'), drawer, recordEditor, document.querySelector('[data-testid="timeline-bar"][data-record-id="p113b-identity-record"]')]
+    const components = nodes.map(node => (node as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent)
+    const pageTiptap = getTiptap(document.querySelector('.document-wrap .eotion-editor'))
+    const recordTiptap = getTiptap(recordEditor)
+    if (nodes.some(node => !node) || components.some(component => !component) || !record || !record.pageId || !pageTiptap || !recordTiptap) throw new Error('Expected Page, Editor, NodeView, Frozen Table, Drawer, Record Host, record, and Tiptap identities')
+    ;(window as Window & { __p113bIdentity?: unknown }).__p113bIdentity = { nodes, components, host, record, pageId: record.pageId, pageTiptap, recordTiptap }
+  })
+  const handle = page.locator('#database-block-p113b-identity-block [data-testid="timeline-resize-end"][data-record-id="p113b-identity-record"]')
+  const bounds = await handle.boundingBox()
+  if (!bounds) throw new Error('Expected identity resize handle to be visible beside the open Drawer')
+  const x = bounds.x + bounds.width / 2
+  const y = bounds.y + bounds.height / 2
+  const deltaX = pxPerMs('month') * 86_400_000
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + deltaX, y, { steps: 4 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(0)
+  const preservesIdentity = () => page.evaluate(() => {
+    const before = (window as Window & { __p113bIdentity?: any }).__p113bIdentity
+    const drawer = document.querySelector('[data-overlay-mode="drawer"]') as (Element & { __vueParentComponent?: { parent?: any } }) | null
+    const recordEditor = drawer?.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: unknown }) | null
+    let host = drawer?.__vueParentComponent as ({ parent?: any; type?: { __name?: string } } | undefined)
+    while (host && host.type?.__name !== 'DatabaseRecordHost') host = host.parent
+    const nodes = [document.querySelector('.document-wrap'), document.querySelector('.eotion-editor-content'), document.querySelector('#database-block-p113b-identity-block'), document.querySelector('#database-block-p113b-identity-block [data-testid="database-timeline"]'), document.querySelector('[data-testid="timeline-frozen-table"]'), drawer, recordEditor, document.querySelector('[data-testid="timeline-bar"][data-record-id="p113b-identity-record"]')]
+    const components = nodes.map(node => (node as (Element & { __vueParentComponent?: unknown }) | null)?.__vueParentComponent)
+    const getTiptap = (node: Element | null) => {
+      const candidate = (node as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null)?.__vueParentComponent?.exposed?.editor
+      const editor = candidate?.view ? candidate : candidate?.value
+      return editor?.view ? editor : null
+    }
+    let currentHost = host
+    return Boolean(before && nodes.every((node, index) => node === before.nodes[index]) && components.every((component, index) => component === before.components[index])
+      && currentHost === before.host && currentHost?.setupState?.content?.record === before.record && before.record.pageId === before.pageId
+      && getTiptap(document.querySelector('.document-wrap .eotion-editor')) === before.pageTiptap && getTiptap(recordEditor) === before.recordTiptap)
+  })
+  await expect.poll(preservesIdentity).toBe(true)
+  await expect(bodyDraft).toContainText('Unsaved resize draft')
+  await page.mouse.up()
+  await expect.poll(() => api.records.find(candidate => candidate.id === item.id)?.properties[date.id]).toEqual({ start: '2026-10-13', end: '2026-10-16' })
+  await expect.poll(preservesIdentity).toBe(true)
+  await expect(drawer).toBeVisible()
+  await expect(bodyDraft).toContainText('Unsaved resize draft')
+  await expect(databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="${item.id}"] [data-property-id="${date.id}"]`)).toContainText('2026-10-13 → 2026-10-16')
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`))).toHaveLength(1)
+})
+
+for (const total of [100, 500] as const) {
+  test(`P11.3B resize preview preserves ${total}-row projections and leaves unrelated bars untouched`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+    const date = property(`p113b-${total}-date`, rootDatabase.id, 'Date', 'date')
+    const timelineView = view(`p113b-${total}-view`, rootDatabase.id, `${total} resize rows`, {
+      ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id }, frozenTable: { visible: true, visibleProperties: ['root-title', date.id], propertyOrder: ['root-title', date.id] } } },
+    }, 'timeline')
+    const items = Array.from({ length: total }, (_, index) => record(`p113b-${total}-${String(index).padStart(3, '0')}`, rootDatabase.id, `p113b-${total}-page-${index}`, {
+      'root-title': `Resize row ${index}`, [date.id]: '2026-10-13',
+    }))
+    const api = await installApi(page, [block(`p113b-${total}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+      databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: items,
+    })
+    for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const databaseBlock = page.locator(`#database-block-p113b-${total}-block`)
+    const timeline = databaseBlock.getByTestId('database-timeline')
+    const projectedCount = () => timeline.evaluate(root => (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState?.projectedItems?.length)
+    await expect.poll(projectedCount).toBe(25)
+    let loaded = 25
+    const loadMore = databaseBlock.getByRole('button', { name: '加载更多' })
+    while (loaded < total) {
+      await expect(loadMore).toHaveCount(1)
+      await loadMore.click()
+      loaded = Math.min(loaded + 25, total)
+      await expect.poll(projectedCount).toBe(loaded)
+    }
+    await expect(loadMore).toHaveCount(0)
+    await page.evaluate(() => { (document.querySelector('.document-wrap') as HTMLElement).scrollTop = 0 })
+    await expect.poll(() => timeline.locator('[data-row-window-first]').getAttribute('data-row-window-first')).toBe('0')
+    const target = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${items[0]!.id}"]`)
+    await expect(target).toBeVisible()
+    await target.scrollIntoViewIfNeeded()
+    const handle = timeline.locator(`[data-testid="timeline-resize-end"][data-record-id="${items[0]!.id}"]`)
+    const bounds = await handle.boundingBox()
+    if (!bounds) throw new Error(`Expected visible ${total}-row resize handle`)
+    const x = bounds.x + bounds.width / 2
+    const y = bounds.y + bounds.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await expect(target).toHaveAttribute('data-drag-state', 'armed')
+    await timeline.evaluate((root, id) => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      const bars = [...root.querySelectorAll<HTMLElement>('[data-testid="timeline-bar"]')]
+      const otherBars = bars.filter(bar => bar.dataset.recordId !== id)
+      if (!setup || !Array.isArray(setup.projectedItems) || !(setup.temporalMap instanceof Map) || !Array.isArray(setup.rowGeometry) || !(setup.frozenDisplayMap instanceof Map) || !otherBars.length) throw new Error('Expected Timeline projections, Frozen Table projection, and unrelated mounted bars')
+      const state = { mutations: 0, updated: 0 }
+      const components = otherBars.map(bar => (bar as HTMLElement & { __vueParentComponent?: { u?: Array<() => void> } }).__vueParentComponent)
+      if (components.some(component => !component)) throw new Error('Expected unrelated bar Vue instances for updated-hook evidence')
+      for (const component of components) component!.u = [...(component!.u ?? []), () => { state.updated += 1 }]
+      const observer = new MutationObserver(records => { state.mutations += records.length })
+      for (const bar of otherBars) observer.observe(bar, { attributes: true, childList: true, subtree: true, characterData: true })
+      ;(window as Window & { __p113bPerformance?: Record<string, unknown> }).__p113bPerformance = {
+        projectedItems: setup.projectedItems, temporalMap: setup.temporalMap, rowGeometry: setup.rowGeometry,
+        frozenDisplayMap: setup.frozenDisplayMap, otherBars, components, observer, state,
+      }
+    }, items[0]!.id)
+    await page.mouse.move(x + pxPerMs('month') * 86_400_000, y, { steps: 4 })
+    await expect(target).toHaveAttribute('data-drag-state', 'dragging')
+    await expect(target).toHaveAttribute('data-preview-date', /2026-10-13/u)
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())))
+    const evidence = await timeline.evaluate(root => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      const before = (window as Window & { __p113bPerformance?: Record<string, any> }).__p113bPerformance
+      if (!setup || !before) throw new Error('Expected captured P11.3B resize preview evidence')
+      const mutationCount = before.observer.takeRecords().length + before.state.mutations
+      before.observer.disconnect()
+      return {
+        projectedItems: setup.projectedItems === before.projectedItems,
+        temporalMap: setup.temporalMap === before.temporalMap,
+        rowGeometry: setup.rowGeometry === before.rowGeometry,
+        frozenDisplayMap: setup.frozenDisplayMap === before.frozenDisplayMap,
+        unrelatedBarMutations: mutationCount,
+        unrelatedBarUpdatedHooks: before.state.updated,
+        unrelatedBarComponentsSame: before.otherBars.every((bar: HTMLElement, index: number) => bar.__vueParentComponent === before.components[index]),
+      }
+    })
+    expect(evidence).toEqual({ projectedItems: true, temporalMap: true, rowGeometry: true, frozenDisplayMap: true, unrelatedBarMutations: 0, unrelatedBarUpdatedHooks: 0, unrelatedBarComponentsSame: true })
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(0)
+    expect(api.records.find(candidate => candidate.id === items[0]!.id)?.properties[date.id]).toBe('2026-10-13')
+    await page.keyboard.press('Escape')
+    await page.mouse.up()
+    await expect(target).toHaveAttribute('data-drag-state', 'idle')
+  })
 }

@@ -23,6 +23,7 @@ import DatabaseTimelineView from './DatabaseTimelineView.vue'
 import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTitleColumn } from './timeline/frozenTable'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import type { TimelineMoveCommand } from './timeline/mutation'
+import { isWritableTimelineDateSource } from './timeline/mutation'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -332,7 +333,7 @@ function getCellValue(record: TableRecord, propertyId: string): unknown {
 
 function prepareTimelineBarDrag(recordId: string): TimelineBarDragSession | null {
   const source = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline?.dateSource
-  if (!props.editor.isEditable || !writable.value || !viewReady.value || viewType.value !== 'timeline' || source?.mode !== 'date-property') return null
+  if (!props.editor.isEditable || !writable.value || !viewReady.value || viewType.value !== 'timeline' || !isWritableTimelineDateSource(source)) return null
   const property = properties.value.find(item => item.id === source.propertyId)
   const record = recordsById.value.get(recordId)
   const rawValue = record ? getCellValue(record, source.propertyId) : undefined
@@ -366,7 +367,7 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
   }
   if (!isCurrent() || !writable.value || command.expectedDatabaseVersion !== databaseVersion.value || viewType.value !== 'timeline') return false
   const timeline = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline
-  if (timeline?.dateSource?.mode !== 'date-property' || timeline.dateSource.propertyId !== command.propertyId) return false
+  if (!isWritableTimelineDateSource(timeline?.dateSource) || timeline.dateSource.propertyId !== command.propertyId) return false
   const property = properties.value.find(item => item.id === command.propertyId)
   const record = recordsById.value.get(command.recordId)
   if (!property || property.type !== 'date' || !record || record.version !== command.expectedRecordVersion) return false
@@ -396,11 +397,11 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
     if (cause instanceof ApiError && cause.statusCode === 409) {
       await refreshLoadedWindow()
       if (!isCurrent()) return false
-      mutationError.value = '记录或数据库已变化，日期未移动；已刷新当前记录。'
+      mutationError.value = '记录或数据库已变化，日期未更新；已刷新当前记录。'
       return false
     }
     if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) {
-      mutationError.value = errorMessage(cause, '日期未移动，请重试。')
+      mutationError.value = errorMessage(cause, '日期未更新，请重试。')
       return false
     }
     await refreshLoadedWindow()
