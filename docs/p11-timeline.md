@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1A Temporal Domain Foundation 与 P11.1B Generic Date Data Path 已完成 / PASS；P11.1C–P11.6 尚未实施**
+> Status: **P11.1A/B/C/D 已完成；P11.2–P11.6 尚未实施；P11.1D 验收见专门报告**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -709,10 +709,25 @@ Web 可选择已有 Timeline View，显示明确的暂未实现状态，不回�
 `DatabaseService.linkInPage` 仍保持 Table-only 规则；后续 Linked Timeline 的接入点
 是该方法的 View 类型门禁与对应 HTTP/Block identity 验收，本轮没有提前放宽。
 
-**P11.1D 未实施：**Date source / dependency 的删除、类型变更、Relation retarget hard
-reference 409；Frozen Table soft reference 修复；Property mutation 的真实 view.type
-校验、事务检查/回滚/CAS 和并发竞态仍需 D 完成。当前 generic records 对悬空 Timeline
-配置 fail-closed，不能代替 mutation lifecycle fence，不能据此宣称生命周期保护已完成。
+**P11.1D 生命周期保护：**统一 `DatabaseViewPropertyDependency` 表达 Board grouping
+（select）、Timeline dateSource（原生 Date，含 start/end）和 dependency（self-relation）
+硬引用。删除或候选 Property 类型/Relation target 破坏引用时返回 409；不自动替换、清空
+或猜测配置。Relation 无 Record 链接也受保护，rename 和合法 self target 更新允许。
+
+Frozen Table 的 visibleProperties / propertyOrder 是软引用：删除 Property 时移除 ID，
+保留 Title、dateSource、dependency、其他 Timeline 字段与未知 outer options；顶层
+filter/sort/projection 沿用原修复规则，Table/List 不应用 Timeline 引用语义。
+
+updateProperty / changePropertyType / deleteProperty 在 Mongo snapshot transaction 内
+读当前 Views、检查硬引用并用候选 schema 验证最终配置，随后写入。所有 repair 调用
+`validateDatabaseViewConfig(config, properties, view.type)`；同类型 change 保持 no-op。
+Property/Database 版本冲突与 View repair CAS 失败均为 409，所有事务写入回滚。
+View CRUD 与 Property mutation 共用 Database version CAS，防止并发新增硬引用与
+破坏性 mutation 同时提交；实际修复的 View 版本加一，未变化的 View 保持版本。
+
+新建/PATCH View 的非法非 self-relation 配置保持 P11.1C 的 400 输入校验契约；
+修改已被 Timeline 引用的 Relation 使其不再 self-relation 返回 409 生命周期冲突。
+验收与事务/并发证据见 [P11.1D 验收](verification/p11-1d-property-lifecycle-fence.md)。
 
 `scrollLeft`、hover item、drag preview、today line x、tooltip、viewport pixel width
 均为 device-local / ephemeral 状态，不属于此共享配置；Timeline 内层不接受这些字段。
@@ -737,8 +752,8 @@ reference 409；Frozen Table soft reference 修复；Property mutation 的真实
 ### P11.1 Timeline Domain + Date Range Foundation
 
 当前细分：P11.1A 日期领域基础 PASS；P11.1B 通用 Date 数据链路 PASS；
-P11.1C 冻结本节 §21 的 View 配置契约。完整 Property lifecycle 防护独立留给 P11.1D；
-不能以 C 的 config/reference 校验代替 D 的 mutation fence。P11.1C 完成后停止。
+P11.1C 冻结本节 §21 的 View 配置契约；P11.1D 已补完整 Property lifecycle 防护与
+事务/CAS/回滚/并发验收。A/B/C/D 完成后停止，不自动进入 P11.2。
 
 先解决：
 

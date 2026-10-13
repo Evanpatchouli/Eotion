@@ -1113,6 +1113,71 @@ test('P11.1C HTTP Timeline Views validate, persist, and fence config through the
     assert.equal(linked.status, 400)
     assert.equal(await blocks.countDocuments({ pageId: 'timeline-http-home' }), blockCountBefore)
     assert.equal((await read(configuredId)).database.version, versionBeforeLink)
+
+    const properties = connection!.db!.collection('database_properties')
+    const records = connection!.db!.collection('database_records')
+    const pages = connection!.db!.collection('pages')
+    const rawSnapshot = async () => ({
+      databases: await databases.find({ id: databaseId }).toArray(),
+      properties: await properties.find({ databaseId }).sort({ id: 1 }).toArray(),
+      views: await views.find({ databaseId }).sort({ id: 1 }).toArray(),
+      records: await records.find({ databaseId }).sort({ id: 1 }).toArray(),
+      pages: await pages.find({ workspaceId: workspace }).sort({ id: 1 }).toArray(),
+    })
+    const propertyState = async (id: string) => {
+      const current = await read(configuredId)
+      return current.properties.find((property: any) => property.id === id)
+    }
+    const expect409WithoutWrites = async (label: string, operation: () => Promise<JsonResponse>) => {
+      const before = await rawSnapshot()
+      const rejected = await operation()
+      assert.equal(rejected.status, 409, `${label}: ${JSON.stringify(rejected.body)}`)
+      assert.deepEqual(await rawSnapshot(), before, `${label}: the complete raw Database/Property/View/Record/Page snapshot is unchanged`)
+    }
+    const propertyRoute = (id: string) => `${route}/properties/${id}`
+    const deleteBody = async (id: string) => ({ expectedDatabaseVersion: (await current()).database.version, expectedPropertyVersion: (await propertyState(id)).version })
+    const typeBody = async (id: string, targetType: string) => ({ targetType, ...(await deleteBody(id)) })
+
+    await expect409WithoutWrites('Timeline single Date delete', async () => request(baseUrl, propertyRoute('timeline-http-date'), 'DELETE', { cookie, body: await deleteBody('timeline-http-date') }))
+    await expect409WithoutWrites('Timeline Date to text', async () => request(baseUrl, `${propertyRoute('timeline-http-date')}/type`, 'PATCH', { cookie, body: await typeBody('timeline-http-date', 'text') }))
+    await expect409WithoutWrites('Timeline Date to number', async () => request(baseUrl, `${propertyRoute('timeline-http-date')}/type`, 'PATCH', { cookie, body: await typeBody('timeline-http-date', 'number') }))
+    await expect409WithoutWrites('Timeline dependency delete', async () => request(baseUrl, propertyRoute(relation.body.property.id), 'DELETE', { cookie, body: await deleteBody(relation.body.property.id) }))
+    await expect409WithoutWrites('Timeline dependency type change', async () => request(baseUrl, `${propertyRoute(relation.body.property.id)}/type`, 'PATCH', { cookie, body: await typeBody(relation.body.property.id, 'text') }))
+    await expect409WithoutWrites('Timeline dependency retarget', async () => request(baseUrl, propertyRoute(relation.body.property.id), 'PATCH', { cookie, body: { config: { targetDatabaseId: 'timeline-http-foreign' }, ...(await deleteBody(relation.body.property.id)) } }))
+
+    const startProperty = await propertyState('timeline-http-start')
+    const endProperty = await propertyState('timeline-http-end')
+    const beforeRange = await read(configuredId)
+    const lifecycleRangeOptions = { ...beforeRange.view.config.options, timeline: { ...beforeRange.view.config.options.timeline, dateSource: { mode: 'start-end', startPropertyId: startProperty.id, endPropertyId: endProperty.id } } }
+    const rangePatch = await request(baseUrl, `${viewsRoute}/${configuredId}`, 'PATCH', { cookie, body: { config: { ...beforeRange.view.config, options: lifecycleRangeOptions }, expectedDatabaseVersion: beforeRange.database.version, expectedViewVersion: beforeRange.view.version } })
+    assert.equal(rangePatch.status, 200, JSON.stringify(rangePatch.body))
+    for (const [label, id, targetType] of [['range start delete', startProperty.id, null], ['range start type', startProperty.id, 'text'], ['range end delete', endProperty.id, null], ['range end type', endProperty.id, 'number']] as const) {
+      await expect409WithoutWrites(label, async () => targetType === null
+        ? request(baseUrl, propertyRoute(id), 'DELETE', { cookie, body: await deleteBody(id) })
+        : request(baseUrl, `${propertyRoute(id)}/type`, 'PATCH', { cookie, body: await typeBody(id, targetType) }))
+    }
+    const relationNoop = await request(baseUrl, propertyRoute(relation.body.property.id), 'PATCH', { cookie, body: { name: 'Renamed dependency', ...(await deleteBody(relation.body.property.id)) } })
+    assert.equal(relationNoop.status, 200, JSON.stringify(relationNoop.body))
+
+    const softId = 'timeline-http-frozen-only'
+    const softCreate = await request(baseUrl, `${route}/properties`, 'POST', { cookie, body: { id: softId, name: 'Frozen only', type: 'text', expectedDatabaseVersion: (await current()).database.version } })
+    assert.equal(softCreate.status, 201, JSON.stringify(softCreate.body))
+    const beforeFrozen = await read(configuredId)
+    const frozenOptions = { ...beforeFrozen.view.config.options, timeline: { ...beforeFrozen.view.config.options.timeline, frozenTable: { visible: true, visibleProperties: [titleId, softId], propertyOrder: [softId] } } }
+    const frozenPatch = await request(baseUrl, `${viewsRoute}/${configuredId}`, 'PATCH', { cookie, body: { config: { ...beforeFrozen.view.config, options: frozenOptions }, expectedDatabaseVersion: beforeFrozen.database.version, expectedViewVersion: beforeFrozen.view.version } })
+    assert.equal(frozenPatch.status, 200, JSON.stringify(frozenPatch.body))
+    const beforeSoftDelete = await read(configuredId)
+    const rawRecordsBeforeRepair = await records.find({ databaseId }).sort({ id: 1 }).toArray()
+    const softDelete = await request(baseUrl, propertyRoute(softId), 'DELETE', { cookie, body: { expectedDatabaseVersion: beforeSoftDelete.database.version, expectedPropertyVersion: softCreate.body.property.version } })
+    assert.equal(softDelete.status, 200, JSON.stringify(softDelete.body))
+    assert.equal(softDelete.body.database.version, beforeSoftDelete.database.version + 1)
+    const repaired = (await read(configuredId)).view
+    assert.equal(repaired.version, frozenPatch.body.view.version + 1)
+    assert.deepEqual(repaired.config.options.timeline.frozenTable, { visible: true, visibleProperties: [titleId], propertyOrder: [] })
+    assert.deepEqual(repaired.config.options.timeline.dependency, configuredTimeline.dependency)
+    assert.deepEqual(repaired.config.options.futureField, options.futureField)
+    assert.deepEqual(await records.find({ databaseId }).sort({ id: 1 }).toArray(), rawRecordsBeforeRepair, 'soft cleanup does not rewrite Records or their versions')
+    assert.equal((await propertyState(titleId)).type, 'title', 'Title Property remains available')
   } finally {
     if (!app) {
       if (previousMongoUri === undefined) delete process.env.MONGODB_URI

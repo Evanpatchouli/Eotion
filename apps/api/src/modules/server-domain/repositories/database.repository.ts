@@ -293,9 +293,6 @@ export class DatabaseRecordRepository {
 @Injectable()
 export class DatabaseViewRepository {
   constructor(@InjectModel(DatabaseViewEntity.name) private readonly model: Model<DatabaseViewDocument>) {}
-  async hasBoardGroupingProperty(workspaceId: string, databaseId: string, propertyId: string, session: ClientSession): Promise<boolean> {
-    return !!(await this.model.exists({ workspaceId, databaseId, type: 'board', 'config.options.groupByPropertyId': propertyId }).session(session ?? null))
-  }
   async create(input: Stored<DatabaseView>, session: ClientSession): Promise<DatabaseView> {
     const [doc] = await this.model.create([{ ...input, config: input.config ?? DEFAULT_DATABASE_VIEW_CONFIG }], { session })
     return this.toRecord(doc!)

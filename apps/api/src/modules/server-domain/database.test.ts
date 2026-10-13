@@ -1267,6 +1267,176 @@ test('property type mutation atomically migrates records, repairs views and prot
   }
 })
 
+test('P11.1D Timeline and relation property lifecycle is fenced and repairs soft references atomically', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  assert.equal(await supportsTransactions(connection), true, 'Timeline property lifecycle regression requires Mongo replica set transactions')
+  const service = app.get(DatabaseService)
+  const owner = await app.get(AuthService).register(`p111d-${randomUUID()}@example.com`, 'correct horse battery staple')
+  const workspaceId = 'p111d-ws'
+  const databaseId = 'p111d-db'
+  await app.get(WorkspaceService).create(owner.id, { id: workspaceId, name: 'P11.1D' })
+  await app.get(PageService).create(owner.id, workspaceId, { id: 'p111d-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  const created = await service.createInPage(owner.id, workspaceId, 'p111d-home', { id: databaseId, name: 'Lifecycle', titlePropertyId: `${databaseId}-title`, viewId: `${databaseId}-table`, blockId: `${databaseId}-block`, orderKey: 'a', parentBlockId: null })
+  const database = async () => (await service.find(owner.id, workspaceId, databaseId))!
+  const properties = async () => service.listProperties(owner.id, workspaceId, databaseId)
+  const add = async (id: string, type: any, extra: any = {}) => (await service.createProperty(owner.id, workspaceId, databaseId, { id, name: id, type, ...extra, expectedDatabaseVersion: (await database()).version })).property
+  const due = await add('p111d-due', 'date')
+  const start = await add('p111d-start', 'date')
+  const end = await add('p111d-end', 'date')
+  const frozenOnly = await add('p111d-frozen', 'text')
+  const selectable = await add('p111d-select', 'select', { options: [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }] })
+  const dependency = await add('p111d-dependency', 'relation', { config: { targetDatabaseId: databaseId } })
+  const basic = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null }
+  const timelineOptions = {
+    timeline: {
+      dateSource: { mode: 'date-property', propertyId: due.id }, scale: 'month',
+      frozenTable: { visible: true, visibleProperties: [`${databaseId}-title`, frozenOnly.id], propertyOrder: [frozenOnly.id] },
+      dependency: { propertyId: dependency.id, direction: 'blocks', shiftMode: 'no_auto_shift', avoidWeekends: false },
+    },
+    unknownTimelineOption: { retain: ['opaque', 4] },
+  }
+  const timeline = await service.createView(owner.id, workspaceId, databaseId, { id: 'p111d-timeline', name: 'Timeline', type: 'timeline', config: { ...basic, filters: [{ propertyId: selectable.id, operator: 'is', value: 'open' }], options: timelineOptions } })
+  const table = await service.createView(owner.id, workspaceId, databaseId, { id: 'p111d-table', name: 'Table', type: 'table', config: { ...basic, filters: [{ propertyId: selectable.id, operator: 'is', value: 'open' }], sorts: [{ propertyId: selectable.id, direction: 'asc' }], visibleProperties: [`${databaseId}-title`, selectable.id], propertyOrder: [selectable.id], options: { keepUnknown: { value: true } } } })
+  const list = await service.createView(owner.id, workspaceId, databaseId, { id: 'p111d-list', name: 'List', type: 'list', config: { ...basic, filters: [{ propertyId: selectable.id, operator: 'is', value: 'open' }], sorts: [{ propertyId: selectable.id, direction: 'asc' }], visibleProperties: [`${databaseId}-title`, selectable.id], propertyOrder: [selectable.id], options: { listOpaque: ['preserve'] } } })
+  const record = await service.createRecordPage(owner.id, workspaceId, databaseId, { id: 'p111d-row', pageId: 'p111d-row-page', title: 'Row', orderKey: 'a' })
+  const recordModel = app.get<Model<any>>(getModelToken(DatabaseRecordEntity.name))
+  const pageModel = app.get<Model<any>>(getModelToken(PageEntity.name))
+  const databaseModel = app.get<Model<any>>(getModelToken(DatabaseEntity.name))
+  const propertyModel = app.get<Model<any>>(getModelToken(DatabasePropertyEntity.name))
+  const viewModel = app.get<Model<any>>(getModelToken(DatabaseViewEntity.name))
+  const snapshot = async () => ({
+    databases: await databaseModel.find({ workspaceId }).sort({ id: 1 }).lean(),
+    properties: await propertyModel.find({ workspaceId }).sort({ id: 1 }).lean(),
+    views: await viewModel.find({ workspaceId }).sort({ id: 1 }).lean(),
+    records: await recordModel.find({ workspaceId }).sort({ id: 1 }).lean(),
+    pages: await pageModel.find({ workspaceId }).sort({ id: 1 }).lean(),
+  })
+  const deleteProperty = async (id: string, dbVersion?: number, propertyVersion?: number) => service.deleteProperty(owner.id, workspaceId, databaseId, id, { expectedDatabaseVersion: dbVersion ?? (await database()).version, expectedPropertyVersion: propertyVersion ?? (await properties()).find(item => item.id === id)!.version })
+  const changeType = async (id: string, targetType: any, dbVersion?: number, propertyVersion?: number) => service.changePropertyType(owner.id, workspaceId, databaseId, id, { targetType, expectedDatabaseVersion: dbVersion ?? (await database()).version, expectedPropertyVersion: propertyVersion ?? (await properties()).find(item => item.id === id)!.version })
+  const updateProperty = async (id: string, config: any, dbVersion?: number, propertyVersion?: number) => service.updateProperty(owner.id, workspaceId, databaseId, id, { config, expectedDatabaseVersion: dbVersion ?? (await database()).version, expectedPropertyVersion: propertyVersion ?? (await properties()).find(item => item.id === id)!.version })
+  const expectHard409 = async (label: string, operation: () => Promise<unknown>) => {
+    const before = await snapshot()
+    await assert.rejects(operation, (error: any) => error.status === 409, label)
+    assert.deepEqual(await snapshot(), before, `${label}: full raw database/property/view/record/page documents and fences are unchanged`)
+  }
+
+  await expectHard409('single Date delete', () => deleteProperty(due.id))
+  await expectHard409('single Date to text', () => changeType(due.id, 'text'))
+  await expectHard409('single Date to number', () => changeType(due.id, 'number'))
+  // Move the Timeline source to the range pair using the real View CAS before testing its end dependency.
+  const latestDb = await database()
+  const latestTimeline = (await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === timeline.view.id)!
+  const rangedOptions = { ...timelineOptions, timeline: { ...timelineOptions.timeline, dateSource: { mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id } } }
+  const ranged = await service.updateView(owner.id, workspaceId, databaseId, timeline.view.id, { config: { ...latestTimeline.config!, options: rangedOptions }, expectedDatabaseVersion: latestDb.version, expectedViewVersion: latestTimeline.version })
+  await expectHard409('range start delete', () => deleteProperty(start.id))
+  await expectHard409('range start type', () => changeType(start.id, 'text'))
+  await expectHard409('range end delete', () => deleteProperty(end.id))
+  await expectHard409('range end type', () => changeType(end.id, 'number'))
+  await expectHard409('dependency relation delete with no links', () => deleteProperty(dependency.id))
+  await expectHard409('dependency relation type', () => changeType(dependency.id, 'text'))
+  await expectHard409('dependency relation retarget away from self', () => updateProperty(dependency.id, { targetDatabaseId: 'another-database' }))
+  const relationRename = await service.updateProperty(owner.id, workspaceId, databaseId, dependency.id, { name: 'Renamed dependency', expectedDatabaseVersion: (await database()).version, expectedPropertyVersion: (await properties()).find(item => item.id === dependency.id)!.version })
+  assert.equal(relationRename.property.name, 'Renamed dependency', 'self relation dependencies allow a name-only update')
+  await service.updateRecordCell(owner.id, workspaceId, databaseId, record.record.id, dependency.id, { value: [], expectedDatabaseVersion: relationRename.database.version, expectedRecordVersion: record.record.version })
+  await expectHard409('empty dependency relation still cannot be deleted', () => deleteProperty(dependency.id))
+
+  let currentDb = await database()
+  const currentFrozen = (await properties()).find(item => item.id === frozenOnly.id)!
+  await expectHard409('stale Database CAS', () => deleteProperty(frozenOnly.id, currentDb.version - 1, currentFrozen.version))
+  await expectHard409('stale Property CAS', () => deleteProperty(frozenOnly.id, currentDb.version, currentFrozen.version + 1))
+  const beforeStaleView = await snapshot()
+  await assert.rejects(service.updateView(owner.id, workspaceId, databaseId, timeline.view.id, { name: 'stale view', expectedDatabaseVersion: currentDb.version, expectedViewVersion: timeline.view.version }), (error: any) => error.status === 409)
+  assert.deepEqual(await snapshot(), beforeStaleView, 'stale View CAS rolls back Database version and preserves all raw documents')
+
+  const viewsRepository = app.get(DatabaseViewRepository)
+  const repair = viewsRepository.updateConfigForProperty.bind(viewsRepository)
+  viewsRepository.updateConfigForProperty = async () => null
+  const beforeRepairCas = await snapshot()
+  try { await assert.rejects(deleteProperty(frozenOnly.id), (error: any) => error.status === 409) } finally { viewsRepository.updateConfigForProperty = repair }
+  assert.deepEqual(await snapshot(), beforeRepairCas, 'repair View CAS failure rolls back all transaction writes')
+
+  currentDb = await database()
+  const currentProperty = (await properties()).find(item => item.id === frozenOnly.id)!
+  const recordsBeforeSoftDelete = await recordModel.find({ databaseId }).sort({ id: 1 }).lean()
+  const pagesBeforeSoftDelete = await pageModel.find({ workspaceId }).sort({ id: 1 }).lean()
+  const deleted = await deleteProperty(frozenOnly.id, currentDb.version, currentProperty.version)
+  assert.equal(deleted.database.version, currentDb.version + 1)
+  const repairedTimeline = (await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === timeline.view.id)!
+  assert.equal(repairedTimeline.version, ranged.view.version + 1)
+  assert.deepEqual((repairedTimeline.config!.options as any).timeline.frozenTable, { visible: true, visibleProperties: [`${databaseId}-title`], propertyOrder: [] })
+  assert.deepEqual((repairedTimeline.config!.options as any).timeline.dependency, timelineOptions.timeline.dependency)
+  assert.deepEqual((repairedTimeline.config!.options as any).timeline.dateSource, rangedOptions.timeline.dateSource)
+  assert.deepEqual((repairedTimeline.config!.options as any).unknownTimelineOption, timelineOptions.unknownTimelineOption)
+  assert.equal((await properties()).some(item => item.id === `${databaseId}-title`), true, 'Title Property is retained')
+  assert.deepEqual(await recordModel.find({ databaseId }).sort({ id: 1 }).lean(), recordsBeforeSoftDelete, 'soft cleanup does not alter Record documents or versions')
+  assert.deepEqual(await pageModel.find({ workspaceId }).sort({ id: 1 }).lean(), pagesBeforeSoftDelete, 'soft cleanup does not alter Page documents')
+  assert.deepEqual((await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === table.view.id)!.config, table.view.config)
+  assert.deepEqual((await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === list.view.id)!.config, list.view.config)
+
+  // Type conversion repairs filters with each persisted View's real type while retaining opaque options.
+  currentDb = await database()
+  const optionBefore = (await properties()).find(item => item.id === selectable.id)!
+  const optionCleanup = await service.updateProperty(owner.id, workspaceId, databaseId, selectable.id, { options: [{ id: 'done', name: 'Done' }], expectedDatabaseVersion: currentDb.version, expectedPropertyVersion: optionBefore.version })
+  assert.equal(optionCleanup.database.version, currentDb.version + 1)
+  const timelineAfterOptionCleanup = (await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === timeline.view.id)!
+  assert.deepEqual(timelineAfterOptionCleanup.config!.filters, [], 'Timeline filter is repaired using the persisted Timeline view type')
+  assert.deepEqual((timelineAfterOptionCleanup.config!.options as any).unknownTimelineOption, timelineOptions.unknownTimelineOption)
+  const recordsBeforeTypeChange = await recordModel.find({ databaseId }).sort({ id: 1 }).lean()
+  const selectBefore = (await properties()).find(item => item.id === selectable.id)!
+  const changed = await changeType(selectable.id, 'text', optionCleanup.database.version, selectBefore.version)
+  assert.equal(changed.database.version, optionCleanup.database.version + 1)
+  assert.deepEqual((await recordModel.find({ databaseId }).sort({ id: 1 }).lean()).map(row => row.properties), recordsBeforeTypeChange.map(row => row.properties), 'unreferenced Record property values are unchanged during conversion')
+  for (const viewId of [table.view.id, list.view.id]) {
+    const repaired = (await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === viewId)!
+    assert.deepEqual(repaired.config!.filters, [], `${repaired.type} filter is repaired for converted Property`)
+    assert.deepEqual(repaired.config!.sorts, [{ propertyId: selectable.id, direction: 'asc' }])
+    assert.deepEqual(repaired.config!.options, viewId === table.view.id ? { keepUnknown: { value: true } } : { listOpaque: ['preserve'] })
+  }
+
+  // A View reference and a conflicting mutation share the Database CAS: one may commit, never both.
+  const raceAgainst = async (propertyId: string, mutation: (version: number, propertyVersion: number) => Promise<unknown>, patchTimeline: (config: any) => any) => {
+    const currentRaceDb = await database()
+    const raceView = (await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === timeline.view.id)!
+    const raceConfig = patchTimeline(raceView.config!)
+    const property = (await properties()).find(item => item.id === propertyId)!
+    const race = await Promise.allSettled([
+      service.updateView(owner.id, workspaceId, databaseId, raceView.id, { config: raceConfig, expectedDatabaseVersion: currentRaceDb.version, expectedViewVersion: raceView.version }),
+      mutation(currentRaceDb.version, property.version),
+    ])
+    assert.equal(race.filter(result => result.status === 'fulfilled').length, 1, `${propertyId}: hard View reference and incompatible mutation cannot both commit`)
+    const failed = race.find(result => result.status === 'rejected') as PromiseRejectedResult
+    assert.equal((failed.reason as any).status, 409, `${propertyId}: loser receives a conflict`)
+    const finalView = (await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === timeline.view.id)!
+    await service.getViewRecords(owner.id, workspaceId, databaseId, finalView.id, { limit: 10 })
+  }
+  const dateRaceType = await add('p111d-race-type', 'date')
+  await raceAgainst(dateRaceType.id,
+    (version, propertyVersion) => service.changePropertyType(owner.id, workspaceId, databaseId, dateRaceType.id, { targetType: 'text', expectedDatabaseVersion: version, expectedPropertyVersion: propertyVersion }),
+    config => ({ ...config, options: { ...(config.options ?? {}), timeline: { ...(config.options as any).timeline, dateSource: { mode: 'date-property', propertyId: dateRaceType.id } } } }))
+  const finalTypeProperty = (await properties()).find(item => item.id === dateRaceType.id)!
+  const finalTypeSource = (await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === timeline.view.id)!.config!.options!['timeline'] as any
+  assert.equal(finalTypeProperty.type === 'date', finalTypeSource.dateSource.propertyId === dateRaceType.id)
+
+  const dateRaceDelete = await add('p111d-race-delete', 'date')
+  await raceAgainst(dateRaceDelete.id,
+    (version, propertyVersion) => service.deleteProperty(owner.id, workspaceId, databaseId, dateRaceDelete.id, { expectedDatabaseVersion: version, expectedPropertyVersion: propertyVersion }),
+    config => ({ ...config, options: { ...(config.options ?? {}), timeline: { ...(config.options as any).timeline, dateSource: { mode: 'date-property', propertyId: dateRaceDelete.id } } } }))
+  const raceDeleteProperty = (await properties()).find(item => item.id === dateRaceDelete.id)
+  const raceDeleteSource = (await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === timeline.view.id)!.config!.options!['timeline'] as any
+  assert.equal(!!raceDeleteProperty, raceDeleteSource.dateSource.propertyId === dateRaceDelete.id)
+
+  await service.createInPage(owner.id, workspaceId, 'p111d-home', { id: 'p111d-other-db', name: 'Retarget target', titlePropertyId: 'p111d-other-title', viewId: 'p111d-other-view', blockId: 'p111d-other-block', orderKey: 'z', parentBlockId: null })
+  const relationRace = await add('p111d-race-retarget', 'relation', { config: { targetDatabaseId: databaseId } })
+  await raceAgainst(relationRace.id,
+    (version, propertyVersion) => service.updateProperty(owner.id, workspaceId, databaseId, relationRace.id, { config: { targetDatabaseId: 'p111d-other-db' }, expectedDatabaseVersion: version, expectedPropertyVersion: propertyVersion }),
+    config => ({ ...config, options: { ...(config.options ?? {}), timeline: { ...(config.options as any).timeline, dependency: { propertyId: relationRace.id, direction: 'blocks', shiftMode: 'no_auto_shift', avoidWeekends: false } } } }))
+  const finalRelation = (await properties()).find(item => item.id === relationRace.id)
+  const finalDependency = (await service.listViews(owner.id, workspaceId, databaseId)).find(view => view.id === timeline.view.id)!.config!.options!['timeline'] as any
+  assert.equal(!!finalRelation && (finalRelation.config as any)?.targetDatabaseId === databaseId, finalDependency.dependency?.propertyId === relationRace.id)
+})
+
 test('P11.1B Date values round-trip through createRecord, derived reads, CAS rollback, and type conversion', async t => {
   const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
   const connection = app.get<Connection>(getConnectionToken())

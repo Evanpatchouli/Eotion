@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
 import { createHash } from 'node:crypto'
-import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression } from '@eotion/domain'
+import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression, type TimelineViewOptions } from '@eotion/domain'
 import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
 import type { DatabaseRecordPageCreateRequest } from '@eotion/contracts'
 import type { DatabaseTableResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
@@ -21,6 +21,7 @@ type CreateRecord = { id: string; pageId: string; properties: DatabaseRecord['pr
 type CreateView = { id: string; name: string; type: DatabaseView['type']; config?: DatabaseViewConfig; expectedDatabaseVersion?: number }
 type WindowInput = { cursor?: string; limit: number }
 type TableCursor = { w: string; d: string; v: string; dv: number; vv: number; ch: string; r: string; p: string }
+type DatabaseViewPropertyDependency = { viewId: string; propertyId: string; required: 'select' | 'date' | 'self-relation' }
 
 @Injectable()
 export class DatabaseService {
@@ -328,11 +329,11 @@ export class DatabaseService {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabasePropertyUpdateRequestSchema, input)
     return this.transact(async session => {
-      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
-      if (!database) throw new ConflictException('Database version is stale')
-      await this.touchAdvanced(workspaceId, [databaseId], session)
+      const currentDatabase = await this.databases.findInWorkspace(workspaceId, databaseId, session)
+      if (!currentDatabase) throw new NotFoundException('Database not found in workspace')
       const existing = await this.properties.findInDatabase(workspaceId, databaseId, propertyId, session)
       if (!existing) throw new NotFoundException('Database property not found')
+      if (currentDatabase.version !== input.expectedDatabaseVersion || existing.version !== input.expectedPropertyVersion) throw new ConflictException('Database or property version is stale')
       if (input.options !== undefined && existing.type !== 'select') throw new BadRequestException('Only select properties have options')
       const candidate = {
         ...existing,
@@ -344,38 +345,47 @@ export class DatabaseService {
       }
       if (!isValidDatabaseProperty(candidate)) throw new BadRequestException('Invalid database property')
       const existingProperties = await this.properties.list(workspaceId, databaseId, session)
+      const candidateProperties = existingProperties.map(property => property.id === propertyId ? candidate : property)
+      const views = await this.views.list(workspaceId, databaseId, session)
+      this.assertViewPropertyDependencies(views, databaseId, propertyId, candidate)
       if (existing.type === 'relation' && input.config !== undefined && JSON.stringify(input.config) !== JSON.stringify(existing.config)) {
         const linked = await this.records.listForCleanup(workspaceId, databaseId, session)
         if (linked.length > DATABASE_RECORD_SCAN_MAX_RECORDS) throw new ConflictException('Database exceeds the maximum of 10000 records for relation retargeting')
         if (linked.some(record => Array.isArray(record.properties[propertyId]) && (record.properties[propertyId] as string[]).length > 0)) throw new ConflictException('Clear relation values before changing its target database')
       }
-      await this.assertDependencies(workspaceId, databaseId, existingProperties.map(property => property.id === propertyId ? candidate : property), session)
+      await this.assertDependencies(workspaceId, databaseId, candidateProperties, session)
+      const keptOptionIds = new Set((candidate.options ?? []).map(option => option.id))
+      const removedOptionIds = new Set((existing.options ?? []).map(option => option.id).filter(optionId => !keptOptionIds.has(optionId)))
+      const repairedViews = views.map(view => {
+        const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+        const nextConfig = removedOptionIds.size === 0 ? config : {
+          ...config,
+          filters: config.filters.filter(filter => !(filter.propertyId === existing.id && typeof filter.value === 'string' && removedOptionIds.has(filter.value))),
+        }
+        if (!validateDatabaseViewConfig(nextConfig, candidateProperties, view.type)) throw new ConflictException('Database view configuration could not be repaired after updating a property')
+        return { view, config, nextConfig }
+      })
+      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      if (!database) throw new ConflictException('Database version is stale')
+      await this.touchAdvanced(workspaceId, [databaseId], session)
       const property = await this.properties.update(workspaceId, databaseId, propertyId, input.expectedPropertyVersion, { ...(input.name === undefined ? {} : { name: input.name }), ...(input.options === undefined ? {} : { options: input.options }), ...(input.config === undefined ? {} : { config: input.config }) }, session)
       if (!property) throw new ConflictException('Database property version is stale')
-      if (input.options !== undefined) {
-        const kept = new Set(input.options.map(option => option.id))
-        const removed = new Set((existing.options ?? []).map(option => option.id).filter(optionId => !kept.has(optionId)))
-        if (removed.size > 0) {
-          const titleId = (await this.properties.list(workspaceId, databaseId, session)).find(row => row.type === 'title')?.id
-          const cleanupRecords = await this.records.listForCleanup(workspaceId, databaseId, session)
-          if (cleanupRecords.length > DATABASE_RECORD_SCAN_MAX_RECORDS) throw new ConflictException('Database exceeds the maximum of 10000 records for option cleanup')
-          for (const record of cleanupRecords) {
-            const current = record.properties[existing.id]
-            if (typeof current === 'string' && removed.has(current)) {
-              const values = { ...record.properties }
-              delete values[existing.id]
-              if (titleId) delete values[titleId]
-              if (!await this.records.updateProperties(workspaceId, databaseId, record.id, record.version, values, session)) throw new ConflictException('Database record changed during option cleanup')
-            }
+      if (removedOptionIds.size > 0) {
+        const titleId = (await this.properties.list(workspaceId, databaseId, session)).find(row => row.type === 'title')?.id
+        const cleanupRecords = await this.records.listForCleanup(workspaceId, databaseId, session)
+        if (cleanupRecords.length > DATABASE_RECORD_SCAN_MAX_RECORDS) throw new ConflictException('Database exceeds the maximum of 10000 records for option cleanup')
+        for (const record of cleanupRecords) {
+          const current = record.properties[existing.id]
+          if (typeof current === 'string' && removedOptionIds.has(current)) {
+            const values = { ...record.properties }
+            delete values[existing.id]
+            if (titleId) delete values[titleId]
+            if (!await this.records.updateProperties(workspaceId, databaseId, record.id, record.version, values, session)) throw new ConflictException('Database record changed during option cleanup')
           }
-          for (const view of await this.views.list(workspaceId, databaseId, session)) {
-            const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
-            const nextConfig = { ...config, filters: config.filters.filter(filter => !(filter.propertyId === existing.id && typeof filter.value === 'string' && removed.has(filter.value))) }
-            if (nextConfig.filters.length === config.filters.length) continue
-            // Preserve opaque Board extension options; grouping dependencies are guarded on type changes and deletion.
-            if (!validateDatabaseViewConfig(nextConfig, (await this.properties.list(workspaceId, databaseId, session)))) throw new ConflictException('Database view configuration could not be repaired after deleting a select option')
-            if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during option cleanup')
-          }
+        }
+        for (const { view, config, nextConfig } of repairedViews) {
+          if (JSON.stringify(nextConfig) === JSON.stringify(config)) continue
+          if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during option cleanup')
         }
       }
       return { database, property }
@@ -393,7 +403,6 @@ export class DatabaseService {
       if (currentDatabase.version !== input.expectedDatabaseVersion || existing.version !== input.expectedPropertyVersion) throw new ConflictException('Database or property version is stale')
       if (existing.type === 'title') throw new BadRequestException('The title property cannot change type')
       if (existing.type === input.targetType) return { database: currentDatabase, property: existing, convertedRecordCount: 0, clearedRecordCount: 0, repairedViewCount: 0 }
-      if (existing.type === 'select' && input.targetType !== 'select') await this.assertNoBoardGroupingDependency(workspaceId, databaseId, propertyId, session)
 
       const candidate: DatabaseProperty = {
         ...existing,
@@ -406,6 +415,8 @@ export class DatabaseService {
       if (!isValidDatabaseProperty(candidate)) throw new BadRequestException('Invalid database property')
       const existingProperties = await this.properties.list(workspaceId, databaseId, session)
       const candidateProperties = existingProperties.map(property => property.id === propertyId ? candidate : property)
+      const views = await this.views.list(workspaceId, databaseId, session)
+      this.assertViewPropertyDependencies(views, databaseId, propertyId, candidate)
       try {
         await this.assertDependencies(workspaceId, databaseId, candidateProperties, session)
       } catch (error) {
@@ -429,6 +440,17 @@ export class DatabaseService {
           throw error
         }
       }
+
+      const repairedViews = views.map(view => {
+        const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+        const nextConfig: DatabaseViewConfig = {
+          ...config,
+          filters: config.filters.filter(filter => filter.propertyId !== propertyId),
+          sorts: ['relation', 'rollup', 'formula'].includes(candidate.type) ? config.sorts.filter(sort => sort.propertyId !== propertyId) : config.sorts,
+        }
+        if (!validateDatabaseViewConfig(nextConfig, candidateProperties, view.type)) throw new ConflictException('Database view configuration could not be repaired after changing property type')
+        return { view, config, nextConfig }
+      })
 
       const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
       if (!database) throw new ConflictException('Database version is stale')
@@ -454,15 +476,7 @@ export class DatabaseService {
       }
 
       let repairedViewCount = 0
-      for (const view of await this.views.list(workspaceId, databaseId, session)) {
-        const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
-        const nextConfig: DatabaseViewConfig = {
-          ...config,
-          filters: config.filters.filter(filter => filter.propertyId !== propertyId),
-          sorts: ['relation', 'rollup', 'formula'].includes(candidate.type) ? config.sorts.filter(sort => sort.propertyId !== propertyId) : config.sorts,
-        }
-        // Preserve opaque Board extension options; grouping dependencies are guarded on type changes and deletion.
-        if (!validateDatabaseViewConfig(nextConfig, candidateProperties)) throw new ConflictException('Database view configuration could not be repaired after changing property type')
+      for (const { view, config, nextConfig } of repairedViews) {
         if (nextConfig.filters.length === config.filters.length && nextConfig.sorts.length === config.sorts.length) continue
         if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during property type conversion')
         repairedViewCount += 1
@@ -477,14 +491,15 @@ export class DatabaseService {
     await this.requireDatabase(userId, workspaceId, databaseId, true)
     this.parse(DatabasePropertyDeleteRequestSchema, input)
     return this.transact(async session => {
-      await this.assertNoBoardGroupingDependency(workspaceId, databaseId, propertyId, session)
-      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
-      if (!database) throw new ConflictException('Database version is stale')
-      await this.touchAdvanced(workspaceId, [databaseId], session)
+      const currentDatabase = await this.databases.findInWorkspace(workspaceId, databaseId, session)
+      if (!currentDatabase) throw new NotFoundException('Database not found in workspace')
       const existing = await this.properties.findInDatabase(workspaceId, databaseId, propertyId, session)
       if (!existing) throw new NotFoundException('Database property not found')
+      if (currentDatabase.version !== input.expectedDatabaseVersion || existing.version !== input.expectedPropertyVersion) throw new ConflictException('Database or property version is stale')
       if (existing.type === 'title') throw new BadRequestException('The title property cannot be deleted')
       const existingProperties = await this.properties.list(workspaceId, databaseId, session)
+      const views = await this.views.list(workspaceId, databaseId, session)
+      this.assertViewPropertyDependencies(views, databaseId, propertyId)
       const localRelations = new Map(existingProperties.filter(property => property.type === 'relation').map(property => [property.id, property]))
       if (existingProperties.some(property => property.type === 'rollup' && (property.config as { relationPropertyId: string; targetPropertyId: string }).relationPropertyId === propertyId
         || property.type === 'rollup' && (property.config as { relationPropertyId: string; targetPropertyId: string }).targetPropertyId === propertyId
@@ -494,6 +509,37 @@ export class DatabaseService {
       }
       await this.assertDependencies(workspaceId, databaseId, existingProperties.filter(property => property.id !== propertyId), session)
       await this.assertNoIncomingPropertyDependencies(workspaceId, existing, session)
+      const remainingProperties = existingProperties.filter(property => property.id !== propertyId)
+      const repairedViews = views.map(view => {
+        const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+        const options = config.options
+        const timelineOptions = view.type === 'timeline' ? options?.timeline as TimelineViewOptions | undefined : undefined
+        const frozenTable = timelineOptions?.frozenTable
+        const nextOptions = frozenTable ? {
+          ...options,
+          timeline: {
+            ...timelineOptions,
+            frozenTable: {
+              ...frozenTable,
+              visibleProperties: frozenTable.visibleProperties?.filter(id => id !== propertyId) ?? null,
+              propertyOrder: frozenTable.propertyOrder?.filter(id => id !== propertyId) ?? null,
+            },
+          },
+        } : options
+        const nextConfig: DatabaseViewConfig = {
+          ...config,
+          filters: config.filters.filter(filter => filter.propertyId !== propertyId),
+          sorts: config.sorts.filter(sort => sort.propertyId !== propertyId),
+          visibleProperties: config.visibleProperties?.filter(id => id !== propertyId) ?? null,
+          propertyOrder: config.propertyOrder?.filter(id => id !== propertyId) ?? null,
+          ...(nextOptions === undefined ? {} : { options: nextOptions }),
+        }
+        if (!validateDatabaseViewConfig(nextConfig, remainingProperties, view.type)) throw new ConflictException('Database view configuration could not be repaired after deleting a property')
+        return { view, config, nextConfig }
+      })
+      const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      if (!database) throw new ConflictException('Database version is stale')
+      await this.touchAdvanced(workspaceId, [databaseId], session)
       if (!await this.properties.delete(workspaceId, databaseId, propertyId, input.expectedPropertyVersion, session)) throw new ConflictException('Database property version is stale')
       const titleId = (await this.properties.list(workspaceId, databaseId, session)).find(row => row.type === 'title')?.id
       const cleanupRecords = await this.records.listForCleanup(workspaceId, databaseId, session)
@@ -505,19 +551,8 @@ export class DatabaseService {
         if (titleId) delete values[titleId]
         if (!await this.records.updateProperties(workspaceId, databaseId, record.id, record.version, values, session)) throw new ConflictException('Database record changed during property cleanup')
       }
-      for (const view of await this.views.list(workspaceId, databaseId, session)) {
-        const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
-        const nextConfig: DatabaseViewConfig = {
-          ...config,
-          filters: config.filters.filter(filter => filter.propertyId !== propertyId),
-          sorts: config.sorts.filter(sort => sort.propertyId !== propertyId),
-          visibleProperties: config.visibleProperties?.filter(id => id !== propertyId) ?? null,
-          propertyOrder: config.propertyOrder?.filter(id => id !== propertyId) ?? null,
-        }
+      for (const { view, config, nextConfig } of repairedViews) {
         if (JSON.stringify(nextConfig) === JSON.stringify(config)) continue
-        const remainingProperties = await this.properties.list(workspaceId, databaseId, session)
-        // Preserve opaque Board extension options; grouping dependencies are guarded on type changes and deletion.
-        if (!validateDatabaseViewConfig(nextConfig, remainingProperties)) throw new ConflictException('Database view configuration could not be repaired after deleting a property')
         if (!await this.views.updateConfigForProperty(workspaceId, databaseId, view, nextConfig, session)) throw new ConflictException('Database view changed during property cleanup')
       }
       return { database }
@@ -711,9 +746,36 @@ export class DatabaseService {
     }
   }
 
-  private async assertNoBoardGroupingDependency(workspaceId: string, databaseId: string, propertyId: string, session: ClientSession): Promise<void> {
-    if (await this.views.hasBoardGroupingProperty(workspaceId, databaseId, propertyId, session)) {
-      throw new ConflictException('Property is used as Board grouping property.')
+  private assertViewPropertyDependencies(views: readonly DatabaseView[], databaseId: string, propertyId: string, candidate?: DatabaseProperty): void {
+    const dependencies: DatabaseViewPropertyDependency[] = []
+    for (const view of views) {
+      const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+      const options = config.options
+      if (view.type === 'board' && options?.groupByPropertyId === propertyId) {
+        dependencies.push({ viewId: view.id, propertyId, required: 'select' })
+      }
+      if (view.type !== 'timeline') continue
+      const timeline = options?.timeline as TimelineViewOptions | undefined
+      const dateSource = timeline?.dateSource
+      if (dateSource?.mode === 'date-property' && dateSource.propertyId === propertyId) {
+        dependencies.push({ viewId: view.id, propertyId, required: 'date' })
+      } else if (dateSource?.mode === 'start-end') {
+        if (dateSource.startPropertyId === propertyId) dependencies.push({ viewId: view.id, propertyId, required: 'date' })
+        if (dateSource.endPropertyId === propertyId) dependencies.push({ viewId: view.id, propertyId, required: 'date' })
+      }
+      const dependency = timeline?.dependency
+      if (dependency?.propertyId === propertyId) dependencies.push({ viewId: view.id, propertyId, required: 'self-relation' })
+    }
+
+    for (const dependency of dependencies) {
+      const valid = candidate !== undefined && (dependency.required === 'select'
+        ? candidate.type === 'select'
+        : dependency.required === 'date'
+          ? candidate.type === 'date'
+          : candidate.type === 'relation' && (candidate.config as { targetDatabaseId?: string } | undefined)?.targetDatabaseId === databaseId)
+      if (valid) continue
+      if (dependency.required === 'select') throw new ConflictException('Property is used as Board grouping property.')
+      throw new ConflictException('Property is used by a Timeline property dependency; update the view before changing or deleting the property.')
     }
   }
 
