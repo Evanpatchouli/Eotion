@@ -706,6 +706,11 @@ generic records 继续执行已有过滤、排序、分页及配置/版本 curso
 Web 可选择已有 Timeline View，显示明确的暂未实现状态，不回退 Table；创建入口、
 时间网格、时间条和 Timeline 专用设置留待后续。
 
+以上为 P11.1C 交付时的实施边界。P11.2A 已建立 Shell/坐标，P11.2B 已接入真实 generic
+records 的只读 milestone/range 与未排期行，实际阶段结果见
+[P11.2B 验证](verification/p11-2b-read-only-bars.md)。Date/View 配置契约保持不变；
+创建、配置 UI 与其余完整 P11 parity 不由这两个阶段自动实现。
+
 `DatabaseService.linkInPage` 仍保持 Table-only 规则；后续 Linked Timeline 的接入点
 是该方法的 View 类型门禁与对应 HTTP/Block identity 验收，本轮没有提前放宽。
 
@@ -774,6 +779,15 @@ P11.1C 冻结本节 §21 的 View 配置契约；P11.1D 已补完整 Property li
 P11.2.0 仅冻结 renderer 架构，不代表产品实现或验收。正式设计见[Timeline Renderer Architecture](architecture/timeline-renderer.md)。文档列明基线代码证据、17 项冻结决策、统一时间坐标与时区规则、viewport/ruler/rows 状态边界、P9 identity fence、standalone Database Page blocker B1，以及风险和后续验证目标。P11.2A scale selector 只改变本实例 ephemeral zoom，不 PATCH、不请求 records；`options.timeline.scale` 仍是共享保存配置，仅未来通用 View Settings 显式保存时才走既有 CAS 和 refresh。架构阶段的 `Timeline*` 类型/文件当时为拟实施内容；P11.2A 的 Shell/坐标模块现已建立，实际验证与 B1 修复见[P11.2A 验证](verification/p11-2a-timeline-shell.md)，不代表完整 read-bars 已实施。
 
 P11.2.0 只变更架构、产品标准摘要及任务/检索文档；不改产品代码、依赖、API/schema/sync/MCP 或版本。17 项决策已冻结，独立复核 0 个确定文档 blocker；文档范围/链接/UTF-8 无 BOM/diff 检查与 62 项给定 instant 和公式验算通过，限制见[本轮验证](architecture/timeline-renderer.md#19-p1120-验证与停止点)。未运行产品、浏览器滚动或性能验收。本阶段提交后停止；经明确启动后，P11.2A 才可按架构文档 §16 实施。
+
+P11.2B 已从 P11.2A 最新 HEAD 接入 projection → temporal geometry/layout → 只读 Bar。
+单 Date 和独立 Start/End 均复用完整 Date normalizer；point 不补 end，range 保留原日期与
+显式零长度，all-day inclusive 仅为视觉右界。未排期仍占 generic 原行并有索引打开入口。
+200 条起复用现有 page host 虚拟化，Record 打开/selection 复用原 Host，不改 mutation、
+配置、查询、同步或持久模型。验收与 100/500 条观察见
+[P11.2B 验证](verification/p11-2b-read-only-bars.md)，实现入口见
+[Renderer 架构 §21](architecture/timeline-renderer.md#21-p112b-只读时间条实施)。
+P11.2B 完成后停止，不自动进入 P11.2C，也不等同于下列完整 read 清单或 P11 FINAL PASS。
 
 只读完成：
 

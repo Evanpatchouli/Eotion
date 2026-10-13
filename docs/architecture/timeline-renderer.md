@@ -6,7 +6,7 @@
 
 ## 1. 目的与实施状态
 
-本文冻结 P11.2 只读 renderer 的设计，说明接口、模块、组件边界、状态、算法和后续验收。**P11.2.0 基线中的所有 `Timeline*` 接口和 renderer 文件均为拟实施内容，Timeline 分支当时仍是占位。** P11.2A 后已存在的 Shell / 坐标模块与实际验证见 §20；projection、bar、Frozen Table、dependency 仍属后续实施。P11.2.0 的架构验算不代表新 renderer 已通过测试。
+本文冻结 P11.2 只读 renderer 的设计，说明接口、模块、组件边界、状态、算法和后续验收。**P11.2.0 基线中的所有 `Timeline*` 接口和 renderer 文件均为拟实施内容，Timeline 分支当时仍是占位。** P11.2A 的 Shell / 坐标模块见 §20；P11.2B 的 projection/layout/bar 实施见 §21。Frozen Table、dependency 等完整 P11 parity 仍属后续实施。P11.2.0 的架构验算不代表新 renderer 已通过测试。
 
 P11.2 读取已有 `DatabaseView`、options、generic records 响应及完整 Record properties；不增加持久化实体、endpoint、Database mutation、同步路径、package dependency 或 MCP surface。P11.2A 是首个实现单元；本次 P11.2.0 只完成架构文档，不启动实现。
 
@@ -434,3 +434,35 @@ DatabaseNodeView 的 Timeline 分支进入真实 Shell，Table 路由也显式�
   首次/失败加载仍使用原 load path。不增加 Timeline 专用 loader。
 - 未实现 projection/layout/bar/Frozen/dependency/mutation、Linked Timeline 创建或 schema/API/MCP/版本变更。
   本轮完成后停止，P11.2B 需用户另行启动。
+
+## 21. P11.2B 只读时间条实施
+
+2026-10-13，按用户独立启动的 P11.2B 严格范围实施。基线 `03138bc`，
+纯逻辑提交 `47d675c`，只读接线与 Web 回归提交 `71e72f9`。
+实际结果与限制见 [P11.2B 验证](../verification/p11-2b-read-only-bars.md)。
+本轮只代表 P11.2B 范围，不代表完整 P11.2 read 或 P11 FINAL PASS。
+
+- `projection.ts` 使用完整 raw Date normalizer，单 Date 消费 start/end，独立 Start/End
+  消费各自 normalized start；显示属性和 Title 复用 generic response 与父 formatter。
+  投影保留原顺序、record/page identity、range 的 precision/explicitZeroDuration，以及
+  未排期 reason。Renderer 不读取 raw Date，也不改变 Records。
+- `geometry.ts` 批量解析投影的 temporal point；date-only 复用已有日界 resolver。
+  `nextCalendarBoundary` 是同一 resolver 的薄 helper，支持原 date 的次日日初与内部
+  year10000 exclusive 边界，不复制时区规则。datetime 使用精确 instant/end。
+- `layout.ts` 集中生成 content X 的 raw/cropped geometry、48px 行和 32px bar。
+  200 条起只计算 page-host 可见窗口、上下五行 overscan 与单独焦点行；焦点按 record ID
+  保存并映射当前 rowIndex，完整 generic rows 的高度仍由 spacer 保持。
+- `DatabaseTimelineView` 分别缓存 projection、temporal map、窗口 geometry；scroll/zoom
+  不重解析全部 Date。`TimelineBar` 只消费 geometry/title/display/visual state。
+  point/零宽 range 以 12px marker 表示，desktop/touch 命中区域为 24/44px，不补 end。
+- `TimelineViewport` 复用唯一 native scroller，Grid/Today 绘制仅覆盖当前行窗口；
+  未排期原 row 无时间 geometry，保留标题/原因/打开，透明背景不遮住 Today 红线。
+  footer 索引由同一 controller 定位原 row、等待挂载、focus，再走既有 Record Host。
+  epoch/scope/DOM guard 拒绝过期导航；原生 details 按 scope 重建并拒绝旧节点 toggle。
+- selection 来自同 workspace/database 的 singleton Record Host pageId，点击仍由父层
+  openRecordPage 处理。generic loader/cursor/P9 fence、Editor 与 Drawer draft 归属保持。
+
+本轮未实现 Frozen Table、dependency、drag/resize、Date mutation、Record edit shortcut、
+auto shift、Calendar 或配置 UI。完全离屏 scheduled row 保留及 offscreen geometry 已建立，
+方向 indicator/jump 留给后续完整 read parity；本轮不建立 Timeline 专属打开逻辑。
+P11.2C 从本节列出的 projection/geometry/layout/viewport 接续，须另行明确授权范围。

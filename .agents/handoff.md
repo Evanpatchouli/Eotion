@@ -1,5 +1,49 @@
 # Handoff
 
+## 2026-10-13 P11.2B Read-only Timeline Bars（范围验收 PASS，完成并停止）
+
+基线03138bc（P11.2A后最新HEAD），开始时master工作树干净。
+分支codex/p11-2b-read-only-bars。正式版本保持0.0.1；P11目标0.0.3。
+纯逻辑47d675ccbb34734fce5dc3215efafd4487ba47d0，Bar接线/Web回归71e72f90676424d3fc359afefbb493d1e22cba65。
+正式验收和交接为本节所在文档commit；证据docs/verification/p11-2b-read-only-bars.md，
+当前架构入口docs/architecture/timeline-renderer.md §21。
+
+流程generic records→projectTimelineRecords→resolveTimelineTemporalGeometry/layoutTimelineItems→TimelineBar。
+Date normalizer处理完整raw值，单Date消费start/end；独立Start/End各取normalized start并忽略合法内部end。
+保原顺序、recordId/pageId/Title、point/range/unscheduled；无end仍point，显式相等end仍range。
+date-only显示时区日界与inclusive视觉右界复用coordinate resolver，新增薄nextCalendarBoundary支持原date次日及内部year10000；
+datetime精确UTCinstant/end；skipday保留诊断，不写回视觉边界或伪造end。
+
+projection/temporal map独立computed只随records/schema/config/display-zone变动；scroll/zoom只布局窗口。
+layout集中48px行/32pxbar、content raw/cropped X与clip/offscreen；point/零宽range用12pxmarker和24/44pxhit。
+200条起单page-host controller虚拟窗口，上下5行overscan，focus按recordID作为独立island；总高spacer保持generic所有行。
+Grid/Today画窗口，未排期背景透明保持Today贯穿；Bar无日期解析、请求、mutation、scroll listener。
+No-date仍在原row显示title/原因/打开，footer索引经同controller.revealRow定位/focus再走现有Record Host。
+epoch/scope/DOM guard拒绝stale/ABA导航，details按scope重建且旧节点toggle不可回写。
+selection从同workspace/database的singleton Host pageId派生；父generic loader/cursor/P9 fence与Editor/Drawer draft归属保持。
+
+验证：纯逻辑22/22（coordinate14+projection3+layout5）、新Web3/3、既有Timeline/identity定向8/8；
+完整相关183项179PASS/4FAIL（Database113/116、Editor44/45、coordinate14/14、layout5/5、projection3/3），0skip/retries。
+所有Timeline/standalone/identity相关9项在完整运行PASS；四ViewABA/Editor/NodeView/Drawer草稿、Date源/坐标/390px通过。
+4失败仅既有Slash/选区toolbar流程，独立复跑2PASS/2FAIL；稳定的Slash创建和selection bubble有P11.2A未改基线同样失败的历史证据，
+本轮未新建baseline，另外2项完整运行时序仍未定性。未弱化assert或扩大范围修复，不声明完整Product全绿。
+最终Web typecheck/build/SW通过，已有chunk提示671.81kB；独立review最终0剩余确定产品blocker。
+主Agent已视检最终1440/390 Light/Dark四图；diff/UTF8无BOM/CRLF/范围检查通过。
+
+100/500全部按25条分页（4/20GET）加载；样本DOM100/17行，500总高24000px、窗口[483,500)，1未排期。
+scroll/zoom保projection/temporal map对象身份；focused远行单独保留，不挂载中间所有行。
+计时538/3849ms含Playwright分页和后续UI操作；资源sample为空，是mock generic seam行为证据，不是正式帧率或真实服务端benchmark。
+日志C:/Users/31250/AppData/Local/Temp/eotion-p112b-validation-2cb1500948374b7992879f2db76c68f0；
+最终截图/JSON副本C:/Users/31250/.codex/visualizations/2026/10/13/01a1343c-863d-7130-8bdb-469850cfebf5/timeline-bars/。
+
+停止边界：不实现Frozen Table、dependency、drag/resize、Date mutation、Record edit shortcut、auto shift、Calendar/config UI；
+不改domain/wire/shared config/API/MCP/sync/version/dependencies，linkInPage仍Table-only。
+完全离屏scheduled记录保留原row和offscreen geometry；方向indicator/jump属于后续完整read parity，严格B未实现，不作本轮blocker。
+未运行真实Mongo/API/MCP、完整Product全量、native真机、5000bars或P11 Final。本轮仅P11.2B Scope PASS。
+P11.2C接续projection/geometry/layout/Bar与同一viewport controller，需另行明确授权范围；Frozen列必须共用row window/geometry，
+后续依赖和mutation仍遵循现有generic领域/Date/CAS，不创建Timeline专用持久实体或打开逻辑。
+本轮已完成并停止，不自动进入P11.2C。
+
 ## 2026-10-13 P11.2A Timeline Shell + Coordinate Engine（范围验收 PASS，完成并停止）
 
 基线 7b93617（P11.2.0 Architecture PASS），开始时 master 工作树干净；

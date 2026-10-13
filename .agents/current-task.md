@@ -1,37 +1,50 @@
-# 当前任务：P11.2A Timeline Shell + Coordinate Engine（范围验收 PASS，完成并停止）
+# 当前任务：P11.2B Read-only Timeline Bars（范围验收 PASS，完成并停止）
 
-基线：7b93617（P11.2.0 Architecture PASS），开始时 master 工作树干净。
-工作分支：codex/p11-2a-timeline-shell。版本保持 0.0.1；P11 目标版本 0.0.3。
-冻结设计：docs/architecture/timeline-renderer.md；只读空间 shell，完成后停止，不进入 P11.2B。
+基线03138bc（P11.2A完成后的最新HEAD），开始时master工作树干净。
+分支codex/p11-2b-read-only-bars。正式版本保持0.0.1；P11目标0.0.3。
+只完成P11.2B严格范围，不进入P11.2C。正式证据docs/verification/p11-2b-read-only-bars.md。
 
 | Work Unit | 模式 / 难度 / 角色 | 目标 | 状态 |
 | --- | --- | --- | --- |
-| A1 | investigate / S0 scout | routing、P9 fence、standalone B1 与测试入口 Evidence Pack | 完成，确认 B1 |
-| A2 | decide / S2 worker + 主 Agent | 冻结设计内的纯函数 API / IANA resolver 与组件接线 Brief | 完成，执行已降到 S1 |
-| A3 | execute / S1 fast_worker | coordinates/scale/ruler/viewport 与数学回归测试 | 完成，数学14/14 |
-| A4 | execute / S1 fast_worker + 主 Agent | 六组件、单一 viewport adapter、真实 Timeline routing；B1 最小修复 | 完成，Web定向5/5，P9回归3/3 |
-| A5 | verify/review / S0 scout + reviewer | 数学/Web/identity/390px、typecheck/build 与最终独立 review | 完成，review 0 blocker；完整相关167/172，失败基线对照已记录 |
-| A6 | execute / S1 主 Agent | 正式验收/索引/current-task/handoff、diff 复核与逻辑单元提交 | 完成，纯引擎20ac1eb、Shell接线1ea6eb4；文档为本文件所在commit |
+| B1 | investigate / S0 scout | Date/generic records/Host与测试Evidence Pack | 完成 |
+| B2 | decide / S2 主Agent | 冻结设计内纯接口/窗口/接线Brief | 完成，执行降为S1 |
+| B3 | execute / S1 fast_worker | projection/geometry/layout与纯逻辑回归 | 完成，22/22 PASS，47d675c |
+| B4 | execute / S1 fast_worker | Bar/未排期/单viewport virtualization/Host接线 | 完成，含review要求的reveal与details保护，71e72f9 |
+| B5 | execute / S1 fast_worker | Web/100/500/identity/390px/截图 | 完成，新3/3与既有定向8/8 PASS |
+| B6 | verify/review / S0 scout + reviewer | 最小充分验证、完整相关suite、独立review | 完成，179/183，失败复跑2/4 PASS；0剩余产品blocker |
+| B7 | execute / S1 主Agent | 验收/索引/handoff与逻辑单元提交 | 完成，正式文档为本文件所在commit |
 
-## 实施边界
+## 实施结果
 
-- configuredScale 来自 options.timeline.scale，默认 month；selector 只改本实例 local override，0 PATCH / 0 records GET。
-- 统一 logical UTC instant ↔ content pixel；date-only 使用 display-zone 当地日界，datetime 保持 UTC instant。
-- 七种密度严格按 P11.2.0；有界 native canvas、同帧 rebase、ruler/grid/Today 共用 transform。
-- 唯一横向 scroller、有限 overscan ticks、page-host ruler pin；resize/navigation 保留 center。
-- records/loading/cursor/footer、通用 title/open 与 Record Host 继续父层持有。A 不读 raw Date 或分类 records。
-- B1 按冻结最小修复：同库 route View change 不销毁 loading subtree，稳定 Editor key，原地更新 block viewId。
-- 不实现 projection/bar/range/milestone/Frozen Table/dependency/drag/resize/date mutation/专用 records loader。
-- 不改 MCP/schema/API/sync/version/dependencies/linkInPage Table-only 门禁。
+- generic records→projectTimelineRecords→resolveTimelineTemporalGeometry/layoutTimelineItems→TimelineBar。
+- normalizer验证完整raw，单Date用start/end，独立Start/End各取normalized start；不补end或修改Record。
+- 投影保recordId/pageId/Title/rowIndex/display；point/range/unscheduled保原顺序，invalid/缺start/混合/逆序不丢行。
+- date-only显示时区日界/inclusive视觉end复用引擎，datetime精确instant；薄nextCalendarBoundary支持原date次日与内部year10000。
+- 48px row/32px bar，统一content X/raw/cropped width/clip/offscreen；零宽marker12px，desktop/touch hit24/44px。
+- 200条起现有page host虚拟化，上下5行overscan与按recordID的focus island；scroll/zoom不重projection/temporalMap。
+- Grid/Today按窗口绘制，未排期原row透明背景保Today贯穿；footer索引reveal/focus后走已有Record Host。
+- epoch/scope/DOM拒绝stale/ABA导航，details按scope重建并拒绝旧节点toggle。selection来自原Host pageId。
+- 父generic loader/cursor/P9 fence与Editor/NodeView/Drawer draft保持，没有第二scroll container/renderer-specific loader。
 
-## 验证目标
+## 验证与限制
 
-数学：round trip、七 scale、时区日界/午夜 gap/fold/半小时 DST/整日跳过/0/99/闰年/月末、tick 有界、rebase/center。
-Web：真实 Timeline、无 Table fallback、七 scale、Today/Prev/Next、原生横滚、390px 无页面溢出、Table/List/Board 回归、P9 identity/draft/ABA、清理与跨日刷新。
-数学14/14、Web定向5/5、P9ABA/snapshot3/3与typecheck已通过，四张Light/Dark desktop/390px截图已视检。
-最终完整相关suite172项：167通过、5失败（Database110/113、Editor43/45、数学14/14），0skip/retries。
-五个失败单独复跑3通过/2失败；未改动7b93617隔离基线同样3通过/2失败，另外三项完整运行时序尚未定性。
-最终Web build/vue-tsc/SW通过；659.30kB已有chunk提示保留。未顺手修改既有失败流程或弱化断言。
-本轮判定P11.2A范围验收PASS，不声明完整Product全绿。正式证据见docs/verification/p11-2a-timeline-shell.md。
-日志：C:/Users/31250/AppData/Local/Temp/eotion-p112a-full-final-640611811d8546368decd60033346a59。
-未运行Mongo/API/MCP、完整Product、native真机、5000bars性能或P11 Final。本轮完成后停止，不进入P11.2B。
+- 纯逻辑22/22（coordinate14、projection3、layout5）、新Web3/3、既有Timeline/identity定向8/8通过。
+- 完整相关183项179PASS/4FAIL，Database113/116、Editor44/45、coordinate14/14、layout5/5、projection3/3；0skip/retries。
+- 完整运行Timeline/standalone/identity9项PASS，四ViewABA/草稿/Date source/100/500/390px通过。
+- 4项失败仅既有Slash dialog/selection bubble，独立复跑2PASS/2FAIL；两个稳定失败有P11.2A未改基线同样失败的历史证据，
+  本轮未新建baseline，其余两项完整运行时序尚未定性。不声明完整Product全绿。
+- 最终Web typecheck/build/SW PASS，已有671.81kB chunk提示；独立review0剩余确定产品blocker；diff/UTF8无BOM/CRLF/范围通过。
+- 主Agent视检1440/390 Light/Dark四图，里程碑/范围/未排期/Today与页面overflow检查通过。
+- 100/500全部按25条分页（4/20GET）加载，DOM样本100/17行；500总高24000px、窗口[483,500)、1未排期。
+  projection/temporal对象身份保持；538/3849ms为mock分页与后续UI累计观察，不是正式帧率/真实服务端benchmark。
+- 日志C:/Users/31250/AppData/Local/Temp/eotion-p112b-validation-2cb1500948374b7992879f2db76c68f0。
+- 最终截图/JSON副本C:/Users/31250/.codex/visualizations/2026/10/13/01a1343c-863d-7130-8bdb-469850cfebf5/timeline-bars/。
+
+## 提交与停止点
+
+纯逻辑47d675ccbb34734fce5dc3215efafd4487ba47d0；只读接线/Web71e72f90676424d3fc359afefbb493d1e22cba65；文档为本文件所在commit。
+未实现Frozen Table/dependency/drag/resize/Date mutation/Record edit shortcut/auto shift/Calendar/config UI，
+完全离屏scheduled保原row/offscreen geometry，方向indicator/jump留后续完整read parity，不作为严格B的blocker。
+没有domain/wire/shared config/API/MCP/sync/version/dependency变更，linkInPage仍Table-only。
+未运行真实Mongo/API/MCP、完整Product全量、native真机、5000bars或P11 Final；本轮只声明P11.2B Scope PASS。
+P11.2C入口与待定范围已写handoff；完成后停止，不自动推进下一阶段。

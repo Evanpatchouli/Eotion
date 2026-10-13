@@ -81,7 +81,7 @@ P9 Final Acceptance（2026-10-13）：**P9 FINAL PASS**。完整 Web Product 367
 P10–P15 Roadmap（2026-10-13）：0.0.1 已发布；后续固定映射为 P10 Database MCP Extension → 0.0.2、P11 Timeline → 0.0.3、P12 Gallery → 0.0.4、P13 Calendar → 0.0.5、P14 Chart → 0.0.6、P15 MCP Full Adaptation → 0.1.0。检索 P10 时重点关注 MCP Database DTO / scope / pagination / CAS / idempotency / generic records；P11 检索 Timeline/date range/view options；P12 检索 Gallery/card projection/cover；P13 检索 Calendar/date mutation/month view；P14 检索 Chart/aggregation/server-side aggregation；P15 检索 MCP full adaptation/view config/capability discovery。所有新 View 继续复用 Database/Property/Record/View 与 generic records，不建立 renderer-specific persistence；Chart 聚合必须服务端执行。正式阶段目标与边界见 `docs/roadmap.md`。
 
 
-P11 Timeline 产品基准（2026-10-13）：用户要求产品结构/交互以 Notion Timeline 为直接基准。正式标准见 [P11 Timeline](../p11-timeline.md)。检索重点：`TimelineView`、`TimelineViewOptions`、date range / datetime、time ruler、horizontal scrollbar、today line、move/resize range、offscreen jump、Frozen Table、dependency self-relation / shift strategy、generic View row ordering。硬要求包括：底部真实水平滚动条；当前日期可视时贯穿 canvas 的红色 today line；Hour/Day/Week/Bi-week/Month/Quarter/Year scale；单 Date range 与独立 Start/End 两种 source；bar move/左右 resize 写回 generic Date mutation + CAS；左表可隐藏且与 rows 对齐；dependency 不创建 Timeline-specific persistence。P11.1A 已冻结 `{ start, end?, timeZone? }` 与 legacy string；P11.1B 通用 Date 数据链路已完成 / PASS，完整比较/投影契约见 §10.4。当前正式版本仍为 0.0.1；P10 尚未实施，不能虚报完成；P11.1C 配置契约见 §21；renderer 尚未实现。
+P11 Timeline 产品基准（2026-10-13）：用户要求产品结构/交互以 Notion Timeline 为直接基准。正式标准见 [P11 Timeline](../p11-timeline.md)。检索重点：`TimelineView`、`TimelineViewOptions`、date range / datetime、time ruler、horizontal scrollbar、today line、move/resize range、offscreen jump、Frozen Table、dependency self-relation / shift strategy、generic View row ordering。硬要求包括：底部真实水平滚动条；当前日期可视时贯穿 canvas 的红色 today line；Hour/Day/Week/Bi-week/Month/Quarter/Year scale；单 Date range 与独立 Start/End 两种 source；bar move/左右 resize 写回 generic Date mutation + CAS；左表可隐藏且与 rows 对齐；dependency 不创建 Timeline-specific persistence。P11.1A 已冻结 `{ start, end?, timeZone? }` 与 legacy string；P11.1B 通用 Date 数据链路已完成 / PASS，完整比较/投影契约见 §10.4。当前正式版本仍为 0.0.1；P10 尚未实施，不能虚报完成；P11.1C 配置契约见 §21；当前只读 renderer 进展见下文 P11.2A/B。
 
 P11.1B 检索入口：`packages/domain/src/date.ts` 的 `isValidDatabaseDateValue` /
 `normalizeDatabaseDateValue` / `getDatabaseDateStartInstant` / `projectDatabaseDateToFormulaDate`，
@@ -114,8 +114,8 @@ updateProperty/changePropertyType/deleteProperty全部按真实view.type校验�
 P11.2.0 Renderer Architecture 检索入口：
 [Timeline Renderer Architecture](../architecture/timeline-renderer.md)，产品标准摘要见
 [P11 Timeline](../p11-timeline.md) 的「P11.2 Renderer Architecture」章节。
-拟实施模块位于 `apps/web/src/components/editor/timeline/`：projection、coordinates、scale、
-ruler、layout、viewport；P11.2.0 当时仅文档，P11.2A 已创建 Shell/坐标模块，projection/layout 仍未实施。坐标统一为 renderer logical instant
+模块位于 `apps/web/src/components/editor/timeline/`：projection、coordinates、scale、
+ruler、layout、viewport；P11.2.0 当时仅文档，P11.2A 创建 Shell/坐标模块，P11.2B 接入 projection/layout。坐标统一为 renderer logical instant
 → pixel，date-only 使用显示时区的日历日边界；all-day inclusive end 只生成独立视觉边界，
 不改变原 end / 显式零长度 range。generic records / cursor / View config / P9 fence 保持。
 `configuredScale` 是原共享配置，`effectiveScale` 可由实例临时 override 改变；P11.2A zoom
@@ -133,4 +133,19 @@ zoom 分开，selector 0 PATCH / 0 records GET；scroll/width/origin/timer 为�
 standalone B1 已建立稳定 Editor key 与受保护 viewId 原地更新；正式结果见
 [P11.2A 验证](../verification/p11-2a-timeline-shell.md)，数学/Web 回归入口为
 `tests/timeline-coordinate.spec.ts` 与 `tests/product-database.spec.ts`。
-projection/bar/range/milestone/Frozen/dependency/Date mutation 未实施，下一阶段为 P11.2B，需另行启动。
+P11.2A 收口时 projection/bar/range/milestone 尚未实施；本轮 P11.2B 接续见下文。
+
+P11.2B 实施检索入口：`timeline/projection.ts` 的 `projectTimelineRecords`、
+`geometry.ts` 的 `resolveTimelineTemporalGeometry`、`layout.ts` 的 `timelineRowWindow` /
+`layoutTimelineItems`、`TimelineBar.vue` 与 `useTimelineViewport.revealRow`。
+完整 raw Date normalizer → 原顺序 point/range/unscheduled 投影 → display-zone temporal map
+→ content X/window geometry → 只读 Bar。独立 Start/End 只使用各自 normalized start；
+date-only inclusive end 仅视觉，datetime 精确 end，零宽 marker 不补日期。
+200 条起 page-host virtualization，focus 按 record ID，selection 按既有 Record Host pageId；
+footer 未排期索引定位原行并 focus/open，native details scope/旧节点 toggle 有保护。
+scroll/zoom 复用 projection 与 temporal map，不新增每 Bar scroll listener 或 records loader。
+测试入口 `timeline-projection.spec.ts` / `timeline-layout.spec.ts` 与 `product-database.spec.ts`
+的 Timeline generic records / 100 / 500 tests；实际验收见
+[P11.2B 验证](../verification/p11-2b-read-only-bars.md)。
+Frozen/dependency/mutation/配置 UI 与离屏方向 indicator/jump 仍未实施；本轮结束后停止，
+P11.2C 需另行明确授权范围，不据 B 的范围结果宣称完整 P11.2 / P11 Final 已通过。
