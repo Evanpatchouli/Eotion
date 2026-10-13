@@ -933,3 +933,194 @@ test('P11.1B HTTP Record create, cell patch, and GET preserve all Date wire shap
     }
   }
 })
+
+test('P11.1C HTTP Timeline Views validate, persist, and fence config through the real API', async t => {
+  const previousMongoUri = process.env.MONGODB_URI
+  const previousWebOrigin = process.env.WEB_ORIGIN
+  const previousNodeEnv = process.env.NODE_ENV
+  process.env.MONGODB_URI = testMongoUri()
+  process.env.WEB_ORIGIN = 'https://trusted.example.test'
+  delete process.env.NODE_ENV
+  let app: Awaited<ReturnType<typeof NestFactory.create>> | undefined
+  let connection: Connection | undefined
+  try {
+    @Module({ imports: [ConfigModule.forRoot({ isGlobal: true }), MongooseModule.forRoot(process.env.MONGODB_URI!), HttpApiModule] })
+    class TimelineHttpTestModule {}
+    app = await NestFactory.create(TimelineHttpTestModule, new FastifyAdapter(), { logger: false })
+    app.setGlobalPrefix('api')
+    await app.listen(0, '127.0.0.1')
+    const address = app.getHttpServer().address()
+    assert.ok(address && typeof address === 'object')
+    const baseUrl = `http://127.0.0.1:${address.port}`
+    connection = app.get<Connection>(getConnectionToken())
+    t.after(async () => {
+      try { await connection?.dropDatabase() } finally {
+        await app?.close()
+        if (previousMongoUri === undefined) delete process.env.MONGODB_URI
+        else process.env.MONGODB_URI = previousMongoUri
+        if (previousWebOrigin === undefined) delete process.env.WEB_ORIGIN
+        else process.env.WEB_ORIGIN = previousWebOrigin
+        if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+        else process.env.NODE_ENV = previousNodeEnv
+      }
+    })
+
+    const credentials = { email: `timeline-http-${randomUUID()}@example.test`, password: 'correct horse battery staple' }
+    assert.equal((await request(baseUrl, '/api/auth/register', 'POST', { body: credentials })).status, 201)
+    const cookie = cookieFrom(await request(baseUrl, '/api/auth/login', 'POST', { body: credentials }))
+    const workspace = 'timeline-http-ws'
+    assert.equal((await request(baseUrl, '/api/workspaces', 'POST', { cookie, body: { id: workspace, name: 'Timeline' } })).status, 201)
+    assert.equal((await request(baseUrl, `/api/workspaces/${workspace}/pages`, 'POST', { cookie, body: { id: 'timeline-http-home', parentPageId: null, title: 'Home', orderKey: 'a' } })).status, 201)
+    const databaseId = 'timeline-http-db'
+    const titleId = 'timeline-http-title'
+    const defaultViewId = 'timeline-http-default'
+    const initialViewId = 'timeline-http-table'
+    const route = `/api/workspaces/${workspace}/databases/${databaseId}`
+    const viewsRoute = `${route}/views`
+    const createdDatabase = await request(baseUrl, `/api/workspaces/${workspace}/pages/timeline-http-home/databases`, 'POST', {
+      cookie, body: { id: databaseId, name: 'Timeline', titlePropertyId: titleId, viewId: initialViewId, blockId: 'timeline-http-block', orderKey: 'b', parentBlockId: null },
+    })
+    assert.equal(createdDatabase.status, 201)
+    const read = async (viewId = defaultViewId, query = '') => {
+      const response = await request(baseUrl, `${viewsRoute}/${viewId}/records${query}`, 'GET', { cookie })
+      assert.equal(response.status, 200, JSON.stringify(response.body))
+      return response.body
+    }
+    const current = async () => read(initialViewId)
+    const date = await request(baseUrl, `${route}/properties`, 'POST', { cookie, body: { id: 'timeline-http-date', name: 'Date', type: 'date', expectedDatabaseVersion: (await current()).database.version } })
+    assert.equal(date.status, 201)
+    const start = await request(baseUrl, `${route}/properties`, 'POST', { cookie, body: { id: 'timeline-http-start', name: 'Start', type: 'date', expectedDatabaseVersion: (await current()).database.version } })
+    assert.equal(start.status, 201)
+    const end = await request(baseUrl, `${route}/properties`, 'POST', { cookie, body: { id: 'timeline-http-end', name: 'End', type: 'date', expectedDatabaseVersion: (await current()).database.version } })
+    assert.equal(end.status, 201)
+    const relation = await request(baseUrl, `${route}/properties`, 'POST', { cookie, body: { id: 'timeline-http-self', name: 'Depends', type: 'relation', config: { targetDatabaseId: databaseId }, expectedDatabaseVersion: (await current()).database.version } })
+    assert.equal(relation.status, 201)
+    const status = await request(baseUrl, `${route}/properties`, 'POST', { cookie, body: { id: 'timeline-http-status', name: 'Status', type: 'select', options: [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }], expectedDatabaseVersion: (await current()).database.version } })
+    assert.equal(status.status, 201)
+
+    const views = connection!.db!.collection('database_views')
+    const databases = connection!.db!.collection('databases')
+    const blocks = connection!.db!.collection('blocks')
+    const defaultConfig = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null }
+    const createdDefault = await request(baseUrl, viewsRoute, 'POST', { cookie, body: { id: defaultViewId, name: 'Default Timeline', type: 'timeline', expectedDatabaseVersion: (await current()).database.version } })
+    assert.equal(createdDefault.status, 201, JSON.stringify(createdDefault.body))
+    assert.equal(createdDefault.body.view.type, 'timeline')
+    assert.equal(Object.hasOwn(createdDefault.body.view.config, 'options'), false, 'Timeline defaults stay effective-only')
+
+    const configuredId = 'timeline-http-configured'
+    const configuredTimeline = {
+      dateSource: { mode: 'date-property', propertyId: 'timeline-http-date' },
+      scale: 'month',
+      frozenTable: { visible: true, visibleProperties: [titleId], propertyOrder: [] },
+      dependency: { propertyId: relation.body.property.id, direction: 'blocks', shiftMode: 'shift_and_keep_gap', avoidWeekends: false },
+    }
+    const options = { timeline: configuredTimeline, futureField: { preserved: [true, 'opaque'] } }
+    const createdConfigured = await request(baseUrl, viewsRoute, 'POST', { cookie, body: { id: configuredId, name: 'Configured Timeline', type: 'timeline', config: { ...defaultConfig, options }, expectedDatabaseVersion: (await current()).database.version } })
+    assert.equal(createdConfigured.status, 201, JSON.stringify(createdConfigured.body))
+    assert.deepEqual(createdConfigured.body.view.config.options, options)
+    const listed = await request(baseUrl, viewsRoute, 'GET', { cookie })
+    assert.deepEqual(listed.body.find((view: any) => view.id === configuredId).config.options, options)
+    assert.deepEqual((await read(configuredId)).view.config.options, options)
+
+    const rejectedSnapshot = async () => ({
+      database: (await current()).database,
+      count: await views.countDocuments({ databaseId }),
+      rawDatabase: await databases.findOne({ id: databaseId }).then((doc: any) => ({ version: doc?.version })),
+      rawViews: await views.find({ databaseId }).sort({ id: 1 }).toArray().then((docs: any[]) => docs.map(doc => ({ id: doc.id, version: doc.version, config: doc.config }))),
+    })
+    for (const [id, timeline] of [
+      ['timeline-http-unknown-inner', { ...configuredTimeline, unknown: true }],
+      ['timeline-http-invalid-date', { dateSource: { mode: 'date-property', propertyId: titleId } }],
+      ['timeline-http-invalid-frozen', { frozenTable: { visible: true, visibleProperties: ['timeline-http-date'], propertyOrder: [] } }],
+      ['timeline-http-invalid-dependency', { dependency: { propertyId: relation.body.property.id, direction: 'depends-on', shiftMode: 'invalid', avoidWeekends: true } }],
+    ] as const) {
+      const before = await rejectedSnapshot()
+      const rejected = await request(baseUrl, viewsRoute, 'POST', { cookie, body: { id, name: id, type: 'timeline', config: { ...defaultConfig, options: { timeline } }, expectedDatabaseVersion: before.database.version } })
+      assert.equal(rejected.status, 400, JSON.stringify(rejected.body))
+      assert.deepEqual(await rejectedSnapshot(), before, `${id}: rejected config has no stored or version side effects`)
+    }
+
+    const beforeBadPatch = await read(configuredId)
+    const badPatchState = await rejectedSnapshot()
+    const rejectedPatch = await request(baseUrl, `${viewsRoute}/${configuredId}`, 'PATCH', { cookie, body: {
+      config: { ...defaultConfig, options: { timeline: { ...configuredTimeline, unknown: true } } },
+      expectedDatabaseVersion: beforeBadPatch.database.version, expectedViewVersion: beforeBadPatch.view.version,
+    } })
+    assert.equal(rejectedPatch.status, 400)
+    assert.deepEqual(await rejectedSnapshot(), badPatchState, 'PATCH validates Timeline shape from the stored view type before committing')
+
+    const configuredRead = await read(configuredId)
+    const rangeOptions = { timeline: { ...configuredTimeline, dateSource: { mode: 'start-end', startPropertyId: start.body.property.id, endPropertyId: end.body.property.id }, scale: 'year' }, futureField: options.futureField }
+    let patch = await request(baseUrl, `${viewsRoute}/${configuredId}`, 'PATCH', { cookie, body: {
+      config: { ...defaultConfig, options: rangeOptions }, expectedDatabaseVersion: configuredRead.database.version, expectedViewVersion: configuredRead.view.version,
+    } })
+    assert.equal(patch.status, 200, JSON.stringify(patch.body))
+    assert.deepEqual(patch.body.view.config.options, rangeOptions)
+    const patchedScale = patch.body.view.config.options.timeline.scale
+    assert.equal(patchedScale, 'year')
+    const staleConfig = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: { timeline: { scale: 'day' } } }
+    const beforeStalePatch = await rejectedSnapshot()
+    const stale = await request(baseUrl, `${viewsRoute}/${configuredId}`, 'PATCH', { cookie, body: {
+      config: staleConfig, expectedDatabaseVersion: beforeStalePatch.database.version - 1, expectedViewVersion: patch.body.view.version,
+    } })
+    assert.equal(stale.status, 409)
+    assert.deepEqual(await rejectedSnapshot(), beforeStalePatch, 'stale Timeline PATCH preserves persisted view and database state')
+
+    // The real API accepts the complete seven-scale union and PATCH can switch back to a single Date Property.
+    let currentView = (await read(configuredId)).view
+    let currentDatabase = (await read(configuredId)).database
+    for (const scale of ['hour', 'day', 'week', 'biweek', 'month', 'quarter', 'year']) {
+      const scaleOptions = { timeline: { ...configuredTimeline, dateSource: { mode: 'date-property', propertyId: date.body.property.id }, scale }, futureField: options.futureField }
+      patch = await request(baseUrl, `${viewsRoute}/${configuredId}`, 'PATCH', { cookie, body: {
+        config: { ...defaultConfig, options: scaleOptions }, expectedDatabaseVersion: currentDatabase.version, expectedViewVersion: currentView.version,
+      } })
+      assert.equal(patch.status, 200, `${scale}: ${JSON.stringify(patch.body)}`)
+      assert.deepEqual(patch.body.view.config.options, scaleOptions)
+      currentView = patch.body.view
+      currentDatabase = patch.body.database
+    }
+
+    for (const [index, state] of ['open', 'done', 'open'].entries()) {
+      const id = `timeline-http-row-${index}`
+      const record = await request(baseUrl, `${route}/records`, 'POST', { cookie, body: { id, pageId: `${id}-page`, title: `Row ${index}`, orderKey: String(index) } })
+      assert.equal(record.status, 201, JSON.stringify(record.body))
+      let rowData = await current()
+      const datePatch = await request(baseUrl, `${route}/records/${id}/cells/timeline-http-date`, 'PATCH', { cookie, body: { value: { start: `2026-10-1${index + 1}` }, expectedDatabaseVersion: rowData.database.version, expectedRecordVersion: record.body.record.version } })
+      assert.equal(datePatch.status, 200, JSON.stringify(datePatch.body))
+      rowData = await current()
+      const statusPatch = await request(baseUrl, `${route}/records/${id}/cells/timeline-http-status`, 'PATCH', { cookie, body: { value: state, expectedDatabaseVersion: rowData.database.version, expectedRecordVersion: datePatch.body.record.version } })
+      assert.equal(statusPatch.status, 200, JSON.stringify(statusPatch.body))
+    }
+    const latest = await read(configuredId)
+    const queryOptions = { timeline: { ...configuredTimeline, dateSource: { mode: 'date-property', propertyId: date.body.property.id }, scale: 'month' }, futureField: options.futureField }
+    const queryConfig = { filters: [{ propertyId: 'timeline-http-status', operator: 'is', value: 'open' }], sorts: [{ propertyId: 'timeline-http-date', direction: 'desc' }], visibleProperties: null, propertyOrder: null, options: queryOptions }
+    const queryPatch = await request(baseUrl, `${viewsRoute}/${configuredId}`, 'PATCH', { cookie, body: { config: queryConfig, expectedDatabaseVersion: latest.database.version, expectedViewVersion: latest.view.version } })
+    assert.equal(queryPatch.status, 200)
+    const first = await read(configuredId, '?limit=1')
+    assert.deepEqual(first.records.map((record: any) => record.id), ['timeline-http-row-2'])
+    assert.ok(first.nextCursor)
+    const rawRecords = await connection!.db!.collection('database_records').find({ databaseId }).sort({ id: 1 }).toArray()
+    const changed = await request(baseUrl, `${viewsRoute}/${configuredId}`, 'PATCH', { cookie, body: { name: 'Cursor fence', expectedDatabaseVersion: first.database.version, expectedViewVersion: first.view.version } })
+    assert.equal(changed.status, 200)
+    const staleCursor = await request(baseUrl, `${viewsRoute}/${configuredId}/records?limit=1&cursor=${encodeURIComponent(first.nextCursor)}`, 'GET', { cookie })
+    assert.equal(staleCursor.status, 409)
+    assert.match(staleCursor.body.message, /Database or view changed/)
+    assert.deepEqual(await connection!.db!.collection('database_records').find({ databaseId }).sort({ id: 1 }).toArray(), rawRecords, 'config and cursor fences do not rewrite generic Records')
+
+    const blockCountBefore = await blocks.countDocuments({ pageId: 'timeline-http-home' })
+    const versionBeforeLink = (await read(configuredId)).database.version
+    const linked = await request(baseUrl, `/api/workspaces/${workspace}/pages/timeline-http-home/database-links`, 'POST', { cookie, body: { databaseId, viewId: configuredId, blockId: 'timeline-http-link-block', parentBlockId: null, orderKey: 'z' } })
+    assert.equal(linked.status, 400)
+    assert.equal(await blocks.countDocuments({ pageId: 'timeline-http-home' }), blockCountBefore)
+    assert.equal((await read(configuredId)).database.version, versionBeforeLink)
+  } finally {
+    if (!app) {
+      if (previousMongoUri === undefined) delete process.env.MONGODB_URI
+      else process.env.MONGODB_URI = previousMongoUri
+      if (previousWebOrigin === undefined) delete process.env.WEB_ORIGIN
+      else process.env.WEB_ORIGIN = previousWebOrigin
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV
+      else process.env.NODE_ENV = previousNodeEnv
+    }
+  }
+})

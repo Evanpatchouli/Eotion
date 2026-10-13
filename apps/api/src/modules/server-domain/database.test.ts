@@ -906,6 +906,189 @@ test('derived reads reject more than 5000 distinct linked records before fetchin
   }
 })
 
+test('Timeline View config round-trips through Mongo and fences generic records without rewriting them', async t => {
+  const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
+  const connection = app.get<Connection>(getConnectionToken())
+  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  const databases = app.get(DatabaseService)
+  const pages = app.get(PageService)
+  const auth = app.get(AuthService)
+  const workspaces = app.get(WorkspaceService)
+  const blocks = app.get(BlockService)
+  const databaseModel = app.get<Model<unknown>>(getModelToken(DatabaseEntity.name))
+  const propertyModel = app.get<Model<unknown>>(getModelToken(DatabasePropertyEntity.name))
+  const recordModel = app.get<Model<unknown>>(getModelToken(DatabaseRecordEntity.name))
+  const viewModel = app.get<Model<unknown>>(getModelToken(DatabaseViewEntity.name))
+  await Promise.all([databaseModel.init(), propertyModel.init(), recordModel.init(), viewModel.init()])
+  if (!(await supportsTransactions(connection))) return
+  const owner = await auth.register(`timeline-config-${randomUUID()}@example.com`, 'correct horse battery staple')
+  await workspaces.create(owner.id, { id: 'timeline-config-ws', name: 'Timeline config' })
+  await pages.create(owner.id, 'timeline-config-ws', { id: 'timeline-config-home', parentPageId: null, title: 'Home', orderKey: 'a' })
+  const createDatabase = (id: string) => databases.createInPage(owner.id, 'timeline-config-ws', 'timeline-config-home', {
+    id, name: id, titlePropertyId: `${id}-title`, viewId: `${id}-table`, blockId: `${id}-block`, orderKey: id, parentBlockId: null,
+  })
+  await createDatabase('timeline-config-db')
+  await createDatabase('timeline-config-target')
+  const database = async () => (await databases.find(owner.id, 'timeline-config-ws', 'timeline-config-db'))!
+  const targetDatabase = async () => (await databases.find(owner.id, 'timeline-config-ws', 'timeline-config-target'))!
+  const date = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-due', name: 'Due', type: 'date', expectedDatabaseVersion: (await database()).version })
+  const startDate = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-start', name: 'Start', type: 'date', expectedDatabaseVersion: (await database()).version })
+  const endDate = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-end', name: 'End', type: 'date', expectedDatabaseVersion: (await database()).version })
+  const text = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-notes', name: 'Notes', type: 'text', expectedDatabaseVersion: (await database()).version })
+  const selfRelation = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-self', name: 'Depends', type: 'relation', config: { targetDatabaseId: 'timeline-config-db' }, expectedDatabaseVersion: (await database()).version })
+  const foreignRelation = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-foreign-relation', name: 'Other', type: 'relation', config: { targetDatabaseId: 'timeline-config-target' }, expectedDatabaseVersion: (await database()).version })
+  const targetDate = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-target', { id: 'timeline-target-date', name: 'Date', type: 'date', expectedDatabaseVersion: (await targetDatabase()).version })
+  const rollup = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-date-rollup', name: 'Rolled date', type: 'rollup', config: { relationPropertyId: foreignRelation.property.id, targetPropertyId: targetDate.property.id, aggregation: 'count' }, expectedDatabaseVersion: (await database()).version })
+  const formula = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-date-formula', name: 'Formula date', type: 'formula', config: { expression: { kind: 'property', propertyId: date.property.id }, resultType: 'date' }, expectedDatabaseVersion: (await database()).version })
+  const status = await databases.createProperty(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-status', name: 'Status', type: 'select', options: [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }], expectedDatabaseVersion: (await database()).version })
+
+  const titleId = 'timeline-config-db-title'
+  const basic = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null }
+  const unconfigured = await databases.createView(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-config-default', name: 'Timeline default', type: 'timeline', config: basic })
+  assert.equal(unconfigured.view.type, 'timeline')
+  assert.equal(Object.hasOwn(unconfigured.view.config!, 'options'), false, 'effective defaults do not get persisted')
+  const defaultRows = await databases.getViewRecords(owner.id, 'timeline-config-ws', 'timeline-config-db', unconfigured.view.id, { limit: 10 })
+  assert.equal(defaultRows.view.type, 'timeline')
+  assert.equal(Object.hasOwn(defaultRows.view.config!, 'options'), false)
+
+  const validOptions = {
+    timeline: {
+      dateSource: { mode: 'date-property', propertyId: date.property.id },
+      scale: 'month',
+      frozenTable: { visible: true, visibleProperties: [titleId, text.property.id], propertyOrder: [text.property.id] },
+      dependency: { propertyId: selfRelation.property.id, direction: 'depends-on', shiftMode: 'shift_when_overlapping', avoidWeekends: true },
+    },
+    futureOption: { retained: ['opaque', 7] },
+    keepFutureNamespace: { enabled: true },
+  }
+  const configured = await databases.createView(owner.id, 'timeline-config-ws', 'timeline-config-db', { id: 'timeline-config-configured', name: 'Configured', type: 'timeline', config: { ...basic, options: validOptions } })
+  assert.deepEqual(configured.view.config?.options, validOptions)
+  assert.deepEqual((await databases.listViews(owner.id, 'timeline-config-ws', 'timeline-config-db')).find(view => view.id === configured.view.id)?.config?.options, validOptions)
+  assert.deepEqual((await databases.getViewRecords(owner.id, 'timeline-config-ws', 'timeline-config-db', configured.view.id, { limit: 10 })).view.config?.options, validOptions)
+
+  const expectInvalidCreate = async (id: string, options: unknown) => {
+    const beforeDatabase = await database()
+    const beforeViewCount = await viewModel.countDocuments({ databaseId: beforeDatabase.id })
+    await assert.rejects(databases.createView(owner.id, 'timeline-config-ws', beforeDatabase.id, { id, name: id, type: 'timeline', config: { ...basic, options: { timeline: options } } }), error => (error as { status?: number }).status === 400, id)
+    assert.equal((await database()).version, beforeDatabase.version, `${id}: failed create preserves Database version`)
+    assert.equal(await viewModel.countDocuments({ databaseId: beforeDatabase.id }), beforeViewCount, `${id}: failed create persists no View`)
+  }
+  const variants: Array<[string, unknown]> = [
+    ['timeline-bad-unknown', { ...validOptions.timeline, innerFuture: true }],
+    ['timeline-bad-scale', { scale: 'decade' }],
+    ['timeline-bad-source-mode', { dateSource: { mode: 'date-property', propertyId: 'timeline-notes' } }],
+    ['timeline-bad-foreign-date', { dateSource: { mode: 'date-property', propertyId: targetDate.property.id } }],
+    ['timeline-bad-range-same', { dateSource: { mode: 'start-end', startPropertyId: date.property.id, endPropertyId: date.property.id } }],
+    ['timeline-bad-range-missing', { dateSource: { mode: 'start-end', startPropertyId: date.property.id } }],
+    ['timeline-bad-formula', { dateSource: { mode: 'date-property', propertyId: formula.property.id } }],
+    ['timeline-bad-rollup', { dateSource: { mode: 'date-property', propertyId: rollup.property.id } }],
+    ['timeline-bad-frozen-shape', { frozenTable: { visible: true, visibleProperties: [titleId] } }],
+    ['timeline-bad-frozen-title', { frozenTable: { visible: true, visibleProperties: [text.property.id], propertyOrder: [] } }],
+    ['timeline-bad-dependency-shape', { dependency: { propertyId: selfRelation.property.id, direction: 'depends-on' } }],
+    ['timeline-bad-dependency-foreign', { dependency: { propertyId: foreignRelation.property.id, direction: 'depends-on', shiftMode: 'no_auto_shift', avoidWeekends: false } }],
+    ['timeline-bad-direction', { dependency: { propertyId: selfRelation.property.id, direction: 'related', shiftMode: 'no_auto_shift', avoidWeekends: false } }],
+    ['timeline-bad-shift', { dependency: { propertyId: selfRelation.property.id, direction: 'blocks', shiftMode: 'sometimes', avoidWeekends: false } }],
+  ]
+  for (const [id, options] of variants) await expectInvalidCreate(id, options)
+
+  const badPatch = await database()
+  const configuredBeforePatch = (await databases.listViews(owner.id, 'timeline-config-ws', badPatch.id)).find(view => view.id === configured.view.id)!
+  const invalidPatch = { ...basic, options: { timeline: { dateSource: { mode: 'date-property', propertyId: text.property.id } } } }
+  await assert.rejects(databases.updateView(owner.id, 'timeline-config-ws', badPatch.id, configuredBeforePatch.id, { config: invalidPatch, expectedDatabaseVersion: badPatch.version, expectedViewVersion: configuredBeforePatch.version }), error => (error as { status?: number }).status === 400)
+  assert.equal((await database()).version, badPatch.version)
+  assert.deepEqual((await databases.listViews(owner.id, 'timeline-config-ws', badPatch.id)).find(view => view.id === configured.view.id), configuredBeforePatch)
+
+  const rangeDateSource = { mode: 'start-end', startPropertyId: startDate.property.id, endPropertyId: endDate.property.id }
+  const scales = ['hour', 'day', 'week', 'biweek', 'month', 'quarter', 'year'] as const
+  let current = configuredBeforePatch
+  let currentDatabase = await database()
+  for (const scale of scales) {
+    const options = { ...validOptions, timeline: { ...validOptions.timeline, scale, dateSource: rangeDateSource } }
+    const patched = await databases.updateView(owner.id, 'timeline-config-ws', currentDatabase.id, current.id, { config: { ...basic, filters: [{ propertyId: status.property.id, operator: 'is', value: 'open' }], sorts: [{ propertyId: date.property.id, direction: 'desc' }], options }, expectedDatabaseVersion: currentDatabase.version, expectedViewVersion: current.version })
+    assert.deepEqual(patched.view.config?.options, options, `${scale} option survives PATCH`)
+    current = patched.view
+    currentDatabase = patched.database
+  }
+  const beforeStale = { database: currentDatabase, view: current, rawViews: await viewModel.find({ databaseId: currentDatabase.id }).sort({ id: 1 }).lean(), rawRecords: await recordModel.find({ databaseId: currentDatabase.id }).sort({ id: 1 }).lean() }
+  await assert.rejects(databases.updateView(owner.id, 'timeline-config-ws', currentDatabase.id, current.id, { name: 'stale update', expectedDatabaseVersion: currentDatabase.version - 1, expectedViewVersion: current.version }), error => (error as { status?: number }).status === 409)
+  assert.equal((await database()).version, beforeStale.database.version)
+  assert.deepEqual(await viewModel.find({ databaseId: currentDatabase.id }).sort({ id: 1 }).lean(), beforeStale.rawViews)
+  assert.deepEqual(await recordModel.find({ databaseId: currentDatabase.id }).sort({ id: 1 }).lean(), beforeStale.rawRecords)
+
+  const beforeStaleView = await database()
+  const staleViewCurrent = (await databases.listViews(owner.id, 'timeline-config-ws', beforeStaleView.id)).find(view => view.id === current.id)!
+  const staleViewSnapshot = { database: await databaseModel.findOne({ id: beforeStaleView.id }).lean(), view: await viewModel.findOne({ id: current.id }).lean() }
+  await assert.rejects(databases.updateView(owner.id, 'timeline-config-ws', beforeStaleView.id, current.id, { name: 'stale view update', expectedDatabaseVersion: beforeStaleView.version, expectedViewVersion: staleViewCurrent.version - 1 }), error => (error as { status?: number }).status === 409)
+  assert.deepEqual({ database: await databaseModel.findOne({ id: beforeStaleView.id }).lean(), view: await viewModel.findOne({ id: current.id }).lean() }, staleViewSnapshot, 'stale View-version CAS rolls back the preceding Database version bump')
+
+  const currentBeforeFrozenUpdate = (await databases.listViews(owner.id, 'timeline-config-ws', currentDatabase.id)).find(view => view.id === current.id)!
+  const databaseBeforeFrozenUpdate = await database()
+  const frozenDependencyOptions = {
+    ...validOptions,
+    timeline: {
+      ...(currentBeforeFrozenUpdate.config!.options!['timeline'] as Record<string, unknown>),
+      frozenTable: { visible: false, visibleProperties: [titleId, text.property.id], propertyOrder: [text.property.id] },
+      dependency: { propertyId: selfRelation.property.id, direction: 'blocks', shiftMode: 'no_auto_shift', avoidWeekends: false },
+    },
+  }
+  const frozenDependencyUpdate = await databases.updateView(owner.id, 'timeline-config-ws', databaseBeforeFrozenUpdate.id, current.id, { config: { ...currentBeforeFrozenUpdate.config!, options: frozenDependencyOptions }, expectedDatabaseVersion: databaseBeforeFrozenUpdate.version, expectedViewVersion: currentBeforeFrozenUpdate.version })
+  assert.deepEqual((frozenDependencyUpdate.view.config!.options as any).timeline, frozenDependencyOptions.timeline)
+  assert.deepEqual((frozenDependencyUpdate.view.config!.options as any).futureOption, validOptions.futureOption)
+
+  const independentOptions = {
+    timeline: {
+      dateSource: { mode: 'start-end', startPropertyId: startDate.property.id, endPropertyId: endDate.property.id },
+      scale: 'day',
+      frozenTable: { visible: false, visibleProperties: [titleId, status.property.id], propertyOrder: [status.property.id] },
+      dependency: { propertyId: selfRelation.property.id, direction: 'blocks', shiftMode: 'no_auto_shift', avoidWeekends: false },
+    },
+    independentFuture: { only: 'this-view' },
+  }
+  const independent = await databases.createView(owner.id, 'timeline-config-ws', currentDatabase.id, { id: 'timeline-config-independent', name: 'Independent', type: 'timeline', config: { ...basic, options: independentOptions }, expectedDatabaseVersion: frozenDependencyUpdate.database.version })
+  assert.deepEqual(independent.view.config?.options, independentOptions)
+  const currentViewRead = await databases.getViewRecords(owner.id, 'timeline-config-ws', currentDatabase.id, current.id, { limit: 10 })
+  assert.deepEqual(currentViewRead.view.config?.options, frozenDependencyOptions, 'same View ID reads shared config while a different View ID owns an independent config')
+  assert.deepEqual((await databases.getViewRecords(owner.id, 'timeline-config-ws', currentDatabase.id, independent.view.id, { limit: 10 })).view.config?.options, independentOptions)
+
+  for (const [index, state] of ['open', 'done', 'open'].entries()) {
+    const id = `timeline-config-row-${index}`
+    const pageId = `${id}-page`
+    const created = await databases.createRecordPage(owner.id, 'timeline-config-ws', currentDatabase.id, { id, pageId, title: `Row ${index}`, orderKey: String(index) })
+    const withDate = await databases.updateRecordCell(owner.id, 'timeline-config-ws', currentDatabase.id, id, date.property.id, { value: { start: `2026-10-1${index + 1}` }, expectedDatabaseVersion: (await database()).version, expectedRecordVersion: created.record.version })
+    await databases.updateRecordCell(owner.id, 'timeline-config-ws', currentDatabase.id, id, status.property.id, { value: state, expectedDatabaseVersion: withDate.database.version, expectedRecordVersion: withDate.record.version })
+  }
+  const viewBeforeQuery = (await databases.listViews(owner.id, 'timeline-config-ws', currentDatabase.id)).find(view => view.id === current.id)!
+  const currentDbBeforeQuery = await database()
+  const configuredRows = await databases.getViewRecords(owner.id, 'timeline-config-ws', currentDatabase.id, current.id, { limit: 1 })
+  assert.deepEqual(configuredRows.records.map(row => row.id), ['timeline-config-row-2'])
+  assert.ok(configuredRows.nextCursor)
+  const next = await databases.getViewRecords(owner.id, 'timeline-config-ws', currentDatabase.id, current.id, { limit: 1, cursor: configuredRows.nextCursor! })
+  assert.deepEqual(next.records.map(row => row.id), ['timeline-config-row-0'])
+  assert.equal(next.nextCursor, null)
+  assert.equal((await databases.getViewRecords(owner.id, 'timeline-config-ws', currentDatabase.id, independent.view.id, { limit: 10 })).records.length, 3, 'different view IDs keep independent unfiltered configuration')
+  const rawRecordsBeforeFence = await recordModel.find({ databaseId: currentDatabase.id }).sort({ id: 1 }).lean()
+  const update = await databases.updateView(owner.id, 'timeline-config-ws', currentDatabase.id, current.id, { name: 'Changed config', expectedDatabaseVersion: currentDbBeforeQuery.version, expectedViewVersion: viewBeforeQuery.version })
+  await assert.rejects(databases.getViewRecords(owner.id, 'timeline-config-ws', currentDatabase.id, current.id, { limit: 1, cursor: configuredRows.nextCursor! }), /changed|anchor/i)
+  assert.deepEqual(await recordModel.find({ databaseId: currentDatabase.id }).sort({ id: 1 }).lean(), rawRecordsBeforeFence, 'View config mutations do not rewrite generic Record documents')
+  assert.equal(update.view.version, viewBeforeQuery.version + 1)
+  const linkedBlockBefore = await connection.db!.collection('blocks').countDocuments({ pageId: 'timeline-config-home' })
+  const databaseVersionBeforeLink = (await database()).version
+  await assert.rejects(databases.linkInPage(owner.id, 'timeline-config-ws', 'timeline-config-home', { databaseId: currentDatabase.id, viewId: current.id, blockId: 'timeline-config-linked-block', parentBlockId: null, orderKey: 'z' }), /Database view/i)
+  assert.equal(await connection.db!.collection('blocks').countDocuments({ pageId: 'timeline-config-home' }), linkedBlockBefore)
+  assert.equal((await database()).version, databaseVersionBeforeLink)
+
+  const recordsBeforeDelete = await recordModel.find({ databaseId: currentDatabase.id }).sort({ id: 1 }).lean()
+  const recordPageIds = recordsBeforeDelete.map(row => (row as unknown as { pageId: string }).pageId)
+  const recordPagesBeforeDelete = await connection.db!.collection('pages').find({ id: { $in: recordPageIds } }).sort({ id: 1 }).toArray()
+  const independentBeforeDelete = (await databases.listViews(owner.id, 'timeline-config-ws', currentDatabase.id)).find(view => view.id === independent.view.id)!
+  const databaseBeforeDelete = await database()
+  const deletedTimeline = await databases.deleteView(owner.id, 'timeline-config-ws', databaseBeforeDelete.id, independent.view.id, { expectedDatabaseVersion: databaseBeforeDelete.version, expectedViewVersion: independentBeforeDelete.version })
+  assert.equal(deletedTimeline.database.version, databaseBeforeDelete.version + 1)
+  assert.equal((await databases.listViews(owner.id, 'timeline-config-ws', currentDatabase.id)).some(view => view.id === independent.view.id), false)
+  assert.deepEqual(await recordModel.find({ databaseId: currentDatabase.id }).sort({ id: 1 }).lean(), recordsBeforeDelete, 'deleting an unreferenced Timeline View preserves generic Records and their versions')
+  assert.deepEqual(await connection.db!.collection('pages').find({ id: { $in: recordPageIds } }).sort({ id: 1 }).toArray(), recordPagesBeforeDelete, 'deleting a Timeline View preserves its Record Pages')
+})
+
 test('advanced reference fences resolve relation and rollup races without dangling references', async t => {
   const app = await NestFactory.createApplicationContext(DatabaseTestModule, { logger: false })
   const connection = app.get<Connection>(getConnectionToken())
