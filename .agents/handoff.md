@@ -1,5 +1,54 @@
 # Handoff
 
+## 2026-10-13 P11.1C Timeline View Config Foundation（PASS，停在此处）
+
+基线 `320d2bd930d288a0a33bec5cae62021e15967771`（P11.1B PASS）。初始目录工作树干净，
+但检出较早的 `bd9e070`；本轮在隔离分支 `codex/p11-1c-timeline-config` 实施，路径
+`C:/Users/31250/.codex/worktrees/p11-1c-timeline-config/Eotion`。正式版本仍 `0.0.1`，
+P11 目标 `0.0.3`；没有进入 P11.1D / P11.2。
+
+实现提交：`57121c7`（Domain/Contracts 回归/§21）、`94336f7`（真实 Mongo API 回归）、
+`ceb4d5d`（Web 占位兼容）。验收/交接收口为本节所在 commit。
+
+`DATABASE_VIEW_TYPES` 已支持 table/list/board/timeline。实际 wire shape 冻结在
+`docs/p11-timeline.md` §21：现有 `options.timeline` 保存 dateSource 判别联合（单 Date
+或两个独立 Date）、七种 scale（有效默认 month）、独立 Frozen Table 投影、self-relation
+dependency（显式 depends-on/blocks，三种既定 shiftMode 和 avoidWeekends）。无 dateSource
+合法，不自动选属性；原生 Date、同库同 Workspace、Title/数组/稳定 ID 严格验证。
+Timeline 内层 shape 严格，outer options 未知未来字段保留；引用语义仅 Timeline 应用，
+Board grouping 原规则保持。没有 Timeline 专属实体、DTO、路由、集合、日期解析或联动。
+
+API/Repository 生产代码无需新逻辑：View CRUD/query 已传真实 view.type、Mongo enum
+复用共享常量。真实测试证明默认/完整配置创建、PATCH/list/generic GET 往返、双版本
+CAS 409/回滚、独立 View、分页/filter/sort/cursor fence、DELETE 不改 Record/Page。
+`linkInPage` 仍 Table-only，Timeline 400 且 Block/Database version 无副作用；后续
+Linked Timeline 从该方法类型门禁及 HTTP/Block identity 验收接入。
+
+Web selector 可切已有 Timeline，显示“时间轴视图暂未实现”，无 Table fallback 或叠加
+普通空态；无 Timeline 创建/专用配置入口。通用 Filter/Sort/View CRUD 与 Record 操作
+保持，切换不重建 Editor/NodeView，不丢 Drawer 标题草稿；390px 占位无横向溢出。
+
+验证：Domain 48/48、Contracts 25/25、SDK 23/23；真实隔离 Mongo 8.2.3 API 21/21
+（2+13+1+5，含 nested，0 failed/skipped；新增 targeted 2/2 是子集）。Web 定向 6/6，
+workers=1/retries=0；相关 typecheck/build、diff/UTF-8 无 BOM、独立 review 0 blocker。
+Mongo 新临时 dbpath/primary/transaction probe 验证，已 admin shutdown：PID 19700
+退出、27712 无 listener；Web 7173 无 listener。日志保留在
+`C:/Users/31250/AppData/Local/Temp/eotion-p111c-dc408051709e490fa68bce3b5f60009e`。
+完整命令/证据/过程修复与未执行项见 `docs/verification/p11-1c-timeline-view-config.md`。
+未运行完整 Web Database/Product、MCP/performance/sync/file 全套、原生真机或完整
+Visual/Final Acceptance；既有大 chunk warning 保留。
+
+**P11.1D 精确接续（未完成）：**`DatabaseService.updateProperty` 327 行（Relation
+retarget）、`changePropertyType` 385 行、`deleteProperty` 476 行的既有事务路径；
+repair 的三个 `validateDatabaseViewConfig` 调用在 376/465/520 行，仍未传真实 view.type。
+参考 service 的 `assertNoBoardGroupingDependency` 714 行 / Repository 的
+`hasBoardGroupingProperty` 296 行，补 Date source/dependency hard reference 409，
+Frozen Table soft reference 修复与 retarget 检查，证明事务内候选 schema 校验、
+CAS/rollback/并发竞态。generic records 的 dangling config fail-closed 不能代替这些
+mutation 防护；不要把 C 的配置校验描述成 D lifecycle 已完成。
+
+P11.1C 已完成并停止。后续只按新的明确用户指令行动。
+
 ## 2026-10-13 P11.1B Generic Date Data Path（PASS，停在此处）
 
 基线 `499877a`；实现提交：`5e2d3e1`（Domain/Contracts）、`03d8ee0`（API/Mongo +

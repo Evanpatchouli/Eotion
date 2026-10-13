@@ -81,7 +81,7 @@ P9 Final Acceptance（2026-10-13）：**P9 FINAL PASS**。完整 Web Product 367
 P10–P15 Roadmap（2026-10-13）：0.0.1 已发布；后续固定映射为 P10 Database MCP Extension → 0.0.2、P11 Timeline → 0.0.3、P12 Gallery → 0.0.4、P13 Calendar → 0.0.5、P14 Chart → 0.0.6、P15 MCP Full Adaptation → 0.1.0。检索 P10 时重点关注 MCP Database DTO / scope / pagination / CAS / idempotency / generic records；P11 检索 Timeline/date range/view options；P12 检索 Gallery/card projection/cover；P13 检索 Calendar/date mutation/month view；P14 检索 Chart/aggregation/server-side aggregation；P15 检索 MCP full adaptation/view config/capability discovery。所有新 View 继续复用 Database/Property/Record/View 与 generic records，不建立 renderer-specific persistence；Chart 聚合必须服务端执行。正式阶段目标与边界见 `docs/roadmap.md`。
 
 
-P11 Timeline 产品基准（2026-10-13）：用户要求产品结构/交互以 Notion Timeline 为直接基准。正式标准见 [P11 Timeline](../p11-timeline.md)。检索重点：`TimelineView`、`TimelineViewOptions`、date range / datetime、time ruler、horizontal scrollbar、today line、move/resize range、offscreen jump、Frozen Table、dependency self-relation / shift strategy、generic View row ordering。硬要求包括：底部真实水平滚动条；当前日期可视时贯穿 canvas 的红色 today line；Hour/Day/Week/Bi-week/Month/Quarter/Year scale；单 Date range 与独立 Start/End 两种 source；bar move/左右 resize 写回 generic Date mutation + CAS；左表可隐藏且与 rows 对齐；dependency 不创建 Timeline-specific persistence。P11.1A 已冻结 `{ start, end?, timeZone? }` 与 legacy string；P11.1B 通用 Date 数据链路已完成 / PASS，完整比较/投影契约见 §10.4。当前正式版本仍为 0.0.1；P10 尚未实施，不能虚报完成；P11.1C 与 renderer 尚未开始。
+P11 Timeline 产品基准（2026-10-13）：用户要求产品结构/交互以 Notion Timeline 为直接基准。正式标准见 [P11 Timeline](../p11-timeline.md)。检索重点：`TimelineView`、`TimelineViewOptions`、date range / datetime、time ruler、horizontal scrollbar、today line、move/resize range、offscreen jump、Frozen Table、dependency self-relation / shift strategy、generic View row ordering。硬要求包括：底部真实水平滚动条；当前日期可视时贯穿 canvas 的红色 today line；Hour/Day/Week/Bi-week/Month/Quarter/Year scale；单 Date range 与独立 Start/End 两种 source；bar move/左右 resize 写回 generic Date mutation + CAS；左表可隐藏且与 rows 对齐；dependency 不创建 Timeline-specific persistence。P11.1A 已冻结 `{ start, end?, timeZone? }` 与 legacy string；P11.1B 通用 Date 数据链路已完成 / PASS，完整比较/投影契约见 §10.4。当前正式版本仍为 0.0.1；P10 尚未实施，不能虚报完成；P11.1C 配置契约见 §21；renderer 尚未实现。
 
 P11.1B 检索入口：`packages/domain/src/date.ts` 的 `isValidDatabaseDateValue` /
 `normalizeDatabaseDateValue` / `getDatabaseDateStartInstant` / `projectDatabaseDateToFormulaDate`，
@@ -93,4 +93,17 @@ Rollup / 类型转换范围保持；不增加 Timeline 专用 Record、API 或 M
 
 P11.1B 验收证据见 [Generic Date Data Path](../verification/p11-1b-generic-date.md)：真实 Mongo
 19/19、完整 Web Database 111/111、Domain 41/41、Contracts 24/24；相关 consumer、
-typecheck/build 与独立复核通过。本轮完成后停止，P11.1C 仅保留接续入口。
+typecheck/build 与独立复核通过。B 阶段完成后停止；P11.1C 的配置契约入口见下文。
+
+P11.1C 检索入口：`DATABASE_VIEW_TYPES`、`TimelineViewOptions` /
+`isValidTimelineViewOptions`、`DatabaseViewConfig.options.timeline` 和
+`validateDatabaseViewConfig(..., view.type)`。实际 wire shape 冻结在
+[P11 §21](../p11-timeline.md#21-view-config-实际契约p111c-冻结)：dateSource 判别联合、
+七种 scale（有效默认 month）、独立 Frozen Table 投影、self Relation dependency 的明确
+方向和三种 shift 策略。结构验证复用原 Create/Update DTO；outer options 未知字段保留，
+Property 引用语义仅 Timeline 应用。CRUD/generic records/版本 cursor fence 复用，Web
+selector 可切 Timeline 并明确占位，无创建入口或 renderer。
+P11.1D 仍需从 `DatabaseService.updateProperty/changePropertyType/deleteProperty`
+事务内 View repair 与 `DatabaseViewRepository.hasBoardGroupingProperty` 所在 fence
+模式接续：hard reference 409、soft reference 修复、真实 view.type、事务/CAS/并发。
+`linkInPage` 保持 Table-only；不能把 generic records fail-closed 当作 lifecycle 已完成。

@@ -13,6 +13,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `p9-multi-view.md` | P9 Multi-View：Table/List/Board、通用 records、分组配置/修改、CAS 与生命周期边界 |
 | `p9-final-acceptance.md` | P9 独立最终验收：完整 Product、真实 API/MCP、三设备视觉与 lifecycle 证据 |
 | `p11-timeline.md` | P11 Timeline 产品标准：Notion parity 结构、日期范围、时间标尺、Today 红线、横向滚动、Frozen Table、Dependency 与验收矩阵 |
+| `verification/p11-1c-timeline-view-config.md` | P11.1C 配置基础验收：实际 options.timeline、真实 CRUD/CAS/cursor、Web 占位与 P11.1D 接续边界 |
 | `context/README.md` | RAG 检索入口、模块索引和 Context Pack 规则 |
 | `specs/` | 产品行为、协议和验收契约 |
 | `decisions/` | ADR：为什么做出重要技术/架构决策 |
