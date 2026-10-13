@@ -20,6 +20,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `verification/p11-2b-read-only-bars.md` | P11.2B 真实 records 日期投影、只读 milestone/range、未排期与行窗口、100/500 条及生命周期验证 |
 | `verification/p11-2c-frozen-table.md` | P11.2C Frozen Table 独立列投影、共享行窗口、Relation 缓存与响应式范围验收（Scope PASS） |
 | `verification/p11-2d-timeline-read-acceptance.md` | P11.2D 核心 Read 最终验收：七scale统一坐标、日期矩阵、Host/Editor identity、Frozen/scroll、390px与100/500、fresh基线失败对照 |
+| `verification/p11-3a-timeline-drag.md` | P11.3A 整体 Bar drag：局部预览、坐标转换、通用 Date cell mutation、CAS/transaction rollback、100/500 与身份保护；独立 Start/End 暂只读 |
 | `context/README.md` | RAG 检索入口、模块索引和 Context Pack 规则 |
 | `specs/` | 产品行为、协议和验收契约 |
 | `decisions/` | ADR：为什么做出重要技术/架构决策 |

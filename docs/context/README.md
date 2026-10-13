@@ -170,3 +170,12 @@ Domain48/48、Contracts25/25、SDK23/23、真实Mongo API22/22和相关typecheck
 fresh基线230项226PASS/4FAIL，最终231项228PASS/3FAIL，最终失败为基线子集，详见验收页。
 完全离屏scheduled indicator/jump仍属deferred parity；Mutation/Drag/Resize/Dependency/
 Calendar/Chart未实施，不据核心PASS宣称P11 Final或全Product全绿。
+
+P11.3A Drag Foundation（2026-10-13～14）：范围PASS，完成并停止，P11.3B未开始。
+入口[Drag验收](../verification/p11-3a-timeline-drag.md)、[Renderer §24](../architecture/timeline-renderer.md#24-p113a-drag-mutation-foundation)。
+检索`mutation.ts`/`temporalOffsetFromX`/`offsetTimelineDateValue`、`useTimelineBarDrag`、
+`prepareTimelineBarDrag`/`moveTimelineRecord`/`isBarViewportCurrent`：single Date的whole-bar pointer
+preview→原generic Record cell→双CAS/transaction，保持duration/precision/zone/Host identity。
+独立Start/End两列用户确认暂只读（现有API无法原子双写）；不新建Timeline endpoint/collection/store。
+35logic/19真实API/6新dragWeb/12既有Timeline-Date-CAS/38Overlay、typecheck/build PASS；
+100/500 otherBar DOM与Vue更新0。后续Resize/Dependency/Undo/Offline等仍未授权，不自动进入B。

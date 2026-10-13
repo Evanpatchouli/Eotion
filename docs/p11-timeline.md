@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1A/B/C/D、P11.2.0 已完成；P11.2A/B/C 范围验收 PASS；P11.2D 核心 Read Acceptance PASS；已停止，P11.3 未开始**
+> Status: **P11.1、P11.2 核心 Read 与 P11.3A Drag Foundation 完成；P11.3A 范围 PASS，已停止；P11.3B 未开始**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -833,7 +833,7 @@ indicator/jump 尚未实施，仍作为后续 parity 待办保留。本轮不宣
 
 ### P11.3 Timeline Mutation
 
-完成：
+分阶段实施；P11.3A 仅为 Bar 整体移动基础，P11.3B 必须另行授权。完整阶段目标：
 
 - move range
 - resize start/end
@@ -841,6 +841,36 @@ indicator/jump 尚未实施，仍作为后续 parity 待办保留。本轮不宣
 - CAS / 409
 - server-confirmed persistence
 - snapshot/lifecycle
+
+#### P11.3A Drag Mutation Foundation
+
+2026-10-13 启动、2026-10-14 收口，**P11.3A 范围验收 PASS**。Temporal/CAS 基础提交
+`d2daaa2`，交互/接线/Web 提交 `bd561e4`；35 logic、19 真实 Mongo API、6 新拖动 Web、
+12 既有 Timeline/Date/CAS 与38 Overlay均通过，Web/API typecheck与build通过。最终独立
+review 0 个剩余确定 blocker；结果只代表本轮范围，未运行完整 Product / P11 Final。
+
+单 Date Property 的 point / range 从 Bar 主体发起 pointer drag；未排期和独立 Start/End
+两列保持只读。现有 Record cell API 一次只原子修改一个 Property，本轮经确认不扩展通用
+API、不以两次请求模拟原子区间移动。
+
+`TimelineBar → Drag Controller → Timeline Mutation Adapter → existing Record cell mutation`
+是唯一写入链路。pointer move 只更新当前 Bar 的临时 geometry / 日期提示；release 才发出
+一次 command，保留 pointerdown 时的原值、Database / Record CAS 与作用域。Timeline 不保存
+独立日期状态，不新增 endpoint、collection、offline queue 或持久化模型。
+
+横向偏移经 `timeToX → xToTime` 计算 temporal target。date-only 在显示时区按最近有效日界
+吸附，使用 Gregorian 日历日偏移平移两端；datetime 使用整数毫秒 instant offset，保留
+source timezone 与精确 duration。保留 string / object、缺省 end / 显式零长 end；all-day
+视觉 inclusive 右界不写回数据。
+
+release 后允许 Bar 保留 optimistic preview，现有 Database mutation success 后刷新 generic
+projection；409 清除 preview、刷新 canonical Record 并提示重新拖动，无自动重试。其他失败
+恢复 confirmed 值；不确定提交结果必须刷新核对。身份和日期仍归现有 Record Host / Database，
+不因拖动重建 Editor、NodeView 或 Drawer。验收入口为
+[P11.3A Drag Foundation](verification/p11-3a-timeline-drag.md)。
+
+本轮不实现 Resize、start/end handle、Dependency shift、auto scheduling、multi-select/bulk、
+Undo/redo、Offline queue、Calendar、日期编辑 fallback 或 Timeline settings UI；完成后停止。
 
 ### P11.4 Frozen Table + Dependencies
 

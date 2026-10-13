@@ -1,5 +1,46 @@
 # Handoff
 
+## 2026-10-14 P11.3A Timeline Drag Mutation Foundation（范围 PASS，完成并停止）
+
+2026-10-13启动，14日收口；基线 `3c73470`、开始时工作树干净，分支
+`codex/p11-3a-timeline-drag`；正式版本仍0.0.1，P11目标0.0.3，不发布。
+Temporal/API回归commit `d2daaa2ff899a7e1b450dcb2b9b0daf89e1bcb26`，
+交互接线/Web commit `bd561e431b55488ad24075f73d1384696b8ced59`；正式文档收口commit
+即包含本节的提交。验收入口：[P11.3A](../docs/verification/p11-3a-timeline-drag.md)。
+
+流程 `TimelineBar → useTimelineBarDrag → NodeView adapter → updateProductDatabaseRecordCell
+→ existing generic cell endpoint → Mongo transaction + Database/Record CAS`。不新建Timeline API、
+collection或store。down冻结原raw Date/双version/scope/epoch/DOM，move仅当前Bar geometry和
+可见日期提示，up有效非零offset一次mutation；现有service串行化、online/权限、通知与generic
+loaded-window refresh复用。success canonical更新，409回退/刷新/提示，不重试；4xx回退，
+5xx/transport刷新核对不确定结果，refresh失败保持只读。保Editor/NodeView/RecordHost/Drawer身份。
+
+`mutation.ts` 用timeToX/xToTime和原日界resolver；date-only最近有效日界吸附并用Gregorian
+日差同量平移，datetime整数毫秒instant平移；保timezone/duration/string-object/end缺省或显式零长。
+不写all-day视觉exclusive end。date-only跳日source fail closed，可跨跳日到有效目标；year0000–9999合法。
+普通click仍开Record，实际drag/cancel抑制release click；Escape/capture/blur/offline/scope/version/
+viewport变动取消。原生scroll先于RAF的same-task pointerup竞态已修：同步DOM scrollLeft/clientWidth
+及transform核验后才commit，回归0PATCH。
+
+**用户确认的延期边界：**仅单Date Property point/range可拖动；独立Start/End两列只读。
+现有API一次仅原子修改一列，不能用两次CAS模拟整体range移动。后续若支持，需另行决定generic
+atomic multi-cell契约，而不是Timeline endpoint；本轮未设计/扩展公共API。
+
+验证全部PASS：35logic（28+7分两批）、19真实Mongo API、6新Web drag、12既有Timeline/Date/CAS、
+38RecordOverlay；Web/API build/typecheck通过。隔离Mongo8.0.32/27715/独立dbpath，已停止，未连接27017。
+100/500按25分页，armed后取样projection/temporal/rowGeometry/Frozen refs保持，其他Bar DOM mutations
+和Vue updated hooks均0、component refs保持、move0PATCH。preview→single CAS→rollback/Table/Frozen/reload、
+same-task scroll取消与offline、保存刷新后Host/RecordEditor/两个Tiptap view和Page/NodeView/Drawer身份均验证。
+标题blur允许原有自动保存；只声称正文/标题文本与组件保留，不声称永远unsaved。
+最终独立review0剩余确定blocker。五张Desktop/390/rollback PNG已root视检，副本在Codex本任务
+visualizations的`timeline-drag/`；详细路径/命令/噪声与限制见验收页。保既有chunk>500kB提示；
+Overlay中未启动7137的auth代理ECONNREFUSED仅为测试噪声。未运行全Product/P11Final/native真机/正式benchmark。
+
+**完成后停止，P11.3B未开始。** B入口：mutation.ts、useTimelineBarDrag.ts、TimelineBar/Viewport、
+DatabaseTimelineView与NodeView adapter；具体范围仍须独立明确授权。不实现Resize/start/end handles、
+Dependency shift、Auto scheduling、Multi-select/Bulk、Undo/redo、Offline queue、Calendar、inline date editor
+或settings。不要把完整P11 Mutation roadmap目标当作B自动授权；P11.5标签密度/视觉polish仍延期。
+
 ## 2026-10-13 P11.2D Timeline Read Renderer Final Acceptance（核心 PASS，已完成并停止）
 
 基线 `916de4a37cea108497d6d76fa4fe8c24ac1961e7` 已含P11.2C，开始时master工作树干净；

@@ -489,3 +489,30 @@ indicator/jump 留给后续完整 read parity；本轮不建立 Timeline 专属�
 Ruler/Grid/Today/Read-only bars/Frozen八项，保generic records、Host identity与scroll ownership。
 完全离屏scheduled indicator/jump仍是未实现parity；mutation/dependency/Calendar/Chart均不包含。
 核心PASS不表示全Notion parity、全Product或P11 Final完成；完成后停止，不进入P11.3。
+
+## 24. P11.3A Drag Mutation Foundation
+
+P11.3A 在已有 renderer 上增加整体 Bar move，Timeline 不建立独立编辑或持久化系统。
+唯一链路：`TimelineBar → useTimelineBarDrag → DatabaseNodeView adapter →
+updateProductDatabaseRecordCell → generic cell HTTP → DatabaseService transaction / CAS`。
+
+- 单 Date Property 的 date-only/datetime point/range 可拖动。独立 Start/End 两列经用户确认
+  暂保只读：现有 cell transaction 一次只写一列，不能用两个请求维持原子区间不变量。
+- `mutation.ts` 用既有 `timeToX/xToTime`、日界 resolver 生成 temporal offset 并平移原 wire
+  value。date-only 最近有效日界吸附、两端 Gregorian 日历日差保持；datetime 整数毫秒
+  instant 差保持，timezone 不改变。不可把 renderer-only inclusive 右界写回 end。
+- 每个 Bar 的 controller 持有自己的 armed/dragging/saving preview。pointermove 仅重新投影
+  当前 item 并复用 temporal resolver / 单 item layout，不回写 records、不刷新全部 row、不发请求。
+  parent caches 仍只随 generic records/schema/config/viewport 更新。
+- pointerdown 冻结 raw Date、Record/Database version 和 scope；pointerup 发出单 command。
+  adapter 再核对 scope/epoch、当前 source/schema/version，复用既有 service 串行化、在线检查、
+  双 CAS、transaction 和 generic refresh。drag 不持有 Host/Drawer/Editor。
+- 拖动后的合成 click 被抑制；普通 click 仍走既有 openRecord。取消、offline、viewport 改变、
+  scope/version 改变和卸载必须丢弃 active preview，旧 callback 不可污染新 scope。
+- release 到 server confirm 期间允许当前 Bar optimistic preview。409 回到 canonical Record
+  并提示；4xx 拒绝回退，5xx/transport 不确定结果刷新核对，无重试或本地持久队列。成功响应
+  与 generic refresh 继续保 loaded window、Record Host draft 和组件 identity。
+
+正式验收见 [P11.3A](../verification/p11-3a-timeline-drag.md)。本轮不实现 handles/resize、
+dependency/auto shift、multi/bulk、undo/offline、Calendar、settings 或独立 Start/End 原子 API；
+P11.3B 接续需明确范围与授权。
