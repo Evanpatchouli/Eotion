@@ -516,3 +516,20 @@ updateProductDatabaseRecordCell → generic cell HTTP → DatabaseService transa
 正式验收见 [P11.3A](../verification/p11-3a-timeline-drag.md)。本轮不实现 handles/resize、
 dependency/auto shift、multi/bulk、undo/offline、Calendar、settings 或独立 Start/End 原子 API；
 P11.3B 接续需明确范围与授权。
+
+## 25. P11.3B Resize Range Mutation
+
+Resize 沿用 §24 的 controller/transient state、command、NodeView adapter 与 generic single-cell
+transaction，不新增服务端入口。Range 的 start/end handle 分别只改一个端点；point 仅通过
+end handle 向右升级 range，legacy string 必要时升级 Date object。独立 Start/End 两列仍只读。
+
+共享 resize helper 将原端点 geometry anchor + pointer delta 经 `timeToX/xToTime` 转成 target，
+消费 scale `futureSnapUnit`，以原端点为相对吸附锚点；date-only 最细 day。所有 preview 与提交
+先 clamp 到 `start <= end`。All-day end 使用 `inclusive date ↔ exclusive visual calendar boundary`
+转换，不用24小时做日期回退。Datetime 保 canonical UTC、timezone、另一端与毫秒精度。
+
+Handle 与主体使用独立 button/事件，不嵌套 button；共用 active session、preview geometry、
+单次 release 与 CAS/refresh/cancel。Pointermove 不改 parent projection/temporal map/Frozen rows，
+不生成 ruler ticks或HTTP请求。事件、日期与验证契约见
+[P11 主计划](../p11-timeline.md#p113b-resize-range-mutation-契约) 与
+[P11.3B 验收](../verification/p11-3b-timeline-resize.md)。P11.3C 需后续独立启动。

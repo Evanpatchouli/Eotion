@@ -1,5 +1,34 @@
 # Handoff
 
+## 2026-10-14 P11.3B Resize Range Mutation（范围PASS，完成并停止）
+
+基线 `288bdc1`，分支 `codex/p11-3b-timeline-resize`，开始时工作树干净。版本仍0.0.1，目标0.0.3。
+逻辑/API回归提交 `6cb2803`，交互/Web提交 `251c1a3`；验收/docs收口commit即包含本节的提交。正式结果见
+[P11.3B](../docs/verification/p11-3b-timeline-resize.md)。
+
+Resize进入原 `Bar → useTimelineBarDrag shared session/preview → mutation.ts/snap.ts →
+NodeView adapter → existing single Record Cell PATCH → dual CAS/Mongo transaction → canonical refresh`。
+不新增API/collection/queue，不重建Host/Drawer/Editor。Range左右handle只改对应端，越界clamp相等，
+不交换；point仅右向有效snap升级range，legacy string升级object，release前原end仍absent。
+All-day end包含式：exclusive视觉日界逆回前一存在的Gregorian日期；point右移一日可为显式同日range。
+Snap统一消费scale.futureSnapUnit，date-only最细day，原端为相对anchor；datetime保UTC/timeZone/毫秒/另一端。
+Move/resize共用active preview，move0PATCH，release最多1PATCH；409 rollback+canonical refresh无retry，
+network/unknown沿用generic uncertain策略。完整keyboard resize留P11.3C/P11.5。
+
+**保持延期：** Separate Start/End mutation requires generic transactional multi-cell Record mutation.
+Before that capability exists, range move/resize remains read-only. 无双PATCH伪原子能力；也无dependency/auto shift、
+multi/bulk、Undo/Redo、offline、Calendar、inline editor/settings。完成B后停止。
+
+P11.3C精确入口：`TimelineBar.vue` pointer/focus/handles、`useTimelineBarDrag.ts`共用session/cancel、
+`mutation.ts`/`snap.ts`端点和吸附、`DatabaseNodeView.vue`原adapter；测试复用
+`timeline-mutation.spec.ts`及`product-database.spec.ts`的P11.3A/B矩阵。后续先独立明确C授权范围，
+不得把multi-cell、dependency或设置自动带入。B的single-cell、inclusive、identity与CAS不变量冻结。
+
+43logic、7新resizeWeb、17旧定向Web、19最终隔离API全部PASS，Web/API typecheck/build通过。
+100/500 projection/temporal/row/Frozen refs保持，other Bar DOM mutations/Vue updated hooks均0。
+Desktop/390 Light/Dark及preview五PNG主Agent已视检。两项viewport边缘handle/body命中blocker已修，最终review0剩余blocker。
+首轮两项旧回归失败单测及完整复跑通过，原因未证明；执行疏漏及最终隔离Mongo日志/清理、截图、未执行项统一记录在正式验收页，勿混用无隔离URI的中断API run。
+
 ## 2026-10-14 P11.3A Timeline Drag Mutation Foundation（范围 PASS，完成并停止）
 
 2026-10-13启动，14日收口；基线 `3c73470`、开始时工作树干净，分支

@@ -1,27 +1,24 @@
-# 当前任务：P11.3A Timeline Drag Mutation Foundation（范围 PASS，完成并停止）
+# 当前任务：P11.3B Resize Range Mutation（范围PASS，完成并停止）
 
-基线 3c73470，工作树干净；分支 codex/p11-3a-timeline-drag。版本保持 0.0.1，P11 目标 0.0.3。
-只实现整体 Bar drag / local preview / temporal command / 既有 Database mutation / optimistic 与 CAS rollback；完成后停止，不进入 P11.3B。
+基线 `288bdc1`，工作树干净；分支 `codex/p11-3b-timeline-resize`。版本保持0.0.1，目标0.0.3。只执行B，完成后停止，不进入C。
 
 | 单元 | 模式 / 难度 / 角色 | 输出 | 状态 |
 | --- | --- | --- | --- |
-| A1 | investigate / S0 scout | Record/cell/CAS/transaction/refresh/Host Evidence Pack | 完成 |
-| A2 | decide / S2 主 Agent | temporal 和 interaction / mutation Brief | 完成；single Date 边界用户确认，后续降为 S1 |
-| A3 | execute / S1 fast_worker | 纯 temporal command、logic tests | 完成；7/7，commit d2daaa2 |
-| A4 | execute / S1 fast_worker | 局部 Drag Controller、父层 adapter、Web 回归 | 完成；新Web6/6 PASS，commit bd561e4 |
-| A5 | verify / S0 scout | logic/API/Web/typecheck/build 与 100/500 证据 | 完成；logic35/API19/新Web6/既有Web12+38、typecheck/build PASS |
-| A6 | review / reviewer | 最终独立 blocker review | 完成；同帧native-scroll P2已修，最终0剩余确定blocker |
-| A7 | execute / S1 主 Agent | 验收、P11、current-task、handoff 与提交 | 完成；正式文档收口commit即包含本文件的提交 |
+| B1 | investigate / S0 scout | temporal/adapter Evidence Pack | 完成 |
+| B2 | decide / S2 主Agent | 端点/snap/共用controller Brief | 完成，执行降S1 |
+| B3 | execute / S1 fast_worker | 纯函数、logic/API回归 | 完成；commit6cb2803 |
+| B4 | execute / S1 fast_worker | 共用preview与handles | 完成；commit251c1a3 |
+| B5 | execute / S1 fast_worker | Web/100/500/视觉回归 | 完成；7新Web/43logic/17旧回归PASS |
+| B6 | verify / S0 scout | 隔离Mongo、typecheck/build | 完成；最终19/19，临时Mongo已关闭 |
+| B7 | review / reviewer | 最终独立blocker review | 完成；两项边缘命中问题已修，0剩余blocker |
+| B8 | execute / S1 主Agent | 契约、验收、handoff与提交 | 完成；正式收口commit包含本文件 |
 
-不变量：timeToX/xToTime 唯一坐标入口；date-only 日历日/ datetime instant offset；range duration/timeZone/shape 保持；不写视觉 exclusive end；unscheduled 不拖；pointer move 仅当前 Bar preview；pointer up 单次 generic Record update；CAS/transaction 复用，不建 endpoint/collection。保 P9 scope/epoch、Editor/NodeView/Record Host/Drawer identity。无 resize/handles/dependency/auto scheduling/multi/bulk/undo/offline/calendar/settings。
+不变量：single Date Property；range左右handle只改对应端，越界clamp至相等；point仅右向创建end，legacy string必要升级object；all-day exclusive视觉日界逆回inclusive日期；scale.futureSnapUnit相对原端snap，date-only最细day；datetime保UTC/timeZone/另一端/毫秒。共用session/preview，move0PATCH/up最多1existing cell PATCH；双CAS/transaction、409 canonical refresh、unknown-state与identity fences复用。
 
-## 收口与接续
+验收入口：`docs/verification/p11-3b-timeline-resize.md`。43logic、7新Web、17旧定向回归、19真实API最终PASS；Web/API typecheck/build PASS。100/500 parent refs保持、other Bar DOM mutations/Vue updated hooks均0。Desktop/390 Light/Dark及390 preview五PNG已视检，console/pageerror定向断言通过。
 
-- 2026-10-13启动，2026-10-14收口；正式验收 `docs/verification/p11-3a-timeline-drag.md`。
-- 实现commit `d2daaa2ff899a7e1b450dcb2b9b0daf89e1bcb26` / `bd561e431b55488ad24075f73d1384696b8ced59`。
-- single Date Property可拖动；独立Start/End两列用户确认暂只读，因现有cell API不能原子双写。
-- 100/500 armed后取样，parent refs稳定，other Bar DOM mutations/Vue updated hooks均0；无每像素网络。
-- Desktop/390预览与提交、409回退五PNG已视检/外部存档；RecordHost/Drawer/两个Tiptap与Editor/NodeView保存后身份保持。
-- 35logic、19真实隔离Mongo API、6新拖动Web、12既有Timeline/Date/CAS、38Overlay全部通过；Web/API build和typecheck通过。Mongo27715已停止。
-- 未运行全Product/P11 Final/native真机/正式帧率benchmark；保留既有chunk提示与Overlay测试代理噪声，不扩范围修复。
-- 完成后停止，P11.3B未开始；从mutation.ts/controller/NodeView adapter接续，具体B范围须另行明确授权。无Resize/Dependency/Auto shift/Undo等实现。
+首轮两项旧回归时序失败，单测与完整复跑通过，原因未证明；不声称完整Product全绿。另有一个未设置隔离URI的API test被及时中断且无结果，不作验收，执行疏漏见验收页。最终API在6cb2803已提交测试源上用独立27716/p113bFinal与全新dbpath，19/19通过并留完整日志；PID29880优雅shutdown、27716无监听。
+
+独立Start/End仍只读，需generic transactional multi-cell mutation后另行支持。不实现Dependency/auto shift、multi/bulk、Undo/Redo、offline、Calendar/settings/inline Date editor或C polish。未运行全Product/P11 Final/native真机/正式帧率benchmark，不发布不改版本。
+
+完成B后停止。C接续入口：TimelineBar.vue handles/focus、useTimelineBarDrag.ts shared session/cancel、mutation.ts/snap.ts端点、DatabaseNodeView.vue原adapter及P11.3A/B测试矩阵；必须后续独立启动，不自动扩展延期能力。

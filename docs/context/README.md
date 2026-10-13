@@ -171,11 +171,18 @@ fresh基线230项226PASS/4FAIL，最终231项228PASS/3FAIL，最终失败为基�
 完全离屏scheduled indicator/jump仍属deferred parity；Mutation/Drag/Resize/Dependency/
 Calendar/Chart未实施，不据核心PASS宣称P11 Final或全Product全绿。
 
-P11.3A Drag Foundation（2026-10-13～14）：范围PASS，完成并停止，P11.3B未开始。
+P11.3A Drag Foundation（2026-10-13～14）：范围PASS，完成并停止；后续B状态见下文。
 入口[Drag验收](../verification/p11-3a-timeline-drag.md)、[Renderer §24](../architecture/timeline-renderer.md#24-p113a-drag-mutation-foundation)。
 检索`mutation.ts`/`temporalOffsetFromX`/`offsetTimelineDateValue`、`useTimelineBarDrag`、
 `prepareTimelineBarDrag`/`moveTimelineRecord`/`isBarViewportCurrent`：single Date的whole-bar pointer
 preview→原generic Record cell→双CAS/transaction，保持duration/precision/zone/Host identity。
 独立Start/End两列用户确认暂只读（现有API无法原子双写）；不新建Timeline endpoint/collection/store。
 35logic/19真实API/6新dragWeb/12既有Timeline-Date-CAS/38Overlay、typecheck/build PASS；
-100/500 otherBar DOM与Vue更新0。后续Resize/Dependency/Undo/Offline等仍未授权，不自动进入B。
+100/500 otherBar DOM与Vue更新0。以上仅A范围；不将完整Mutation roadmap作为后续授权。
+
+P11.3B Resize Range Mutation（2026-10-14）：single Date start/end resize与point→range。
+入口[Resize验收](../verification/p11-3b-timeline-resize.md)、[Renderer §25](../architecture/timeline-renderer.md#25-p113b-resize-range-mutation)。
+检索`resizeTimelineDateValueFromX`/`snapTimelineEndpoint`/`inclusiveDateBeforeBoundary`/
+`isWritableTimelineDateSource`、`TimelineBar` handles：共享controller/transient preview、相对端点scale
+snap、包含式all-day end转换、clamp和wire shape升级；仍复用原NodeView single Cell/CAS/refresh。
+独立Start/End继续read-only。完成B后停止，P11.3C需另行启动；Dependency/Undo/Offline等未实现。

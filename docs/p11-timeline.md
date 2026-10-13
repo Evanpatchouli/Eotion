@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1、P11.2 核心 Read 与 P11.3A Drag Foundation 完成；P11.3A 范围 PASS，已停止；P11.3B 未开始**
+> Status: **P11.1、P11.2 核心 Read、P11.3A Drag Foundation 与 P11.3B Resize Range Mutation 范围 PASS；完成并停止，不进入 P11.3C**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -833,7 +833,7 @@ indicator/jump 尚未实施，仍作为后续 parity 待办保留。本轮不宣
 
 ### P11.3 Timeline Mutation
 
-分阶段实施；P11.3A 仅为 Bar 整体移动基础，P11.3B 必须另行授权。完整阶段目标：
+分阶段实施；P11.3A 为 Bar 整体移动基础，P11.3B 已独立授权范围调整。完整阶段目标：
 
 - move range
 - resize start/end
@@ -871,6 +871,46 @@ projection；409 清除 preview、刷新 canonical Record 并提示重新拖动�
 
 本轮不实现 Resize、start/end handle、Dependency shift、auto scheduling、multi-select/bulk、
 Undo/redo、Offline queue、Calendar、日期编辑 fallback 或 Timeline settings UI；完成后停止。
+
+#### P11.3B Resize Range Mutation 契约
+
+2026-10-14，**P11.3B 范围验收 PASS**。纯逻辑/API回归提交 `6cb2803`，交互/Web提交 `251c1a3`；
+43 logic、7 新 resize Web、17 既有定向 Web、19 真实隔离 Mongo API 最终通过，Web/API
+typecheck/build通过。独立review的两项边缘hitbox问题已修，0剩余确定blocker。
+首轮两项旧回归时序失败在单测和完整复跑通过，完整Product/P11 Final未执行；详见验收页。
+
+P11.3B 只允许 `dateSource.mode === 'date-property'`。Range 的左 handle 只改 start，
+右 handle 只改 end；越过另一端时 clamp 到相等，保留显式 end，不交换端点语义。
+Point 仅有右 handle，向右到有效吸附目标才创建 end。Pointermove 不改 persisted value；
+release 后一次提交完整 Date cell。Legacy string point 必要时升级 `{start,end}`，已有对象
+保持对象；显式相等 end 与省略 end 的 point 始终区分。
+
+坐标统一使用 `timeToX/xToTime`，吸附集中在共享纯函数并消费 scale 的 `futureSnapUnit`：
+Hour 15分钟、Day 1小时、Week/Biweek/Month/Quarter 1日、Year 1月。吸附以原目标端点为
+相对锚点，最近步长、等距向前；date-only 最细为日，不能升级 datetime。日/月步长复用
+calendar engine，datetime 保留原毫秒、未修改端 instant、canonical UTC wire 与原 IANA timezone。
+整体 move 仍使用 P11.3A 的原精度契约。
+
+All-day persisted end 是包含式日期：range 右 handle 的原 temporal anchor 为 end 次日日初，
+吸附后的视觉 exclusive 日界转换为前一 Gregorian 日期再写 end，不能直接写 visual boundary。
+Point 原 anchor 为 start 日初，右移一个日界可形成 `{start,end:start}` 的显式单日 range，
+右移两个日界形成包含两日的 range；没有提前为 point 伪造 end。DST 的23/25小时不改变
+日历日期语义，转换不使用固定24小时回退。显示时区跳过整日时，inverse 选择边界前最后
+存在的日期（例如 Apia 2011-12-31 日界对应 inclusive 2011-12-29）；原端点落在跳过日则
+保持 fail-closed，不从 resize 生成不可显示端点。
+
+Resize 复用 `TimelineBar → useTimelineBarDrag → mutation helper → NodeView adapter →
+existing Record Cell API → Database/Record CAS + transaction → canonical refresh`。
+Move/resize 共用局部 transient preview、捕获作用域与版本、取消和 uncertain-state 策略。
+409 清 preview、刷新 canonical 并提示，不自动重试；其他错误回退，未知结果通过 generic
+refresh 核对，不保留失败 preview。Handle 事件不触发主体 drag 或 Record open；主体 click
+继续复用 Record Host，handle 有 accessible label 与可见 focus，不引入 focus trap。
+
+独立 Start/End source 只显示/打开，无可用 handles。Separate Start/End mutation requires
+generic transactional multi-cell Record mutation. Before that capability exists, range move/resize
+remains read-only. 不增加 resize endpoint、Timeline collection、multi-cell API 或持久队列。
+本轮不含 dependency、bulk/multi-select、undo、Calendar、settings/inline editor、P11.3C polish。
+验收结果与未执行项见 [P11.3B Resize](verification/p11-3b-timeline-resize.md)。完成后停止。
 
 ### P11.4 Frozen Table + Dependencies
 
