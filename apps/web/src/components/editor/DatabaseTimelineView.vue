@@ -4,7 +4,7 @@ import type { DatabaseTimelineViewOptions, DatabaseViewConfig } from '@eotion/do
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import type { TimelineMoveCommand } from './timeline/mutation'
 import { isWritableTimelineDateSource } from './timeline/mutation'
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
 import { IconName } from '../ui/icons'
 import EotionIcon from '../ui/EotionIcon.vue'
@@ -39,6 +39,14 @@ const emit = defineEmits<{
 }>()
 
 const recordsExpanded = ref(false)
+/**
+ * Timeline-local pending fence: the window between pointer release, session
+ * validation and the in-flight generic Cell PATCH. The shared Record Cell
+ * service serialises database-wide; this map is what keeps the same bar from
+ * queueing a second mutation with a stale version and drives the quiet saving
+ * affordance without remounting the bar.
+ */
+const pendingTimelineMutations = reactive(new Map<string, { recordId: string; propertyId: string }>())
 
 const root = ref<HTMLElement | null>(null)
 const scroller = ref<HTMLElement | null>(null)
@@ -51,6 +59,11 @@ const configuredScale = computed(() => timelineOptions.value?.scale ?? 'month')
 const barDraggable = computed(() => props.writable && isWritableTimelineDateSource(timelineOptions.value?.dateSource))
 const barTransform = computed(() => viewport.state.value ? viewportTransform(viewport.state.value) : null)
 const recordVersionById = computed(() => new Map(props.records.map(record => [record.id, record.version])))
+const writablePropertyId = computed(() => {
+  const source = timelineOptions.value?.dateSource
+  return isWritableTimelineDateSource(source) ? source.propertyId : ''
+})
+const recordMutationBusyById = computed(() => new Map([...pendingTimelineMutations.values()].map(pending => [pending.recordId, true] as const)))
 const frozenColumns = computed(() => resolveFrozenTableProperties(props.properties, props.config))
 const frozenTableVisible = computed(() => timelineOptions.value?.frozenTable?.visible === true)
 const frozenDisplayMap = computed(() => frozenTableVisible.value
@@ -105,8 +118,21 @@ function focusRow(rowIndex: number): void {
 
 function prepareTimelineDrag(recordId: string): TimelineBarDragSession | null {
   if (!barDraggable.value) return null
+  const propertyId = writablePropertyId.value
+  if (!propertyId || pendingTimelineMutations.has(recordId)) return null
   const session = props.prepareDrag(recordId)
-  return session?.expectedDatabaseVersion === props.databaseVersion ? session : null
+  return session?.expectedDatabaseVersion === props.databaseVersion && session.propertyId === propertyId ? session : null
+}
+
+async function commitTimelineDrag(command: TimelineMoveCommand): Promise<boolean> {
+  const captured = { recordId: command.recordId, propertyId: command.propertyId }
+  pendingTimelineMutations.set(captured.recordId, captured)
+  try {
+    return await props.moveRecord(command)
+  } finally {
+    const pending = pendingTimelineMutations.get(captured.recordId)
+    if (pending && pending.propertyId === captured.propertyId) pendingTimelineMutations.delete(captured.recordId)
+  }
 }
 
 function isBarViewportCurrent(snapshot: NonNullable<typeof barTransform.value>): boolean {
@@ -200,8 +226,9 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
         :display-time-zone="viewport.displayTimeZone.value"
         :draggable="barDraggable"
         :record-version-by-id="recordVersionById"
+        :record-mutation-busy-by-id="recordMutationBusyById"
         :prepare-drag="prepareTimelineDrag"
-        :commit-drag="moveRecord"
+        :commit-drag="commitTimelineDrag"
         :is-viewport-current="isBarViewportCurrent"
         @scroller-ref="viewport.bindScroller"
         @ruler-ref="viewport.bindRulerAnchor"

@@ -22,6 +22,7 @@ import DatabaseBoardView from './DatabaseBoardView.vue'
 import DatabaseTimelineView from './DatabaseTimelineView.vue'
 import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTitleColumn } from './timeline/frozenTable'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
+import { beginTimelineDateMutation, endTimelineDateMutation } from './timeline/interaction'
 import type { TimelineMoveCommand } from './timeline/mutation'
 import { isWritableTimelineDateSource } from './timeline/mutation'
 
@@ -352,6 +353,11 @@ function prepareTimelineBarDrag(recordId: string): TimelineBarDragSession | null
   })
 }
 
+/**
+ * Timeline Date Property mutation. One call is one generic Record Cell PATCH;
+ * the Timeline layer never opens a second request, retry or local queue.
+ * Returns true only when the canonical record is known to match the command.
+ */
 async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean> {
   const capturedEpoch = (command as TimelineMoveCommand & { viewIdentityEpoch?: number }).viewIdentityEpoch
   const capturedRoot = (command as TimelineMoveCommand & { viewRoot?: HTMLElement | null }).viewRoot
@@ -365,7 +371,6 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
     })
     return currentEditorViewId === viewId.value && viewReady.value && props.editor.isEditable
   }
-  if (!isCurrent() || !writable.value || command.expectedDatabaseVersion !== databaseVersion.value || viewType.value !== 'timeline') return false
   const timeline = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline
   if (!isWritableTimelineDateSource(timeline?.dateSource) || timeline.dateSource.propertyId !== command.propertyId) return false
   const property = properties.value.find(item => item.id === command.propertyId)
@@ -373,7 +378,10 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
   if (!property || property.type !== 'date' || !record || record.version !== command.expectedRecordVersion) return false
   const currentValue = getCellValue(record, property.id)
   if (!isValidDatabaseDateValue(currentValue) || JSON.stringify(currentValue) !== JSON.stringify(command.originalValue) || !isValidDatabaseDateValue(command.value)) return false
+  // Wire-shape aware no-op guard: an explicit equal `end` is not an absent end,
+  // so a resize that only re-states the canonical value must not send a PATCH.
   if (JSON.stringify(normalizeDatabaseDateValue(currentValue)) === JSON.stringify(normalizeDatabaseDateValue(command.value))) return false
+  const dateMutationKey = { recordId: record.id, propertyId: property.id }
 
   savingCell.value = true
   mutationError.value = ''
@@ -395,13 +403,17 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
     if (!isCurrent()) return false
     externalRefreshPending = false
     if (cause instanceof ApiError && cause.statusCode === 409) {
+      // Another writer changed the record. Show the canonical value, never retry
+      // and never keep the stale optimistic position.
       await refreshLoadedWindow()
       if (!isCurrent()) return false
-      mutationError.value = '记录或数据库已变化，日期未更新；已刷新当前记录。'
+      mutationError.value = staleReadonly.value
+        ? '日期已在其他位置被修改；刷新未完成，当前内容保持只读，请重试加载。'
+        : '日期已在其他位置被修改，已刷新到最新版本。'
       return false
     }
     if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) {
-      mutationError.value = errorMessage(cause, '日期未更新，请重试。')
+      mutationError.value = errorMessage(cause, '日期未更新，已恢复当前记录。')
       return false
     }
     await refreshLoadedWindow()
@@ -409,9 +421,14 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
     const canonical = recordsById.value.get(command.recordId)
     const canonicalValue = canonical ? getCellValue(canonical, property.id) : undefined
     const confirmed = isValidDatabaseDateValue(canonicalValue) && JSON.stringify(normalizeDatabaseDateValue(canonicalValue)) === JSON.stringify(normalizeDatabaseDateValue(command.value))
-    mutationError.value = confirmed ? '日期已更新，提交响应暂未确认；当前记录已与目标一致。' : '提交结果暂未确认，已刷新当前记录。'
+    mutationError.value = confirmed
+      ? '日期已更新，提交响应暂未确认；当前记录已与目标一致。'
+      : '提交结果暂未确认，已刷新为服务器最新日期。'
     return confirmed
   } finally {
+    // The fence is released for every outcome, including an identity change, so
+    // a stale response can never leave the record permanently busy.
+    endTimelineDateMutation(dateMutationKey)
     if (isCurrent()) {
       savingCell.value = false
       runDeferredRefresh()

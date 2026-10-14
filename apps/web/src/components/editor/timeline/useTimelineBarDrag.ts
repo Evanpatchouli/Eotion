@@ -1,6 +1,13 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { DatabaseDateValue } from '@eotion/domain/date'
 import { normalizeDatabaseDateValue } from '@eotion/domain/date'
+import { captureTimelineBarFocus, restoreTimelineBarFocus, type TimelineBarFocusReference } from './focus'
+import {
+  TIMELINE_DRAG_THRESHOLD_PX,
+  createTimelineInteractionLedger,
+  isTimelineDateMutationBusy,
+  type TimelineInteractionPhase,
+} from './interaction'
 import type { TimelineMoveCommand } from './mutation'
 import { offsetTimelineDateValue, resizeTimelineDateValueFromX, temporalOffsetFromX } from './mutation'
 import { resolveTimelineTemporalGeometry } from './geometry'
@@ -19,6 +26,11 @@ export type TimelineBarDragSession = Readonly<{
   viewRoot: HTMLElement | null
 }>
 
+/** DOM projection of the interaction phase; `armed`/`dragging` are both previewing. */
+export type TimelineBarDragState = 'idle' | 'armed' | 'dragging' | 'saving'
+
+type DragMode = 'move' | 'start' | 'end'
+
 type Options = {
   geometry: () => TimelineItemGeometry
   item: () => TimelineItemProjection
@@ -30,17 +42,19 @@ type Options = {
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
   commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
   isViewportCurrent: (snapshot: Transform) => boolean
+  focusContainer?: () => HTMLElement | null
 }
 
 type ActiveDrag = {
+  mode: DragMode
   pointerId: number
   target: HTMLElement
-  mode: 'move' | 'start' | 'end'
   startX: number
   startY: number
   transform: Transform
   zone: string
   session: TimelineBarDragSession
+  focus: TimelineBarFocusReference
   moved: boolean
 }
 
@@ -81,6 +95,11 @@ function shiftedItem(item: TimelineItemProjection, value: DatabaseDateValue): Ti
   } : null
 }
 
+/**
+ * Normalized equality keeps the wire-shape semantics that matter: an explicit
+ * `end` (including an explicit equal end) is never treated as an absent end, so
+ * a resize that only re-states the same endpoints stays a no-op.
+ */
 function normalizedValuesEqual(left: DatabaseDateValue, right: DatabaseDateValue): boolean {
   const normalizedLeft = normalizeDatabaseDateValue(left)
   const normalizedRight = normalizeDatabaseDateValue(right)
@@ -97,41 +116,76 @@ function previewDate(value: DatabaseDateValue | null): string {
 }
 
 export function useTimelineBarDrag(options: Options) {
+  const ledger = createTimelineInteractionLedger()
   const previewGeometry = ref<TimelineItemGeometry | null>(null)
   const previewValue = ref<DatabaseDateValue | null>(null)
-  const state = ref<'idle' | 'armed' | 'dragging' | 'saving'>('idle')
+  const state = ref<TimelineBarDragState>('idle')
+  const phase = ref<TimelineInteractionPhase>('idle')
   const active = ref<ActiveDrag | null>(null)
-  const activeMode = computed(() => active.value?.mode ?? null)
-  const pending = ref<{ session: TimelineBarDragSession; transform: Transform } | null>(null)
+  const pending = ref<{ session: TimelineBarDragSession; mode: DragMode; token: number } | null>(null)
+  const activeMode = computed<DragMode | null>(() => active.value?.mode ?? null)
+  const pendingMode = computed<DragMode | null>(() => pending.value?.mode ?? null)
   const suppressNextClick = ref(false)
-  let epoch = 0
+  let previewListeners: AbortController | null = null
   const geometry = computed(() => previewGeometry.value ?? options.geometry())
   const date = computed(() => previewDate(previewValue.value))
+  const mutationBusy = computed(() => {
+    const session = pending.value?.session
+    if (phase.value !== 'pending' || !session) return false
+    return isTimelineDateMutationBusy(session)
+  })
+
+  function releasePreviewListeners(): void {
+    previewListeners?.abort()
+    previewListeners = null
+  }
+
+  function clearPreviewGeometry(): void {
+    previewGeometry.value = null
+    previewValue.value = null
+  }
 
   function clearActive(): ActiveDrag | null {
     const current = active.value
     active.value = null
     window.removeEventListener('blur', onWindowBlur)
+    releasePreviewListeners()
     if (current) {
-      try { if (current.target.hasPointerCapture(current.pointerId)) current.target.releasePointerCapture(current.pointerId) } catch { /* element may have detached */ }
+      try {
+        if (current.target.isConnected && current.target.hasPointerCapture(current.pointerId)) current.target.releasePointerCapture(current.pointerId)
+      } catch { /* element may have detached or capture may already be gone */ }
     }
-    state.value = 'idle'
     return current
   }
 
-  function cancel(): void {
-    const preserveReleaseClick = pending.value !== null
-    const suppressCanceledDragClick = active.value?.moved === true
-    epoch += 1
+  /**
+   * Local preview cancellation (pointercancel, lost capture, blur, viewport or
+   * scope change, offline transition). It never invalidates an in-flight
+   * mutation: the pending PATCH keeps its token and still owns its cleanup.
+   */
+  function abortPreview(): void {
+    ledger.cancelPreview()
     clearActive()
-    pending.value = null
-    previewGeometry.value = null
-    previewValue.value = null
-    if (suppressCanceledDragClick) suppressNextClick.value = true
-    else if (!preserveReleaseClick) suppressNextClick.value = false
+    if (ledger.phase !== 'pending') {
+      clearPreviewGeometry()
+      state.value = 'idle'
+    }
+    phase.value = ledger.phase
   }
 
-  function begin(event: PointerEvent, mode: 'move' | 'start' | 'end' = 'move'): void {
+  /** Full cancellation (Escape / unmount): detaches any in-flight response too. */
+  function cancel(): void {
+    const suppressCanceledDragClick = active.value?.moved === true
+    ledger.cancel()
+    clearActive()
+    pending.value = null
+    clearPreviewGeometry()
+    phase.value = ledger.phase
+    state.value = 'idle'
+    suppressNextClick.value = suppressCanceledDragClick
+  }
+
+  function begin(event: PointerEvent, mode: DragMode = 'move'): void {
     if (active.value || pending.value) return
     suppressNextClick.value = false
     if (!options.enabled() || event.button !== 0 || event.isPrimary === false || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
@@ -139,24 +193,32 @@ export function useTimelineBarDrag(options: Options) {
     if (!transform || !options.isViewportCurrent(transform) || !Number.isFinite(options.recordVersion())) return
     const session = options.prepareDrag(options.item().recordId)
     if (!session || session.scope !== options.scope() || session.expectedRecordVersion !== options.recordVersion()) return
+    if (isTimelineDateMutationBusy(session)) return
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
+    if (ledger.begin() === null) return
     if (mode !== 'move') { event.preventDefault(); event.stopPropagation() }
-    epoch += 1
     active.value = {
+      mode,
       pointerId: event.pointerId,
       target,
-      mode,
       startX: event.clientX,
       startY: event.clientY,
       transform: { ...transform },
       zone: options.displayTimeZone(),
       session,
+      focus: captureTimelineBarFocus(options.item().recordId),
       moved: false,
     }
+    phase.value = ledger.phase
     state.value = 'armed'
+    suppressNextClick.value = false
     window.addEventListener('blur', onWindowBlur, { once: true })
-    try { target.setPointerCapture(event.pointerId) } catch { clearActive() }
+    const listeners = new AbortController()
+    previewListeners = listeners
+    window.addEventListener('keydown', onPreviewKeydown, { signal: listeners.signal })
+    document.addEventListener('visibilitychange', onVisibilityChange, { signal: listeners.signal })
+    try { target.setPointerCapture(event.pointerId) } catch { cancel() }
   }
 
   function updatePreview(value: DatabaseDateValue | null, current: ActiveDrag): void {
@@ -174,7 +236,7 @@ export function useTimelineBarDrag(options: Options) {
     if (!options.isViewportCurrent(current.transform)) { cancel(); return }
     const deltaX = event.clientX - current.startX
     const deltaY = event.clientY - current.startY
-    if (state.value === 'armed' && Math.hypot(deltaX, deltaY) < 4) return
+    if (state.value === 'armed' && Math.hypot(deltaX, deltaY) < TIMELINE_DRAG_THRESHOLD_PX) return
     if (Math.abs(deltaY) > Math.abs(deltaX) && state.value === 'armed') { cancel(); return }
     event.preventDefault()
     current.moved = true
@@ -191,40 +253,70 @@ export function useTimelineBarDrag(options: Options) {
     return resizeTimelineDateValueFromX(current.session.originalValue, current.mode, deltaX, current.transform, current.zone)
   }
 
+  /** End an interaction that never produced a request and return the machine to idle. */
+  function settleWithoutCommit(mode: DragMode): void {
+    // A resize handle is a control, not a Record open affordance: releasing it
+    // without a commit must never fall through to the bar click handler.
+    suppressNextClick.value = mode !== 'move'
+    ledger.cancelPreview()
+    clearPreviewGeometry()
+    phase.value = ledger.phase
+    state.value = 'idle'
+  }
+
   async function finish(event: PointerEvent): Promise<void> {
     const current = active.value
     if (!current || event.pointerId !== current.pointerId) return
     if (!options.isViewportCurrent(current.transform)) { cancel(); return }
     const deltaX = event.clientX - current.startX
-    const didMove = current.moved || Math.abs(deltaX) >= 4 && Math.abs(deltaX) >= Math.abs(event.clientY - current.startY)
+    const deltaY = event.clientY - current.startY
+    const didMove = current.moved || Math.abs(deltaX) >= TIMELINE_DRAG_THRESHOLD_PX && Math.abs(deltaX) >= Math.abs(deltaY)
     const value = didMove ? computeValue(current, deltaX) : null
-    clearActive()
-    if (!didMove) return
+    if (!didMove) {
+      settleWithoutCommit(current.mode)
+      clearActive()
+      return
+    }
     suppressNextClick.value = true
+    clearActive()
     if (!value || normalizedValuesEqual(current.session.originalValue, value)) {
-      previewGeometry.value = null
-      previewValue.value = null
+      // No-op drag/resize: snap back to the canonical geometry without any PATCH.
+      suppressNextClick.value = current.mode !== 'move'
+      clearPreviewGeometry()
+      ledger.cancelPreview()
+      phase.value = ledger.phase
+      state.value = 'idle'
+      return
+    }
+    // The pending fence is registered and released by the mutation adapter that
+    // owns the in-flight request; the controller only owns the interaction phase.
+    const token = ledger.beginCommit()
+    if (token === null) {
+      suppressNextClick.value = current.mode !== 'move'
+      clearPreviewGeometry()
+      ledger.cancelPreview()
+      phase.value = ledger.phase
+      state.value = 'idle'
       return
     }
     updatePreview(value, current)
-    const token = epoch
-    pending.value = { session: current.session, transform: current.transform }
+    pending.value = { session: current.session, mode: current.mode, token }
+    phase.value = ledger.phase
     state.value = 'saving'
-    previewValue.value = value
     try {
       const succeeded = await options.commitDrag({ ...current.session, value })
-      if (token !== epoch) return
-      if (!succeeded) {
-        previewGeometry.value = null
-        previewValue.value = null
+      if (ledger.isCurrent(token)) {
+        if (!succeeded) clearPreviewGeometry()
+        restoreTimelineBarFocus(current.focus)
       }
     } catch {
-      if (token === epoch) { previewGeometry.value = null; previewValue.value = null }
+      if (ledger.isCurrent(token)) clearPreviewGeometry()
     } finally {
-      if (token === epoch) {
-        previewGeometry.value = null
-        previewValue.value = null
-        pending.value = null
+      const settled = ledger.complete(token)
+      if (pending.value?.token === token) pending.value = null
+      if (settled) {
+        clearPreviewGeometry()
+        phase.value = ledger.phase
         state.value = 'idle'
       }
     }
@@ -238,29 +330,64 @@ export function useTimelineBarDrag(options: Options) {
     return true
   }
 
+  function onPreviewKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || !active.value) return
+    event.preventDefault()
+    cancel()
+  }
+
   function onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && (active.value || pending.value)) { event.preventDefault(); cancel(); return }
+    if (event.key === 'Escape' && phase.value !== 'idle') { event.preventDefault(); cancel(); return }
     if (event.key === 'Enter' || event.key === ' ') suppressNextClick.value = false
   }
-  function onWindowBlur(): void { if (active.value) cancel() }
-  function onLostPointerCapture(event: PointerEvent): void { if (active.value?.pointerId === event.pointerId) cancel() }
+
+  function onVisibilityChange(): void {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden' && active.value) abortPreview()
+  }
+
+  function onWindowBlur(): void { if (active.value) abortPreview() }
+
+  /** A lost capture can only cancel a local preview; a pending PATCH keeps its token. */
+  function onLostPointerCapture(event: PointerEvent): void {
+    if (active.value?.pointerId === event.pointerId) abortPreview()
+  }
 
   watch(
     [options.scope, options.recordVersion, options.transform, options.enabled],
     ([scope, version, transform, enabled], [oldScope, oldVersion, oldTransform, oldEnabled]) => {
-      const activeTransform = active.value?.transform ?? pending.value?.transform
       const activeSession = active.value?.session ?? pending.value?.session
-      const contextChanged = activeSession && (scope !== activeSession.scope || version !== activeSession.expectedRecordVersion || !transform || !activeTransform || transform.generation !== activeTransform.generation || transform.scrollLeft !== activeTransform.scrollLeft || transform.scale !== activeTransform.scale)
-      if (contextChanged || active.value && !enabled) cancel()
+      const contextChanged = activeSession && (scope !== activeSession.scope || version !== activeSession.expectedRecordVersion || !transform)
+      if (contextChanged || active.value && !enabled) abortPreview()
       else if (!active.value && !pending.value && (scope !== oldScope || version !== oldVersion || !transform || !oldTransform || transform.generation !== oldTransform.generation || transform.scrollLeft !== oldTransform.scrollLeft || transform.scale !== oldTransform.scale || enabled !== oldEnabled)) {
-        previewGeometry.value = null
-        previewValue.value = null
+        clearPreviewGeometry()
+        phase.value = ledger.phase
+        state.value = 'idle'
       }
     },
     { flush: 'sync' },
   )
 
-  onBeforeUnmount(() => { cancel(); suppressNextClick.value = false; window.removeEventListener('blur', onWindowBlur) })
+  onBeforeUnmount(() => {
+    cancel()
+    suppressNextClick.value = false
+    window.removeEventListener('blur', onWindowBlur)
+    releasePreviewListeners()
+  })
 
-  return { geometry, previewDate: date, state, activeMode, begin, move, finish, cancel, click, onKeydown, onLostPointerCapture }
+  return {
+    geometry,
+    previewDate: date,
+    state,
+    phase,
+    mutationBusy,
+    activeMode,
+    pendingMode,
+    begin,
+    move,
+    finish,
+    cancel,
+    click,
+    onKeydown,
+    onLostPointerCapture,
+  }
 }

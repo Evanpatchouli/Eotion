@@ -20,6 +20,7 @@ const props = defineProps<{
   scope: string
   recordVersion?: number
   draggable: boolean
+  mutationBusy?: boolean
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
   commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
   isViewportCurrent: (snapshot: Transform) => boolean
@@ -42,6 +43,9 @@ const drag = useTimelineBarDrag({
   commitDrag: command => props.commitDrag(command),
   isViewportCurrent: snapshot => props.isViewportCurrent(snapshot),
 })
+const saving = computed(() => drag.state.value === 'saving')
+const pending = computed(() => saving.value || props.mutationBusy === true)
+const operation = computed(() => drag.activeMode.value ?? drag.pendingMode.value)
 const previewLabelStyle = computed(() => {
   const transform = props.transform
   if (!drag.previewDate.value || !transform) return {}
@@ -85,112 +89,142 @@ const endHandleCompact = computed(() => handleCenters.value.endClamped && (barGe
 function tooltip(): string {
   const details = props.visibleProperties.filter(property => property.displayText).map(property => property.displayText)
   const diagnostic = props.geometry.diagnostic === 'calendar-day-skipped' ? '显示时区内该日不存在' : ''
-  const date = drag.previewDate.value ? `预览日期 ${drag.previewDate.value}` : props.dateLabel
+  const date = pending.value && !drag.previewDate.value
+    ? '正在保存…'
+    : drag.previewDate.value ? `预览日期 ${drag.previewDate.value}` : props.dateLabel
   return [props.title || '无标题', date, diagnostic, ...details].filter(Boolean).join(' · ')
 }
 
+/** Shared click resolution for the bar and its sibling resize handles. */
 function handleClick(event: MouseEvent): void {
-  event.preventDefault()
-  event.stopPropagation()
-  drag.click(event)
+  if (drag.click(event)) return
+  emit('click', event)
 }
 </script>
 
 <template>
-  <button
-    class="eotion-timeline-bar"
-    :class="{ 'eotion-timeline-bar--marker': drag.geometry.value.marker, 'is-selected': selected, 'is-hovered': hovered, 'is-draggable': draggable, 'is-dragging': drag.state.value === 'dragging' || drag.state.value === 'saving' }"
-    :style="{
-      left: `${drag.geometry.value.x}px`,
-      top: `${drag.geometry.value.top - drag.geometry.value.rowTop + (drag.geometry.value.marker ? drag.geometry.value.height / 2 : 0)}px`,
-      width: drag.geometry.value.marker ? undefined : `${Math.max(0, drag.geometry.value.width)}px`,
-      borderWidth: !drag.geometry.value.marker && drag.geometry.value.width < 2 ? '0' : undefined,
-    }"
-    :title="tooltip()"
-    :aria-label="tooltip() || title || '无标题'"
-    :aria-pressed="selected"
-    data-testid="timeline-bar"
-    :data-record-id="drag.geometry.value.recordId"
-    :data-kind="drag.geometry.value.kind"
-    :data-marker="drag.geometry.value.marker ? 'true' : 'false'"
-    :data-drag-state="drag.state.value"
-    :data-preview-date="drag.previewDate.value || undefined"
-    :data-draggable="draggable ? 'true' : 'false'"
-    type="button"
-    @focus="emit('focusRow')"
-    @pointerdown.stop="drag.begin"
-    @pointermove.stop="drag.move"
-    @pointerup.stop="drag.finish"
-    @pointercancel.stop="drag.cancel"
-    @lostpointercapture="drag.onLostPointerCapture"
-    @keydown="drag.onKeydown"
-    @click="!drag.click($event) && emit('click', $event)"
-  >
-    <span class="eotion-timeline-bar-shape" :class="{ 'is-range': !drag.geometry.value.marker }" :data-testid="drag.geometry.value.marker ? 'timeline-marker' : undefined" aria-hidden="true" />
-    <span class="eotion-timeline-bar-content">
-      <span class="eotion-timeline-bar-title">{{ title || '无标题' }}</span>
-      <span v-if="visibleProperties.some(property => property.displayText)" class="eotion-timeline-bar-properties">
-        <span v-for="property in visibleProperties.filter(item => item.displayText)" :key="property.propertyId">
-          {{ property.displayText }}
+  <!-- Zero-size anchor: the bar target and the resize handles are absolute
+       siblings in the row coordinate space, so a handle can never nest inside
+       the bar and a handle click can never open the record. -->
+  <div class="eotion-timeline-bar-anchor" @focusin="emit('focusRow')">
+    <button
+      class="eotion-timeline-bar"
+      :class="{
+        'eotion-timeline-bar--marker': drag.geometry.value.marker,
+        'is-selected': selected,
+        'is-hovered': hovered,
+        'is-draggable': draggable,
+        'is-dragging': drag.state.value === 'dragging',
+        'is-saving': saving,
+        'is-pending': pending,
+      }"
+      :style="{
+        left: `${drag.geometry.value.x}px`,
+        top: `${drag.geometry.value.top - drag.geometry.value.rowTop + (drag.geometry.value.marker ? drag.geometry.value.height / 2 : 0)}px`,
+        width: drag.geometry.value.marker ? undefined : `${Math.max(0, drag.geometry.value.width)}px`,
+        borderWidth: !drag.geometry.value.marker && drag.geometry.value.width < 2 ? '0' : undefined,
+      }"
+      :aria-label="tooltip() || title || '无标题'"
+      :aria-pressed="selected"
+      :aria-busy="pending ? 'true' : 'false'"
+      :aria-disabled="draggable ? undefined : 'true'"
+      :title="tooltip()"
+      :data-record-id="drag.geometry.value.recordId"
+      :data-kind="drag.geometry.value.kind"
+      :data-marker="drag.geometry.value.marker ? 'true' : 'false'"
+      :data-drag-state="drag.state.value"
+      :data-interaction-phase="drag.phase.value"
+      :data-preview-date="drag.previewDate.value || undefined"
+      :data-draggable="draggable ? 'true' : 'false'"
+      :data-saving="pending ? 'true' : 'false'"
+      :data-operation="operation ?? undefined"
+      data-testid="timeline-bar"
+      type="button"
+      @keydown="drag.onKeydown"
+      @pointerdown.stop="drag.begin"
+      @pointermove.stop="drag.move"
+      @pointerup.stop="drag.finish"
+      @pointercancel.stop="drag.cancel"
+      @lostpointercapture="drag.onLostPointerCapture"
+      @click="handleClick"
+    >
+      <span class="eotion-timeline-bar-shape" :class="{ 'is-range': !drag.geometry.value.marker }" :data-testid="drag.geometry.value.marker ? 'timeline-marker' : undefined" aria-hidden="true" />
+      <span class="eotion-timeline-bar-content">
+        <span class="eotion-timeline-bar-title">{{ title || '无标题' }}</span>
+        <span v-if="visibleProperties.some(property => property.displayText)" class="eotion-timeline-bar-properties">
+          <span v-for="property in visibleProperties.filter(item => item.displayText)" :key="property.propertyId">
+            {{ property.displayText }}
+          </span>
         </span>
       </span>
-    </span>
-  </button>
-  <button
-    v-if="showStartHandle"
-    class="eotion-timeline-resize-handle eotion-timeline-resize-handle--start"
-    :class="{ 'is-hovered': hovered, 'is-selected': selected, 'is-compact': startHandleCompact }"
-    :style="startHandleStyle"
-    :aria-label="`调整开始日期：${title || '无标题'}`"
-    :title="`调整开始日期：${title || '无标题'}`"
-    :data-record-id="drag.geometry.value.recordId"
-    data-testid="timeline-resize-start"
-    type="button"
-    @focus="emit('focusRow')"
-    @pointerdown.stop.prevent="drag.begin($event, 'start')"
-    @pointermove.stop="drag.move"
-    @pointerup.stop="drag.finish"
-    @pointercancel.stop="drag.cancel"
-    @lostpointercapture="drag.onLostPointerCapture"
-    @keydown="drag.onKeydown"
-    @click="handleClick"
-  ><span aria-hidden="true" /></button>
-  <button
-    v-if="showEndHandle"
-    class="eotion-timeline-resize-handle eotion-timeline-resize-handle--end"
-    :class="{ 'is-hovered': hovered, 'is-selected': selected, 'is-compact': endHandleCompact }"
-    :style="endHandleStyle"
-    :aria-label="`调整结束日期：${title || '无标题'}`"
-    :title="`调整结束日期：${title || '无标题'}`"
-    :data-record-id="drag.geometry.value.recordId"
-    data-testid="timeline-resize-end"
-    type="button"
-    @focus="emit('focusRow')"
-    @pointerdown.stop.prevent="drag.begin($event, 'end')"
-    @pointermove.stop="drag.move"
-    @pointerup.stop="drag.finish"
-    @pointercancel.stop="drag.cancel"
-    @lostpointercapture="drag.onLostPointerCapture"
-    @keydown="drag.onKeydown"
-    @click="handleClick"
-  ><span aria-hidden="true" /></button>
-  <div
-    v-if="drag.previewDate.value"
-    class="eotion-timeline-drag-preview"
-    :style="previewLabelStyle"
-    data-testid="timeline-drag-preview"
-    aria-live="polite"
-    aria-atomic="true"
-  >预览日期 {{ drag.previewDate.value }}</div>
+    </button>
+    <button
+      v-if="showStartHandle"
+      class="eotion-timeline-resize-handle eotion-timeline-resize-handle--start"
+      :class="{ 'is-hovered': hovered, 'is-selected': selected, 'is-compact': startHandleCompact, 'is-busy': pending }"
+      :style="startHandleStyle"
+      :aria-label="`调整开始日期：${title || '无标题'}`"
+      :aria-disabled="pending ? 'true' : undefined"
+      :title="`调整开始日期：${title || '无标题'}`"
+      :data-record-id="drag.geometry.value.recordId"
+      data-testid="timeline-resize-start"
+      type="button"
+      @keydown="drag.onKeydown"
+      @pointerdown.stop="drag.begin($event, 'start')"
+      @pointermove.stop="drag.move"
+      @pointerup.stop="drag.finish"
+      @pointercancel.stop="drag.cancel"
+      @lostpointercapture="drag.onLostPointerCapture"
+      @click="handleClick"
+    ><span aria-hidden="true" /></button>
+    <button
+      v-if="showEndHandle"
+      class="eotion-timeline-resize-handle eotion-timeline-resize-handle--end"
+      :class="{ 'is-hovered': hovered, 'is-selected': selected, 'is-compact': endHandleCompact, 'is-busy': pending }"
+      :style="endHandleStyle"
+      :aria-label="`调整结束日期：${title || '无标题'}`"
+      :aria-disabled="pending ? 'true' : undefined"
+      :title="`调整结束日期：${title || '无标题'}`"
+      :data-record-id="drag.geometry.value.recordId"
+      data-testid="timeline-resize-end"
+      type="button"
+      @keydown="drag.onKeydown"
+      @pointerdown.stop="drag.begin($event, 'end')"
+      @pointermove.stop="drag.move"
+      @pointerup.stop="drag.finish"
+      @pointercancel.stop="drag.cancel"
+      @lostpointercapture="drag.onLostPointerCapture"
+      @click="handleClick"
+    ><span aria-hidden="true" /></button>
+    <div
+      v-if="drag.previewDate.value"
+      class="eotion-timeline-drag-preview"
+      :style="previewLabelStyle"
+      data-testid="timeline-drag-preview"
+      aria-live="polite"
+      aria-atomic="true"
+    >{{ saving ? `正在保存 ${drag.previewDate.value}` : `预览日期 ${drag.previewDate.value}` }}</div>
+    <div v-else-if="saving" class="eotion-timeline-drag-preview" data-testid="timeline-save-status" role="status">正在保存…</div>
+  </div>
 </template>
 
 <style scoped>
+.eotion-timeline-bar-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  /* Positioning anchor only: the body and handles own every hit target, so the
+     anchor can never shadow a resize handle or a bar click. */
+  pointer-events: none;
+}
 .eotion-timeline-bar {
   position: absolute;
   z-index: 3;
   display: flex;
-  min-width: 0;
   box-sizing: border-box;
+  min-width: 0;
   height: 32px;
   align-items: center;
   gap: 6px;
@@ -203,10 +237,12 @@ function handleClick(event: MouseEvent): void {
   text-align: left;
   font: inherit;
   cursor: pointer;
+  pointer-events: auto;
 }
 .eotion-timeline-bar:hover { background: var(--e-color-hover, var(--editor-hover)); }
 .eotion-timeline-bar.is-draggable { cursor: grab; touch-action: pan-y; }
-.eotion-timeline-bar.is-draggable.is-dragging { cursor: grabbing; }
+.eotion-timeline-bar.is-dragging, .eotion-timeline-bar.is-saving { cursor: grabbing; }
+.eotion-timeline-bar.is-pending { cursor: progress; opacity: .72; }
 .eotion-timeline-bar.is-selected { border-color: var(--e-color-focus, var(--editor-focus)); background: var(--e-color-selected, var(--editor-selected)); }
 .eotion-timeline-bar.is-hovered:not(.is-selected) { background: var(--e-color-hover, var(--editor-hover)); }
 .eotion-timeline-bar:focus-visible { z-index: 5; outline: var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset: 1px; }
@@ -223,14 +259,16 @@ function handleClick(event: MouseEvent): void {
 .eotion-timeline-bar--marker .eotion-timeline-bar-content { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; }
 .eotion-timeline-bar--marker:hover .eotion-timeline-bar-shape { background: var(--e-color-accent, var(--editor-accent)); }
 .eotion-timeline-bar--marker.is-selected .eotion-timeline-bar-shape { background: var(--e-color-accent, var(--editor-accent)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--e-color-accent, var(--editor-accent)) 24%, transparent); }
-.eotion-timeline-bar--marker:focus-visible .eotion-timeline-bar-shape { box-shadow: 0 0 0 3px color-mix(in srgb, var(--e-color-focus, var(--editor-focus)) 28%, transparent); }
-.eotion-timeline-resize-handle { position:absolute; z-index:6; width:12px; height:32px; transform:translateX(-50%); border:0; border-radius:4px; padding:0; background:transparent; opacity:0; cursor:ew-resize; touch-action:none; }
+.eotion-timeline-bar--marker:focus-visible { outline: var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset: 2px; border-radius: 50%; }
+.eotion-timeline-bar--marker .eotion-timeline-bar-shape { pointer-events: none; }
+.eotion-timeline-resize-handle { position:absolute; z-index:6; box-sizing:border-box; width:12px; height:32px; transform:translateX(-50%); border:0; border-radius:4px; padding:0; background:transparent; opacity:0; cursor:ew-resize; touch-action:none; pointer-events:auto; }
 .eotion-timeline-resize-handle span { display:block; width:2px; height:18px; margin:auto; border-radius:2px; background:var(--e-color-accent, var(--editor-accent)); box-shadow:0 0 0 2px var(--e-color-surface, var(--editor-surface)); }
 .eotion-timeline-resize-handle.is-compact { height:16px; }
 .eotion-timeline-resize-handle.is-compact span { height:12px; pointer-events:none; }
+.eotion-timeline-resize-handle.is-busy { cursor:progress; pointer-events:none; }
 .eotion-timeline-resize-handle.is-hovered, .eotion-timeline-resize-handle.is-selected, .eotion-timeline-resize-handle:hover, .eotion-timeline-resize-handle:focus-visible { opacity:1; }
 .eotion-timeline-resize-handle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
-.eotion-timeline-bar:focus-visible ~ .eotion-timeline-resize-handle { opacity:1; }
+.eotion-timeline-bar-anchor:has(> .eotion-timeline-bar:focus-visible) .eotion-timeline-resize-handle { opacity:1; }
 .eotion-timeline-row.is-hovered .eotion-timeline-resize-handle, .eotion-timeline-row.is-selected .eotion-timeline-resize-handle { opacity:1; }
 @media (pointer:coarse) { .eotion-timeline-bar--marker { width:44px; height:44px; } }
 @media (pointer:coarse) { .eotion-timeline-resize-handle { opacity:1; width:10px; } }

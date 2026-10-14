@@ -28,6 +28,7 @@ const props = defineProps<{
   displayTimeZone: string
   draggable: boolean
   recordVersionById: ReadonlyMap<string, number>
+  recordMutationBusyById: ReadonlyMap<string, boolean>
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
   commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
   isViewportCurrent: (snapshot: Transform) => boolean
@@ -145,6 +146,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
                 :display-time-zone="displayTimeZone"
                 :record-version="recordVersionById.get(row.item.recordId)"
                 :draggable="draggable && row.item.kind !== 'unscheduled'"
+                :mutation-busy="recordMutationBusyById.get(row.item.recordId) === true"
                 :prepare-drag="prepareDrag"
                 :commit-drag="commitDrag"
                 :is-viewport-current="isViewportCurrent"
