@@ -1,5 +1,57 @@
 # Handoff
 
+## 2026-10-14 P11.3C Timeline Mutation UX + Conflict（范围 PASS，完成并停止）
+
+基线 `d992425`，分支 `codex/p11-3c-mutation-ux-conflict`，开始时工作树干净。版本仍 0.0.1，目标 0.0.3。
+正式结果见 [P11.3C](../docs/verification/p11-3c-mutation-ux-conflict.md)。
+
+Drag 与 resize 收敛为单一 lifecycle：新增纯模块 `apps/web/src/components/editor/timeline/interaction.ts`
+（`createTimelineInteractionLedger`：`idle → previewing → pending → idle` + 单调 token；
+`cancelPreview()` 只清本地 preview、`cancel()` 才失效 in-flight；`TIMELINE_DRAG_THRESHOLD_PX = 4`；
+view 级 `recordId + propertyId` busy fence 用 `reactive(new Set())` 暴露给 Vue）与
+`timeline/focus.ts`（`captureTimelineBarFocus` / `restoreTimelineBarFocus`）。
+`useTimelineBarDrag` 接线 ledger 并暴露 `phase`/`mutationBusy`/`pendingMode`；Escape 在
+preview 期间挂 window（`AbortController`），pointercancel / lostpointercapture / blur /
+visibilitychange / viewport-scope-version 变化只清本地 preview，pending 不被误杀。
+`TimelineBar.vue` 重构为零尺寸 anchor + bar button 与 resize handles **绝对定位兄弟节点**
+（handle 不再嵌套在 bar 内，因此不会 fall through 到 Record open），handle 可 focus（移除
+`pointerdown.prevent`），pending 显示轻量 saving（opacity / progress / `aria-busy` /
+`data-saving` / `role="status"`），handles 在 pending 时 `aria-disabled` 且不可命中。
+`DatabaseTimelineView.vue` 新增 `pendingTimelineMutations` + `commitTimelineDrag` +
+`recordMutationBusyById`；`DatabaseNodeView.moveTimelineRecord` 加
+`beginTimelineDateMutation`/`endTimelineDateMutation`（finally 无条件释放）、wire-shape-aware
+no-op guard，并把冲突/失败/unknown 文案收口为「日期已在其他位置被修改，已刷新到最新版本。」/
+「日期未更新，已恢复当前记录。」/「日期已更新，提交响应暂未确认；当前记录已与目标一致。」/
+「提交结果暂未确认，已刷新为服务器最新日期。」。
+
+**关键顺序陷阱（已修）：** `clearActive()` 释放 pointer capture 会同步派发 `click`，所以
+`suppressNextClick` 必须在释放 capture **之前**置位；否则真实 drag 后的合成 click 会打开 Record。
+resize handle 的手势显式抑制 click，bar body 的无移动手势仍保留既有 Record open 语义。
+
+**已知边界（勿误读）：** View switcher `:disabled="viewBusy"`（含 `savingCell`），因此 pending
+期间切 View 在 UI 层 fail closed；Web 测试断言 disabled，跨 View stale callback 由 logic spec 的
+token fence 覆盖。preview 期间 bar 持有 pointer capture，无法用真实鼠标点击 toolbar。测试 harness
+新增 `abortCellUpdatesWithoutCommit` mock 开关以构造「transport 失败且服务端未落库」的 unknown 分支
+（仅测试用，非产品能力）。
+
+**验证：** Timeline logic 52/52（新 `tests/timeline-interaction.spec.ts` 9）；Timeline Web 31/31
+（既有 P11.3A/B 13 + 新 P11.3C 6 + 既有 Timeline/Date/CAS 12，workers=1/retries=0）；Web/API
+typecheck+build PASS；真实隔离 Mongo 8.2.3（27717 / replicaSet `p113cFinal` / 独立 dbpath）19/19
+0 fail/skip，实例已优雅 shutdown，27717 无监听，用户 27017 未触碰。
+
+**保持延期：** 独立 Start/End multi-cell（需 generic transactional multi-cell Record mutation）、
+Dependency/auto shift、bulk/multi-select、Undo/Redo、offline queue、Calendar、settings UI、P11.5
+视觉/标签密度 polish。无 API/model/Mongo/MCP/sync/version 改动。未运行完整 Product 全量、P11 Final、
+native 真机、正式帧率 benchmark；不发布不改版本。
+
+**完成后停止，P11.3D 未开始。** D 精确入口：`timeline/interaction.ts`（ledger/busy fence）、
+`timeline/focus.ts`、`timeline/useTimelineBarDrag.ts`、`timeline/TimelineBar.vue`、
+`DatabaseTimelineView.vue` 的 `pendingTimelineMutations`、`DatabaseNodeView.vue` 的
+`moveTimelineRecord`；测试复用 `tests/timeline-interaction.spec.ts` 与
+`tests/product-database.spec.ts` 的 `P11.3C` grep（helpers `dragTimelineBar`、
+`closeTimelineDrawer`、`p113bResize`）。D 必须先独立授权，并先决定是否放宽 pending 期间切 View 的
+generic busy guard；不得把 multi-cell、dependency、undo 或 settings 自动带入。
+
 ## 2026-10-14 P11.3B Resize Range Mutation（范围PASS，完成并停止）
 
 基线 `288bdc1`，分支 `codex/p11-3b-timeline-resize`，开始时工作树干净。版本仍0.0.1，目标0.0.3。

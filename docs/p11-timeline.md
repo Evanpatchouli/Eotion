@@ -912,6 +912,49 @@ remains read-only. 不增加 resize endpoint、Timeline collection、multi-cell 
 本轮不含 dependency、bulk/multi-select、undo、Calendar、settings/inline editor、P11.3C polish。
 验收结果与未执行项见 [P11.3B Resize](verification/p11-3b-timeline-resize.md)。完成后停止。
 
+#### P11.3C Mutation UX + Conflict 契约
+
+2026-10-14，**P11.3C 范围验收 PASS**。Drag 与 resize 不再各自维护状态，而是共用
+`timeline/interaction.ts` 的单一 ledger：`idle → previewing → pending → idle`，每个 in-flight
+completion 绑定单调递增 token；`cancelPreview()` 只清本地 preview、不失效 in-flight token，
+`cancel()`（Escape / unmount）才失效。move 与 resize 共用 `TIMELINE_DRAG_THRESHOLD_PX = 4`。
+view 级 busy fence 以 `recordId + propertyId` 为键，保证同一 Date Cell 至多一个在途 mutation；
+既有 generic Record Cell service 已是 database-wide 串行，Timeline 不重建 queue。
+
+Escape（previewing）清 preview、0 PATCH、focus 留在 Timeline；Escape（pending）只 detach UI
+callback，不假装撤销服务端 mutation。`pointercancel`、`lostpointercapture`、window blur、
+`visibilitychange=hidden`、viewport transform / scope / version 变化与组件卸载都只清本地
+preview；不允许 stuck handle、残留 cursor 或悬空 session。resize handle 可 focus（不再
+`pointerdown.prevent`），bar/resize 的 pointerdown 不再复用同一个嵌套 target。
+
+pending 期间 bar 显示轻量 Quiet Studio feedback（opacity、progress cursor、`aria-busy`、
+`data-saving`、`role="status"`「正在保存…」），不改变 row height / 时间宽度 / bar 位置，
+不用全屏 loading、不 remount Table/Record Host。同 record 的 date handle 变 `aria-disabled` 且
+不可命中。
+
+409 只做 canonical refresh + 低打扰提示，不 retry、不覆盖他人修改、不保留 stale optimistic
+position；文案不暴露 CAS / version / HTTP 409。明确 4xx 回退到 canonical。transport / 5xx
+一律 refresh 后用 normalized value 核对：一致则接受 canonical，不一致则回退并保持明确
+uncertain；refresh 失败沿用 `staleReadonly` 只读。offline 时 Timeline 仍显示但
+`data-draggable="false"`、pointerdown 立即 fail closed；offline 发生在 active preview 时
+cancel 且不提交。
+
+身份 fence 保持 P9/P11.2 原则：interaction token、scope/version、viewport transform、NodeView
+`viewIdentityEpoch`/`viewRoot`/`data-view-id`/`viewReady`/`isEditable` 与 Database/Record
+version 各自核验；busy fence 的 `finally` 释放与 identity 无关，避免 stale 响应永久锁死 record。
+View switcher 的 `:disabled="viewBusy"`（含 `savingCell`）使 pending 期间切 View 在 UI 层
+fail closed，跨 View stale callback 由 token fence 覆盖。
+
+TimelineBar 的 bar body 与 resize handles 现在是零尺寸 anchor 容器下的绝对定位兄弟节点，
+handle 永不嵌套在 bar 内部，因此 handle 手势不会触发 Record open，bar body click 仍走既有
+Record Host。键盘方向键编辑日期仍留给 P11.5。
+
+验收证据、已知边界（含 pending 切 View fail closed、无移动 bar body 仍打开 Record、
+pointer capture 下无法点击 toolbar）与 P11.3D 接续入口见
+[P11.3C 验证](verification/p11-3c-mutation-ux-conflict.md)。本轮不含 multi-cell Start/End、
+Dependency/auto shift、bulk、Undo/Redo、offline queue、Calendar、settings UI 或 P11.5 polish；
+不新增任何 Timeline backend API。
+
 ### P11.4 Frozen Table + Dependencies
 
 完成：

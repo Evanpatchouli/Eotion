@@ -1,24 +1,37 @@
-# 当前任务：P11.3B Resize Range Mutation（范围PASS，完成并停止）
+# 当前任务：P11.3C Timeline Mutation UX + Conflict（范围验收 PASS，完成并停止）
 
-基线 `288bdc1`，工作树干净；分支 `codex/p11-3b-timeline-resize`。版本保持0.0.1，目标0.0.3。只执行B，完成后停止，不进入C。
+基线 `d992425`，工作树干净；分支 `codex/p11-3c-mutation-ux-conflict`。版本保持 0.0.1，目标 0.0.3。
+只执行 C 的交互生命周期/取消/冲突/offline/identity/focus 收敛，完成后停止，不进入 P11.3D。
 
 | 单元 | 模式 / 难度 / 角色 | 输出 | 状态 |
 | --- | --- | --- | --- |
-| B1 | investigate / S0 scout | temporal/adapter Evidence Pack | 完成 |
-| B2 | decide / S2 主Agent | 端点/snap/共用controller Brief | 完成，执行降S1 |
-| B3 | execute / S1 fast_worker | 纯函数、logic/API回归 | 完成；commit6cb2803 |
-| B4 | execute / S1 fast_worker | 共用preview与handles | 完成；commit251c1a3 |
-| B5 | execute / S1 fast_worker | Web/100/500/视觉回归 | 完成；7新Web/43logic/17旧回归PASS |
-| B6 | verify / S0 scout | 隔离Mongo、typecheck/build | 完成；最终19/19，临时Mongo已关闭 |
-| B7 | review / reviewer | 最终独立blocker review | 完成；两项边缘命中问题已修，0剩余blocker |
-| B8 | execute / S1 主Agent | 契约、验收、handoff与提交 | 完成；正式收口commit包含本文件 |
+| C1 | investigate / S0 scout | temporal/adapter/handle 既有行为 Evidence Pack | 完成 |
+| C2 | decide / S2 主 Agent | 统一 ledger / cancel / pending / busy fence Brief | 完成 |
+| C3 | execute / S1 主 Agent | `interaction.ts` + `focus.ts` 纯逻辑 | 完成 |
+| C4 | execute / S1 主 Agent | controller / bar DOM / view fence / NodeView 文案接线 | 完成 |
+| C5 | execute / S1 主 Agent | logic 9 + Web 6 新回归与 harness | 完成 |
+| C6 | verify / S0 主 Agent | 逻辑 52、Web 31、typecheck/build、隔离 Mongo 19 | 完成 |
+| C7 | execute / S1 主 Agent | 契约、验收、handoff 与提交 | 本文件所在提交 |
 
-不变量：single Date Property；range左右handle只改对应端，越界clamp至相等；point仅右向创建end，legacy string必要升级object；all-day exclusive视觉日界逆回inclusive日期；scale.futureSnapUnit相对原端snap，date-only最细day；datetime保UTC/timeZone/另一端/毫秒。共用session/preview，move0PATCH/up最多1existing cell PATCH；双CAS/transaction、409 canonical refresh、unknown-state与identity fences复用。
+不变量（冻结）：single Date Property；drag/resize 共用 `idle→previewing→pending→idle` 与单调 token；
+4px shared threshold；同 record+property 串行（既有 generic database-wide 串行 + Timeline fence）；
+409 只 canonical refresh 不 retry；known failure 回退；unknown 一律 refresh 后按 normalized value
+接受或保持 uncertain；offline 立即 fail closed 并取消 active preview；identity/ABA fence 不变；
+handle 与 bar body 是兄弟节点；no-op 不发 PATCH；date-only/datetime wire shape 保留。
 
-验收入口：`docs/verification/p11-3b-timeline-resize.md`。43logic、7新Web、17旧定向回归、19真实API最终PASS；Web/API typecheck/build PASS。100/500 parent refs保持、other Bar DOM mutations/Vue updated hooks均0。Desktop/390 Light/Dark及390 preview五PNG已视检，console/pageerror定向断言通过。
+验收入口：`docs/verification/p11-3c-mutation-ux-conflict.md`。逻辑 52/52（新 9）、Timeline Web
+31/31（新 P11.3C 6）、真实隔离 Mongo 8.2.3（27717 / replicaSet p113cFinal）19/19、Web/API
+typecheck+build PASS。隔离实例已优雅 shutdown，用户 27017 未触碰。
 
-首轮两项旧回归时序失败，单测与完整复跑通过，原因未证明；不声称完整Product全绿。另有一个未设置隔离URI的API test被及时中断且无结果，不作验收，执行疏漏见验收页。最终API在6cb2803已提交测试源上用独立27716/p113bFinal与全新dbpath，19/19通过并留完整日志；PID29880优雅shutdown、27716无监听。
+已知边界：View switcher 在 `viewBusy`（含 `savingCell`）时 disabled，因此 pending 期间切 View 在
+UI 层 fail closed，Web 测试断言 disabled，跨 View stale callback 由 logic spec 覆盖；无移动的 bar
+body 手势仍按既有语义打开 Record，handle 手势不打开；preview 期间 pointer capture 使 toolbar 不可
+点击。仍未实现 multi-cell Start/End、Dependency/auto shift、bulk、Undo/Redo、offline queue、
+Calendar、settings UI、P11.5 polish；未新增任何 Timeline backend API。未运行完整 Product/P11 Final/
+native 真机/正式帧率 benchmark，不发布不改版本。
 
-独立Start/End仍只读，需generic transactional multi-cell mutation后另行支持。不实现Dependency/auto shift、multi/bulk、Undo/Redo、offline、Calendar/settings/inline Date editor或C polish。未运行全Product/P11 Final/native真机/正式帧率benchmark，不发布不改版本。
-
-完成B后停止。C接续入口：TimelineBar.vue handles/focus、useTimelineBarDrag.ts shared session/cancel、mutation.ts/snap.ts端点、DatabaseNodeView.vue原adapter及P11.3A/B测试矩阵；必须后续独立启动，不自动扩展延期能力。
+完成 C 后停止。D 接续入口：`timeline/interaction.ts`（ledger/busy fence）、`focus.ts`、
+`useTimelineBarDrag.ts`、`TimelineBar.vue`、`DatabaseTimelineView.vue` 的
+`pendingTimelineMutations`、`DatabaseNodeView.vue` 的 `moveTimelineRecord`；测试复用
+`tests/timeline-interaction.spec.ts` 与 `product-database.spec.ts` 的 `P11.3C` grep。D 必须独立
+授权，先决定是否放宽 pending 期间切 View 的 generic busy guard。

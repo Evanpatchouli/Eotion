@@ -186,3 +186,21 @@ P11.3B Resize Range Mutation（2026-10-14）：single Date start/end resize与po
 `isWritableTimelineDateSource`、`TimelineBar` handles：共享controller/transient preview、相对端点scale
 snap、包含式all-day end转换、clamp和wire shape升级；仍复用原NodeView single Cell/CAS/refresh。
 独立Start/End继续read-only。完成B后停止，P11.3C需另行启动；Dependency/Undo/Offline等未实现。
+
+P11.3C Mutation UX + Conflict（2026-10-14）：范围验收 PASS 后停止。入口
+[P11.3C 验证](../verification/p11-3c-mutation-ux-conflict.md)、[Renderer §26](../architecture/timeline-renderer.md#26-p113c-mutation-ux--conflict)。
+检索新增 `interaction.ts` / `createTimelineInteractionLedger` / `TimelineInteractionPhase` /
+`beginTimelineDateMutation` / `isTimelineDateMutationBusy` / `TIMELINE_DRAG_THRESHOLD_PX`、
+`focus.ts` / `captureTimelineBarFocus` / `restoreTimelineBarFocus`、`data-interaction-phase` /
+`data-saving` / `data-operation`、`DatabaseTimelineView` 的 `pendingTimelineMutations` /
+`commitTimelineDrag`、`moveTimelineRecord` 的 conflict/known-failure/unknown 文案。
+drag 与 resize 共用 idle→previewing→pending→idle、token fence 与 4px threshold；Escape /
+pointercancel / lostpointercapture / blur / visibilitychange 清本地 preview 且 0 PATCH；
+pending 期间同 record+property fail closed、bar 显示轻量 saving、handles aria-disabled；
+409 只做 canonical refresh 不 retry；unknown 结果一律 refresh 后按 normalized value 接受或回退；
+offline 立即 fail closed 且取消 active preview。View switcher 在 `viewBusy`（含 `savingCell`）
+时为 disabled，因此 pending 切 View 在 UI 层 fail closed（P11.3D 需明确是否放宽）。
+TimelineBar 的 bar body 与 handles 现在是零尺寸 anchor 下的绝对定位兄弟节点，handle 永不嵌套在
+bar 内。逻辑 52/52、Timeline Web 31/31（含新 P11.3C 6）、真实隔离 Mongo API 19/19 PASS；
+Web/API typecheck+build PASS。缺少独立 Start/End multi-cell、Dependency、Undo/Offline 队列、
+Calendar、settings 与 P11.5 polish；未跑完整 Product/P11 Final/native真机/正式帧率。
