@@ -537,7 +537,7 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
   const shiftMode = timeline.dependency?.shiftMode
   const atomicBatch = shiftMode !== undefined && shiftMode !== 'no_auto_shift'
   const dateSourceIdentity = timelineDateSourceIdentity(timeline.dateSource)
-  const dependencyConfigIdentity = timelineDependencyConfigIdentity(viewConfig.value)
+  const dependencyConfigIdentity = timelineDependencyConfigIdentity(viewConfig.value) ?? undefined
   if (!dateSourceIdentity || command.dateSourceIdentity !== dateSourceIdentity
     || command.expectedViewVersion !== viewVersion.value
     || command.dependencyConfigIdentity !== dependencyConfigIdentity
