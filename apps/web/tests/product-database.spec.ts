@@ -8922,7 +8922,7 @@ test('P11.3C conflict and network failures reconcile to canonical dates without 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
 })
 
-test('P11.3C view switch during pending keeps identity fences, drafts, and canonical records', async ({ page }) => {
+test('P11.3C view switch during preview or pending keeps identity fences, drafts, and canonical records', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
   const date = property('p113c-fence-date', rootDatabase.id, 'Date', 'date')
@@ -8950,8 +8950,45 @@ test('P11.3C view switch during pending keeps identity fences, drafts, and canon
     await databaseBlock.getByRole('button', { name: '切换视图' }).click()
     await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name, exact: true }).click()
   }
+  // While a Timeline preview holds pointer capture the toolbar cannot be clicked with
+  // the mouse, so this drives the same DOM controls without a pointer.
+  const switchViewWithoutPointer = async (name: string) => {
+    await page.evaluate(() => {
+      const trigger = document.querySelector<HTMLElement>('#database-block-p113c-fence-block button[aria-label="切换视图"]')
+      trigger?.click()
+    })
+    await expect(page.locator('section.eotion-database-view-menu')).toBeVisible()
+    await page.evaluate((viewName) => {
+      const rows = [...document.querySelectorAll('.eotion-database-view-row')]
+      const row = rows.find(candidate => candidate.querySelector('.eotion-database-view-name')?.textContent?.trim() === viewName)
+      ;(row?.querySelector('.eotion-database-view-name') as HTMLElement | undefined)?.click()
+    }, name)
+  }
+
 
   await expect(bar).toBeVisible()
+
+  // Preview, then switch the View while the pointer is still down: the bar unmounts,
+  // the preview is discarded and no PATCH is ever sent.
+  const previewBounds = await bar.boundingBox()
+  if (!previewBounds) throw new Error('Expected the fence bar before the preview view switch')
+  const previewX = previewBounds.x + previewBounds.width / 2
+  const previewY = previewBounds.y + previewBounds.height / 2
+  await page.mouse.move(previewX, previewY)
+  await page.mouse.down()
+  await page.mouse.move(previewX + dayPixels, previewY, { steps: 4 })
+  await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  await switchViewWithoutPointer('Fence table')
+  await expect(databaseBlock.locator('table')).toBeVisible()
+  await page.mouse.up()
+  await page.mouse.move(0, 0)
+  expect(cellPatches()).toBe(0)
+  expect(canonicalValue()).toBe('2026-10-13')
+  await switchViewWithoutPointer('Fence timeline')
+  await expect(bar).toBeVisible()
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  await expect(bar).toHaveAttribute('data-interaction-phase', 'idle')
+  expect(cellPatches()).toBe(0)
 
   // Pending, then switch the View: the request may finish, but only canonical records update.
   api.holdCellUpdateResponse = true

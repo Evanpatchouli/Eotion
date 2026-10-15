@@ -42,7 +42,6 @@ type Options = {
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
   commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
   isViewportCurrent: (snapshot: Transform) => boolean
-  focusContainer?: () => HTMLElement | null
 }
 
 type ActiveDrag = {
@@ -356,7 +355,19 @@ export function useTimelineBarDrag(options: Options) {
     [options.scope, options.recordVersion, options.transform, options.enabled],
     ([scope, version, transform, enabled], [oldScope, oldVersion, oldTransform, oldEnabled]) => {
       const activeSession = active.value?.session ?? pending.value?.session
-      const contextChanged = activeSession && (scope !== activeSession.scope || version !== activeSession.expectedRecordVersion || !transform)
+      // A captured preview is also invalidated by a native scroll, a rebase, a
+      // scale change or a resize, exactly as it was before P11.3C.
+      const capturedTransform = active.value?.transform
+      const contextChanged = activeSession && (
+        scope !== activeSession.scope
+        || version !== activeSession.expectedRecordVersion
+        || !transform
+        || Boolean(capturedTransform && (
+          transform.generation !== capturedTransform.generation
+          || transform.scrollLeft !== capturedTransform.scrollLeft
+          || transform.scale !== capturedTransform.scale
+        ))
+      )
       if (contextChanged || active.value && !enabled) abortPreview()
       else if (!active.value && !pending.value && (scope !== oldScope || version !== oldVersion || !transform || !oldTransform || transform.generation !== oldTransform.generation || transform.scrollLeft !== oldTransform.scrollLeft || transform.scale !== oldTransform.scale || enabled !== oldEnabled)) {
         clearPreviewGeometry()

@@ -371,6 +371,9 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
     })
     return currentEditorViewId === viewId.value && viewReady.value && props.editor.isEditable
   }
+  // Last-line defence in front of the generic Cell API: identity, writability,
+  // captured Database version and view type are all re-checked here.
+  if (!isCurrent() || !writable.value || command.expectedDatabaseVersion !== databaseVersion.value || viewType.value !== 'timeline') return false
   const timeline = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline
   if (!isWritableTimelineDateSource(timeline?.dateSource) || timeline.dateSource.propertyId !== command.propertyId) return false
   const property = properties.value.find(item => item.id === command.propertyId)
