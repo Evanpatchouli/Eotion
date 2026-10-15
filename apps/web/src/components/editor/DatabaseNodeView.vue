@@ -425,6 +425,10 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
     }
     await refreshLoadedWindow()
     if (!isCurrent()) return false
+    if (staleReadonly.value) {
+      mutationError.value = '提交结果暂未确认。'
+      return false
+    }
     const canonical = recordsById.value.get(command.recordId)
     const canonicalValue = canonical ? getCellValue(canonical, property.id) : undefined
     const confirmed = isValidDatabaseDateValue(canonicalValue) && JSON.stringify(normalizeDatabaseDateValue(canonicalValue)) === JSON.stringify(normalizeDatabaseDateValue(command.value))

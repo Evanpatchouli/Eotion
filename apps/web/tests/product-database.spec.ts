@@ -9052,7 +9052,7 @@ test('P11.3C conflict and network failures reconcile to canonical dates without 
   await expect(bar).toHaveAttribute('title', /2026-10-20/u)
   expect(cellPatches()).toBe(1)
 
-  // Known failure: rollback to the canonical date, still no retry.
+  // HTTP 500 has an unknown result; refresh confirms the unchanged canonical date.
   api.failCellUpdates = 1
   api.failCellUpdateStatus = 500
   await dragTimelineBar(page, bar, dayPixels)
@@ -9091,6 +9091,60 @@ test('P11.3C conflict and network failures reconcile to canonical dates without 
   await expect(bar).toHaveAttribute('title', /2026-10-21/u)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
 })
+
+for (const scenario of [
+  { key: 'after-commit', name: 'after server commit', abortField: 'abortCellUpdatesAfterCommit' as const, expectedValue: '2026-10-14' },
+  { key: 'without-commit', name: 'without server commit', abortField: 'abortCellUpdatesWithoutCommit' as const, expectedValue: '2026-10-13' },
+]) {
+  test(`P11.3C unknown refresh failure keeps result uncertain until retry (${scenario.name})`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+    const date = property(`p113c-unknown-refresh-${scenario.key}`, rootDatabase.id, 'Date', 'date')
+    const timelineView = view(`p113c-unknown-refresh-${scenario.key}-view`, rootDatabase.id, 'Unknown refresh', {
+      ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } },
+    }, 'timeline')
+    const item = record(`p113c-unknown-refresh-${scenario.key}-record`, rootDatabase.id, `p113c-unknown-refresh-${scenario.key}-page`, { 'root-title': 'Unknown refresh', [date.id]: '2026-10-13' })
+    const api = await installApi(page, [block(`p113c-unknown-refresh-${scenario.key}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+      databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: [item],
+    })
+    api.pages.push({ ...pageRecord, id: item.pageId, title: 'Unknown refresh', role: 'database-record' })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const databaseBlock = page.locator(`#database-block-p113c-unknown-refresh-${scenario.key}-block`)
+    const timeline = databaseBlock.getByTestId('database-timeline')
+    const bar = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${item.id}"]`)
+    await expect(bar).toBeVisible()
+    const recordsPath = `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/views/${timelineView.id}/table`
+    const tableReads = () => api.requests.filter(request => request.method === 'GET' && request.path === recordsPath).length
+    const patches = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`)).length
+    const readsBeforeMutation = tableReads()
+    const patchesBeforeMutation = patches()
+    api[scenario.abortField] = 1
+    api.failTableLoads = 1
+
+    await dragTimelineBar(page, bar, pxPerMs('month') * 86_400_000)
+    await expect.poll(() => tableReads()).toBe(readsBeforeMutation + 1)
+    await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+    await expect(bar).not.toHaveAttribute('data-preview-date', /.+/u)
+    await expect(bar).toHaveAttribute('data-draggable', 'false')
+    await expect(bar).toHaveAttribute('title', /2026-10-13/u)
+    const failedRefreshAlerts = () => databaseBlock.getByRole('alert').allTextContents()
+    await expect.poll(async () => (await failedRefreshAlerts()).join(' ')).toContain('提交结果暂未确认')
+    await expect.poll(async () => (await failedRefreshAlerts()).join(' ')).toContain('只读')
+    expect((await failedRefreshAlerts()).join(' ')).not.toMatch(/已刷新为服务器最新日期|日期已更新/u)
+    expect(patches()).toBe(patchesBeforeMutation + 1)
+    expect(tableReads()).toBe(readsBeforeMutation + 1)
+
+    await databaseBlock.getByRole('button', { name: '重试刷新' }).click()
+    await expect(databaseBlock.getByRole('button', { name: '重试刷新' })).toHaveCount(0)
+    await expect.poll(() => tableReads()).toBe(readsBeforeMutation + 2)
+    await expect.poll(() => api.records.find(candidate => candidate.id === item.id)?.properties[date.id]).toBe(scenario.expectedValue)
+    await expect(bar).toHaveAttribute('data-draggable', 'true')
+    await expect(bar).toHaveAttribute('title', new RegExp(scenario.expectedValue, 'u'))
+    await expect(databaseBlock.getByRole('alert')).toContainText('提交结果暂未确认。')
+    expect(patches()).toBe(patchesBeforeMutation + 1)
+  })
+}
 
 test('P11.3C view switch during preview or pending keeps identity fences, drafts, and canonical records', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
