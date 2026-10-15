@@ -18,6 +18,9 @@ import type {
   DatabaseViewUpdateRequest,
   DatabaseViewDeleteRequest,
   DatabaseRecordCellUpdateRequest,
+  DatabaseCellBatchMutationRequest,
+  DatabaseCellBatchMutationResponse,
+  DatabaseCellBatchMutationReceipt,
   DatabaseTableRecordResponse,
   DatabaseTableQuery,
   DatabaseTableResponse,
@@ -136,6 +139,8 @@ export class EotionApiClient {
     updateDatabaseView: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; view: DatabaseViewResponse }>
     deleteDatabaseView: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewDeleteRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse }>
     updateDatabaseRecordCell: (workspaceId: string, databaseId: string, recordId: string, propertyId: string, input: DatabaseRecordCellUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; record: DatabaseTableRecordResponse; page?: PageResponse }>
+    mutateDatabaseCells: (workspaceId: string, databaseId: string, input: DatabaseCellBatchMutationRequest, signal?: AbortSignal) => Promise<DatabaseCellBatchMutationResponse>
+    getDatabaseCellMutationReceipt: (workspaceId: string, databaseId: string, mutationId: string, signal?: AbortSignal) => Promise<DatabaseCellBatchMutationReceipt>
   }
   readonly sync: {
     send: (operation: SyncOperation, signal?: AbortSignal) => Promise<void>
@@ -223,6 +228,9 @@ export class EotionApiClient {
       updateDatabaseView: (workspaceId, databaseId, viewId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}`, { method: 'PATCH', body: input, signal }),
       deleteDatabaseView: (workspaceId, databaseId, viewId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}`, { method: 'DELETE', body: input, signal }),
       updateDatabaseRecordCell: (workspaceId, databaseId, recordId, propertyId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/records/${segment(recordId)}/cells/${segment(propertyId)}`, { method: 'PATCH', body: input, signal }),
+      // Mutation requests are deliberately single-shot; an uncertain response must be resolved via the receipt endpoint.
+      mutateDatabaseCells: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/cell-mutations`, { method: 'POST', body: input, signal }),
+      getDatabaseCellMutationReceipt: (workspaceId, databaseId, mutationId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/cell-mutations/${segment(mutationId)}`, { method: 'GET', signal }),
     }
     this.sync = {
       send: async (operation, signal) => {

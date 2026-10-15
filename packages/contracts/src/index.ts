@@ -336,6 +336,74 @@ export const DatabaseRecordCellUpdateRequestSchema = z.object({
 }).strict()
 export type DatabaseRecordCellUpdateRequest = z.infer<typeof DatabaseRecordCellUpdateRequestSchema>
 
+const databaseCellBatchMutationVersionSchema = z.number().int().positive().safe()
+const databaseCellBatchMutationCellSchema = z.object({
+  propertyId: databaseStableIdSchema,
+  value: databaseRecordPropertyValueSchema,
+}).strict()
+const databaseCellBatchMutationRecordSchema = z.object({
+  recordId: databaseStableIdSchema,
+  expectedRecordVersion: databaseCellBatchMutationVersionSchema,
+  cells: z.array(databaseCellBatchMutationCellSchema).min(1).max(100),
+}).strict()
+const databaseCellBatchMutationRequestInputSchema = z.object({
+  mutationId: databaseStableIdSchema,
+  expectedDatabaseVersion: databaseCellBatchMutationVersionSchema,
+  records: z.array(databaseCellBatchMutationRecordSchema).min(1).max(500),
+  context: z.object({
+    viewId: databaseStableIdSchema,
+    expectedViewVersion: databaseCellBatchMutationVersionSchema,
+  }).strict().optional(),
+}).strict()
+export const DatabaseCellBatchMutationRequestSchema = databaseCellBatchMutationRequestInputSchema.superRefine((value, context) => {
+  const recordIds = new Set<string>()
+  let totalCells = 0
+  value.records.forEach((record, recordIndex) => {
+    if (recordIds.has(record.recordId)) {
+      context.addIssue({ code: 'custom', message: 'Record ids must be unique', path: ['records', recordIndex, 'recordId'] })
+    }
+    recordIds.add(record.recordId)
+
+    const propertyIds = new Set<string>()
+    record.cells.forEach((cell, cellIndex) => {
+      if (propertyIds.has(cell.propertyId)) {
+        context.addIssue({ code: 'custom', message: 'Cell property ids must be unique within a record', path: ['records', recordIndex, 'cells', cellIndex, 'propertyId'] })
+      }
+      propertyIds.add(cell.propertyId)
+      totalCells += 1
+    })
+  })
+  if (totalCells > 1000) {
+    context.addIssue({ code: 'custom', message: 'A batch may contain at most 1000 cells', path: ['records'] })
+  }
+})
+export type DatabaseCellBatchMutationRequest = z.infer<typeof DatabaseCellBatchMutationRequestSchema>
+
+const databaseCellBatchMutationRecordResponseSchema = z.object({
+  id: databaseStableIdSchema,
+  databaseId: databaseStableIdSchema,
+  workspaceId: databaseStableIdSchema,
+  pageId: databaseStableIdSchema,
+  properties: z.record(databaseStableIdSchema, databaseRecordPropertyValueSchema),
+  version: databaseCellBatchMutationVersionSchema,
+  createdAt: dateSchema,
+  updatedAt: dateSchema,
+  pageVersion: dateSchema,
+}).strict()
+export const DatabaseTableRecordSchema = databaseCellBatchMutationRecordResponseSchema
+export const DatabaseCellBatchMutationResponseSchema = z.object({
+  mutationId: databaseStableIdSchema,
+  database: DatabaseSchema,
+  records: z.array(DatabaseTableRecordSchema).min(1).max(500),
+}).strict()
+export type DatabaseCellBatchMutationResponse = z.infer<typeof DatabaseCellBatchMutationResponseSchema>
+
+export const DatabaseCellBatchMutationReceiptSchema = z.object({
+  mutationId: databaseStableIdSchema,
+  status: z.enum(['committed', 'not_committed', 'uncertain']),
+}).strict()
+export type DatabaseCellBatchMutationReceipt = z.infer<typeof DatabaseCellBatchMutationReceiptSchema>
+
 export const DatabaseRecordCreateRequestSchema = z.object({
   id: databaseStableIdSchema,
   pageId: databaseStableIdSchema,
