@@ -1,14 +1,30 @@
-# 当前任务：P11.3C Round-trip No-op Drag Review Fix（完成并停止）
+# 当前任务：P11.3D Timeline Mutation Final Acceptance（完成并停止）
 
-基线 `4fe83eb5fd5cb0692e14353d1e9e78c9ec459b14`；分支 `codex/p11-3c-round-trip-noop-fix`。只修复超过 threshold 后拖回 canonical 日期误开 Record 的 P2；完成后停止，不进入 P11.3D。
+基线 `548f9eb3540377bb903b491fae34ac2cdaa01c0a`；开始时 master 工作树干净。
+分支 `codex/p11-3d-final-acceptance`。**Final verdict PASS；P11.3 Timeline Mutation COMPLETE。**
+本轮只有验收测试和文档；不改产品代码/API/schema/版本，不进入 P11.4。
 
 | 单元 | 模式 / 难度 / 角色 | 输出 | 状态 |
 | --- | --- | --- | --- |
-| R1 | investigate / S0 主 Agent | no-op 分支覆盖 click 抑制，旧测试关闭 drawer 掩盖问题 | 完成 |
-| R2 | execute / S1 fast_worker | 最小修复 + point/range 往返与后续打开回归，先红后绿 | 完成；红测drawer=1，绿测1/1 |
-| R3 | verify / S0 scout + reviewer | P11.3 定向 Web/logic、typecheck/build、独立复核 | 完成；logic52/52、Web35/35、typecheck/build通过、review无blocker |
-| R4 | execute / S1 主 Agent | 更正验收文档、handoff、提交与停止 | 完成；本文件所在提交收口 |
+| D1 | investigate / S0 主 Agent | 架构、七 scale / inclusive / identity 覆盖检查 | 完成 |
+| D2 | decide → execute / S2 worker → S1 | blur/hidden、point→range Table/reload、pending unmount ABA、pending Escape/offline | 完成；最终增补4/4 + 2/2 |
+| D3 | verify / S0 scout | 完整 Domain/Contracts/SDK/API/MCP 与隔离 Mongo | 完成；48/25/23、domain16/performance1/HTTP31/MCP30全PASS |
+| D4 | verify / S0 scout + S2 环境诊断 | Timeline、Database/Product、100/500、视觉、基线失败对照 | 完成；logic52、DB143、其余Product256PASS/1基线FAIL，Web typecheck/build通过 |
+| D5 | review / reviewer | 独立实现及新增测试复核 | 完成；0 blocker |
+| D6 | execute / S1 主 Agent | 正式矩阵、文档/handoff、聚焦提交与停止 | 完成；收口提交包含本文件 |
 
-Brief：didMove=true 后无论最终值是否 canonical，都必须吞掉本次 release 合成 click；未越阈值的 bar body 继续点击打开；handle 永不打开 Record。保持 0 PATCH、canonical 日期/version、idle 与清空 preview；新 pointerdown 或 Enter/Space 继续可以打开 Record。不改变 threshold、日期归一化、pending/token/CAS、API/model/sync/版本。不推送或发布。
+验收报告：`docs/verification/p11-3d-timeline-mutation-final.md`。
+测试提交：`783d053`、`781d860`；最终文档提交见本文件所在提交。
 
-Web 首跑复用了单测短生命周期服务，前2项通过后33项导航连接拒绝；改用独立服务最终35/35，workers=1/retries=0。临时服务已清理，7173无监听。正式结果见 docs/verification/p11-3c-mutation-ux-conflict.md §18。完成本修复后停止，P11.3D未开始。
+冻结：Database mutation pending 时 viewBusy 含 savingCell，View switcher disabled/fail closed。
+Separate Start/End readable/openable，因无 generic atomic multi-cell API 保持 mutation read-only。
+真实 route unmount ABA 与 pending View switch 分开陈述；后者不可通过被禁用控件执行。
+
+完整 Product 两批原始400项399PASS/1FAIL；新增D pending2/2，最终402独立项合计401PASS/1基线FAIL。
+About发布记录 expected 2026-10-11 / actual 暂无记录，当前复跑和隔离548f9eb同断言失败，非flaky。
+仅记录handoff，不改无关About。Native、正式FPS、P11 Final、发布未运行，不宣称全Product全绿。
+
+Mongo8.0.12/55776/replicaSet p113d_6a2f770f，随机库，已admin shutdown；7173/7174亦无监听。
+删除TEMP Mongo dbpath被工具策略拒绝（仅返回blocked by policy），未绕过；日志/目录保留。
+独立基线worktree干净；Vite cacheDir临时配置已还原，验证服务已关闭。
+最终diff和strict UTF-8无BOM通过；完成后停止，P11.4 Dependency尚未开始。

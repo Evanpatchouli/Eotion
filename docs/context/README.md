@@ -199,8 +199,19 @@ pointercancel / lostpointercapture / blur / visibilitychange 清本地 preview �
 pending 期间同 record+property fail closed、bar 显示轻量 saving、handles aria-disabled；
 409 只做 canonical refresh 不 retry；unknown 结果一律 refresh 后按 normalized value 接受或回退；
 offline 立即 fail closed 且取消 active preview。View switcher 在 `viewBusy`（含 `savingCell`）
-时为 disabled，因此 pending 切 View 在 UI 层 fail closed（P11.3D 需明确是否放宽）。
+时为 disabled，因此 pending 切 View 在 UI 层 fail closed（P11.3D 已明确冻结该行为，不放宽）。
 TimelineBar 的 bar body 与 handles 现在是零尺寸 anchor 下的绝对定位兄弟节点，handle 永不嵌套在
 bar 内。逻辑 52/52、Timeline Web 31/31（含新 P11.3C 6）、真实隔离 Mongo API 19/19 PASS；
 Web/API typecheck+build PASS。缺少独立 Start/End multi-cell、Dependency、Undo/Offline 队列、
 Calendar、settings 与 P11.5 polish；未跑完整 Product/P11 Final/native真机/正式帧率。
+
+P11.3D Final Acceptance（2026-10-16）：**P11.3 Timeline Mutation COMPLETE，A/B/C/D PASS**。
+正式矩阵与失败基线入口为 [P11.3D](../verification/p11-3d-timeline-mutation-final.md)。检索新增
+`P11.3D Escape/offline during pending`、`__p113dRealm`、`activeBarMutations` / `rulerTicksSame` /
+`frozenRowsSame`；补验 blur/hidden、point→range Table/reload、同 document route unmount ABA、
+100/500 active/other/ruler/Frozen 更新。logic52/52、完整Database143/143与最后delta4/4、新pending2/2；
+其余Product256/257，唯一About发布日期失败在548f9eb独立基线同断言复现，不伪称全Product全绿。
+Domain48/Contracts25/SDK23、隔离Mongo8.0.12（55776/p113d_6a2f770f）的server-domain16、performance1、
+HTTP31、MCP30全通过，相关typecheck/build通过，独立review0 blocker。Mongo/Vite实例均已关闭。
+pending View switch正式冻结disabled/fail closed；Start/End readable/openable但mutation只读，
+不新增multi-cell API。无产品代码/版本/依赖/API/schema改动；P11.4 Dependency未开始，完成后停止。

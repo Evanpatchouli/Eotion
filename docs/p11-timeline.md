@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1、P11.2 核心 Read、P11.3A Drag Foundation 与 P11.3B Resize Range Mutation 范围 PASS；完成并停止，不进入 P11.3C**
+> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；完成并停止，P11.4 未开始**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -833,7 +833,12 @@ indicator/jump 尚未实施，仍作为后续 parity 待办保留。本轮不宣
 
 ### P11.3 Timeline Mutation
 
-分阶段实施；P11.3A 为 Bar 整体移动基础，P11.3B 已独立授权范围调整。完整阶段目标：
+**COMPLETE（2026-10-16，P11.3D Final Acceptance PASS）**。已完成当前冻结范围：single Date
+point/range move、start/end resize、precision/timezone/inclusive end、CAS/conflict/unknown、
+cancel/offline、busy/identity、Host/Drawer 与 Table canonical consistency。独立 Start/End 因缺少
+generic atomic multi-cell mutation 继续只读；pending View switch fail closed。最终证据见下文 D。
+
+以下为原阶段目标；Timeline date picker fallback 未新增，既有 Table Date Cell editor 保留：
 
 - move range
 - resize start/end
@@ -962,7 +967,31 @@ pointer capture 下无法点击 toolbar）与 P11.3D 接续入口见
 Dependency/auto shift、bulk、Undo/Redo、offline queue、Calendar、settings UI 或 P11.5 polish；
 不新增任何 Timeline backend API。
 
-### P11.4 Frozen Table + Dependencies
+#### P11.3D Timeline Mutation Final Acceptance
+
+2026-10-16，从 `548f9eb` 开始，仅复用并补强现有 mutation 验收，未新增产品功能。
+**Final verdict：PASS；P11.3 Timeline Mutation — COMPLETE。** 最终矩阵、真实隔离 Mongo、
+完整 regression、100/500 观察和验证层级见
+[P11.3D 最终验收](verification/p11-3d-timeline-mutation-final.md)。独立 review 0 blocker。
+完整 Product 原始 400 项为 399 PASS / 1 About 基线失败，新增 pending 两项 2/2 PASS；不宣称
+全部 Product 全绿。该 About 项在 `548f9eb` 隔离运行复现相同断言失败，不纳入 Timeline 修复范围。
+
+当前 P11.3 正式冻结：
+
+- 普通 click / 低于 4px 的 body movement：0 PATCH + 打开 Record；超过阈值后往返 canonical：
+  0 PATCH + 不打开 Record。Handle 的 click / modifier / Enter / Space 永不打开 Record。
+- 单 Date point/range 的 move 与 start/end resize 继续复用现有 single Cell API / 双 CAS /
+  transaction / canonical refresh，保持 wire shape、timezone、毫秒和 inclusive end。
+- Unknown result 只有成功读取 canonical 才能核对；refresh 失败保持未确认和 `staleReadonly`，
+  后续 retry 只重读，不再次 PATCH。
+- **P11.3 当前不允许用户在 Database mutation pending 时切换 View。** `viewBusy` 仍含
+  `savingCell`；真实控件 disabled / fail closed，mutation 完成后恢复，不放宽 generic busy guard。
+- Separate Start/End mutation remains intentionally read-only because the generic Record API does
+  not yet provide atomic multi-cell mutation. 继续 readable/openable；没有 sequential PATCH workaround。
+
+此验收不代表 P11 Timeline COMPLETE、Dependency COMPLETE 或 `0.0.3` 可发布；不改版本。
+
+### P11.4 Frozen Table + Dependencies（尚未开始）
 
 完成：
 

@@ -1,6 +1,6 @@
 # P11.2 Timeline Renderer 架构
 
-> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS**（2026-10-13；实施/验收记录见 §20–§23）
+> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS；P11.3 Mutation COMPLETE**（Read 2026-10-13、Mutation 2026-10-16；实施/验收记录见 §20–§27）
 > 基线：`25bd279585772bfdce43799de71fb3c3f5ba5436`（`master`），P11.1D PASS 之后。
 > 版本背景：当前版本 `0.0.1`，P11 目标版本 `0.0.3`。§1–§19 保留 P11.2.0 的架构基线；该阶段仅修改文档。P11.2A/B/C 的产品实施与验证见 §20–§22，API、schema、sync、MCP、依赖与版本保持。
 
@@ -577,3 +577,20 @@ Pointer capture 结束时可能出现后续 click；抑制标记必须在释放 
 - preview 期间 bar 持有 pointer capture，无法用真实鼠标点击 toolbar；这是浏览器约束。
 
 证据与未执行项见 [P11.3C 验证](../verification/p11-3c-mutation-ux-conflict.md)。P11.3D 需独立授权。
+
+## 27. P11.3D 最终验收与当前边界
+
+2026-10-16，按独立授权对已有 single Date mutation 做最终验收，**P11.3D PASS / P11.3 COMPLETE**；实际结果见
+[P11.3D Final Acceptance](../verification/p11-3d-timeline-mutation-final.md)。生产写入路径仍为
+Bar/Handle → shared interaction controller → temporal command → Timeline/View adapters
+→ existing generic Record Cell API → Database + Record CAS / Mongo transaction → canonical refresh。
+不新增 endpoint、collection、mutation queue 或 pointermove 写入。
+
+本轮正式冻结 **Database mutation pending 时不允许用户切换 View**：`viewBusy` 保留
+`savingCell`，View switcher disabled / fail closed；完成后恢复。不为该流程放宽 generic busy guard。
+preview 的 scope/unmount 变化必须 cancel；pending unmount 的旧 callback 仍受 token、epoch、DOM
+root 与 scope fence 保护。真实 UI、同 document route 生命周期与 logic fence 证据在验收页分别说明。
+
+独立 Start/End 两 Property 继续 readable/openable 且 mutation read-only；当前 generic Record API
+没有 atomic multi-cell mutation，不使用 sequential PATCH workaround。Dependency、auto shift、
+bulk、Undo/Redo、offline queue、Calendar 与视觉 polish 不属于本轮；P11.4 未开始。

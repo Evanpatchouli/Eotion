@@ -1,5 +1,46 @@
 # Handoff
 
+## 2026-10-16 P11.3D Timeline Mutation Final Acceptance（完成并停止）
+
+**Final verdict PASS；P11.3 Timeline Mutation COMPLETE，A/B/C/D PASS。** 基线548f9eb，
+分支codex/p11-3d-final-acceptance，开始工作树干净；测试提交783d053、781d860，文档收口为本节所在提交。
+正式报告：[P11.3D](../docs/verification/p11-3d-timeline-mutation-final.md)。没有产品代码/API/schema/
+MCP/sync/依赖/版本变更。P11整体、Dependency与0.0.3发布并未完成；P11.4未开始。
+
+新增验收：blur/hidden取消；point→range的Table/Frozen/回Timeline/reload几何；同document SPA route
+pending卸载后A→B→A（timeOrigin/window sentinel、旧bar disconnected、新bar身份/idle不被旧回调污染）；
+pending Escape非Undo与offline事件+unknown读取恢复；100/500 active bar计数与other/ruler/Frozen稳定。
+独立review先复核生产链再补看测试diff，最终0 blocker。pending View switch正式冻结disabled/fail closed，
+不放宽viewBusy/savingCell；Start/End依然read-only，不能以sequential PATCH伪原子multi-cell。
+
+本轮实际结果：logic52/52；完整Database143/143；最终增补4/4、pending新增2/2；其余Product256/257。
+原始全Product400项399PASS/1FAIL，新D两项独立通过后最终402独立项为401PASS/1基线FAIL，不宣称全绿。
+Domain48/48、Contracts25/25、SDK23/23；真实隔离Mongo server-domain16/16、performance1/1、
+HTTP31/31、MCP30/30；相关typecheck/build通过。Web build有既有>500kB chunk提示。
+
+唯一Product失败：product-settings.spec.ts:755 About发布日期expected2026-10-11/actual暂无记录。
+定向复跑失败；548f9eb隔离worktree最终在同业务断言失败（不是flaky，也非Timeline回归）。两次无效
+基线试验被Vite deps_temp ENOENT阻断，因cacheDir误放Playwright而未传Vite；S2仅修TEMP工具配置后
+取得有效基线，临时配置已还原。About实现与spec无diff；后续独立处理releaseInfo/About契约，本轮不修。
+
+API日志：TEMP/eotion-p113d-api-regression-20261016-002807；Mongo8.0.12，127.0.0.1:55776，
+replicaSet p113d_6a2f770f，全新TEMP dbpath/随机库，不改.env/不连接27017。已admin shutdown，PID40208
+不存在、55776无监听；7173/7174也无监听。TEMP Mongo dbpath递归删除被自动审批拒绝，工具仅给出
+blocked by policy，未绕过；实例已停，数据目录与日志保留。
+
+Web原始/复跑/基线日志：TEMP/eotion-p11-3d-web-acceptance-20261016-003321-058；最后有效基线日志
+product-settings-about-baseline-vite-cache-fixed.raw.log。Timeline日志前缀TEMP/eotion-p113d-*，七张
+PNG在TEMP/eotion-p113d-visual，主Agent均视检。首个hidden测试编写错误日志被同名复跑覆盖，原输出
+仍在会话；后续失败（文案/selector）均以唯一日志与context保留。共享test-results被并行清理的原始
+Product失败仍保留raw日志，定向与有效基线产物已改为独立TEMP输出；详见报告，不隐藏证据保留限制。
+
+100/500 drag active DOM9/Vue4、resize DOM12/Vue4；其他bar DOM/Vue0、ruler/Frozen DOM0，refs与节点
+identity保持。这是更新观察而非FPS。Desktop1440与390 Light/Dark/preview/pending/error smoke通过。
+Native真机、正式FPS、真实API连Web全链E2E、P11 Final与发布未运行。
+
+完成后停止。P11.4精确入口为docs/p11-timeline.md的P11.4 Frozen Table + Dependencies；需独立明确
+Dependency需求/invariant/验收再启动，不把single-cell封板视作multi-cell/auto shift/Undo授权。
+
 ## 2026-10-16 P11.3C Round-trip No-op Drag Review Fix
 
 基线 `4fe83eb`，分支 `codex/p11-3c-round-trip-noop-fix`。唯一 P2：真实 bar drag 越过 threshold
