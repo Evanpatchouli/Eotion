@@ -206,7 +206,7 @@ export function useTimelineBarDrag(options: Options) {
       transform: { ...transform },
       zone: options.displayTimeZone(),
       session,
-      focus: captureTimelineBarFocus(options.item().recordId),
+      focus: captureTimelineBarFocus(options.item().recordId, target),
       moved: false,
     }
     phase.value = ledger.phase

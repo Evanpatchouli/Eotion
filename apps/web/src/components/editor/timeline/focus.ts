@@ -12,9 +12,16 @@ export type TimelineBarFocusReference = Readonly<{
   recordId: string
 }>
 
-export function captureTimelineBarFocus(recordId: string): TimelineBarFocusReference {
+/**
+ * `pressedElement` is the element the pointer went down on. The browser focuses a
+ * button only after the pointerdown handler returns, so reading
+ * `document.activeElement` here would usually capture the previous element (or the
+ * body) and make the restore a no-op.
+ */
+export function captureTimelineBarFocus(recordId: string, pressedElement: HTMLElement | null): TimelineBarFocusReference {
   const active = typeof document === 'undefined' ? null : document.activeElement
-  return Object.freeze({ element: active instanceof HTMLElement ? active : null, recordId })
+  const element = pressedElement ?? (active instanceof HTMLElement ? active : null)
+  return Object.freeze({ element, recordId })
 }
 
 function isTimelineInteractionElement(element: Element | null): boolean {

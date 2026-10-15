@@ -384,7 +384,11 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
   // Wire-shape aware no-op guard: an explicit equal `end` is not an absent end,
   // so a resize that only re-states the canonical value must not send a PATCH.
   if (JSON.stringify(normalizeDatabaseDateValue(currentValue)) === JSON.stringify(normalizeDatabaseDateValue(command.value))) return false
+  // Acquire the view-scoped busy fence before the request exists; the same key is
+  // released in the finally below. A second Timeline mutation for this record +
+  // property is rejected here instead of queueing behind a stale version.
   const dateMutationKey = { recordId: record.id, propertyId: property.id }
+  if (!beginTimelineDateMutation(dateMutationKey)) return false
 
   savingCell.value = true
   mutationError.value = ''
@@ -429,8 +433,9 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
       : '提交结果暂未确认，已刷新为服务器最新日期。'
     return confirmed
   } finally {
-    // The fence is released for every outcome, including an identity change, so
-    // a stale response can never leave the record permanently busy.
+    // This call owns the fence (it returned false above otherwise), so the release
+    // runs for every outcome, including an identity change: a stale response can
+    // never leave the record permanently busy.
     endTimelineDateMutation(dateMutationKey)
     if (isCurrent()) {
       savingCell.value = false

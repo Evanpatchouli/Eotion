@@ -95,10 +95,21 @@ function tooltip(): string {
   return [props.title || '无标题', date, diagnostic, ...details].filter(Boolean).join(' · ')
 }
 
-/** Shared click resolution for the bar and its sibling resize handles. */
+/** The bar body is the Record-open affordance. */
 function handleClick(event: MouseEvent): void {
   if (drag.click(event)) return
   emit('click', event)
+}
+
+/**
+ * Resize handles are controls, not Record-open affordances: every activation
+ * (pointer, modifier+click, or keyboard Enter/Space) is swallowed here and can
+ * never fall through to the bar's Record open.
+ */
+function handleControlClick(event: MouseEvent): void {
+  event.preventDefault()
+  event.stopPropagation()
+  drag.click(event)
 }
 </script>
 
@@ -127,7 +138,6 @@ function handleClick(event: MouseEvent): void {
       :aria-label="tooltip() || title || '无标题'"
       :aria-pressed="selected"
       :aria-busy="pending ? 'true' : 'false'"
-      :aria-disabled="draggable ? undefined : 'true'"
       :title="tooltip()"
       :data-record-id="drag.geometry.value.recordId"
       :data-kind="drag.geometry.value.kind"
@@ -175,7 +185,7 @@ function handleClick(event: MouseEvent): void {
       @pointerup.stop="drag.finish"
       @pointercancel.stop="drag.cancel"
       @lostpointercapture="drag.onLostPointerCapture"
-      @click="handleClick"
+      @click="handleControlClick"
     ><span aria-hidden="true" /></button>
     <button
       v-if="showEndHandle"
@@ -194,7 +204,7 @@ function handleClick(event: MouseEvent): void {
       @pointerup.stop="drag.finish"
       @pointercancel.stop="drag.cancel"
       @lostpointercapture="drag.onLostPointerCapture"
-      @click="handleClick"
+      @click="handleControlClick"
     ><span aria-hidden="true" /></button>
     <div
       v-if="drag.previewDate.value"

@@ -8629,6 +8629,23 @@ test('P11.3C Timeline equal and sub-threshold pointer gestures never open a Reco
   await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
   expect(cellPatches()).toBe(before)
 
+  // Keyboard and modifier activation of a resize handle is still a control action,
+  // never a Record open.
+  const keyboardHandle = handleFor('timeline-resize-end', range.id)
+  await keyboardHandle.focus()
+  await expect(keyboardHandle).toBeFocused()
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Space')
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  await keyboardHandle.click({ modifiers: ['Control'] })
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  await keyboardHandle.click({ modifiers: ['Meta'] })
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  expect(cellPatches()).toBe(before)
+  // The bar still opens the Record, so it must never advertise itself as disabled.
+  await expect(barFor(point.id)).not.toHaveAttribute('aria-disabled', /.+/u)
+  await expect(barFor(range.id)).not.toHaveAttribute('aria-disabled', /.+/u)
+
   // A resize dragged out and back to the canonical endpoint sends no PATCH either.
   const rangeEndHandle = handleFor('timeline-resize-end', range.id)
   const endHandleBounds = await rangeEndHandle.boundingBox()
@@ -8768,6 +8785,9 @@ test('P11.3C pending mutation shows a quiet saving state, blocks the same record
   await expect(pendingBar).toHaveAttribute('data-saving', 'true')
   await expect(pendingBar).toHaveAttribute('aria-busy', 'true')
   await expect(pendingBar).toHaveClass(/is-pending/u)
+  // The bar can still open the Record while saving, so it must not be aria-disabled.
+  await expect(pendingBar).not.toHaveAttribute('aria-disabled', /.+/u)
+  expect(await page.evaluate(() => document.activeElement !== document.body && document.activeElement !== null)).toBe(true)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
   expect(cellPatches()).toBe(beforePatches + 1)
 
@@ -8845,6 +8865,23 @@ test('P11.3C pending mutation shows a quiet saving state, blocks the same record
   expect(cellPatches()).toBe(beforePatches + 1)
   await expect(scroller).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+
+  // The adapter-level busy fence is real: a pre-acquired record+property key makes
+  // moveTimelineRecord bail before the generic Cell PATCH.
+  expect(await page.evaluate(async () => {
+    const module = await import('/src/components/editor/timeline/interaction.ts')
+    return module.beginTimelineDateMutation({ recordId: 'p113c-pending-second', propertyId: 'p113c-pending-date' })
+  })).toBe(true)
+  const fencedPatches = secondPatches()
+  await dragTimelineBar(page, barFor(second.id), dayPixels)
+  expect(secondPatches()).toBe(fencedPatches)
+  await page.evaluate(async () => {
+    const module = await import('/src/components/editor/timeline/interaction.ts')
+    module.endTimelineDateMutation({ recordId: 'p113c-pending-second', propertyId: 'p113c-pending-date' })
+  })
+  const releasedPatches = secondPatches()
+  await dragTimelineBar(page, barFor(second.id), dayPixels)
+  await expect.poll(() => secondPatches()).toBe(releasedPatches + 1)
 })
 
 test('P11.3C conflict and network failures reconcile to canonical dates without retry or stale optimism', async ({ page }) => {
