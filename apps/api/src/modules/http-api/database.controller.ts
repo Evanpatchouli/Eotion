@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabaseTableQuerySchema, DatabaseViewRecordsQuerySchema, DatabaseViewListQuerySchema, DatabaseViewHttpCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
 import { DatabaseService } from '../server-domain/services/database.service'
+import { DatabaseCellBatchMutationRequestSchema } from '@eotion/contracts'
 import type { UserRecord } from '../server-domain/types'
 import { CurrentUser, SessionAuthGuard } from './auth.transport'
 import { parseBody, parseId } from './validation'
@@ -9,6 +10,16 @@ import { parseBody, parseId } from './validation'
 @UseGuards(SessionAuthGuard)
 export class DatabaseController {
   constructor(private readonly databases: DatabaseService) {}
+
+  @Post('databases/:databaseId/cell-mutations')
+  mutateCells(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Body() body: unknown) {
+    return this.databases.mutateCells(user.id, parseId(workspaceId), parseId(databaseId), parseBody(DatabaseCellBatchMutationRequestSchema, body))
+  }
+
+  @Get('databases/:databaseId/cell-mutations/:mutationId')
+  cellMutationReceipt(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('mutationId') mutationId: string) {
+    return this.databases.getCellMutationReceipt(user.id, parseId(workspaceId), parseId(databaseId), parseId(mutationId))
+  }
 
   @Get('databases')
   list(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Query() query: unknown) {

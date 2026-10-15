@@ -696,7 +696,7 @@ test('database writes reject unsupported transactions before any write', async (
   const repository = new Proxy({}, { get: () => () => { writes += 1; throw new Error('unexpected write') } })
   const connection = { db: { admin: () => ({ command: async () => ({}) }) }, startSession: () => { sessions += 1; throw new Error('unexpected session') } }
   const permissions = { assertCanWrite: async () => {} }
-  const service = new DatabaseService(repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, permissions as never, connection as never)
+  const service = new DatabaseService(repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, permissions as never, connection as never)
   await assert.rejects(service.createInPage('user', 'workspace', 'page', { id: 'db', name: 'Tasks', titlePropertyId: 'title', viewId: 'view', blockId: 'block', orderKey: 'a', parentBlockId: null }), error => (error as { status?: number }).status === 503)
   assert.equal(writes, 0)
   assert.equal(sessions, 0)

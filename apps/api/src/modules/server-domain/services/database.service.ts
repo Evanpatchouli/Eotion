@@ -1,12 +1,17 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import { InjectConnection } from '@nestjs/mongoose'
 import { createHash } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
+import { planDatabaseSchedule, SchedulingError, MAX_SCHEDULE_RECORDS } from '@eotion/domain'
 import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression, type TimelineViewOptions } from '@eotion/domain'
 import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
 import type { DatabaseRecordPageCreateRequest } from '@eotion/contracts'
+import { DatabaseCellBatchMutationRequestSchema } from '@eotion/contracts'
+import type { DatabaseCellBatchMutationRequest, DatabaseCellBatchMutationResponse, DatabaseCellBatchMutationReceipt } from '@eotion/contracts'
 import type { DatabaseTableResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
+import { DatabaseCellMutationRepository, type DatabaseCellMutationReceiptKey } from '../repositories/database-cell-mutation.repository'
 import { PageRepository } from '../repositories/page.repository'
 import { BlockRepository } from '../repositories/block.repository'
 import { BlockService } from './block.service'
@@ -30,6 +35,7 @@ export class DatabaseService {
     private readonly properties: DatabasePropertyRepository,
     private readonly records: DatabaseRecordRepository,
     private readonly views: DatabaseViewRepository,
+    private readonly cellMutations: DatabaseCellMutationRepository,
     private readonly pages: PageRepository,
     private readonly blocks: BlockService,
     private readonly blockRepository: BlockRepository,
@@ -605,6 +611,160 @@ export class DatabaseService {
       const projected = { ...updatedRecord, properties: { ...updatedRecord.properties, [titleProperty.id]: page.title }, pageVersion: page.updatedAt }
       return { database, record: (await this.projectDerived(workspaceId, [projected], properties, session))[0]! }
     })
+  }
+
+  async getCellMutationReceipt(userId: string, workspaceId: string, databaseId: string, mutationId: string): Promise<DatabaseCellBatchMutationReceipt> {
+    await this.requireDatabase(userId, workspaceId, databaseId, false)
+    const receipt = await this.cellMutations.find({ userId, workspaceId, databaseId, mutationId })
+    return { mutationId, status: receipt?.status === 'pending' || !receipt ? 'uncertain' : receipt.status }
+  }
+
+  async mutateCells(userId: string, workspaceId: string, databaseId: string, input: DatabaseCellBatchMutationRequest): Promise<DatabaseCellBatchMutationResponse> {
+    this.parse(DatabaseCellBatchMutationRequestSchema, input)
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    if (!(await supportsTransactions(this.connection))) throw new ServiceUnavailableException('Database writes require MongoDB replica set transactions')
+    const key: DatabaseCellMutationReceiptKey = { userId, workspaceId, databaseId, mutationId: input.mutationId }
+    const requestHash = createHash('sha256').update(JSON.stringify(input)).digest('hex')
+    await this.cellMutations.ensureReady()
+    const prior = await this.cellMutations.find(key)
+    if (prior) throw new ConflictException(prior.requestHash === requestHash ? 'Mutation already submitted; resolve its receipt' : 'Mutation id belongs to another request')
+    try {
+      await this.cellMutations.reserve(key, requestHash)
+    } catch (error) {
+      const raced = await this.cellMutations.find(key)
+      if (raced) throw new ConflictException(raced.requestHash === requestHash ? 'Mutation already submitted; resolve its receipt' : 'Mutation id belongs to another request')
+      throw error
+    }
+    try {
+      return await this.transact(session => this.mutateCellsInTransaction(workspaceId, databaseId, input, key, requestHash, session))
+    } catch (error) {
+      // A commit with an unknown outcome must never become an explicit failure.
+      if (!(error as { hasErrorLabel?: (label: string) => boolean })?.hasErrorLabel?.('UnknownTransactionCommitResult')) {
+        await this.cellMutations.fail(key, requestHash).catch(() => undefined)
+      }
+      throw error
+    }
+  }
+
+  private async mutateCellsInTransaction(workspaceId: string, databaseId: string, input: DatabaseCellBatchMutationRequest,
+    key: DatabaseCellMutationReceiptKey, requestHash: string, session: ClientSession): Promise<DatabaseCellBatchMutationResponse> {
+    const database = await this.databases.findInWorkspace(workspaceId, databaseId, session)
+    if (!database) throw new NotFoundException('Database not found in workspace')
+    if (database.version !== input.expectedDatabaseVersion) throw new ConflictException('Database version is stale')
+    const properties = await this.properties.listLimited(workspaceId, databaseId, DATABASE_MAX_PROPERTIES + 1, session)
+    if (properties.length > DATABASE_MAX_PROPERTIES) throw new BadRequestException('Database exceeds property limit')
+    const propertyById = new Map(properties.map(property => [property.id, property]))
+    const canonical = await this.records.list(workspaceId, databaseId, session)
+    if (canonical.length > DATABASE_RECORD_SCAN_MAX_RECORDS) throw new BadRequestException('Database exceeds canonical record scan limit')
+    const recordById = new Map(canonical.map(record => [record.id, record]))
+    const candidates = new Map<string, DatabaseRecord['properties']>()
+    const explicit = new Set<string>()
+    const relationTargets = new Set<string>()
+    for (const request of input.records) {
+      const record = recordById.get(request.recordId)
+      if (!record) throw new NotFoundException('Database record not found')
+      if (record.version !== request.expectedRecordVersion) throw new ConflictException('Database record version is stale')
+      explicit.add(record.id)
+      const values = { ...record.properties }
+      for (const cell of request.cells) {
+        const property = propertyById.get(cell.propertyId)
+        if (!property) throw new NotFoundException('Database property not found')
+        if (property.type === 'title' || property.type === 'rollup' || property.type === 'formula') throw new BadRequestException('Title and derived properties are read only in batch mutations')
+        if (cell.value === null) delete values[property.id]
+        else values[property.id] = cell.value
+        if (property.type === 'relation') {
+          const targetId = (property.config as { targetDatabaseId: string }).targetDatabaseId
+          relationTargets.add(targetId)
+          await this.assertRelationValues(workspaceId, targetId, cell.value, session)
+        }
+      }
+      candidates.set(record.id, values)
+    }
+    let view: DatabaseView | null = null
+    if (input.context) {
+      view = await this.views.findInWorkspace(workspaceId, input.context.viewId, session)
+      if (!view || view.databaseId !== databaseId) throw new NotFoundException('Database view not found')
+      if (view.version !== input.context.expectedViewVersion) throw new ConflictException('Database view version is stale')
+      if (view.type !== 'timeline' || !validateDatabaseViewConfig(view.config, properties, view.type)) throw new ConflictException('Timeline view configuration is invalid')
+      if (input.records.length !== 1 || input.records[0]!.cells.length !== 1) throw new BadRequestException('View context requires one root cell intent')
+      const timeline = (view.config.options as { timeline?: TimelineViewOptions } | undefined)?.timeline
+      const dependency = timeline?.dependency
+      const dateSource = timeline?.dateSource
+      if (!dependency || !dateSource) throw new BadRequestException('Timeline scheduling is not configured')
+      const rootRequest = input.records[0]!
+      const rootCell = rootRequest.cells[0]!
+      let rootId = rootRequest.recordId
+      let shouldPlan = false
+      if (dateSource.mode === 'date-property' && rootCell.propertyId === dateSource.propertyId) {
+        shouldPlan = !isDeepStrictEqual(recordById.get(rootId)!.properties[dateSource.propertyId] ?? null,
+          candidates.get(rootId)![dateSource.propertyId] ?? null)
+      }
+      else if (rootCell.propertyId === dependency.propertyId) {
+        const oldLinks = recordById.get(rootId)!.properties[dependency.propertyId]
+        const newLinks = candidates.get(rootId)![dependency.propertyId]
+        const before = Array.isArray(oldLinks) ? oldLinks as string[] : []
+        const after = Array.isArray(newLinks) ? newLinks as string[] : []
+        const added = after.filter(id => !before.includes(id))
+        if (added.length > 1) throw new BadRequestException('View context accepts one relation edge intent')
+        if (added.length === 1) {
+          rootId = dependency.direction === 'depends-on' ? added[0]! : rootId
+          shouldPlan = true
+        }
+      } else throw new BadRequestException('Cell is not a configured Timeline root intent')
+      if (shouldPlan && dependency.shiftMode !== 'no_auto_shift') {
+        const edges: { predecessorRecordId: string; successorRecordId: string }[] = []
+        for (const record of canonical) {
+          const links = (candidates.get(record.id) ?? record.properties)[dependency.propertyId]
+          if (links === undefined || links === null) continue
+          if (!Array.isArray(links)) throw new ConflictException('Stored relation is invalid')
+          for (const linkedId of links) {
+            if (typeof linkedId !== 'string' || !recordById.has(linkedId)) throw new ConflictException('Stored self relation references a missing record')
+            edges.push(dependency.direction === 'depends-on'
+              ? { predecessorRecordId: linkedId, successorRecordId: record.id }
+              : { predecessorRecordId: record.id, successorRecordId: linkedId })
+          }
+        }
+        try {
+          const plan = planDatabaseSchedule({ records: canonical, edges,
+            dateSource, rootRecordId: rootId, ...(candidates.has(rootId) ? { rootProperties: candidates.get(rootId)! } : {}),
+            shiftMode: dependency.shiftMode, avoidWeekends: dependency.avoidWeekends })
+          for (const mutation of plan.mutations) candidates.set(mutation.recordId,
+            { ...(candidates.get(mutation.recordId) ?? recordById.get(mutation.recordId)!.properties), ...mutation.properties })
+        } catch (error) {
+          if (error instanceof SchedulingError) throw new BadRequestException(`Timeline scheduling failed: ${error.code}`)
+          throw error
+        }
+      }
+    }
+    if (candidates.size > MAX_SCHEDULE_RECORDS) throw new BadRequestException('Batch exceeds affected record limit')
+    let changedCells = 0
+    const changed: DatabaseRecord[] = []
+    for (const [id, values] of candidates) {
+      const record = recordById.get(id)!
+      if (!validateStoredDatabaseRecordValues(values, properties)) throw new BadRequestException('Invalid database record properties')
+      changedCells += [...new Set([...Object.keys(values), ...Object.keys(record.properties)])]
+        .filter(propertyId => !isDeepStrictEqual(values[propertyId] ?? null, record.properties[propertyId] ?? null)).length
+      if (!isDeepStrictEqual(values, record.properties)) changed.push(record)
+    }
+    if (changedCells > 1000) throw new BadRequestException('Batch exceeds final cell limit')
+    const changedIds = new Set(changed.map(record => record.id))
+    await this.touchAdvanced(workspaceId, [databaseId, ...relationTargets], session)
+    const resultDatabase = changed.length ? await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
+      : await this.databases.findInWorkspace(workspaceId, databaseId, session)
+    if (!resultDatabase) throw new ConflictException('Database version is stale')
+    const resultRecords: DatabaseRecord[] = []
+    for (const [id, values] of [...candidates].sort(([left], [right]) => left.localeCompare(right))) {
+      const record = recordById.get(id)!
+      if (changedIds.has(id)) {
+        const updated = await this.records.updateProperties(workspaceId, databaseId, id, record.version, values, session)
+        if (!updated) throw new ConflictException('Database record version is stale')
+        resultRecords.push(updated)
+      } else resultRecords.push(record)
+    }
+    const projected = await this.projectRecords(workspaceId, resultRecords, properties, session)
+    if (projected.length !== resultRecords.length) throw new ConflictException('Record page missing from workspace')
+    if (!await this.cellMutations.commit(key, requestHash, session)) throw new ConflictException('Mutation receipt changed during commit')
+    return { mutationId: input.mutationId, database: resultDatabase, records: projected }
   }
 
   async createRecord(userId: string, workspaceId: string, databaseId: string, input: CreateRecord): Promise<DatabaseRecord> {

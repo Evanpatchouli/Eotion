@@ -3,6 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose'
 
 import { BlockRepository } from './repositories/block.repository'
 import { DatabaseRepository, DatabasePropertyRepository, DatabaseRecordRepository, DatabaseViewRepository } from './repositories/database.repository'
+import { DatabaseCellMutationRepository } from './repositories/database-cell-mutation.repository'
+import { DatabaseCellMutationReceiptEntity, DatabaseCellMutationReceiptSchema } from './schemas/database-cell-mutation.schema'
 import { DatabaseEntity, DatabaseSchema } from './schemas/database.schema'
 import { DatabasePropertyEntity, DatabasePropertySchema } from './schemas/database-property.schema'
 import { DatabaseRecordEntity, DatabaseRecordSchema } from './schemas/database-record.schema'
@@ -46,6 +48,7 @@ import { DocumentMutationService } from './services/document-mutation.service'
       { name: DatabasePropertyEntity.name, schema: DatabasePropertySchema },
       { name: DatabaseRecordEntity.name, schema: DatabaseRecordSchema },
       { name: DatabaseViewEntity.name, schema: DatabaseViewSchema },
+      { name: DatabaseCellMutationReceiptEntity.name, schema: DatabaseCellMutationReceiptSchema },
       { name: FileMetadataEntity.name, schema: FileMetadataSchema },
       { name: UserEntity.name, schema: UserSchema },
       { name: SessionEntity.name, schema: SessionSchema },
@@ -62,6 +65,7 @@ import { DocumentMutationService } from './services/document-mutation.service'
     DatabasePropertyRepository,
     DatabaseRecordRepository,
     DatabaseViewRepository,
+    DatabaseCellMutationRepository,
     FileMetadataRepository,
     UserRepository,
     SessionRepository,
