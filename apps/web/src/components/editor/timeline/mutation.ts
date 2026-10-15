@@ -25,8 +25,19 @@ export interface TimelineMoveCommand {
   propertyId: string
   expectedDatabaseVersion: number
   expectedRecordVersion: number
+  /** Captured on pointerdown; required for an atomic cascade batch. */
+  expectedViewVersion?: number
+  /** Fingerprint of the full dateSource object captured on pointerdown. */
+  dateSourceIdentity?: string
+  /** Fingerprint of the complete Timeline dependency options captured on pointerdown. */
+  dependencyConfigIdentity?: string
   originalValue: DatabaseDateValue
   value: DatabaseDateValue
+}
+
+export function timelineDateSourceIdentity(source: unknown): string | null {
+  if (!source || typeof source !== 'object' || Array.isArray(source)) return null
+  try { return JSON.stringify(source) } catch { return null }
 }
 
 export function isWritableTimelineDateSource(

@@ -4,6 +4,7 @@ import { expect, test, type Locator, type Page, type Route, type TestInfo } from
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain/database'
 import { getTimelineScale, pxPerMs } from '../src/components/editor/timeline/scale'
+import { planDatabaseSchedule } from '../../../packages/domain/src/scheduling'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -433,9 +434,13 @@ type DatabaseApi = {
   conflictCellUpdateValue: DatabasePropertyValue
   offline: boolean
   failRelationCandidates: number
+  conflictCellBatchMutations: number
+  cellBatchMutationOutcome: 'success' | 'committed' | 'not_committed' | 'uncertain' | 'receipt-read-failure'
+  failCellBatchReceiptReads: number
+  cellBatchMutationReceipts: Map<string, 'committed' | 'not_committed' | 'uncertain'>
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'abortCellUpdatesAfterCommit' | 'abortCellUpdatesWithoutCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'holdCellUpdateResponse' | 'failCellUpdateStatus' | 'conflictCellUpdateValue' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'abortCellUpdatesAfterCommit' | 'abortCellUpdatesWithoutCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'holdCellUpdateResponse' | 'conflictCellBatchMutations' | 'cellBatchMutationOutcome' | 'failCellBatchReceiptReads' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
@@ -460,6 +465,10 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     abortCellUpdatesWithoutCommit: options.abortCellUpdatesWithoutCommit ?? 0,
     failCellUpdates: options.failCellUpdates ?? 0,
     conflictCellUpdates: options.conflictCellUpdates ?? 0,
+    conflictCellBatchMutations: options.conflictCellBatchMutations ?? 0,
+    cellBatchMutationOutcome: options.cellBatchMutationOutcome ?? 'success',
+    failCellBatchReceiptReads: options.failCellBatchReceiptReads ?? 0,
+    cellBatchMutationReceipts: new Map(),
     failViewUpdates: options.failViewUpdates ?? 0,
     failPropertyUpdates: options.failPropertyUpdates ?? 0,
     failPropertyDeletes: options.failPropertyDeletes ?? 0,
@@ -532,6 +541,115 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     if (resolveOptions && request.method() === 'POST') {
       const items = api.records.filter(item => item.databaseId === resolveOptions[1] && payload.recordIds.includes(item.id)).map(item => ({ recordId: item.id, pageId: item.pageId, title: api.pages.find(page => page.id === item.pageId)?.title ?? '' }))
       return json(route, 200, { items })
+    }
+    const batchReceipt = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/cell-mutations/([^/]+)$`, 'u').exec(pathname)
+    if (batchReceipt && request.method() === 'GET') {
+      if (api.failCellBatchReceiptReads > 0) {
+        api.failCellBatchReceiptReads -= 1
+        return json(route, 503, { statusCode: 503, message: 'Mutation receipt temporarily unavailable' })
+      }
+      const status = api.cellBatchMutationReceipts.get(batchReceipt[2]!)
+      return json(route, 200, { mutationId: batchReceipt[2], status: status ?? 'uncertain' })
+    }
+    const batchMutation = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/cell-mutations$`, 'u').exec(pathname)
+    if (batchMutation && request.method() === 'POST') {
+      const databaseItem = api.databases.find(item => item.id === batchMutation[1])
+      const input = payload as {
+        mutationId: string; expectedDatabaseVersion: number
+        records: Array<{ recordId: string; expectedRecordVersion: number; cells: Array<{ propertyId: string; value: DatabasePropertyValue }> }>
+        context?: { viewId: string; expectedViewVersion: number }
+      }
+      if (!databaseItem) return json(route, 404, { statusCode: 404, message: 'Database not found' })
+      const requestRecords = input.records.map(item => ({ record: api.records.find(record => record.id === item.recordId), input: item }))
+      if (input.expectedDatabaseVersion !== databaseItem.version || requestRecords.some(({ record, input: item }) => !record || record.version !== item.expectedRecordVersion)) {
+        return json(route, 409, { statusCode: 409, message: 'Cell batch version conflict' })
+      }
+      if (input.context) {
+        const contextView = api.views.find(item => item.id === input.context!.viewId && item.databaseId === databaseItem.id)
+        if (!contextView || contextView.version !== input.context.expectedViewVersion) return json(route, 409, { statusCode: 409, message: 'Timeline view version conflict' })
+      }
+      if (api.conflictCellBatchMutations > 0) {
+        api.conflictCellBatchMutations -= 1
+        return json(route, 409, { statusCode: 409, message: 'Cell batch version conflict' })
+      }
+
+      // Model one canonical server transaction: build all candidate properties first,
+      // run the domain planner over the full unfiltered record/edge snapshot, then
+      // apply the complete changed-record set and one Database version bump.
+      const candidates = api.records.filter(item => item.databaseId === databaseItem.id).map(item => ({ ...item, properties: { ...item.properties } }))
+      const candidateById = new Map(candidates.map(item => [item.id, item]))
+      for (const { input: item } of requestRecords) {
+        const target = candidateById.get(item.recordId)!
+        for (const cell of item.cells) target.properties[cell.propertyId] = cell.value
+      }
+      let planned: Array<{ recordId: string; properties: Record<string, DatabasePropertyValue> }> = []
+      if (input.context) {
+        const policyView = api.views.find(item => item.id === input.context!.viewId)!
+        const timeline = policyView.config.options?.timeline
+        const dependency = timeline?.dependency
+        const source = timeline?.dateSource
+        if (dependency && source) {
+          const relation = api.properties.find(item => item.id === dependency.propertyId)
+          if (relation) {
+            const edges: Array<{ predecessorRecordId: string; successorRecordId: string }> = []
+            for (const item of candidates) {
+              const linked = item.properties[relation.id]
+              if (!Array.isArray(linked)) continue
+              for (const targetId of linked) {
+                if (typeof targetId !== 'string') continue
+                edges.push(dependency.direction === 'depends-on'
+                  ? { predecessorRecordId: targetId, successorRecordId: item.id }
+                  : { predecessorRecordId: item.id, successorRecordId: targetId })
+              }
+            }
+            let rootRecordId = requestRecords[0]!.input.recordId
+            const relationMutation = requestRecords.find(({ input: item }) => item.cells.some(cell => cell.propertyId === relation.id))
+            if (relationMutation) {
+              const ownerId = relationMutation.input.recordId
+              const before = api.records.find(item => item.id === ownerId)?.properties[relation.id]
+              const after = candidateById.get(ownerId)?.properties[relation.id]
+              const prior = new Set(Array.isArray(before) ? before.filter((id): id is string => typeof id === 'string') : [])
+              const added = (Array.isArray(after) ? after.filter((id): id is string => typeof id === 'string') : []).find(id => !prior.has(id))
+              if (added) rootRecordId = dependency.direction === 'depends-on' ? added : ownerId
+            }
+            try {
+              planned = planDatabaseSchedule({ records: candidates, edges, dateSource: source, rootRecordId,
+                rootProperties: candidateById.get(rootRecordId)?.properties, shiftMode: dependency.shiftMode,
+                avoidWeekends: dependency.avoidWeekends }).mutations
+            } catch {
+              // A rejected canonical plan has no business writes in this harness.
+              return json(route, 400, { statusCode: 400, message: 'cycle: scheduled Timeline cycle rejected' })
+            }
+          }
+        }
+      }
+      if (api.cellBatchMutationOutcome === 'not_committed' || api.cellBatchMutationOutcome === 'uncertain' || api.cellBatchMutationOutcome === 'receipt-read-failure') {
+        api.cellBatchMutationReceipts.set(input.mutationId, api.cellBatchMutationOutcome === 'not_committed' ? 'not_committed' : 'uncertain')
+        if (api.cellBatchMutationOutcome === 'receipt-read-failure') api.failCellBatchReceiptReads += 1
+        return route.abort('failed')
+      }
+      const changed = new Map<string, TestRecord>()
+      for (const { input: item } of requestRecords) changed.set(item.recordId, candidateById.get(item.recordId)!)
+      for (const item of planned) {
+        const candidate = candidateById.get(item.recordId)!
+        changed.set(item.recordId, { ...candidate, properties: { ...candidate.properties, ...item.properties } })
+      }
+      const changedRecords: TestRecord[] = []
+      for (const [recordId, candidate] of changed) {
+        const existing = api.records.find(item => item.id === recordId)!
+        if (JSON.stringify(existing.properties) === JSON.stringify(candidate.properties)) continue
+        existing.properties = { ...candidate.properties }
+        existing.version += 1
+        existing.updatedAt = later
+        changedRecords.push(existing)
+      }
+      if (changedRecords.length > 0) {
+        databaseItem.version += 1
+        databaseItem.updatedAt = later
+      }
+      api.cellBatchMutationReceipts.set(input.mutationId, 'committed')
+      if (api.cellBatchMutationOutcome === 'committed') return route.abort('failed')
+      return json(route, 200, { mutationId: input.mutationId, database: databaseItem, records: changedRecords })
     }
     const viewsPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views$`, 'u').exec(pathname)
     if (viewsPath && request.method() === 'GET') return json(route, 200, api.views.filter((item) => item.databaseId === viewsPath[1]))
@@ -4855,6 +4973,226 @@ for (const total of [100, 500] as const) {
     await testInfo.attach(`timeline-${total}-browser-samples.json`, { path: samplePath, contentType: 'application/json' })
   })
 }
+
+// P11.4C Web acceptance exercises the transport and interaction boundary. The
+// intercepted API below applies one canonical batch with the shared domain
+// planner; real Mongo atomicity is covered by the isolated API integration suite.
+function p114cBatchPosts(api: DatabaseApi) {
+  return api.requests.filter(request => request.method === 'POST' && request.path.endsWith('/cell-mutations'))
+}
+
+function p114cCellPatches(api: DatabaseApi) {
+  return api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))
+}
+
+for (const scenario of [
+  { name: 'bar drag', gesture: 'drag' as const, value: { start: '2026-10-13', end: '2026-10-15' } },
+  { name: 'left resize', gesture: 'resize-start' as const, value: { start: '2026-10-13', end: '2026-10-15' } },
+  { name: 'right resize', gesture: 'resize-end' as const, value: { start: '2026-10-13', end: '2026-10-15' } },
+  { name: 'point to range', gesture: 'resize-end' as const, value: '2026-10-13' },
+] as const) {
+  test(`P11.4C ${scenario.name} sends one root-only atomic batch on release`, async ({ page }) => {
+    const rootDateId = 'root-date'
+    const records = [
+      record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', [rootDateId]: scenario.value }),
+      record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', [rootDateId]: '2026-10-01', 'p114b-depends-on-relation': ['p114b-a'] }),
+    ]
+    const { relation, timeline, api, timelineView } = await p114bFixture(page, 'depends-on', records, {}, 'shift_when_overlapping')
+    const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+    const target = scenario.gesture === 'drag' ? bar : timeline.locator(`[data-testid="timeline-${scenario.gesture}"][data-record-id="p114b-a"]`)
+    const bounds = await target.boundingBox()
+    if (!bounds) throw new Error(`Expected ${scenario.name} target`)
+    const x = bounds.x + bounds.width / 2
+    const y = bounds.y + bounds.height / 2
+    const delta = scenario.gesture === 'drag' ? pxPerMs('month') * 4 * 86_400_000 : pxPerMs('month') * 86_400_000 * (scenario.gesture === 'resize-start' ? -1 : 1)
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x + delta, y, { steps: 5 })
+    await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+    expect(p114cBatchPosts(api)).toHaveLength(0)
+    expect(p114cCellPatches(api)).toHaveLength(0)
+    expect(api.records.find(item => item.id === 'p114b-a')?.properties[rootDateId]).toEqual(scenario.value)
+    await page.mouse.up()
+    await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+    const request = p114cBatchPosts(api)[0]!
+    expect(request.payload).toMatchObject({
+      expectedDatabaseVersion: 1,
+      context: { viewId: timelineView.id, expectedViewVersion: 1 },
+      records: [{ recordId: 'p114b-a', expectedRecordVersion: 1, cells: [{ propertyId: rootDateId }] }],
+    })
+    expect(request.payload.records).toHaveLength(1)
+    expect(request.payload.records[0].cells).toHaveLength(1)
+    expect(p114cCellPatches(api)).toHaveLength(0)
+    await expect.poll(() => api.records.find(item => item.id === 'p114b-a')?.version).toBe(2)
+    await expect.poll(() => api.records.find(item => item.id === 'p114b-b')?.version).toBe(2)
+    expect(api.databases[0]?.version).toBe(2)
+    expect(api.records.find(item => item.id === 'p114b-b')?.properties[rootDateId]).not.toBe('2026-10-01')
+    expect(relation.id).toBe('p114b-depends-on-relation')
+  })
+}
+
+test('P11.4C dependency create batches Relation and its canonical date plan', async ({ page }) => {
+  const { relation, timeline, api, timelineView } = await p114bFixture(page, 'depends-on', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': { start: '2026-10-16', end: '2026-10-17' } }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14' }),
+  ], {}, 'shift_when_overlapping')
+  await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  expect(p114cCellPatches(api)).toHaveLength(0)
+  await page.mouse.up()
+  await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+  expect(p114cBatchPosts(api)[0]?.payload).toMatchObject({
+    expectedDatabaseVersion: 1,
+    context: { viewId: timelineView.id, expectedViewVersion: 1 },
+    records: [{ recordId: 'p114b-b', expectedRecordVersion: 1, cells: [{ propertyId: relation.id, value: ['p114b-a'] }] }],
+  })
+  expect(api.records.find(item => item.id === 'p114b-b')?.properties[relation.id]).toEqual(['p114b-a'])
+  expect(api.records.find(item => item.id === 'p114b-b')?.properties['root-date']).toBe('2026-10-18')
+  expect(api.databases[0]?.version).toBe(2)
+  expect(p114cCellPatches(api)).toHaveLength(0)
+  await expect.poll(() => timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    return Array.isArray(setup?.dependencyEdges) ? setup.dependencyEdges.length : -1
+  })).toBe(1)
+  await expect(timeline.locator('[data-testid="timeline-dependency-path"][data-predecessor-id="p114b-a"][data-successor-id="p114b-b"]')).toHaveCount(1)
+})
+
+test('P11.4C dependency delete under an active shift policy changes no dates', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'depends-on', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13' }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14', 'p114b-depends-on-relation': ['p114b-a'] }),
+  ], {}, 'shift_when_overlapping')
+  await expect(timeline.locator('[data-testid="timeline-dependency-path"][data-predecessor-id="p114b-a"][data-successor-id="p114b-b"]')).toHaveCount(1)
+  await p114bDeleteEdge(page, timeline, 'p114b-a', 'p114b-b')
+  await expect.poll(() => p114cCellPatches(api).length).toBe(1)
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  expect(api.records.find(item => item.id === 'p114b-b')?.properties['root-date']).toBe('2026-10-14')
+  expect(api.records.find(item => item.id === 'p114b-b')?.properties[relation.id]).toEqual([])
+  expect(p114cCellPatches(api)[0]?.path).toContain(`/cells/${relation.id}`)
+})
+
+test('P11.4C filtered downstream records are planned from canonical records while refresh stays in the current window', async ({ page }) => {
+  const { timeline, api } = await p114bFixture(page, 'depends-on', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13' }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Hidden successor', 'root-date': '2026-10-14', 'p114b-depends-on-relation': ['p114b-a'] }),
+  ], {}, 'shift_when_overlapping', [{ propertyId: 'root-title', operator: 'is', value: 'Alpha' }])
+  await expect(timeline.locator('[data-testid="timeline-bar"]')).toHaveCount(1)
+  const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+  const bounds = await bar.boundingBox()
+  if (!bounds) throw new Error('Expected visible P11.4C filtered root')
+  const loadedReads = () => api.requests.filter(request => request.method === 'GET' && request.path.endsWith('/views/p114b-depends-on-view/table')).length
+  const beforeReads = loadedReads()
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(bounds.x + bounds.width / 2 + pxPerMs('month') * 4 * 86_400_000, bounds.y + bounds.height / 2, { steps: 5 })
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  await page.mouse.up()
+  await expect.poll(() => api.records.find(item => item.id === 'p114b-b')?.properties['root-date']).toBe('2026-10-17')
+  await expect.poll(loadedReads).toBeGreaterThan(beforeReads)
+  await expect(timeline.locator('[data-testid="timeline-bar"]')).toHaveCount(1)
+  expect(await timeline.locator('[data-testid="timeline-bar"]').getAttribute('data-record-id')).toBe('p114b-a')
+  expect(p114cBatchPosts(api)).toHaveLength(1)
+  expect(p114cCellPatches(api)).toHaveLength(0)
+})
+
+test('P11.4C scheduled cycle rejection leaves relation, dates, record versions, and Database version unchanged', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'depends-on', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13', [relationId('depends-on')]: ['p114b-b'] }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14', [relationId('depends-on')]: ['p114b-c'] }),
+    record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-15' }),
+  ], {}, 'shift_when_overlapping')
+  const before = api.records.map(item => ({ id: item.id, properties: { ...item.properties }, version: item.version }))
+  await p114bConnect(page, timeline, 'p114b-a', 'p114b-c')
+  await page.mouse.up()
+  await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+  expect(api.records.map(item => ({ id: item.id, properties: item.properties, version: item.version }))).toEqual(before)
+  expect(api.databases[0]?.version).toBe(1)
+  expect(p114cCellPatches(api)).toHaveLength(0)
+  expect(relation.id).toBe(relationId('depends-on'))
+})
+
+function relationId(direction: P114bDirection) { return `p114b-${direction}-relation` }
+
+test('P11.4C a 409 refreshes once and never retries the mutation', async ({ page }) => {
+  const { timeline, api } = await p114bFixture(page, 'depends-on', undefined, { conflictCellBatchMutations: 1 }, 'shift_when_overlapping')
+  const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+  const beforeGets = () => api.requests.filter(request => request.method === 'GET' && request.path.endsWith('/views/p114b-depends-on-view/table')).length
+  const initialGets = beforeGets()
+  const bounds = await bar.boundingBox()
+  if (!bounds) throw new Error('Expected P11.4C conflict bar')
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(bounds.x + bounds.width / 2 + pxPerMs('month') * 4 * 86_400_000, bounds.y + bounds.height / 2, { steps: 5 })
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  await page.mouse.up()
+  await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+  await expect.poll(beforeGets).toBeGreaterThan(initialGets)
+  expect(api.records.find(item => item.id === 'p114b-a')?.properties['root-date']).toBe('2026-10-13')
+  expect(api.databases[0]?.version).toBe(1)
+  expect(p114cCellPatches(api)).toHaveLength(0)
+})
+
+for (const outcome of ['committed', 'not_committed', 'uncertain', 'receipt-read-failure'] as const) {
+  test(`P11.4C lost batch response reconciles ${outcome} without retry`, async ({ page }) => {
+    const { timeline, api } = await p114bFixture(page, 'depends-on', undefined, { cellBatchMutationOutcome: outcome }, 'shift_when_overlapping')
+    const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+    const bounds = await bar.boundingBox()
+    if (!bounds) throw new Error('Expected P11.4C unknown-result bar')
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(bounds.x + bounds.width / 2 + pxPerMs('month') * 4 * 86_400_000, bounds.y + bounds.height / 2, { steps: 5 })
+    expect(p114cBatchPosts(api)).toHaveLength(0)
+    await page.mouse.up()
+    await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+    const mutationId = p114cBatchPosts(api)[0]?.payload.mutationId as string
+    await expect.poll(() => api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/cell-mutations/${mutationId}`)).length).toBe(1)
+    expect(p114cBatchPosts(api)).toHaveLength(1)
+    expect(p114cCellPatches(api)).toHaveLength(0)
+    if (outcome === 'committed') {
+      await expect.poll(() => api.records.find(item => item.id === 'p114b-a')?.properties['root-date']).not.toBe('2026-10-13')
+      expect(api.databases[0]?.version).toBe(2)
+    } else {
+      expect(api.records.find(item => item.id === 'p114b-a')?.properties['root-date']).toBe('2026-10-13')
+      expect(api.databases[0]?.version).toBe(1)
+    }
+    if (outcome === 'uncertain' || outcome === 'receipt-read-failure') {
+      await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(bounds.x + bounds.width / 2 + pxPerMs('month') * 4 * 86_400_000, bounds.y + bounds.height / 2, { steps: 5 })
+      await page.mouse.up()
+      expect(p114cBatchPosts(api)).toHaveLength(1)
+    }
+  })
+}
+
+test('P11.4C offline and changed view config reject a prepared gesture before sending a batch', async ({ page }) => {
+  const { timeline, api, timelineView } = await p114bFixture(page, 'depends-on', undefined, {}, 'shift_when_overlapping')
+  const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+  const gesture = async (deltaDays: number) => {
+    const bounds = await bar.boundingBox()
+    if (!bounds) throw new Error('Expected P11.4C fence bar')
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(bounds.x + bounds.width / 2 + pxPerMs('month') * deltaDays * 86_400_000, bounds.y + bounds.height / 2, { steps: 5 })
+    await expect(bar).toHaveAttribute('data-drag-state', 'dragging')
+  }
+  await gesture(4)
+  await page.context().setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+  await expect(bar).toHaveAttribute('data-drag-state', 'idle')
+  await page.mouse.up()
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  await page.context().setOffline(false)
+  await page.evaluate(() => window.dispatchEvent(new Event('online')))
+  await gesture(4)
+  api.databases[0]!.version += 1
+  api.views.find(item => item.id === timelineView.id)!.version += 1
+  await page.mouse.up()
+  await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+  expect(p114cCellPatches(api)).toHaveLength(0)
+  expect(api.databases[0]?.version).toBe(2)
+  expect(api.records.find(item => item.id === 'p114b-a')?.properties['root-date']).toBe('2026-10-13')
+})
 
 test('P11.3B resize handles remain hittable at the native Timeline viewport edges', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
@@ -9967,15 +10305,16 @@ for (const total of [100, 500] as const) {
 // Database suite so its eventual full run also exercises the P11.3 regression set.
 type P114bDirection = 'depends-on' | 'blocks'
 
-async function p114bFixture(page: Page, direction: P114bDirection, records?: TestRecord[], options: Parameters<typeof installApi>[2] = {}) {
+async function p114bFixture(page: Page, direction: P114bDirection, records?: TestRecord[], options: Parameters<typeof installApi>[2] = {}, shiftMode: 'shift_when_overlapping' | 'shift_and_keep_gap' | 'no_auto_shift' = 'no_auto_shift', filters: DatabaseFilter[] = []) {
   const relation = { ...property(`p114b-${direction}-relation`, rootDatabase.id, 'Dependencies', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
   const timelineView = view(`p114b-${direction}-view`, rootDatabase.id, 'Dependency editing', {
     ...DEFAULT_DATABASE_VIEW_CONFIG,
+    filters,
     visibleProperties: ['root-title', 'root-date'], propertyOrder: ['root-title', 'root-date'],
     options: { timeline: {
       scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' },
       frozenTable: { visible: true, visibleProperties: ['root-title'], propertyOrder: ['root-title'] },
-      dependency: { propertyId: relation.id, direction, shiftMode: 'no_auto_shift', avoidWeekends: false },
+      dependency: { propertyId: relation.id, direction, shiftMode, avoidWeekends: false },
     } },
   }, 'timeline')
   const fallbackView = view(`p114b-${direction}-table-view`, rootDatabase.id, 'Fallback table')

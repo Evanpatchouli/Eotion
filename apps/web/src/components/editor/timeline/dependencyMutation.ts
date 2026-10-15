@@ -14,6 +14,7 @@ export type TimelineDependencyCapture = {
   configIdentity: string
   propertyVersion: number
   expectedDatabaseVersion: number
+  expectedViewVersion?: number
   viewIdentityEpoch: number
   viewRoot: HTMLElement | null
   records: readonly { id: string; version: number; originalValue: unknown }[]
@@ -32,6 +33,7 @@ export type TimelineDependencyProperty = {
   direction: 'depends-on' | 'blocks'
   configIdentity: string
   propertyVersion: number
+  shiftMode: 'shift_when_overlapping' | 'shift_and_keep_gap' | 'no_auto_shift'
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -43,7 +45,7 @@ function isVersion(value: unknown): value is number {
 }
 
 /** Stable semantic fingerprint for the complete dependency options object. */
-function dependencyConfigIdentity(config: DatabaseViewConfig): string | null {
+export function timelineDependencyConfigIdentity(config: DatabaseViewConfig): string | null {
   const options = (config as { options?: unknown }).options
   if (!options || typeof options !== 'object' || Array.isArray(options)) return null
   const timeline = (options as Record<string, unknown>).timeline
@@ -77,8 +79,9 @@ export function resolveTimelineDependencyProperty(
 ): TimelineDependencyProperty | null {
   if (!isNonEmptyString(databaseId) || !Array.isArray(properties)) return null
   const options = resolveTimelineDependencyOptions(config)
-  const configIdentity = dependencyConfigIdentity(config)
+  const configIdentity = timelineDependencyConfigIdentity(config)
   if (!options || !configIdentity) return null
+  const dependencyOptions = (config.options as { timeline: { dependency: { shiftMode: TimelineDependencyProperty['shiftMode'] } } }).timeline.dependency
   const property = properties.find(candidate => candidate.id === options.propertyId)
   const propertyConfig: unknown = property?.config
   if (!property || property.databaseId !== databaseId || property.type !== 'relation' || !isVersion(property.version)
@@ -90,6 +93,7 @@ export function resolveTimelineDependencyProperty(
     direction: options.direction,
     configIdentity,
     propertyVersion: property.version,
+    shiftMode: dependencyOptions.shiftMode,
   }
 }
 
@@ -100,6 +104,7 @@ function isCaptureValid(capture: TimelineDependencyCapture): boolean {
     && isNonEmptyString(capture.propertyId) && isNonEmptyString(capture.configIdentity)
     && (capture.direction === 'depends-on' || capture.direction === 'blocks')
     && isVersion(capture.propertyVersion) && isVersion(capture.expectedDatabaseVersion)
+    && (capture.expectedViewVersion === undefined || isVersion(capture.expectedViewVersion))
     && isVersion(capture.viewIdentityEpoch) && (capture.viewRoot === null || typeof capture.viewRoot === 'object')
     && Array.isArray(capture.records) && capture.records.every(record => !!record && typeof record === 'object'
       && isNonEmptyString(record.id) && isVersion(record.version))

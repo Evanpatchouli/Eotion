@@ -24,14 +24,15 @@ import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTit
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import { beginTimelineDateMutation, endTimelineDateMutation } from './timeline/interaction'
 import type { TimelineMoveCommand } from './timeline/mutation'
-import { isWritableTimelineDateSource } from './timeline/mutation'
-import { resolveTimelineDependencyProperty, prepareDependencyRelationMutation, isDependencyRelationMutationConfirmed, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
+import { isWritableTimelineDateSource, timelineDateSourceIdentity } from './timeline/mutation'
+import { resolveTimelineDependencyProperty, timelineDependencyConfigIdentity, prepareDependencyRelationMutation, isDependencyRelationMutationConfirmed, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
   createProductDatabaseView, deleteProductDatabaseView, listProductDatabaseViews,
   clearProductDatabaseViewDeleteState, getProductDatabaseViewDeleteState, setProductDatabaseViewDeleteState,
   isProductDatabaseRecordCreationUncertain, loadProductDatabaseTable, prepareProductDatabaseRecordPage,
+  mutateProductDatabaseCells, getProductDatabaseCellMutationReceipt,
   updateProductDatabaseProperty, changeProductDatabasePropertyType, updateProductDatabaseRecordCell, updateProductDatabaseView,
   listProductDatabases, listProductRelationCandidates, resolveProductRelationTitles,
 } from '../../services/productDatabases'
@@ -351,7 +352,7 @@ function captureTimelineDependency(): TimelineDependencyCapture | null {
     databaseId: databaseId.value, viewId: viewId.value, blockId: blockId.value,
     propertyId: dependency.propertyId, direction: dependency.direction,
     configIdentity: dependency.configIdentity, propertyVersion: dependency.propertyVersion,
-    expectedDatabaseVersion: databaseVersion.value, viewIdentityEpoch, viewRoot: root,
+    expectedDatabaseVersion: databaseVersion.value, expectedViewVersion: viewVersion.value, viewIdentityEpoch, viewRoot: root,
     records: Object.freeze(records.value.map(record => {
       const value = getCellValue(record, dependency.propertyId)
       return Object.freeze({ id: record.id, version: record.version, originalValue: Array.isArray(value) ? Object.freeze([...value]) : value })
@@ -359,7 +360,7 @@ function captureTimelineDependency(): TimelineDependencyCapture | null {
   })
 }
 
-/** Semantic edge command → one existing Relation Cell PATCH, with no date writes. */
+/** Semantic edge intent → generic atomic batch for active create, otherwise one Relation Cell PATCH. */
 async function mutateTimelineDependency(command: TimelineDependencyCommand): Promise<boolean> {
   const capture = command.capture
   const isCurrent = (): boolean => {
@@ -376,8 +377,10 @@ async function mutateTimelineDependency(command: TimelineDependencyCommand): Pro
     return editorViewId === capture.viewId && viewType.value === 'timeline'
   }
   if (!isCurrent() || !canEditTimelineDependency()) return false
+  const dependency = resolveTimelineDependencyProperty(databaseId.value, properties.value, viewConfig.value)
   const mutation = prepareDependencyRelationMutation(command, { databaseId: databaseId.value, properties: properties.value, config: viewConfig.value })
-  if (!mutation || capture.expectedDatabaseVersion !== databaseVersion.value) {
+  if (!dependency || !mutation || capture.expectedDatabaseVersion !== databaseVersion.value
+    || typeof capture.expectedViewVersion !== 'number' || capture.expectedViewVersion !== viewVersion.value) {
     await refreshLoadedWindow()
     return false
   }
@@ -394,13 +397,27 @@ async function mutateTimelineDependency(command: TimelineDependencyCommand): Pro
   // The generic database-wide gate is acquired synchronously, before its queue.
   savingCell.value = true
   mutationError.value = ''
+  const atomicBatch = command.operation === 'create' && dependency.shiftMode !== 'no_auto_shift'
+  const mutationId = atomicBatch ? createLocalId() : null
   try {
-    const result = await updateProductDatabaseRecordCell(capture.workspaceId, capture.databaseId, mutation.ownerRecordId, capture.propertyId, {
-      value: mutation.value, expectedDatabaseVersion: capture.expectedDatabaseVersion, expectedRecordVersion: mutation.expectedRecordVersion,
-    })
+    const result = atomicBatch
+      ? await mutateProductDatabaseCells(capture.workspaceId, capture.databaseId, {
+        mutationId: mutationId!,
+        expectedDatabaseVersion: capture.expectedDatabaseVersion,
+        records: [{ recordId: mutation.ownerRecordId, expectedRecordVersion: mutation.expectedRecordVersion, cells: [{ propertyId: capture.propertyId, value: mutation.value }] }],
+        context: { viewId: capture.viewId, expectedViewVersion: capture.expectedViewVersion },
+      })
+      : await updateProductDatabaseRecordCell(capture.workspaceId, capture.databaseId, mutation.ownerRecordId, capture.propertyId, {
+        value: mutation.value, expectedDatabaseVersion: capture.expectedDatabaseVersion, expectedRecordVersion: mutation.expectedRecordVersion,
+      })
     if (!isCurrent()) return false
     databaseVersion.value = result.database.version
-    records.value = records.value.map(record => record.id === result.record.id ? result.record : record)
+    if ('records' in result) {
+      const returned = new Map(result.records.map(item => [item.id, item]))
+      records.value = records.value.map(record => returned.get(record.id) ?? record)
+    } else {
+      records.value = records.value.map(record => record.id === result.record.id ? result.record : record)
+    }
     externalRefreshPending = false
     await refreshLoadedWindow()
     return isCurrent() && !staleReadonly.value
@@ -409,13 +426,37 @@ async function mutateTimelineDependency(command: TimelineDependencyCommand): Pro
     externalRefreshPending = false
     if (cause instanceof ApiError && cause.statusCode === 409) {
       await refreshLoadedWindow()
-      if (isCurrent()) mutationError.value = staleReadonly.value
+      if (isCurrent()) mutationError.value = atomicBatch ? '相关记录已发生变化，已刷新到最新版本。' : staleReadonly.value
         ? '依赖关系已在其他位置发生变化；刷新未完成，请重试加载。'
         : '依赖关系已在其他位置发生变化，已刷新到最新版本。'
       return false
     }
+    if (atomicBatch && !(cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500)) {
+      let receipt: Awaited<ReturnType<typeof getProductDatabaseCellMutationReceipt>> | null = null
+      try { receipt = await getProductDatabaseCellMutationReceipt(capture.workspaceId, capture.databaseId, mutationId!) } catch { /* unresolved below */ }
+      if (!isCurrent()) return false
+      if (receipt?.mutationId === mutationId && receipt.status === 'committed') {
+        await refreshLoadedWindow()
+        return isCurrent() && !staleReadonly.value
+      }
+      if (receipt?.mutationId === mutationId && receipt.status === 'not_committed') {
+        await refreshLoadedWindow()
+        if (isCurrent() && staleReadonly.value) mutationError.value = '提交结果已确认未执行，但刷新未完成，请重新加载。'
+        return false
+      }
+      await refreshLoadedWindow()
+      if (isCurrent()) {
+        staleReadonly.value = true
+        refreshError.value = '提交结果暂未确认，请重新加载当前视图。'
+        mutationError.value = '提交结果暂未确认，请重新加载当前视图。'
+      }
+      return false
+    }
     if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) {
-      mutationError.value = '依赖关系未保存，请检查关联记录和权限后重新操作。'
+      const text = errorMessage(cause, '')
+      mutationError.value = atomicBatch && /cycle|循环/u.test(text) ? '检测到循环依赖，无法自动调整日期。'
+        : atomicBatch && /limit|edge|maximum|exceed|too many|bounded|cap|超过|过大|上限|限制/u.test(text) ? '依赖链过大，未执行日期调整。'
+          : '依赖关系未保存，请检查关联记录和权限后重新操作。'
       return false
     }
     // Transport/5xx is an unknown result. Never retry the mutation.
@@ -462,16 +503,18 @@ function prepareTimelineBarDrag(recordId: string): TimelineBarDragSession | null
     propertyId: property.id,
     expectedDatabaseVersion: databaseVersion.value,
     expectedRecordVersion: record.version,
+    expectedViewVersion: viewVersion.value,
+    dateSourceIdentity: timelineDateSourceIdentity(source) ?? undefined,
+    dependencyConfigIdentity: timelineDependencyConfigIdentity(viewConfig.value) ?? undefined,
     originalValue,
     viewIdentityEpoch,
     viewRoot,
-  })
+  }) as TimelineBarDragSession
 }
 
 /**
- * Timeline Date Property mutation. One call is one generic Record Cell PATCH;
- * the Timeline layer never opens a second request, retry or local queue.
- * Returns true only when the canonical record is known to match the command.
+ * A release submits one root Date intent. Active policy uses the generic atomic
+ * batch; the server plans the full graph. Unknown batches resolve by receipt.
  */
 async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean> {
   const capturedEpoch = (command as TimelineMoveCommand & { viewIdentityEpoch?: number }).viewIdentityEpoch
@@ -491,6 +534,17 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
   if (!isCurrent() || !writable.value || command.expectedDatabaseVersion !== databaseVersion.value || viewType.value !== 'timeline') return false
   const timeline = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline
   if (!isWritableTimelineDateSource(timeline?.dateSource) || timeline.dateSource.propertyId !== command.propertyId) return false
+  const shiftMode = timeline.dependency?.shiftMode
+  const atomicBatch = shiftMode !== undefined && shiftMode !== 'no_auto_shift'
+  const dateSourceIdentity = timelineDateSourceIdentity(timeline.dateSource)
+  const dependencyConfigIdentity = timelineDependencyConfigIdentity(viewConfig.value)
+  if (!dateSourceIdentity || command.dateSourceIdentity !== dateSourceIdentity
+    || command.expectedViewVersion !== viewVersion.value
+    || command.dependencyConfigIdentity !== dependencyConfigIdentity
+    || atomicBatch && !dependencyConfigIdentity) {
+    await refreshLoadedWindow()
+    return false
+  }
   const property = properties.value.find(item => item.id === command.propertyId)
   const record = recordsById.value.get(command.recordId)
   if (!property || property.type !== 'date' || !record || record.version !== command.expectedRecordVersion) return false
@@ -507,16 +561,29 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
 
   savingCell.value = true
   mutationError.value = ''
+  const mutationId = atomicBatch ? createLocalId() : null
   try {
-    const result = await updateProductDatabaseRecordCell(workspaceId.value, databaseId.value, record.id, property.id, {
-      value: command.value,
-      expectedDatabaseVersion: command.expectedDatabaseVersion,
-      expectedRecordVersion: command.expectedRecordVersion,
-    })
+    const result = atomicBatch
+      ? await mutateProductDatabaseCells(workspaceId.value, databaseId.value, {
+        mutationId: mutationId!,
+        expectedDatabaseVersion: command.expectedDatabaseVersion,
+        records: [{ recordId: record.id, expectedRecordVersion: command.expectedRecordVersion, cells: [{ propertyId: property.id, value: command.value }] }],
+        context: { viewId: viewId.value, expectedViewVersion: command.expectedViewVersion! },
+      })
+      : await updateProductDatabaseRecordCell(workspaceId.value, databaseId.value, record.id, property.id, {
+        value: command.value,
+        expectedDatabaseVersion: command.expectedDatabaseVersion,
+        expectedRecordVersion: command.expectedRecordVersion,
+      })
     if (!isCurrent()) return false
     databaseVersion.value = result.database.version
-    if (recordsById.value.has(result.record.id)) records.value = records.value.map(item => item.id === result.record.id ? result.record : item)
-    mutationError.value = 'refreshWarning' in result && result.refreshWarning ? result.refreshWarning : ''
+    if ('records' in result) {
+      const returned = new Map(result.records.map(item => [item.id, item]))
+      records.value = records.value.map(item => returned.get(item.id) ?? item)
+    } else if (recordsById.value.has(result.record.id)) {
+      records.value = records.value.map(item => item.id === result.record.id ? result.record : item)
+    }
+    mutationError.value = ''
     externalRefreshPending = false
     await refreshLoadedWindow()
     if (!isCurrent()) return false
@@ -529,13 +596,39 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
       // and never keep the stale optimistic position.
       await refreshLoadedWindow()
       if (!isCurrent()) return false
-      mutationError.value = staleReadonly.value
-        ? '日期已在其他位置被修改；刷新未完成，当前内容保持只读，请重试加载。'
-        : '日期已在其他位置被修改，已刷新到最新版本。'
+      mutationError.value = atomicBatch
+        ? '相关记录已发生变化，已刷新到最新版本。'
+        : staleReadonly.value
+          ? '日期已在其他位置被修改；刷新未完成，当前内容保持只读，请重试加载。'
+          : '日期已在其他位置被修改，已刷新到最新版本。'
+      return false
+    }
+    if (atomicBatch && !(cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500)) {
+      let receipt: Awaited<ReturnType<typeof getProductDatabaseCellMutationReceipt>> | null = null
+      try { receipt = await getProductDatabaseCellMutationReceipt(workspaceId.value, databaseId.value, mutationId!) } catch { /* unresolved below */ }
+      if (!isCurrent()) return false
+      if (receipt?.mutationId === mutationId && receipt.status === 'committed') {
+        await refreshLoadedWindow()
+        return isCurrent() && !staleReadonly.value
+      }
+      if (receipt?.mutationId === mutationId && receipt.status === 'not_committed') {
+        await refreshLoadedWindow()
+        if (isCurrent() && staleReadonly.value) mutationError.value = '提交结果已确认未执行，但刷新未完成，请重新加载。'
+        return false
+      }
+      await refreshLoadedWindow()
+      if (isCurrent()) {
+        staleReadonly.value = true
+        refreshError.value = '提交结果暂未确认，请重新加载当前视图。'
+        mutationError.value = '提交结果暂未确认，请重新加载当前视图。'
+      }
       return false
     }
     if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) {
-      mutationError.value = errorMessage(cause, '日期未更新，已恢复当前记录。')
+      const text = errorMessage(cause, '日期未更新，已恢复当前记录。')
+      mutationError.value = atomicBatch && /cycle|循环/u.test(text) ? '检测到循环依赖，无法自动调整日期。'
+        : atomicBatch && /limit|edge|maximum|exceed|too many|bounded|cap|超过|过大|上限|限制/u.test(text) ? '依赖链过大，未执行日期调整。'
+          : errorMessage(cause, '日期未更新，已恢复当前记录。')
       return false
     }
     await refreshLoadedWindow()

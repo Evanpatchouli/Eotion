@@ -1,5 +1,5 @@
 import { createLocalId } from '@eotion/storage'
-import type { DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyTypeChangeRequest, DatabasePropertyTypeChangeResponse, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest } from '@eotion/contracts'
+import type { DatabaseCellBatchMutationRequest, DatabaseCellBatchMutationResponse, DatabaseCellBatchMutationReceipt, DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyTypeChangeRequest, DatabasePropertyTypeChangeResponse, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest } from '@eotion/contracts'
 import { nextOrderKey } from '../utils/pageTree'
 
 import { flushActivePageEditor } from '../editor/activePageEditor'
@@ -333,5 +333,38 @@ export async function updateProductDatabaseRecordCell(workspaceId: string, datab
       }
     }
     return { ...result, ...(refreshWarning ? { refreshWarning } : {}) }
+  })
+}
+
+export async function mutateProductDatabaseCells(
+  workspaceId: string,
+  databaseId: string,
+  input: DatabaseCellBatchMutationRequest,
+): Promise<DatabaseCellBatchMutationResponse> {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再编辑数据库。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const result = await api.databases.mutateDatabaseCells(workspaceId, databaseId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
+}
+
+export async function getProductDatabaseCellMutationReceipt(
+  workspaceId: string,
+  databaseId: string,
+  mutationId: string,
+): Promise<DatabaseCellBatchMutationReceipt> {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再确认数据库修改结果。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    assertOnlineAndCurrent(workspaceId, userId)
+    const result = await api.databases.getDatabaseCellMutationReceipt(workspaceId, databaseId, mutationId)
+    assertOnlineAndCurrent(workspaceId, userId)
+    return result
   })
 }
