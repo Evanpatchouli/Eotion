@@ -14,7 +14,7 @@ export type TimelineDependencyGeometry = {
   end: { x: number; y: number }
 }
 
-function dependencyOptions(config: DatabaseViewConfig): { propertyId: string; direction: 'depends-on' | 'blocks' } | null {
+export function resolveTimelineDependencyOptions(config: DatabaseViewConfig): { propertyId: string; direction: 'depends-on' | 'blocks' } | null {
   const timeline = (config as { options?: unknown }).options
   if (timeline === null || typeof timeline !== 'object' || Array.isArray(timeline)) return null
   const options = (timeline as Record<string, unknown>).timeline
@@ -28,7 +28,7 @@ export function projectTimelineDependencies(args: {
   records: readonly TimelineRecordInput[]
   config: DatabaseViewConfig
 }): TimelineDependencyEdge[] {
-  const options = dependencyOptions(args.config)
+  const options = resolveTimelineDependencyOptions(args.config)
   if (!options || typeof args.databaseId !== 'string' || args.databaseId.length === 0) return []
 
   const property = args.properties.find(candidate => candidate.id === options.propertyId)
