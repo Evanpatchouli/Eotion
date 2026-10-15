@@ -1,5 +1,40 @@
 # Handoff
 
+## 2026-10-16 P11.4B Dependency Editing（完成并停止）
+
+**Final verdict：PASS；P11.4B COMPLETE。P11.4C/D未开始。**
+基线`1eb5e5db5c29bd97aa3a13ea4c39812c80bcd64c`，分支`codex/p11-4b-dependency-editing`，开始工作树干净。
+实现`25ba107`、`aa77aa9`，范围内fix `e464c2e`、`db3c3ea`；验收`f13f3f8`，文档提交包含本节。
+报告：[P11.4B](../docs/verification/p11-4b-dependency-editing.md)，架构§29。版本0.0.1/build2不变；目标0.0.3未发布。
+
+手势始终predecessor→successor，纯mapping：depends-on写successor Relation中的predecessor，blocks写predecessor Relation中的successor。
+create stable dedupe append；delete只filter指定ID，保序；一次完整Cell PATCH，复用generic serialization、validation、双CAS与Mongo事务。
+无entity/collection/endpoint、无Date写入或auto shift。canonical Relation→P11.4A projection为唯一永久graph。
+self/semantic duplicate 0 PATCH；cycle允许，Cycle scheduling semantics deferred to P11.4C Auto Shift Policies.
+只链接rendered scheduled Bar（包括该Bar的扩展controls），不补取filtered/unloaded/unscheduled目标、不加picker。
+
+pointerdown捕获loaded Relation snapshots/Record versions、DB version、完整user/workspace/database/view/block/scope/epoch/root与property/config/direction。
+提交identity/config/version fail closed；generic savingCell同步阻止第二mutation；409清临时状态、canonical refresh、0 retry。
+网络/5xx按canonical membership确认，读取失败staleReadonly，不retry mutation；用户只能再读canonical。
+offline不能create/delete，linking途中offline取消；Escape/cancel/lostcapture/blur/hidden/unmount/scope/config/viewport变化清preview/capture。
+Pointer Events create与Date drag/resize仲裁；touch action使用primary/session/scope/config/edge/bounds fence，首tap选择、再次tap删除，抑制合成click。
+review修复首次管理click误删、pending临时只读、editability缓存、粗指针point遮挡、non-primary touch和非Element事件target。
+依赖live guard修复不扩大为通用toolbar的人工setEditable切换验收。
+
+实际验证：Timeline logic86/86（新增27）；Domain48/48；Contracts25/25；Web typecheck/build/version check/diff/UTF-8无BOM通过。
+B Web27/27；最终完整Database180/180（单worker/零重试），包含P11.3全部回归与P11.4A全部8项。
+首轮完整178/180，两项Board草稿标题/List空标题失败；最终源定向2/2与最终完整180/180均过，保留原日志，不称基线缺陷。
+隔离Mongo8.0.12新TEMP dbpath/61591/RS p114b7e4c42c6：Domain16/16、完整HTTP31/31（增补前），增补后Database HTTP5/5。
+已验证Relation add/remove顺序、GET/Mongo持久化、DB/Record CAS与事务回滚；实例已停，不访问27017。
+100/500：10/50 edges、4/20 table GET、extra Record requests0；pointermove projections/geometry refs稳定，无关DOM/Vue0，preview layer Vue4。
+主Agent视检Desktop/390 Light/Dark与Dark preview/selection，无document横溢；真实coarse/CDP touch create/delete 2 Relation PATCH/0 Date PATCH/pageerror0。
+全部TEMP原始日志、最终截图目录与命名瑕疵见报告；不把mock Web与真实HTTP/Mongo合称一条端到端链。
+
+未跑完整Product其他13文件、Web连真实API全链、native真机、正式FPS、截图baseline diff或发布。
+**停止在B。** C精确入口：`TimelineDependencyOptions.shiftMode/avoidWeekends`、`timeline/dependency.ts` canonical graph、
+`dependencyMutation.ts` semantic mapping、NodeView existing Cell adapter；先独立冻结cycle/调度/跨window/多Cell原子性与unknown契约。
+不得据single Relation Cell PASS执行sequential Date PATCH或自动级联。P11.4D Final Acceptance也未执行。
+
 ## 2026-10-16 P11.4A Dependency Read Model + Lines（完成并停止）
 
 **Final verdict：PASS（P11.4A Scope）。P11.4B/C/D 未开始。** 基线2f9734b，分支

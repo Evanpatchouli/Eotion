@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS，完成并停止；P11.4B/C/D 未开始**
+> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS，完成并停止；P11.4C/D 未开始**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -998,7 +998,7 @@ Frozen Table 的显示、独立列投影与共享行对齐已由 P11.2C 完成�
 | 单元 | 范围 |
 | --- | --- |
 | P11.4A Dependency Read Model + Lines | **Scope PASS（2026-10-16）**：读取现有 self Relation，纯投影、共享 Bar geometry 与只读箭头 |
-| P11.4B Dependency Editing | 后续独立授权：创建、删除、拖线及 Relation mutation |
+| P11.4B Dependency Editing | **PASS（2026-10-16）**：predecessor→successor 创建/删除；现有 Relation Cell 单次 CAS PATCH，不移动日期 |
 | P11.4C Auto Shift Policies | 后续独立授权：shiftMode / avoidWeekends 执行与原子日期联动 |
 | P11.4D Dependency Final Acceptance | 后续独立验收整个 Dependency 能力 |
 
@@ -1015,7 +1015,16 @@ canvas 的端点可以保留，SVG 负责裁剪。active drag/resize preview 按
 不重解析 Relation 或全量 Record projection。SVG 不接收 pointer/focus；Today、Bar、handles 和
 preview 层保持在其上方。验收和精确限制见 [P11.4A](verification/p11-4a-dependency-read-lines.md)。
 
-P11.4A 完成后停止，不自动进入 P11.4B；不声明 P11.4、P11 Final 或 0.0.3 已完成。
+P11.4A 的只读边界见上述报告。P11.4B 独立实施与验收见
+[Dependency Editing](verification/p11-4b-dependency-editing.md)；完成 B 后停止，不进入 C/D，
+不声明 P11.4、P11 Final 或 0.0.3 已完成。
+
+P11.4B 手势永远 predecessor→successor，与 Relation direction 解耦；depends-on 写 successor
+Relation，blocks 写 predecessor Relation，create/delete 共用纯 mapping。单次完整 Cell PATCH
+保留其他 ID/顺序，复用既有 validation、Database/Record CAS、transaction 和 canonical projection。
+self/duplicate 0 PATCH，cycle 允许，调度语义延后 P11.4C。offline不编辑；409不重试、刷新；
+unknown读取canonical membership确认，读取失败staleReadonly；只链接当前rendered Bar，不补取
+filtered/unloaded/unscheduled目标。没有 auto-shift、settings、picker、Undo/Redo 或版本改动。
 
 ### P11.5 Responsive + Visual Polish
 

@@ -1,6 +1,6 @@
 # P11.2 Timeline Renderer 架构
 
-> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS；P11.3 Mutation COMPLETE；P11.4A Dependency Read Lines Scope PASS**（Read 2026-10-13、Mutation / Dependency A 2026-10-16；实施/验收记录见 §20–§28）
+> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS；P11.3 Mutation COMPLETE；P11.4A Read Lines Scope PASS；P11.4B Dependency Editing COMPLETE / PASS**（实施/验收记录见 §20–§29；P11.4C/D未开始）
 > 基线：`25bd279585772bfdce43799de71fb3c3f5ba5436`（`master`），P11.1D PASS 之后。
 > 版本背景：当前版本 `0.0.1`，P11 目标版本 `0.0.3`。§1–§19 保留 P11.2.0 的架构基线；该阶段仅修改文档。P11.2A/B/C 的产品实施与验证见 §20–§22，API、schema、sync、MCP、依赖与版本保持。
 
@@ -643,3 +643,38 @@ routing 为确定的 orthogonal path：forward 使用中间折点；backward / �
 
 验收与限制见 [P11.4A](../verification/p11-4a-dependency-read-lines.md)。本轮到 A 为止；
 P11.4B Editing、P11.4C Auto Shift、P11.4D Final Acceptance 都需独立后续任务。
+
+## 29. P11.4B Dependency Editing
+
+P11.4B 在 §28 canonical renderer 上增加可逆 Relation editing；不新增实体/API，不移动日期。
+gesture source 永远是 predecessor，target 永远是 successor；`dependencyMutation.ts` 的
+`resolveDependencyRelationMutation` 统一 create/delete mapping：depends-on 修改 successor Cell
+中的 predecessor ID；blocks 修改 predecessor Cell 中的 successor ID。create stable dedupe
+append，delete filter 指定 ID，保留其余顺序；一次完整 generic Relation Cell PATCH，无第二侧写入。
+
+`captureTimelineDependency` 在 pointerdown 捕获 scope/user/workspace/database/view/block、
+epoch/DOM root、property version、direction/config fingerprint、Database version 和所有 loaded
+Record 的 Relation raw value/Record version。owner 在命中 target 后用快照映射，不临时取新版本。
+`mutateTimelineDependency` 在提交前校验 identity/config/property/self target/原值与双版本，
+复用 `savingCell` 和 `updateProductDatabaseRecordCell`；existing validator/CAS/事务仍是服务端权威。
+已提交请求的实例归属独立于编辑器是否临时可写，防止只读切换跳过 canonical refresh 或滞留 busy。
+
+`useTimelineDependencyInteraction` 只保存 transient linking pointer/candidate、pending 与 selected
+stable edge ID。canonical projection 是唯一永久 graph；self/semantic duplicate 0 PATCH，cycle允许。
+`Cycle scheduling semantics deferred to P11.4C Auto Shift Policies.`
+只命中当前 rendered Bar；filtered/unloaded/unscheduled 目标没有额外 GET、picker 或自动加载。
+
+preview 与 canonical 复用 `layoutTimelineDependency` 和 Bar raw anchors；pointermove 不重新读取
+Relation、不重投影 graph。创建首条边时，有效 dependency config 也建立共享 geometry Map。
+visual SVG 保持 Grid < Dependency < Today < Bar；透明宽 stroke hit layer 高于空白行且低于 Bar /
+resize/connector，visual path 不进入 Tab。独立 keyboard control 管理 selection 和 delete，label
+使用 record title；首次点击管理仅选择，后续显式删除或 Delete/Backspace 执行 mutation。
+
+active linking 与 Date drag/resize 互斥。Escape/cancel/lostcapture/blur/hidden/unmount、scope/
+config/viewport change/offline 清理 capture 与 preview，0 PATCH；offline 不允许开始 create/delete。
+409 refresh canonical、不 retry；确定性4xx清 pending、保留 canonical；网络/5xx读取 canonical
+membership 确认 create/delete结果，读取失败 staleReadonly、只允许重新读取，不重发 mutation。
+selection 在 edge 消失或 scope change时清空；scope ABA不复用旧选择。
+
+验收、100/500观察、真实Mongo、视觉与未运行项见
+[P11.4B](../verification/p11-4b-dependency-editing.md)。P11.4C/D 仍需独立后续任务。
