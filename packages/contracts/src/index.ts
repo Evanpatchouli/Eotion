@@ -390,11 +390,12 @@ const databaseCellBatchMutationRecordResponseSchema = z.object({
   updatedAt: dateSchema,
   pageVersion: dateSchema,
 }).strict()
-export const DatabaseTableRecordSchema = databaseCellBatchMutationRecordResponseSchema
+/** Stored cells plus canonical Page title/version; derived values require a View records read. */
+export const DatabaseCellBatchMutationRecordSchema = databaseCellBatchMutationRecordResponseSchema
 export const DatabaseCellBatchMutationResponseSchema = z.object({
   mutationId: databaseStableIdSchema,
   database: DatabaseSchema,
-  records: z.array(DatabaseTableRecordSchema).min(1).max(500),
+  records: z.array(DatabaseCellBatchMutationRecordSchema).min(1).max(500),
 }).strict()
 export type DatabaseCellBatchMutationResponse = z.infer<typeof DatabaseCellBatchMutationResponseSchema>
 

@@ -76,11 +76,15 @@ export function planDatabaseSchedule(input: {
   }
   const indegree = new Map([...affected].map(id => [id, 0]))
   let edgeCount = 0
-  for (const id of affected) for (const edge of outgoing.get(id) ?? []) {
-    if (!affected.has(edge.successorRecordId)) continue
-    indegree.set(edge.successorRecordId, indegree.get(edge.successorRecordId)! + 1)
+  // Every incoming constraint to a scheduled affected successor is evaluated,
+  // including predecessors outside the reachable subgraph. The root is not
+  // replanned, so only its internal incoming edges matter for cycle detection.
+  for (const id of affected) for (const edge of incoming.get(id) ?? []) {
+    const internal = affected.has(edge.predecessorRecordId)
+    if (id === rootRecordId && !internal) continue
     edgeCount++
     if (edgeCount > MAX_SCHEDULE_EDGES) throw new SchedulingError('limit')
+    if (internal) indegree.set(id, indegree.get(id)! + 1)
   }
   const ready = new MinHeap<string>((a, b) => a < b ? -1 : a > b ? 1 : 0)
   for (const [id, degree] of indegree) if (degree === 0) ready.push(id)
@@ -135,9 +139,11 @@ function readDates(properties: DatabaseRecord['properties'], source: TimelineDat
   const endCell = source.mode === 'start-end' ? cells[1] : undefined
   if (endCell && endCell.kind !== startCell.kind) throw new SchedulingError('invalid-date')
   const start = instant(startCell.start)
-  const finish = endCell ? instant(endCell.start) : startCell.end ? instant(startCell.end) : start
+  const finish = source.mode === 'start-end' ? (endCell ? instant(endCell.start) : start)
+    : startCell.end ? instant(startCell.end) : start
   if (finish < start) throw new SchedulingError('invalid-date')
-  const inclusiveFinish = startCell.kind === 'date-only' && (endCell || startCell.end)
+  const hasRange = source.mode === 'start-end' ? Boolean(endCell) : Boolean(startCell.end)
+  const inclusiveFinish = startCell.kind === 'date-only' && hasRange
     ? checkedAdd(finish, DAY_MS) : finish
   return { kind: startCell.kind, start, finish: inclusiveFinish, cells: raw as DatabaseDateValue[] }
 }

@@ -90,6 +90,20 @@ test('duplicate edges do not produce duplicate mutations', () => {
   assert.equal(result.mutations.length, 1)
 })
 
+test('external incoming predecessor constrains an affected successor and counts toward edge budget', () => {
+  const result = run([
+    record('a', '2026-01-10'), record('b', '2026-01-01'), record('external', '2026-01-12'),
+  ], [edge('a', 'b'), edge('external', 'b')])
+  assert.deepEqual(dates(result), { b: '2026-01-12' })
+  assert.deepEqual([result.nodeCount, result.edgeCount], [2, 2])
+})
+
+test('external incoming constraints over 10000 fail closed despite a tiny affected subgraph', () => {
+  const externals = Array.from({ length: MAX_SCHEDULE_EDGES / 2 }, (_, i) => record(`e${i}`, '2026-01-01'))
+  const edges = [edge('a', 'b'), edge('a', 'c'), ...externals.flatMap(item => [edge(item.id, 'b'), edge(item.id, 'c')])]
+  failure(() => run([record('a', '2026-01-10'), record('b', '2026-01-01'), record('c', '2026-01-01'), ...externals], edges), 'limit')
+})
+
 test('unrelated cycles do not block the affected subgraph', () => {
   const result = run([record('a', '2026-01-10'), record('b', '2026-01-01'), record('x', '2026-01-01'), record('y', '2026-01-01')], [edge('a', 'b'), edge('x', 'y'), edge('y', 'x')])
   assert.deepEqual(dates(result), { b: '2026-01-10' })
@@ -149,6 +163,22 @@ test('start-end without End is a point and moves only its existing Start cell', 
     { id: 'a', properties: { start: '2026-01-10' } },
     { id: 'b', properties: { start: null, end: '2026-01-01' } },
   ], [edge('a', 'b')], { dateSource: startEnd }).mutations, [])
+})
+
+test('start-end point ignores Start cell inner end for predecessor finish', () => {
+  const result = run([
+    { id: 'a', properties: { start: { start: '2026-01-10', end: '2026-01-15' }, end: null } },
+    { id: 'b', properties: { start: '2026-01-01', end: null } },
+  ], [edge('a', 'b')], { dateSource: startEnd })
+  assert.deepEqual(result.mutations, [{ recordId: 'b', properties: { start: '2026-01-10' } }])
+})
+
+test('start-end datetime point ignores Start cell inner end for predecessor finish', () => {
+  const result = run([
+    { id: 'a', properties: { start: { start: '2026-01-10T10:00:00.123Z', end: '2026-01-15T12:00:00.123Z', timeZone: 'UTC' }, end: null } },
+    { id: 'b', properties: { start: { start: '2026-01-01T00:00:00.000Z', timeZone: 'UTC' }, end: null } },
+  ], [edge('a', 'b')], { dateSource: startEnd })
+  assert.deepEqual(result.mutations, [{ recordId: 'b', properties: { start: { start: '2026-01-10T10:00:00.123Z', timeZone: 'UTC' } } }])
 })
 
 test('start-end rejects mixed date kinds and reversed boundaries', () => {
