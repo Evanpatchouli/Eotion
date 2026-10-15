@@ -58,7 +58,8 @@ focus、可键盘 Escape。
   `cursor: progress`、`aria-busy="true"`、`data-saving="true"`、`role="status"` 文案「正在保存…」；
   不改变 row height、时间宽度或 bar 位置，不使用全屏 loading，不 remount Table/Record Host。
 - 同一 `record + property` 在途时 `begin()` 立即 fail closed：不进入 preview、不产生第二个
-  PATCH；handles 为 `aria-disabled` 且 `pointer-events: none`。
+  PATCH。保存期间 `DatabaseNodeView.writable=false` 传到 `DatabaseTimelineView`，使 bar 的
+  `draggable=false`，resize handles 暂时卸载；bar 仍显示 pending 状态并可打开 Record。
 - NodeView `moveTimelineRecord` 用 `beginTimelineDateMutation` 二次确认，因此即使并发路径
   绕过 bar，也只会有一个 Cell PATCH。
 - 既有 generic 层已是 database-wide 串行（`serializeDatabaseMutation`），Timeline **不重建
@@ -87,7 +88,7 @@ transport / 5xx 之后一律 `refreshLoadedWindow()` 重新核对 canonical，�
 | --- | --- |
 | canonical == command.value | 接受 canonical，文案 `日期已更新，提交响应暂未确认；当前记录已与目标一致。`，返回 true |
 | canonical != command.value | rollback 到 canonical，文案 `提交结果暂未确认，已刷新为服务器最新日期。`，返回 false |
-| refresh 失败 | `refreshError` + `staleReadonly`，保持只读并可重试加载 |
+| refresh 失败 | 保留 `refreshError` + `staleReadonly`，保持只读、结果仍未确认并返回 false；可沿用该错误重试加载，不以旧 records 声称已是最新 |
 
 禁止：无脑 retry、timeout 再发一次 PATCH、假定失败、假定成功。
 
@@ -115,13 +116,15 @@ transport / 5xx 之后一律 `refreshLoadedWindow()` 重新核对 canonical，�
 
 ## 10. Focus / Accessibility 基础
 
-- resize handle 可 focus（移除 `pointerdown.prevent`），`focus-visible` 环可见；
+- resize handle 可 focus（controller 移除 resize `pointerdown.preventDefault`），`focus-visible` 环可见；
   bar marker 变体的 focus ring 收在圆形 marker 上。
-- Escape 见 §3；mutation 提交后按 identity 恢复 focus 到原 bar/handle，且**不会**从 drawer、
-  Frozen row 或 Table 抢走 focus（`focus.ts` 只在 focus 掉到 body/丢失时恢复）。
+- Escape 见 §3；mutation 提交后仅在 focus 丢失或落到 `body` 时恢复：捕获原 bar anchor DOM identity；
+  原 handle 消失时只在同 anchor 找同 record 当前 control，或回退到该 bar。其他非 `body` 焦点（包括
+  另一 bar、drawer、Frozen row、Table）不抢；恢复在 `nextTick` 后再核验 interaction token 与 scope。
 - View switch / unmount 不产生 focus trap。
-- `aria-busy`（saving）、`aria-disabled`（pending handle / 只读 bar）、`role="status"`（保存中）、
-  `role="alert"`（conflict / failure）语义明确。键盘方向键编辑日期仍留给 P11.5。
+- `aria-busy`（saving）、`role="status"`（保存中）、`role="alert"`（conflict / failure）语义明确。
+  `TimelineBar` 模板仍有 handle `aria-disabled` 分支，但保存期间 handles 卸载，因此不是可见 pending
+  行为；只读/离线 bar 仍可打开 Record，不声明 `aria-disabled`。键盘方向键编辑日期仍留给 P11.5。
 
 ## 11. Event Arbitration
 
@@ -173,7 +176,7 @@ Logic（任务书 §20 十八项）：
 | 1 | idle → preview → cancel | `interaction.spec`「cancelPreview …」/「cancel from previewing …」 |
 | 2 | idle → preview → pending → success | `interaction.spec`「interaction ledger …」+ Web#4 unknown-confirmed |
 | 3 | pending → 409 → canonical refresh | Web#4 |
-| 4 | pending → known failure → rollback | Web#4（500） |
+| 4 | pending → known failure → rollback | 既有 P11.3A/B failure 回归的 400 分支；Web#4 的 500 属于 unknown/transport 分支 |
 | 5 | pending → unknown → verified success | Web#4（abort-after-commit） |
 | 6 | pending → unknown → verified failure | Web#4（abort-without-commit） |
 | 7 | Escape before commit = 0 PATCH | Web#2 |
@@ -182,7 +185,7 @@ Logic（任务书 §20 十八项）：
 | 10 | unmount during preview = 0 PATCH | Web#5（preview 期间切 View 使 bar 卸载） |
 | 11 | view switch during preview = 0 PATCH | Web#5 |
 | 12 | view switch during pending 的 stale scope 被忽略 | 机制由 `interaction.spec` token fence 覆盖；UI 层被 `viewBusy` fail closed（见 §14.1） |
-| 13 | ABA identity fence | `interaction.spec`「cancel from previewing …」/「cancel invalidates …」+ 既有 P9/P11.2D identity 套件 |
+| 13 | ABA identity fence | `interaction.spec` token/cancel 用例 + 既有 P9/P11.2D identity 套件；本轮 focus 的 scope/token 失效 guard 无独立 E2E 专项断言 |
 | 14 | same Record double mutation blocked | Web#3 |
 | 15 | no-op drag = 0 PATCH | Web#1 |
 | 16 | no-op resize = 0 PATCH | Web#1 |
@@ -199,7 +202,7 @@ Web（任务书 §21 十九项）：
 | 4 | save pending visual state | Web#3 |
 | 5 | same bar pending 再次 drag blocked | Web#3 |
 | 6 | 409 → canonical geometry refresh | Web#4 |
-| 7 | network failure → preview rollback | Web#4 |
+| 7 | known 4xx failure → preview rollback | 既有 P11.3A/B failure 回归的 400 分支；Web#4 的 500 按 unknown 处理 |
 | 8 | unknown result → canonical verification | Web#4 |
 | 9 | Table Date Cell 与 canonical 同步 | Web#4、Web#5 |
 | 10 | View switch during preview | Web#5 |
@@ -215,7 +218,7 @@ Web（任务书 §21 十九项）：
 
 Web 编号（`tests/product-database.spec.ts`，grep `P11.3C`）：#1 equal/sub-threshold 手势、#2 Escape/pointercancel/lostpointercapture、#3 pending 视觉与忙锁、#4 conflict/network/unknown、#5 view switch 与 drawer draft、#6 offline。
 
-### 独立复核与修复（2026-10-14）
+### 独立复核与修复（2026-10-14，历史验收记录）
 
 独立 reviewer 复核 `d992425..HEAD` 后发现 2 个必须处理的缺陷与 1 个 a11y 回归；主 Agent 逐条复现后全部修复并补回归：
 
@@ -223,7 +226,7 @@ Web 编号（`tests/product-database.spec.ts`，grep `P11.3C`）：#1 equal/sub-
 | --- | --- | --- |
 | blocker | resize handle 复用 bar 的 click 处理，键盘 Enter/Space 或 Ctrl/Cmd/Shift/Alt+click 时 handle 激活会 fall through 到 `emit('click')` → 打开 Record，违反「handle 交互不得触发 Record open」 | 新增 `handleControlClick`：handle 一律 `preventDefault` + `stopPropagation` + `drag.click`，**永不** emit；bar body 保留 `handleClick`（旧实现即如此，本轮重构时被合并成同一个处理函数） |
 | 缺陷 | `moveTimelineRecord` 只有 `endTimelineDateMutation`、从未 `beginTimelineDateMutation`（调试插桩清理时与插桩行一起被删除），导致 busy fence 恒空、`isTimelineDateMutationBusy` 恒 false，声明的作用域锁实际不存在 | 在 `savingCell = true` 之前 `beginTimelineDateMutation(dateMutationKey)`，失败即提前 return；`finally` 释放（该调用必然持锁，提前 return 的路径不进 `finally`） |
-| a11y | bar button 在 `draggable=false`（只读/离线）时带 `aria-disabled="true"`，但它仍会打开 Record，读屏用户可能无法触达唯一主操作 | 移除 bar 的 `aria-disabled`；resize handle 的 `aria-disabled` 保留（pending 期间 handle 确实不动作） |
+| a11y | bar button 在 `draggable=false`（只读/离线）时带 `aria-disabled="true"`，但它仍会打开 Record，读屏用户可能无法触达唯一主操作 | 移除 bar 的 `aria-disabled`。后续浏览器复核确认保存期间 handles 因 `writable=false` 而卸载，模板的 handle `aria-disabled` 分支不是可见 pending 行为 |
 
 同时修正一处「声明有效但实际 no-op」的实现：`captureTimelineBarFocus` 原本在 pointerdown 处理器内读
 `document.activeElement`（浏览器在处理器返回后才聚焦按钮），改为使用 pointerdown 的 `currentTarget`，
@@ -233,6 +236,50 @@ Web 编号（`tests/product-database.spec.ts`，grep `P11.3C`）：#1 equal/sub-
 bar 不声明 `aria-disabled`；pending 期间 bar 不 disabled 且焦点不落到 body；
 **适配器忙锁集成用例**（页面内 `beginTimelineDateMutation` 预占 `recordId+propertyId` 后拖动 → 0 PATCH，
 释放后再拖动 → 1 PATCH）；preview 期间切 View（bar 卸载）0 PATCH 且 interaction phase 回 idle。
+
+### 2026-10-15 审阅修复（完成；不代表 P11.3 Final 验收）
+
+本节记录 2026-10-14 历史验收后的审阅修复与本轮最终定向结果。上方统计仅代表 2026-10-14 历史验收；本轮数字见下文，不回写或覆盖历史结果。
+
+- **Lost capture click 抑制**：`abortPreview()` 在清 active / 释放 capture 前设置 click 抑制，并让标记存活到后续 click 被消费。真实 lostcapture 定向用例 **1/1 PASS**；已提交 `53c98b5`。
+- **Focus identity 与 resize focus**：focus helper 捕获原 bar anchor DOM identity。原 handle 已消失时，只在同 anchor 查找同 record 当前 control，找不到则回退到该 bar；任何其他非 `body` 焦点（含另一个 bar、drawer、Frozen row、Table）都不抢。controller 在 `nextTick` 后恢复前重新核验 token 与 scope；移除 resize controller 的 `pointerdown.preventDefault`。焦点定向 **4/4 PASS**；已提交 `c784b40`。scope/token 失效时的 focus 保护由实现 guard 保证，并复用既有 lifecycle 覆盖；本轮没有独立 E2E 专门断言这条 focus 分支。
+- **Unknown refresh 失败**：refresh 失败后保留 `staleReadonly` / `refreshError`，当前 mutation 结果维持未确认并返回 `false`；只读与 retry 沿用该错误状态，不以旧 records 声称最新。参数化定向 **2/2 PASS**；已提交 `832cf28`。
+- **Pending handles 实际状态**：保存期间 `writable=false` 经 `DatabaseTimelineView` 使 `draggable=false`，resize handles 卸载；浏览器观察到 `handleCount=0`。bar 仍显示 pending 状态且可打开 Record。模板里的 handle `aria-disabled` 分支通常不可达。只读/离线 bar 同样可打开 Record，不能标为 `aria-disabled`。
+
+### 最终验证（2026-10-15，代码冻结后）
+
+| 检查 | 结果 |
+| --- | --- |
+| Timeline 6 个 logic specs | **52/52 PASS** |
+| `product-database.spec.ts` Timeline/Date/P11 定向 grep | **35/35 PASS**，`--workers=1 --retries=0`；P11.3C 当前 10 项（原 6 + 新 4），并增强原 2 项 |
+| Web typecheck | **PASS** |
+| Web production build | **PASS**；无 Vite chunk warning，仅有 `NO_COLOR` / `FORCE_COLOR` 环境提示 |
+| Independent review | **无新增 blocker** |
+| `git diff --check` | **PASS** |
+
+复现输出目录：`%TEMP%\eotion-p113c-final-logic`、`%TEMP%\eotion-p113c-final-web`。未运行真实 API/Mongo、完整 Product 全量、native 真机或正式 benchmark；不沿用 2026-10-14 对这些项的历史数字。
+
+命令：
+
+```powershell
+pnpm --filter @eotion/web exec playwright test tests/timeline-coordinate.spec.ts tests/timeline-projection.spec.ts tests/timeline-layout.spec.ts tests/timeline-mutation.spec.ts tests/timeline-interaction.spec.ts tests/timeline-frozen-table.spec.ts
+pnpm --filter @eotion/web exec playwright test tests/product-database.spec.ts --grep "Timeline|timeline|P11\.3[ABC]|P11\.1B formats|409 refreshes the latest record version" --workers=1 --retries=0
+pnpm --filter @eotion/web typecheck
+pnpm --filter @eotion/web build
+git diff --check
+```
+
+### 提交
+
+| 提交 | 修复 |
+| --- | --- |
+| `53c98b5` | lostpointercapture 后 click 抑制；定向 1/1 |
+| `c784b40` | focus identity / resize focus；定向 4/4 + typecheck |
+| `832cf28` | unknown refresh 失败状态；参数化定向 2/2 |
+
+### 覆盖口径更正
+
+任务书 Logic 矩阵第 4 项的 500 响应属于 unknown/transport 结果，不能标为 known failure。确定性 4xx known-failure 由既有 P11.3A/B failure 回归中的 400 分支覆盖；Web#4 的 500 用例按 unknown 分支统计。
 
 ## 14. 已知边界与发现（重要，勿误读）
 

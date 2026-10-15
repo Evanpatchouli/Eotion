@@ -1,6 +1,14 @@
 # Handoff
 
-## 2026-10-14 P11.3C Timeline Mutation UX + Conflict（范围 PASS，完成并停止）
+## 2026-10-15 P11.3C 审阅修复收口（完成，P11.3D 未开始）
+
+审阅修复提交：`53c98b5`（lostcapture click 抑制，定向 1/1）、`c784b40`（focus identity / resize focus，定向 4/4 + typecheck）、`832cf28`（unknown refresh 状态，参数化定向 2/2）。Focus helper 捕获 bar anchor identity，只在原 anchor 内恢复同 record control / fallback bar；完成时 nextTick 后再次核验 token + scope。焦点范围以实现 guard 和既有 lifecycle 回归覆盖；scope/token 失效的 focus 分支没有独立 E2E 专项断言。
+
+最终验证：6 个 Timeline logic specs 52/52；`product-database.spec.ts` 定向 grep 35/35（workers=1、retries=0；P11.3C 当前 10 项，原 6 + 新 4，原 2 项增强）；Web typecheck、production build、`git diff --check` PASS；独立 review 无新增 blocker。构建仅有 `NO_COLOR` / `FORCE_COLOR` 环境提示，无 Vite chunk warning。结果目录 `%TEMP%\eotion-p113c-final-logic` 与 `%TEMP%\eotion-p113c-final-web`。
+
+本轮未运行真实 API/Mongo、完整 Product 全量、native 真机或正式 benchmark；不沿用 2026-10-14 对这些项的历史数字。unknown refresh 失败仍保持未确认/只读并返回 false；保存期间 `writable=false` 会卸载 resize handles（浏览器 `handleCount=0`），bar 仍显示 pending 且可打开 Record。P11.3D 仍需独立授权。
+
+## 2026-10-14 P11.3C Timeline Mutation UX + Conflict（历史范围验收记录）
 
 基线 `d992425`，分支 `codex/p11-3c-mutation-ux-conflict`，开始时工作树干净。版本仍 0.0.1，目标 0.0.3。
 正式结果见 [P11.3C](../docs/verification/p11-3c-mutation-ux-conflict.md)。
@@ -15,8 +23,8 @@ preview 期间挂 window（`AbortController`），pointercancel / lostpointercap
 visibilitychange / viewport-scope-version 变化只清本地 preview，pending 不被误杀。
 `TimelineBar.vue` 重构为零尺寸 anchor + bar button 与 resize handles **绝对定位兄弟节点**
 （handle 不再嵌套在 bar 内，因此不会 fall through 到 Record open），handle 可 focus（移除
-`pointerdown.prevent`），pending 显示轻量 saving（opacity / progress / `aria-busy` /
-`data-saving` / `role="status"`），handles 在 pending 时 `aria-disabled` 且不可命中。
+resize controller 的 `pointerdown.preventDefault`），pending 显示轻量 saving（opacity / progress / `aria-busy` /
+`data-saving` / `role="status"`）。保存期间 `writable=false` 会卸载 resize handles；bar 仍可打开 Record。
 `DatabaseTimelineView.vue` 新增 `pendingTimelineMutations` + `commitTimelineDrag` +
 `recordMutationBusyById`；`DatabaseNodeView.moveTimelineRecord` 加
 `beginTimelineDateMutation`/`endTimelineDateMutation`（finally 无条件释放）、wire-shape-aware
@@ -24,9 +32,8 @@ no-op guard，并把冲突/失败/unknown 文案收口为「日期已在其他�
 「日期未更新，已恢复当前记录。」/「日期已更新，提交响应暂未确认；当前记录已与目标一致。」/
 「提交结果暂未确认，已刷新为服务器最新日期。」。
 
-**关键顺序陷阱（已修）：** `clearActive()` 释放 pointer capture 会同步派发 `click`，所以
-`suppressNextClick` 必须在释放 capture **之前**置位；否则真实 drag 后的合成 click 会打开 Record。
-resize handle 的手势显式抑制 click，bar body 的无移动手势仍保留既有 Record open 语义。
+**Click 抑制顺序：** 释放 pointer capture 后可能出现 click；抑制标记须在 release 前设置，并保留至对应 click 被消费。
+不假定 release 同步派发 click。resize handle 手势显式抑制 click，bar body 的无移动手势仍保留既有 Record open 语义。
 
 **已知边界（勿误读）：** View switcher `:disabled="viewBusy"`（含 `savingCell`），因此 pending
 期间切 View 在 UI 层 fail closed；Web 测试断言 disabled，跨 View stale callback 由 logic spec 的
@@ -41,12 +48,12 @@ resize handle 复用了 bar 的 click 处理，键盘 Enter/Space 或 Ctrl/Meta+
 (2) 缺陷：`moveTimelineRecord` 只有 `endTimelineDateMutation`、从未 `beginTimelineDateMutation`
 （调试插桩清理时与插桩行一起被删），busy fence 恒空、声明的作用域锁实际不存在；已在 `savingCell` 之前
 获取、失败提前 return、finally 释放。(3) a11y：bar button 在只读/离线时带 `aria-disabled="true"` 但仍可
-打开 Record；已移除（handle 的保留）。另把 `captureTimelineBarFocus` 改用 pointerdown 的 `currentTarget`
+打开 Record；已移除。模板仍有 handle `aria-disabled` 分支，但保存期间 handles 会卸载，故该状态不是可见行为。另把 `captureTimelineBarFocus` 改用 pointerdown 的 `currentTarget`
 （原先读 `document.activeElement` 早于浏览器聚焦，恢复实际是 no-op），focus 恢复才真正生效。
 补回归：handle 键盘/修饰键不打开 Record、bar 不声明 disabled、pending 焦点不落 body、适配器忙锁集成用例
 （预占 key → 0 PATCH，释放后 → 1 PATCH）、preview 期间切 View 0 PATCH。
 
-**最终验证（HEAD 冻结后）：** Timeline logic **52/52**；Timeline/Date/CAS 定向（grep 排除 P11.3C）**25/25**；
+**2026-10-14 历史验证（当日 HEAD）：** Timeline logic **52/52**；Timeline/Date/CAS 定向（grep 排除 P11.3C）**25/25**；
 P11.3C **6/6**；合计 Timeline Web **31/31**（workers=1/retries=0）。完整 `product-database.spec.ts`
 **139 项 134 PASS / 5 FAIL**：5 项全部落在既有 Slash / Database dialog 基线浮动族（`database command` 行、
 Board view 选择器、2× slash 建库、link shared database），Timeline/Date/CAS/P11.3 路径 0 失败；其中

@@ -924,13 +924,14 @@ view 级 busy fence 以 `recordId + propertyId` 为键，保证同一 Date Cell 
 Escape（previewing）清 preview、0 PATCH、focus 留在 Timeline；Escape（pending）只 detach UI
 callback，不假装撤销服务端 mutation。`pointercancel`、`lostpointercapture`、window blur、
 `visibilitychange=hidden`、viewport transform / scope / version 变化与组件卸载都只清本地
-preview；不允许 stuck handle、残留 cursor 或悬空 session。resize handle 可 focus（不再
-`pointerdown.prevent`），bar/resize 的 pointerdown 不再复用同一个嵌套 target。
+preview；不允许 stuck handle、残留 cursor 或悬空 session。resize handle 可 focus（controller 不再
+对 resize pointerdown 调用 `preventDefault`），bar/resize 的 pointerdown 不再复用同一个嵌套 target。需要抑制 capture
+release 后可能出现的 click 时，先设置抑制标记并保留到对应 click 被消费；不假定 release 同步派发 click。
 
 pending 期间 bar 显示轻量 Quiet Studio feedback（opacity、progress cursor、`aria-busy`、
 `data-saving`、`role="status"`「正在保存…」），不改变 row height / 时间宽度 / bar 位置，
-不用全屏 loading、不 remount Table/Record Host。同 record 的 date handle 变 `aria-disabled` 且
-不可命中。
+不用全屏 loading、不 remount Table/Record Host。保存期间 `writable=false` 会让 resize handles
+暂时卸载；bar 仍显示 pending 状态且可打开 Record。只读/离线 bar 也仍是 Record 入口，不标记为 `aria-disabled`。
 
 409 只做 canonical refresh + 低打扰提示，不 retry、不覆盖他人修改、不保留 stale optimistic
 position；文案不暴露 CAS / version / HTTP 409。明确 4xx 回退到 canonical。transport / 5xx
@@ -948,6 +949,12 @@ fail closed，跨 View stale callback 由 token fence 覆盖。
 TimelineBar 的 bar body 与 resize handles 现在是零尺寸 anchor 容器下的绝对定位兄弟节点，
 handle 永不嵌套在 bar 内部，因此 handle 手势不会触发 Record open，bar body click 仍走既有
 Record Host。键盘方向键编辑日期仍留给 P11.5。
+
+mutation 后仅当焦点已丢失或落到 `body` 时尝试恢复：捕获原 bar anchor DOM identity；若原 handle
+已卸载，只在该 anchor 内为同一 record 查找当前 control，或回退到该 bar。其他非 `body` 焦点（包括
+另一个 bar、drawer、Frozen row、Table）一律不抢。恢复在 `nextTick` 后进行，并再次核验 interaction token
+与 scope。Unknown refresh 失败时保留 `staleReadonly` 与 `refreshError`，返回未确认（`false`）；重试沿用
+该错误状态，不以旧 records 声称已是最新。
 
 验收证据、已知边界（含 pending 切 View fail closed、无移动 bar body 仍打开 Record、
 pointer capture 下无法点击 toolbar）与 P11.3D 接续入口见

@@ -546,22 +546,25 @@ P11.3C 不新增 mutation 能力，而是把 P11.3A/B 的 drag/resize 收敛为�
   - `TIMELINE_DRAG_THRESHOLD_PX = 4`：move/resize 共用。
   - `beginTimelineDateMutation` / `endTimelineDateMutation` / `isTimelineDateMutationBusy`：
     view 级 `recordId + propertyId` fence（`reactive(new Set())`）。
-- `timeline/focus.ts`（新）：`captureTimelineBarFocus` / `restoreTimelineBarFocus`，只在 focus
-  真的丢失时恢复，不抢 drawer/Frozen/Table 的 focus。
+- `timeline/focus.ts`（新）：`captureTimelineBarFocus` / `restoreTimelineBarFocus` 捕获原 bar anchor DOM
+  identity；仅在焦点丢失或落到 `body` 时恢复。原 handle 消失时只在同 anchor 找同 record 的当前 control
+  或回退到 bar；其他非 `body` 焦点（包括另一 bar、drawer/Frozen/Table）不抢。恢复在 `nextTick` 后再核验
+  interaction token 与 scope。
 - `timeline/useTimelineBarDrag.ts`：ledger 接线、`phase` / `mutationBusy` / `pendingMode` 暴露、
   pointercancel / lostpointercapture / window blur / visibilitychange / viewport 变化取消、
   preview 期间 window 级 Escape（`AbortController` 生命周期）、`settleWithoutCommit`。
 - `timeline/TimelineBar.vue`：零尺寸 `eotion-timeline-bar-anchor`，bar button 与两个 resize handle
   是绝对定位兄弟节点（handle 不再嵌套于 bar，点击不会穿透到 Record open）；pending 视觉
-  （opacity / progress / `aria-busy` / `data-saving` / `role="status"`）；handle 可 focus。
+  （opacity / progress / `aria-busy` / `data-saving` / `role="status"`）；handle 可 focus。保存期间
+  `writable=false` 使 `draggable=false`，resize handles 暂时卸载；bar 仍显示 pending 状态并可打开 Record。
 - `timeline/TimelineViewport.vue`：新增 `recordMutationBusyById` 透传。
 - `DatabaseTimelineView.vue`：`pendingTimelineMutations` reactive map、`prepareTimelineDrag` 的
   record fence、`commitTimelineDrag` 持有 pending、`recordMutationBusyById` computed。
 - `DatabaseNodeView.vue`：`moveTimelineRecord` 外层加 `beginTimelineDateMutation` /
   `endTimelineDateMutation`，wire-shape-aware no-op guard，409 / known-failure / unknown 文案收口。
 
-关键顺序陷阱（已修）：`clearActive()` 释放 pointer capture 会**同步**派发 `click`，因此
-`suppressNextClick` 必须在释放 capture 之前置位，否则真实 drag 后的合成 click 会打开 Record。
+Pointer capture 结束时可能出现后续 click；抑制标记必须在释放 capture 前置位，并保留到对应 click 被消费，
+避免真实 drag 后的 click 打开 Record。不假定释放 capture 会同步派发 click。
 
 已知行为/边界：
 

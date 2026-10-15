@@ -1,4 +1,4 @@
-# 当前任务：P11.3C 审阅问题修复
+# 当前任务：P11.3C 审阅问题修复（完成）
 
 基线 `574a93c`，分支 `codex/p11-3c-review-fixes`。用户授权修复本会话审阅确认的四项 P2 并按规范提交。
 限于 cancel click、刷新失败反馈、焦点转移和 resize 焦点闭环；不进入 P11.3D，不改 API / model / sync / 版本。
@@ -9,8 +9,8 @@
 | F2 | execute / S1 fast_worker | 保留取消拖拽 click 抑制 + 真实 lostpointercapture 回归 | 完成；定向 Web 1/1 PASS |
 | F3 | execute / S1 fast_worker | 尊重用户焦点转移；resize 可聚焦、原 DOM 失联时同 anchor 回退 + 回归 | 完成；定向 Web 4/4 与 typecheck PASS |
 | F4 | execute / S1 fast_worker | unknown 刷新失败保持不确定文案与只读 + 回归 | 完成；定向 Web 2/2 PASS |
-| F5 | verify / S0 scout + reviewer | 定向 Web / logic / typecheck / build，最终一次独立 review | 独立 review 无 blocker；整体回归执行中 |
-| F6 | execute / S1 fast_worker + 主 Agent | 同步验收文档、handoff、提交并检查最终 diff | 待执行 |
+| F5 | verify / S0 scout + reviewer | 定向 Web / logic / typecheck / build，最终一次独立 review | 完成；logic 52/52、Web 35/35、typecheck/build PASS；review 无 blocker |
+| F6 | execute / S1 fast_worker + 主 Agent | 同步验收文档、handoff、提交并检查最终 diff | 本文件所在文档提交 |
 
 Implementation Brief：
 
@@ -23,3 +23,11 @@ Implementation Brief：
 - 每个完成的独立逻辑单元单独 commit，最终文档收口另一次 commit；不推送、不发布。
 
 已知验证背景：审阅时 logic 52/52、Web typecheck 通过；P11.3C Web 首跑 5/6，冲突用例初始 bar 超时单独复跑 3/3 通过，根因未确定，不直接标为既有浮动。
+
+## 本轮结果
+
+- 修复提交：53c98b5（取消 click）、c784b40（焦点保留/恢复）、832cf28（unknown refresh 失败）。
+- P11.3C 当前 10 项；最终 Timeline/Date/CAS Web 集合 35/35，workers=1/retries=0。logic 52/52；Web typecheck/build PASS。
+- 独立 reviewer 未发现新增阻断缺陷；最终 diff、UTF-8 无 BOM 与换行卫生在文档提交前核验。
+- 本轮未运行完整 Product、真实 API/Mongo、native 真机与正式帧率 benchmark，不复用历史结果宣称本轮通过。
+- 不进入 P11.3D，不推送、不发布、不改版本。
