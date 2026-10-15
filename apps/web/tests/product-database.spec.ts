@@ -113,6 +113,29 @@ async function closeTimelineDrawer(page: Page): Promise<void> {
   await expect(drawer).toHaveCount(0)
 }
 
+/** Resize/Sidebar transitions must settle before capturing coordinates for a gesture. */
+async function settleTimelineGestureLayout(timeline: Locator): Promise<void> {
+  await timeline.evaluate(async root => {
+    await Promise.allSettled(document.getAnimations()
+      .filter(animation => animation.playState === 'running' && Number.isFinite(animation.effect?.getComputedTiming().iterations))
+      .map(animation => animation.finished))
+    let previous = ''
+    let stable = 0
+    for (let frame = 0; frame < 120; frame++) {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      const viewport = root.querySelector<HTMLElement>('[data-testid="timeline-viewport"]')
+      const scroller = root.querySelector<HTMLElement>('[data-testid="timeline-scroll"]')
+      const rect = viewport?.getBoundingClientRect()
+      const signature = JSON.stringify([rect?.x, rect?.y, rect?.width, rect?.height, viewport?.dataset.generation,
+        scroller?.scrollLeft, scroller?.clientWidth, document.scrollingElement?.scrollTop, window.innerWidth])
+      stable = signature === previous ? stable + 1 : 0
+      if (stable >= 4) return
+      previous = signature
+    }
+    throw new Error('Timeline gesture layout did not settle after resizing')
+  })
+}
+
 async function dragTimelineBar(page: Page, bar: Locator, deltaX: number): Promise<void> {
   await bar.scrollIntoViewIfNeeded()
   const bounds = await bar.boundingBox()
@@ -8121,6 +8144,7 @@ test('P11.3A Timeline date-property drag previews locally and commits one CAS up
 
   await page.setViewportSize({ width: 390, height: 844 })
   const mobileBar = barFor(items[0]!.id)
+  await settleTimelineGestureLayout(timeline)
   const mobileBounds = await mobileBar.boundingBox()
   if (!mobileBounds) throw new Error('Expected the date bar to be visible at the 390px viewport')
   const mobileX = mobileBounds.x + mobileBounds.width / 2
@@ -10712,6 +10736,7 @@ test('P11.4B 390px coarse touch creates and deletes a dependency with touch inpu
     await page.setViewportSize({ width: 390, height: 844 })
     const closeMobileNav = page.getByRole('button', { name: '关闭导航菜单' })
     if (await closeMobileNav.isVisible()) await closeMobileNav.click()
+    await settleTimelineGestureLayout(timeline)
     await expect.poll(() => page.evaluate(() => ({ coarse: matchMedia('(pointer: coarse)').matches, touchPoints: navigator.maxTouchPoints }))).toEqual({ coarse: true, touchPoints: expect.any(Number) })
     expect(await page.evaluate(() => navigator.maxTouchPoints)).toBeGreaterThan(0)
     const cdp = await context.newCDPSession(page)
