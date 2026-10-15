@@ -9563,3 +9563,402 @@ test('P11.3C offline fails closed before preview and cancels an active preview w
   await context.setOffline(false)
   await page.evaluate(() => window.dispatchEvent(new Event('online')))
 })
+
+for (const direction of ['depends-on', 'blocks'] as const) {
+  test(`P11.4A ${direction} draws read-only directed dependencies from loaded, scheduled self Relation targets`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+    const relation = { ...property(`p114a-${direction}-relation`, rootDatabase.id, 'Predecessors', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+    const timelineView = view(`p114a-${direction}-view`, rootDatabase.id, 'Dependency lines', {
+      ...DEFAULT_DATABASE_VIEW_CONFIG,
+      visibleProperties: ['root-title', 'root-date'], propertyOrder: ['root-title', 'root-date'],
+      filters: [{ propertyId: 'root-text', operator: 'contains', value: 'keep' }],
+      options: { timeline: {
+        scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' },
+        frozenTable: { visible: true, visibleProperties: ['root-title', 'root-date'], propertyOrder: ['root-title', 'root-date'] },
+        dependency: { propertyId: relation.id, direction, shiftMode: 'no_auto_shift', avoidWeekends: false },
+      } },
+    }, 'timeline')
+    const items = [
+      record(`p114a-${direction}-a`, rootDatabase.id, `p114a-${direction}-page-a`, { 'root-title': 'A', 'root-text': 'keep', 'root-date': '2026-10-15', [relation.id]: [`p114a-${direction}-b`, `p114a-${direction}-c`, `p114a-${direction}-b`, `p114a-${direction}-missing`, `p114a-${direction}-filtered`, `p114a-${direction}-a`] }),
+      record(`p114a-${direction}-b`, rootDatabase.id, `p114a-${direction}-page-b`, { 'root-title': 'B', 'root-text': 'keep', 'root-date': { start: '2026-10-10', end: '2026-10-12' } }),
+      record(`p114a-${direction}-c`, rootDatabase.id, `p114a-${direction}-page-c`, { 'root-title': 'C', 'root-text': 'keep', 'root-date': '2026-10-20' }),
+      record(`p114a-${direction}-filtered`, rootDatabase.id, `p114a-${direction}-page-filtered`, { 'root-title': 'Filtered', 'root-text': 'hidden', 'root-date': '2026-10-14' }),
+    ]
+    const api = await installApi(page, [block(`p114a-${direction}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+      databases: [rootDatabase], views: [timelineView], properties: [rootProperties[0]!, rootProperties[1]!, rootProperties[5]!, relation], records: items,
+    })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const timeline = page.locator(`#database-block-p114a-${direction}-block`).getByTestId('database-timeline')
+    const layer = timeline.getByTestId('timeline-dependency-layer')
+    const paths = layer.getByTestId('timeline-dependency-path')
+    await expect(layer).toHaveAttribute('data-projected-edge-count', '2')
+    await expect(paths).toHaveCount(2)
+    const actual = await paths.evaluateAll(elements => elements.map(element => ({
+      predecessor: element.getAttribute('data-predecessor-id'), successor: element.getAttribute('data-successor-id'),
+      startX: Number(element.getAttribute('data-start-x')), endX: Number(element.getAttribute('data-end-x')),
+      startY: Number(element.getAttribute('data-start-y')), endY: Number(element.getAttribute('data-end-y')),
+      d: element.getAttribute('d'), marker: element.getAttribute('marker-end'),
+    })))
+    const id = (suffix: string) => `p114a-${direction}-${suffix}`
+    expect(actual.map(edge => [edge.predecessor, edge.successor]).sort()).toEqual((direction === 'depends-on'
+      ? [[id('b'), id('a')], [id('c'), id('a')]]
+      : [[id('a'), id('b')], [id('a'), id('c')]]).sort())
+    expect(actual.every(edge => edge.d?.startsWith('M') && edge.marker?.startsWith('url(#') && Number.isFinite(edge.startX) && Number.isFinite(edge.endX) && Number.isFinite(edge.startY) && Number.isFinite(edge.endY))).toBe(true)
+    expect(actual.some(edge => edge.startX > edge.endX)).toBe(true)
+    expect(actual.some(edge => edge.startX < edge.endX)).toBe(true)
+    const anchors = await timeline.evaluate(root => {
+      const geometry = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState?.dependencyGeometryById
+      if (!(geometry instanceof Map)) throw new Error('Expected dependency geometry by Record ID')
+      return [...root.querySelectorAll<SVGPathElement>('[data-testid="timeline-dependency-path"]')].map(path => {
+        const predecessor = geometry.get(path.dataset.predecessorId)
+        const successor = geometry.get(path.dataset.successorId)
+        if (!predecessor || !successor) throw new Error('Expected both edge endpoints in geometry map')
+        return {
+          startX: Number(path.dataset.startX), expectedStartX: predecessor.marker || predecessor.kind === 'point' ? predecessor.rawX : predecessor.rawX + predecessor.rawWidth,
+          endX: Number(path.dataset.endX), expectedEndX: successor.rawX,
+          startY: Number(path.dataset.startY), expectedStartY: predecessor.top + predecessor.height / 2,
+          endY: Number(path.dataset.endY), expectedEndY: successor.top + successor.height / 2,
+        }
+      })
+    })
+    for (const anchor of anchors) {
+      expect(anchor.startX).toBeCloseTo(anchor.expectedStartX, 3)
+      expect(anchor.endX).toBeCloseTo(anchor.expectedEndX, 3)
+      expect(anchor.startY).toBeCloseTo(anchor.expectedStartY, 3)
+      expect(anchor.endY).toBeCloseTo(anchor.expectedEndY, 3)
+    }
+    for (const suffix of ['a', 'b', 'c']) {
+      const row = timeline.locator(`[data-timeline-row][data-record-id="${id(suffix)}"]`)
+      await expect(row).toHaveCount(1)
+      await expect(timeline.locator(`[data-timeline-frozen-row][data-record-id="${id(suffix)}"]`)).toHaveCount(1)
+    }
+    expect(api.requests.filter(request => request.method !== 'GET')).toHaveLength(0)
+    expect(api.requests.filter(request => /record-options|\/records\//u.test(request.path))).toHaveLength(0)
+    expect(api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/views/${timelineView.id}/table`))).toHaveLength(1)
+  })
+}
+
+test('P11.4A Timeline without dependency config keeps an empty line layer and ordinary bars interactive', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+  const relation = { ...property('p114a-disabled-relation', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const timelineView = view('p114a-disabled-view', rootDatabase.id, 'No dependency', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-title', 'root-date'], propertyOrder: ['root-title', 'root-date'],
+    options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'root-date' } } },
+  }, 'timeline')
+  const api = await installApi(page, [block('p114a-disabled-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [rootProperties[0]!, rootProperties[5]!, relation], records: [
+      record('p114a-disabled-a', rootDatabase.id, 'p114a-disabled-page-a', { 'root-title': 'A', 'root-date': '2026-10-13', [relation.id]: ['p114a-disabled-b'] }),
+      record('p114a-disabled-b', rootDatabase.id, 'p114a-disabled-page-b', { 'root-title': 'B', 'root-date': '2026-10-14' }),
+    ],
+  })
+  api.pages.push(
+    { ...pageRecord, id: 'p114a-disabled-page-a', title: 'A', role: 'database-record' },
+    { ...pageRecord, id: 'p114a-disabled-page-b', title: 'B', role: 'database-record' },
+  )
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-p114a-disabled-block').getByTestId('database-timeline')
+  const layer = timeline.getByTestId('timeline-dependency-layer')
+  await expect(layer).toHaveAttribute('data-projected-edge-count', '0')
+  await expect(layer.getByTestId('timeline-dependency-path')).toHaveCount(0)
+  const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114a-disabled-a"]')
+  await bar.click()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  expect(api.requests.filter(request => request.method === 'PATCH' || /record-options|\/records\//u.test(request.path))).toHaveLength(0)
+})
+
+test('P11.4A dependency paths follow bar preview, scroll, scale and navigation without intercepting the bar', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+  const relation = { ...property('p114a-interaction-relation', rootDatabase.id, 'Blocks', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const timelineView = view('p114a-interaction-view', rootDatabase.id, 'Dependency preview', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-title', 'root-date'], propertyOrder: ['root-title', 'root-date'],
+    options: { timeline: {
+      scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' },
+      frozenTable: { visible: true, visibleProperties: ['root-title', 'root-date'], propertyOrder: ['root-title', 'root-date'] },
+      dependency: { propertyId: relation.id, direction: 'blocks', shiftMode: 'no_auto_shift', avoidWeekends: false },
+    } },
+  }, 'timeline')
+  const items = [
+    record('p114a-interaction-a', rootDatabase.id, 'p114a-interaction-page-a', { 'root-title': 'A', 'root-date': { start: '2026-10-12', end: '2026-10-15' }, [relation.id]: ['p114a-interaction-b', 'p114a-interaction-c'] }),
+    record('p114a-interaction-b', rootDatabase.id, 'p114a-interaction-page-b', { 'root-title': 'B', 'root-date': '2026-10-18' }),
+    record('p114a-interaction-c', rootDatabase.id, 'p114a-interaction-page-c', { 'root-title': 'C', 'root-date': '2026-10-20' }),
+    record('p114a-interaction-d', rootDatabase.id, 'p114a-interaction-page-d', { 'root-title': 'D', 'root-date': '2026-10-11', [relation.id]: ['p114a-interaction-c'] }),
+  ]
+  const api = await installApi(page, [block('p114a-interaction-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [rootProperties[0]!, rootProperties[5]!, relation], records: items,
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-p114a-interaction-block').getByTestId('database-timeline')
+  const scroller = timeline.getByTestId('timeline-scroll')
+  const layer = timeline.getByTestId('timeline-dependency-layer')
+  const paths = layer.getByTestId('timeline-dependency-path')
+  await expect(paths).toHaveCount(3)
+  const marker = layer.locator('marker')
+  await expect(marker).toHaveAttribute('refX', '17')
+  const markerId = await marker.getAttribute('id')
+  expect(markerId).toBeTruthy()
+  expect(await paths.evaluateAll((elements, id) => elements.every(element => element.getAttribute('marker-end') === `url(#${id})`), markerId)).toBe(true)
+  const screenshotDir = path.join(process.env.TEMP ?? testInfo.outputDir, `eotion-p114a-web-${Date.now()}-${process.pid}`)
+  await mkdir(screenshotDir, { recursive: true })
+  await page.screenshot({ path: path.join(screenshotDir, 'desktop-lines-light.png') })
+  const a = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114a-interaction-a"]')
+  const unrelatedPath = layer.locator('[data-testid="timeline-dependency-path"][data-predecessor-id="p114a-interaction-d"]')
+  await expect(unrelatedPath).toHaveCount(1)
+  const before = await paths.evaluateAll(elements => elements.map(element => ({ id: element.getAttribute('data-edge-id'), d: element.getAttribute('d'), predecessor: element.getAttribute('data-predecessor-id') })))
+  const barBounds = await a.boundingBox()
+  if (!barBounds) throw new Error('Expected dependency preview bar')
+  const x = barBounds.x + barBounds.width / 2
+  const y = barBounds.y + barBounds.height / 2
+  expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="timeline-bar"]')?.getAttribute('data-record-id'), { x, y })).toBe('p114a-interaction-a')
+  expect(await layer.evaluate(element => getComputedStyle(element).pointerEvents)).toBe('none')
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    const unrelated = root.querySelector('[data-testid="timeline-dependency-path"][data-predecessor-id="p114a-interaction-d"]')
+    if (!setup || !unrelated) throw new Error('Expected dependency projection and unrelated path')
+    const state = { mutations: 0 }
+    const observer = new MutationObserver(records => { state.mutations += records.length })
+    observer.observe(unrelated, { attributes: true, childList: true, subtree: true })
+    ;(window as Window & { __p114aPreviewProbe?: Record<string, unknown> }).__p114aPreviewProbe = {
+      edges: setup.dependencyEdges, geometry: setup.dependencyGeometryById, windowEdges: setup.windowDependencyEdges,
+      unrelated, observer, state,
+    }
+  })
+  await page.mouse.move(x + pxPerMs('month') * 86_400_000, y, { steps: 4 })
+  await expect(a).toHaveAttribute('data-drag-state', 'dragging')
+  await expect.poll(async () => paths.evaluateAll((elements, baseline) => elements.map(element => ({ id: element.getAttribute('data-edge-id'), d: element.getAttribute('d'), predecessor: element.getAttribute('data-predecessor-id') })).filter(edge => edge.predecessor === 'p114a-interaction-a').some(edge => edge.d !== baseline.find(original => original.id === edge.id)?.d), before)).toBe(true)
+  const preview = await timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, unknown> } }).__vueParentComponent?.setupState
+    const probe = (window as Window & { __p114aPreviewProbe?: Record<string, any> }).__p114aPreviewProbe
+    if (!setup || !probe) throw new Error('Expected dependency preview probe')
+    const mutations = probe.state.mutations + probe.observer.takeRecords().length
+    probe.observer.disconnect()
+    return {
+      edgesSame: setup.dependencyEdges === probe.edges,
+      geometrySame: setup.dependencyGeometryById === probe.geometry,
+      windowEdgesSame: setup.windowDependencyEdges === probe.windowEdges,
+      unrelatedSame: root.querySelector('[data-testid="timeline-dependency-path"][data-predecessor-id="p114a-interaction-d"]') === probe.unrelated,
+      unrelatedMutations: mutations,
+    }
+  })
+  expect(preview).toEqual({ edgesSame: true, geometrySame: true, windowEdgesSame: true, unrelatedSame: true, unrelatedMutations: 0 })
+  await page.screenshot({ path: path.join(screenshotDir, 'desktop-drag-preview-light.png') })
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+  await page.keyboard.press('Escape')
+  await page.mouse.up()
+  await expect(a).toHaveAttribute('data-drag-state', 'idle')
+  await expect.poll(() => paths.evaluateAll(elements => elements.map(element => ({ id: element.getAttribute('data-edge-id'), d: element.getAttribute('d'), predecessor: element.getAttribute('data-predecessor-id') })))).toEqual(before)
+
+  await a.hover()
+  const endHandle = timeline.locator('[data-testid="timeline-resize-end"][data-record-id="p114a-interaction-a"]')
+  await expect(endHandle).toBeVisible()
+  const handleBounds = await endHandle.boundingBox()
+  if (!handleBounds) throw new Error('Expected range resize handle under dependency lines')
+  const handleX = handleBounds.x + handleBounds.width / 2
+  const handleY = handleBounds.y + handleBounds.height / 2
+  expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('[data-testid="timeline-resize-end"]')?.getAttribute('data-record-id'), { x: handleX, y: handleY })).toBe('p114a-interaction-a')
+  await page.mouse.move(handleX, handleY)
+  await page.mouse.down()
+  await page.mouse.move(handleX + pxPerMs('month') * 86_400_000, handleY, { steps: 4 })
+  await expect(a).toHaveAttribute('data-drag-state', 'dragging')
+  await expect.poll(async () => paths.evaluateAll((elements, baseline) => elements.some(element => element.getAttribute('data-predecessor-id') === 'p114a-interaction-a' && element.getAttribute('d') !== baseline.find(original => original.id === element.getAttribute('data-edge-id'))?.d), before)).toBe(true)
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+  await page.keyboard.press('Escape')
+  await page.mouse.up()
+  await expect(a).toHaveAttribute('data-drag-state', 'idle')
+  await expect.poll(() => paths.evaluateAll(elements => elements.map(element => ({ id: element.getAttribute('data-edge-id'), d: element.getAttribute('d'), predecessor: element.getAttribute('data-predecessor-id') })))).toEqual(before)
+
+  const beforeScroll = await unrelatedPath.boundingBox()
+  await timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    if (!setup) throw new Error('Expected Timeline projection before scroll')
+    ;(window as Window & { __p114aReadProbe?: { projectedItems: unknown; temporalMap: unknown; dependencyEdges: unknown } }).__p114aReadProbe = {
+      projectedItems: setup.projectedItems, temporalMap: setup.temporalMap, dependencyEdges: setup.dependencyEdges,
+    }
+  })
+  await scroller.evaluate(element => { element.scrollLeft += 120 })
+  await expect.poll(async () => (await unrelatedPath.boundingBox())?.x).not.toBe(beforeScroll?.x)
+  const projectionsSame = () => timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    const probe = (window as Window & { __p114aReadProbe?: { projectedItems: unknown; temporalMap: unknown; dependencyEdges: unknown } }).__p114aReadProbe
+    return Boolean(setup && probe && setup.projectedItems === probe.projectedItems && setup.temporalMap === probe.temporalMap && setup.dependencyEdges === probe.dependencyEdges)
+  })
+  expect(await projectionsSame()).toBe(true)
+  const tableReads = api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/views/${timelineView.id}/table`)).length
+  await timeline.getByLabel('时间轴刻度').selectOption('week')
+  await expect(timeline).toHaveAttribute('data-scale', 'week')
+  await expect(paths).toHaveCount(3)
+  expect(await projectionsSame()).toBe(true)
+  await timeline.getByRole('button', { name: '今天' }).click()
+  await expect(paths).toHaveCount(3)
+  expect(await projectionsSame()).toBe(true)
+  await timeline.getByRole('button', { name: '下一个时间段' }).click()
+  await expect(paths).toHaveCount(3)
+  expect(await projectionsSame()).toBe(true)
+  await timeline.getByRole('button', { name: '上一个时间段' }).click()
+  await expect(paths).toHaveCount(3)
+  expect(await projectionsSame()).toBe(true)
+  await timeline.getByRole('button', { name: '今天' }).click()
+  await expect(paths).toHaveCount(3)
+  expect(api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/views/${timelineView.id}/table`))).toHaveLength(tableReads)
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+  await timeline.getByLabel('时间轴刻度').selectOption('quarter')
+  await timeline.getByRole('button', { name: '今天' }).click()
+  await expect(paths).toHaveCount(3)
+  await page.screenshot({ path: path.join(screenshotDir, 'desktop-lines-today-light.png') })
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
+  await page.screenshot({ path: path.join(screenshotDir, 'desktop-lines-today-dark.png') })
+  await page.setViewportSize({ width: 390, height: 844 })
+  const closeMobileNav = page.getByRole('button', { name: '关闭导航菜单' })
+  if (await closeMobileNav.isVisible()) await closeMobileNav.click()
+  await expect.poll(() => page.locator('.product-sidebar').evaluate(element => element.getBoundingClientRect().right)).toBeLessThanOrEqual(0)
+  await expect(page.locator('.sidebar-scrim')).toHaveCount(0)
+  await timeline.getByRole('button', { name: '今天' }).click()
+  for (const theme of ['light', 'dark'] as const) {
+    await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+    await expect(layer).toBeAttached()
+    await page.screenshot({ path: path.join(screenshotDir, `phone-390-lines-${theme}.png`) })
+  }
+  console.log(`P11.4A screenshot evidence: ${screenshotDir}`)
+})
+
+for (const total of [100, 500] as const) {
+  for (const density of ['sparse', 'medium'] as const) {
+    test(`P11.4A ${total} loaded rows keep ${density} dependency projection bounded across pagination and row windows`, async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+      const relation = { ...property(`p114a-${total}-${density}-relation`, rootDatabase.id, 'Blocks', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+      const timelineView = view(`p114a-${total}-${density}-view`, rootDatabase.id, 'Dependency density', {
+        ...DEFAULT_DATABASE_VIEW_CONFIG,
+        visibleProperties: ['root-title', 'root-date'], propertyOrder: ['root-title', 'root-date'],
+        options: { timeline: {
+          scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' },
+          frozenTable: { visible: true, visibleProperties: ['root-title'], propertyOrder: ['root-title'] },
+          dependency: { propertyId: relation.id, direction: 'blocks', shiftMode: 'no_auto_shift', avoidWeekends: false },
+        } },
+      }, 'timeline')
+      const id = (index: number) => `p114a-${total}-${density}-${String(index).padStart(3, '0')}`
+      const items = Array.from({ length: total }, (_, index) => {
+        const targetIndexes = density === 'medium'
+          ? [index + 1, index + 2].filter(next => next < total)
+          : index % 10 === 0 && index + 1 < total ? [index + 1] : index === 24 ? [25] : []
+        return record(id(index), rootDatabase.id, `${id(index)}-page`, {
+          'root-title': `Row ${index}`, 'root-date': '2026-10-13', [relation.id]: targetIndexes.map(id),
+        })
+      })
+      const api = await installApi(page, [block(`p114a-${total}-${density}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+        databases: [rootDatabase], views: [timelineView], properties: [rootProperties[0]!, rootProperties[5]!, relation], records: items,
+      })
+      await page.goto('/#/app/database-workspace/page/database-page')
+      const blockRoot = page.locator(`#database-block-p114a-${total}-${density}-block`)
+      const timeline = blockRoot.getByTestId('database-timeline')
+      const layer = timeline.getByTestId('timeline-dependency-layer')
+      const projectedCount = () => timeline.evaluate(root => {
+        const items = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState?.projectedItems
+        return Array.isArray(items) ? items.length : -1
+      })
+      await expect.poll(projectedCount).toBe(25)
+      await expect(layer).toHaveAttribute('data-projected-edge-count', density === 'medium' ? '47' : '3')
+      await expect(layer.locator(`[data-predecessor-id="${id(24)}"][data-successor-id="${id(25)}"]`)).toHaveCount(0)
+      const loadMore = blockRoot.getByRole('button', { name: '加载更多' })
+      for (let loaded = 25; loaded < total; loaded += 25) {
+        await loadMore.click()
+        await expect.poll(projectedCount).toBe(Math.min(loaded + 25, total))
+      }
+      await expect(loadMore).toHaveCount(0)
+      const expectedEdges = density === 'medium' ? total * 2 - 3 : total / 10 + 1
+      await expect(layer).toHaveAttribute('data-projected-edge-count', String(expectedEdges))
+      const reads = api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/views/${timelineView.id}/table`))
+      expect(reads).toHaveLength(total / 25)
+      expect(reads.every(request => new URLSearchParams(request.search).get('limit') === '25')).toBe(true)
+      expect(api.requests.filter(request => /record-options|\/records\//u.test(request.path))).toHaveLength(0)
+      expect(api.requests.filter(request => request.method !== 'GET')).toHaveLength(0)
+      const bounded = await timeline.evaluate(root => {
+        const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+        const layer = root.querySelector('[data-testid="timeline-dependency-layer"]')
+        if (!setup || !layer || !Array.isArray(setup.dependencyEdges) || !(setup.dependencyGeometryById instanceof Map) || !Array.isArray(setup.windowDependencyEdges)) throw new Error('Expected dependency projection refs')
+        const rows = root.querySelectorAll('[data-timeline-row]').length
+        const windowEdges = Number(layer.getAttribute('data-window-edge-count'))
+        const paths = layer.querySelectorAll('[data-testid="timeline-dependency-path"]').length
+        ;(window as Window & { __p114aDensityProbe?: { edges: unknown } }).__p114aDensityProbe = { edges: setup.dependencyEdges }
+        return { rows, windowEdges, paths, edges: setup.dependencyEdges.length, geometry: setup.dependencyGeometryById.size }
+      })
+      expect(bounded.edges).toBe(expectedEdges)
+      expect(bounded.paths).toBeLessThanOrEqual(bounded.windowEdges)
+      expect(bounded.windowEdges).toBeLessThanOrEqual(density === 'medium' ? bounded.rows * 2 + 4 : bounded.rows + 4)
+      expect(bounded.geometry).toBe(total)
+      await page.evaluate(() => { (document.querySelector('.document-wrap') as HTMLElement).scrollTop = 0 })
+      await expect.poll(() => timeline.locator('[data-row-window-first]').getAttribute('data-row-window-first')).toBe('0')
+      const sourceBar = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${id(0)}"]`)
+      const incidentPath = layer.locator(`[data-testid="timeline-dependency-path"][data-predecessor-id="${id(0)}"]`).first()
+      const unrelatedPath = layer.locator(`[data-testid="timeline-dependency-path"][data-predecessor-id="${id(density === 'medium' ? 2 : 10)}"]`).first()
+      await expect(sourceBar).toBeVisible()
+      await expect(incidentPath).toHaveCount(1)
+      await expect(unrelatedPath).toHaveCount(1)
+      const incidentBefore = await incidentPath.getAttribute('d')
+      const sourceBounds = await sourceBar.boundingBox()
+      if (!sourceBounds) throw new Error('Expected source bar for dependency preview density probe')
+      const x = sourceBounds.x + sourceBounds.width / 2
+      const y = sourceBounds.y + sourceBounds.height / 2
+      await page.mouse.move(x, y)
+      await page.mouse.down()
+      await timeline.evaluate((root, unrelatedRecordId) => {
+        const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+        const unrelated = root.querySelector(`[data-testid="timeline-dependency-path"][data-predecessor-id="${unrelatedRecordId}"]`)
+        if (!setup || !unrelated) throw new Error('Expected Timeline dependency preview probes')
+        const state = { mutations: 0 }
+        const observer = new MutationObserver(records => { state.mutations += records.length })
+        observer.observe(unrelated, { attributes: true, childList: true, subtree: true })
+        ;(window as Window & { __p114aDensityPreviewProbe?: Record<string, unknown> }).__p114aDensityPreviewProbe = {
+          projectedItems: setup.projectedItems, temporalMap: setup.temporalMap, dependencyEdges: setup.dependencyEdges,
+          dependencyGeometryById: setup.dependencyGeometryById, windowDependencyEdges: setup.windowDependencyEdges,
+          unrelated, observer, state,
+        }
+      }, id(density === 'medium' ? 2 : 10))
+      await page.mouse.move(x + pxPerMs('month') * 86_400_000, y, { steps: 4 })
+      await expect(sourceBar).toHaveAttribute('data-drag-state', 'dragging')
+      await expect.poll(() => incidentPath.getAttribute('d')).not.toBe(incidentBefore)
+      const previewEvidence = await timeline.evaluate((root, unrelatedRecordId) => {
+        const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+        const probe = (window as Window & { __p114aDensityPreviewProbe?: Record<string, any> }).__p114aDensityPreviewProbe
+        if (!setup || !probe) throw new Error('Expected stored dependency preview probes')
+        const unrelatedMutations = probe.state.mutations + probe.observer.takeRecords().length
+        probe.observer.disconnect()
+        return {
+          projectedItemsSame: setup.projectedItems === probe.projectedItems,
+          temporalMapSame: setup.temporalMap === probe.temporalMap,
+          dependencyEdgesSame: setup.dependencyEdges === probe.dependencyEdges,
+          dependencyGeometrySame: setup.dependencyGeometryById === probe.dependencyGeometryById,
+          windowEdgesSame: setup.windowDependencyEdges === probe.windowDependencyEdges,
+          unrelatedPathSame: root.querySelector(`[data-testid="timeline-dependency-path"][data-predecessor-id="${unrelatedRecordId}"]`) === probe.unrelated,
+          unrelatedMutations,
+        }
+      }, id(density === 'medium' ? 2 : 10))
+      expect(previewEvidence).toEqual({ projectedItemsSame: true, temporalMapSame: true, dependencyEdgesSame: true, dependencyGeometrySame: true, windowEdgesSame: true, unrelatedPathSame: true, unrelatedMutations: 0 })
+      expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+      await page.keyboard.press('Escape')
+      await page.mouse.up()
+      await expect(sourceBar).toHaveAttribute('data-drag-state', 'idle')
+      await expect(incidentPath).toHaveAttribute('d', incidentBefore ?? '')
+      if (total === 500) {
+        expect(bounded.rows).toBeLessThanOrEqual(40)
+        await page.evaluate(() => { (document.querySelector('.document-wrap') as HTMLElement).scrollTop = 1000 })
+        await expect.poll(() => timeline.locator('[data-row-window-first]').getAttribute('data-row-window-first')).not.toBe('0')
+        expect(await timeline.evaluate(root => {
+          const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+          const probe = (window as Window & { __p114aDensityProbe?: { edges: unknown } }).__p114aDensityProbe
+          return setup?.dependencyEdges === probe?.edges
+        })).toBe(true)
+        const visible = await layer.evaluate(element => ({ paths: element.querySelectorAll('[data-testid="timeline-dependency-path"]').length, windowEdges: Number(element.getAttribute('data-window-edge-count')) }))
+        expect(visible.paths).toBeLessThanOrEqual(visible.windowEdges)
+        expect(visible.windowEdges).toBeLessThanOrEqual(84)
+      }
+      console.log(`P11.4A ${total} ${density} dependency evidence: ${JSON.stringify({ ...bounded, preview: previewEvidence })}`)
+    })
+  }
+}

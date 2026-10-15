@@ -1,15 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import type { TimelineTick, TimelineViewportState } from './types'
 import type { TimelineRowGeometry, TimelineRowWindow } from './layout'
 import type { TimelineUnscheduledReason } from './projection'
 import type { TimelineBarDragSession } from './useTimelineBarDrag'
 import type { TimelineMoveCommand } from './mutation'
 import type { Transform } from './types'
+import type { TimelineItemGeometry } from './layout'
+import type { TimelineDependencyEdge } from './dependency'
 import TimelineGrid from './TimelineGrid.vue'
 import TimelineRuler from './TimelineRuler.vue'
 import TimelineTodayLine from './TimelineTodayLine.vue'
 import TimelineBar from './TimelineBar.vue'
+import TimelineDependencyLayer from './TimelineDependencyLayer.vue'
 
 const props = defineProps<{
   state: TimelineViewportState | null
@@ -21,6 +24,9 @@ const props = defineProps<{
   bodyHeight: number
   rowWindow: TimelineRowWindow
   rows: TimelineRowGeometry[]
+  dependencyEdges: readonly TimelineDependencyEdge[]
+  windowDependencyEdges: readonly TimelineDependencyEdge[]
+  dependencyGeometryById: ReadonlyMap<string, TimelineItemGeometry>
   selectedPageId: string | null
   hoveredRecordId: string | null
   scope: string
@@ -46,6 +52,13 @@ const unscheduledStyle = computed(() => ({
   left: `${props.state?.scrollLeft ?? 0}px`,
   width: `${props.state?.width ?? 0}px`,
 }))
+const previewGeometryById = reactive(new Map<string, TimelineItemGeometry>())
+watch(() => props.scope, () => previewGeometryById.clear(), { flush: 'sync' })
+
+function updatePreviewGeometry(recordId: string, geometry: TimelineItemGeometry | null): void {
+  if (geometry) previewGeometryById.set(recordId, geometry)
+  else previewGeometryById.delete(recordId)
+}
 
 const emit = defineEmits<{
   scrollerRef: [element: HTMLElement | null]
@@ -117,6 +130,16 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
         >
           <div class="eotion-timeline-draw-window" :style="overlayStyle" aria-hidden="true">
             <TimelineGrid :ticks="gridTicks" />
+          </div>
+          <TimelineDependencyLayer
+            :edges="dependencyEdges"
+            :window-edges="windowDependencyEdges"
+            :geometry-by-record-id="dependencyGeometryById"
+            :preview-geometry-by-record-id="previewGeometryById"
+            :canvas-width="canvasWidthPx"
+            :body-height="bodyHeight"
+          />
+          <div class="eotion-timeline-today" :style="overlayStyle" aria-hidden="true">
             <TimelineTodayLine :x="todayX" />
           </div>
           <div
@@ -151,6 +174,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
                 :commit-drag="commitDrag"
                 :is-viewport-current="isViewportCurrent"
                 @focus-row="emit('focusRow', row.rowIndex)"
+                @preview-geometry="updatePreviewGeometry"
                 @click="emit('openRecord', $event, row.item.pageId)"
               />
               <div v-else-if="row.item.kind === 'unscheduled'" class="eotion-timeline-unscheduled" data-testid="timeline-unscheduled-row" :data-record-id="row.item.recordId">
@@ -175,12 +199,13 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-canvas { position:relative; min-width:100%; min-height:240px; }
 .eotion-timeline-body { position:relative; width:100%; min-height:240px; isolation:isolate; }
 .eotion-timeline-draw-window { position:absolute; z-index:0; left:0; overflow:hidden; pointer-events:none; }
-.eotion-timeline-row { position:absolute; z-index:2; left:0; width:100%; }
+.eotion-timeline-today { position:absolute; z-index:2; left:0; overflow:hidden; pointer-events:none; }
+.eotion-timeline-row { position:absolute; z-index:3; left:0; width:100%; }
 .eotion-timeline-row:has(.eotion-timeline-bar[data-drag-state="dragging"]), .eotion-timeline-row:has(.eotion-timeline-bar[data-drag-state="saving"]) { z-index:6; }
 .eotion-timeline-row.is-hovered { background:color-mix(in srgb, var(--e-color-hover, var(--editor-hover)) 48%, transparent); }
 .eotion-timeline-row.is-selected { background:color-mix(in srgb, var(--e-color-selected, var(--editor-selected)) 56%, transparent); }
 .eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; }
-.eotion-timeline-row--unscheduled { z-index:3; }
+.eotion-timeline-row--unscheduled { z-index:4; }
 .eotion-timeline-unscheduled { display:flex; width:100%; height:100%; align-items:center; gap:8px; overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); padding:0 8px; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; }
 .eotion-timeline-unscheduled-title { min-width:0; overflow:hidden; color:var(--e-color-text-primary, var(--editor-text)); font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
 .eotion-timeline-unscheduled-reason { flex:0 0 auto; }

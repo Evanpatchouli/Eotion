@@ -4,7 +4,7 @@ import type { TimelineItemProjection } from './projection'
 import type { Transform } from './types'
 import type { TimelineBarDragSession } from './useTimelineBarDrag'
 import type { TimelineMoveCommand } from './mutation'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { useTimelineBarDrag } from './useTimelineBarDrag'
 
 const props = defineProps<{
@@ -29,6 +29,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   click: [event: MouseEvent]
   focusRow: []
+  previewGeometry: [recordId: string, geometry: TimelineItemGeometry | null]
 }>()
 
 const drag = useTimelineBarDrag({
@@ -54,6 +55,12 @@ const previewLabelStyle = computed(() => {
   return { left: `${left}px`, top: '1px', maxWidth: `${Math.max(0, Math.min(180, visibleRight - left))}px` }
 })
 const barGeometry = computed(() => drag.geometry.value)
+watch(
+  [() => drag.geometry.value, () => drag.previewDate.value],
+  ([geometry, previewDate]) => emit('previewGeometry', props.geometry.recordId, previewDate ? geometry : null),
+  { flush: 'sync' },
+)
+onBeforeUnmount(() => emit('previewGeometry', props.geometry.recordId, null))
 const showStartHandle = computed(() => props.draggable && props.item.kind === 'range' && (!barGeometry.value.clippedLeft || drag.activeMode.value === 'start'))
 const showEndHandle = computed(() => props.draggable && (!barGeometry.value.clippedRight || drag.activeMode.value === 'end'))
 const handleCenters = computed(() => {

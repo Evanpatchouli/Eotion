@@ -12,15 +12,17 @@ import TimelineHeader from './timeline/TimelineHeader.vue'
 import TimelineViewport from './timeline/TimelineViewport.vue'
 import FrozenTablePane from './timeline/FrozenTablePane.vue'
 import { projectFrozenTableDisplay, resolveFrozenTableProperties } from './timeline/frozenTable'
-import { layoutTimelineItems, TIMELINE_HEADER_HEIGHT } from './timeline/layout'
+import { layoutTimelineItem, layoutTimelineItems, TIMELINE_HEADER_HEIGHT, type TimelineItemGeometry } from './timeline/layout'
 import { projectTimelineRecords } from './timeline/projection'
 import { resolveTimelineTemporalGeometry } from './timeline/geometry'
 import { viewportTransform } from './timeline/viewport'
 import { useTimelineViewport } from './timeline/useTimelineViewport'
+import { projectTimelineDependencies, selectTimelineDependencyEdges } from './timeline/dependency'
 
 type TimelineRecord = DatabaseViewRecordsResponse['records'][number]
 
 const props = defineProps<{
+  databaseId: string
   scope: string
   config: DatabaseViewConfig
   records: readonly TimelineRecord[]
@@ -91,6 +93,31 @@ const viewport = useTimelineViewport({
   focusedRowIndex: () => focusedRowIndex.value,
 })
 const temporalMap = computed(() => resolveTimelineTemporalGeometry(projectedItems.value, viewport.displayTimeZone.value))
+const dependencyEdges = computed(() => projectTimelineDependencies({
+  databaseId: props.databaseId,
+  properties: props.properties,
+  records: props.records,
+  config: props.config,
+}))
+const dependencyGeometryById = computed(() => {
+  if (dependencyEdges.value.length === 0) return new Map<string, TimelineItemGeometry>()
+  const transform = barTransform.value
+  if (!transform) return new Map<string, TimelineItemGeometry>()
+  const geometry = new Map<string, TimelineItemGeometry>()
+  for (const item of projectedItems.value) {
+    if (item.kind === 'unscheduled') continue
+    const temporal = temporalMap.value.get(item.recordId)
+    if (!temporal) continue
+    geometry.set(item.recordId, layoutTimelineItem(item, temporal, item.rowIndex, transform))
+  }
+  return geometry
+})
+const windowDependencyEdges = computed(() => selectTimelineDependencyEdges(
+  dependencyEdges.value,
+  dependencyGeometryById.value,
+  viewport.rowWindow.value,
+  viewport.canvasWidthPx.value,
+))
 const rowGeometry = computed(() => {
   const state = viewport.state.value
   if (!state) return []
@@ -219,6 +246,9 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
         :body-height="bodyHeight"
         :row-window="viewport.rowWindow.value"
         :rows="rowGeometry"
+        :dependency-edges="dependencyEdges"
+        :window-dependency-edges="windowDependencyEdges"
+        :dependency-geometry-by-id="dependencyGeometryById"
         :selected-page-id="selectedPageId"
         :hovered-record-id="hoveredRecordId"
         :scope="scope"
