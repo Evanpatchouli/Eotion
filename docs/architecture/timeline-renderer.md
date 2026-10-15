@@ -572,6 +572,8 @@ Pointer capture 结束时可能出现后续 click；抑制标记必须在释放 
   fail closed；跨 View stale callback 由 ledger token 覆盖。
 - 无移动（或低于 threshold）的 bar body 手势是既有 click 语义，会打开 Record；resize handle
   手势被显式抑制，不 fall through。
+- 超过 threshold 的真实 drag 在最终日期与 canonical 相等时仍抑制本次 release click；
+  no-op 只决定不提交 PATCH，不能将已发生的 drag 重新解释为 Record click。
 - preview 期间 bar 持有 pointer capture，无法用真实鼠标点击 toolbar；这是浏览器约束。
 
 证据与未执行项见 [P11.3C 验证](../verification/p11-3c-mutation-ux-conflict.md)。P11.3D 需独立授权。

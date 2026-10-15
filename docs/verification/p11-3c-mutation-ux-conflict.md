@@ -134,6 +134,8 @@ transport / 5xx 之后一律 `refreshLoadedWindow()` 重新核对 canonical，�
 - 轻微点击 / 无意义移动（< 4px）不发 PATCH；超过 threshold 后 snap 回原值同样不发 PATCH。
 - 「无移动的 bar body 手势」仍按既有语义打开 Record（click）；resize handle 的手势则被显式抑制，
   不会 fall through 到 bar click。
+- 一旦超过 threshold 进入真实 drag，即使最终回到原 canonical 日期，也必须抑制本次 release
+  的合成 click，不打开 Record；后续新的普通点击、Enter / Space 仍可正常打开。
 
 ## 12. No-op Mutation
 
@@ -288,8 +290,9 @@ git diff --check
    **fail closed**，无法用真实点击复现切换。Web 测试据此断言 disabled；跨 View stale callback
    的不变量由 logic spec 的 token fence 覆盖。P11.3D 若要允许 pending 期间切 View，需先明确
    是否放宽 generic busy guard。
-2. **无移动的 bar body 手势会打开 Record**（既有 click 语义），包括 drag 后 snap 回原值的往返。
-   测试按该语义断言（必要时关闭 drawer），并额外断言 handle 手势不会打开 Record。
+2. **无移动或低于 threshold 的 bar body 手势会打开 Record**（既有 click 语义）。超过 threshold
+   后 snap 回原值的往返属于真实 drag：0 PATCH 且不打开 Record。旧测试主动关闭意外 drawer，
+   未能证明此行为；2026-10-16 review fix 已改为直接断言无 drawer，并覆盖后续点击和键盘打开。
 3. **preview 期间无法用鼠标点击 toolbar**：bar 持有 pointer capture，视角切换只能在 pending 或
    非拖动态进行；这是浏览器 pointer capture 的固有约束，不是缺陷。
 4. 未实现（明确延期）：独立 Start/End multi-cell、Dependency / auto shift、bulk/multi-select、
@@ -333,3 +336,39 @@ capability exists, range move/resize remains read-only.
   `P11.3C` grep；helpers `dragTimelineBar`、`closeTimelineDrawer`、`p113bResize`。
 - 不变量：single Date Property、共享 ledger token、409 no-retry、unknown canonical 核对、
   offline fail closed、identity/ABA fence、`normalizeDatabaseDateValue` 的 wire shape 保留。
+
+## 18. 2026-10-16 Round-trip No-op Drag Review Fix
+
+基线 `4fe83eb5fd5cb0692e14353d1e9e78c9ec459b14`，分支
+`codex/p11-3c-round-trip-noop-fix`。仅修复已确认 P2，P11.3D 未开始。
+
+根因：`finish()` 在 `didMove=true` 时设置了 click 抑制，但 no-op 分支随后按 mode 覆盖该标记，
+使 body move 的 release click 打开 Record。删除这处覆盖，保持原 no-op cleanup / 0 PATCH；
+不改 threshold、日期计算、ledger、pending、CAS 或数据契约。
+
+回归沿用原 Web 用例，改名为 `P11.3C Timeline no-op round trips suppress release clicks while
+ordinary clicks open Records`。先在旧实现上运行，point 往返后的 drawer 断言失败（期望 0，实际 1）；
+修复后同一用例 1/1 PASS。point legacy string 与 range object 均由真实鼠标拖出非 canonical
+preview 后拖回原值，检查 idle、无 preview、无 drawer、0 cell PATCH、完整 canonical record / version
+不变；同时检查普通 click、2px sub-threshold click、后续 click / Enter / Space 正常打开，保留 handle
+不开 Record 的回归。旧测试中 `0.2 × dayPixels` 实际超过 4px，已替换为明确的 2px。
+
+浏览器验证使用既有 Playwright / Chrome、`http://127.0.0.1:7173`，主用例 1440×900。
+Browser plugin not available（本会话未列出 browser skill）。往返结束截图位于系统 TEMP 的
+`eotion-p113c-round-trip/p11-3c-round-trip-noop.png`，已视检确认产品内容正常、无错误遮罩、无 Record drawer。
+独立 reviewer 静态复核无 blocker。完整 Product、真实 API/Mongo、native 真机和正式 benchmark 未运行；
+不复用历史结果宣称本轮通过。不推送、不发布、不改版本。
+
+本次最终验证（沿用 §13 的六个 logic specs 与 Timeline/Date/CAS Web grep）：
+
+| 项目 | 本轮结果 |
+| --- | --- |
+| Timeline logic | 52/52 PASS，workers=1/retries=0 |
+| 相关 Timeline/Date/CAS Web | 35/35 PASS，workers=1/retries=0 |
+| Web typecheck / production build | PASS；build 有 >500 kB chunk 提示 |
+| 独立 review / diff / UTF-8 无 BOM | 无 blocker / PASS / PASS |
+
+Web 集合首跑复用了单测创建的短生命周期 dev server；前两项通过后，该服务退出，后续 33 项
+均在导航时报 `ERR_CONNECTION_REFUSED`，7173 无监听。启动独立 Vite 服务后重跑，35/35 通过且
+无连接拒绝；验证服务已清理，7173 无监听。日志根目录为系统 TEMP 下
+`eotion-roundtrip-cd8324b619bc4c8e977aba05305825b1`，主要日志 `logic.log`、`web-independent.log`。

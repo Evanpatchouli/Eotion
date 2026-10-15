@@ -280,8 +280,8 @@ export function useTimelineBarDrag(options: Options) {
     suppressNextClick.value = true
     clearActive()
     if (!value || normalizedValuesEqual(current.session.originalValue, value)) {
-      // No-op drag/resize: snap back to the canonical geometry without any PATCH.
-      suppressNextClick.value = current.mode !== 'move'
+      // A threshold-crossing gesture remains a drag even when it returns to the canonical value.
+      // Keep its release click suppressed while snapping back without any PATCH.
       clearPreviewGeometry()
       ledger.cancelPreview()
       phase.value = ledger.phase

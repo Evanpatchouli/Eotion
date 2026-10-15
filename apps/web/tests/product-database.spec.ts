@@ -8563,7 +8563,7 @@ for (const total of [100, 500] as const) {
     await expect(target).toHaveAttribute('data-drag-state', 'idle')
   })
 }
-test('P11.3C Timeline equal and sub-threshold pointer gestures never open a Record or send a PATCH', async ({ page }) => {
+test('P11.3C Timeline no-op round trips suppress release clicks while ordinary clicks open Records', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
   const date = property('p113c-noop-date', rootDatabase.id, 'Date', 'date')
@@ -8595,15 +8595,17 @@ test('P11.3C Timeline equal and sub-threshold pointer gestures never open a Reco
   expect(cellPatches()).toBe(before)
 
   // A movement under the shared drag threshold is still a click, never a preview.
-  await dragTimelineBar(page, barFor(point.id), pxPerMs('month') * 86_400_000 * 0.2)
+  await dragTimelineBar(page, barFor(point.id), 2)
   await expect(barFor(point.id)).not.toHaveAttribute('data-preview-date', /.+/u)
   expect(await barFor(point.id).getAttribute('data-interaction-phase')).toBe('idle')
-  if (await page.locator('[data-overlay-mode="drawer"]').count() > 0) await page.getByRole('button', { name: '关闭记录' }).click()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await page.getByRole('button', { name: '关闭记录' }).click()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
   expect(cellPatches()).toBe(before)
   expect(api.records.find(item => item.id === point.id)?.properties[date.id]).toBe('2026-10-13')
 
-  // A real drag that snaps back to the canonical value must not send a PATCH.
-  await closeTimelineDrawer(page)
+  // A real body drag that snaps back to the canonical point value must not send a PATCH or open a Record.
+  const pointBefore = structuredClone(api.records.find(item => item.id === point.id)!)
   const pointBounds = await barFor(point.id).boundingBox()
   if (!pointBounds) throw new Error('Expected the no-op point bar for the round trip')
   const pointX = pointBounds.x + pointBounds.width / 2
@@ -8612,15 +8614,57 @@ test('P11.3C Timeline equal and sub-threshold pointer gestures never open a Reco
   await page.mouse.down()
   await page.mouse.move(pointX + dayPixels, pointY, { steps: 4 })
   await expect(barFor(point.id)).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(barFor(point.id)).toHaveAttribute('data-interaction-phase', 'previewing')
   await expect(barFor(point.id)).toHaveAttribute('data-preview-date', '2026-10-14')
   await page.mouse.move(pointX, pointY, { steps: 4 })
   await expect(barFor(point.id)).toHaveAttribute('data-preview-date', '2026-10-13')
   await page.mouse.up()
   await expect(barFor(point.id)).toHaveAttribute('data-drag-state', 'idle')
+  await expect(barFor(point.id)).toHaveAttribute('data-interaction-phase', 'idle')
   await expect(barFor(point.id)).not.toHaveAttribute('data-preview-date', /.+/u)
   expect(cellPatches()).toBe(before)
-  await closeTimelineDrawer(page)
-  expect(api.records.find(item => item.id === point.id)?.properties[date.id]).toBe('2026-10-13')
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  expect(api.records.find(item => item.id === point.id)).toEqual(pointBefore)
+
+  // The same body round trip preserves the canonical range object and its version.
+  const rangeBefore = structuredClone(api.records.find(item => item.id === range.id)!)
+  const rangeBounds = await barFor(range.id).boundingBox()
+  if (!rangeBounds) throw new Error('Expected the no-op range bar for the round trip')
+  const rangeX = rangeBounds.x + rangeBounds.width / 2
+  const rangeY = rangeBounds.y + rangeBounds.height / 2
+  await page.mouse.move(rangeX, rangeY)
+  await page.mouse.down()
+  await page.mouse.move(rangeX + dayPixels, rangeY, { steps: 4 })
+  await expect(barFor(range.id)).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(barFor(range.id)).toHaveAttribute('data-interaction-phase', 'previewing')
+  await expect(barFor(range.id)).toHaveAttribute('data-preview-date', '2026-10-14 – 2026-10-16')
+  await page.mouse.move(rangeX, rangeY, { steps: 4 })
+  await expect(barFor(range.id)).toHaveAttribute('data-preview-date', '2026-10-13 – 2026-10-15')
+  await page.mouse.up()
+  await expect(barFor(range.id)).toHaveAttribute('data-drag-state', 'idle')
+  await expect(barFor(range.id)).toHaveAttribute('data-interaction-phase', 'idle')
+  await expect(barFor(range.id)).not.toHaveAttribute('data-preview-date', /.+/u)
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  expect(cellPatches()).toBe(before)
+  expect(api.records.find(item => item.id === range.id)).toEqual(rangeBefore)
+  await screenshot(page, 'p11-3c-round-trip-noop')
+
+  // Suppressing each release click must not disable the next pointer or keyboard activation.
+  await barFor(point.id).click()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await page.getByRole('button', { name: '关闭记录' }).click()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  await barFor(point.id).focus()
+  await page.keyboard.press('Enter')
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await page.getByRole('button', { name: '关闭记录' }).click()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  await barFor(range.id).focus()
+  await page.keyboard.press('Space')
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await page.getByRole('button', { name: '关闭记录' }).click()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  expect(cellPatches()).toBe(before)
 
   // Handle interactions never fall through to the bar click handler.
   await dragTimelineBar(page, handleFor('timeline-resize-end', range.id), 0)

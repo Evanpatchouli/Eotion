@@ -1,5 +1,24 @@
 # Handoff
 
+## 2026-10-16 P11.3C Round-trip No-op Drag Review Fix
+
+基线 `4fe83eb`，分支 `codex/p11-3c-round-trip-noop-fix`。唯一 P2：真实 bar drag 越过 threshold
+后拖回 canonical 日期，原本 0 PATCH 却误开 Record。`finish()` 保留已设置的 release click 抑制，
+删除 no-op 分支按 mode 重置的赋值；其余 mutation / token / CAS 不变。
+
+旧测试在往返之后主动关闭意外 drawer，已改为真实鼠标 point / range 往返后直接断言无 drawer、
+idle / 无 preview、0 cell PATCH、完整 record（含 version）不变；保留普通 click、sub-threshold
+click、后续 click / Enter / Space 正常打开及 handle 永不打开。旧实现红测得到 drawer 数量 1，
+修复后该定向用例 1/1 PASS。独立 reviewer 无 blocker。完整验证结果见
+[验收记录 §18](../docs/verification/p11-3c-mutation-ux-conflict.md#18-2026-10-16-round-trip-no-op-drag-review-fix)。
+
+最终：Timeline logic 52/52、相关 Web 35/35（workers=1/retries=0）、Web typecheck/build、diff/BOM检查通过。
+Web 首跑因复用服务在单测结束时被关闭而中断；独立服务复跑全绿，服务已清理。日志在系统 TEMP 的
+`eotion-roundtrip-cd8324b619bc4c8e977aba05305825b1`。
+
+只修本问题，不进入 P11.3D；不推送、不发布、不改版本。未运行全 Product、真实 API/Mongo、
+native 真机或正式 benchmark。
+
 ## 2026-10-15 P11.3C 审阅修复收口（完成，P11.3D 未开始）
 
 审阅修复提交：`53c98b5`（lostcapture click 抑制，定向 1/1）、`c784b40`（focus identity / resize focus，定向 4/4 + typecheck）、`832cf28`（unknown refresh 状态，参数化定向 2/2）。Focus helper 捕获 bar anchor identity，只在原 anchor 内恢复同 record control / fallback bar；完成时 nextTick 后再次核验 token + scope。焦点范围以实现 guard 和既有 lifecycle 回归覆盖；scope/token 失效的 focus 分支没有独立 E2E 专项断言。
