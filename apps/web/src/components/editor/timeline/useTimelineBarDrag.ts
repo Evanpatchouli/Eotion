@@ -163,6 +163,7 @@ export function useTimelineBarDrag(options: Options) {
    * mutation: the pending PATCH keeps its token and still owns its cleanup.
    */
   function abortPreview(): void {
+    if (active.value?.moved === true) suppressNextClick.value = true
     ledger.cancelPreview()
     clearActive()
     if (ledger.phase !== 'pending') {

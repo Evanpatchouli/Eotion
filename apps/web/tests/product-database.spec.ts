@@ -8748,6 +8748,38 @@ test('P11.3C Escape and pointercancel cancel previews with zero PATCH and keep f
   expect(cellPatches()).toBe(beforeResizeEscape)
   await page.mouse.up()
   expect(cellPatches()).toBe(beforeResizeEscape)
+
+  const rangeBarBounds = await rangeBar.boundingBox()
+  if (!rangeBarBounds) throw new Error('Expected the cancel range bar')
+  const rangeBarX = rangeBarBounds.x + rangeBarBounds.width / 2
+  const rangeBarY = rangeBarBounds.y + rangeBarBounds.height / 2
+  await rangeBar.evaluate(element => {
+    let pointerId: number | null = null
+    element.addEventListener('pointerdown', event => { pointerId = event.pointerId }, { once: true })
+    element.addEventListener('review-release-pointer-capture', () => {
+      if (pointerId !== null && element.hasPointerCapture(pointerId)) element.releasePointerCapture(pointerId)
+    }, { once: true })
+  })
+  await page.mouse.move(rangeBarX, rangeBarY)
+  await page.mouse.down()
+  await page.mouse.move(rangeBarX + dayPixels, rangeBarY, { steps: 4 })
+  await expect(rangeBar).toHaveAttribute('data-drag-state', 'dragging')
+  await rangeBar.evaluate(element => element.dispatchEvent(new Event('review-release-pointer-capture')))
+  await page.mouse.move(rangeBarX + dayPixels + 1, rangeBarY)
+  await expect(rangeBar).toHaveAttribute('data-drag-state', 'idle')
+  await expect(rangeBar).toHaveAttribute('data-interaction-phase', 'idle')
+  await rangeBar.evaluate(element => {
+    element.addEventListener('click', event => {
+      element.dataset.testClickDefaultPrevented = String(event.defaultPrevented)
+    }, { once: true })
+  })
+  await page.mouse.move(rangeBarX, rangeBarY)
+  await page.mouse.up()
+  await expect(rangeBar).toHaveAttribute('data-test-click-default-prevented', 'true')
+  await rangeBar.evaluate(element => { delete element.dataset.testClickDefaultPrevented })
+  expect(cellPatches()).toBe(beforeResizeEscape)
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  expect(api.records.find(item => item.id === range.id)?.properties[date.id]).toEqual({ start: '2026-10-13', end: '2026-10-15' })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
   expect(api.records.find(item => item.id === range.id)?.properties[date.id]).toEqual({ start: '2026-10-13', end: '2026-10-15' })
   await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)

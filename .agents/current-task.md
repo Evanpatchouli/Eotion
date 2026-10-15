@@ -1,42 +1,25 @@
-# 当前任务：P11.3C Timeline Mutation UX + Conflict（范围验收 PASS，完成并停止）
+# 当前任务：P11.3C 审阅问题修复
 
-基线 `d992425`，工作树干净；分支 `codex/p11-3c-mutation-ux-conflict`。版本保持 0.0.1，目标 0.0.3。
-只执行 C 的交互生命周期/取消/冲突/offline/identity/focus 收敛，完成后停止，不进入 P11.3D。
+基线 `574a93c`，分支 `codex/p11-3c-review-fixes`。用户授权修复本会话审阅确认的四项 P2 并按规范提交。
+限于 cancel click、刷新失败反馈、焦点转移和 resize 焦点闭环；不进入 P11.3D，不改 API / model / sync / 版本。
 
 | 单元 | 模式 / 难度 / 角色 | 输出 | 状态 |
 | --- | --- | --- | --- |
-| C1 | investigate / S0 scout | temporal/adapter/handle 既有行为 Evidence Pack | 完成 |
-| C2 | decide / S2 主 Agent | 统一 ledger / cancel / pending / busy fence Brief | 完成 |
-| C3 | execute / S1 主 Agent | `interaction.ts` + `focus.ts` 纯逻辑 | 完成 |
-| C4 | execute / S1 主 Agent | controller / bar DOM / view fence / NodeView 文案接线 | 完成 |
-| C5 | execute / S1 主 Agent | logic 9 + Web 6 新回归与 harness | 完成 |
-| C6 | verify / S0 主 Agent | 逻辑 52/52、Timeline Web 31/31、全量 product-database 134/139（5 失败为基线浮动）、typecheck/build、隔离 Mongo 19/19 | 完成 |
-| C8 | verify / reviewer + S1 主 Agent | 独立复核 3 项（handle click / busy fence / aria-disabled）复现修复与补回归 | 完成 |
-| C7 | execute / S1 主 Agent | 契约、验收、handoff 与提交 | 本文件所在提交 |
+| F1 | decide / S2 主 Agent | 复用审阅 Evidence Pack，确定最小修复与验收 | 完成 |
+| F2 | execute / S1 fast_worker | 保留取消拖拽 click 抑制 + 真实 lostpointercapture 回归 | 完成；定向 Web 1/1 PASS |
+| F3 | execute / S1 fast_worker | 尊重用户焦点转移；resize 可聚焦、原 DOM 失联时同 anchor 回退 + 回归 | 待执行 |
+| F4 | execute / S1 fast_worker | unknown 刷新失败保持不确定文案与只读 + 回归 | 待执行 |
+| F5 | verify / S0 scout + reviewer | 定向 Web / logic / typecheck / build，最终一次独立 review | 待执行 |
+| F6 | execute / S1 fast_worker + 主 Agent | 同步验收文档、handoff、提交并检查最终 diff | 待执行 |
 
-不变量（冻结）：single Date Property；drag/resize 共用 `idle→previewing→pending→idle` 与单调 token；
-4px shared threshold；同 record+property 串行（既有 generic database-wide 串行 + Timeline fence）；
-409 只 canonical refresh 不 retry；known failure 回退；unknown 一律 refresh 后按 normalized value
-接受或保持 uncertain；offline 立即 fail closed 并取消 active preview；identity/ABA fence 不变；
-handle 与 bar body 是兄弟节点；no-op 不发 PATCH；date-only/datetime wire shape 保留。
+Implementation Brief：
 
-验收入口：`docs/verification/p11-3c-mutation-ux-conflict.md`。
+- 取消：abortPreview 在清 active 之前保留 moved 对下一次 click 的抑制；不能覆盖 pending 原有抑制状态或失效在途 token。
+- 焦点：除原目标或 body/空焦点外，任何其他 activeElement 都视为用户主动转移；包括另一个 Timeline bar。
+- Resize：移除 controller 中阻止 pointerdown 默认聚焦的 preventDefault；保留事件隔离。捕获同一 bar anchor 的 DOM identity，在原 handle 失联时仅在该 anchor 内寻找同 record 的当前目标/bar，禁止全局查询跨 View 抢焦点。
+- 恢复时确认当前 ledger token 和 scope；等 Vue DOM 更新后处理目标失联，卸载后不恢复。保持既有 pending busy guard 和 handle 永不打开 Record。
+- Unknown：refreshLoadedWindow 返回后若 staleReadonly 为 true，返回 false 并显示刷新未完成/结果未确认，不使用旧 records 宣称 canonical 已更新。
+- 回归复用现有 product-database harness；审阅临时复现在系统 TEMP/eotion-p113c-review-evidence/reproduction.spec.ts，可取场景但不可整份复制进仓库。
+- 每个完成的独立逻辑单元单独 commit，最终文档收口另一次 commit；不推送、不发布。
 
-独立复核（reviewer）发现并已修复：resize handle 的键盘/修饰键激活曾会打开 Record；
-`moveTimelineRecord` 的 busy fence 只有 release 没有 acquire；bar button 在只读时错误声明 `aria-disabled`。
-另修正 `captureTimelineBarFocus` 的捕获时机。补充回归见验收页「独立复核与修复」。逻辑 52/52（新 9）、Timeline Web
-31/31（新 P11.3C 6）、真实隔离 Mongo 8.2.3（27717 / replicaSet p113cFinal）19/19、Web/API
-typecheck+build PASS。隔离实例已优雅 shutdown，用户 27017 未触碰。
-
-已知边界：View switcher 在 `viewBusy`（含 `savingCell`）时 disabled，因此 pending 期间切 View 在
-UI 层 fail closed，Web 测试断言 disabled，跨 View stale callback 由 logic spec 覆盖；无移动的 bar
-body 手势仍按既有语义打开 Record，handle 手势不打开；preview 期间 pointer capture 使 toolbar 不可
-点击。仍未实现 multi-cell Start/End、Dependency/auto shift、bulk、Undo/Redo、offline queue、
-Calendar、settings UI、P11.5 polish；未新增任何 Timeline backend API。未运行完整 Product/P11 Final/
-native 真机/正式帧率 benchmark，不发布不改版本。
-
-完成 C 后停止。D 接续入口：`timeline/interaction.ts`（ledger/busy fence）、`focus.ts`、
-`useTimelineBarDrag.ts`、`TimelineBar.vue`、`DatabaseTimelineView.vue` 的
-`pendingTimelineMutations`、`DatabaseNodeView.vue` 的 `moveTimelineRecord`；测试复用
-`tests/timeline-interaction.spec.ts` 与 `product-database.spec.ts` 的 `P11.3C` grep。D 必须独立
-授权，先决定是否放宽 pending 期间切 View 的 generic busy guard。
+已知验证背景：审阅时 logic 52/52、Web typecheck 通过；P11.3C Web 首跑 5/6，冲突用例初始 bar 超时单独复跑 3/3 通过，根因未确定，不直接标为既有浮动。
