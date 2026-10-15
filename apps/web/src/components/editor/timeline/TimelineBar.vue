@@ -321,5 +321,7 @@ function handleControlClick(event: MouseEvent): void {
 .eotion-timeline-row.is-hovered .eotion-timeline-resize-handle, .eotion-timeline-row.is-selected .eotion-timeline-resize-handle { opacity:1; }
 @media (pointer:coarse) { .eotion-timeline-bar--marker { width:44px; height:44px; } }
 @media (pointer:coarse) { .eotion-timeline-resize-handle { opacity:1; width:10px; } }
-@media (pointer:coarse) { .eotion-timeline-dependency-handle { opacity:1; width:28px; height:28px; } }
+/* Keep the enlarged touch target within its row, below the Bar/resize centers.
+   A square target here would cover the point marker's primary touch target. */
+@media (pointer:coarse) { .eotion-timeline-dependency-handle { opacity:1; width:28px; height:20px; transform:translate(-50%, calc(-50% + 4px)); } }
 </style>

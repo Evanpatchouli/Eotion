@@ -93,8 +93,15 @@ export function useTimelineDependencyInteraction(options: Options) {
     if (!canvas) { cancel(); return }
     const bounds = canvas.getBoundingClientRect()
     pointer.value = { x: event.clientX - bounds.left, y: event.clientY - bounds.top }
-    const bar = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-testid="timeline-bar"]')
-    const candidate = bar && canvas.contains(bar) ? bar.dataset.recordId ?? null : null
+    const hit = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>(
+      '[data-testid="timeline-bar"], [data-testid="timeline-dependency-handle"], [data-testid="timeline-resize-start"], [data-testid="timeline-resize-end"]',
+    )
+    // Expanded touch controls can cover part of their own Bar. While linking,
+    // those controls target that rendered Bar too; they never start a resize
+    // or a second connection and cannot resolve an unloaded Record.
+    const bar = hit?.matches('[data-testid="timeline-bar"]') ? hit
+      : hit?.closest('[data-timeline-row]')?.querySelector<HTMLElement>('[data-testid="timeline-bar"]')
+    const candidate = hit && bar && canvas.contains(bar) && hit.dataset.recordId === bar.dataset.recordId ? bar.dataset.recordId ?? null : null
     targetRecordId.value = candidate && candidate !== current.predecessorRecordId
       && options.renderedRecordIds().has(candidate)
       && !existingPairs.value.has(JSON.stringify([current.predecessorRecordId, candidate]))

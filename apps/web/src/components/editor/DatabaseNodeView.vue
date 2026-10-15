@@ -1873,7 +1873,7 @@ function onOnlineChange(): void {
 function onEscape(event: KeyboardEvent): void {
   if (event.key !== 'Escape') return
   if (deletePropertyTarget.value || optionsPropertyId.value) return
-  if ((event.target as HTMLElement | null)?.closest('.eotion-product-overlay')) return
+  if (event.target instanceof Element && event.target.closest('.eotion-product-overlay')) return
   if (cellEdit.value) cancelCellEdit()
   const hadPopover = Boolean(cellPopover.value || relationPicker.value || propertyCreatorOpen.value || viewMenuOpen.value || settingsMenuOpen.value || viewControlsOpen.value)
   if (cellPopover.value) cellPopover.value = null
@@ -1886,7 +1886,7 @@ function onEscape(event: KeyboardEvent): void {
   runDeferredRefresh()
 }
 function onOutsidePointer(event: PointerEvent): void {
-  if ((event.target as HTMLElement | null)?.closest('.eotion-database, .eotion-database-popover, .eotion-popover-panel, .eotion-product-overlay')) return
+  if (event.target instanceof Element && event.target.closest('.eotion-database, .eotion-database-popover, .eotion-popover-panel, .eotion-product-overlay')) return
   propertyCreatorOpen.value = false
   cellPopover.value = null
   closeRelationPicker()

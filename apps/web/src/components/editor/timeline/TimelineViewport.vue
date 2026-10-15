@@ -65,6 +65,8 @@ watch(() => props.scope, () => previewGeometryById.clear(), { flush: 'sync' })
 const canvasBody = ref<HTMLElement | null>(null)
 const dependencyControl = ref<HTMLButtonElement | null>(null)
 const dependencyDeleteArmed = ref(false)
+let dependencyTouchSession: { pointerId: number; scope: string; configKey: string; edgeId: string | null } | null = null
+let suppressDependencyTouchClick = false
 const renderedRecordIds = computed(() => new Set(props.rows.filter(row => row.geometry && !row.geometry.offscreen).map(row => row.item.recordId)))
 const dependency = useTimelineDependencyInteraction({
   scope: () => props.scope,
@@ -88,17 +90,53 @@ function selectDependencyEdge(id: string): void {
   dependency.selectEdge(id)
   dependencyControl.value?.focus()
 }
-function onDependencyControlClick(event: MouseEvent): void {
+function activateDependencyControl(keyboard: boolean): void {
   // Browser focus selects the first edge before click. A pointer's first
   // activation of the management control must only select, never delete it.
-  if ((event.detail === 0 || dependencyDeleteArmed.value) && dependency.selectedEdge.value) void dependency.removeSelected()
+  if (!dependency.selectedEdge.value) {
+    dependency.selectRelative(1)
+    dependencyDeleteArmed.value = false
+    return
+  }
+  if (keyboard || dependencyDeleteArmed.value) void dependency.removeSelected()
   dependencyDeleteArmed.value = false
+}
+function onDependencyControlPointerDown(event: PointerEvent): void {
+  if (event.pointerType === 'touch' && !event.isPrimary) return
+  dependencyTouchSession = null
+  suppressDependencyTouchClick = false
+  dependencyDeleteArmed.value = dependency.selectedEdge.value !== null
+  if (event.pointerType === 'touch' && event.isPrimary) {
+    // A touch tap must work without a synthesized mouse click inside NodeViews.
+    event.preventDefault()
+    dependencyTouchSession = { pointerId: event.pointerId, scope: props.scope, configKey: props.dependencyConfigKey, edgeId: dependency.selectedEdgeId.value }
+  }
+}
+function onDependencyControlPointerUp(event: PointerEvent): void {
+  const session = dependencyTouchSession
+  if (event.pointerType !== 'touch' || !session || event.pointerId !== session.pointerId) return
+  dependencyTouchSession = null
+  suppressDependencyTouchClick = true
+  if (session.scope !== props.scope || session.configKey !== props.dependencyConfigKey
+    || session.edgeId !== null && session.edgeId !== dependency.selectedEdgeId.value) return
+  const bounds = dependencyControl.value?.getBoundingClientRect()
+  if (!bounds || event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return
+  activateDependencyControl(false)
+}
+function onDependencyControlClick(event: MouseEvent): void {
+  const touchClick = event instanceof PointerEvent && event.pointerType === 'touch'
+  if (suppressDependencyTouchClick && (event.detail > 0 || touchClick)) {
+    suppressDependencyTouchClick = false
+    return
+  }
+  suppressDependencyTouchClick = false
+  activateDependencyControl(event.detail === 0)
 }
 function onDependencyControlKeydown(event: KeyboardEvent): void {
   if (event.key === 'ArrowRight' || event.key === 'ArrowDown') { event.preventDefault(); dependency.selectRelative(1) }
   else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') { event.preventDefault(); dependency.selectRelative(-1) }
   else if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); void dependency.removeSelected() }
-  else if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dependency.selectedEdgeId.value = null }
+  else if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dependencyTouchSession = null; dependencyDeleteArmed.value = false; dependency.selectedEdgeId.value = null }
 }
 function guardConcurrentPointer(event: PointerEvent): void {
   if (!dependency.active.value) return
@@ -162,7 +200,9 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
         :aria-disabled="!dependencyEditable || !online || dependency.pending.value ? 'true' : undefined"
         @focus="!dependency.selectedEdge.value && dependency.selectRelative(1)"
         @keydown="onDependencyControlKeydown"
-        @pointerdown="dependencyDeleteArmed = dependency.selectedEdge.value !== null"
+        @pointerdown.stop="onDependencyControlPointerDown"
+        @pointerup.stop="onDependencyControlPointerUp"
+        @pointercancel="dependencyTouchSession = null"
         @click="onDependencyControlClick"
       >{{ dependency.selectedEdge.value ? `删除依赖 ${selectedEdgePosition}/${dependencyEdges.length}` : `依赖关系 ${dependencyEdges.length}` }}</button>
       <span v-if="dependency.pending.value" class="eotion-timeline-dependency-status" role="status">正在保存依赖关系…</span>
