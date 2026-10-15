@@ -333,8 +333,15 @@ function getCellValue(record: TableRecord, propertyId: string): unknown {
   return Object.hasOwn(record.properties, propertyId) ? record.properties[propertyId] : undefined
 }
 
+function canEditTimelineDependency(): boolean {
+  // Tiptap's isEditable is a live, non-reactive getter. Do not cache its
+  // short-circuit result in viewBusy across a temporary read-only transition.
+  return props.editor.isEditable && viewReady.value && writable.value
+    && !loadingMore.value && !creating.value && scopedViewDeleteState.value?.status !== 'pending'
+}
+
 function captureTimelineDependency(): TimelineDependencyCapture | null {
-  if (viewBusy.value || !writable.value || viewType.value !== 'timeline') return null
+  if (!canEditTimelineDependency() || viewType.value !== 'timeline') return null
   const dependency = resolveTimelineDependencyProperty(databaseId.value, properties.value, viewConfig.value)
   if (!dependency) return null
   const root = document.getElementById(`database-block-${blockId.value}`)
@@ -359,7 +366,7 @@ async function mutateTimelineDependency(command: TimelineDependencyCommand): Pro
     if (capture.viewIdentityEpoch !== viewIdentityEpoch || capture.scope !== timelineScope.value
       || capture.userId !== userId.value || capture.workspaceId !== workspaceId.value
       || capture.databaseId !== databaseId.value || capture.viewId !== viewId.value || capture.blockId !== blockId.value
-      || !capture.viewRoot?.isConnected || !viewReady.value || !props.editor.isEditable) return false
+      || !capture.viewRoot?.isConnected || !viewReady.value) return false
     const root = document.getElementById(`database-block-${blockId.value}`)
     if (root !== capture.viewRoot || root.getAttribute('data-view-id') !== capture.viewId || root.getAttribute('data-view-ready') !== 'true') return false
     let editorViewId = ''
@@ -368,7 +375,7 @@ async function mutateTimelineDependency(command: TimelineDependencyCommand): Pro
     })
     return editorViewId === capture.viewId && viewType.value === 'timeline'
   }
-  if (!isCurrent() || viewBusy.value || !writable.value) return false
+  if (!isCurrent() || !canEditTimelineDependency()) return false
   const mutation = prepareDependencyRelationMutation(command, { databaseId: databaseId.value, properties: properties.value, config: viewConfig.value })
   if (!mutation || capture.expectedDatabaseVersion !== databaseVersion.value) {
     await refreshLoadedWindow()
@@ -429,7 +436,11 @@ async function mutateTimelineDependency(command: TimelineDependencyCommand): Pro
     mutationError.value = confirmed ? '依赖关系已更新，已读取最新结果。' : '依赖关系未更新，已恢复服务器最新内容。'
     return confirmed
   } finally {
-    if (isCurrent()) {
+    // Release only the request's own instance, even if that editor became
+    // temporarily read-only while awaiting the response. A new epoch owns its
+    // own busy flag and must never be unlocked by this stale completion.
+    if (capture.viewIdentityEpoch === viewIdentityEpoch && capture.scope === timelineScope.value
+      && capture.viewRoot === document.getElementById(`database-block-${blockId.value}`)) {
       savingCell.value = false
       runDeferredRefresh()
     }

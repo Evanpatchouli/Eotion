@@ -209,7 +209,7 @@ function handleControlClick(event: MouseEvent): void {
       class="eotion-timeline-dependency-handle"
       :style="dependencyHandleStyle"
       :data-record-id="geometry.recordId"
-      :aria-label="`从 ${title || '无标题'} 创建依赖关系`"
+      :aria-label="`创建依赖：${title || '无标题'}`"
       :aria-disabled="dependencyPending ? 'true' : undefined"
       data-testid="timeline-dependency-handle"
       type="button"

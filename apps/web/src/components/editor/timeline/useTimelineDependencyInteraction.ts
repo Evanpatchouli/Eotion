@@ -137,7 +137,7 @@ export function useTimelineDependencyInteraction(options: Options) {
     const index = edges.findIndex(edge => edge.id === selectedEdgeId.value)
     selectedEdgeId.value = edges[index < 0 ? delta < 0 ? edges.length - 1 : 0 : (index + delta + edges.length) % edges.length]?.id ?? null
   }
-  function onKeydown(event: KeyboardEvent): void { if (event.key === 'Escape') { event.preventDefault(); cancel() } }
+  function onKeydown(event: KeyboardEvent): void { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel() } }
   function onVisibilityChange(): void { if (document.visibilityState === 'hidden') cancel() }
 
   watch([options.scope, options.writable, options.online, options.transform, options.configKey], () => {

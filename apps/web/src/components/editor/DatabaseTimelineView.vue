@@ -3,7 +3,7 @@ import type { DatabasePropertyResponse, DatabaseViewRecordsResponse } from '@eot
 import type { DatabaseTimelineViewOptions, DatabaseViewConfig } from '@eotion/domain/database'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import type { TimelineMoveCommand } from './timeline/mutation'
-import type { TimelineDependencyCapture, TimelineDependencyCommand } from './timeline/dependencyMutation'
+import { resolveTimelineDependencyProperty, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
 import { isWritableTimelineDateSource } from './timeline/mutation'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
@@ -62,17 +62,10 @@ const hoveredRecordId = ref<string | null>(null)
 const timelineOptions = computed(() => (props.config.options as DatabaseTimelineViewOptions | undefined)?.timeline)
 const configuredScale = computed(() => timelineOptions.value?.scale ?? 'month')
 const barDraggable = computed(() => props.writable && isWritableTimelineDateSource(timelineOptions.value?.dateSource))
-const dependencyEditable = computed(() => {
-  const dependency = timelineOptions.value?.dependency
-  if (!dependency || !props.writable) return false
-  const property = props.properties.find(candidate => candidate.id === dependency.propertyId)
-  return property?.databaseId === props.databaseId && property.type === 'relation'
-    && property.config !== null && typeof property.config === 'object' && 'targetDatabaseId' in property.config
-    && property.config.targetDatabaseId === props.databaseId
-})
+const dependencyProperty = computed(() => resolveTimelineDependencyProperty(props.databaseId, props.properties, props.config))
+const dependencyEditable = computed(() => props.writable && dependencyProperty.value !== null)
 const dependencyConfigKey = computed(() => JSON.stringify([
-  props.scope, props.config, timelineOptions.value?.dependency,
-  props.properties.find(property => property.id === timelineOptions.value?.dependency?.propertyId)?.version,
+  props.scope, dependencyProperty.value?.configIdentity, dependencyProperty.value?.propertyVersion,
 ]))
 const online = ref(typeof navigator === 'undefined' || navigator.onLine)
 if (typeof window !== 'undefined') {

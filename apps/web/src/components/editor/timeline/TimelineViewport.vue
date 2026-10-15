@@ -64,6 +64,7 @@ const previewGeometryById = reactive(new Map<string, TimelineItemGeometry>())
 watch(() => props.scope, () => previewGeometryById.clear(), { flush: 'sync' })
 const canvasBody = ref<HTMLElement | null>(null)
 const dependencyControl = ref<HTMLButtonElement | null>(null)
+const dependencyDeleteArmed = ref(false)
 const renderedRecordIds = computed(() => new Set(props.rows.filter(row => row.geometry && !row.geometry.offscreen).map(row => row.item.recordId)))
 const dependency = useTimelineDependencyInteraction({
   scope: () => props.scope,
@@ -87,11 +88,17 @@ function selectDependencyEdge(id: string): void {
   dependency.selectEdge(id)
   dependencyControl.value?.focus()
 }
+function onDependencyControlClick(event: MouseEvent): void {
+  // Browser focus selects the first edge before click. A pointer's first
+  // activation of the management control must only select, never delete it.
+  if ((event.detail === 0 || dependencyDeleteArmed.value) && dependency.selectedEdge.value) void dependency.removeSelected()
+  dependencyDeleteArmed.value = false
+}
 function onDependencyControlKeydown(event: KeyboardEvent): void {
   if (event.key === 'ArrowRight' || event.key === 'ArrowDown') { event.preventDefault(); dependency.selectRelative(1) }
   else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') { event.preventDefault(); dependency.selectRelative(-1) }
   else if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); void dependency.removeSelected() }
-  else if (event.key === 'Escape') { event.preventDefault(); dependency.selectedEdgeId.value = null }
+  else if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dependency.selectedEdgeId.value = null }
 }
 function guardConcurrentPointer(event: PointerEvent): void {
   if (!dependency.active.value) return
@@ -155,7 +162,8 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
         :aria-disabled="!dependencyEditable || !online || dependency.pending.value ? 'true' : undefined"
         @focus="!dependency.selectedEdge.value && dependency.selectRelative(1)"
         @keydown="onDependencyControlKeydown"
-        @click="dependency.selectedEdge.value && dependency.removeSelected()"
+        @pointerdown="dependencyDeleteArmed = dependency.selectedEdge.value !== null"
+        @click="onDependencyControlClick"
       >{{ dependency.selectedEdge.value ? `删除依赖 ${selectedEdgePosition}/${dependencyEdges.length}` : `依赖关系 ${dependencyEdges.length}` }}</button>
       <span v-if="dependency.pending.value" class="eotion-timeline-dependency-status" role="status">正在保存依赖关系…</span>
       <div
@@ -190,7 +198,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
           :data-row-window-total-height="rowWindow.totalHeight"
           :data-rendered-row-count="rows.length"
           :ref="setBody"
-          @pointerdown.capture="guardConcurrentPointer"
+          :onPointerdownCapture="dependency.active.value ? guardConcurrentPointer : undefined"
         >
           <div class="eotion-timeline-draw-window" :style="overlayStyle" aria-hidden="true">
             <TimelineGrid :ticks="gridTicks" />
