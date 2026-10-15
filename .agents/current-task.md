@@ -10,7 +10,7 @@
 | C3 | execute / S1 主 Agent | `interaction.ts` + `focus.ts` 纯逻辑 | 完成 |
 | C4 | execute / S1 主 Agent | controller / bar DOM / view fence / NodeView 文案接线 | 完成 |
 | C5 | execute / S1 主 Agent | logic 9 + Web 6 新回归与 harness | 完成 |
-| C6 | verify / S0 主 Agent | 逻辑 52、Web 31、typecheck/build、隔离 Mongo 19 | 完成 |
+| C6 | verify / S0 主 Agent | 逻辑 52/52、Timeline Web 31/31、全量 product-database 134/139（5 失败为基线浮动）、typecheck/build、隔离 Mongo 19/19 | 完成 |
 | C8 | verify / reviewer + S1 主 Agent | 独立复核 3 项（handle click / busy fence / aria-disabled）复现修复与补回归 | 完成 |
 | C7 | execute / S1 主 Agent | 契约、验收、handoff 与提交 | 本文件所在提交 |
 

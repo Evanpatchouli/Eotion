@@ -148,6 +148,8 @@ normalized-equivalent 时不发 mutation。覆盖 legacy string、date object、
 | 新 P11.3C Web | 6/6 PASS（见下表） |
 | 真实 API/Mongo | **19/19 PASS**，0 fail/skip；隔离实例 27717 / replicaSet `p113cFinal` / 独立 dbpath，MongoDB 8.2.3；已优雅 shutdown，27717 无监听；用户 27017 未触碰 |
 | Web/API typecheck + build | PASS（保留既有 `EotionEditor` chunk >500 kB 提示） |
+| 完整 `product-database.spec.ts` 全量 | **139 项：134 PASS / 5 FAIL**；5 项全部属于既有 Slash / Database dialog 基线浮动族（`database command` 行、Board view 选择器、2× slash 建库、link shared database），Timeline / Date / CAS / P11.3 路径 0 失败 |
+| 基线浮动证明 | `linking a shared database …` 在基线 `d992425` 上 `--repeat-each=5` 亦为 **1 FAIL / 4 PASS**（同一断言 `数据库` dialog 5s 未出现），与 P11.2D/P11.3B 记录的基线失败家族一致，非 P11.3C 回归 |
 | `git diff --check` | PASS |
 
 新增 logic（`tests/timeline-interaction.spec.ts`，9）：ledger 唯一所有权、stale/duplicate token

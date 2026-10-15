@@ -46,6 +46,14 @@ resize handle 复用了 bar 的 click 处理，键盘 Enter/Space 或 Ctrl/Meta+
 补回归：handle 键盘/修饰键不打开 Record、bar 不声明 disabled、pending 焦点不落 body、适配器忙锁集成用例
 （预占 key → 0 PATCH，释放后 → 1 PATCH）、preview 期间切 View 0 PATCH。
 
+**最终验证（HEAD 冻结后）：** Timeline logic **52/52**；Timeline/Date/CAS 定向（grep 排除 P11.3C）**25/25**；
+P11.3C **6/6**；合计 Timeline Web **31/31**（workers=1/retries=0）。完整 `product-database.spec.ts`
+**139 项 134 PASS / 5 FAIL**：5 项全部落在既有 Slash / Database dialog 基线浮动族（`database command` 行、
+Board view 选择器、2× slash 建库、link shared database），Timeline/Date/CAS/P11.3 路径 0 失败；其中
+`linking a shared database …` 已在基线 `d992425` 上 `--repeat-each=5` 复现 1 FAIL / 4 PASS，证明为既有浮动
+而非 P11.3C 回归。Web/API typecheck+build、`git diff --check`、UTF-8 无 BOM 均 PASS；真实隔离 Mongo
+8.2.3（27717 / replicaSet p113cFinal）19/19，实例已关闭，用户 27017 未触碰。
+
 **验证：** Timeline logic 52/52（新 `tests/timeline-interaction.spec.ts` 9）；Timeline Web 31/31
 （既有 P11.3A/B 13 + 新 P11.3C 6 + 既有 Timeline/Date/CAS 12，workers=1/retries=0）；Web/API
 typecheck+build PASS；真实隔离 Mongo 8.2.3（27717 / replicaSet `p113cFinal` / 独立 dbpath）19/19
