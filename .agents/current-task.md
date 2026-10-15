@@ -7,7 +7,7 @@
 | --- | --- | --- | --- |
 | F1 | decide / S2 主 Agent | 复用审阅 Evidence Pack，确定最小修复与验收 | 完成 |
 | F2 | execute / S1 fast_worker | 保留取消拖拽 click 抑制 + 真实 lostpointercapture 回归 | 完成；定向 Web 1/1 PASS |
-| F3 | execute / S1 fast_worker | 尊重用户焦点转移；resize 可聚焦、原 DOM 失联时同 anchor 回退 + 回归 | 待执行 |
+| F3 | execute / S1 fast_worker | 尊重用户焦点转移；resize 可聚焦、原 DOM 失联时同 anchor 回退 + 回归 | 完成；定向 Web 4/4 与 typecheck PASS |
 | F4 | execute / S1 fast_worker | unknown 刷新失败保持不确定文案与只读 + 回归 | 待执行 |
 | F5 | verify / S0 scout + reviewer | 定向 Web / logic / typecheck / build，最终一次独立 review | 待执行 |
 | F6 | execute / S1 fast_worker + 主 Agent | 同步验收文档、handoff、提交并检查最终 diff | 待执行 |

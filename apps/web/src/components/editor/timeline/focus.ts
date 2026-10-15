@@ -9,7 +9,9 @@
  */
 export type TimelineBarFocusReference = Readonly<{
   element: HTMLElement | null
+  anchor: HTMLElement | null
   recordId: string
+  testId: string | null
 }>
 
 /**
@@ -21,28 +23,40 @@ export type TimelineBarFocusReference = Readonly<{
 export function captureTimelineBarFocus(recordId: string, pressedElement: HTMLElement | null): TimelineBarFocusReference {
   const active = typeof document === 'undefined' ? null : document.activeElement
   const element = pressedElement ?? (active instanceof HTMLElement ? active : null)
-  return Object.freeze({ element, recordId })
-}
-
-function isTimelineInteractionElement(element: Element | null): boolean {
-  return element?.closest('[data-testid="timeline-bar"], [data-testid^="timeline-resize-"]') !== null
+  return Object.freeze({
+    element,
+    anchor: element?.closest<HTMLElement>('.eotion-timeline-bar-anchor') ?? null,
+    recordId,
+    testId: element?.dataset.testid ?? null,
+  })
 }
 
 /**
- * Re-focus the bar after a mutation only when the interaction itself dropped
- * focus. Returns true when focus ended up on the bar.
+ * Restore the captured control after a mutation only when the interaction itself
+ * dropped focus. Returns true when focus ended up on that control or its fallback.
  */
 export function restoreTimelineBarFocus(reference: TimelineBarFocusReference): boolean {
-  const element = reference.element
-  if (!element || !element.isConnected) return false
-  if (element.dataset.recordId !== reference.recordId) return false
+  const { element, anchor, recordId, testId } = reference
+  if (!anchor || !anchor.isConnected) return false
+  const controls = Array.from(anchor.querySelectorAll<HTMLElement>('[data-record-id][data-testid]'))
+  const matchesReference = (candidate: HTMLElement | null): candidate is HTMLElement => Boolean(
+    candidate
+    && candidate.isConnected
+    && anchor.contains(candidate)
+    && candidate.dataset.recordId === recordId,
+  )
+  const sameControl = matchesReference(element) && element.dataset.testid === testId
+    ? element
+    : controls.find(candidate => matchesReference(candidate) && candidate.dataset.testid === testId) ?? null
+  const target = sameControl ?? controls
+    .find(candidate => matchesReference(candidate) && candidate.dataset.testid === 'timeline-bar') ?? null
+  if (!target) return false
   const active = document.activeElement
-  if (active === element) return true
-  const focusMovedOn = active !== null && active !== document.body && !isTimelineInteractionElement(active)
-  if (focusMovedOn) return false
+  if (active === target) return true
+  if (active !== null && active !== document.body) return false
   try {
-    element.focus({ preventScroll: true })
-    return document.activeElement === element
+    target.focus({ preventScroll: true })
+    return document.activeElement === target
   } catch {
     return false
   }

@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { DatabaseDateValue } from '@eotion/domain/date'
 import { normalizeDatabaseDateValue } from '@eotion/domain/date'
 import { captureTimelineBarFocus, restoreTimelineBarFocus, type TimelineBarFocusReference } from './focus'
@@ -197,7 +197,7 @@ export function useTimelineBarDrag(options: Options) {
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
     if (ledger.begin() === null) return
-    if (mode !== 'move') { event.preventDefault(); event.stopPropagation() }
+    if (mode !== 'move') event.stopPropagation()
     active.value = {
       mode,
       pointerId: event.pointerId,
@@ -305,7 +305,8 @@ export function useTimelineBarDrag(options: Options) {
     state.value = 'saving'
     try {
       const succeeded = await options.commitDrag({ ...current.session, value })
-      if (ledger.isCurrent(token)) {
+      await nextTick()
+      if (ledger.isCurrent(token) && current.session.scope === options.scope()) {
         if (!succeeded) clearPreviewGeometry()
         restoreTimelineBarFocus(current.focus)
       }

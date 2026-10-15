@@ -8716,12 +8716,16 @@ test('P11.3C Escape and pointercancel cancel previews with zero PATCH and keep f
   const handleX = handleBounds.x + handleBounds.width / 2
   const handleY = handleBounds.y + handleBounds.height / 2
   const beforeResizeEscape = cellPatches()
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+  await expect(page.locator('body')).toBeFocused()
   await page.mouse.move(handleX, handleY)
   await page.mouse.down()
   await page.mouse.move(handleX - dayPixels, handleY, { steps: 4 })
   await expect(rangeBar).toHaveAttribute('data-drag-state', 'dragging')
+  await expect(startHandle).toBeFocused()
   await page.keyboard.press('Escape')
   await expect(rangeBar).toHaveAttribute('data-drag-state', 'idle')
+  await expect(startHandle).toBeFocused()
   await page.mouse.up()
   expect(cellPatches()).toBe(beforeResizeEscape)
   expect(api.records.find(item => item.id === range.id)?.properties[date.id]).toEqual({ start: '2026-10-13', end: '2026-10-15' })
@@ -8846,6 +8850,7 @@ test('P11.3C pending mutation shows a quiet saving state, blocks the same record
   await expect.poll(() => api.records.find(item => item.id === first.id)?.properties[date.id]).toBe('2026-10-14')
   await expect(barFor(first.id)).toHaveAttribute('data-drag-state', 'idle')
   await expect(barFor(first.id)).toHaveAttribute('data-saving', 'false')
+  await expect(barFor(second.id)).toBeFocused()
   // The second mutation captured the pre-refresh Database version, so the existing
   // CAS fence rejects it instead of double-writing; the canonical value is unchanged.
   await expect.poll(() => api.records.find(item => item.id === second.id)?.properties[date.id]).toBe('2026-10-20')
@@ -8914,6 +8919,102 @@ test('P11.3C pending mutation shows a quiet saving state, blocks the same record
   const releasedPatches = secondPatches()
   await dragTimelineBar(page, barFor(second.id), dayPixels)
   await expect.poll(() => secondPatches()).toBe(releasedPatches + 1)
+})
+
+test('P11.3C drag completion preserves focus on another Timeline bar', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const date = property('p113c-focus-date', rootDatabase.id, 'Date', 'date')
+  const timelineView = view('p113c-focus-view', rootDatabase.id, 'Focus preservation', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } },
+  }, 'timeline')
+  const first = record('p113c-focus-first', rootDatabase.id, 'p113c-focus-first-page', { 'root-title': 'First', [date.id]: '2026-10-13' })
+  const second = record('p113c-focus-second', rootDatabase.id, 'p113c-focus-second-page', { 'root-title': 'Second', [date.id]: '2026-10-20' })
+  const api = await installApi(page, [block('p113c-focus-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: [first, second], holdCellUpdateResponse: true,
+  })
+  for (const item of [first, second]) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-p113c-focus-block').getByTestId('database-timeline')
+  const barFor = (id: string) => timeline.locator(`[data-testid="timeline-bar"][data-record-id="${id}"]`)
+  const patches = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${first.id}/cells/${date.id}`)).length
+  const before = patches()
+
+  await dragTimelineBar(page, barFor(first.id), pxPerMs('month') * 86_400_000)
+  await api.cellUpdateResponseStarted
+  await expect(barFor(first.id)).toHaveAttribute('data-saving', 'true')
+  await barFor(second.id).focus()
+  await expect(barFor(second.id)).toBeFocused()
+  api.holdCellUpdateResponse = false
+  api.releaseCellUpdateResponse()
+  await expect.poll(() => api.records.find(item => item.id === first.id)?.properties[date.id]).toBe('2026-10-14')
+  await expect(barFor(first.id)).toHaveAttribute('data-saving', 'false')
+  await expect(barFor(second.id)).toBeFocused()
+  expect(patches()).toBe(before + 1)
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+})
+
+test('P11.3C resize completion restores focus to the current same-record handle after pending removes handles', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const date = property('p113c-resize-focus-date', rootDatabase.id, 'Date', 'date')
+  const timelineView = view('p113c-resize-focus-view', rootDatabase.id, 'Resize focus', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } },
+  }, 'timeline')
+  const range = record('p113c-resize-focus-range', rootDatabase.id, 'p113c-resize-focus-page', { 'root-title': 'Resize focus', [date.id]: { start: '2026-10-13', end: '2026-10-15' } })
+  const api = await installApi(page, [block('p113c-resize-focus-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: [range], holdCellUpdateResponse: true,
+  })
+  api.pages.push({ ...pageRecord, id: range.pageId, title: 'Resize focus', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-p113c-resize-focus-block').getByTestId('database-timeline')
+  const rangeBar = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${range.id}"]`)
+  const startHandle = timeline.locator(`[data-testid="timeline-resize-start"][data-record-id="${range.id}"]`)
+  const bounds = await startHandle.boundingBox()
+  if (!bounds) throw new Error('Expected the P11.3C resize focus start handle')
+  const before = api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${range.id}/cells/${date.id}`)).length
+  const dayPixels = pxPerMs('month') * 86_400_000
+  const x = bounds.x + bounds.width / 2
+  const y = bounds.y + bounds.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x - dayPixels, y, { steps: 4 })
+  await expect(rangeBar).toHaveAttribute('data-drag-state', 'dragging')
+  await page.mouse.up()
+  await api.cellUpdateResponseStarted
+  await expect(rangeBar).toHaveAttribute('data-drag-state', 'saving')
+  await expect(startHandle).toHaveCount(0)
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${range.id}/cells/${date.id}`))).toHaveLength(before + 1)
+
+  api.holdCellUpdateResponse = false
+  api.releaseCellUpdateResponse()
+  await expect.poll(() => api.records.find(item => item.id === range.id)?.properties[date.id]).toEqual({ start: '2026-10-12', end: '2026-10-15' })
+  await expect(rangeBar).toHaveAttribute('data-drag-state', 'idle')
+  await expect(startHandle).toBeAttached()
+  await expect(startHandle).toBeFocused()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${range.id}/cells/${date.id}`))).toHaveLength(before + 1)
+
+  api.conflictCellUpdates = 1
+  api.conflictCellUpdateValue = '2026-10-12'
+  const beforeConflict = api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${range.id}/cells/${date.id}`)).length
+  const currentHandleBounds = await startHandle.boundingBox()
+  if (!currentHandleBounds) throw new Error('Expected the current start handle before the canonical point conflict')
+  const conflictX = currentHandleBounds.x + currentHandleBounds.width / 2
+  const conflictY = currentHandleBounds.y + currentHandleBounds.height / 2
+  await page.mouse.move(conflictX, conflictY)
+  await page.mouse.down()
+  await page.mouse.move(conflictX + dayPixels * 3, conflictY, { steps: 4 })
+  await expect(rangeBar).toHaveAttribute('data-drag-state', 'dragging')
+  await page.mouse.up()
+  await expect.poll(() => api.records.find(item => item.id === range.id)?.properties[date.id]).toBe('2026-10-12')
+  await expect(rangeBar).toHaveAttribute('data-drag-state', 'idle')
+  await expect(startHandle).toHaveCount(0)
+  await expect(timeline.locator(`[data-testid="timeline-resize-end"][data-record-id="${range.id}"]`)).toHaveCount(1)
+  await expect(rangeBar).toBeFocused()
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${range.id}/cells/${date.id}`))).toHaveLength(beforeConflict + 1)
 })
 
 test('P11.3C conflict and network failures reconcile to canonical dates without retry or stale optimism', async ({ page }) => {
