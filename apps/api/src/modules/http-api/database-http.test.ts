@@ -325,6 +325,50 @@ test('database HTTP mutations validate values, versions, ownership, and Page tit
     assert.equal(derivedCell.status, 400)
     const oversizedRelation = await request(baseUrl, cellRoute('db-http-links'), 'PATCH', { cookie, body: { value: Array.from({ length: 51 }, (_, index) => `record-${index}`), expectedDatabaseVersion: linkCell.body.database.version, expectedRecordVersion: linkCell.body.record.version } })
     assert.equal(oversizedRelation.status, 400)
+    const secondTarget = await request(baseUrl, `/api/workspaces/${workspace}/databases/${secondDbId}/records`, 'POST', { cookie, body: { id: 'db-http-second-record-b', pageId: 'db-http-second-page-b', title: 'Other row B', orderKey: 'b' } })
+    const thirdTarget = await request(baseUrl, `/api/workspaces/${workspace}/databases/${secondDbId}/records`, 'POST', { cookie, body: { id: 'db-http-second-record-c', pageId: 'db-http-second-page-c', title: 'Other row C', orderKey: 'c' } })
+    assert.equal(secondTarget.status, 201)
+    assert.equal(thirdTarget.status, 201)
+    current = await table()
+    const orderedRelation = await request(baseUrl, cellRoute('db-http-links'), 'PATCH', { cookie, body: {
+      value: ['db-http-second-record-c', 'db-http-second-record', 'db-http-second-record-b'],
+      expectedDatabaseVersion: current.database.version,
+      expectedRecordVersion: current.records[0].version,
+    } })
+    assert.equal(orderedRelation.status, 200)
+    assert.deepEqual(orderedRelation.body.record.properties['db-http-links'], ['db-http-second-record-c', 'db-http-second-record', 'db-http-second-record-b'])
+    assert.equal(orderedRelation.body.database.version, current.database.version + 1)
+    assert.equal(orderedRelation.body.record.version, current.records[0].version + 1)
+    const orderedRead = await table()
+    assert.deepEqual(orderedRead.records[0].properties['db-http-links'], ['db-http-second-record-c', 'db-http-second-record', 'db-http-second-record-b'], 'generic GET preserves Relation wire order')
+    assert.deepEqual((await connection!.db!.collection('database_records').findOne({ id: recordId }))?.properties['db-http-links'], ['db-http-second-record-c', 'db-http-second-record', 'db-http-second-record-b'], 'Mongo persists Relation wire order')
+
+    const staleRelationDatabase = await request(baseUrl, cellRoute('db-http-links'), 'PATCH', { cookie, body: {
+      value: [], expectedDatabaseVersion: orderedRead.database.version - 1, expectedRecordVersion: orderedRead.records[0].version,
+    } })
+    assert.equal(staleRelationDatabase.status, 409)
+    const afterStaleRelationDatabase = await table()
+    assert.equal(afterStaleRelationDatabase.database.version, orderedRead.database.version, 'stale Database CAS does not bump Database version')
+    assert.deepEqual(afterStaleRelationDatabase.records[0].properties['db-http-links'], orderedRead.records[0].properties['db-http-links'])
+
+    const staleRelationRecord = await request(baseUrl, cellRoute('db-http-links'), 'PATCH', { cookie, body: {
+      value: ['db-http-second-record-b', 'db-http-second-record-c'],
+      expectedDatabaseVersion: orderedRead.database.version,
+      expectedRecordVersion: orderedRead.records[0].version - 1,
+    } })
+    assert.equal(staleRelationRecord.status, 409)
+    const afterStaleRelationRecord = await table()
+    assert.equal(afterStaleRelationRecord.database.version, orderedRead.database.version, 'Record CAS failure rolls back the preceding Database bump')
+    assert.deepEqual(afterStaleRelationRecord.records, orderedRead.records, 'Record CAS failure preserves canonical Relation value and Record version')
+
+    const removedRelationTarget = await request(baseUrl, cellRoute('db-http-links'), 'PATCH', { cookie, body: {
+      value: ['db-http-second-record-c', 'db-http-second-record-b'],
+      expectedDatabaseVersion: afterStaleRelationRecord.database.version,
+      expectedRecordVersion: afterStaleRelationRecord.records[0].version,
+    } })
+    assert.equal(removedRelationTarget.status, 200)
+    assert.deepEqual(removedRelationTarget.body.record.properties['db-http-links'], ['db-http-second-record-c', 'db-http-second-record-b'], 'unlink preserves the remaining Relation order')
+    assert.deepEqual((await table()).records[0].properties['db-http-links'], ['db-http-second-record-c', 'db-http-second-record-b'], 'unlink survives generic GET')
     current = await table()
     const derivedView = await request(baseUrl, `${databaseRoute}/views/${viewId}`, 'PATCH', { cookie, body: { config: { filters: [], sorts: [{ propertyId: 'db-http-count-plus-one', direction: 'asc' }], visibleProperties: null, propertyOrder: null }, expectedDatabaseVersion: current.database.version, expectedViewVersion: current.view.version } })
     assert.equal(derivedView.status, 400)

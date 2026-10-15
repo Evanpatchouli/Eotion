@@ -9962,3 +9962,579 @@ for (const total of [100, 500] as const) {
     })
   }
 }
+
+// P11.4B acceptance helpers and gates. Keep these at the end of the shared
+// Database suite so its eventual full run also exercises the P11.3 regression set.
+type P114bDirection = 'depends-on' | 'blocks'
+
+async function p114bFixture(page: Page, direction: P114bDirection, records?: TestRecord[], options: Parameters<typeof installApi>[2] = {}) {
+  const relation = { ...property(`p114b-${direction}-relation`, rootDatabase.id, 'Dependencies', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+  const timelineView = view(`p114b-${direction}-view`, rootDatabase.id, 'Dependency editing', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    visibleProperties: ['root-title', 'root-date'], propertyOrder: ['root-title', 'root-date'],
+    options: { timeline: {
+      scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' },
+      frozenTable: { visible: true, visibleProperties: ['root-title'], propertyOrder: ['root-title'] },
+      dependency: { propertyId: relation.id, direction, shiftMode: 'no_auto_shift', avoidWeekends: false },
+    } },
+  }, 'timeline')
+  const fallbackView = view(`p114b-${direction}-table-view`, rootDatabase.id, 'Fallback table')
+  const items = records ?? [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13' }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14' }),
+    record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-15' }),
+  ]
+  const api = await installApi(page, [block(`p114b-${direction}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView, fallbackView], properties: [...rootProperties, relation], records: items,
+    ...options,
+  })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator(`#database-block-p114b-${direction}-block`).getByTestId('database-timeline')
+  await expect(timeline).toBeVisible()
+  return { relation, timelineView, items, api, timeline }
+}
+
+function p114bRelationPatch(api: DatabaseApi, relationId: string) {
+  return api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/cells/${relationId}`))
+}
+
+async function p114bConnect(page: Page, timeline: Locator, predecessorId: string, successorId: string) {
+  const handle = timeline.locator(`[data-testid="timeline-dependency-handle"][data-record-id="${predecessorId}"]`)
+  const target = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${successorId}"]`)
+  await expect(handle).toBeVisible()
+  await expect(target).toBeVisible()
+  await handle.scrollIntoViewIfNeeded()
+  await target.scrollIntoViewIfNeeded()
+  const sourceBounds = await handle.boundingBox()
+  const targetBounds = await target.boundingBox()
+  if (!sourceBounds || !targetBounds) throw new Error('Expected visible P11.4B source and target')
+  const source = { x: sourceBounds.x + sourceBounds.width / 2, y: sourceBounds.y + sourceBounds.height / 2 }
+  const destination = { x: targetBounds.x + targetBounds.width / 2, y: targetBounds.y + targetBounds.height / 2 }
+  await page.mouse.move(source.x, source.y)
+  await page.mouse.down()
+  await page.mouse.move(destination.x, destination.y, { steps: 4 })
+  return { handle, target, destination }
+}
+
+async function p114bSelectEdge(page: Page, timeline: Locator, predecessorId: string, successorId: string) {
+  const hit = timeline.locator(`[data-testid="timeline-dependency-hit"][data-predecessor-id="${predecessorId}"][data-successor-id="${successorId}"]`)
+  await expect(hit).toBeVisible()
+  const point = await hit.evaluate(element => {
+    const path = element as SVGPathElement
+    const svg = path.ownerSVGElement
+    if (!svg) throw new Error('Expected dependency hit path owner SVG')
+    const bounds = svg.getBoundingClientRect()
+    for (const fraction of [0.08, 0.16, 0.24, 0.32, 0.4, 0.5, 0.6, 0.68, 0.76, 0.84, 0.92]) {
+      const position = path.getPointAtLength(path.getTotalLength() * fraction)
+      const x = bounds.left + position.x
+      const y = bounds.top + position.y
+      if (document.elementFromPoint(x, y)?.closest('[data-testid="timeline-dependency-hit"]') === path) return { x, y }
+    }
+    throw new Error('No dependency path segment wins elementFromPoint hit-testing')
+  })
+  await page.mouse.click(point.x, point.y)
+  const control = timeline.getByTestId('timeline-dependency-control')
+  await expect(control).toHaveAttribute('data-selected-edge-id', /.+/u)
+  return control
+}
+
+async function p114bDeleteEdge(page: Page, timeline: Locator, predecessorId: string, successorId: string) {
+  const control = await p114bSelectEdge(page, timeline, predecessorId, successorId)
+  await control.press('Delete')
+}
+
+for (const direction of ['depends-on', 'blocks'] as const) {
+  test(`P11.4B ${direction} create and delete use one ordered Relation Cell CAS`, async ({ page }) => {
+    const { relation, timeline, api } = await p114bFixture(page, direction)
+    await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+    await expect(timeline.locator('[data-testid="timeline-dependency-preview"]')).toBeVisible()
+    expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+    await page.mouse.up()
+    await expect.poll(() => p114bRelationPatch(api, relation.id).length).toBe(1)
+    const ownerId = direction === 'depends-on' ? 'p114b-b' : 'p114b-a'
+    const relatedId = direction === 'depends-on' ? 'p114b-a' : 'p114b-b'
+    expect(p114bRelationPatch(api, relation.id)[0]?.payload).toMatchObject({ value: [relatedId], expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+    await expect(timeline.locator(`[data-testid="timeline-dependency-path"][data-predecessor-id="p114b-a"][data-successor-id="p114b-b"]`)).toHaveCount(1)
+    await p114bDeleteEdge(page, timeline, 'p114b-a', 'p114b-b')
+    await expect.poll(() => p114bRelationPatch(api, relation.id).length).toBe(2)
+    expect(p114bRelationPatch(api, relation.id)[1]?.payload).toMatchObject({ value: [], expectedDatabaseVersion: 2, expectedRecordVersion: 2 })
+    expect(api.records.find(item => item.id === ownerId)?.properties[relation.id]).toEqual([])
+    expect(api.records.find(item => item.id === relatedId)?.properties[relation.id]).toBeUndefined()
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(2)
+  })
+}
+
+test('P11.4B appends only the new Relation ID, preserving other IDs, order, and Date wire values', async ({ page }) => {
+  const initial = record('p114b-a', rootDatabase.id, 'p114b-page-a', {
+    'root-title': 'Alpha', 'root-date': { start: '2026-10-15T10:20:30.000Z', end: '2026-10-16T10:20:30.000Z', timeZone: 'America/Los_Angeles' },
+    'p114b-depends-on-relation': ['p114b-c', 'p114b-keep'],
+  })
+  const fixture = await p114bFixture(page, 'blocks', [
+    initial,
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14' }),
+    record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-15' }),
+  ])
+  const relationId = fixture.relation.id
+  // The fixture's Relation property id is generated from the direction.
+  initial.properties[relationId] = ['p114b-c', 'p114b-keep']
+  const seeded = fixture.api.records.find(item => item.id === 'p114b-a')!
+  seeded.properties[relationId] = ['p114b-c', 'p114b-keep']
+  await page.reload()
+  await expect(fixture.timeline.locator('[data-testid="timeline-dependency-path"]')).toHaveCount(1)
+  await p114bConnect(page, fixture.timeline, 'p114b-a', 'p114b-b')
+  await page.mouse.up()
+  await expect.poll(() => p114bRelationPatch(fixture.api, relationId).length).toBe(1)
+  expect(p114bRelationPatch(fixture.api, relationId)[0]?.payload.value).toEqual(['p114b-c', 'p114b-keep', 'p114b-b'])
+  await expect(fixture.timeline.locator('[data-testid="timeline-dependency-path"]')).toHaveCount(2)
+  await p114bDeleteEdge(page, fixture.timeline, 'p114b-a', 'p114b-b')
+  await expect.poll(() => p114bRelationPatch(fixture.api, relationId).length).toBe(2)
+  expect(p114bRelationPatch(fixture.api, relationId)[1]?.payload.value).toEqual(['p114b-c', 'p114b-keep'])
+  await expect(fixture.timeline.locator('[data-testid="timeline-dependency-path"]')).toHaveCount(1)
+  expect(fixture.api.records.find(item => item.id === 'p114b-a')?.properties[relationId]).toEqual(['p114b-c', 'p114b-keep'])
+  expect(fixture.api.records.find(item => item.id === 'p114b-a')?.properties['root-date']).toEqual({ start: '2026-10-15T10:20:30.000Z', end: '2026-10-16T10:20:30.000Z', timeZone: 'America/Los_Angeles' })
+  expect(fixture.api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith('/cells/root-date'))).toHaveLength(0)
+})
+
+test('P11.4B self and duplicate links do not write; a longer cycle remains a valid Relation edge', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13', 'p114b-blocks-relation': ['p114b-b'] }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14', 'p114b-blocks-relation': ['p114b-c'] }),
+    record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-15' }),
+  ])
+  for (const id of ['p114b-a', 'p114b-b']) {
+    const handleBounds = await timeline.locator(`[data-testid="timeline-dependency-handle"][data-record-id="${id}"]`).boundingBox()
+    const barBounds = await timeline.locator(`[data-testid="timeline-bar"][data-record-id="${id}"]`).boundingBox()
+    if (!handleBounds || !barBounds) throw new Error(`Expected dependency handle and Bar for ${id}`)
+    await page.mouse.move(handleBounds.x + handleBounds.width / 2, handleBounds.y + handleBounds.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(barBounds.x + barBounds.width / 2, barBounds.y + barBounds.height / 2, { steps: 2 })
+    await page.mouse.up()
+  }
+  await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+  await page.mouse.up()
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+  await p114bConnect(page, timeline, 'p114b-c', 'p114b-a')
+  await page.mouse.up()
+  await expect.poll(() => p114bRelationPatch(api, relation.id).length).toBe(1)
+  expect(api.records.find(item => item.id === 'p114b-c')?.properties[relation.id]).toEqual(['p114b-a'])
+  await expect(timeline.locator('[data-testid="timeline-dependency-path"]')).toHaveCount(3)
+})
+
+for (const cancellation of ['Escape', 'pointercancel', 'lostpointercapture', 'blur', 'hidden', 'offline', 'scope-change'] as const) {
+  test(`P11.4B cancels connection on ${cancellation} without PATCH`, async ({ page, context }) => {
+    const { relation, timeline, api } = await p114bFixture(page, 'blocks')
+    const { handle, target, destination } = await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+    await expect(timeline.locator('[data-testid="timeline-dependency-preview"]')).toBeVisible()
+    if (cancellation === 'Escape') await page.keyboard.press('Escape')
+    else if (cancellation === 'pointercancel') await handle.dispatchEvent('pointercancel', { pointerId: 1, bubbles: true })
+    else if (cancellation === 'lostpointercapture') await handle.dispatchEvent('lostpointercapture', { pointerId: 1, bubbles: true })
+    else if (cancellation === 'blur') await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+    else if (cancellation === 'hidden') await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    else if (cancellation === 'offline') { await context.setOffline(true); await page.evaluate(() => window.dispatchEvent(new Event('offline'))) }
+    else {
+      await page.getByRole('button', { name: '切换视图' }).evaluate(element => (element as HTMLButtonElement).click())
+      await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Fallback table', exact: true }).evaluate(element => (element as HTMLButtonElement).click())
+    }
+    await expect(timeline.locator('[data-testid="timeline-dependency-preview"]')).toHaveCount(0)
+    await page.mouse.up()
+    expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+    expect(api.records.find(item => item.id === 'p114b-a')?.properties[relation.id]).toBeUndefined()
+    if (cancellation === 'offline') await context.setOffline(false)
+    void target; void destination
+  })
+}
+
+for (const operation of ['create', 'delete'] as const) {
+  for (const failure of ['409', '4xx', 'unknown-committed', 'unknown-uncommitted'] as const) {
+    test(`P11.4B ${operation} ${failure} reconciles canonical Relation without retry`, async ({ page }) => {
+      const relationSeed = operation === 'delete' ? ['p114b-b'] : undefined
+      const a = record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13', ...(relationSeed ? { 'p114b-blocks-relation': relationSeed } : {}) })
+      const { relation, timeline, api } = await p114bFixture(page, 'blocks', [
+        a,
+        record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14' }),
+        record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-15' }),
+      ], failure === '409'
+        ? { conflictCellUpdates: 1, conflictCellUpdateValue: operation === 'create' ? ['p114b-b'] : [] }
+        : failure === '4xx' ? { failCellUpdates: 1, failCellUpdateStatus: 403 }
+          : failure === 'unknown-committed' ? { abortCellUpdatesAfterCommit: 1 }
+            : { abortCellUpdatesWithoutCommit: 1 })
+      if (operation === 'create') {
+        await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+        await page.mouse.up()
+      } else await p114bDeleteEdge(page, timeline, 'p114b-a', 'p114b-b')
+      await expect.poll(() => p114bRelationPatch(api, relation.id).length).toBe(1)
+      const edgeAfterRefresh = operation === 'create'
+        ? ['409', 'unknown-committed'].includes(failure) ? 1 : 0
+        : ['409', 'unknown-committed'].includes(failure) ? 0 : 1
+      await expect.poll(() => timeline.locator('[data-testid="timeline-dependency-path"]').count()).toBe(edgeAfterRefresh)
+      expect(p114bRelationPatch(api, relation.id)).toHaveLength(1)
+      if (failure === 'unknown-committed') {
+        const owner = api.records.find(item => item.id === 'p114b-a')!
+        expect(owner.properties[relation.id]).toEqual(operation === 'create' ? ['p114b-b'] : [])
+      }
+    })
+  }
+}
+
+test('P11.4B refresh failure after unknown commit locks the stale dependency view read-only', async ({ page }) => {
+  const { relation, timeline, timelineView, api } = await p114bFixture(page, 'blocks', undefined, { abortCellUpdatesWithoutCommit: 1 })
+  let failedRefresh = false
+  await page.route(`**/databases/${rootDatabase.id}/views/${timelineView.id}/table**`, async route => {
+    if (!failedRefresh && route.request().method() === 'GET') {
+      failedRefresh = true
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ statusCode: 503, message: 'Snapshot unavailable' }) })
+      return
+    }
+    await route.fallback()
+  })
+  await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+  await page.mouse.up()
+  await expect.poll(() => p114bRelationPatch(api, relation.id).length).toBe(1)
+  await expect.poll(() => failedRefresh).toBe(true)
+  await expect(timeline.locator('[data-testid="timeline-dependency-handle"]')).toHaveCount(0)
+  await expect(timeline.locator('[data-testid="timeline-dependency-path"]')).toHaveCount(0)
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(1)
+  const tablePath = `/views/${timelineView.id}/table`
+  const readsBeforeRetry = api.requests.filter(request => request.method === 'GET' && request.path.endsWith(tablePath)).length
+  await page.getByRole('button', { name: '重试刷新' }).click()
+  await expect.poll(() => api.requests.filter(request => request.method === 'GET' && request.path.endsWith(tablePath)).length).toBe(readsBeforeRetry + 1)
+  await expect(timeline.locator('[data-testid="timeline-dependency-handle"]')).toHaveCount(3)
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(1)
+})
+
+test('P11.4B pending relation write locks other Database mutations and releases once settled', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks', undefined, { holdCellUpdateResponse: true })
+  await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+  const responseStarted = api.cellUpdateResponseStarted
+  await page.mouse.up()
+  await responseStarted
+  await expect(timeline.getByRole('status')).toHaveText('正在保存依赖关系…')
+  await expect(timeline.locator('[data-testid="timeline-dependency-handle"]')).toHaveCount(0)
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(1)
+  await page.locator('.document-wrap .eotion-editor').evaluate(element => {
+    const candidate = (element as Element & { __vueParentComponent?: { exposed?: { editor?: any } } }).__vueParentComponent?.exposed?.editor
+    const editor = candidate?.view ? candidate : candidate?.value
+    if (!editor?.setEditable) throw new Error('Expected the parent Tiptap Editor to toggle editability')
+    editor.setEditable(false)
+  })
+  api.releaseCellUpdateResponse()
+  await expect.poll(() => api.records.find(item => item.id === 'p114b-a')?.properties[relation.id]).toEqual(['p114b-b'])
+  await expect(timeline.getByRole('status')).toHaveCount(0)
+  await expect(timeline.getByTestId('timeline-dependency-control')).toHaveAttribute('aria-busy', 'false')
+  await expect(timeline.locator('[data-testid="timeline-dependency-path"][data-predecessor-id="p114b-a"][data-successor-id="p114b-b"]')).toHaveCount(1)
+  await page.locator('.document-wrap .eotion-editor').evaluate(element => {
+    const candidate = (element as Element & { __vueParentComponent?: { exposed?: { editor?: any } } }).__vueParentComponent?.exposed?.editor
+    const editor = candidate?.view ? candidate : candidate?.value
+    editor?.setEditable(true)
+  })
+  await expect(timeline.getByTestId('timeline-dependency-control')).not.toHaveAttribute('aria-disabled', 'true')
+  await p114bConnect(page, timeline, 'p114b-a', 'p114b-c')
+  await expect(timeline.locator('[data-testid="timeline-dependency-preview"]')).toBeVisible()
+  await page.mouse.up()
+  await expect.poll(() => p114bRelationPatch(api, relation.id).length).toBe(2)
+  expect(p114bRelationPatch(api, relation.id)[1]?.payload).toMatchObject({ value: ['p114b-b', 'p114b-c'], expectedDatabaseVersion: 2, expectedRecordVersion: 2 })
+})
+
+test('P11.4B dependency control selects edges by keyboard and pointer gestures do not start Bar or resize mutations', async ({ page }) => {
+  const relationId = 'p114b-blocks-relation'
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': { start: '2026-10-13', end: '2026-10-14' }, [relationId]: ['p114b-b'] }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14', [relationId]: ['p114b-c'] }),
+    record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-15' }),
+    record('p114b-d', rootDatabase.id, 'p114b-page-d', { 'root-title': 'Delta', 'root-date': '2026-10-16' }),
+  ])
+  const hitTest = await timeline.evaluate(root => {
+    const hit = root.querySelector<SVGPathElement>('[data-testid="timeline-dependency-hit"]')
+    const bar = root.querySelector<HTMLElement>('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+    const blankRow = root.querySelector<HTMLElement>('[data-timeline-row][data-record-id="p114b-d"]')
+    if (!hit || !bar || !blankRow || !hit.ownerSVGElement) throw new Error('Expected hit path, Bar and blank row')
+    const hitBounds = hit.ownerSVGElement.getBoundingClientRect()
+    const point = hit.getPointAtLength(hit.getTotalLength() / 2)
+    const barBounds = bar.getBoundingClientRect()
+    const rowBounds = blankRow.getBoundingClientRect()
+    const scrollBounds = root.querySelector<HTMLElement>('[data-testid="timeline-scroll"]')!.getBoundingClientRect()
+    const left = Math.max(rowBounds.left, scrollBounds.left + 5)
+    const right = Math.min(rowBounds.right, scrollBounds.right - 5)
+    const candidates = [rowBounds.top + 5, rowBounds.top + rowBounds.height / 2, rowBounds.bottom - 5]
+      .flatMap(y => Array.from({ length: 40 }, (_, index) => ({ x: left + (right - left) * (index + 0.5) / 40, y })))
+    const blankPoint = candidates.find(candidate => {
+      const target = document.elementFromPoint(candidate.x, candidate.y)
+      return target?.closest('[data-timeline-row]') === blankRow
+        && !target.closest('[data-testid="timeline-bar"], [data-testid^="timeline-resize-"], [data-testid="timeline-dependency-hit"]')
+    })
+    if (!blankPoint) throw new Error('Expected an uncovered point inside the visible blank timeline row')
+    return {
+      line: document.elementFromPoint(hitBounds.left + point.x, hitBounds.top + point.y)?.closest('[data-testid="timeline-dependency-hit"]') === hit,
+      bar: document.elementFromPoint(barBounds.left + barBounds.width / 2, barBounds.top + barBounds.height / 2)?.closest('[data-testid="timeline-bar"]') === bar,
+      blankRow: blankPoint,
+    }
+  })
+  expect(hitTest.line).toBe(true)
+  expect(hitTest.bar).toBe(true)
+  await page.mouse.move(hitTest.blankRow.x, hitTest.blankRow.y)
+  await expect(timeline.locator('[data-timeline-row][data-record-id="p114b-d"]')).toHaveClass(/is-hovered/u)
+  const control = timeline.getByTestId('timeline-dependency-control')
+  await expect(control).toBeVisible()
+  await control.focus()
+  await expect(control).toHaveAttribute('data-selected-edge-id', /.+/u)
+  const first = await control.getAttribute('data-selected-edge-id')
+  await control.press('ArrowRight')
+  await expect.poll(() => control.getAttribute('data-selected-edge-id')).not.toBe(first)
+  await control.press('ArrowLeft')
+  await expect(control).toHaveAttribute('data-selected-edge-id', first ?? '')
+  const { handle, target } = await p114bConnect(page, timeline, 'p114b-c', 'p114b-a')
+  await page.mouse.up()
+  await expect.poll(() => p114bRelationPatch(api, relation.id).length).toBe(1)
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith('/cells/root-date'))).toHaveLength(0)
+  expect(api.records.find(item => item.id === 'p114b-c')?.properties[relation.id]).toEqual(['p114b-a'])
+  await expect(handle).toBeAttached()
+  await expect(target).toBeAttached()
+})
+
+test('P11.4B first dependency-control click selects without deleting', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13', 'p114b-blocks-relation': ['p114b-b'] }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14', 'p114b-blocks-relation': ['p114b-c'] }),
+    record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-15' }),
+  ])
+  const control = timeline.getByTestId('timeline-dependency-control')
+  await expect(control).not.toHaveAttribute('data-selected-edge-id')
+  const refsBefore = await timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    return { dependencyEdges: setup?.dependencyEdges, projectedItems: setup?.projectedItems }
+  })
+  await control.click()
+  await expect(control).toHaveAttribute('data-selected-edge-id', /.+/u)
+  await expect(timeline.locator('[data-testid="timeline-dependency-path"]')).toHaveCount(2)
+  const refsAfter = await timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    return { dependencyEdges: setup?.dependencyEdges, projectedItems: setup?.projectedItems }
+  })
+  expect(refsAfter).toEqual(refsBefore)
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+})
+
+test('P11.4B Desktop and 390px dependency UI screenshots stay usable in Light and Dark', async ({ page }, testInfo) => {
+  const { timeline, api } = await p114bFixture(page, 'blocks', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-14', 'p114b-blocks-relation': ['p114b-b'] }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14' }),
+    record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-14' }),
+  ])
+  const unique = `${Date.now()}-${process.pid}-${Math.random().toString(16).slice(2)}`
+  const directory = path.join(process.env.TEMP ?? testInfo.outputDir, `eotion-p114b-web-${unique}`)
+  await mkdir(directory, { recursive: true })
+  for (const [width, prefix] of [[1440, 'desktop'], [390, 'phone-390']] as const) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
+    if (width === 390) {
+      const closeMobileNav = page.getByRole('button', { name: '关闭导航菜单' })
+      if (await closeMobileNav.isVisible()) await closeMobileNav.click()
+      await expect.poll(() => page.locator('.product-sidebar').evaluate(element => element.getBoundingClientRect().right)).toBeLessThanOrEqual(0)
+    }
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+      await expect(timeline.locator('[data-testid="timeline-dependency-path"]')).toHaveCount(1)
+      await page.screenshot({ path: path.join(directory, `${prefix}-${theme}.png`), animations: 'disabled', fullPage: true })
+    }
+    if (width === 390) {
+      await p114bConnect(page, timeline, 'p114b-a', 'p114b-c')
+      await expect(timeline.locator('[data-testid="timeline-dependency-preview"]')).toBeVisible()
+      await page.screenshot({ path: path.join(directory, 'phone-390-create-preview-light.png'), animations: 'disabled', fullPage: true })
+      await page.mouse.up()
+      await expect.poll(() => p114bRelationPatch(api, 'p114b-blocks-relation').length).toBe(1)
+      const control = await p114bSelectEdge(page, timeline, 'p114b-a', 'p114b-c')
+      await expect(control).toHaveAttribute('aria-label', /删除依赖/u)
+      await page.screenshot({ path: path.join(directory, 'phone-390-selected-delete-light.png'), animations: 'disabled', fullPage: true })
+      await control.press('Delete')
+      await expect.poll(() => p114bRelationPatch(api, 'p114b-blocks-relation').length).toBe(2)
+      await expect(timeline.locator('[data-testid="timeline-dependency-path"]')).toHaveCount(1)
+    }
+  }
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith('/cells/p114b-blocks-relation'))).toHaveLength(2)
+  console.log(`P11.4B visual evidence: ${directory}`)
+})
+
+test('P11.4B 390px coarse touch creates and deletes a dependency with touch input', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 })
+  try {
+    const page = await context.newPage()
+    const pageErrors: string[] = []
+    page.on('pageerror', error => pageErrors.push(error.message))
+    const { timeline, api } = await p114bFixture(page, 'blocks', [
+      record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-14' }),
+      record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14' }),
+      record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-14' }),
+    ])
+    await page.setViewportSize({ width: 390, height: 844 })
+    const closeMobileNav = page.getByRole('button', { name: '关闭导航菜单' })
+    if (await closeMobileNav.isVisible()) await closeMobileNav.click()
+    await expect.poll(() => page.evaluate(() => ({ coarse: matchMedia('(pointer: coarse)').matches, touchPoints: navigator.maxTouchPoints }))).toEqual({ coarse: true, touchPoints: expect.any(Number) })
+    expect(await page.evaluate(() => navigator.maxTouchPoints)).toBeGreaterThan(0)
+    const cdp = await context.newCDPSession(page)
+    const touch = async (type: 'touchStart' | 'touchMove' | 'touchEnd', point?: { x: number; y: number }) => {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: point ? [{ x: point.x, y: point.y, id: 1, radiusX: 1, radiusY: 1, force: 1 }] : [],
+      })
+    }
+    const handle = timeline.locator('[data-testid="timeline-dependency-handle"][data-record-id="p114b-a"]')
+    const target = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-c"]')
+    const targetHandle = timeline.locator('[data-testid="timeline-dependency-handle"][data-record-id="p114b-c"]')
+    await expect(handle).toBeVisible()
+    await expect(target).toBeVisible()
+    await expect(targetHandle).toBeVisible()
+    const sourceBounds = await handle.boundingBox()
+    const targetBounds = await target.boundingBox()
+    if (!sourceBounds || !targetBounds) throw new Error('Expected coarse-pointer dependency source and target')
+    const source = { x: sourceBounds.x + sourceBounds.width / 2, y: sourceBounds.y + sourceBounds.height / 2 }
+    const targetGeometry = await target.evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      const describe = (x: number, y: number) => {
+        const hit = document.elementFromPoint(x, y) as HTMLElement | null
+        return { tag: hit?.tagName, testId: hit?.getAttribute('data-testid'), className: typeof hit?.className === 'string' ? hit.className : '', recordId: hit?.dataset.recordId, closestBarId: hit?.closest<HTMLElement>('[data-testid="timeline-bar"]')?.dataset.recordId, closestResizeId: hit?.closest<HTMLElement>('[data-testid^="timeline-resize-"]')?.dataset.testid }
+      }
+      const resize = document.querySelector<HTMLElement>('[data-testid="timeline-resize-end"][data-record-id="p114b-c"]')
+      const resizeRect = resize?.getBoundingClientRect()
+      const bodyPoint = [0.25, 0.35, 0.65, 0.75].map(fraction => ({ x: rect.left + rect.width * fraction, y: rect.top + rect.height / 2 }))
+        .find(point => document.elementFromPoint(point.x, point.y)?.closest('[data-testid="timeline-bar"]') === element)
+      return {
+        bar: { x: rect.x, y: rect.y, width: rect.width, height: rect.height, kind: element.dataset.kind },
+        barCenterPoint: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+        barCenter: describe(rect.left + rect.width / 2, rect.top + rect.height / 2),
+        resizeCenter: resizeRect ? describe(resizeRect.left + resizeRect.width / 2, resizeRect.top + resizeRect.height / 2) : null,
+        bodyPoint: bodyPoint ?? null,
+      }
+    })
+    console.log(`P11.4B coarse touch hit geometry: ${JSON.stringify(targetGeometry)}`)
+    expect(targetGeometry.barCenter.closestBarId).toBe('p114b-c')
+    expect(targetGeometry.resizeCenter?.closestResizeId).toBe('timeline-resize-end')
+    const overlap = { x: targetGeometry.barCenterPoint.x + 9, y: targetGeometry.barCenterPoint.y + 10 }
+    const overlapHit = await page.evaluate(({ x, y }) => {
+      const element = document.elementFromPoint(x, y) as HTMLElement | null
+      return { testId: element?.getAttribute('data-testid'), connectorRecordId: element?.closest<HTMLElement>('[data-testid="timeline-dependency-handle"]')?.dataset.recordId }
+    }, overlap)
+    console.log(`P11.4B coarse touch Bar-plus-connector hit: ${JSON.stringify({ overlap, overlapHit })}`)
+    expect(overlapHit.connectorRecordId).toBe('p114b-c')
+    const destination = overlap
+    const handleHit = await page.evaluate(({ x, y }) => {
+      const element = document.elementFromPoint(x, y) as HTMLElement | null
+      return { testId: element?.getAttribute('data-testid'), recordId: element?.closest<HTMLElement>('[data-testid="timeline-dependency-handle"]')?.dataset.recordId }
+    }, destination)
+    expect(handleHit).toEqual({ testId: null, recordId: 'p114b-c' })
+    await handle.evaluate(element => {
+      const target = window as Window & { __p114bTouchTypes?: string[] }
+      target.__p114bTouchTypes = []
+      element.addEventListener('pointerdown', event => target.__p114bTouchTypes!.push((event as PointerEvent).pointerType), { once: true })
+    })
+    await touch('touchStart', source)
+    await touch('touchMove', destination)
+    await expect(timeline.locator('[data-testid="timeline-dependency-preview"]')).toBeVisible()
+    expect(await page.evaluate(() => (window as Window & { __p114bTouchTypes?: string[] }).__p114bTouchTypes)).toEqual(['touch'])
+    await touch('touchEnd')
+    await expect.poll(() => p114bRelationPatch(api, 'p114b-blocks-relation').length).toBe(1)
+
+    const control = timeline.getByTestId('timeline-dependency-control')
+    await expect(control).toBeVisible()
+    await control.tap()
+    await expect(control).toHaveAttribute('data-selected-edge-id', /.+/u)
+    expect(p114bRelationPatch(api, 'p114b-blocks-relation')).toHaveLength(1)
+    await control.tap()
+    await expect.poll(() => p114bRelationPatch(api, 'p114b-blocks-relation').length).toBe(2)
+    await expect(timeline.locator('[data-testid="timeline-dependency-path"]')).toHaveCount(0)
+    expect(pageErrors).toEqual([])
+  } finally {
+    await context.close()
+  }
+})
+
+for (const total of [100, 500] as const) {
+  test(`P11.4B ${total} rows keep pointer preview local with no relation N+1`, async ({ page }) => {
+    const relationId = `p114b-blocks-relation`
+    const id = (index: number) => `p114b-${total}-${String(index).padStart(3, '0')}`
+    const items = Array.from({ length: total }, (_, index) => record(id(index), rootDatabase.id, `${id(index)}-page`, {
+      'root-title': `Row ${index}`, 'root-date': '2026-10-13',
+      [relationId]: index % 10 === 0 && index + 1 < total ? [id(index + 1)] : [],
+    }))
+    const { relation, timeline, timelineView, api } = await p114bFixture(page, 'blocks', items)
+    const loadMore = page.getByRole('button', { name: '加载更多' })
+    for (let loaded = 25; loaded < total; loaded += 25) await loadMore.click()
+    await expect.poll(() => timeline.evaluate(root => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      return Array.isArray(setup?.projectedItems) ? setup.projectedItems.length : -1
+    })).toBe(total)
+    await expect(timeline.getByTestId('timeline-dependency-layer')).toHaveAttribute('data-projected-edge-count', String(total / 10))
+    const requestEvidence = api.requests.filter(request => /record-options|\/records\//u.test(request.path))
+    expect(requestEvidence).toHaveLength(0)
+    expect(api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/views/${timelineView.id}/table`))).toHaveLength(total / 25)
+    await timeline.evaluate(root => {
+      for (let element: HTMLElement | null = root.parentElement; element; element = element.parentElement) element.scrollTop = 0
+      document.scrollingElement?.scrollTo(0, 0)
+      window.scrollTo(0, 0)
+    })
+    await expect(timeline.getByTestId('timeline-canvas-body')).toHaveAttribute('data-row-window-first', '0')
+    const handle = timeline.locator(`[data-testid="timeline-dependency-handle"][data-record-id="${id(0)}"]`)
+    const target = timeline.locator(`[data-testid="timeline-bar"][data-record-id="${id(2)}"]`)
+    await target.scrollIntoViewIfNeeded()
+    const unrelated = timeline.locator(`[data-testid="timeline-dependency-path"][data-predecessor-id="${id(10)}"]`).first()
+    const bounds = await handle.boundingBox(); const targetBounds = await target.boundingBox()
+    if (!bounds || !targetBounds) throw new Error('Expected dense dependency handles')
+    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+    await page.mouse.down()
+    const refs = await timeline.evaluate((root, probeArgs) => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      const path = root.querySelector(probeArgs.unrelatedSelector)
+      const bars = [...root.querySelectorAll<HTMLElement>('[data-testid="timeline-bar"]')]
+        .filter(bar => bar.dataset.recordId !== probeArgs.sourceId && bar.dataset.recordId !== probeArgs.targetId)
+      const components = bars.map(bar => (bar as HTMLElement & { __vueParentComponent?: { u?: Array<() => void> } }).__vueParentComponent)
+      const layer = root.querySelector('[data-testid="timeline-dependency-layer"]')
+      const layerComponent = (layer as (Element & { __vueParentComponent?: { u?: Array<() => void> } }) | null)?.__vueParentComponent
+      if (!setup || !path || !layer || components.some(component => !component) || !layerComponent) throw new Error('Expected dependency projection, unrelated Bars/path and Vue components')
+      const state = { mutations: 0, unrelatedUpdated: 0, layerUpdated: 0 }
+      for (const component of components) component!.u = [...(component!.u ?? []), () => { state.unrelatedUpdated += 1 }]
+      layerComponent.u = [...(layerComponent.u ?? []), () => { state.layerUpdated += 1 }]
+      const observer = new MutationObserver(records => { state.mutations += records.length })
+      observer.observe(path, { attributes: true, childList: true, subtree: true })
+      ;(window as Window & { __p114bRefs?: Record<string, unknown>; __p114bObserver?: MutationObserver }).__p114bRefs = {
+        projectedItems: setup.projectedItems, temporalMap: setup.temporalMap, dependencyEdges: setup.dependencyEdges,
+        geometry: setup.dependencyGeometryById, windowEdges: setup.windowDependencyEdges, path, unrelatedSelector: probeArgs.unrelatedSelector,
+        bars, components, layer, layerComponent, state,
+      }
+      ;(window as Window & { __p114bObserver?: MutationObserver }).__p114bObserver = observer
+      return true
+    }, { unrelatedSelector: `[data-testid="timeline-dependency-path"][data-predecessor-id="${id(10)}"]`, sourceId: id(0), targetId: id(2) })
+    expect(refs).toBe(true)
+    await page.mouse.move(targetBounds.x + targetBounds.width / 2, targetBounds.y + targetBounds.height / 2, { steps: 4 })
+    await expect(timeline.locator('[data-testid="timeline-dependency-preview"]')).toBeVisible()
+    const evidence = await timeline.evaluate(root => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      const windowWithProbe = window as Window & { __p114bRefs?: Record<string, any>; __p114bObserver?: MutationObserver }
+      const probe = windowWithProbe.__p114bRefs
+      if (!setup || !probe) throw new Error('Expected P11.4B density probe')
+      const mutations = probe.state.mutations + (windowWithProbe.__p114bObserver?.takeRecords().length ?? 0)
+      windowWithProbe.__p114bObserver?.disconnect()
+      return {
+        projectionStable: setup.projectedItems === probe.projectedItems && setup.temporalMap === probe.temporalMap && setup.dependencyEdges === probe.dependencyEdges,
+        geometryStable: setup.dependencyGeometryById === probe.geometry && setup.windowDependencyEdges === probe.windowEdges,
+        unrelatedPathStable: root.querySelector(probe.unrelatedSelector) === probe.path,
+        unrelatedMutations: mutations,
+        unrelatedVueUpdates: probe.state.unrelatedUpdated,
+        incidentLayerVueUpdates: probe.state.layerUpdated,
+        unrelatedBarsStable: probe.bars.every((bar: HTMLElement, index: number) => (bar as HTMLElement & { __vueParentComponent?: unknown }).__vueParentComponent === probe.components[index]),
+      }
+    })
+    expect(evidence).toMatchObject({ projectionStable: true, geometryStable: true, unrelatedPathStable: true, unrelatedMutations: 0, unrelatedVueUpdates: 0, unrelatedBarsStable: true })
+    expect(evidence.incidentLayerVueUpdates).toBeGreaterThan(0)
+    console.log(`P11.4B ${total} pointer evidence: ${JSON.stringify({ projectedRecords: total, projectedEdges: total / 10, loadedTableReads: total / 25, extraRecordRequests: requestEvidence.length, ...evidence })}`)
+    expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+    await page.keyboard.press('Escape')
+    await page.mouse.up()
+    await expect(timeline.locator('[data-testid="timeline-dependency-preview"]')).toHaveCount(0)
+    expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+    if (total === 500) expect(await timeline.locator('[data-timeline-row]').count()).toBeLessThanOrEqual(40)
+  })
+}
