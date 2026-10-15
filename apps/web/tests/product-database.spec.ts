@@ -9068,6 +9068,73 @@ test('P11.3C pending mutation shows a quiet saving state, blocks the same record
   await expect.poll(() => secondPatches()).toBe(releasedPatches + 1)
 })
 
+for (const interruption of ['Escape', 'offline'] as const) {
+  test(`P11.3D ${interruption} during pending keeps the submitted mutation and releases busy after completion`, async ({ page, context }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+    const date = property(`p113d-${interruption}-date`, rootDatabase.id, 'Date', 'date')
+    const timelineView = view(`p113d-${interruption}-view`, rootDatabase.id, 'Pending interruption', {
+      ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } },
+    }, 'timeline')
+    const item = record(`p113d-${interruption}-record`, rootDatabase.id, `p113d-${interruption}-page`, { 'root-title': 'Pending item', [date.id]: '2026-10-13' })
+    const api = await installApi(page, [block(`p113d-${interruption}-block`, 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+      databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, date], records: [item], holdCellUpdateResponse: true,
+    })
+    api.pages.push({ ...pageRecord, id: item.pageId, title: 'Pending item', role: 'database-record' })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const databaseBlock = page.locator(`#database-block-p113d-${interruption}-block`)
+    const bar = databaseBlock.getByTestId('database-timeline').locator(`[data-testid="timeline-bar"][data-record-id="${item.id}"]`)
+    const patches = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/records/${item.id}/cells/${date.id}`)).length
+    const tableReads = () => api.requests.filter(request => request.method === 'GET' && request.path === `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/views/${timelineView.id}/table`).length
+    await expect(bar).toBeVisible()
+    await dragTimelineBar(page, bar, pxPerMs('month') * 86_400_000)
+    await api.cellUpdateResponseStarted
+    await expect(bar).toHaveAttribute('data-interaction-phase', 'pending')
+    expect(patches()).toBe(1)
+
+    if (interruption === 'Escape') {
+      await page.keyboard.press('Escape')
+      await expect(bar).toHaveAttribute('data-interaction-phase', 'idle')
+      await expect(bar).not.toHaveAttribute('data-preview-date', /.+/u)
+    } else {
+      await context.setOffline(true)
+      await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+      await expect(bar).toHaveAttribute('data-draggable', 'false')
+      await context.setOffline(false)
+      await page.evaluate(() => window.dispatchEvent(new Event('online')))
+    }
+    expect(patches()).toBe(1)
+    expect(api.records.find(candidate => candidate.id === item.id)?.properties[date.id]).toBe('2026-10-13')
+    // Offline happened after the PATCH started. The route mock does not drop an
+    // in-flight response on its own, so model a committed write with a lost
+    // response and failed canonical reads explicitly.
+    if (interruption === 'offline') {
+      api.abortCellUpdatesAfterCommit = 1
+      api.failTableLoads = 5
+    }
+    api.holdCellUpdateResponse = false
+    api.releaseCellUpdateResponse()
+    await expect.poll(() => api.records.find(candidate => candidate.id === item.id)?.properties[date.id]).toBe('2026-10-14')
+    if (interruption === 'offline') {
+      await expect(bar).toHaveAttribute('data-draggable', 'false')
+      await expect(databaseBlock.getByRole('alert').filter({ hasText: '提交结果暂未确认' })).toBeVisible()
+      const readsBeforeRetry = tableReads()
+      api.failTableLoads = 0
+      await databaseBlock.getByRole('button', { name: '重试刷新' }).click()
+      await expect.poll(() => tableReads()).toBe(readsBeforeRetry + 1)
+      expect(patches()).toBe(1)
+    }
+    await expect(bar).toHaveAttribute('data-interaction-phase', 'idle')
+    await expect(bar).toHaveAttribute('data-saving', 'false')
+    await expect(bar).toHaveAttribute('title', /2026-10-14/u)
+    expect(patches()).toBe(1)
+    await dragTimelineBar(page, bar, pxPerMs('month') * 86_400_000)
+    await expect.poll(() => api.records.find(candidate => candidate.id === item.id)?.properties[date.id]).toBe('2026-10-15')
+    expect(patches()).toBe(2)
+  })
+}
+
 test('P11.3C drag completion preserves focus on another Timeline bar', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
