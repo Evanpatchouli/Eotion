@@ -34,6 +34,18 @@ token fence 覆盖。preview 期间 bar 持有 pointer capture，无法用真实
 新增 `abortCellUpdatesWithoutCommit` mock 开关以构造「transport 失败且服务端未落库」的 unknown 分支
 （仅测试用，非产品能力）。
 
+**独立复核与修复（b2b57f8 / 后续修复提交）：** 独立 reviewer 发现 3 项并已全部复现修复 —— (1) blocker：
+resize handle 复用了 bar 的 click 处理，键盘 Enter/Space 或 Ctrl/Meta+click 会 fall through 到
+`emit('click')` 打开 Record（旧实现 handle 从不 emit，本轮重构合并时引入）；改为 handle 专用
+`handleControlClick`（恒 preventDefault+stopPropagation，永不 emit），bar body 保留 `handleClick`。
+(2) 缺陷：`moveTimelineRecord` 只有 `endTimelineDateMutation`、从未 `beginTimelineDateMutation`
+（调试插桩清理时与插桩行一起被删），busy fence 恒空、声明的作用域锁实际不存在；已在 `savingCell` 之前
+获取、失败提前 return、finally 释放。(3) a11y：bar button 在只读/离线时带 `aria-disabled="true"` 但仍可
+打开 Record；已移除（handle 的保留）。另把 `captureTimelineBarFocus` 改用 pointerdown 的 `currentTarget`
+（原先读 `document.activeElement` 早于浏览器聚焦，恢复实际是 no-op），focus 恢复才真正生效。
+补回归：handle 键盘/修饰键不打开 Record、bar 不声明 disabled、pending 焦点不落 body、适配器忙锁集成用例
+（预占 key → 0 PATCH，释放后 → 1 PATCH）、preview 期间切 View 0 PATCH。
+
 **验证：** Timeline logic 52/52（新 `tests/timeline-interaction.spec.ts` 9）；Timeline Web 31/31
 （既有 P11.3A/B 13 + 新 P11.3C 6 + 既有 Timeline/Date/CAS 12，workers=1/retries=0）；Web/API
 typecheck+build PASS；真实隔离 Mongo 8.2.3（27717 / replicaSet `p113cFinal` / 独立 dbpath）19/19

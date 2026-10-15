@@ -162,6 +162,76 @@ canonical Table 同步 + Drawer draft 保留、offline fail closed 与 active pr
 
 测试口径：不把 mock 通过当作真实 Mongo 证据；局部 DOM 观察不等于帧率 benchmark。
 
+### 任务书逐项覆盖对照
+
+Logic（任务书 §20 十八项）：
+
+| # | 场景 | 覆盖 |
+| --- | --- | --- |
+| 1 | idle → preview → cancel | `interaction.spec`「cancelPreview …」/「cancel from previewing …」 |
+| 2 | idle → preview → pending → success | `interaction.spec`「interaction ledger …」+ Web#4 unknown-confirmed |
+| 3 | pending → 409 → canonical refresh | Web#4 |
+| 4 | pending → known failure → rollback | Web#4（500） |
+| 5 | pending → unknown → verified success | Web#4（abort-after-commit） |
+| 6 | pending → unknown → verified failure | Web#4（abort-without-commit） |
+| 7 | Escape before commit = 0 PATCH | Web#2 |
+| 8 | pointercancel = 0 PATCH | 既有 P11.3A failure 回归（真实 `pointercancel` 事件） |
+| 9 | lostpointercapture cleanup | Web#2 |
+| 10 | unmount during preview = 0 PATCH | Web#5（preview 期间切 View 使 bar 卸载） |
+| 11 | view switch during preview = 0 PATCH | Web#5 |
+| 12 | view switch during pending 的 stale scope 被忽略 | 机制由 `interaction.spec` token fence 覆盖；UI 层被 `viewBusy` fail closed（见 §14.1） |
+| 13 | ABA identity fence | `interaction.spec`「cancel from previewing …」/「cancel invalidates …」+ 既有 P9/P11.2D identity 套件 |
+| 14 | same Record double mutation blocked | Web#3 |
+| 15 | no-op drag = 0 PATCH | Web#1 |
+| 16 | no-op resize = 0 PATCH | Web#1 |
+| 17 | offline pointerdown 不 preview | Web#6 |
+| 18 | offline transition 取消 active preview | Web#6 |
+
+Web（任务书 §21 十九项）：
+
+| # | 场景 | 覆盖 |
+| --- | --- | --- |
+| 1 | Drag → Escape | Web#2 |
+| 2 | Resize → Escape | Web#2 |
+| 3 | pointer cancel cleanup | Web#2（lostpointercapture）+ 既有 A failure |
+| 4 | save pending visual state | Web#3 |
+| 5 | same bar pending 再次 drag blocked | Web#3 |
+| 6 | 409 → canonical geometry refresh | Web#4 |
+| 7 | network failure → preview rollback | Web#4 |
+| 8 | unknown result → canonical verification | Web#4 |
+| 9 | Table Date Cell 与 canonical 同步 | Web#4、Web#5 |
+| 10 | View switch during preview | Web#5 |
+| 11 | View switch during pending | Web#5（断言 switcher disabled 的 fail-closed 行为） |
+| 12 | A → B → A stale response | token fence + 既有 P9 identity 套件（见 §14.1） |
+| 13 | Drawer open + title/body draft 保持 | Web#5 |
+| 14 | handle focus / Escape | Web#2、Web#3 |
+| 15 | offline readonly | Web#6 |
+| 16 | click bar 不触发 accidental mutation | Web#1 |
+| 17 | tiny pointer movement under threshold 不 PATCH | Web#1 |
+| 18 | Start/End source 继续 read-only | 既有 P11.3A/B 回归 |
+| 19 | 390px feedback 不产生 document 横向溢出 | Web#3、Web#5 |
+
+Web 编号（`tests/product-database.spec.ts`，grep `P11.3C`）：#1 equal/sub-threshold 手势、#2 Escape/pointercancel/lostpointercapture、#3 pending 视觉与忙锁、#4 conflict/network/unknown、#5 view switch 与 drawer draft、#6 offline。
+
+### 独立复核与修复（2026-10-14）
+
+独立 reviewer 复核 `d992425..HEAD` 后发现 2 个必须处理的缺陷与 1 个 a11y 回归；主 Agent 逐条复现后全部修复并补回归：
+
+| 级别 | 问题 | 修复 |
+| --- | --- | --- |
+| blocker | resize handle 复用 bar 的 click 处理，键盘 Enter/Space 或 Ctrl/Cmd/Shift/Alt+click 时 handle 激活会 fall through 到 `emit('click')` → 打开 Record，违反「handle 交互不得触发 Record open」 | 新增 `handleControlClick`：handle 一律 `preventDefault` + `stopPropagation` + `drag.click`，**永不** emit；bar body 保留 `handleClick`（旧实现即如此，本轮重构时被合并成同一个处理函数） |
+| 缺陷 | `moveTimelineRecord` 只有 `endTimelineDateMutation`、从未 `beginTimelineDateMutation`（调试插桩清理时与插桩行一起被删除），导致 busy fence 恒空、`isTimelineDateMutationBusy` 恒 false，声明的作用域锁实际不存在 | 在 `savingCell = true` 之前 `beginTimelineDateMutation(dateMutationKey)`，失败即提前 return；`finally` 释放（该调用必然持锁，提前 return 的路径不进 `finally`） |
+| a11y | bar button 在 `draggable=false`（只读/离线）时带 `aria-disabled="true"`，但它仍会打开 Record，读屏用户可能无法触达唯一主操作 | 移除 bar 的 `aria-disabled`；resize handle 的 `aria-disabled` 保留（pending 期间 handle 确实不动作） |
+
+同时修正一处「声明有效但实际 no-op」的实现：`captureTimelineBarFocus` 原本在 pointerdown 处理器内读
+`document.activeElement`（浏览器在处理器返回后才聚焦按钮），改为使用 pointerdown 的 `currentTarget`，
+使 mutation 之后的 focus 恢复真正生效，同时保留「不抢 Drawer / Frozen row / Table 焦点」的判定。
+
+补充回归（均并入 `P11.3C` grep）：handle 键盘 Enter/Space 与 Ctrl/Meta+click 不打开 Record；
+bar 不声明 `aria-disabled`；pending 期间 bar 不 disabled 且焦点不落到 body；
+**适配器忙锁集成用例**（页面内 `beginTimelineDateMutation` 预占 `recordId+propertyId` 后拖动 → 0 PATCH，
+释放后再拖动 → 1 PATCH）；preview 期间切 View（bar 卸载）0 PATCH 且 interaction phase 回 idle。
+
 ## 14. 已知边界与发现（重要，勿误读）
 
 1. **View switcher 在 pending 时是 disabled**：`DatabaseNodeView` 的 `切换视图` 按钮

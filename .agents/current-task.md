@@ -11,6 +11,7 @@
 | C4 | execute / S1 主 Agent | controller / bar DOM / view fence / NodeView 文案接线 | 完成 |
 | C5 | execute / S1 主 Agent | logic 9 + Web 6 新回归与 harness | 完成 |
 | C6 | verify / S0 主 Agent | 逻辑 52、Web 31、typecheck/build、隔离 Mongo 19 | 完成 |
+| C8 | verify / reviewer + S1 主 Agent | 独立复核 3 项（handle click / busy fence / aria-disabled）复现修复与补回归 | 完成 |
 | C7 | execute / S1 主 Agent | 契约、验收、handoff 与提交 | 本文件所在提交 |
 
 不变量（冻结）：single Date Property；drag/resize 共用 `idle→previewing→pending→idle` 与单调 token；
@@ -19,7 +20,11 @@
 接受或保持 uncertain；offline 立即 fail closed 并取消 active preview；identity/ABA fence 不变；
 handle 与 bar body 是兄弟节点；no-op 不发 PATCH；date-only/datetime wire shape 保留。
 
-验收入口：`docs/verification/p11-3c-mutation-ux-conflict.md`。逻辑 52/52（新 9）、Timeline Web
+验收入口：`docs/verification/p11-3c-mutation-ux-conflict.md`。
+
+独立复核（reviewer）发现并已修复：resize handle 的键盘/修饰键激活曾会打开 Record；
+`moveTimelineRecord` 的 busy fence 只有 release 没有 acquire；bar button 在只读时错误声明 `aria-disabled`。
+另修正 `captureTimelineBarFocus` 的捕获时机。补充回归见验收页「独立复核与修复」。逻辑 52/52（新 9）、Timeline Web
 31/31（新 P11.3C 6）、真实隔离 Mongo 8.2.3（27717 / replicaSet p113cFinal）19/19、Web/API
 typecheck+build PASS。隔离实例已优雅 shutdown，用户 27017 未触碰。
 
