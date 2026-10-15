@@ -25,6 +25,7 @@ import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import { beginTimelineDateMutation, endTimelineDateMutation } from './timeline/interaction'
 import type { TimelineMoveCommand } from './timeline/mutation'
 import { isWritableTimelineDateSource } from './timeline/mutation'
+import { resolveTimelineDependencyProperty, prepareDependencyRelationMutation, isDependencyRelationMutationConfirmed, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
 
 import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
@@ -330,6 +331,109 @@ function getRelationTitle(property: DatabasePropertyResponse, recordId: string):
 }
 function getCellValue(record: TableRecord, propertyId: string): unknown {
   return Object.hasOwn(record.properties, propertyId) ? record.properties[propertyId] : undefined
+}
+
+function captureTimelineDependency(): TimelineDependencyCapture | null {
+  if (viewBusy.value || !writable.value || viewType.value !== 'timeline') return null
+  const dependency = resolveTimelineDependencyProperty(databaseId.value, properties.value, viewConfig.value)
+  if (!dependency) return null
+  const root = document.getElementById(`database-block-${blockId.value}`)
+  if (!root?.isConnected) return null
+  return Object.freeze({
+    scope: timelineScope.value, userId: userId.value, workspaceId: workspaceId.value,
+    databaseId: databaseId.value, viewId: viewId.value, blockId: blockId.value,
+    propertyId: dependency.propertyId, direction: dependency.direction,
+    configIdentity: dependency.configIdentity, propertyVersion: dependency.propertyVersion,
+    expectedDatabaseVersion: databaseVersion.value, viewIdentityEpoch, viewRoot: root,
+    records: Object.freeze(records.value.map(record => {
+      const value = getCellValue(record, dependency.propertyId)
+      return Object.freeze({ id: record.id, version: record.version, originalValue: Array.isArray(value) ? Object.freeze([...value]) : value })
+    })),
+  })
+}
+
+/** Semantic edge command → one existing Relation Cell PATCH, with no date writes. */
+async function mutateTimelineDependency(command: TimelineDependencyCommand): Promise<boolean> {
+  const capture = command.capture
+  const isCurrent = (): boolean => {
+    if (capture.viewIdentityEpoch !== viewIdentityEpoch || capture.scope !== timelineScope.value
+      || capture.userId !== userId.value || capture.workspaceId !== workspaceId.value
+      || capture.databaseId !== databaseId.value || capture.viewId !== viewId.value || capture.blockId !== blockId.value
+      || !capture.viewRoot?.isConnected || !viewReady.value || !props.editor.isEditable) return false
+    const root = document.getElementById(`database-block-${blockId.value}`)
+    if (root !== capture.viewRoot || root.getAttribute('data-view-id') !== capture.viewId || root.getAttribute('data-view-ready') !== 'true') return false
+    let editorViewId = ''
+    props.editor.state.doc.descendants(node => {
+      if (node.type.name === 'eotionDatabase' && node.attrs.blockId === capture.blockId) editorViewId = String(node.attrs.viewId ?? '')
+    })
+    return editorViewId === capture.viewId && viewType.value === 'timeline'
+  }
+  if (!isCurrent() || viewBusy.value || !writable.value) return false
+  const mutation = prepareDependencyRelationMutation(command, { databaseId: databaseId.value, properties: properties.value, config: viewConfig.value })
+  if (!mutation || capture.expectedDatabaseVersion !== databaseVersion.value) {
+    await refreshLoadedWindow()
+    return false
+  }
+  const owner = recordsById.value.get(mutation.ownerRecordId)
+  if (!owner || !recordsById.value.has(mutation.relatedRecordId)) return false
+  if (owner.version !== mutation.expectedRecordVersion || JSON.stringify(getCellValue(owner, capture.propertyId)) !== JSON.stringify(mutation.originalValue)) {
+    await refreshLoadedWindow()
+    return false
+  }
+  if (mutation.noop) {
+    if (command.operation === 'delete') await refreshLoadedWindow()
+    return false
+  }
+  // The generic database-wide gate is acquired synchronously, before its queue.
+  savingCell.value = true
+  mutationError.value = ''
+  try {
+    const result = await updateProductDatabaseRecordCell(capture.workspaceId, capture.databaseId, mutation.ownerRecordId, capture.propertyId, {
+      value: mutation.value, expectedDatabaseVersion: capture.expectedDatabaseVersion, expectedRecordVersion: mutation.expectedRecordVersion,
+    })
+    if (!isCurrent()) return false
+    databaseVersion.value = result.database.version
+    records.value = records.value.map(record => record.id === result.record.id ? result.record : record)
+    externalRefreshPending = false
+    await refreshLoadedWindow()
+    return isCurrent() && !staleReadonly.value
+  } catch (cause) {
+    if (!isCurrent()) return false
+    externalRefreshPending = false
+    if (cause instanceof ApiError && cause.statusCode === 409) {
+      await refreshLoadedWindow()
+      if (isCurrent()) mutationError.value = staleReadonly.value
+        ? '依赖关系已在其他位置发生变化；刷新未完成，请重试加载。'
+        : '依赖关系已在其他位置发生变化，已刷新到最新版本。'
+      return false
+    }
+    if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) {
+      mutationError.value = '依赖关系未保存，请检查关联记录和权限后重新操作。'
+      return false
+    }
+    // Transport/5xx is an unknown result. Never retry the mutation.
+    await refreshLoadedWindow()
+    if (!isCurrent()) return false
+    if (staleReadonly.value) {
+      mutationError.value = '依赖关系提交结果暂未确认，请联网后重新加载。'
+      return false
+    }
+    const canonical = recordsById.value.get(mutation.ownerRecordId)
+    const currentDependency = resolveTimelineDependencyProperty(databaseId.value, properties.value, viewConfig.value)
+    if (!canonical || currentDependency?.configIdentity !== capture.configIdentity || currentDependency.propertyVersion !== capture.propertyVersion) {
+      staleReadonly.value = true
+      refreshError.value = '依赖关系提交结果暂未确认，请重新加载当前视图。'
+      return false
+    }
+    const confirmed = isDependencyRelationMutationConfirmed(getCellValue(canonical, capture.propertyId), mutation.relatedRecordId, command.operation)
+    mutationError.value = confirmed ? '依赖关系已更新，已读取最新结果。' : '依赖关系未更新，已恢复服务器最新内容。'
+    return confirmed
+  } finally {
+    if (isCurrent()) {
+      savingCell.value = false
+      runDeferredRefresh()
+    }
+  }
 }
 
 function prepareTimelineBarDrag(recordId: string): TimelineBarDragSession | null {
@@ -2016,7 +2120,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :move-record="moveTimelineRecord" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
       <div v-else-if="viewType === 'table' && properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>

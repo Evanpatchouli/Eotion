@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import type { TimelineTick, TimelineViewportState } from './types'
 import type { TimelineRowGeometry, TimelineRowWindow } from './layout'
 import type { TimelineUnscheduledReason } from './projection'
@@ -8,6 +8,8 @@ import type { TimelineMoveCommand } from './mutation'
 import type { Transform } from './types'
 import type { TimelineItemGeometry } from './layout'
 import type { TimelineDependencyEdge } from './dependency'
+import type { TimelineDependencyCapture, TimelineDependencyCommand } from './dependencyMutation'
+import { useTimelineDependencyInteraction } from './useTimelineDependencyInteraction'
 import TimelineGrid from './TimelineGrid.vue'
 import TimelineRuler from './TimelineRuler.vue'
 import TimelineTodayLine from './TimelineTodayLine.vue'
@@ -33,6 +35,12 @@ const props = defineProps<{
   transform: Transform | null
   displayTimeZone: string
   draggable: boolean
+  dependencyEditable: boolean
+  dependencyConfigKey: string
+  recordTitleById: ReadonlyMap<string, string>
+  online: boolean
+  captureDependency: () => TimelineDependencyCapture | null
+  mutateDependency: (command: TimelineDependencyCommand) => Promise<boolean>
   recordVersionById: ReadonlyMap<string, number>
   recordMutationBusyById: ReadonlyMap<string, boolean>
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
@@ -54,6 +62,45 @@ const unscheduledStyle = computed(() => ({
 }))
 const previewGeometryById = reactive(new Map<string, TimelineItemGeometry>())
 watch(() => props.scope, () => previewGeometryById.clear(), { flush: 'sync' })
+const canvasBody = ref<HTMLElement | null>(null)
+const dependencyControl = ref<HTMLButtonElement | null>(null)
+const renderedRecordIds = computed(() => new Set(props.rows.filter(row => row.geometry && !row.geometry.offscreen).map(row => row.item.recordId)))
+const dependency = useTimelineDependencyInteraction({
+  scope: () => props.scope,
+  writable: () => props.dependencyEditable && previewGeometryById.size === 0 && !canvasBody.value?.querySelector('[data-drag-state="armed"], [data-drag-state="dragging"]'),
+  online: () => props.online,
+  transform: () => props.transform,
+  configKey: () => props.dependencyConfigKey,
+  isViewportCurrent: snapshot => props.isViewportCurrent(snapshot),
+  edges: () => props.dependencyEdges,
+  renderedRecordIds: () => renderedRecordIds.value,
+  canvas: () => canvasBody.value,
+  captureDependency: () => props.captureDependency(),
+  mutateDependency: command => props.mutateDependency(command),
+})
+const selectedEdgePosition = computed(() => {
+  const edge = dependency.selectedEdge.value
+  if (!edge) return 0
+  return props.dependencyEdges.findIndex(candidate => candidate.id === edge.id) + 1
+})
+function selectDependencyEdge(id: string): void {
+  dependency.selectEdge(id)
+  dependencyControl.value?.focus()
+}
+function onDependencyControlKeydown(event: KeyboardEvent): void {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') { event.preventDefault(); dependency.selectRelative(1) }
+  else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') { event.preventDefault(); dependency.selectRelative(-1) }
+  else if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); void dependency.removeSelected() }
+  else if (event.key === 'Escape') { event.preventDefault(); dependency.selectedEdgeId.value = null }
+}
+function guardConcurrentPointer(event: PointerEvent): void {
+  if (!dependency.active.value) return
+  const target = event.target
+  if (target instanceof Element && target.closest('[data-testid="timeline-bar"], [data-testid^="timeline-resize-"]')) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+}
 
 function updatePreviewGeometry(recordId: string, geometry: TimelineItemGeometry | null): void {
   if (geometry) previewGeometryById.set(recordId, geometry)
@@ -78,7 +125,8 @@ function setRulerAnchor(element: unknown): void {
 }
 
 function setBody(element: unknown): void {
-  emit('bodyRef', typeof HTMLElement !== 'undefined' && element instanceof HTMLElement ? element : null)
+  canvasBody.value = typeof HTMLElement !== 'undefined' && element instanceof HTMLElement ? element : null
+  emit('bodyRef', canvasBody.value)
 }
 
 function reasonLabel(reason: TimelineUnscheduledReason): string {
@@ -95,6 +143,21 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 <template>
   <div class="eotion-timeline-viewport" data-testid="timeline-viewport" :data-generation="state?.generation">
     <div class="eotion-timeline-ruler-slot">
+      <button
+        v-if="dependencyEdges.length"
+        ref="dependencyControl"
+        class="eotion-timeline-dependency-control"
+        type="button"
+        data-testid="timeline-dependency-control"
+        :data-selected-edge-id="dependency.selectedEdgeId.value ?? undefined"
+        :aria-label="dependency.selectedEdge.value ? `删除依赖：${recordTitleById.get(dependency.selectedEdge.value.predecessorRecordId) || '无标题'} → ${recordTitleById.get(dependency.selectedEdge.value.successorRecordId) || '无标题'}。第 ${selectedEdgePosition}/${dependencyEdges.length} 条，方向键选择` : `管理 ${dependencyEdges.length} 条依赖关系。方向键选择，Delete 删除`"
+        :aria-busy="dependency.pending.value ? 'true' : 'false'"
+        :aria-disabled="!dependencyEditable || !online || dependency.pending.value ? 'true' : undefined"
+        @focus="!dependency.selectedEdge.value && dependency.selectRelative(1)"
+        @keydown="onDependencyControlKeydown"
+        @click="dependency.selectedEdge.value && dependency.removeSelected()"
+      >{{ dependency.selectedEdge.value ? `删除依赖 ${selectedEdgePosition}/${dependencyEdges.length}` : `依赖关系 ${dependencyEdges.length}` }}</button>
+      <span v-if="dependency.pending.value" class="eotion-timeline-dependency-status" role="status">正在保存依赖关系…</span>
       <div
         class="eotion-timeline-ruler-anchor"
         :style="rulerAnchorStyle"
@@ -127,6 +190,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
           :data-row-window-total-height="rowWindow.totalHeight"
           :data-rendered-row-count="rows.length"
           :ref="setBody"
+          @pointerdown.capture="guardConcurrentPointer"
         >
           <div class="eotion-timeline-draw-window" :style="overlayStyle" aria-hidden="true">
             <TimelineGrid :ticks="gridTicks" />
@@ -138,6 +202,11 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
             :preview-geometry-by-record-id="previewGeometryById"
             :canvas-width="canvasWidthPx"
             :body-height="bodyHeight"
+            :selected-edge-id="dependency.selectedEdgeId.value"
+            :preview-edge="dependency.previewEdge.value"
+            :preview-source-record-id="dependency.active.value?.predecessorRecordId ?? null"
+            :preview-pointer="dependency.pointer.value"
+            @select-edge="selectDependencyEdge"
           />
           <div class="eotion-timeline-today" :style="overlayStyle" aria-hidden="true">
             <TimelineTodayLine :x="todayX" />
@@ -170,6 +239,12 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
                 :record-version="recordVersionById.get(row.item.recordId)"
                 :draggable="draggable && row.item.kind !== 'unscheduled'"
                 :mutation-busy="recordMutationBusyById.get(row.item.recordId) === true"
+                :dependency-connectable="dependencyEditable && online && row.item.kind !== 'unscheduled'"
+                :dependency-pending="dependency.pending.value"
+                :begin-dependency="dependency.start"
+                :move-dependency="dependency.move"
+                :finish-dependency="dependency.finish"
+                :cancel-dependency="dependency.cancel"
                 :prepare-drag="prepareDrag"
                 :commit-drag="commitDrag"
                 :is-viewport-current="isViewportCurrent"
@@ -193,6 +268,9 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 <style scoped>
 .eotion-timeline-viewport { position:relative; min-width:0; max-width:100%; overflow:clip; }
 .eotion-timeline-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); }
+.eotion-timeline-dependency-control { position:absolute; z-index:4; right:6px; top:4px; min-height:26px; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:2px 8px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-primary, var(--editor-text)); font:inherit; font-size:11px; cursor:pointer; }
+.eotion-timeline-dependency-control:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); }
+.eotion-timeline-dependency-status { position:absolute; z-index:4; right:8px; bottom:2px; padding:2px 5px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-secondary, var(--editor-muted)); font-size:10px; }
 .eotion-timeline-ruler-anchor { position:absolute; top:0; left:0; width:100%; height:var(--timeline-header-height, 56px); overflow:hidden; background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
 .eotion-timeline-scroll { width:100%; min-width:0; max-width:100%; min-height:240px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; }
 .eotion-timeline-scroll:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:-2px; }
@@ -200,13 +278,13 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-body { position:relative; width:100%; min-height:240px; isolation:isolate; }
 .eotion-timeline-draw-window { position:absolute; z-index:0; left:0; overflow:hidden; pointer-events:none; }
 .eotion-timeline-today { position:absolute; z-index:2; left:0; overflow:hidden; pointer-events:none; }
-.eotion-timeline-row { position:absolute; z-index:3; left:0; width:100%; }
+.eotion-timeline-row { position:absolute; left:0; width:100%; }
 .eotion-timeline-row:has(.eotion-timeline-bar[data-drag-state="dragging"]), .eotion-timeline-row:has(.eotion-timeline-bar[data-drag-state="saving"]) { z-index:6; }
 .eotion-timeline-row.is-hovered { background:color-mix(in srgb, var(--e-color-hover, var(--editor-hover)) 48%, transparent); }
 .eotion-timeline-row.is-selected { background:color-mix(in srgb, var(--e-color-selected, var(--editor-selected)) 56%, transparent); }
-.eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; }
+.eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
 .eotion-timeline-row--unscheduled { z-index:4; }
-.eotion-timeline-unscheduled { display:flex; width:100%; height:100%; align-items:center; gap:8px; overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); padding:0 8px; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; }
+.eotion-timeline-unscheduled { display:flex; width:100%; height:100%; align-items:center; gap:8px; overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); padding:0 8px; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; pointer-events:auto; }
 .eotion-timeline-unscheduled-title { min-width:0; overflow:hidden; color:var(--e-color-text-primary, var(--editor-text)); font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
 .eotion-timeline-unscheduled-reason { flex:0 0 auto; }
 .eotion-timeline-unscheduled button { flex:0 0 auto; min-height:32px; border:0; border-radius:var(--e-radius-control, 6px); padding:0 8px; background:transparent; color:var(--e-color-accent, var(--editor-accent)); font:inherit; cursor:pointer; }

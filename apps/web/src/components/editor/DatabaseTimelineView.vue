@@ -3,8 +3,9 @@ import type { DatabasePropertyResponse, DatabaseViewRecordsResponse } from '@eot
 import type { DatabaseTimelineViewOptions, DatabaseViewConfig } from '@eotion/domain/database'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import type { TimelineMoveCommand } from './timeline/mutation'
+import type { TimelineDependencyCapture, TimelineDependencyCommand } from './timeline/dependencyMutation'
 import { isWritableTimelineDateSource } from './timeline/mutation'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 
 import { IconName } from '../ui/icons'
 import EotionIcon from '../ui/EotionIcon.vue'
@@ -33,6 +34,8 @@ const props = defineProps<{
   databaseVersion: number
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
   moveRecord: (command: TimelineMoveCommand) => Promise<boolean>
+  captureDependency: () => TimelineDependencyCapture | null
+  mutateDependency: (command: TimelineDependencyCommand) => Promise<boolean>
 }>()
 
 const emit = defineEmits<{
@@ -59,6 +62,26 @@ const hoveredRecordId = ref<string | null>(null)
 const timelineOptions = computed(() => (props.config.options as DatabaseTimelineViewOptions | undefined)?.timeline)
 const configuredScale = computed(() => timelineOptions.value?.scale ?? 'month')
 const barDraggable = computed(() => props.writable && isWritableTimelineDateSource(timelineOptions.value?.dateSource))
+const dependencyEditable = computed(() => {
+  const dependency = timelineOptions.value?.dependency
+  if (!dependency || !props.writable) return false
+  const property = props.properties.find(candidate => candidate.id === dependency.propertyId)
+  return property?.databaseId === props.databaseId && property.type === 'relation'
+    && property.config !== null && typeof property.config === 'object' && 'targetDatabaseId' in property.config
+    && property.config.targetDatabaseId === props.databaseId
+})
+const dependencyConfigKey = computed(() => JSON.stringify([
+  props.scope, props.config, timelineOptions.value?.dependency,
+  props.properties.find(property => property.id === timelineOptions.value?.dependency?.propertyId)?.version,
+]))
+const online = ref(typeof navigator === 'undefined' || navigator.onLine)
+if (typeof window !== 'undefined') {
+  const onOnline = () => { online.value = true }
+  const onOffline = () => { online.value = false }
+  window.addEventListener('online', onOnline)
+  window.addEventListener('offline', onOffline)
+  onBeforeUnmount(() => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline) })
+}
 const barTransform = computed(() => viewport.state.value ? viewportTransform(viewport.state.value) : null)
 const recordVersionById = computed(() => new Map(props.records.map(record => [record.id, record.version])))
 const writablePropertyId = computed(() => {
@@ -77,6 +100,7 @@ const projectedItems = computed(() => projectTimelineRecords({
   config: props.config,
   formatValue: props.formatValue,
 }))
+const recordTitleById = computed(() => new Map(projectedItems.value.map(item => [item.recordId, item.title])))
 const rowIndexByRecordId = computed(() => new Map(projectedItems.value.map(item => [item.recordId, item.rowIndex])))
 const focusedRowIndex = computed(() => focusedRecordId.value === null ? null : rowIndexByRecordId.value.get(focusedRecordId.value) ?? null)
 const unscheduledItems = computed(() => projectedItems.value.filter(item => item.kind === 'unscheduled'))
@@ -100,7 +124,7 @@ const dependencyEdges = computed(() => projectTimelineDependencies({
   config: props.config,
 }))
 const dependencyGeometryById = computed(() => {
-  if (dependencyEdges.value.length === 0) return new Map<string, TimelineItemGeometry>()
+  if (!dependencyEditable.value && dependencyEdges.value.length === 0) return new Map<string, TimelineItemGeometry>()
   const transform = barTransform.value
   if (!transform) return new Map<string, TimelineItemGeometry>()
   const geometry = new Map<string, TimelineItemGeometry>()
@@ -255,6 +279,12 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
         :transform="barTransform"
         :display-time-zone="viewport.displayTimeZone.value"
         :draggable="barDraggable"
+        :dependency-editable="dependencyEditable"
+        :dependency-config-key="dependencyConfigKey"
+        :record-title-by-id="recordTitleById"
+        :online="online"
+        :capture-dependency="captureDependency"
+        :mutate-dependency="mutateDependency"
         :record-version-by-id="recordVersionById"
         :record-mutation-busy-by-id="recordMutationBusyById"
         :prepare-drag="prepareTimelineDrag"

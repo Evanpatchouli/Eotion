@@ -21,6 +21,12 @@ const props = defineProps<{
   recordVersion?: number
   draggable: boolean
   mutationBusy?: boolean
+  dependencyConnectable?: boolean
+  dependencyPending?: boolean
+  beginDependency: (event: PointerEvent, recordId: string) => void
+  moveDependency: (event: PointerEvent) => void
+  finishDependency: (event: PointerEvent) => void
+  cancelDependency: () => void
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
   commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
   isViewportCurrent: (snapshot: Transform) => boolean
@@ -92,6 +98,10 @@ const endHandleStyle = computed(() => ({
 }))
 const startHandleCompact = computed(() => handleCenters.value.startClamped && (barGeometry.value.marker || barGeometry.value.width < 24))
 const endHandleCompact = computed(() => handleCenters.value.endClamped && (barGeometry.value.marker || barGeometry.value.width < 24))
+const dependencyHandleStyle = computed(() => ({
+  left: `${Math.min((props.transform?.scrollLeft ?? 0) + (props.transform?.width ?? Number.POSITIVE_INFINITY) - 9, Math.max((props.transform?.scrollLeft ?? 0) + 9, barGeometry.value.rawX + (barGeometry.value.marker ? 0 : barGeometry.value.rawWidth) + 9))}px`,
+  top: `${barGeometry.value.top - barGeometry.value.rowTop + barGeometry.value.height / 2 + 10}px`,
+}))
 
 function tooltip(): string {
   const details = props.visibleProperties.filter(property => property.displayText).map(property => property.displayText)
@@ -195,6 +205,22 @@ function handleControlClick(event: MouseEvent): void {
       @click="handleControlClick"
     ><span aria-hidden="true" /></button>
     <button
+      v-if="dependencyConnectable"
+      class="eotion-timeline-dependency-handle"
+      :style="dependencyHandleStyle"
+      :data-record-id="geometry.recordId"
+      :aria-label="`从 ${title || '无标题'} 创建依赖关系`"
+      :aria-disabled="dependencyPending ? 'true' : undefined"
+      data-testid="timeline-dependency-handle"
+      type="button"
+      @pointerdown.stop="beginDependency($event, geometry.recordId)"
+      @pointermove.stop="moveDependency"
+      @pointerup.stop="finishDependency"
+      @pointercancel.stop="cancelDependency"
+      @lostpointercapture="cancelDependency"
+      @click.stop.prevent
+    ><span aria-hidden="true" /></button>
+    <button
       v-if="showEndHandle"
       class="eotion-timeline-resize-handle eotion-timeline-resize-handle--end"
       :class="{ 'is-hovered': hovered, 'is-selected': selected, 'is-compact': endHandleCompact, 'is-busy': pending }"
@@ -285,8 +311,15 @@ function handleControlClick(event: MouseEvent): void {
 .eotion-timeline-resize-handle.is-busy { cursor:progress; pointer-events:none; }
 .eotion-timeline-resize-handle.is-hovered, .eotion-timeline-resize-handle.is-selected, .eotion-timeline-resize-handle:hover, .eotion-timeline-resize-handle:focus-visible { opacity:1; }
 .eotion-timeline-resize-handle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
+.eotion-timeline-dependency-handle { position:absolute; z-index:7; display:grid; place-items:center; box-sizing:border-box; width:18px; height:18px; transform:translate(-50%, -50%); border:1px solid var(--e-color-accent, var(--editor-accent)); border-radius:50%; padding:0; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-accent, var(--editor-accent)); opacity:0; cursor:crosshair; touch-action:none; pointer-events:auto; }
+.eotion-timeline-dependency-handle span { width:7px; height:7px; border-right:1px solid currentColor; border-top:1px solid currentColor; transform:rotate(45deg); }
+.eotion-timeline-dependency-handle:hover, .eotion-timeline-dependency-handle:focus-visible, .eotion-timeline-row.is-hovered .eotion-timeline-dependency-handle, .eotion-timeline-row.is-selected .eotion-timeline-dependency-handle { opacity:1; }
+.eotion-timeline-bar-anchor:has(> .eotion-timeline-bar:focus-visible) .eotion-timeline-dependency-handle { opacity:1; }
+.eotion-timeline-dependency-handle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
+.eotion-timeline-dependency-handle[aria-disabled="true"] { pointer-events:none; }
 .eotion-timeline-bar-anchor:has(> .eotion-timeline-bar:focus-visible) .eotion-timeline-resize-handle { opacity:1; }
 .eotion-timeline-row.is-hovered .eotion-timeline-resize-handle, .eotion-timeline-row.is-selected .eotion-timeline-resize-handle { opacity:1; }
 @media (pointer:coarse) { .eotion-timeline-bar--marker { width:44px; height:44px; } }
 @media (pointer:coarse) { .eotion-timeline-resize-handle { opacity:1; width:10px; } }
+@media (pointer:coarse) { .eotion-timeline-dependency-handle { opacity:1; width:28px; height:28px; } }
 </style>

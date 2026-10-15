@@ -9,7 +9,10 @@ const props = defineProps<{
   previewGeometryByRecordId: ReadonlyMap<string, TimelineItemGeometry>
   canvasWidth: number
   markerId: string
+  hit?: boolean
+  selected?: boolean
 }>()
+const emit = defineEmits<{ select: [id: string] }>()
 
 const geometry = computed(() => {
   const predecessor = props.previewGeometryByRecordId.get(props.edge.predecessorRecordId)
@@ -26,7 +29,7 @@ const geometry = computed(() => {
   <path
     v-if="geometry"
     :d="geometry.path"
-    :marker-end="`url(#${markerId})`"
+    :marker-end="hit ? undefined : `url(#${markerId})`"
     :data-start-x="geometry.start.x"
     :data-start-y="geometry.start.y"
     :data-end-x="geometry.end.x"
@@ -34,12 +37,14 @@ const geometry = computed(() => {
     :data-edge-id="edge.id"
     :data-predecessor-id="edge.predecessorRecordId"
     :data-successor-id="edge.successorRecordId"
-    data-testid="timeline-dependency-path"
+    :data-testid="hit ? 'timeline-dependency-hit' : 'timeline-dependency-path'"
     fill="none"
-    stroke="var(--e-color-text-secondary, var(--editor-muted))"
-    stroke-width="1.25"
-    opacity="0.7"
+    :stroke="hit ? 'transparent' : selected ? 'var(--e-color-accent, var(--editor-accent))' : 'var(--e-color-text-secondary, var(--editor-muted))'"
+    :stroke-width="hit ? 14 : selected ? 2 : 1.25"
+    :opacity="hit ? 1 : 0.7"
+    :pointer-events="hit ? 'stroke' : 'none'"
     aria-hidden="true"
     focusable="false"
+    @click.stop="hit && emit('select', edge.id)"
   />
 </template>
