@@ -26,6 +26,7 @@ export type {
   NormalizedDatabaseDateTimeValue,
   NormalizedDatabaseDateValue,
 } from './date'
+export { planDatabaseSchedule, SchedulingError, MAX_SCHEDULE_RECORDS, MAX_SCHEDULE_EDGES, MAX_SCHEDULE_SCAN_RECORDS, MAX_SCHEDULE_SCAN_EDGES } from './scheduling'
 
 export {
   BLOCK_CAPABILITIES,
