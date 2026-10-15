@@ -591,7 +591,7 @@ Bar/Handle → shared interaction controller → temporal command → Timeline/V
 preview 的 scope/unmount 变化必须 cancel；pending unmount 的旧 callback 仍受 token、epoch、DOM
 root 与 scope fence 保护。真实 UI、同 document route 生命周期与 logic fence 证据在验收页分别说明。
 
-独立 Start/End 两 Property 继续 readable/openable 且 mutation read-only；当前 generic Record API
+独立 Start/End 两 Property 继续 readable/openable 且手动 mutation read-only；P11.3D 验收时 generic Record API
 没有 atomic multi-cell mutation，不使用 sequential PATCH workaround。Dependency、auto shift、
 bulk、Undo/Redo、offline queue、Calendar 与视觉 polish 不属于本轮；P11.4 未开始。
 
@@ -677,4 +677,37 @@ membership 确认 create/delete结果，读取失败 staleReadonly、只允许�
 selection 在 edge 消失或 scope change时清空；scope ABA不复用旧选择。
 
 验收、100/500观察、真实Mongo、视觉与未运行项见
-[P11.4B](../verification/p11-4b-dependency-editing.md)。P11.4C/D 仍需独立后续任务。
+[P11.4B](../verification/p11-4b-dependency-editing.md)。C 的独立实施见下节，D 仍未开始。
+
+## 30. P11.4C Auto Shift Policies
+
+active auto shift 的 Date drag/resize 和 dependency create 在 release 时提交一次 generic
+Database `cell-mutations`，仅传 root Cell intent 与 pointerdown 捕获的 Database/Record/View
+versions；不由 Web planning，也不先保存 root 再 cascade。no_auto_shift / dependency delete
+继续原单 Cell 路径；pointermove 仍仅 root Bar / linking line 局部预览，0 HTTP。
+
+server 在同一 Mongo snapshot transaction 中验证 canonical View/Properties，读取本库完整
+有界 records，不应用 View filter/window，映射 Relation 成 predecessor→successor，再调用纯
+domain `planDatabaseSchedule`。多 predecessor（含 affected set 外 incoming）取最大约束，
+stable topological evaluation 让 diamond 只计划一次；Date patches 与 Relation/root 合并，
+一个 Record 一次 CAS，Database 整批一次 bump，任何失败全回滚。
+
+Scheduling interval 不使用 UI width/display timezone：datetime point 为精确 instant，range
+finish 为 end；date-only point finish=start，显式 date-only range finish 为 inclusive end
+次日。separate Start/End 只读各 Cell normalized start；缺 End 是 point，Start Cell 内部 end
+不当作 finish。auto shift 可双 Cell 同事务；手动 Start/End 继续只读。
+
+overlap 仅向未来消除重叠；keep-gap 保留每边 mutation 前的非负间隔；no_auto_shift 不级联。
+avoidWeekends 只调整需要移动的 successor start 至周一，datetime 使用自身 IANA 时区并保持
+local wall clock/毫秒；range 保 elapsed duration。unscheduled 节点停止路径、不造 Date；
+affected scheduled cycle fail closed，无关 cycle 不阻塞。
+
+scan 上限现有 10,000 records，affected 最多 500 records / 10,000 约束边（含实际参与的
+外部 incoming；不参与 root 排期的外部 incoming 除外），最终最多 1,000 changed Cells。
+超限拒绝而非截断。unknown batch 只依据 mutationId receipt committed/not_committed/uncertain，
+不得用 loaded root 日期/membership 猜整批结果；uncertain/读取失败保持 stale read-only，
+409 刷新、0 retry。配置/property lifecycle 和 scope/epoch/DOM root fence 继续成立。
+
+正式契约：[Database transactional Cells](database-cell-mutations.md)；
+调度矩阵、真实 Mongo、测试和停止边界：[P11.4C 验收](../verification/p11-4c-auto-shift-policies.md)。
+P11.4D/P11.5/P11 Final 不属于本轮。connector keyboard create P2 留待 D 或 P11.5。

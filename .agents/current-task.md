@@ -1,4 +1,30 @@
-# 当前任务：P11.4B Dependency Editing — PASS / COMPLETE，完成并停止
+# 当前任务：P11.4C Auto Shift Policies — 实现完成 / 验收 HOLD，停止在 C
+
+基线 `d662dec83c849ce8d2ec4c09ab566ae72c0fa272`，开始工作树干净。仅执行 C；不进入 D / P11.5 / Final，不修改版本。
+
+| 单元 | 模式 / 等级 / 角色 | 输出 | 状态 |
+| --- | --- | --- | --- |
+| C1 | investigate / S0 scout + 主 Agent | 事务、Web adapter、日期 Evidence Pack | 完成，见 exec-plans/p11-4c-atomicity.md |
+| C2 | decide / S2 主 Agent | Atomicity Design Gate / Implementation Brief | 完成，十项门禁冻结 |
+| C3 | execute / S1–S2 worker | 纯 planner + domain 测试 | c54e8ab/2943d59；最终86/86 |
+| C4 | execute / S1–S2 worker | generic atomic mutation / receipt / canonical service + tests | 59b289f；真实Mongo Domain16/16，HTTP32/32 |
+| C5 | execute / S1 fast_worker | Web Date/create adapter + integration tests | 1a7dcf0/847dcef；C14/14、logic88/88、typecheck/build通过 |
+| C6 | verify / S0 主 Agent + review / reviewer | 隔离 Mongo、回归、性能、独立复核、文档 | 完整Web192/194；P11325/B27/C14均过；实现review0blocker，验收HOLD |
+
+强制：一次 Mongo transaction 包含 root + cascade / Relation create + cascade；Database +1，changed Record 各 +1；服务端完整 canonical graph；CAS/config fence；receipt 确认 unknown，不重试 mutation；禁止顺序 Cell PATCH。
+P11.4B connector keyboard create P2 保留至 D 或 P11.5，不在本轮扩展。
+
+## HOLD 接续
+
+报告 `docs/verification/p11-4c-auto-shift-policies.md` 记录完整证据与正式语义。
+当前Standalone route/Board grouping两个标题草稿回退未归因；对应C batch入口未执行，PageView等源码未改。
+当前定向6/6；baseline定向10/10，baseline完整179/180出现另一个Board创建标题回退；不能据此认定当前两失败均为基线。
+接续应记录PageView titleDraft/titleSaving/page.title、pages.rename、sync.revision/pages.refresh与View GET gate时间线，闭合归因后复跑门禁。
+不顺手修无关PageView，不仅重试至PASS。HOLD未解除，不开始D。
+Mongo8.0.12随机64880/rs p114cc5ed398d已shutdown，PID42268及监听均不存在；baseline7174亦已关。
+版本0.0.1/build2未改；没有发布。最终SHA见交付消息。
+
+## 上轮完成记录：P11.4B
 
 基线 `1eb5e5db5c29bd97aa3a13ea4c39812c80bcd64c`，分支 `codex/p11-4b-dependency-editing`，开始工作树干净。
 只执行 B；不移动日期、不改版本、不进入 P11.4C/D。

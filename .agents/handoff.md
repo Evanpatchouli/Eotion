@@ -1,5 +1,37 @@
 # Handoff
 
+## 2026-10-16 P11.4C Auto Shift Policies（实现完成 / 验收 HOLD，停止在 C）
+
+基线 `d662dec83c849ce8d2ec4c09ab566ae72c0fa272`；分支 `codex/p11-4c-auto-shift`。
+只执行 C，不自动进入 D/P11.5/Final，不改版本。当前报告
+[P11.4C](../docs/verification/p11-4c-auto-shift-policies.md)；设计门禁
+[Atomicity Gate](../docs/exec-plans/p11-4c-atomicity.md)。
+
+新增 generic `cell-mutations` + receipt；单 Mongo transaction 包含 root/create Relation + 全级联。
+canonical scan 独立于 View filters/windows；DB 整批+1，changed Record各+1，多Cell先合并。
+纯domain稳定拓扑planner；date-only inclusive finish、timezone/ms/DST、weekend start-only、
+unscheduled boundary、affected cycle及limits均已实现。手动Start/End仍只读。
+unknown只查mutationId receipt，不以loaded root猜批次；uncertain只读，409 refresh/0retry。
+
+独立review已修：Start/End缺End时误用Start内部end；外部incoming约束未计入边上限；
+无dependency时undefined/null指纹拒绝P11.3提交。静态独立review0未修blocker。
+Domain86/86、Contracts29/29、SDK24/24、Timeline logic88/88；API/Web typecheck/build/version check通过。
+真实Mongo Domain16/16、HTTP JS7/7 + sync1/1 + file24/24，包含真实写后CAS/异常rollback。
+最终完整Database分4个不重叠组、单worker/retries0，共192/194；其中P11325/25、A8/8、B27/27、C14/14均过。
+
+**HOLD原因**：Standalone route 与 Board grouping 两项titleDraft被旧值覆盖，C batch入口未执行。
+当前两项定向各3次共6/6，baseline各5次共10/10；指定d662dec完整baseline179/180也出现Board创建标题回退，
+但并非同一case，未证明当前两失败同根因。review明确不能将完整Web标PASS；未顺手改PageView。
+接续先记录旧`sync.revision → pages.refresh → PageView watcher`与titleSaving/rename/View GET gate真实时间线，
+归因后做必要最小修复或明确已证基线影响，再复跑门禁；不能只repeat到绿，不开始D。
+日志、首轮失败与各轮独立output路径见报告。TMP baseline快照在`.agents/p114c-baseline-24db1c9006b343008eaf0823626005bd`，
+由.git/info/exclude忽略；7174已关。Mongo8.0.12/64880/rs p114cc5ed398d已shutdown，PID42268和端口均不在。
+版本0.0.1/build2保持不变；功能/测试至02cbd98，最终文档SHA见交付消息。未进入D/P11.5/Final。
+
+**P2 connector keyboard create 仍未修：** focusable button 的 Enter/Space 没有真正create workflow。
+本轮不设计键盘picker，最迟 P11.4D 或 P11.5 解决。D必须独立开始，入口为C报告、
+generic batch/receipt tests、planner矩阵及两种active Web adapter；不要用C替代D/P11 Final。
+
 ## 2026-10-16 P11.4B Dependency Editing（完成并停止）
 
 **Final verdict：PASS；P11.4B COMPLETE。P11.4C/D未开始。**

@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS，完成并停止；P11.4C/D 未开始**
+> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C 实现完成、验收 HOLD（完整 Web 标题草稿门禁未闭合）；P11.4D 未开始**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -1082,3 +1082,25 @@ P11 FINAL PASS 前必须覆盖：
 - 为复刻 Notion 放一个没有真实行为的“在日历中管理”按钮。
 
 P11 的标准是 **真实 Database View + Notion Timeline 级交互**，而不是视觉 mock。
+
+## P11.4C Auto Shift Policies 实施契约
+
+P11.4C 使用服务端完整 canonical dependency graph 和纯 domain planner，不受 Web filter、
+pagination 或 viewport 影响。Date root + cascade、Relation create + cascade 使用 generic
+multi-record/multi-cell 单事务，DB 整批 +1、changed Record 各 +1，任一失败全回滚。
+Date/delete/no_auto_shift 边界、receipt unknown 和生命周期见
+[P11.4C 验收](verification/p11-4c-auto-shift-policies.md) 与
+[通用事务架构](architecture/database-cell-mutations.md)。
+
+三种策略：no_auto_shift 0 cascade/cycle允许；overlap 仅向未来满足 successor.start ≥
+predecessor.finish；keep-gap 在此基础上保留 mutation 前每边 max(0, oldStart−oldFinish)。
+multi predecessor 聚合全部 incoming，diamond 稳定拓扑一次规划。date-only point 不造 end，
+显式 range inclusive end 次日是 finish；datetime 保 exact ms/timezone/elapsed duration。
+avoidWeekends 只把需自动移动的 successor 新 start 用自身 calendar/IANA timezone 向未来滚至
+周一，不改工作日时长。affected cycle 拒绝整批，无关 cycle 不阻塞；unscheduled successor
+不造日期且停止路径。separate Start/End 自动双 Cell 原子移动，手动仍只读。
+
+pointermove 继续本地 root/line preview；release 一次请求，unknown 只看整批 receipt，不猜
+loaded root，409 只刷新不重试。上限为 canonical scan 10,000 records、affected scheduled
+500 records / 10,000 参与约束边、final 1,000 changed Cells，超限 fail closed。
+完成 C 后停止，D、P11.5、P11 Final 和版本升级必须由后续独立任务开始。
