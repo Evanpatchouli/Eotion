@@ -277,14 +277,33 @@ test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, a
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
   const beforeTableBounds = await barFor('p113b-range').boundingBox()
   if (!beforeTableBounds) throw new Error('Expected resized Timeline geometry before switching to Table')
+  const promotedPoints = [['p113b-string-point', 'Legacy string', '2026-10-18'], ['p113b-object-point', 'Legacy object', '2026-10-16']] as const
+  const promotedBeforeTable = new Map<string, { x: number; width: number }>()
+  for (const [id] of promotedPoints) {
+    const bounds = await barFor(id).boundingBox()
+    if (!bounds) throw new Error(`Expected promoted range geometry for ${id}`)
+    promotedBeforeTable.set(id, bounds)
+    await expect(barFor(id)).toHaveAttribute('data-kind', 'range')
+    await expect(barFor(id)).toHaveAttribute('data-marker', 'false')
+    expect(Math.abs(bounds.width - pxPerMs('month') * 86_400_000)).toBeLessThanOrEqual(1)
+  }
   await switchView('Resize table')
   await expect(databaseBlock.locator('table')).toBeVisible()
   await expect(databaseBlock.locator('table')).toContainText('2026-10-12')
+  for (const [, title, start] of promotedPoints) {
+    await expect(databaseBlock.locator('tbody tr').filter({ hasText: title })).toContainText(`${start} → ${start}`)
+  }
   await switchView('Resize dates')
   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
   const afterTableBounds = await barFor('p113b-range').boundingBox()
   if (!afterTableBounds) throw new Error('Expected Timeline geometry after returning from Table')
   expect(Math.abs(afterTableBounds.width - beforeTableBounds.width)).toBeLessThanOrEqual(1)
+  for (const [id] of promotedPoints) {
+    const bounds = await barFor(id).boundingBox()
+    if (!bounds) throw new Error(`Expected promoted range after Table switch for ${id}`)
+    expect(Math.abs(bounds.x - promotedBeforeTable.get(id)!.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(bounds.width - promotedBeforeTable.get(id)!.width)).toBeLessThanOrEqual(1)
+  }
   const beforeReloadBounds = afterTableBounds
   await page.reload()
   await expect.poll(() => api.records.find(item => item.id === 'p113b-range')?.properties[date.id]).toEqual({ start: '2026-10-12', end: '2026-10-16' })
@@ -294,6 +313,15 @@ test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, a
   expect(Math.abs(afterReloadBounds.x - beforeReloadBounds.x)).toBeLessThanOrEqual(1)
   expect(Math.abs(afterReloadBounds.width - beforeReloadBounds.width)).toBeLessThanOrEqual(1)
   await expect(databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="p113b-range"] [data-property-id="${date.id}"]`)).toContainText('2026-10-12 → 2026-10-16')
+  for (const [id, , start] of promotedPoints) {
+    const bounds = await barFor(id).boundingBox()
+    if (!bounds) throw new Error(`Expected promoted range after reload for ${id}`)
+    expect(Math.abs(bounds.x - promotedBeforeTable.get(id)!.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(bounds.width - promotedBeforeTable.get(id)!.width)).toBeLessThanOrEqual(1)
+    await expect(barFor(id)).toHaveAttribute('data-kind', 'range')
+    await expect(barFor(id)).toHaveAttribute('data-marker', 'false')
+    await expect(databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="${id}"] [data-property-id="${date.id}"]`)).toContainText(`${start} → ${start}`)
+  }
   expect(runtimeErrors).toEqual([])
 })
 
@@ -8214,15 +8242,27 @@ test(`P11.3A drag preview does not rebuild ${total}-row Timeline projections or 
     const bars = [...root.querySelectorAll<HTMLElement>('[data-testid="timeline-bar"]')]
     const otherBars = bars.filter(bar => bar.dataset.recordId !== targetRecordId)
     if (!setup || !Array.isArray(setup.projectedItems) || !(setup.temporalMap instanceof Map) || !Array.isArray(setup.rowGeometry) || !(setup.frozenDisplayMap instanceof Map) || !otherBars.length) throw new Error('Expected complete Timeline projections and multiple mounted bars')
-    const mutationState = { count: 0, updatedHooks: 0 }
+    const mutationState = { count: 0, updatedHooks: 0, activeMutations: 0, activeUpdatedHooks: 0, stableMutations: 0 }
     const otherComponents = otherBars.map(bar => (bar as HTMLElement & { __vueParentComponent?: { u?: Array<() => void> } }).__vueParentComponent)
     if (otherComponents.some(component => !component)) throw new Error('Expected every unrelated bar to expose its Vue instance for update-hook evidence')
     for (const component of otherComponents) component!.u = [...(component!.u ?? []), () => { mutationState.updatedHooks += 1 }]
+    const activeBar = bars.find(bar => bar.dataset.recordId === targetRecordId)!
+    const activeComponent = (activeBar as HTMLElement & { __vueParentComponent?: { u?: Array<() => void> } }).__vueParentComponent
+    if (!activeComponent) throw new Error('Expected active bar Vue instance')
+    activeComponent.u = [...(activeComponent.u ?? []), () => { mutationState.activeUpdatedHooks += 1 }]
+    const rulerTicks = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-ruler-tick')]
+    const frozenRows = [...root.querySelectorAll<HTMLElement>('[data-timeline-frozen-row]')]
+    if (!rulerTicks.length || !frozenRows.length) throw new Error('Expected mounted ruler ticks and Frozen rows')
     const observer = new MutationObserver(mutations => { mutationState.count += mutations.length })
     for (const bar of otherBars) observer.observe(bar, { attributes: true, childList: true, subtree: true, characterData: true })
+    const activeObserver = new MutationObserver(mutations => { mutationState.activeMutations += mutations.length })
+    activeObserver.observe(activeBar, { attributes: true, childList: true, subtree: true, characterData: true })
+    const stableObserver = new MutationObserver(mutations => { mutationState.stableMutations += mutations.length })
+    for (const node of [...rulerTicks, ...frozenRows]) stableObserver.observe(node, { attributes: true, childList: true, subtree: true, characterData: true })
     ;(window as Window & { __p113aPreviewSnapshot?: Record<string, unknown> }).__p113aPreviewSnapshot = {
       projectedItems: setup.projectedItems, temporalMap: setup.temporalMap, rowGeometry: setup.rowGeometry,
-      frozenDisplayMap: setup.frozenDisplayMap, otherBars, otherComponents, observer, mutationState,
+      frozenDisplayMap: setup.frozenDisplayMap, otherBars, otherComponents, observer, activeObserver, stableObserver,
+      activeBar, rulerTicks, frozenRows, mutationState,
     }
   }, targetRecordId)
   await page.mouse.move(stableX + pxPerMs('month') * 86_400_000, stableY, { steps: 4 })
@@ -8235,6 +8275,10 @@ test(`P11.3A drag preview does not rebuild ${total}-row Timeline projections or 
     if (!setup || !before) throw new Error('Expected stored 500-row Timeline preview snapshot')
     const mutations = before.observer.takeRecords()
     before.observer.disconnect()
+    const activeMutations = before.activeObserver.takeRecords().length + before.mutationState.activeMutations
+    before.activeObserver.disconnect()
+    const stableMutations = before.stableObserver.takeRecords().length + before.mutationState.stableMutations
+    before.stableObserver.disconnect()
     return {
       projectedItems: setup.projectedItems === before.projectedItems,
       temporalMap: setup.temporalMap === before.temporalMap,
@@ -8243,9 +8287,17 @@ test(`P11.3A drag preview does not rebuild ${total}-row Timeline projections or 
       unrelatedBarMutations: mutations.length + before.mutationState.count,
       unrelatedBarUpdatedHooks: before.mutationState.updatedHooks,
       unrelatedBarComponentsSame: before.otherBars.every((bar: HTMLElement, index: number) => bar.__vueParentComponent === before.otherComponents[index]),
+      activeBarMutations: activeMutations,
+      activeBarUpdatedHooks: before.mutationState.activeUpdatedHooks,
+      rulerTicksSame: [...root.querySelectorAll('.eotion-timeline-ruler-tick')].every((node, index) => node === before.rulerTicks[index]) && root.querySelectorAll('.eotion-timeline-ruler-tick').length === before.rulerTicks.length,
+      frozenRowsSame: [...root.querySelectorAll('[data-timeline-frozen-row]')].every((node, index) => node === before.frozenRows[index]) && root.querySelectorAll('[data-timeline-frozen-row]').length === before.frozenRows.length,
+      rulerAndFrozenMutations: stableMutations,
     }
   })
-  expect(unchanged).toMatchObject({ projectedItems: true, temporalMap: true, rowGeometry: true, frozenDisplayMap: true, unrelatedBarMutations: 0, unrelatedBarUpdatedHooks: 0, unrelatedBarComponentsSame: true })
+  expect(unchanged).toMatchObject({ projectedItems: true, temporalMap: true, rowGeometry: true, frozenDisplayMap: true, unrelatedBarMutations: 0, unrelatedBarUpdatedHooks: 0, unrelatedBarComponentsSame: true, rulerTicksSame: true, frozenRowsSame: true, rulerAndFrozenMutations: 0 })
+  expect(unchanged.activeBarMutations).toBeGreaterThan(0)
+  expect(unchanged.activeBarUpdatedHooks).toBeGreaterThan(0)
+  console.log(`P11.3D ${total} drag preview evidence: ${JSON.stringify(unchanged)}`)
   expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(0)
   expect(api.records.find(item => item.id === targetRecordId)?.properties[date.id]).toBe('2026-10-13')
   await page.keyboard.press('Escape')
@@ -8524,15 +8576,27 @@ for (const total of [100, 500] as const) {
       const bars = [...root.querySelectorAll<HTMLElement>('[data-testid="timeline-bar"]')]
       const otherBars = bars.filter(bar => bar.dataset.recordId !== id)
       if (!setup || !Array.isArray(setup.projectedItems) || !(setup.temporalMap instanceof Map) || !Array.isArray(setup.rowGeometry) || !(setup.frozenDisplayMap instanceof Map) || !otherBars.length) throw new Error('Expected Timeline projections, Frozen Table projection, and unrelated mounted bars')
-      const state = { mutations: 0, updated: 0 }
+      const state = { mutations: 0, updated: 0, activeMutations: 0, activeUpdated: 0, stableMutations: 0 }
       const components = otherBars.map(bar => (bar as HTMLElement & { __vueParentComponent?: { u?: Array<() => void> } }).__vueParentComponent)
       if (components.some(component => !component)) throw new Error('Expected unrelated bar Vue instances for updated-hook evidence')
       for (const component of components) component!.u = [...(component!.u ?? []), () => { state.updated += 1 }]
+      const activeBar = bars.find(bar => bar.dataset.recordId === id)!
+      const activeComponent = (activeBar as HTMLElement & { __vueParentComponent?: { u?: Array<() => void> } }).__vueParentComponent
+      if (!activeComponent) throw new Error('Expected active bar Vue instance')
+      activeComponent.u = [...(activeComponent.u ?? []), () => { state.activeUpdated += 1 }]
+      const rulerTicks = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-ruler-tick')]
+      const frozenRows = [...root.querySelectorAll<HTMLElement>('[data-timeline-frozen-row]')]
+      if (!rulerTicks.length || !frozenRows.length) throw new Error('Expected mounted ruler ticks and Frozen rows')
       const observer = new MutationObserver(records => { state.mutations += records.length })
       for (const bar of otherBars) observer.observe(bar, { attributes: true, childList: true, subtree: true, characterData: true })
+      const activeObserver = new MutationObserver(records => { state.activeMutations += records.length })
+      activeObserver.observe(activeBar, { attributes: true, childList: true, subtree: true, characterData: true })
+      const stableObserver = new MutationObserver(records => { state.stableMutations += records.length })
+      for (const node of [...rulerTicks, ...frozenRows]) stableObserver.observe(node, { attributes: true, childList: true, subtree: true, characterData: true })
       ;(window as Window & { __p113bPerformance?: Record<string, unknown> }).__p113bPerformance = {
         projectedItems: setup.projectedItems, temporalMap: setup.temporalMap, rowGeometry: setup.rowGeometry,
-        frozenDisplayMap: setup.frozenDisplayMap, otherBars, components, observer, state,
+        frozenDisplayMap: setup.frozenDisplayMap, otherBars, components, observer, activeObserver, stableObserver,
+        activeBar, rulerTicks, frozenRows, state,
       }
     }, items[0]!.id)
     await page.mouse.move(x + pxPerMs('month') * 86_400_000, y, { steps: 4 })
@@ -8545,6 +8609,10 @@ for (const total of [100, 500] as const) {
       if (!setup || !before) throw new Error('Expected captured P11.3B resize preview evidence')
       const mutationCount = before.observer.takeRecords().length + before.state.mutations
       before.observer.disconnect()
+      const activeMutations = before.activeObserver.takeRecords().length + before.state.activeMutations
+      before.activeObserver.disconnect()
+      const stableMutations = before.stableObserver.takeRecords().length + before.state.stableMutations
+      before.stableObserver.disconnect()
       return {
         projectedItems: setup.projectedItems === before.projectedItems,
         temporalMap: setup.temporalMap === before.temporalMap,
@@ -8553,9 +8621,17 @@ for (const total of [100, 500] as const) {
         unrelatedBarMutations: mutationCount,
         unrelatedBarUpdatedHooks: before.state.updated,
         unrelatedBarComponentsSame: before.otherBars.every((bar: HTMLElement, index: number) => bar.__vueParentComponent === before.components[index]),
+        activeBarMutations: activeMutations,
+        activeBarUpdatedHooks: before.state.activeUpdated,
+        rulerTicksSame: [...root.querySelectorAll('.eotion-timeline-ruler-tick')].every((node, index) => node === before.rulerTicks[index]) && root.querySelectorAll('.eotion-timeline-ruler-tick').length === before.rulerTicks.length,
+        frozenRowsSame: [...root.querySelectorAll('[data-timeline-frozen-row]')].every((node, index) => node === before.frozenRows[index]) && root.querySelectorAll('[data-timeline-frozen-row]').length === before.frozenRows.length,
+        rulerAndFrozenMutations: stableMutations,
       }
     })
-    expect(evidence).toEqual({ projectedItems: true, temporalMap: true, rowGeometry: true, frozenDisplayMap: true, unrelatedBarMutations: 0, unrelatedBarUpdatedHooks: 0, unrelatedBarComponentsSame: true })
+    expect(evidence).toMatchObject({ projectedItems: true, temporalMap: true, rowGeometry: true, frozenDisplayMap: true, unrelatedBarMutations: 0, unrelatedBarUpdatedHooks: 0, unrelatedBarComponentsSame: true, rulerTicksSame: true, frozenRowsSame: true, rulerAndFrozenMutations: 0 })
+    expect(evidence.activeBarMutations).toBeGreaterThan(0)
+    expect(evidence.activeBarUpdatedHooks).toBeGreaterThan(0)
+    console.log(`P11.3D ${total} resize preview evidence: ${JSON.stringify(evidence)}`)
     expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(0)
     expect(api.records.find(candidate => candidate.id === items[0]!.id)?.properties[date.id]).toBe('2026-10-13')
     await page.keyboard.press('Escape')
@@ -8832,6 +8908,32 @@ test('P11.3C Escape and pointercancel cancel previews with zero PATCH and keep f
   expect(api.records.find(item => item.id === range.id)?.properties[date.id]).toEqual({ start: '2026-10-13', end: '2026-10-15' })
   await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
   expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(before + 1)
+
+  for (const cancellation of ['blur', 'hidden'] as const) {
+    const bounds = await rangeBar.boundingBox()
+    if (!bounds) throw new Error(`Expected range bar before ${cancellation} cancellation`)
+    const x = bounds.x + bounds.width / 2
+    const y = bounds.y + bounds.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x + dayPixels, y, { steps: 4 })
+    await expect(rangeBar).toHaveAttribute('data-interaction-phase', 'previewing')
+    if (cancellation === 'blur') {
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+    } else {
+      await page.evaluate(() => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
+        document.dispatchEvent(new Event('visibilitychange'))
+        Reflect.deleteProperty(document, 'visibilityState')
+      })
+    }
+    await expect(rangeBar).toHaveAttribute('data-interaction-phase', 'idle')
+    await expect(rangeBar).not.toHaveAttribute('data-preview-date', /.+/u)
+    await page.mouse.up()
+    await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
+    expect(cellPatches()).toBe(before + 1)
+    expect(api.records.find(item => item.id === range.id)?.properties[date.id]).toEqual({ start: '2026-10-13', end: '2026-10-15' })
+  }
 })
 
 test('P11.3C pending mutation shows a quiet saving state, blocks the same record, and leaves other records interactive', async ({ page, context }) => {
@@ -8870,6 +8972,7 @@ test('P11.3C pending mutation shows a quiet saving state, blocks the same record
   expect(await page.evaluate(() => document.activeElement !== document.body && document.activeElement !== null)).toBe(true)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
   expect(cellPatches()).toBe(beforePatches + 1)
+  await screenshot(page, 'p113d-pending-desktop-light')
 
   const blockedPatches = cellPatches()
   const pendingPreview = await pendingBar.getAttribute('data-preview-date')
@@ -9095,6 +9198,7 @@ test('P11.3C conflict and network failures reconcile to canonical dates without 
   await expect(bar).not.toHaveAttribute('data-preview-date', /.+/u)
   await expect(bar).toHaveAttribute('title', /2026-10-20/u)
   expect(cellPatches()).toBe(1)
+  await screenshot(page, 'p113d-conflict-desktop-light')
 
   // HTTP 500 has an unknown result; refresh confirms the unchanged canonical date.
   api.failCellUpdates = 1
@@ -9275,9 +9379,29 @@ test('P11.3C view switch during preview or pending keeps identity fences, drafts
   // racing the request. The stale-callback fence is covered by the logic spec.
   await expect(databaseBlock.getByRole('button', { name: '切换视图' })).toBeDisabled()
   await expect(databaseBlock.getByTestId('database-timeline')).toBeVisible()
+  const realmOrigin = await page.evaluate(() => {
+    ;(window as Window & { __p113dRealm?: object }).__p113dRealm = {}
+    return performance.timeOrigin
+  })
+  const oldBar = await bar.elementHandle()
+  await page.goto(`/#/app/${workspace.id}/page/${item.pageId}`)
+  await expect(databaseBlock).toHaveCount(0)
+  await page.goto(`/#/app/${workspace.id}/page/${pageRecord.id}`)
+  await expect(bar).toBeVisible()
+  expect(await page.evaluate(() => performance.timeOrigin)).toBe(realmOrigin)
+  expect(await page.evaluate(() => Boolean((window as Window & { __p113dRealm?: object }).__p113dRealm))).toBe(true)
+  expect(await oldBar?.evaluate(element => element.isConnected)).toBe(false)
+  const newBar = await bar.elementHandle()
+  await expect(bar).toHaveAttribute('data-interaction-phase', 'idle')
+  await expect(bar).toHaveAttribute('data-saving', 'false')
   api.releaseCellUpdateResponse()
   api.holdCellUpdateResponse = false
   await expect.poll(() => canonicalValue()).toBe('2026-10-14')
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  expect(await newBar?.evaluate(element => element.isConnected)).toBe(true)
+  await expect(bar).toHaveAttribute('data-interaction-phase', 'idle')
+  await expect(bar).toHaveAttribute('data-saving', 'false')
+  await expect(bar).not.toHaveAttribute('data-preview-date', /.+/u)
   await expect(databaseBlock.getByRole('button', { name: '切换视图' })).toBeEnabled()
   await switchView('Fence table')
   await expect(databaseBlock.locator('table')).toContainText('2026-10-14')
