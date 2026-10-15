@@ -1,5 +1,45 @@
 # Handoff
 
+## 2026-10-16 P11.4A Dependency Read Model + Lines（完成并停止）
+
+**Final verdict：PASS（P11.4A Scope）。P11.4B/C/D 未开始。** 基线2f9734b，分支
+codex/p11-4a-dependency-read-lines，开始工作树干净。实现提交552207a、5dd2c03，文档验收
+提交包含本节。报告：[P11.4A](../docs/verification/p11-4a-dependency-read-lines.md)，架构§28。
+版本仍0.0.1，P11目标0.0.3；不声明P11.4、P11 Final或发布完成。
+
+唯一数据源为当前View已加载canonical records的现有self Relation string[] cell。
+depends-on target→owner，blocks owner→target；shiftMode/avoidWeekends只读不执行。
+无新实体/API/schema/service request；无Relation/Date写入。P11.1D lifecycle fence未改。
+缺失/不可读/非self属性fail closed，duplicate/self/missing/filtered/unloaded目标过滤，不补GET。
+edge ID由property/pred/succ派生；geometry复用layoutTimelineItem raw端点和共享Bar center Y。
+支持point/range、forward/backward、clipped/viewport外canvas内端点；row span与共享window相交
+才创建path组件，含跨窗边。Vue只呈现；Grid<Dependency<Today<Bar/preview，不抢pointer/focus。
+
+Viewport reactive Map按record key接收现有Bar preview，逐edge组件只订阅两端key。
+四组100/500真实pointer预览中Record/temporal/dependency/geometry/window refs稳定，无关path
+累计DOM0、move PATCH0。100 sparse/medium：11/197 edges与paths、100 rows；500：51/997
+edges、3/59 paths、28 rows。额外Record GET/record-options resolve0（测试排除Relation展示列，
+隔离既有标题resolver）；generic records恰为4/20页。不是FPS benchmark。
+
+本轮logic59/59（新增dependency7），Domain48/48、Contracts25/25，完整Database Web153/153
+（新增A8，单worker/retries0，3.9min）；包含P11.3 drag/resize/no-op/409/round-trip/Start-End只读
+及identity/unknown/offline。Web typecheck/build、diff/UTF8无BOM通过；build有既有chunk提示。
+独立review最终0 P1/P2 blocker。视觉发现point箭头被diamond遮住，marker refX17让箭尖提前10px，
+保留共享anchor；interaction复验与最终完整Database均通过，主Agent视检最终Desktop/390 Light/Dark。
+
+原始证据：TEMP/eotion-p114a-database-full-dc363e89496a4b9685581fab4de83896（153项原始日志、
+list、独立artifacts、最终typecheck）；TEMP/eotion-p114a-web-1792084627207-4648（最终6张PNG）。
+其余logic/domain/focused及初轮harness失败日志见报告，未覆盖；初轮把标题resolver误计N+1、
+闭包/计数/overlay selector问题已修正。首张390侧栏动画中间态已弃用并等待settled重拍。
+Vite有mock seam sync snapshot代理7137连接拒绝日志，相关测试通过，不称真实API联通。
+未跑真实API/Mongo、完整Product、native、正式FPS、baseline截图diff、P11.4B/C/D/P11.5/Final/发布。
+
+P11.4B精确入口：TimelineDependencyOptions、timeline/dependency.ts；现有
+DatabaseNodeView.setRelation → productDatabases.updateProductDatabaseRecordCell →
+DatabaseService.updateRecordCell/assertRelationValues 的Relation Cell CAS/事务，以及
+prepareTimelineBarDrag/moveTimelineRecord的scope/identity fence。独立定义创建/删除/拖线、
+cycle/失败语义和验收；不把read renderer当成mutation授权，auto shift仍属C。本轮到此停止。
+
 ## 2026-10-16 P11.3D Timeline Mutation Final Acceptance（完成并停止）
 
 **Final verdict PASS；P11.3 Timeline Mutation COMPLETE，A/B/C/D PASS。** 基线548f9eb，

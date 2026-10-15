@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；完成并停止，P11.4 未开始**
+> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS，完成并停止；P11.4B/C/D 未开始**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -991,16 +991,31 @@ Dependency/auto shift、bulk、Undo/Redo、offline queue、Calendar、settings U
 
 此验收不代表 P11 Timeline COMPLETE、Dependency COMPLETE 或 `0.0.3` 可发布；不改版本。
 
-### P11.4 Frozen Table + Dependencies（尚未开始）
+### P11.4 Dependency（分期冻结）
 
-完成：
+Frozen Table 的显示、独立列投影与共享行对齐已由 P11.2C 完成。Dependency 按以下边界独立交付：
 
-- show/hide table
-- independent table projection
-- row alignment
-- dependency connector / lines
-- dependency relation mutation
-- bounded automatic date shift
+| 单元 | 范围 |
+| --- | --- |
+| P11.4A Dependency Read Model + Lines | **Scope PASS（2026-10-16）**：读取现有 self Relation，纯投影、共享 Bar geometry 与只读箭头 |
+| P11.4B Dependency Editing | 后续独立授权：创建、删除、拖线及 Relation mutation |
+| P11.4C Auto Shift Policies | 后续独立授权：shiftMode / avoidWeekends 执行与原子日期联动 |
+| P11.4D Dependency Final Acceptance | 后续独立验收整个 Dependency 能力 |
+
+P11.4A 的唯一数据来源是当前 View 已加载 canonical records 的 Relation `string[]` cell，
+配置沿用 §21.4；不增加 entity、API、collection 或持久 ID。`depends-on` 将 cell owner A
+引用 B 投影为 **B → A**；`blocks` 投影为 **A → B**。shiftMode / avoidWeekends 保留原值且不执行。
+缺失、不可读、非 self Relation 或失效引用 fail closed，不猜测其他属性；重复与 self edge 跳过。
+缺失、filtered-out、unloaded target 在投影中过滤，不补发请求或扩大分页，也不伪造 Bar。
+
+Dependency anchors 来自共享 Bar raw geometry：range 出端为 visual end、入端为 visual start，
+point 为 marker center，Y 为共享 Bar center。纯 orthogonal routing 支持 forward/backward 与
+上下跨行；只在两端 canvas 可解析、row span 与共享行窗口相交时呈现。viewport 外仍在 bounded
+canvas 的端点可以保留，SVG 负责裁剪。active drag/resize preview 按 record key 只更新关联边，
+不重解析 Relation 或全量 Record projection。SVG 不接收 pointer/focus；Today、Bar、handles 和
+preview 层保持在其上方。验收和精确限制见 [P11.4A](verification/p11-4a-dependency-read-lines.md)。
+
+P11.4A 完成后停止，不自动进入 P11.4B；不声明 P11.4、P11 Final 或 0.0.3 已完成。
 
 ### P11.5 Responsive + Visual Polish
 

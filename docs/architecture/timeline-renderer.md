@@ -1,6 +1,6 @@
 # P11.2 Timeline Renderer 架构
 
-> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS；P11.3 Mutation COMPLETE**（Read 2026-10-13、Mutation 2026-10-16；实施/验收记录见 §20–§27）
+> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS；P11.3 Mutation COMPLETE；P11.4A Dependency Read Lines Scope PASS**（Read 2026-10-13、Mutation / Dependency A 2026-10-16；实施/验收记录见 §20–§28）
 > 基线：`25bd279585772bfdce43799de71fb3c3f5ba5436`（`master`），P11.1D PASS 之后。
 > 版本背景：当前版本 `0.0.1`，P11 目标版本 `0.0.3`。§1–§19 保留 P11.2.0 的架构基线；该阶段仅修改文档。P11.2A/B/C 的产品实施与验证见 §20–§22，API、schema、sync、MCP、依赖与版本保持。
 
@@ -594,3 +594,52 @@ root 与 scope fence 保护。真实 UI、同 document route 生命周期与 log
 独立 Start/End 两 Property 继续 readable/openable 且 mutation read-only；当前 generic Record API
 没有 atomic multi-cell mutation，不使用 sequential PATCH workaround。Dependency、auto shift、
 bulk、Undo/Redo、offline queue、Calendar 与视觉 polish 不属于本轮；P11.4 未开始。
+
+## 28. P11.4A Dependency Read Model + Lines
+
+数据路径为已授权的当前 View canonical records / schema / `options.timeline.dependency`
+→ `timeline/dependency.ts` 纯投影 → 共享 Bar geometry → 纯 routing →
+`TimelineDependencyLayer` / `TimelineDependencyPath`。不新增 domain entity、API、Mongo schema、
+持久 ID 或业务数据请求。P11.1D Property Lifecycle Fence 仍负责服务端硬引用；renderer 只对
+当前已授权 schema 防御校验，不绕过它请求隐藏属性或记录。
+
+`projectTimelineDependencies` 独立验证冻结 Timeline options 与所引用 Property 的存在、
+当前 Database 归属、原生 Relation 类型和 self target。只读取实际 Relation `string[]` wire
+shape；空值/坏值、重复链接、self link、当前结果中不存在的 target 跳过。不会猜测另一个属性。
+`depends-on` 是 target predecessor → owner successor；`blocks` 是 owner → target。
+edge ID 由 `[propertyId, predecessorRecordId, successorRecordId]` 的 JSON tuple 派生，按 ID
+确定排序。只保留 Record IDs，不复制 Date，也不保存 unresolved edge。
+
+未加载、被 filter 排除、已删除或不可见的 target 采用同一种 fail-closed 结果：过滤该边，
+不补 GET、不扩大分页、不创建假 Bar。后续正常加载分页或 View refresh 后重新投影。
+shiftMode / avoidWeekends 仍由原配置保存与校验，本轮不执行。
+
+`dependencyGeometryById` 对 scheduled items 调用既有 `layoutTimelineItem`，与 Bar 消费同一
+temporal map / transform / row index。无 dependency 时不建立额外的全量 geometry。
+range 出端使用 rawX + rawWidth（包含原有 all-day inclusive visual end），入端 rawX；
+point / zero-width marker 使用 rawX center；Y 使用 top + height / 2。
+不重复日期解析或 Date→pixel 数学，不读取 DOM bounding box。raw anchor 超出 bounded canvas
+时不画完整边；仅在 viewport 外但仍在 canvas 内时保留，并由 SVG 裁剪。
+
+routing 为确定的 orthogonal path：forward 使用中间折点；backward / 很近的端点先水平退出，
+通过共享 row geometry 推导的行间隙绕行，再水平进入 successor。支持 predecessor 在上/下、
+远近行及不同 Record 的极近端点，不为排期倒序改写 Date。
+
+分层与性能：
+
+- projected edges 只依赖 canonical records / schema / config。
+- canonical geometry map 按共享 transform 生成；row-window 选择两端可解析且 row span 与窗口
+  相交的边（含两端窗外但跨越窗口），并保留 isolated focused row 关联边。
+- SVG 仅创建 window-relevant edge 组件；不做 edges × DOM rows 扫描。投影为 O(N + links)
+  加稳定排序，canonical layout O(N)，window selection O(E)；路径不引入 DOM measurement。
+- `TimelineBar` 将现有 controller 最终 preview geometry 只读发给 Viewport，稳定的 reactive
+  Map 按 record key 存储 override。每个 Path computed 只读取自身两个 key，pointermove 只
+  使 incident edges 失效；不 clone Map、不重解析 Relation、不重建 Record projection。
+- preview 清除、取消、卸载或 scope 切换时删除 override；pending 沿用原 Bar preview，确认后
+  由 generic canonical refresh 更新。没有第二套 mutation / 日期状态机。
+- Grid < Dependency SVG < Today < Bars < Handles / Preview。SVG、path 不可 focus、
+  `pointer-events:none`，箭头 marker 使用每个实例唯一 ID；线色复用现有 text-secondary token。
+  箭尖沿末段提前 10px 显示，避免被 point 菱形遮住；path 本身仍到达原始共享 anchor。
+
+验收与限制见 [P11.4A](../verification/p11-4a-dependency-read-lines.md)。本轮到 A 为止；
+P11.4B Editing、P11.4C Auto Shift、P11.4D Final Acceptance 都需独立后续任务。
