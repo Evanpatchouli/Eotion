@@ -23,6 +23,8 @@ P11.4C 增加通用 Database 能力；不引入 Timeline Record、独立调度�
 
 整批成功时 Database version 只加 1；每个实际发生变化的 Record 只加 1，同 Record 的多 Cell 先合并再单次 CAS。未变化的 Record 不 bump；全 no-op 不 bump Database。即使 no-op 也验证客户端版本。响应返回 mutationId、canonical Database 与目标 Records 的 stored Cells、Page 标题和 pageVersion 投影；不承诺包含 Formula/Rollup，派生值通过后续 generic View records read 获取，继续保留原有派生读取上限。
 
+对已存储的显式 `null` 再提交 `null`，保留原存储值并视为 no-op；对缺失 Cell 清空同样不 bump。清空非空 Cell 才发生实际变化。混合 batch 中，空值 no-op 的 Record 仍保持版本，只有其他实际变化的 Record 增加版本；no-op 事务仍返回 committed receipt。
+
 ## 单事务执行
 
 服务端先验证认证/Workspace 写权限与 Database 归属。业务执行使用一个 Mongo snapshot transaction：读取 canonical Database、Properties、Records 和可选 View，验证 Database/Record/View CAS 与真实 Property/Relation/value，计算并合并计划，然后 Database 一次 CAS、每 changed Record 一次 CAS、同事务提交 receipt。任一错误整体回滚；没有顺序单 Cell PATCH、分段提交或 Web 发回可信 graph plan。

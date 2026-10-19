@@ -10,6 +10,8 @@ import { getConnectionToken, MongooseModule } from '@nestjs/mongoose'
 import type { Connection } from 'mongoose'
 import { HttpApiModule } from './http-api.module'
 import { DatabaseRecordRepository } from '../server-domain/repositories/database.repository'
+import { UserRepository } from '../server-domain/repositories/user.repository'
+import { DatabaseService } from '../server-domain/services/database.service'
 
 type Result = { status: number; body: Record<string, any>; headers: Headers }
 
@@ -368,6 +370,119 @@ test('generic cell batch is atomic, versioned, scoped, and has durable receipts'
         context: { viewId: 'batch-no-shift-view', expectedViewVersion: noShiftView.body.view.version } })
     assert.equal(noShiftCycle.status, 201, JSON.stringify(noShiftCycle.body))
     assert.equal(noShiftCycle.body.records.length, 1)
+  } finally {
+    try { await connection?.dropDatabase() } finally {
+      await app?.close()
+      if (previousUri === undefined) delete process.env.MONGODB_URI
+      else process.env.MONGODB_URI = previousUri
+      if (previousOrigin === undefined) delete process.env.WEB_ORIGIN
+      else process.env.WEB_ORIGIN = previousOrigin
+    }
+  }
+})
+
+test('null cell clears preserve stored explicit nulls and only bump changed records', async t => {
+  const source = process.env.P4_TEST_MONGODB_URI?.trim()
+  if (!source) return t.skip('P4_TEST_MONGODB_URI must name an isolated replica set')
+  const previousUri = process.env.MONGODB_URI
+  const previousOrigin = process.env.WEB_ORIGIN
+  const uri = new URL(source)
+  uri.pathname = `/eotion_cell_null_${randomUUID().replaceAll('-', '')}`
+  process.env.MONGODB_URI = uri.toString()
+  process.env.WEB_ORIGIN = 'https://trusted.example.test'
+  let app: Awaited<ReturnType<typeof NestFactory.create>> | undefined
+  let connection: Connection | undefined
+  try {
+    @Module({ imports: [ConfigModule.forRoot({ isGlobal: true }), MongooseModule.forRoot(process.env.MONGODB_URI), HttpApiModule] })
+    class TestModule {}
+    app = await NestFactory.create(TestModule, new FastifyAdapter(), { logger: false })
+    app.setGlobalPrefix('api')
+    await app.listen(0, '127.0.0.1')
+    const address = app.getHttpServer().address()
+    assert.ok(address && typeof address === 'object')
+    const base = `http://127.0.0.1:${address.port}`
+    connection = app.get<Connection>(getConnectionToken())
+    const owner = { email: 'null-cell-owner@example.test', password: 'correct horse battery staple' }
+    assert.equal((await request(base, '/api/auth/register', 'POST', undefined, owner)).status, 201)
+    const login = await request(base, '/api/auth/login', 'POST', undefined, owner)
+    const cookie = login.headers.get('set-cookie')!.split(';', 1)[0]!
+    assert.equal((await request(base, '/api/workspaces', 'POST', cookie, { id: 'null-ws', name: 'Nulls' })).status, 201)
+    assert.equal((await request(base, '/api/workspaces/null-ws/pages', 'POST', cookie,
+      { id: 'null-home', parentPageId: null, title: 'Home', orderKey: 'a' })).status, 201)
+    const route = '/api/workspaces/null-ws/databases/null-db'
+    assert.equal((await request(base, '/api/workspaces/null-ws/pages/null-home/databases', 'POST', cookie,
+      { id: 'null-db', name: 'Nulls', titlePropertyId: 'null-title', viewId: 'null-view', blockId: 'null-block', orderKey: 'a', parentBlockId: null })).status, 201)
+    const snapshot = async () => {
+      const result = await request(base, `${route}/views/null-view/records`, 'GET', cookie)
+      assert.equal(result.status, 200)
+      return result.body
+    }
+    const rows = (data: any) => data.records as any[]
+    const row = (data: any, id: string) => rows(data).find(record => record.id === id)
+    let state = await snapshot()
+    const property = await request(base, `${route}/properties`, 'POST', cookie,
+      { id: 'null-value', name: 'Value', type: 'text', expectedDatabaseVersion: state.database.version })
+    assert.equal(property.status, 201, JSON.stringify(property.body))
+    state = await snapshot()
+
+    assert.equal((await request(base, '/api/workspaces/null-ws/pages', 'POST', cookie,
+      { id: 'null-record-page', parentPageId: null, title: 'Explicit null', orderKey: 'b' })).status, 201)
+    const user = await app.get(UserRepository).findAuthenticationByEmail(owner.email)
+    assert.ok(user)
+    await app.get(DatabaseService).createRecord(user.user.id, 'null-ws', 'null-db', {
+      id: 'null-record', pageId: 'null-record-page', properties: { 'null-title': 'Explicit null', 'null-value': null },
+    })
+    const repository = app.get(DatabaseRecordRepository)
+    const storedNull = await repository.findInDatabase('null-ws', 'null-db', 'null-record')
+    assert.ok(storedNull && Object.hasOwn(storedNull.properties, 'null-value'))
+    assert.equal(storedNull.properties['null-value'], null, 'the legitimate record create path stored an explicit null')
+
+    assert.equal((await request(base, `${route}/records`, 'POST', cookie,
+      { id: 'value-record', pageId: 'value-record-page', title: 'Value record', orderKey: 'c', properties: { 'null-value': 'present' } })).status, 201)
+    state = await snapshot()
+    const mutation = (data: any, id: string, records: unknown[]) => ({ mutationId: id, expectedDatabaseVersion: data.database.version, records })
+    const clear = (data: any, id: string) => ({ recordId: id, expectedRecordVersion: row(data, id).version,
+      cells: [{ propertyId: 'null-value', value: null }] })
+
+    const nullClear = await request(base, `${route}/cell-mutations`, 'POST', cookie,
+      mutation(state, 'null-clear-noop', [clear(state, 'null-record')]))
+    assert.equal(nullClear.status, 201, JSON.stringify(nullClear.body))
+    assert.equal(nullClear.body.database.version, state.database.version)
+    assert.equal(nullClear.body.records[0].version, row(state, 'null-record').version)
+    assert.equal((await request(base, `${route}/cell-mutations/null-clear-noop`, 'GET', cookie)).body.status, 'committed')
+    const afterNullClear = await repository.findInDatabase('null-ws', 'null-db', 'null-record')
+    assert.equal(afterNullClear?.properties['null-value'], null)
+    assert.equal(afterNullClear?.version, row(state, 'null-record').version)
+
+    const beforeMixed = await snapshot()
+    const mixed = await request(base, `${route}/cell-mutations`, 'POST', cookie,
+      mutation(beforeMixed, 'null-clear-mixed-change', [clear(beforeMixed, 'null-record'),
+        { recordId: 'value-record', expectedRecordVersion: row(beforeMixed, 'value-record').version,
+          cells: [{ propertyId: 'null-value', value: 'changed' }] }]))
+    assert.equal(mixed.status, 201, JSON.stringify(mixed.body))
+    assert.equal(mixed.body.database.version, beforeMixed.database.version + 1)
+    assert.equal(mixed.body.records.find((record: any) => record.id === 'null-record').version, row(beforeMixed, 'null-record').version)
+    assert.equal(mixed.body.records.find((record: any) => record.id === 'value-record').version, row(beforeMixed, 'value-record').version + 1)
+    assert.equal((await request(base, `${route}/cell-mutations/null-clear-mixed-change`, 'GET', cookie)).body.status, 'committed')
+    const afterMixedNull = await repository.findInDatabase('null-ws', 'null-db', 'null-record')
+    assert.equal(afterMixedNull?.properties['null-value'], null)
+    assert.equal(afterMixedNull?.version, row(beforeMixed, 'null-record').version)
+
+    const beforeClear = await snapshot()
+    const valueClear = await request(base, `${route}/cell-mutations`, 'POST', cookie,
+      mutation(beforeClear, 'nonempty-clear', [clear(beforeClear, 'value-record')]))
+    assert.equal(valueClear.status, 201, JSON.stringify(valueClear.body))
+    assert.equal(valueClear.body.database.version, beforeClear.database.version + 1)
+    assert.equal(valueClear.body.records[0].version, row(beforeClear, 'value-record').version + 1)
+    assert.equal(valueClear.body.records[0].properties['null-value'], undefined)
+    assert.equal((await request(base, `${route}/cell-mutations/nonempty-clear`, 'GET', cookie)).body.status, 'committed')
+    const afterClear = await snapshot()
+    const repeatedClear = await request(base, `${route}/cell-mutations`, 'POST', cookie,
+      mutation(afterClear, 'nonempty-clear-repeat', [clear(afterClear, 'value-record')]))
+    assert.equal(repeatedClear.status, 201, JSON.stringify(repeatedClear.body))
+    assert.equal(repeatedClear.body.database.version, afterClear.database.version)
+    assert.equal(repeatedClear.body.records[0].version, row(afterClear, 'value-record').version)
+    assert.equal((await request(base, `${route}/cell-mutations/nonempty-clear-repeat`, 'GET', cookie)).body.status, 'committed')
   } finally {
     try { await connection?.dropDatabase() } finally {
       await app?.close()

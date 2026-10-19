@@ -670,7 +670,9 @@ export class DatabaseService {
         const property = propertyById.get(cell.propertyId)
         if (!property) throw new NotFoundException('Database property not found')
         if (property.type === 'title' || property.type === 'rollup' || property.type === 'formula') throw new BadRequestException('Title and derived properties are read only in batch mutations')
-        if (cell.value === null) delete values[property.id]
+        if (cell.value === null) {
+          if (values[property.id] !== null) delete values[property.id]
+        }
         else values[property.id] = cell.value
         if (property.type === 'relation') {
           const targetId = (property.config as { targetDatabaseId: string }).targetDatabaseId
