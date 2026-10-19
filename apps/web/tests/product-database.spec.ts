@@ -5215,6 +5215,131 @@ for (const outcome of ['committed', 'not_committed', 'uncertain', 'receipt-read-
   })
 }
 
+for (const action of ['active Date', 'Dependency create'] as const) {
+  for (const outcome of ['committed', 'not_committed', 'uncertain', 'receipt-read-failure'] as const) {
+    test(`P11.4D ${action} reports ${outcome} receipt without retry or guessed root`, async ({ page }) => {
+      const { relation, timeline, api, timelineView } = await p114bFixture(page, 'depends-on', undefined, { cellBatchMutationOutcome: outcome }, 'shift_when_overlapping')
+      const databaseBlock = page.locator(`#database-block-p114b-depends-on-block`)
+      const initialTableReads = api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/views/${timelineView.id}/table`)).length
+      if (action === 'active Date') {
+        const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+        await dragTimelineBar(page, bar, pxPerMs('month') * 4 * 86_400_000)
+      } else {
+        await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+        await page.mouse.up()
+      }
+      await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+      const mutation = p114cBatchPosts(api)[0]!
+      expect(mutation.payload.context).toEqual({ viewId: timelineView.id, expectedViewVersion: 1 })
+      expect(mutation.payload.records).toHaveLength(1)
+      if (action === 'active Date') {
+        expect(mutation.payload.records[0]).toMatchObject({ recordId: 'p114b-a', cells: [{ propertyId: 'root-date' }] })
+      } else {
+        expect(mutation.payload.records[0]).toMatchObject({ recordId: 'p114b-b', cells: [{ propertyId: relation.id, value: ['p114b-a'] }] })
+      }
+      const receiptId = mutation.payload.mutationId as string
+      await expect.poll(() => api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/cell-mutations/${receiptId}`)).length).toBe(1)
+      await expect.poll(() => api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/views/${timelineView.id}/table`)).length).toBeGreaterThan(initialTableReads)
+      expect(p114cBatchPosts(api)).toHaveLength(1)
+      expect(p114cCellPatches(api)).toHaveLength(0)
+      if (outcome === 'committed') {
+        await expect(databaseBlock.getByRole('alert')).toHaveCount(0)
+      } else if (outcome === 'not_committed') {
+        await expect(databaseBlock.getByRole('alert').filter({ hasText: '提交结果已确认未执行，已刷新服务器最新内容。' })).toHaveCount(1)
+      } else {
+        await expect(databaseBlock.getByRole('alert').filter({ hasText: '提交结果暂未确认，请重新加载当前视图。' }).first()).toContainText('提交结果暂未确认，请重新加载当前视图。')
+        if (action === 'active Date') {
+          const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+          const bounds = await bar.boundingBox()
+          if (!bounds) throw new Error('Expected P11.4D read-only Date bar')
+          await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+          await page.mouse.down()
+          await page.mouse.move(bounds.x + bounds.width / 2 + pxPerMs('month') * 4 * 86_400_000, bounds.y + bounds.height / 2, { steps: 4 })
+          await page.mouse.up()
+        } else {
+          await expect(timeline.locator('[data-testid="timeline-dependency-handle"]')).toHaveCount(0)
+        }
+        await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+      }
+    })
+  }
+}
+
+for (const action of ['active Date', 'Dependency create'] as const) {
+  test(`P11.4D ${action} keeps the confirmed non-commit message when canonical refresh fails`, async ({ page }) => {
+    const { timeline, api } = await p114bFixture(page, 'depends-on', undefined, { cellBatchMutationOutcome: 'not_committed' }, 'shift_when_overlapping')
+    const databaseBlock = page.locator('#database-block-p114b-depends-on-block')
+    api.failTableLoads = 1
+    if (action === 'active Date') {
+      const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+      await dragTimelineBar(page, bar, pxPerMs('month') * 4 * 86_400_000)
+    } else {
+      await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+      await page.mouse.up()
+    }
+    await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+    await expect(databaseBlock.getByRole('alert').filter({ hasText: '提交结果已确认未执行，但刷新未完成，请重新加载。' })).toHaveCount(1)
+    if (action === 'active Date') {
+      const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+      const bounds = await bar.boundingBox()
+      if (!bounds) throw new Error('Expected P11.4D stale Date bar')
+      await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(bounds.x + bounds.width / 2 + pxPerMs('month') * 4 * 86_400_000, bounds.y + bounds.height / 2, { steps: 4 })
+      await page.mouse.up()
+    } else {
+      await expect(timeline.locator('[data-testid="timeline-dependency-handle"]')).toHaveCount(0)
+    }
+    await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+    expect(p114cBatchPosts(api)).toHaveLength(1)
+    expect(p114cCellPatches(api)).toHaveLength(0)
+  })
+}
+
+for (const action of ['active Date', 'Dependency create'] as const) {
+test(`P11.4D ${action} confirmed non-commit cannot report into a changed view scope`, async ({ page }) => {
+  const { timeline, api, timelineView } = await p114bFixture(page, 'depends-on', undefined, { cellBatchMutationOutcome: 'not_committed' }, 'shift_when_overlapping')
+  let signalRefreshStarted!: () => void
+  let releaseRefresh!: () => void
+  const refreshStarted = new Promise<void>(resolve => { signalRefreshStarted = resolve })
+  const refreshGate = new Promise<void>(resolve => { releaseRefresh = resolve })
+  await page.route(url => url.pathname.endsWith(`/views/${timelineView.id}/table`) && url.searchParams.get('limit') === '25', async route => {
+    signalRefreshStarted()
+    await refreshGate
+    await route.fallback()
+  })
+  if (action === 'active Date') {
+    const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+    await dragTimelineBar(page, bar, pxPerMs('month') * 4 * 86_400_000)
+  } else {
+    await p114bConnect(page, timeline, 'p114b-a', 'p114b-b')
+    await page.mouse.up()
+  }
+  await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+  await refreshStarted
+  await page.evaluate((targetViewId) => {
+    const root = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null
+    const exposedEditor = root?.__vueParentComponent?.exposed?.editor
+    const editor = exposedEditor?.commands ? exposedEditor : exposedEditor?.value
+    if (!editor?.view) throw new Error('Expected active Tiptap editor')
+    let position = -1
+    let attrs: Record<string, unknown> | undefined
+    editor.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, unknown> }, nodePosition: number) => {
+      if (position < 0 && node.type.name === 'eotionDatabase') { position = nodePosition; attrs = node.attrs }
+    })
+    if (position < 0 || !attrs) throw new Error('Expected database node')
+    editor.view.dispatch(editor.state.tr.setNodeMarkup(position, undefined, { ...attrs, viewId: targetViewId }))
+  }, 'p114b-depends-on-table-view')
+  releaseRefresh()
+  const databaseBlock = page.locator('#database-block-p114b-depends-on-block')
+  await expect(databaseBlock).toHaveAttribute('data-view-id', 'p114b-depends-on-table-view')
+  await expect(databaseBlock.locator('table')).toBeVisible()
+  await expect(databaseBlock.getByRole('alert')).toHaveCount(0)
+  expect(p114cBatchPosts(api)).toHaveLength(1)
+  expect(p114cCellPatches(api)).toHaveLength(0)
+})
+}
+
 test('P11.4C offline and changed view config reject a prepared gesture before sending a batch', async ({ page }) => {
   const { timeline, api, timelineView } = await p114bFixture(page, 'depends-on', undefined, {}, 'shift_when_overlapping')
   const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')

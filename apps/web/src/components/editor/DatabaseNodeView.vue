@@ -441,7 +441,9 @@ async function mutateTimelineDependency(command: TimelineDependencyCommand): Pro
       }
       if (receipt?.mutationId === mutationId && receipt.status === 'not_committed') {
         await refreshLoadedWindow()
-        if (isCurrent() && staleReadonly.value) mutationError.value = '提交结果已确认未执行，但刷新未完成，请重新加载。'
+        if (isCurrent()) mutationError.value = staleReadonly.value
+          ? '提交结果已确认未执行，但刷新未完成，请重新加载。'
+          : '提交结果已确认未执行，已刷新服务器最新内容。'
         return false
       }
       await refreshLoadedWindow()
@@ -613,7 +615,9 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
       }
       if (receipt?.mutationId === mutationId && receipt.status === 'not_committed') {
         await refreshLoadedWindow()
-        if (isCurrent() && staleReadonly.value) mutationError.value = '提交结果已确认未执行，但刷新未完成，请重新加载。'
+        if (isCurrent()) mutationError.value = staleReadonly.value
+          ? '提交结果已确认未执行，但刷新未完成，请重新加载。'
+          : '提交结果已确认未执行，已刷新服务器最新内容。'
         return false
       }
       await refreshLoadedWindow()
