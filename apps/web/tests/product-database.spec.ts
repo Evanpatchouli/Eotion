@@ -11055,3 +11055,337 @@ for (const total of [100, 500] as const) {
     if (total === 500) expect(await timeline.locator('[data-timeline-row]').count()).toBeLessThanOrEqual(40)
   })
 }
+
+async function p114dStartKeyboard(page: Page, timeline: Locator, sourceId = 'p114b-a', key = 'Enter') {
+  const source = timeline.locator(`[data-testid="timeline-dependency-handle"][data-record-id="${sourceId}"]`)
+  await expect(source).toBeVisible()
+  await source.focus()
+  await source.press(key)
+  await expect(source).toBeFocused()
+  return source
+}
+
+for (const scenario of [
+  { direction: 'depends-on', key: 'Enter', shiftMode: 'no_auto_shift', mode: 'cell' },
+  { direction: 'blocks', key: 'Space', shiftMode: 'shift_when_overlapping', mode: 'batch' },
+] as const) {
+  test(`P11.4D keyboard ${scenario.direction} creates source → target once with ${scenario.mode} mutation`, async ({ page }) => {
+    const scheduled = scenario.mode === 'batch'
+      ? [
+          record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': { start: '2026-10-16', end: '2026-10-17' } }),
+          record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14' }),
+        ]
+      : [
+          record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13' }),
+          record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14' }),
+        ]
+    const { relation, timeline, api, timelineView } = await p114bFixture(page, scenario.direction, scheduled, {}, scenario.shiftMode)
+    const source = await p114dStartKeyboard(page, timeline, 'p114b-a', scenario.key)
+    const target = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-b"]')
+    await expect(timeline.getByTestId('timeline-dependency-live')).toContainText('方向键')
+    await expect(timeline.getByTestId('timeline-dependency-live')).toContainText('Escape 或 Tab 取消')
+    await expect(target).toHaveClass(/is-dependency-target/u)
+    await expect(timeline.getByTestId('timeline-dependency-preview')).toBeVisible()
+    expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+    expect(p114cBatchPosts(api)).toHaveLength(0)
+    await source.press(scenario.key)
+
+    if (scenario.mode === 'cell') {
+      await expect.poll(() => p114bRelationPatch(api, relation.id).length).toBe(1)
+      expect(p114cBatchPosts(api)).toHaveLength(0)
+      const owner = api.records.find(item => item.id === 'p114b-b')!
+      expect(p114bRelationPatch(api, relation.id)[0]?.payload).toMatchObject({ value: ['p114b-a'], expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+      expect(owner.properties[relation.id]).toEqual(['p114b-a'])
+    } else {
+      await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+      expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+      expect(p114cBatchPosts(api)[0]?.payload).toMatchObject({
+        expectedDatabaseVersion: 1,
+        context: { viewId: timelineView.id, expectedViewVersion: 1 },
+        records: [{ recordId: 'p114b-a', expectedRecordVersion: 1, cells: [{ propertyId: relation.id, value: ['p114b-b'] }] }],
+      })
+      expect(api.records.find(item => item.id === 'p114b-a')?.properties[relation.id]).toEqual(['p114b-b'])
+      expect(api.records.find(item => item.id === 'p114b-b')?.properties['root-date']).toBe('2026-10-18')
+    }
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(scenario.mode === 'cell' ? 1 : 0)
+    await expect(timeline.locator('[data-testid="timeline-dependency-path"][data-predecessor-id="p114b-a"][data-successor-id="p114b-b"]')).toHaveCount(1)
+    expect(p114cBatchPosts(api)).toHaveLength(scenario.mode === 'batch' ? 1 : 0)
+  })
+}
+
+test('P11.4D keyboard target cycling excludes self, duplicate, unscheduled, and filtered records', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13', 'p114b-blocks-relation': ['p114b-b'] }),
+    record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Duplicate edge', 'root-date': '2026-10-14' }),
+    record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Gamma', 'root-date': '2026-10-15' }),
+    record('p114b-d', rootDatabase.id, 'p114b-page-d', { 'root-title': 'Delta', 'root-date': '2026-10-16' }),
+    record('p114b-e', rootDatabase.id, 'p114b-page-e', { 'root-title': 'Unscheduled' }),
+    record('p114b-f', rootDatabase.id, 'p114b-page-f', { 'root-title': 'Filtered', 'root-date': '2026-10-17' }),
+  ], {}, 'no_auto_shift', [{ propertyId: 'root-title', operator: 'is_not', value: 'Filtered' }])
+  const source = await p114dStartKeyboard(page, timeline)
+  const bar = (id: string) => timeline.locator(`[data-testid="timeline-bar"][data-record-id="${id}"]`)
+  await expect(bar('p114b-c')).toHaveClass(/is-dependency-target/u)
+  await expect(bar('p114b-a')).not.toHaveClass(/is-dependency-target/u)
+  await expect(bar('p114b-b')).not.toHaveClass(/is-dependency-target/u)
+  await expect(bar('p114b-d')).not.toHaveClass(/is-dependency-target/u)
+  await expect(bar('p114b-e')).toHaveCount(0)
+  await expect(bar('p114b-f')).toHaveCount(0)
+
+  await source.press('ArrowDown')
+  await expect(bar('p114b-d')).toHaveClass(/is-dependency-target/u)
+  await source.press('ArrowRight')
+  await expect(bar('p114b-c')).toHaveClass(/is-dependency-target/u)
+  await source.press('ArrowUp')
+  await expect(bar('p114b-d')).toHaveClass(/is-dependency-target/u)
+  await source.press('Home')
+  await expect(bar('p114b-c')).toHaveClass(/is-dependency-target/u)
+  await source.press('End')
+  await expect(bar('p114b-d')).toHaveClass(/is-dependency-target/u)
+  await expect(source).toBeFocused()
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+  await page.keyboard.press('Escape')
+  await expect(timeline.getByTestId('timeline-dependency-preview')).toHaveCount(0)
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+})
+
+for (const cancelKey of ['Escape', 'Tab'] as const) {
+  test(`P11.4D keyboard ${cancelKey} cancels without mutation and preserves normal focus behavior`, async ({ page }) => {
+    const { relation, timeline, api } = await p114bFixture(page, 'depends-on')
+    const source = await p114dStartKeyboard(page, timeline)
+    await expect(timeline.getByTestId('timeline-dependency-preview')).toBeVisible()
+    if (cancelKey === 'Escape') {
+      await source.press('Escape')
+      await expect(source).toBeFocused()
+    } else {
+      await source.press('Tab')
+      await expect(source).not.toBeFocused()
+    }
+    await expect(timeline.getByTestId('timeline-dependency-live')).toContainText('依赖创建已取消')
+    await expect(timeline.getByTestId('timeline-dependency-preview')).toHaveCount(0)
+    expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+    expect(p114cBatchPosts(api)).toHaveLength(0)
+  })
+}
+
+test('P11.4D keyboard creation with no legal targets announces and never submits', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks', [
+    record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Only scheduled source', 'root-date': '2026-10-13' }),
+    record('p114b-e', rootDatabase.id, 'p114b-page-e', { 'root-title': 'Unscheduled' }),
+  ])
+  const source = await p114dStartKeyboard(page, timeline)
+  await expect(timeline.getByTestId('timeline-dependency-live')).toContainText('没有可用的已排期目标')
+  await expect(timeline.getByTestId('timeline-dependency-preview')).toHaveCount(0)
+  await source.press('Enter')
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  await source.press('Escape')
+})
+
+for (const fence of ['offline', 'readonly', 'config', 'scope'] as const) {
+  test(`P11.4D keyboard preview cancels on ${fence} lifecycle change without writing`, async ({ page, context }) => {
+    const { relation, timeline, api, timelineView } = await p114bFixture(page, 'depends-on')
+    const source = await p114dStartKeyboard(page, timeline)
+    await expect(timeline.getByTestId('timeline-dependency-preview')).toBeVisible()
+    if (fence === 'offline') {
+      await context.setOffline(true)
+      await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+    } else if (fence === 'readonly') {
+      await page.locator('.document-wrap .eotion-editor').evaluate(element => {
+        const candidate = (element as Element & { __vueParentComponent?: { exposed?: { editor?: any } } }).__vueParentComponent?.exposed?.editor
+        const editor = candidate?.view ? candidate : candidate?.value
+        if (!editor?.setEditable) throw new Error('Expected the parent Tiptap Editor')
+        editor.setEditable(false, false)
+      })
+      await expect(page.locator('.document-wrap .eotion-editor .ProseMirror')).toHaveAttribute('contenteditable', 'false')
+    } else if (fence === 'config') {
+      await timeline.evaluate(root => {
+        const instance = (root as HTMLElement & { __vueParentComponent?: { props?: Record<string, any> } }).__vueParentComponent
+        const config = instance?.props?.config as DatabaseViewConfig | undefined
+        const dependency = config?.options?.timeline?.dependency
+        if (!dependency) throw new Error('Expected live Timeline dependency config')
+        dependency.direction = dependency.direction === 'blocks' ? 'depends-on' : 'blocks'
+      })
+    } else {
+      await page.evaluate(targetViewId => {
+        const root = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null
+        const exposedEditor = root?.__vueParentComponent?.exposed?.editor
+        const editor = exposedEditor?.commands ? exposedEditor : exposedEditor?.value
+        if (!editor?.view) throw new Error('Expected active Tiptap editor')
+        const setView = (viewId: string) => {
+          let position = -1
+          let attrs: Record<string, unknown> | undefined
+          editor.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, unknown> }, nodePosition: number) => {
+            if (position < 0 && node.type.name === 'eotionDatabase') { position = nodePosition; attrs = node.attrs }
+          })
+          if (position < 0 || !attrs) throw new Error('Expected database node')
+          editor.view.dispatch(editor.state.tr.setNodeMarkup(position, undefined, { ...attrs, viewId }))
+        }
+        setView(targetViewId)
+      }, `p114b-depends-on-table-view`)
+    }
+    await expect(timeline.getByTestId('timeline-dependency-preview')).toHaveCount(0)
+    if (fence === 'scope') await expect(page.locator(`#database-block-p114b-depends-on-block table`)).toBeVisible()
+    expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+    expect(p114cBatchPosts(api)).toHaveLength(0)
+    if (fence === 'offline') await context.setOffline(false)
+    if (fence === 'readonly') {
+      await page.locator('.document-wrap .eotion-editor').evaluate(element => {
+        const candidate = (element as Element & { __vueParentComponent?: { exposed?: { editor?: any } } }).__vueParentComponent?.exposed?.editor
+        const editor = candidate?.view ? candidate : candidate?.value
+        editor?.setEditable(true, false)
+      })
+      await expect(page.locator('.document-wrap .eotion-editor .ProseMirror')).toHaveAttribute('contenteditable', 'true')
+      await expect(timeline.locator('[data-testid="timeline-dependency-handle"]')).toHaveCount(3)
+      const resumedSource = await p114dStartKeyboard(page, timeline)
+      await expect(timeline.getByTestId('timeline-dependency-preview')).toBeVisible()
+      await resumedSource.press('Escape')
+      expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+    }
+    void timelineView
+    void source
+  })
+}
+
+test('P11.4D disappearing keyboard target clears selection and blocks confirmation', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks')
+  const source = await p114dStartKeyboard(page, timeline)
+  const target = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-b"]')
+  await expect(target).toHaveClass(/is-dependency-target/u)
+  api.records.splice(api.records.findIndex(item => item.id === 'p114b-b'), 1)
+  await timeline.evaluate(async root => {
+    let component = (root as HTMLElement & { __vueParentComponent?: any }).__vueParentComponent
+    while (component) {
+      const refresh = component.setupState?.refreshLoadedWindow
+      if (typeof refresh === 'function') { await refresh(); return }
+      component = component.parent
+    }
+    throw new Error('Expected DatabaseNodeView refreshLoadedWindow')
+  })
+  await expect(target).toHaveCount(0)
+  await expect(timeline.getByTestId('timeline-dependency-preview')).toHaveCount(0)
+  await source.press('Enter')
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(0)
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  await source.press('Escape')
+})
+
+test('P11.4D pending keyboard activation cannot submit twice and restores focus after success', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks', undefined, { holdCellUpdateResponse: true })
+  const source = await p114dStartKeyboard(page, timeline)
+  await source.evaluate(element => { (window as Window & { __p114dKeyboardSource?: HTMLElement }).__p114dKeyboardSource = element })
+  await source.press('Enter')
+  await api.cellUpdateResponseStarted
+  await page.evaluate(() => {
+    const source = (window as Window & { __p114dKeyboardSource?: HTMLElement }).__p114dKeyboardSource
+    if (!source) throw new Error('Expected captured source connector')
+    for (const type of ['keydown', 'keyup'] as const) {
+      source.dispatchEvent(new KeyboardEvent(type, { key: 'Enter', bubbles: true, cancelable: true, repeat: type === 'keydown' }))
+    }
+  })
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(1)
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+  api.releaseCellUpdateResponse()
+  await expect.poll(() => api.records.find(item => item.id === 'p114b-a')?.properties[relation.id]).toEqual(['p114b-b'])
+  await expect(timeline.locator('[data-testid="timeline-dependency-path"][data-predecessor-id="p114b-a"][data-successor-id="p114b-b"]')).toHaveCount(1)
+  await expect(timeline.locator('[data-testid="timeline-dependency-handle"][data-record-id="p114b-a"]')).toBeFocused()
+  await expect(timeline.getByTestId('timeline-dependency-live')).toContainText('依赖关系已保存')
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(1)
+})
+
+test('P11.4D keyboard 4xx failure restores a lost source focus and leaves preview cleared', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks', undefined, { failCellUpdates: 1, failCellUpdateStatus: 403 })
+  let signalRequest!: () => void
+  let releaseResponse!: () => void
+  const requestStarted = new Promise<void>(resolve => { signalRequest = resolve })
+  const responseGate = new Promise<void>(resolve => { releaseResponse = resolve })
+  await page.route(url => new URL(url).pathname.endsWith(`/cells/${relation.id}`), async route => {
+    signalRequest()
+    await responseGate
+    await route.fallback()
+  })
+  const source = await p114dStartKeyboard(page, timeline)
+  await source.press('Enter')
+  await requestStarted
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+  releaseResponse()
+  await expect(page.locator(`#database-block-p114b-blocks-block`).getByRole('alert')).toBeVisible()
+  await expect(timeline.getByTestId('timeline-dependency-preview')).toHaveCount(0)
+  await expect(timeline.locator('[data-testid="timeline-dependency-handle"][data-record-id="p114b-a"]')).toBeFocused()
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(1)
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+})
+
+test('P11.4D stale keyboard completion cannot restore focus or report into an A-B-A view epoch', async ({ page }) => {
+  const { relation, timeline, api } = await p114bFixture(page, 'blocks', undefined, { holdCellUpdateResponse: true })
+  const source = await p114dStartKeyboard(page, timeline)
+  await source.press('Enter')
+  await api.cellUpdateResponseStarted
+  const setEditorViewId = (viewId: string) => page.evaluate(targetViewId => {
+    const root = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null
+    const exposedEditor = root?.__vueParentComponent?.exposed?.editor
+    const editor = exposedEditor?.commands ? exposedEditor : exposedEditor?.value
+    if (!editor?.view) throw new Error('Expected active Tiptap editor')
+    let position = -1
+    let attrs: Record<string, unknown> | undefined
+    editor.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, unknown> }, nodePosition: number) => {
+      if (position < 0 && node.type.name === 'eotionDatabase') { position = nodePosition; attrs = node.attrs }
+    })
+    if (position < 0 || !attrs) throw new Error('Expected database node')
+    editor.view.dispatch(editor.state.tr.setNodeMarkup(position, undefined, { ...attrs, viewId: targetViewId }))
+  }, viewId)
+  await setEditorViewId('p114b-blocks-table-view')
+  await expect(page.locator('#database-block-p114b-blocks-block')).toHaveAttribute('data-view-id', 'p114b-blocks-table-view')
+  await setEditorViewId('p114b-blocks-view')
+  const restoredTimeline = page.locator('#database-block-p114b-blocks-block').getByTestId('database-timeline')
+  await expect(restoredTimeline).toBeVisible()
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
+  api.releaseCellUpdateResponse()
+  await expect.poll(() => api.records.find(item => item.id === 'p114b-a')?.properties[relation.id]).toEqual(['p114b-b'])
+  await expect(page.locator('#database-block-p114b-blocks-block').getByRole('alert')).toHaveCount(0)
+  expect(p114bRelationPatch(api, relation.id)).toHaveLength(1)
+  await expect(restoredTimeline.locator('[data-testid="timeline-dependency-handle"][data-record-id="p114b-a"]')).not.toBeFocused()
+  void timeline
+})
+
+test('P11.4D keyboard picker stays visible across Desktop, Tablet, and Phone in Light and Dark', async ({ page }, testInfo) => {
+  const { timeline, api } = await p114bFixture(page, 'blocks')
+  const unique = `${Date.now()}-${process.pid}-${Math.random().toString(16).slice(2)}`
+  const directory = path.join(process.env.TEMP ?? testInfo.outputDir, `eotion-p114d-keyboard-${unique}`)
+  await mkdir(directory, { recursive: true })
+  for (const [width, height, name] of [[1440, 900, 'desktop'], [768, 1024, 'tablet'], [390, 844, 'phone']] as const) {
+    await page.setViewportSize({ width, height })
+    if (width === 390) {
+      const closeMobileNav = page.getByRole('button', { name: '关闭导航菜单' })
+      if (await closeMobileNav.isVisible()) await closeMobileNav.click()
+      await expect.poll(() => page.locator('.product-sidebar').evaluate(element => element.getBoundingClientRect().right)).toBeLessThanOrEqual(0)
+    }
+    await settleTimelineGestureLayout(timeline)
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+      const source = await p114dStartKeyboard(page, timeline)
+      const status = timeline.getByTestId('timeline-dependency-live')
+      await expect(status).toContainText('已选择目标 Beta')
+      await expect(status).toContainText('Enter 或空格保存')
+      await expect(status).toBeVisible()
+      await expect(timeline.getByTestId('timeline-dependency-preview')).toBeVisible()
+      const visibleEvidence = await timeline.evaluate(root => {
+        const status = root.querySelector<HTMLElement>('[data-testid="timeline-dependency-live"]')
+        const target = root.querySelector<HTMLElement>('[data-testid="timeline-bar"][data-record-id="p114b-b"]')
+        const bounds = status?.getBoundingClientRect()
+        return {
+          targetSelected: target?.classList.contains('is-dependency-target') === true,
+          statusFits: !!status && status.scrollWidth <= status.clientWidth && !!bounds && bounds.left >= 0 && bounds.right <= document.documentElement.clientWidth,
+          pageFits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+          message: status?.textContent ?? '',
+        }
+      })
+      expect(visibleEvidence).toMatchObject({ targetSelected: true, statusFits: true, pageFits: true })
+      await page.screenshot({ path: path.join(directory, `${name}-${theme}.png`), animations: 'disabled', fullPage: true })
+      await source.press('Escape')
+      await expect(timeline.getByTestId('timeline-dependency-preview')).toHaveCount(0)
+    }
+  }
+  expect(p114bRelationPatch(api, 'p114b-blocks-relation')).toHaveLength(0)
+  console.log(`P11.4D keyboard visual evidence: ${directory}`)
+})

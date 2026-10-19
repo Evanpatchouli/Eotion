@@ -67,7 +67,7 @@ const dependencyControl = ref<HTMLButtonElement | null>(null)
 const dependencyDeleteArmed = ref(false)
 let dependencyTouchSession: { pointerId: number; scope: string; configKey: string; edgeId: string | null } | null = null
 let suppressDependencyTouchClick = false
-const renderedRecordIds = computed(() => new Set(props.rows.filter(row => row.geometry && !row.geometry.offscreen).map(row => row.item.recordId)))
+const renderedRecordIds = computed(() => new Set(props.rows.filter(row => row.item.kind !== 'unscheduled' && row.geometry && !row.geometry.offscreen).map(row => row.item.recordId)))
 const dependency = useTimelineDependencyInteraction({
   scope: () => props.scope,
   writable: () => props.dependencyEditable && previewGeometryById.size === 0 && !canvasBody.value?.querySelector('[data-drag-state="armed"], [data-drag-state="dragging"]'),
@@ -76,6 +76,7 @@ const dependency = useTimelineDependencyInteraction({
   configKey: () => props.dependencyConfigKey,
   isViewportCurrent: snapshot => props.isViewportCurrent(snapshot),
   edges: () => props.dependencyEdges,
+  recordTitleById: () => props.recordTitleById,
   renderedRecordIds: () => renderedRecordIds.value,
   canvas: () => canvasBody.value,
   captureDependency: () => props.captureDependency(),
@@ -187,6 +188,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 
 <template>
   <div class="eotion-timeline-viewport" data-testid="timeline-viewport" :data-generation="state?.generation">
+    <span class="eotion-timeline-dependency-live" :class="{ 'is-visible': dependency.showKeyboardStatus.value }" role="status" aria-live="polite" aria-atomic="true" data-testid="timeline-dependency-live">{{ dependency.liveMessage.value }}</span>
     <div class="eotion-timeline-ruler-slot">
       <button
         v-if="dependencyEdges.length"
@@ -289,7 +291,10 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
                 :mutation-busy="recordMutationBusyById.get(row.item.recordId) === true"
                 :dependency-connectable="dependencyEditable && online && row.item.kind !== 'unscheduled'"
                 :dependency-pending="dependency.pending.value"
+                :dependency-target-selected="dependency.active.value?.mode === 'keyboard' && dependency.targetRecordId.value === row.item.recordId"
                 :begin-dependency="dependency.start"
+                :keydown-dependency="dependency.keydown"
+                :blur-dependency="dependency.blurKeyboard"
                 :move-dependency="dependency.move"
                 :finish-dependency="dependency.finish"
                 :cancel-dependency="dependency.cancel"
@@ -319,6 +324,8 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-dependency-control { position:absolute; z-index:4; right:6px; top:4px; min-height:26px; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:2px 8px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-primary, var(--editor-text)); font:inherit; font-size:11px; cursor:pointer; }
 .eotion-timeline-dependency-control:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); }
 .eotion-timeline-dependency-status { position:absolute; z-index:4; right:8px; bottom:2px; padding:2px 5px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-secondary, var(--editor-muted)); font-size:10px; }
+.eotion-timeline-dependency-live { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0, 0, 0, 0); clip-path:inset(50%); white-space:nowrap; }
+.eotion-timeline-dependency-live.is-visible { z-index:5; top:32px; left:8px; box-sizing:border-box; width:max-content; max-width:calc(100% - 16px); height:auto; overflow:hidden; clip:auto; clip-path:none; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:3px 8px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-primary, var(--editor-text)); font-size:11px; line-height:16px; white-space:normal; overflow-wrap:anywhere; pointer-events:none; }
 .eotion-timeline-ruler-anchor { position:absolute; top:0; left:0; width:100%; height:var(--timeline-header-height, 56px); overflow:hidden; background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
 .eotion-timeline-scroll { width:100%; min-width:0; max-width:100%; min-height:240px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; }
 .eotion-timeline-scroll:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:-2px; }

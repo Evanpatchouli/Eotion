@@ -252,6 +252,9 @@ const savingPropertyName = ref(false)
 let deleteRequestEpoch = 0
 const creationUncertain = computed(() => isProductDatabaseRecordCreationUncertain(auth.user?.id ?? '', workspaceId.value, databaseId.value))
 const writable = computed(() => online.value && !staleReadonly.value && !loading.value && !savingCell.value && !viewSubmitting.value && !savingPropertyName.value && !deletingProperty.value && !changingPropertyType.value)
+const timelineEditorEditable = ref(props.editor.isEditable)
+let timelineEditorEditableObserver: MutationObserver | null = null
+function syncTimelineEditorEditable(): void { timelineEditorEditable.value = props.editor.isEditable }
 type MutablePropertyType = Exclude<DatabasePropertyType, 'title'>
 const typeChangeTarget = ref<{ property: DatabasePropertyResponse; targetType: MutablePropertyType; databaseVersion: number; config?: DatabasePropertyConfig } | null>(null)
 const changingPropertyType = ref(false)
@@ -2002,6 +2005,11 @@ function closePopoversForViewportChange(): void {
 }
 
 onMounted(() => {
+  syncTimelineEditorEditable()
+  if (!props.editor.isDestroyed) {
+    timelineEditorEditableObserver = new MutationObserver(syncTimelineEditorEditable)
+    timelineEditorEditableObserver.observe(props.editor.view.dom, { attributes: true, attributeFilter: ['contenteditable'] })
+  }
   window.addEventListener(DATABASE_RECORD_CREATED_EVENT, onRecordCreated)
   window.addEventListener(DATABASE_UPDATED_EVENT, onDatabaseChanged)
   window.addEventListener('online', onOnlineChange)
@@ -2013,6 +2021,8 @@ onMounted(() => {
   void loadTable()
 })
 onBeforeUnmount(() => {
+  timelineEditorEditableObserver?.disconnect()
+  timelineEditorEditableObserver = null
   viewIdentityEpoch += 1
   typeChangeRequestEpoch += 1
   propertyConfigEpoch += 1
@@ -2228,7 +2238,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable && timelineEditorEditable" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
       <div v-else-if="viewType === 'table' && properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>

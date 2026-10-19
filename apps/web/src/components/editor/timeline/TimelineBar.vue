@@ -23,7 +23,10 @@ const props = defineProps<{
   mutationBusy?: boolean
   dependencyConnectable?: boolean
   dependencyPending?: boolean
+  dependencyTargetSelected?: boolean
   beginDependency: (event: PointerEvent, recordId: string) => void
+  keydownDependency: (event: KeyboardEvent, recordId: string) => void
+  blurDependency: (event: FocusEvent, recordId: string) => void
   moveDependency: (event: PointerEvent) => void
   finishDependency: (event: PointerEvent) => void
   cancelDependency: () => void
@@ -145,6 +148,7 @@ function handleControlClick(event: MouseEvent): void {
         'is-dragging': drag.state.value === 'dragging',
         'is-saving': saving,
         'is-pending': pending,
+        'is-dependency-target': dependencyTargetSelected,
       }"
       :style="{
         left: `${drag.geometry.value.x}px`,
@@ -207,12 +211,15 @@ function handleControlClick(event: MouseEvent): void {
     <button
       v-if="dependencyConnectable"
       class="eotion-timeline-dependency-handle"
+      :class="{ 'is-target-selected': dependencyTargetSelected }"
       :style="dependencyHandleStyle"
       :data-record-id="geometry.recordId"
       :aria-label="`创建依赖：${title || '无标题'}`"
       :aria-disabled="dependencyPending ? 'true' : undefined"
       data-testid="timeline-dependency-handle"
       type="button"
+      @keydown="keydownDependency($event, geometry.recordId)"
+      @blur="blurDependency($event, geometry.recordId)"
       @pointerdown.stop="beginDependency($event, geometry.recordId)"
       @pointermove.stop="moveDependency"
       @pointerup.stop="finishDependency"
@@ -287,6 +294,7 @@ function handleControlClick(event: MouseEvent): void {
 .eotion-timeline-bar.is-dragging, .eotion-timeline-bar.is-saving { cursor: grabbing; }
 .eotion-timeline-bar.is-pending { cursor: progress; opacity: .72; }
 .eotion-timeline-bar.is-selected { border-color: var(--e-color-focus, var(--editor-focus)); background: var(--e-color-selected, var(--editor-selected)); }
+.eotion-timeline-bar.is-dependency-target { outline:2px solid var(--e-color-accent, var(--editor-accent)); outline-offset:3px; background:color-mix(in srgb, var(--e-color-selected, var(--editor-selected)) 72%, var(--e-color-surface, var(--editor-surface))); }
 .eotion-timeline-bar.is-hovered:not(.is-selected) { background: var(--e-color-hover, var(--editor-hover)); }
 .eotion-timeline-bar:focus-visible { z-index: 5; outline: var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset: 1px; }
 .eotion-timeline-bar-shape { position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--e-color-accent, var(--editor-accent)); }
@@ -314,6 +322,7 @@ function handleControlClick(event: MouseEvent): void {
 .eotion-timeline-dependency-handle { position:absolute; z-index:7; display:grid; place-items:center; box-sizing:border-box; width:18px; height:18px; transform:translate(-50%, -50%); border:1px solid var(--e-color-accent, var(--editor-accent)); border-radius:50%; padding:0; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-accent, var(--editor-accent)); opacity:0; cursor:crosshair; touch-action:none; pointer-events:auto; }
 .eotion-timeline-dependency-handle span { width:7px; height:7px; border-right:1px solid currentColor; border-top:1px solid currentColor; transform:rotate(45deg); }
 .eotion-timeline-dependency-handle:hover, .eotion-timeline-dependency-handle:focus-visible, .eotion-timeline-row.is-hovered .eotion-timeline-dependency-handle, .eotion-timeline-row.is-selected .eotion-timeline-dependency-handle { opacity:1; }
+.eotion-timeline-dependency-handle.is-target-selected { opacity:1; border-width:2px; background:var(--e-color-selected, var(--editor-selected)); box-shadow:0 0 0 3px color-mix(in srgb, var(--e-color-accent, var(--editor-accent)) 24%, transparent); }
 .eotion-timeline-bar-anchor:has(> .eotion-timeline-bar:focus-visible) .eotion-timeline-dependency-handle { opacity:1; }
 .eotion-timeline-dependency-handle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
 .eotion-timeline-dependency-handle[aria-disabled="true"] { pointer-events:none; }
