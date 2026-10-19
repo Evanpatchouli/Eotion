@@ -1348,19 +1348,23 @@ test('database header keeps desktop and tablet controls on one row', async ({ pa
   const header = page.locator('#database-block-wide-header-database .eotion-database-header')
   const assertOneRow = async (width: number, screenshotName: string) => {
     await page.setViewportSize({ width, height: 844 })
-    const [title, viewTrigger, settings, add] = await Promise.all([
-      header.locator('.eotion-database-copy').boundingBox(),
-      header.getByRole('button', { name: '切换视图' }).boundingBox(),
-      header.getByRole('button', { name: '数据库设置' }).boundingBox(),
-      header.getByRole('button', { name: '新建记录' }).boundingBox(),
+    await Promise.all([
+      expect(header.locator('.eotion-database-copy')).toBeVisible(),
+      expect(header.getByRole('button', { name: '切换视图' })).toBeVisible(),
+      expect(header.getByRole('button', { name: '数据库设置' })).toBeVisible(),
+      expect(header.getByRole('button', { name: '新建记录' })).toBeVisible(),
     ])
-    expect(title).not.toBeNull()
-    expect(viewTrigger).not.toBeNull()
-    expect(settings).not.toBeNull()
-    expect(add).not.toBeNull()
-    for (const box of [viewTrigger!, settings!, add!]) expect(Math.abs(box.y - title!.y)).toBeLessThanOrEqual(10)
-    expect(await header.evaluate(element => getComputedStyle(element).display)).toBe('flex')
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+    // Compare one layout snapshot: separate async boundingBox calls can straddle a reflow.
+    const layout = await header.evaluate(element => ({
+      boxes: ['.eotion-database-copy', '[aria-label="切换视图"]', '[aria-label="数据库设置"]', '[aria-label="新建记录"]']
+        .map(selector => element.querySelector(selector)?.getBoundingClientRect().toJSON() ?? null),
+      display: getComputedStyle(element).display,
+      documentWidth: document.documentElement.scrollWidth,
+    }))
+    for (const box of layout.boxes) expect(box).not.toBeNull()
+    for (const box of layout.boxes.slice(1)) expect(Math.abs(box!.y - layout.boxes[0]!.y)).toBeLessThanOrEqual(10)
+    expect(layout.display).toBe('flex')
+    expect(layout.documentWidth).toBeLessThanOrEqual(width)
     await screenshot(page, screenshotName)
   }
   await assertOneRow(1280, 'database-header-desktop')
