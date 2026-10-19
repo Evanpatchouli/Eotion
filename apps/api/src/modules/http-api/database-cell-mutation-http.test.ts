@@ -493,3 +493,227 @@ test('null cell clears preserve stored explicit nulls and only bump changed reco
     }
   }
 })
+
+type TimelineSchedulingScenario = {
+  name: string
+  shiftMode: 'shift_when_overlapping' | 'shift_and_keep_gap'
+  avoidWeekends: boolean
+  records: { id: string; date: Record<string, string> }[]
+  edges: [string, string][]
+  rootId: string
+  rootDate: Record<string, string>
+  expectedDates: Record<string, Record<string, string>>
+}
+
+const timelineSchedulingScenarios: TimelineSchedulingScenario[] = [
+  {
+    name: 'keep-gap chain preserves each link gap', shiftMode: 'shift_and_keep_gap', avoidWeekends: false,
+    records: [['a', '2026-10-01'], ['b', '2026-10-03'], ['c', '2026-10-05'], ['d', '2026-10-10']]
+      .map(([id, start]) => ({ id: id!, date: { start: start! } })),
+    edges: [['a', 'b'], ['b', 'c'], ['c', 'd']], rootId: 'a', rootDate: { start: '2026-10-04' },
+    expectedDates: { a: { start: '2026-10-04' }, b: { start: '2026-10-06' }, c: { start: '2026-10-08' }, d: { start: '2026-10-13' } },
+  },
+  {
+    name: 'keep-gap diamond plans shared successor once', shiftMode: 'shift_and_keep_gap', avoidWeekends: false,
+    records: [['a', '2026-10-01'], ['b', '2026-10-03'], ['c', '2026-10-05'], ['d', '2026-10-10']]
+      .map(([id, start]) => ({ id: id!, date: { start: start! } })),
+    edges: [['a', 'b'], ['a', 'c'], ['b', 'd'], ['c', 'd']], rootId: 'a', rootDate: { start: '2026-10-04' },
+    expectedDates: { a: { start: '2026-10-04' }, b: { start: '2026-10-06' }, c: { start: '2026-10-08' }, d: { start: '2026-10-13' } },
+  },
+  {
+    name: 'overlap diamond honors an external incoming predecessor', shiftMode: 'shift_when_overlapping', avoidWeekends: false,
+    records: [
+      { id: 'a', date: { start: '2026-10-01', end: '2026-10-02' } },
+      { id: 'b', date: { start: '2026-10-03' } },
+      { id: 'c', date: { start: '2026-10-03', end: '2026-10-04' } },
+      { id: 'd', date: { start: '2026-10-05' } },
+      { id: 'x', date: { start: '2026-10-11' } },
+    ],
+    edges: [['a', 'b'], ['a', 'c'], ['b', 'd'], ['c', 'd'], ['x', 'd']], rootId: 'a',
+    rootDate: { start: '2026-10-06', end: '2026-10-07' },
+    expectedDates: {
+      a: { start: '2026-10-06', end: '2026-10-07' }, b: { start: '2026-10-08' },
+      c: { start: '2026-10-08', end: '2026-10-09' }, d: { start: '2026-10-11' },
+    },
+  },
+  {
+    name: 'spring DST weekend roll preserves wall time and range duration', shiftMode: 'shift_when_overlapping', avoidWeekends: true,
+    records: [
+      { id: 'a', date: { start: '2026-03-06T17:30:00.123Z', timeZone: 'America/Los_Angeles' } },
+      { id: 'b', date: { start: '2026-03-06T20:30:00.123Z', end: '2026-03-06T22:00:00.123Z', timeZone: 'America/Los_Angeles' } },
+    ],
+    edges: [['a', 'b']], rootId: 'a', rootDate: { start: '2026-03-07T17:30:00.123Z', timeZone: 'America/Los_Angeles' },
+    expectedDates: {
+      a: { start: '2026-03-07T17:30:00.123Z', timeZone: 'America/Los_Angeles' },
+      b: { start: '2026-03-09T16:30:00.123Z', end: '2026-03-09T18:00:00.123Z', timeZone: 'America/Los_Angeles' },
+    },
+  },
+  {
+    name: 'spring DST without weekend avoidance preserves elapsed shift', shiftMode: 'shift_when_overlapping', avoidWeekends: false,
+    records: [
+      { id: 'a', date: { start: '2026-03-06T17:30:00.123Z', timeZone: 'America/Los_Angeles' } },
+      { id: 'b', date: { start: '2026-03-06T20:30:00.123Z', end: '2026-03-06T22:00:00.123Z', timeZone: 'America/Los_Angeles' } },
+    ],
+    edges: [['a', 'b']], rootId: 'a', rootDate: { start: '2026-03-07T17:30:00.123Z', timeZone: 'America/Los_Angeles' },
+    expectedDates: {
+      a: { start: '2026-03-07T17:30:00.123Z', timeZone: 'America/Los_Angeles' },
+      b: { start: '2026-03-07T17:30:00.123Z', end: '2026-03-07T19:00:00.123Z', timeZone: 'America/Los_Angeles' },
+    },
+  },
+  {
+    name: 'fall DST weekend roll preserves wall time and range duration', shiftMode: 'shift_when_overlapping', avoidWeekends: true,
+    records: [
+      { id: 'a', date: { start: '2026-10-30T16:30:00.456Z', timeZone: 'America/Los_Angeles' } },
+      { id: 'b', date: { start: '2026-10-30T17:30:00.456Z', end: '2026-10-30T18:00:00.456Z', timeZone: 'America/Los_Angeles' } },
+    ],
+    edges: [['a', 'b']], rootId: 'a', rootDate: { start: '2026-10-31T16:30:00.456Z', timeZone: 'America/Los_Angeles' },
+    expectedDates: {
+      a: { start: '2026-10-31T16:30:00.456Z', timeZone: 'America/Los_Angeles' },
+      b: { start: '2026-11-02T17:30:00.456Z', end: '2026-11-02T18:00:00.456Z', timeZone: 'America/Los_Angeles' },
+    },
+  },
+  ...(['2026-10-17', '2026-10-18'] as const).map((rootDate, index): TimelineSchedulingScenario => ({
+    name: index === 0 ? 'date-only Saturday root rolls successor to Monday without an end' : 'date-only Sunday root rolls successor to Monday without an end',
+    shiftMode: 'shift_when_overlapping', avoidWeekends: true,
+    records: [{ id: 'a', date: { start: '2026-10-16' } }, { id: 'b', date: { start: '2026-10-16' } }],
+    edges: [['a', 'b']], rootId: 'a', rootDate: { start: rootDate },
+    expectedDates: { a: { start: rootDate }, b: { start: '2026-10-19' } },
+  })),
+]
+
+test('canonical Timeline scheduling HTTP integration matrix (8 scenarios)', async t => {
+  const source = process.env.P4_TEST_MONGODB_URI?.trim()
+  if (!source) return t.skip('P4_TEST_MONGODB_URI must name an isolated replica set')
+  const previousUri = process.env.MONGODB_URI
+  const previousOrigin = process.env.WEB_ORIGIN
+  const uri = new URL(source)
+  uri.pathname = `/eotion_timeline_http_matrix_${randomUUID().replaceAll('-', '')}`
+  process.env.MONGODB_URI = uri.toString()
+  process.env.WEB_ORIGIN = 'https://trusted.example.test'
+  let app: Awaited<ReturnType<typeof NestFactory.create>> | undefined
+  let connection: Connection | undefined
+  try {
+    @Module({ imports: [ConfigModule.forRoot({ isGlobal: true }), MongooseModule.forRoot(process.env.MONGODB_URI), HttpApiModule] })
+    class TestModule {}
+    app = await NestFactory.create(TestModule, new FastifyAdapter(), { logger: false })
+    app.setGlobalPrefix('api')
+    await app.listen(0, '127.0.0.1')
+    const address = app.getHttpServer().address()
+    assert.ok(address && typeof address === 'object')
+    const base = `http://127.0.0.1:${address.port}`
+    connection = app.get<Connection>(getConnectionToken())
+
+    for (const scenario of timelineSchedulingScenarios) await t.test(scenario.name, async () => {
+      const suffix = randomUUID().replaceAll('-', '')
+      const owner = { email: `timeline-${suffix}@example.test`, password: 'correct horse battery staple' }
+      assert.equal((await request(base, '/api/auth/register', 'POST', undefined, owner)).status, 201)
+      const login = await request(base, '/api/auth/login', 'POST', undefined, owner)
+      const cookie = login.headers.get('set-cookie')!.split(';', 1)[0]!
+      const workspaceId = `ws-${suffix}`
+      const homeId = `home-${suffix}`
+      const databaseId = `db-${suffix}`
+      const tableViewId = `table-${suffix}`
+      const timelineViewId = `timeline-${suffix}`
+      const titlePropertyId = `title-${suffix}`
+      const datePropertyId = `date-${suffix}`
+      const relationPropertyId = `links-${suffix}`
+      assert.equal((await request(base, '/api/workspaces', 'POST', cookie, { id: workspaceId, name: 'Scheduling matrix' })).status, 201)
+      assert.equal((await request(base, `/api/workspaces/${workspaceId}/pages`, 'POST', cookie,
+        { id: homeId, parentPageId: null, title: 'Home', orderKey: 'a' })).status, 201)
+      const route = `/api/workspaces/${workspaceId}/databases/${databaseId}`
+      const createDatabase = await request(base, `/api/workspaces/${workspaceId}/pages/${homeId}/databases`, 'POST', cookie,
+        { id: databaseId, name: 'Scheduling', titlePropertyId, viewId: tableViewId,
+          blockId: `block-${suffix}`, orderKey: 'a', parentBlockId: null })
+      assert.equal(createDatabase.status, 201, JSON.stringify(createDatabase.body))
+      const snapshot = async (viewId: string) => {
+        const response = await request(base, `${route}/views/${viewId}/records`, 'GET', cookie)
+        assert.equal(response.status, 200, JSON.stringify(response.body))
+        return response.body
+      }
+      const row = (data: any, id: string) => data.records.find((record: any) => record.id === id)
+      let state = await snapshot(tableViewId)
+      const dateProperty = await request(base, `${route}/properties`, 'POST', cookie,
+        { id: datePropertyId, name: 'Schedule', type: 'date', expectedDatabaseVersion: state.database.version })
+      assert.equal(dateProperty.status, 201, JSON.stringify(dateProperty.body))
+      state = await snapshot(tableViewId)
+      const relationProperty = await request(base, `${route}/properties`, 'POST', cookie,
+        { id: relationPropertyId, name: 'Blocks', type: 'relation', config: { targetDatabaseId: databaseId },
+          expectedDatabaseVersion: state.database.version })
+      assert.equal(relationProperty.status, 201, JSON.stringify(relationProperty.body))
+
+      const recordIds = new Map<string, string>()
+      for (const record of scenario.records) {
+        const recordId = `${record.id}-${suffix}`
+        recordIds.set(record.id, recordId)
+        const created = await request(base, `${route}/records`, 'POST', cookie,
+          { id: recordId, pageId: `page-${record.id}-${suffix}`, title: record.id.toUpperCase(), orderKey: record.id,
+            properties: { [datePropertyId]: record.date } })
+        assert.equal(created.status, 201, JSON.stringify(created.body))
+      }
+
+      state = await snapshot(tableViewId)
+      const linksByOwner = new Map<string, string[]>()
+      for (const [from, to] of scenario.edges) {
+        const outgoing = linksByOwner.get(from) ?? []
+        outgoing.push(recordIds.get(to)!)
+        linksByOwner.set(from, outgoing)
+      }
+      const graphMutationId = `graph-${suffix}`
+      const graphMutation = await request(base, `${route}/cell-mutations`, 'POST', cookie, {
+        mutationId: graphMutationId,
+        expectedDatabaseVersion: state.database.version,
+        records: [...linksByOwner].map(([from, links]) => ({ recordId: recordIds.get(from)!,
+          expectedRecordVersion: row(state, recordIds.get(from)!).version,
+          cells: [{ propertyId: relationPropertyId, value: links }] })),
+      })
+      assert.equal(graphMutation.status, 201, JSON.stringify(graphMutation.body))
+      assert.equal((await request(base, `${route}/cell-mutations/${graphMutationId}`, 'GET', cookie)).body.status, 'committed')
+
+      state = await snapshot(tableViewId)
+      const config = {
+        filters: [], sorts: [], visibleProperties: null, propertyOrder: null,
+        options: { timeline: { dateSource: { mode: 'date-property', propertyId: datePropertyId },
+          dependency: { propertyId: relationPropertyId, direction: 'blocks', shiftMode: scenario.shiftMode,
+            avoidWeekends: scenario.avoidWeekends } } },
+      }
+      const timelineView = await request(base, `${route}/views`, 'POST', cookie,
+        { id: timelineViewId, name: 'Timeline', type: 'timeline', config, expectedDatabaseVersion: state.database.version })
+      assert.equal(timelineView.status, 201, JSON.stringify(timelineView.body))
+      const before = await snapshot(timelineViewId)
+      const rootRecordId = recordIds.get(scenario.rootId)!
+      const rootMutationId = `root-${suffix}`
+      const rootMutation = await request(base, `${route}/cell-mutations`, 'POST', cookie, {
+        mutationId: rootMutationId,
+        expectedDatabaseVersion: before.database.version,
+        records: [{ recordId: rootRecordId, expectedRecordVersion: row(before, rootRecordId).version,
+          cells: [{ propertyId: datePropertyId, value: scenario.rootDate }] }],
+        context: { viewId: timelineViewId, expectedViewVersion: timelineView.body.view.version },
+      })
+      assert.equal(rootMutation.status, 201, JSON.stringify(rootMutation.body))
+      assert.equal(rootMutation.body.database.version, before.database.version + 1)
+      assert.equal((await request(base, `${route}/cell-mutations/${rootMutationId}`, 'GET', cookie)).body.status, 'committed')
+
+      const after = await snapshot(timelineViewId)
+      assert.equal(after.database.version, before.database.version + 1, 'reload observes exactly one Database bump')
+      for (const [key, expectedDate] of Object.entries(scenario.expectedDates)) {
+        const id = recordIds.get(key)!
+        assert.deepEqual(row(rootMutation.body, id).properties[datePropertyId], expectedDate, `${key} committed Date wire value`)
+        assert.deepEqual(row(after, id).properties[datePropertyId], expectedDate, `${key} reloaded Date wire value`)
+        assert.equal(row(after, id).version, row(before, id).version + 1, `${key} changes once`)
+      }
+      for (const record of scenario.records.filter(item => !Object.hasOwn(scenario.expectedDates, item.id))) {
+        const id = recordIds.get(record.id)!
+        assert.deepEqual(row(after, id).properties[datePropertyId], record.date, `${record.id} remains unchanged after reload`)
+        assert.equal(row(after, id).version, row(before, id).version, `${record.id} version stays unchanged`)
+      }
+    })
+  } finally {
+    try { await connection?.dropDatabase() } finally {
+      await app?.close()
+      if (previousUri === undefined) delete process.env.MONGODB_URI
+      else process.env.MONGODB_URI = previousUri
+      if (previousOrigin === undefined) delete process.env.WEB_ORIGIN
+      else process.env.WEB_ORIGIN = previousOrigin
+    }
+  }
+})
