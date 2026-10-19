@@ -1,0 +1,20 @@
+{
+  "baselineCommit": "a94f0cc4ee7dfd994b5073370f15bef23b49393c",
+  "test": "database view selector creates a Board view through the existing DatabaseView API",
+  "initialFullRunArtifactsTempDirectory": "eotion-p115-full-database-5337865ff23f4d4fa6fdf0c1b417f6c6",
+  "initialFailure": "After editing the Record title and clicking the View selector, the accessible Database View group did not contain the Create Board View button (line 3234). The error snapshot already contained the new title in both Drawer and Table.",
+  "currentRepeatedRun": {
+    "repeatEach": 3, "workers": 1, "retries": 0,
+    "passed": 2, "failed": 1, "exitCode": 1,
+    "failure": "Earlier assertion at line 3231: after fill, the title input still showed fixture value Board record instead of the draft.",
+    "artifactsTempDirectory": "eotion-p115-selector-current-058bdd16b9524de48a4be8f76a0e2b53"
+  },
+  "baselineRepeatedRun": {
+    "repeatEach": 3, "workers": 1, "retries": 0,
+    "passed": 2, "failed": 1, "exitCode": 1,
+    "failure": "Same earlier title input assertion at line 3231; the specific selector-menu failure from the full run did not reproduce.",
+    "setup": "Ordinary TEMP git archive copy, separate offline frozen Web dependency install and shared package builds; 615 reparse items checked, no target points to main checkout; separate Vite 7176 stopped after the run.",
+    "artifactsTempDirectory": "eotion-p115-selector-baseline-6e6703cf068241b4bd99d43933b68eed"
+  },
+  "conclusion": "The test has a proven pre-existing title-input timing failure. These repeats do not establish whether the initial selector-menu assertion failure is pre-existing or a regression. No PageView/title synchronization code or existing Board test was changed."
+}

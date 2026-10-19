@@ -243,3 +243,11 @@ unknown仍按同mutationId整批receipt，不retry。scheduling对Separate两Cel
 首220/221失败与13/13定向单独保留；Domain92/Contracts29/SDK24/logic88、真实Mongo
 Domain16/performance1/HTTP18和API/Web门禁通过，独立review0blocker。Mongo/Vite已关闭，
 版本0.0.1/build2不变；停在D，不进入P11.5/P11 Final/发布。C历史193/194不改写，标题问题本轮未复现。
+
+P11.5（2026-10-19）：COMPLETE / Scope PASS（用户明确接受四项已证旧视觉基线例外），正式状态见
+[P11.5报告](../verification/p11-5-responsive-visual-polish.md)与[renderer §32](../architecture/timeline-renderer.md#32-p115-responsive--visual-polish)。
+检索`eotion-timeline-root` container Header、minor day label、WebKit native scrollbar、
+`refreshing`/`refreshLoadedWindow`、`timeline-visual.spec.ts`与P11.5产品用例。保留单renderer、
+Frozen持久配置、48px共享行、Date/Dependency仲裁与receipt三态。新六图通过不等于整体
+visual通过；旧四图失败有a94 actual字节一致证据，自动visual仍9/13。完整Database226/226，
+用户已授权提交推送；版本不变，P11.6尚未执行。

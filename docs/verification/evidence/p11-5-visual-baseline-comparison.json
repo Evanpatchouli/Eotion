@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-19",
+  "timezone": "Asia/Shanghai",
+  "baselineCommit": "a94f0cc4ee7dfd994b5073370f15bef23b49393c",
+  "baselineSetup": "Detached managed worktree, original visual suite/config except baseURL 7174 and a separate Vite cacheDir; existing unchanged workspace dependencies reused. No snapshot update.",
+  "baselineResult": { "passed": 3, "failed": 4, "skipped": 0, "workers": 1, "retries": 0, "exitCode": 1 },
+  "currentExistingSevenResult": { "passed": 3, "failed": 4, "skipped": 0, "workers": 1, "retries": 0, "exitCode": 1 },
+  "baselineArtifactsTempDirectory": "eotion-p115-visual-baseline-04ac465dc6054db98a44f8294df2c8cb",
+  "currentArtifactsTempDirectory": "eotion-visual-regression-existing7-stable-eb5b16e6d9d242e084dd18b718cbd226",
+  "images": [
+    { "name": "page-tablet-light.png", "differentPixelsFromStoredSnapshot": 1251, "currentActualEqualsBaselineActual": true, "sha256": "12B4D0D4F24F18AD39D34536DBF7F6435620622F1BC23F85E3CB00C378ED1322" },
+    { "name": "page-mobile-light.png", "differentPixelsFromStoredSnapshot": 1175, "currentActualEqualsBaselineActual": true, "sha256": "A455C3BF511C7BBB8F476EC179A25AF663CB1C710D2D12E8D36FBAB520CF9C98" },
+    { "name": "settings-desktop-light.png", "differentPixelsFromStoredSnapshot": 2006, "currentActualEqualsBaselineActual": true, "sha256": "6752CEF0BA25443FA0C1DD900E6489846C26E8E760DE91CC5C2BEB165E09AD4D" },
+    { "name": "settings-profile-mobile-light.png", "differentPixelsFromStoredSnapshot": 1132, "currentActualEqualsBaselineActual": true, "sha256": "FE7AD87834C932A442500A24BD9AF9E8D87961820EB6ED0AFB816B55D8617D6A" }
+  ],
+  "conclusion": "The four pre-existing visual failures render byte-identical actual PNGs before and after this change. Stored unrelated snapshots and maxDiffPixelRatio 0.001 remain unchanged. The overall visual gate is not PASS.",
+  "diagnosticOnly": "Temporary baseline-only disable-lcd-text experiment gave 6/7, leaving mobile 524 pixels different. Additional font-subpixel/gpu experiments did not resolve it. No rendering flags, threshold changes, or unrelated snapshot updates were applied to the main checkout."
+}

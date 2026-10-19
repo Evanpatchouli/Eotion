@@ -1,5 +1,42 @@
 # Handoff
 
+## 2026-10-19 P11.5 Responsive + Visual Polish — COMPLETE / PASS（Scope，用户接受旧视觉例外）
+
+基线master `a94f0cc4ee7dfd994b5073370f15bef23b49393c`，开始工作树干净、fetch后origin一致。
+只执行P11.5；0.0.1/build2不变，不启动P11.6/tag/Release。用户在明确四项旧视觉差异与
+提交推送条件后回复“提交”，接受该Scope例外并授权提交推送master；自动visual仍9/13，
+旧七张快照不改。实现提交363ac66、视觉提交721e139；最终文档提交SHA与远端/工作树核对
+以交付消息和Git history为准。
+
+生产：容器Header、minor day紧凑label与仅日刻度限宽、真实可见native scrollbar、Frozen title
+填行、coarse主要控件、generic Database epoch保护且仅Timeline呈现的刷新提示；不改Date wire/Relation/API/
+Domain/SDK/MCP/同步/标题同步/identity fence。正式契约renderer §32。
+
+五新产品+一新label定向6/6、logic/theme92/92、Webtypecheck/version通过；修复supports
+语法后production build+production theme2/2通过。最终六Timeline基线compare6/6与Agent逐张
+视检完成（Tablet曾因阈值留旧图，保存live actual后仅该图强制更新）；完整visual9/13，
+四个旧Page/Settings实际PNG与a94隔离副本逐字节相同，旧七张快照/阈值未改。
+
+完整Database三次均单worker零retry整文件：首224/226（旧Board create菜单/旧Slash缺option），
+第二225/226（旧Board grouping title首次输入回显），最终226/226（7.8m）全过，前两次保留。
+create case当前/a94各repeat3为2pass1fail但失败在更早titleDraft，不把菜单缺失洗成基线；
+grouping基线2pass1fail为keyboard grouping后title保持，当前第二批是首次fill后，时点不同。
+最后通过不称旧标题/菜单/Slash问题已修，未修改这些代码/旧tests。
+
+独立末态review发现真实P2：父Viewport scoped的coarse day top32未命中子Ruler，管理按钮
+挡字形。已将同规则移入Ruler自身，真实390/360 computed top32/Range文字上缘>=control
+bottom，0新增未修P1/P2。此4px纯字形修正在完整226之后，以末态target8/visual/build2验证，
+独立review认可无需第四次整文件。Phone L/D两张新参考图已最小更新；最后13比图9PASS/4FAIL，
+六Timeline全过，旧7不动，0新增未修P1/P2。用户确认前HOLD；确认后按旧四项已证例外
+Scope PASS，不把用户接受写成自动visual全绿。
+
+详细矩阵、原始TEMP目录、失败和恢复过程见
+[P11.5报告](../docs/verification/p11-5-responsive-visual-polish.md)。工具清理baseline junction
+误清共享依赖/四包，已恢复HEAD源码且diff空；Web原lock安装、shared3包build成功，Electron
+44.4.5按锁完整性与缓存逐文件恢复，desktop electron --version通过。没有改ACL/杀用户进程。
+主Agent已关闭7173的session46988/PID48952，核对进程退出与7173/7174/7176/4175的listener
+均0。基线后续复现改用普通TEMP archive，链接不指向主checkout。全部测试已结束。
+
 ## 2026-10-19 P11.4D Dependency Final Acceptance — COMPLETE / PASS（Scope）
 
 基线 `2f84ef5ca560bbcd6e8afa06b14ab1d8252bb743`，master，开始工作树干净。

@@ -1,4 +1,49 @@
-# 当前任务：P11.4D Dependency Final Acceptance — COMPLETE / PASS（Scope）
+# 当前任务：P11.5 Responsive + Visual Polish — COMPLETE / PASS（Scope，用户接受旧视觉例外）
+
+基线（2026-10-19）：master，fetch后HEAD/origin/master均为
+`a94f0cc4ee7dfd994b5073370f15bef23b49393c`，工作树干净；0.0.1/build2不变。
+仅P11.5，完成后停止，不启动P11.6/tag/Release。
+
+| 单元 | 模式 / 等级 / 角色 | 验收 / 状态 |
+| --- | --- | --- |
+| U1 | investigate / S0 scout | renderer触控布局Evidence Pack；完成 |
+| U2 | decide / S2 主Agent | 下列Brief；已冻结 |
+| U3 | execute / S1 fast_worker | 实施完成，含Bar主题几何/状态断言6/6；末修后加原B真touch与D键盘合8/8 |
+| U4 | execute / S1 fast_worker | 六新图PASS；Tablet与Phone末修均先看live actual再最小更新；最后visual9/13，旧4与a94 actual字节相同 |
+| U5 | verify / S0 scout + reviewer | logic/theme92/92、typecheck/version通过；最终production build+2theme通过；完整三批224/226、225/226、226/226均保留；末修P2已独立复核修复，0新增未修P1/P2 |
+| U6 | execute / S1 主Agent | 用户明确接受旧4视觉例外并回复“提交”，已授权分单元提交推送；实现363ac66、视觉721e139，最终文档SHA/远端/干净工作树见交付核对；测试端口均已停 |
+
+2026-10-19用户确认：在明确询问是否接受四项已证旧视觉差异为例外并提交推送后，回复
+“提交”。据此P11.5 Scope PASS，自动visual仍9/13，不更新旧七图；P11.6不启动。
+
+## P11.5 Implementation Brief（修改前）
+
+- 原生横滚、共享row geometry、48px行/32pxBar、44px触控point及Frozen<=700px
+  仅标题列已存在。保留单renderer/P9 fence/持久配置。
+- Header的420px窗口媒体查询改为Timeline root container query；紧凑时period
+  独占一行，navigation与scale同一行且互不挤压。
+- 初始真实PNG证明Month36px minor ticks被完整月日标签覆盖；minor day改locale日号，
+  标签宽度约束在tick内，保留major年月、tick边界/密度/geometry/budget。
+- dependency管理26px与未排期打开32px可在coarse下扩大；日期handles 10x32px、
+  connector28x20px先保留仲裁，避免覆盖Bar主入口/相邻行，记录例外及真实touch命中。
+- generic Database继续拥有首次loading/error/retry/offline与staleReadonly；
+  refreshLoadedWindow保留已有DOM，补充受现有requestEpoch保护的轻量刷新提示。
+  不造loader服务，不改变receipt三态/零重试。
+- 复用Quiet Studio token；主题不改几何/状态。真实浏览器核对原生底部scrollbar，
+  需要时补充可见样式。禁止Domain/Date wire/Relation/API/SDK/MCP/版本/标题同步改动。
+
+验收：1440x900、1024x900、390x844、360x800的Light/Dark，手机hasTouch/isMobile及
+pointer:coarse；navigation/scale/scroll/无全页overflow/Frozen同步/配置不变/主题几何不变。
+touch覆盖tap open、move/resize提交取消、connector创建、line单次选择删除、短Bar/point/
+相邻行/边缘命中及清理。状态覆盖loading/refresh/reconnect/空库/全未排期/混合/error/retry/
+offline/pending，既有C/D回归继续保护receipt与staleReadonly。
+
+视觉6张：Desktop L/D、Tablet L、Phone L/D、空或未排期；固定时间/zh-CN/Asia-Shanghai/
+reduced-motion，先检视PNG再建立最小基线。既有7张基线不更新。自动比图、功能测试、Agent
+视检分列。最终完整Database单worker零重试一次运行并保留原始日志，全部Timeline logic/
+P11.3/4专项、visual/theme、typecheck/build/version/diff及独立review；不启动Mongo/P11.6。
+
+## 历史：P11.4D Dependency Final Acceptance — COMPLETE / PASS（Scope）
 
 ## D 阶段范围与基线（2026-10-19）
 

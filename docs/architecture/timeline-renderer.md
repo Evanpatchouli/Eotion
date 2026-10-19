@@ -1,6 +1,6 @@
 # P11.2 Timeline Renderer 架构
 
-> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS；P11.3 Mutation COMPLETE；P11.4A Read Lines Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C COMPLETE / PASS（Scope）；P11.4D 未开始**（实施/验收记录见 §20–§30）
+> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS；P11.3 Mutation COMPLETE；P11.4A Read Lines Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C COMPLETE / PASS（Scope）；P11.4D COMPLETE / PASS；P11.5 COMPLETE / Scope PASS（用户接受旧视觉例外）**（实施/验收记录见 §20–§32）
 > 基线：`25bd279585772bfdce43799de71fb3c3f5ba5436`（`master`），P11.1D PASS 之后。
 > 版本背景：当前版本 `0.0.1`，P11 目标版本 `0.0.3`。§1–§19 保留 P11.2.0 的架构基线；该阶段仅修改文档。P11.2A/B/C 的产品实施与验证见 §20–§22，API、schema、sync、MCP、依赖与版本保持。
 
@@ -756,3 +756,29 @@ datetime Cell 两端使用实际 elapsed delta；date-only Cell 两端使用 Sta
 因此每 Cell 的 precision、wire shape、timeZone、毫秒和内部 duration 保留；混合外层没有
 统一的 elapsed duration 保证。跨 DST 的 weekend roll 可为 23/25 小时，date-only 仍按
 UTC 日期差移动。最终范围/值重新校验，越界或非法范围拒绝整批并回滚。
+
+## 32. P11.5 Responsive + Visual Polish
+
+实施与证据见 [P11.5验收记录](../verification/p11-5-responsive-visual-polish.md)。P11.6未执行；
+不得将本轮Timeline定向通过或六张新图通过写成整体visual门禁通过。
+用户已明确接受四项已证旧视觉差异作为P11.5 Scope例外并授权提交推送；自动visual仍9/13。
+
+- Header复用root inline-size container，<=420px时导航和scale在首行、period另占一行；
+  Frozen沿用<=700px标题列策略，不改变保存的visible或创建第二renderer。
+- minor day label使用locale日号，由major提供完整日期语境。仅minor day限宽在自身tick内；
+  hour fold尾部offset保留，所有边界、密度、坐标和tick budget保持。
+- 原生Timeline scroller继续唯一持有横滚。WebKit使用12px原生轨道、语义色thumb与24px最小
+  thumb宽；其他支持standard scrollbar的引擎使用语义色。原生轨道没有第二滚动状态或桥接。
+- coarse下依赖管理/未排期打开使用36px共享紧凑文本按钮规格，Frozen title填满48px行的
+  可用内容区（扣结构边框），未排期disclosure至少44px。32px Bar、44px point touch target、
+  10x32px resize（边缘紧凑16px高）、28x20px connector及既有手势仲裁保持。后两者是高密度
+  编辑目标例外，扩大到44px会覆盖Bar主入口/相邻行；真实设备尚需人工验证，不冒充全目标44px。
+- DatabaseNodeView继续拥有loading/error/retry/offline和receipt/staleReadonly，仅增加原
+  requestEpoch约束的refresh提示（仅Timeline呈现），刷新中保留现有内容；Table/List/Board
+  不增加新的refresh布局位移。新的load/identity清理旧refresh标记，
+  旧请求finally不能清掉新请求反馈。无新的loader、错误服务、storage或mutation重试。
+- Light/Dark沿用语义token，不复制组件CSS或改变geometry。headless Chrome默认隐藏原生
+  scrollbar，新的Timeline视觉与native轨道定向测试仅在其自身launch配置中移除该隐藏参数，
+  让截图/命中验证实际轨道；旧七张visual的启动参数与基线保持。
+
+Domain调度、Date wire、Relation mapping、API/SDK/MCP、Editor identity与版本未变。
