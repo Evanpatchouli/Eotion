@@ -318,6 +318,8 @@ test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, a
   for (const [, title, start] of promotedPoints) {
     await expect(databaseBlock.locator('tbody tr').filter({ hasText: title })).toContainText(`${start} → ${start}`)
   }
+  // Observe the intermediate save so the initial Timeline seed cannot satisfy the final fence.
+  await expect.poll(() => (api.blocks.find(item => item.id === 'p113b-date-block')?.props as { node?: { attrs?: { viewId?: string } } })?.node?.attrs?.viewId).toBe(tableView.id)
   await switchView('Resize dates')
   await settleTimelineGestureLayout(timeline)
   const afterTableBounds = await barFor('p113b-range').boundingBox()
