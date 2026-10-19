@@ -188,7 +188,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 
 <template>
   <div class="eotion-timeline-viewport" data-testid="timeline-viewport" :data-generation="state?.generation">
-    <span class="eotion-timeline-dependency-live" :class="{ 'is-visible': dependency.showKeyboardStatus.value }" role="status" aria-live="polite" aria-atomic="true" data-testid="timeline-dependency-live">{{ dependency.liveMessage.value }}</span>
+    <span class="eotion-timeline-dependency-live" :class="{ 'is-visible': dependency.showKeyboardStatus.value }" aria-live="polite" aria-atomic="true" data-testid="timeline-dependency-live">{{ dependency.liveMessage.value }}</span>
     <div class="eotion-timeline-ruler-slot">
       <button
         v-if="dependencyEdges.length"
