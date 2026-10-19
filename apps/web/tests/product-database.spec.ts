@@ -299,7 +299,7 @@ test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, a
     await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name, exact: true }).click()
   }
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await settleTimelineGestureLayout(timeline)
   const beforeTableBounds = await barFor('p113b-range').boundingBox()
   if (!beforeTableBounds) throw new Error('Expected resized Timeline geometry before switching to Table')
   const promotedPoints = [['p113b-string-point', 'Legacy string', '2026-10-18'], ['p113b-object-point', 'Legacy object', '2026-10-16']] as const
@@ -319,7 +319,7 @@ test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, a
     await expect(databaseBlock.locator('tbody tr').filter({ hasText: title })).toContainText(`${start} → ${start}`)
   }
   await switchView('Resize dates')
-  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await settleTimelineGestureLayout(timeline)
   const afterTableBounds = await barFor('p113b-range').boundingBox()
   if (!afterTableBounds) throw new Error('Expected Timeline geometry after returning from Table')
   expect(Math.abs(afterTableBounds.width - beforeTableBounds.width)).toBeLessThanOrEqual(1)
@@ -330,9 +330,12 @@ test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, a
     expect(Math.abs(bounds.width - promotedBeforeTable.get(id)!.width)).toBeLessThanOrEqual(1)
   }
   const beforeReloadBounds = afterTableBounds
+  // View references autosave separately from Date Cells; reload only after the saved reference is canonical.
+  await expect.poll(() => (api.blocks.find(item => item.id === 'p113b-date-block')?.props as { node?: { attrs?: { viewId?: string } } })?.node?.attrs?.viewId).toBe(timelineView.id)
   await page.reload()
   await expect.poll(() => api.records.find(item => item.id === 'p113b-range')?.properties[date.id]).toEqual({ start: '2026-10-12', end: '2026-10-16' })
   await expect(barFor('p113b-range')).toBeVisible()
+  await settleTimelineGestureLayout(timeline)
   const afterReloadBounds = await barFor('p113b-range').boundingBox()
   if (!afterReloadBounds) throw new Error('Expected Timeline geometry after reload')
   expect(Math.abs(afterReloadBounds.x - beforeReloadBounds.x)).toBeLessThanOrEqual(1)
