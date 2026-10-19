@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './tests',
-  testMatch: 'visual-regression.spec.ts',
+  testMatch: ['visual-regression.spec.ts', 'timeline-visual.spec.ts'],
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
   fullyParallel: false,
   workers: 1,
