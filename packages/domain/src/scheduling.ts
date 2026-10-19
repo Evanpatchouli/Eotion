@@ -16,7 +16,12 @@ export class SchedulingError extends Error {
 
 type RecordInput = Pick<DatabaseRecord, 'id' | 'properties'>
 type Edge = { predecessorRecordId: string; successorRecordId: string }
-type Dates = { kind: NormalizedDatabaseDateValue['kind']; start: number; finish: number; cells: DatabaseDateValue[] }
+type Dates = {
+  start: number
+  finish: number
+  cells: DatabaseDateValue[]
+  normalized: NormalizedDatabaseDateValue[]
+}
 
 /** Pure planner for the server's canonical post-relation predecessor → successor graph. */
 export function planDatabaseSchedule(input: {
@@ -108,7 +113,11 @@ export function planDatabaseSchedule(input: {
         if (candidate > required) required = candidate
       }
       if (required > old.start) {
-        if (old.kind === 'date-only') required = Math.ceil(required / DAY_MS) * DAY_MS
+        if (old.normalized[0]!.kind === 'date-only') {
+          required = Math.ceil(required / DAY_MS) * DAY_MS
+        } else if (old.normalized.length > 1 && old.normalized[1]!.kind === 'date-only') {
+          required = checkedAdd(old.start, Math.ceil((required - old.start) / DAY_MS) * DAY_MS)
+        }
         if (avoidWeekends) required = nextWeekday(required, old.cells[0]!)
         const shifted = shiftDates(old, required, dateSource)
         planned.set(id, shifted.dates)
@@ -137,15 +146,15 @@ function readDates(properties: DatabaseRecord['properties'], source: TimelineDat
   if (cells.some(value => !value)) throw new SchedulingError('invalid-date')
   const startCell = cells[0]!
   const endCell = source.mode === 'start-end' ? cells[1] : undefined
-  if (endCell && endCell.kind !== startCell.kind) throw new SchedulingError('invalid-date')
   const start = instant(startCell.start)
-  const finish = source.mode === 'start-end' ? (endCell ? instant(endCell.start) : start)
-    : startCell.end ? instant(startCell.end) : start
-  if (finish < start) throw new SchedulingError('invalid-date')
+  const finish = source.mode === 'start-end'
+    ? endCell ? checkedAdd(instant(endCell.start), endCell.kind === 'date-only' ? DAY_MS : 0) : start
+    : startCell.end ? checkedAdd(instant(startCell.end), startCell.kind === 'date-only' ? DAY_MS : 0) : start
+  if (source.mode === 'start-end' && endCell?.kind === 'date-only') {
+    if (finish <= start) throw new SchedulingError('invalid-date')
+  } else if (finish < start) throw new SchedulingError('invalid-date')
   const hasRange = source.mode === 'start-end' ? Boolean(endCell) : Boolean(startCell.end)
-  const inclusiveFinish = startCell.kind === 'date-only' && hasRange
-    ? checkedAdd(finish, DAY_MS) : finish
-  return { kind: startCell.kind, start, finish: inclusiveFinish, cells: raw as DatabaseDateValue[] }
+  return { start, finish: hasRange ? finish : start, cells: raw as DatabaseDateValue[], normalized: cells as NormalizedDatabaseDateValue[] }
 }
 
 function instant(value: string): number {
@@ -163,20 +172,25 @@ function checkedAdd(a: number, b: number): number {
 function shiftDates(old: Dates, newStart: number, source: TimelineDateSource): {
   dates: Dates; properties: DatabaseRecord['properties']
 } {
-  const offset = newStart - old.start
+  const elapsedOffset = newStart - old.start
+  const dayOffset = Math.floor(newStart / DAY_MS) - Math.floor(old.start / DAY_MS)
   const keys = source.mode === 'date-property' ? [source.propertyId] :
     old.cells.length === 1 ? [source.startPropertyId] : [source.startPropertyId, source.endPropertyId]
   const properties: DatabaseRecord['properties'] = {}
   for (let i = 0; i < keys.length; i++) {
     const value = old.cells[i]!
+    const normalized = old.normalized[i]!
+    const offset = normalized.kind === 'date-only' ? dayOffset * DAY_MS : elapsedOffset
     const move = (part: string) => {
       const result = checkedAdd(instant(part), offset)
-      if (old.kind === 'date-only') {
+      if (normalized.kind === 'date-only') {
         const iso = new Date(result).toISOString()
         if (result % DAY_MS !== 0 || !/^\d{4}-\d{2}-\d{2}T/u.test(iso)) throw new SchedulingError('invalid-date')
         return iso.slice(0, 10)
       }
-      return new Date(result).toISOString()
+      const iso = new Date(result).toISOString()
+      if (!isValidCanonicalUtcInstant(iso)) throw new SchedulingError('invalid-date')
+      return iso
     }
     properties[keys[i]!] = typeof value === 'string' ? move(value) : {
       ...value, start: move(value.start), ...(value.end === undefined ? {} : { end: move(value.end) }),

@@ -717,3 +717,174 @@ test('canonical Timeline scheduling HTTP integration matrix (8 scenarios)', asyn
     }
   }
 })
+
+test('Separate source mixed-precision Relation create commits atomically and rolls back invalid plans', async t => {
+  const source = process.env.P4_TEST_MONGODB_URI?.trim()
+  if (!source) return t.skip('P4_TEST_MONGODB_URI must name an isolated replica set')
+  const previousUri = process.env.MONGODB_URI
+  const previousOrigin = process.env.WEB_ORIGIN
+  const uri = new URL(source)
+  uri.pathname = `/eotion_timeline_mixed_http_${randomUUID().replaceAll('-', '')}`
+  process.env.MONGODB_URI = uri.toString()
+  process.env.WEB_ORIGIN = 'https://trusted.example.test'
+  let app: Awaited<ReturnType<typeof NestFactory.create>> | undefined
+  let connection: Connection | undefined
+  try {
+    @Module({ imports: [ConfigModule.forRoot({ isGlobal: true }), MongooseModule.forRoot(process.env.MONGODB_URI), HttpApiModule] })
+    class TestModule {}
+    app = await NestFactory.create(TestModule, new FastifyAdapter(), { logger: false })
+    app.setGlobalPrefix('api')
+    await app.listen(0, '127.0.0.1')
+    const address = app.getHttpServer().address()
+    assert.ok(address && typeof address === 'object')
+    const base = `http://127.0.0.1:${address.port}`
+    connection = app.get<Connection>(getConnectionToken())
+
+    const suffix = randomUUID().replaceAll('-', '')
+    const owner = { email: `mixed-${suffix}@example.test`, password: 'correct horse battery staple' }
+    assert.equal((await request(base, '/api/auth/register', 'POST', undefined, owner)).status, 201)
+    const login = await request(base, '/api/auth/login', 'POST', undefined, owner)
+    const cookie = login.headers.get('set-cookie')!.split(';', 1)[0]!
+    const workspaceId = `ws-${suffix}`
+    const homeId = `home-${suffix}`
+    const databaseId = `db-${suffix}`
+    const tableViewId = `table-${suffix}`
+    const timelineViewId = `timeline-${suffix}`
+    const startPropertyId = `start-${suffix}`
+    const endPropertyId = `end-${suffix}`
+    const relationPropertyId = `links-${suffix}`
+    assert.equal((await request(base, '/api/workspaces', 'POST', cookie, { id: workspaceId, name: 'Mixed scheduling' })).status, 201)
+    assert.equal((await request(base, `/api/workspaces/${workspaceId}/pages`, 'POST', cookie,
+      { id: homeId, parentPageId: null, title: 'Home', orderKey: 'a' })).status, 201)
+    const route = `/api/workspaces/${workspaceId}/databases/${databaseId}`
+    assert.equal((await request(base, `/api/workspaces/${workspaceId}/pages/${homeId}/databases`, 'POST', cookie,
+      { id: databaseId, name: 'Mixed', titlePropertyId: `title-${suffix}`, viewId: tableViewId,
+        blockId: `block-${suffix}`, orderKey: 'a', parentBlockId: null })).status, 201)
+
+    const snapshot = async () => {
+      const result = await request(base, `${route}/views/${tableViewId}/records`, 'GET', cookie)
+      assert.equal(result.status, 200, JSON.stringify(result.body))
+      return result.body
+    }
+    const row = (data: any, id: string) => data.records.find((record: any) => record.id === id)
+    let state = await snapshot()
+    for (const [id, name] of [[startPropertyId, 'Start'], [endPropertyId, 'End']] as const) {
+      const created = await request(base, `${route}/properties`, 'POST', cookie,
+        { id, name, type: 'date', expectedDatabaseVersion: state.database.version })
+      assert.equal(created.status, 201, JSON.stringify(created.body))
+      state = await snapshot()
+    }
+    const relation = await request(base, `${route}/properties`, 'POST', cookie,
+      { id: relationPropertyId, name: 'Blocks', type: 'relation', config: { targetDatabaseId: databaseId },
+        expectedDatabaseVersion: state.database.version })
+    assert.equal(relation.status, 201, JSON.stringify(relation.body))
+    state = await snapshot()
+
+    const initialDates: Record<string, { start: any; end: any }> = {
+      root: { start: { start: '2026-01-01T23:00:00.123Z', timeZone: 'UTC' }, end: '2026-01-01' },
+      target: { start: { start: '2026-01-01', end: '2026-01-01' }, end: { start: '2026-01-01T12:00:00.456Z', end: '2026-01-01T13:00:00.456Z', timeZone: 'Asia/Tokyo' } },
+      datetimeTarget: { start: { start: '2026-01-01T10:00:00.123Z', end: '2026-01-01T11:00:00.123Z', timeZone: 'UTC' },
+        end: { start: '2026-01-01', end: '2026-01-02' } },
+      invalidRoot: { start: '2026-01-02', end: { start: '2026-01-01T12:00:00.000Z', timeZone: 'UTC' } },
+      invalidTarget: { start: '2026-01-01', end: '2026-01-01' },
+      overflowRoot: { start: '9999-12-31', end: '9999-12-31' },
+      overflowTarget: { start: '9999-12-31', end: { start: '9999-12-31T12:00:00.000Z', timeZone: 'UTC' } },
+    }
+    for (const [id, value] of Object.entries(initialDates)) {
+      const created = await request(base, `${route}/records`, 'POST', cookie,
+        { id: `${id}-${suffix}`, pageId: `page-${id}-${suffix}`, title: id, orderKey: id,
+          properties: { [startPropertyId]: value.start, [endPropertyId]: value.end } })
+      assert.equal(created.status, 201, JSON.stringify(created.body))
+    }
+
+    state = await snapshot()
+    const config = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null,
+      options: { timeline: { dateSource: { mode: 'start-end', startPropertyId, endPropertyId },
+        dependency: { propertyId: relationPropertyId, direction: 'blocks', shiftMode: 'shift_when_overlapping', avoidWeekends: false } } } }
+    const timeline = await request(base, `${route}/views`, 'POST', cookie,
+      { id: timelineViewId, name: 'Timeline', type: 'timeline', config, expectedDatabaseVersion: state.database.version })
+    assert.equal(timeline.status, 201, JSON.stringify(timeline.body))
+
+    const before = await snapshot()
+    const rootId = `root-${suffix}`
+    const targetId = `target-${suffix}`
+    const mutationId = `mixed-create-${suffix}`
+    const committed = await request(base, `${route}/cell-mutations`, 'POST', cookie, {
+      mutationId, expectedDatabaseVersion: before.database.version,
+      records: [{ recordId: rootId, expectedRecordVersion: row(before, rootId).version,
+        cells: [{ propertyId: relationPropertyId, value: [targetId] }] }],
+      context: { viewId: timelineViewId, expectedViewVersion: timeline.body.view.version },
+    })
+    assert.equal(committed.status, 201, JSON.stringify(committed.body))
+    assert.equal(committed.body.database.version, before.database.version + 1)
+    assert.deepEqual(committed.body.records.map((item: any) => item.id).sort(), [rootId, targetId].sort())
+    assert.equal((await request(base, `${route}/cell-mutations/${mutationId}`, 'GET', cookie)).body.status, 'committed')
+    const after = await snapshot()
+    assert.equal(after.database.version, before.database.version + 1)
+    assert.equal(row(after, rootId).version, row(before, rootId).version + 1)
+    assert.equal(row(after, targetId).version, row(before, targetId).version + 1)
+    assert.deepEqual(row(committed.body, targetId).properties[startPropertyId], { start: '2026-01-02', end: '2026-01-02' })
+    assert.deepEqual(row(committed.body, targetId).properties[endPropertyId], { start: '2026-01-02T12:00:00.456Z', end: '2026-01-02T13:00:00.456Z', timeZone: 'Asia/Tokyo' })
+    assert.deepEqual(row(after, rootId).properties[relationPropertyId], [targetId])
+    assert.deepEqual(row(after, targetId).properties[startPropertyId], { start: '2026-01-02', end: '2026-01-02' })
+    assert.deepEqual(row(after, targetId).properties[endPropertyId], { start: '2026-01-02T12:00:00.456Z', end: '2026-01-02T13:00:00.456Z', timeZone: 'Asia/Tokyo' })
+
+    const beforeSecond = await snapshot()
+    const datetimeTargetId = `datetimeTarget-${suffix}`
+    const secondMutationId = `mixed-create-datetime-${suffix}`
+    const secondCommitted = await request(base, `${route}/cell-mutations`, 'POST', cookie, {
+      mutationId: secondMutationId, expectedDatabaseVersion: beforeSecond.database.version,
+      records: [{ recordId: rootId, expectedRecordVersion: row(beforeSecond, rootId).version,
+        cells: [{ propertyId: relationPropertyId, value: [targetId, datetimeTargetId] }] }],
+      context: { viewId: timelineViewId, expectedViewVersion: timeline.body.view.version },
+    })
+    assert.equal(secondCommitted.status, 201, JSON.stringify(secondCommitted.body))
+    assert.equal(secondCommitted.body.database.version, beforeSecond.database.version + 1)
+    assert.deepEqual(secondCommitted.body.records.map((item: any) => item.id).sort(), [rootId, datetimeTargetId].sort())
+    assert.equal((await request(base, `${route}/cell-mutations/${secondMutationId}`, 'GET', cookie)).body.status, 'committed')
+    const afterSecond = await snapshot()
+    assert.equal(afterSecond.database.version, beforeSecond.database.version + 1)
+    assert.equal(row(afterSecond, rootId).version, row(beforeSecond, rootId).version + 1)
+    assert.equal(row(afterSecond, datetimeTargetId).version, row(beforeSecond, datetimeTargetId).version + 1)
+    assert.deepEqual(row(secondCommitted.body, datetimeTargetId).properties[startPropertyId],
+      { start: '2026-01-02T10:00:00.123Z', end: '2026-01-02T11:00:00.123Z', timeZone: 'UTC' })
+    assert.deepEqual(row(secondCommitted.body, datetimeTargetId).properties[endPropertyId], { start: '2026-01-02', end: '2026-01-03' })
+    assert.deepEqual(row(afterSecond, rootId).properties[relationPropertyId], [targetId, datetimeTargetId])
+    assert.deepEqual(row(afterSecond, datetimeTargetId).properties[startPropertyId],
+      { start: '2026-01-02T10:00:00.123Z', end: '2026-01-02T11:00:00.123Z', timeZone: 'UTC' })
+    assert.deepEqual(row(afterSecond, datetimeTargetId).properties[endPropertyId], { start: '2026-01-02', end: '2026-01-03' })
+
+    for (const [caseName, rootName, targetName] of [
+      ['invalid-range', 'invalidRoot', 'invalidTarget'], ['overflow', 'overflowRoot', 'overflowTarget'],
+    ] as const) {
+      const beforeRejected = await snapshot()
+      const rejectedRootId = `${rootName}-${suffix}`
+      const rejectedTargetId = `${targetName}-${suffix}`
+      const rejectedMutationId = `mixed-${caseName}-${suffix}`
+      const rejected = await request(base, `${route}/cell-mutations`, 'POST', cookie, {
+        mutationId: rejectedMutationId, expectedDatabaseVersion: beforeRejected.database.version,
+        records: [{ recordId: rejectedRootId, expectedRecordVersion: row(beforeRejected, rejectedRootId).version,
+          cells: [{ propertyId: relationPropertyId, value: [rejectedTargetId] }] }],
+        context: { viewId: timelineViewId, expectedViewVersion: timeline.body.view.version },
+      })
+      assert.equal(rejected.status, 400, JSON.stringify(rejected.body))
+      assert.equal((await request(base, `${route}/cell-mutations/${rejectedMutationId}`, 'GET', cookie)).body.status, 'not_committed')
+      const afterRejected = await snapshot()
+      assert.equal(afterRejected.database.version, beforeRejected.database.version)
+      for (const id of [rejectedRootId, rejectedTargetId]) {
+        assert.equal(row(afterRejected, id).version, row(beforeRejected, id).version)
+        assert.deepEqual(row(afterRejected, id).properties[relationPropertyId], row(beforeRejected, id).properties[relationPropertyId])
+        assert.deepEqual(row(afterRejected, id).properties[startPropertyId], row(beforeRejected, id).properties[startPropertyId])
+        assert.deepEqual(row(afterRejected, id).properties[endPropertyId], row(beforeRejected, id).properties[endPropertyId])
+      }
+    }
+  } finally {
+    try { await connection?.dropDatabase() } finally {
+      await app?.close()
+      if (previousUri === undefined) delete process.env.MONGODB_URI
+      else process.env.MONGODB_URI = previousUri
+      if (previousOrigin === undefined) delete process.env.WEB_ORIGIN
+      else process.env.WEB_ORIGIN = previousOrigin
+    }
+  }
+})

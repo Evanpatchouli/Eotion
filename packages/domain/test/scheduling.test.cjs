@@ -181,10 +181,87 @@ test('start-end datetime point ignores Start cell inner end for predecessor fini
   assert.deepEqual(result.mutations, [{ recordId: 'b', properties: { start: { start: '2026-01-10T10:00:00.123Z', timeZone: 'UTC' } } }])
 })
 
-test('start-end rejects mixed date kinds and reversed boundaries', () => {
+test('start-end rejects reversed boundaries', () => {
   const root = { id: 'a', properties: { start: '2026-01-10', end: '2026-01-11' } }
-  failure(() => run([root, { id: 'b', properties: { start: '2026-01-01', end: { start: '2026-01-02T00:00:00.000Z', timeZone: 'UTC' } } }], [edge('a', 'b')], { dateSource: startEnd }), 'invalid-date')
   failure(() => run([root, { id: 'b', properties: { start: '2026-01-03', end: '2026-01-02' } }], [edge('a', 'b')], { dateSource: startEnd }), 'invalid-date')
+})
+
+test('independent start-end cells allow mixed precision and finish uses the End cell kind', () => {
+  const result = run([
+    { id: 'a', properties: { start: { start: '2026-01-01T23:00:00.123Z', timeZone: 'UTC' }, end: '2026-01-01' } },
+    { id: 'b', properties: { start: '2026-01-01', end: null } },
+  ], [edge('a', 'b')], { dateSource: startEnd })
+  assert.deepEqual(result.mutations, [{ recordId: 'b', properties: { start: '2026-01-02' } }])
+
+  failure(() => run([
+    { id: 'a', properties: { start: { start: '2026-01-02T00:00:00.000Z', timeZone: 'UTC' }, end: '2026-01-01' } },
+    { id: 'b', properties: { start: '2026-01-01', end: null } },
+  ], [edge('a', 'b')], { dateSource: startEnd }), 'invalid-date')
+})
+
+test('mixed successor shifts each Date cell in its own precision and preserves inner ranges', () => {
+  const result = run([
+    { id: 'a', properties: { start: { start: '2026-01-01T11:00:00.000Z', timeZone: 'UTC' } } },
+    { id: 'b', properties: {
+      start: { start: '2026-01-01T10:00:00.123Z', end: '2026-01-01T11:00:00.123Z', timeZone: 'UTC' },
+      end: { start: '2026-01-01', end: '2026-01-02' },
+    } },
+  ], [edge('a', 'b')], { dateSource: startEnd })
+  assert.deepEqual(result.mutations, [{ recordId: 'b', properties: {
+    start: { start: '2026-01-02T10:00:00.123Z', end: '2026-01-02T11:00:00.123Z', timeZone: 'UTC' },
+    end: { start: '2026-01-02', end: '2026-01-03' },
+  } }])
+})
+
+test('mixed successor rounds a positive fractional-day requirement before applying the Start zone weekend', () => {
+  const result = run([
+    { id: 'a', properties: { start: { start: '2026-03-07T12:30:00.123Z', timeZone: 'UTC' } } },
+    { id: 'b', properties: {
+      start: { start: '2026-03-06T18:30:00.123Z', end: '2026-03-06T19:30:00.123Z', timeZone: 'America/Los_Angeles' },
+      end: '2026-03-08',
+    } },
+  ], [edge('a', 'b')], { dateSource: startEnd, avoidWeekends: true })
+  assert.deepEqual(result.mutations, [{ recordId: 'b', properties: {
+    start: { start: '2026-03-09T17:30:00.123Z', end: '2026-03-09T18:30:00.123Z', timeZone: 'America/Los_Angeles' },
+    end: '2026-03-11',
+  } }])
+})
+
+test('mixed successor weekend roll preserves wall time through fall DST and shifts its date-only End by UTC days', () => {
+  const result = run([
+    { id: 'a', properties: { start: { start: '2026-10-31T17:30:00.456Z', timeZone: 'UTC' } } },
+    { id: 'b', properties: {
+      start: { start: '2026-10-30T17:30:00.456Z', end: '2026-10-30T18:00:00.456Z', timeZone: 'America/Los_Angeles' },
+      end: '2026-10-31',
+    } },
+  ], [edge('a', 'b')], { dateSource: startEnd, avoidWeekends: true })
+  assert.deepEqual(result.mutations, [{ recordId: 'b', properties: {
+    start: { start: '2026-11-02T18:30:00.456Z', end: '2026-11-02T19:00:00.456Z', timeZone: 'America/Los_Angeles' },
+    end: '2026-11-03',
+  } }])
+})
+
+test('date-only Start and datetime End keep independent day and elapsed shifts', () => {
+  const result = run([
+    { id: 'a', properties: { start: { start: '2026-01-01T12:00:00.000Z', timeZone: 'UTC' } } },
+    { id: 'b', properties: {
+      start: { start: '2026-01-01', end: '2026-01-02' },
+      end: { start: '2026-01-01T10:00:00.456Z', end: '2026-01-01T11:00:00.456Z', timeZone: 'Asia/Tokyo' },
+    } },
+  ], [edge('a', 'b')], { dateSource: startEnd })
+  assert.deepEqual(result.mutations, [{ recordId: 'b', properties: {
+    start: { start: '2026-01-02', end: '2026-01-03' },
+    end: { start: '2026-01-02T10:00:00.456Z', end: '2026-01-02T11:00:00.456Z', timeZone: 'Asia/Tokyo' },
+  } }])
+})
+
+test('mixed precision overflow is rejected while year zero remains shiftable', () => {
+  failure(() => run([
+    { id: 'a', properties: { start: '9999-12-31', end: '9999-12-31' } },
+    { id: 'b', properties: { start: { start: '9999-12-31T12:00:00.000Z', timeZone: 'UTC' }, end: '9999-12-31' } },
+  ], [edge('a', 'b')], { dateSource: startEnd }), 'invalid-date')
+  assert.deepEqual(run([record('a', '0000-01-02'), record('b', '0000-01-01')], [edge('a', 'b')]).mutations,
+    [{ recordId: 'b', properties: { date: '0000-01-02' } }])
 })
 
 test('avoid weekends moves Saturday and Sunday date-only starts to Monday', () => {
