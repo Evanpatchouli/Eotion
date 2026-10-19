@@ -215,3 +215,18 @@ Domain48/Contracts25/SDK23、隔离Mongo8.0.12（55776/p113d_6a2f770f）的serve
 HTTP31、MCP30全通过，相关typecheck/build通过，独立review0 blocker。Mongo/Vite实例均已关闭。
 pending View switch正式冻结disabled/fail closed；Start/End readable/openable但mutation只读，
 不新增multi-cell API。无产品代码/版本/依赖/API/schema改动；P11.4 Dependency未开始，完成后停止。
+
+P11.4C Auto Shift 接续检索入口（2026-10-19）：当前状态为**P11.4C COMPLETE / PASS（Scope）**。
+正式行为和范围见[P11.4C验收记录](../verification/p11-4c-auto-shift-policies.md)、
+[Renderer §30](../architecture/timeline-renderer.md#30-p114c-auto-shift-policies)；本次已核对的
+standalone/Board refresh、baseline source、null Cell 红绿和隔离 Mongo 生命周期见
+[接续证据 JSON](../verification/evidence/p11-4c-resume-20261019.json)。
+
+按代码边界检索：`packages/domain/src/scheduling.ts`（纯 canonical graph planner 与策略）；
+`apps/api/src/modules/server-domain/services/database.service.ts` 中 `mutateCellsInTransaction`
+（通用 multi-record/multi-cell atomic commit、CAS 与 receipt 状态）；
+`database-cell-mutation.repository.ts` / `database-cell-mutation.schema.ts`（持久回执）；
+`apps/web/src/components/editor/DatabaseNodeView.vue` 与
+`apps/web/src/services/productDatabases.ts`（Cell mutation adapters）。先读取现有事务契约
+`../architecture/database-cell-mutations.md`，不要从 renderer 的局部 preview 推断 canonical graph。
+P11.4C Scope PASS：最终完整Web193/194（唯一已证基线标题草稿失败）、P11.3 25/25、A8/B27/C14通过，真实HTTP17/17；独立review无未修C blocker。P11.4B connector keyboard create P2留D/P11.5；D与P11 Final未开始，不据C范围结论宣称整体通过。

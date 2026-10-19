@@ -1,5 +1,19 @@
 # Handoff
 
+## 2026-10-19 P11.4C COMPLETE / PASS（Scope）
+
+当前只收口 P11.4C；**P11.4C COMPLETE / PASS（Scope）**。正式验证矩阵见
+[P11.4C 验收记录](../docs/verification/p11-4c-auto-shift-policies.md)，接续 facts / traces / baseline hashes / null-clear 红绿与 Mongo lifecycle 见
+[接续证据](../docs/verification/evidence/p11-4c-resume-20261019.json)。版本 0.0.1/build2 不变；不进入 D、P11.5、P11 Final 或发布。
+
+R1 已完成：4 条有效 standalone / Board refresh trace 均表明 dirty title draft 在 `sync.revision` 1→2 后的 refresh 中回到 canonical 标题，`titleSaving=false`、PageView identity 稳定、page item identity 改变、0 HTTP/rename/cell mutation；baseline 同机制。与 C 无关的 PageView 不扩 scope。R2 已决定隔离此问题并修正 batch explicit-null clear P2。R3 已完成：`438e393` null clear、`a1a7394` header snapshot、`eefe67a` Slash PM 只读前置。Review 本轮静态检查 0 个未修 C blocker，null P2 已修。
+
+接续初轮 Domain 86/86、Contracts 29/29、SDK 24/24、Timeline logic 88/88；隔离 MongoDB 8.2.3 Domain 16/16、HTTP 8/8；API/Web build 与 typecheck 通过。最初完整 Web 191/194，P11.3 25/25、A 8/8、B 27/27、C 14/14 通过。baseline 177/180；Slash 建库相同 case 和 dialog assertion 失败，但缺 error context，不能推断更深层同因。
+
+R4已完成，独立review确认C范围0未修P1/P2 blocker。最终Web193/194（worker1/retries0），唯一standalone dirty-title为已证同机制基线；P11.3 25/25、A8/8、B27/27、C14/14全部通过。完整Web不称全绿。81ea2a9单独末态poll的seed假阳性由7197探针复现，4818059顺序观察Table→Timeline后local/canonical均Timeline、pending=0；618f7ec等待异步Review id。f4c77a4新增真实HTTP8策略场景（含父矩阵9/9），最终HTTP三文件17/17、APIbuild/typecheck通过。
+
+Mongo61703/PID32300、61070/PID37200、63334/PID36848均已关闭、端口无监听；rs与metadata见报告JSON。7173/7193/7194/7196/7197均已停。停在C，不进入D/P11.5/Final。D精确入口为C报告、domain scheduling矩阵、generic batch/receipt、canonical executor/rollback HTTP测试、NodeView active Date/create适配器。P2 connector Enter/Space create仍待D或P11.5；既有PageView dirty-title刷新覆盖另立问题，本轮不修。
+
 ## 2026-10-16 P11.4C Auto Shift Policies（实现完成 / 验收 HOLD，停止在 C）
 
 基线 `d662dec83c849ce8d2ec4c09ab566ae72c0fa272`；分支 `codex/p11-4c-auto-shift`。

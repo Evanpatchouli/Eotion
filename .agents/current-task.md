@@ -1,28 +1,27 @@
-# 当前任务：P11.4C Auto Shift Policies — 实现完成 / 验收 HOLD，停止在 C
+# 当前任务：P11.4C Auto Shift Policies — COMPLETE / PASS（Scope）
 
-基线 `d662dec83c849ce8d2ec4c09ab566ae72c0fa272`，开始工作树干净。仅执行 C；不进入 D / P11.5 / Final，不修改版本。
+## 当前范围（2026-10-19）
+
+仅收口 P11.4C，不进入 D / P11.5 / P11 Final，不改版本。正式契约和验证矩阵见
+`docs/verification/p11-4c-auto-shift-policies.md`；接续事实见
+`docs/verification/evidence/p11-4c-resume-20261019.json`。
 
 | 单元 | 模式 / 等级 / 角色 | 输出 | 状态 |
 | --- | --- | --- | --- |
-| C1 | investigate / S0 scout + 主 Agent | 事务、Web adapter、日期 Evidence Pack | 完成，见 exec-plans/p11-4c-atomicity.md |
-| C2 | decide / S2 主 Agent | Atomicity Design Gate / Implementation Brief | 完成，十项门禁冻结 |
-| C3 | execute / S1–S2 worker | 纯 planner + domain 测试 | c54e8ab/2943d59；最终86/86 |
-| C4 | execute / S1–S2 worker | generic atomic mutation / receipt / canonical service + tests | 59b289f；真实Mongo Domain16/16，HTTP32/32 |
-| C5 | execute / S1 fast_worker | Web Date/create adapter + integration tests | 1a7dcf0/847dcef；C14/14、logic88/88、typecheck/build通过 |
-| C6 | verify / S0 主 Agent + review / reviewer | 隔离 Mongo、回归、性能、独立复核、文档 | 完整Web192/194；P11325/B27/C14均过；实现review0blocker，验收HOLD |
+| R1 | investigate / S0 scout | standalone、Board dirty-title refresh 与 baseline 时序 Evidence Pack | 完成；4 条有效 trace 显示同一 refresh 回退机制，0 HTTP、0 rename、0 batch mutation |
+| R2 | decide / S2 主 Agent | 区分旧 PageView 草稿覆盖与 C 范围；决定修复 null batch 语义 | 完成；旧 PageView 不扩 scope，显式 null P2 已修 |
+| R3 | execute / S1 | null clear 修复、几何/选区/异步保存前置 | 完成：438e393、a1a7394、eefe67a、81ea2a9、4818059、618f7ec |
+| R4 | verify / S0 主 Agent + reviewer | 最终回归、证据与独立 review | 完成；C 范围 0 未修 P1/P2 blocker，Scope PASS |
 
-强制：一次 Mongo transaction 包含 root + cascade / Relation create + cascade；Database +1，changed Record 各 +1；服务端完整 canonical graph；CAS/config fence；receipt 确认 unknown，不重试 mutation；禁止顺序 Cell PATCH。
-P11.4B connector keyboard create P2 保留至 D 或 P11.5，不在本轮扩展。
+R1 的四条有效 trace 均从 dirty draft / `titleSaving=false` 开始，`sync.revision` 1→2 后触发刷新，最终 draft 回到 canonical 标题；PageView identity 稳定、page item identity 改变，0 HTTP、0 rename、0 cell mutation。Reviewer 认可 baseline 表现为同机制；不修无关 PageView。
 
-## HOLD 接续
+最终验证：Domain86/86、Contracts29/29、SDK24/24、Timeline logic88/88；Mongo8.2.3 Domain16/16、HTTP17/17（矩阵父+8策略子例计9）；API/Web build、typecheck、version check通过。最终完整Web193/194（workers1/retries0），P11.3 25/25、A8/8、B27/27、C14/14。唯一standalone dirty-title失败已由四条current/baseline同机制trace隔离为既有PageView问题，不称完整Web全绿。原baseline完整177/180，原始失败与中间批次保留在报告。
 
-报告 `docs/verification/p11-4c-auto-shift-policies.md` 记录完整证据与正式语义。
-当前Standalone route/Board grouping两个标题草稿回退未归因；对应C batch入口未执行，PageView等源码未改。
-当前定向6/6；baseline定向10/10，baseline完整179/180出现另一个Board创建标题回退；不能据此认定当前两失败均为基线。
-接续应记录PageView titleDraft/titleSaving/page.title、pages.rename、sync.revision/pages.refresh与View GET gate时间线，闭合归因后复跑门禁。
-不顺手修无关PageView，不仅重试至PASS。HOLD未解除，不开始D。
-Mongo8.0.12随机64880/rs p114cc5ed398d已shutdown，PID42268及监听均不存在；baseline7174亦已关。
-版本0.0.1/build2未改；没有发布。最终SHA见交付消息。
+P11.3B reload 的真实缺口已由独立探针闭合：末态poll读到seed Timeline时，本地仍Table且pending Table upsert；4818059顺序等待Table→Timeline，修后本地/服务端Timeline、pending=0。618f7ec等异步Review id，f4c77a4补真实HTTP策略矩阵。最终完整门禁日志web-release-gate.log。P11.4B connector keyboard create P2仍留D/P11.5，不在本轮处理。
+
+隔离Mongo均已关闭：61703/PID32300/`eotion_p114c_6ca102e54b3b`、61070/PID37200/`eotion_p114c_nullfix_a11e705872`、63334/PID36848/`eotion_p114c_nullfix_789f057983`；自有7173/7193/7194/7196/7197已停。版本0.0.1/build2不变。
+
+完成并停在C。D必须独立启动，入口为本报告、domain scheduling、generic cell-mutations/receipt、canonical graph/rollback HTTP测试和NodeView active Date/create adapters。既有PageView草稿覆盖另立问题，不扩本轮范围。
 
 ## 上轮完成记录：P11.4B
 

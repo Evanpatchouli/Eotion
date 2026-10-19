@@ -1,0 +1,447 @@
+{
+  "schemaVersion": 1,
+  "capturedOn": "2026-10-19",
+  "finalVerdict": "PASS (P11.4C Scope)",
+  "independentReview": "0 unaddressed P1/P2 blockers within C; the pre-existing PageView dirty-title issue and deferred connector keyboard workflow are explicitly retained.",
+  "version": "0.0.1 / build 2 unchanged",
+  "stopBoundary": "P11.4C only; P11.4D, P11.5, P11 Final and release not started.",
+  "standaloneRefresh": {
+    "current": {
+      "source": "%TEMP%/eotion-p114c-runtime-20261019/traces/current-standalone.json",
+      "capturedAt": "2026-10-19T03:03:58.108Z",
+      "before": {
+        "titleDraft": "Title draft across route",
+        "titleSaving": false,
+        "pageId": "root-record-page",
+        "pageTitle": "Standalone record",
+        "storedTitle": "Standalone record"
+      },
+      "events": [
+        {
+          "kind": "sync.revision:incremented",
+          "before": 1,
+          "after": 2,
+          "titleDraft": "Title draft across route",
+          "titleSaving": false,
+          "pageId": "root-record-page",
+          "pageTitle": "Standalone record",
+          "storedTitle": "Standalone record"
+        },
+        {
+          "kind": "pages.refresh:start",
+          "syncRevision": 2,
+          "titleDraft": "Title draft across route",
+          "titleSaving": false,
+          "pageId": "root-record-page",
+          "pageTitle": "Standalone record",
+          "storedTitle": "Standalone record"
+        },
+        {
+          "kind": "pages.refresh:end",
+          "syncRevision": 2,
+          "titleDraft": "Standalone record",
+          "titleSaving": false,
+          "pageId": "root-record-page",
+          "pageTitle": "Standalone record",
+          "storedTitle": "Standalone record"
+        }
+      ],
+      "after": {
+        "titleDraft": "Standalone record",
+        "titleSaving": false,
+        "pageId": "root-record-page",
+        "pageTitle": "Standalone record",
+        "storedTitle": "Standalone record"
+      },
+      "identity": {
+        "pageItemChanged": true,
+        "pageViewStable": true
+      },
+      "revision": {
+        "before": 1,
+        "after": 2
+      },
+      "renameCalls": 0,
+      "requestCount": {
+        "before": 8,
+        "after": 8
+      },
+      "requests": [],
+      "cellMutationRequests": []
+    },
+    "baseline2": {
+      "source": "%TEMP%/eotion-p114c-runtime-20261019/traces/baseline2-standalone.json",
+      "capturedAt": "2026-10-19T03:06:19.443Z",
+      "before": {
+        "titleDraft": "Title draft across route",
+        "titleSaving": false,
+        "pageId": "root-record-page",
+        "pageTitle": "Standalone record",
+        "storedTitle": "Standalone record"
+      },
+      "events": [
+        {
+          "kind": "sync.revision:incremented",
+          "before": 1,
+          "after": 2,
+          "titleDraft": "Title draft across route",
+          "titleSaving": false,
+          "pageId": "root-record-page",
+          "pageTitle": "Standalone record",
+          "storedTitle": "Standalone record"
+        },
+        {
+          "kind": "pages.refresh:start",
+          "syncRevision": 2,
+          "titleDraft": "Title draft across route",
+          "titleSaving": false,
+          "pageId": "root-record-page",
+          "pageTitle": "Standalone record",
+          "storedTitle": "Standalone record"
+        },
+        {
+          "kind": "pages.refresh:end",
+          "syncRevision": 2,
+          "titleDraft": "Standalone record",
+          "titleSaving": false,
+          "pageId": "root-record-page",
+          "pageTitle": "Standalone record",
+          "storedTitle": "Standalone record"
+        }
+      ],
+      "after": {
+        "titleDraft": "Standalone record",
+        "titleSaving": false,
+        "pageId": "root-record-page",
+        "pageTitle": "Standalone record",
+        "storedTitle": "Standalone record"
+      },
+      "identity": {
+        "pageItemChanged": true,
+        "pageViewStable": true
+      },
+      "revision": {
+        "before": 1,
+        "after": 2
+      },
+      "renameCalls": 0,
+      "requestCount": {
+        "before": 8,
+        "after": 8
+      },
+      "requests": [],
+      "cellMutationRequests": []
+    }
+  },
+  "boardGroupingRefresh": {
+    "current": {
+      "source": "%TEMP%/eotion-p114c-runtime-20261019/traces/current-board-valid-board-grouping.json",
+      "capturedAt": "2026-10-19T03:10:29.012Z",
+      "before": {
+        "titleDraft": "Draft survives Board mutation",
+        "titleSaving": false,
+        "pageId": "board-mutation-page-a",
+        "pageTitle": "Move me",
+        "storedTitle": "Move me"
+      },
+      "events": [
+        {
+          "kind": "sync.revision:incremented",
+          "before": 1,
+          "after": 2,
+          "titleSaving": false,
+          "titleDraft": "Draft survives Board mutation",
+          "pageId": "board-mutation-page-a",
+          "pageTitle": "Move me",
+          "storedTitle": "Move me"
+        },
+        {
+          "kind": "pages.refresh:start",
+          "syncRevision": 2,
+          "titleSaving": false,
+          "titleDraft": "Draft survives Board mutation",
+          "pageId": "board-mutation-page-a",
+          "pageTitle": "Move me",
+          "storedTitle": "Move me"
+        },
+        {
+          "kind": "pages.refresh:end",
+          "syncRevision": 2,
+          "titleSaving": false,
+          "titleDraft": "Move me",
+          "pageId": "board-mutation-page-a",
+          "pageTitle": "Move me",
+          "storedTitle": "Move me"
+        }
+      ],
+      "after": {
+        "titleDraft": "Move me",
+        "titleSaving": false,
+        "pageId": "board-mutation-page-a",
+        "pageTitle": "Move me",
+        "storedTitle": "Move me"
+      },
+      "identity": {
+        "pageItemChanged": true,
+        "pageViewStable": true
+      },
+      "revision": {
+        "before": 1,
+        "after": 2
+      },
+      "renameCalls": 0,
+      "requestCount": {
+        "before": 13,
+        "after": 13
+      },
+      "requests": [],
+      "cellMutationRequests": []
+    },
+    "baseline": {
+      "source": "%TEMP%/eotion-p114c-runtime-20261019/traces/baseline-board-valid-board-grouping.json",
+      "capturedAt": "2026-10-19T03:16:05.170Z",
+      "before": {
+        "titleDraft": "Draft survives Board mutation",
+        "titleSaving": false,
+        "pageId": "board-mutation-page-a",
+        "pageTitle": "Move me",
+        "storedTitle": "Move me"
+      },
+      "events": [
+        {
+          "kind": "sync.revision:incremented",
+          "before": 1,
+          "after": 2,
+          "titleSaving": false,
+          "titleDraft": "Draft survives Board mutation",
+          "pageId": "board-mutation-page-a",
+          "pageTitle": "Move me",
+          "storedTitle": "Move me"
+        },
+        {
+          "kind": "pages.refresh:start",
+          "syncRevision": 2,
+          "titleSaving": false,
+          "titleDraft": "Draft survives Board mutation",
+          "pageId": "board-mutation-page-a",
+          "pageTitle": "Move me",
+          "storedTitle": "Move me"
+        },
+        {
+          "kind": "pages.refresh:end",
+          "syncRevision": 2,
+          "titleSaving": false,
+          "titleDraft": "Move me",
+          "pageId": "board-mutation-page-a",
+          "pageTitle": "Move me",
+          "storedTitle": "Move me"
+        }
+      ],
+      "after": {
+        "titleDraft": "Move me",
+        "titleSaving": false,
+        "pageId": "board-mutation-page-a",
+        "pageTitle": "Move me",
+        "storedTitle": "Move me"
+      },
+      "identity": {
+        "pageItemChanged": true,
+        "pageViewStable": true
+      },
+      "revision": {
+        "before": 1,
+        "after": 2
+      },
+      "renameCalls": 0,
+      "requestCount": {
+        "before": 13,
+        "after": 13
+      },
+      "requests": [],
+      "cellMutationRequests": []
+    }
+  },
+  "sourceComparison": {
+    "baseline": {
+      "commit": "d662dec83c849ce8d2ec4c09ab566ae72c0fa272",
+      "kind": "git archive snapshot",
+      "path": "C:/Users/31250/AppData/Local/Temp/eotion-p114c-runtime-20261019/baseline",
+      "description": "Baseline source tree extracted from the d662dec archive; verified @eotion workspace links resolve inside this baseline tree.",
+      "workspaceDependencyLinks": {
+        "apps/web/node_modules/@eotion/contracts": "packages/contracts",
+        "apps/web/node_modules/@eotion/domain": "packages/domain",
+        "apps/web/node_modules/@eotion/sdk": "packages/sdk",
+        "apps/web/node_modules/@eotion/storage": "packages/storage"
+      }
+    },
+    "currentCommit": "a1a7394b9f6113edf765cbc2b8612e85f308548a",
+    "files": [
+      {
+        "path": "apps/web/src/views/PageView.vue",
+        "baselineBlob": "cec1e2d29c91ec16275339f946711add17047cef",
+        "currentBlob": "cec1e2d29c91ec16275339f946711add17047cef",
+        "identical": true
+      },
+      {
+        "path": "apps/web/src/layouts/ProductShell.vue",
+        "baselineBlob": "451660609e4a5b3aaf4a0729ce603f3d015f83ce",
+        "currentBlob": "451660609e4a5b3aaf4a0729ce603f3d015f83ce",
+        "identical": true
+      },
+      {
+        "path": "apps/web/src/stores/productPages.ts",
+        "baselineBlob": "72b163fdc576e3665cabb4172d83242f20644150",
+        "currentBlob": "72b163fdc576e3665cabb4172d83242f20644150",
+        "identical": true
+      },
+      {
+        "path": "apps/web/src/stores/productSync.ts",
+        "baselineBlob": "7b1b14c52b7879b9e5d965f3cd850fb4e9be81d3",
+        "currentBlob": "7b1b14c52b7879b9e5d965f3cd850fb4e9be81d3",
+        "identical": true
+      }
+    ]
+  },
+  "baselineChecks": {
+    "targeted": {
+      "headerSlashCreateSharedDatabase": {
+        "passed": 3,
+        "total": 3
+      },
+      "boardGroupingDiagnostic": "Dirty title reverted to canonical title with titleSaving=false."
+    },
+    "fullPlaywright": {
+      "passed": 177,
+      "total": 180,
+      "failures": [
+        "P11.3B date-only resize: expected data-drag-state=dragging, received idle",
+        "Board renderer generic records: expected second row y >= 1136, received 853",
+        "Slash database creation: dialog 数据库 was absent after clicking the slash menu option."
+      ],
+      "slashFailureComparison": "Baseline and current full runs fail at the same dialog visibility assertion. Baseline error context is unavailable, so this does not establish a deeper shared cause.",
+      "log": "%TEMP%/eotion-p114c-runtime-20261019/baseline-full.log"
+    },
+    "invalidArtifactsOmitted": [
+      "baseline-board-grouping.json: titleSaving=true before refresh and title save overlaps refresh.",
+      "current-focus-board-grouping.json: title and draft already match before refresh."
+    ]
+  },
+  "slashSelectionProbe": {
+    "directory": "%TEMP%/eotion-p114c-slash-probe-4490545c75104a6eb13af3f3ec4529b6",
+    "purpose": "Bounded diagnosis to capture selection timing, not acceptance retries.",
+    "repetitionsPerCase": 10,
+    "total": 20,
+    "failed": 0,
+    "retries": 0,
+    "workers": 1,
+    "controlEndDomPmMismatchCount": 1,
+    "enterKeydownDomPmMismatchCount": 0,
+    "observedMismatch": {
+      "file": "slash-link-shared-database-repeat-9.json",
+      "text": "Shared body",
+      "controlEndKeyup": { "domOffset": 11, "pmHead": 1 },
+      "enterKeydown": { "domOffset": 11, "pmHead": 12 },
+      "note": "The editor and its view retained identity. PM synchronized approximately 4 ms later before Enter. No failure occurred in this trace; it does not establish the exact cause of historical failures."
+    },
+    "fixtureFixCommit": "eefe67a",
+    "fixtureFix": "Read-only waits for real PM selection at the final textblock before Enter, then the final empty paragraph before Slash. No setSelection or keyboard replay.",
+    "fixtureFocusedResult": { "passed": 8, "total": 8 }
+  },
+  "viewReferenceReloadPrecondition": {
+    "beforeFix": {
+      "log": "%TEMP%/eotion-p114c-resume-d525d668aa154ff5bdf7ead1a11f1e26/web-acceptance.log",
+      "passed": 193,
+      "total": 194,
+      "failedCase": "P11.3B date-only resize changes one endpoint, keeps inclusive end dates, and promotes legacy points to ranges",
+      "snapshot": "After reload the main Block renders Resize table, while canonical Record Date remains 2026-10-12 through 2026-10-16."
+    },
+    "source": "View switching updates Editor attributes first; PagePersistence schedules flush after 500 ms. The test reloaded after two RAF without waiting for persistence.",
+    "initialFixtureCommit": "81ea2a9",
+    "initialFixtureLimitation": "A lone Timeline poll can read the initial fixture seed before an older Table save lands. The complete run still failed after a targeted pass.",
+    "proof": {
+      "log": "%TEMP%/eotion-p114c-resume-d525d668aa154ff5bdf7ead1a11f1e26/p113b-reload-probe-evidence.txt",
+      "originalProbe": { "passed": 0, "total": 1 },
+      "originalBeforeReload": { "serverView": "Timeline", "localView": "Table", "pendingBlockUpserts": ["Table"] },
+      "twoStageBeforeReload": { "serverView": "Timeline", "localView": "Timeline", "pendingBlockUpserts": [] },
+      "observedServerUpsertOrder": ["Table", "Timeline"],
+      "twoStageProbes": { "runs": 2, "passedEach": 1, "totalEach": 1 },
+      "privatePagePersistencePendingState": "Not accessible through the probe component chain; no assertion on that private state is claimed."
+    },
+    "fixCommit": "4818059",
+    "fix": "Observe canonical Table before switching back, then canonical Timeline before reload; bounded layout stability before geometry. All Date and 1px assertions unchanged."
+  },
+  "finalWebGate": {
+    "sourceCommit": "618f7ec2fd55eb42ea6ef10d17454862dc8ec9b1",
+    "log": "%TEMP%/eotion-p114c-resume-d525d668aa154ff5bdf7ead1a11f1e26/web-release-gate.log",
+    "passed": 193,
+    "total": 194,
+    "workers": 1,
+    "retries": 0,
+    "failures": ["standalone database route keeps editor, NodeView, and record drafts across delayed Table/List/Board/Timeline A-B-A switches: dirty title reverted to Standalone record"],
+    "failureAttribution": "The four current/baseline runtime traces and identical source hashes above establish the pre-existing PageView refresh mechanism. The complete Web suite is not labelled all-green.",
+    "p113": { "passed": 25, "total": 25 },
+    "p114a": { "passed": 8, "total": 8 },
+    "p114b": { "passed": 27, "total": 27 },
+    "p114c": { "passed": 14, "total": 14 }
+  },
+  "selectOptionFixtureWait": {
+    "fixCommit": "618f7ec",
+    "failure": "The test read Review option id immediately after Add.click(), before the asynchronous property PATCH updated the fixture.",
+    "fix": "Read-only poll for the same Review id before keeping all existing id and lifecycle assertions; no keyboard or click replay.",
+    "baselineComparison": "Not run for this case; it is not labelled a proven baseline failure."
+  },
+  "canonicalHttpPolicyMatrix": {
+    "log": "%TEMP%/eotion-timeline-http-matrix.log",
+    "fullHttpLog": "%TEMP%/eotion-timeline-http-matrix-full-http.log",
+    "typecheckLog": "%TEMP%/eotion-timeline-http-matrix-typecheck.log",
+    "scenarios": ["keep-gap chain", "keep-gap diamond", "overlap diamond with external incoming predecessor", "spring DST with weekend avoidance", "spring DST without weekend avoidance", "fall DST with weekend avoidance", "date-only Saturday", "date-only Sunday"],
+    "matrixNodeCounts": { "passed": 9, "total": 9, "includesParentTest": true },
+    "fullHttpNodeCounts": { "passed": 17, "total": 17, "failed": 0, "skipped": 0 },
+    "build": "PASS",
+    "apiTypecheck": "PASS",
+    "firstAttempt": "View POST failed with 400 because fixture mode abbreviations were not the canonical enum. Fixture corrected without changing Date expectations or product code. The first failed setup log was overwritten by the successful rerun and is not available; only the session record remains.",
+    "transport": "Root mutation uses real authenticated HTTP generic cell-mutations with canonical Timeline View id/version; Relation graph initialized via generic HTTP batch without context.",
+    "mongo": {
+      "version": "8.2.3",
+      "port": 63334,
+      "replicaSet": "eotion_p114c_nullfix_789f057983",
+      "pid": 36848,
+      "metadata": "%TEMP%/eotion-p114c-http-matrix-mongo-9c25ca83c3014ad28c784d3d2934d8d4/metadata.txt",
+      "shutdownLog": "%TEMP%/eotion-p114c-http-matrix-mongo-9c25ca83c3014ad28c784d3d2934d8d4/shutdown.log",
+      "status": "stopped; PID absent and listener count 0"
+    }
+  },
+  "nullCellClearRegression": {
+    "fixCommit": "438e393",
+    "beforeFix": {
+      "log": "%TEMP%/eotion-nullfix-pre-repair.log",
+      "actualDatabaseVersion": 5,
+      "expectedDatabaseVersion": 4,
+      "result": "failed as expected"
+    },
+    "afterFix": {
+      "httpTestsPassed": 8,
+      "httpTestsTotal": 8,
+      "build": "PASS",
+      "apiTypecheck": "PASS"
+    },
+    "isolatedMongo": [
+      {
+        "version": "8.2.3",
+        "port": 61703,
+        "replicaSet": "eotion_p114c_6ca102e54b3b",
+        "pid": 32300,
+        "logsDirectory": "%TEMP%/eotion-p114c-mongo-df9d7baf660c4bd08abe3ad3767d2da6",
+        "status": "stopped"
+      },
+      {
+        "port": 61070,
+        "replicaSet": "eotion_p114c_nullfix_a11e705872",
+        "pid": 37200,
+        "metadata": "%TEMP%/eotion-p114c-nullfix-mongo-dc74e6fcaaa4437597a3bc72c011678e/metadata.txt",
+        "status": "stopped"
+      }
+    ],
+    "lifecycleMetadataConfirmed": true
+  }
+}

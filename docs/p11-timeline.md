@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C 实现完成、验收 HOLD（完整 Web 标题草稿门禁未闭合）；P11.4D 未开始**
+> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C COMPLETE / PASS（Scope）；P11.4D 未开始**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -999,7 +999,7 @@ Frozen Table 的显示、独立列投影与共享行对齐已由 P11.2C 完成�
 | --- | --- |
 | P11.4A Dependency Read Model + Lines | **Scope PASS（2026-10-16）**：读取现有 self Relation，纯投影、共享 Bar geometry 与只读箭头 |
 | P11.4B Dependency Editing | **PASS（2026-10-16）**：predecessor→successor 创建/删除；现有 Relation Cell 单次 CAS PATCH，不移动日期 |
-| P11.4C Auto Shift Policies | 后续独立授权：shiftMode / avoidWeekends 执行与原子日期联动 |
+| P11.4C Auto Shift Policies | **P11.4C COMPLETE / PASS（Scope）**：shiftMode / avoidWeekends 执行与原子日期联动；[验收记录](verification/p11-4c-auto-shift-policies.md)、[接续证据](verification/evidence/p11-4c-resume-20261019.json) |
 | P11.4D Dependency Final Acceptance | 后续独立验收整个 Dependency 能力 |
 
 P11.4A 的唯一数据来源是当前 View 已加载 canonical records 的 Relation `string[]` cell，
@@ -1084,6 +1084,10 @@ P11 FINAL PASS 前必须覆盖：
 P11 的标准是 **真实 Database View + Notion Timeline 级交互**，而不是视觉 mock。
 
 ## P11.4C Auto Shift Policies 实施契约
+
+当前状态：**P11.4C COMPLETE / PASS（Scope）**。本轮实现、修复与接续证据见
+[P11.4C 验收记录](verification/p11-4c-auto-shift-policies.md) 和
+[2026-10-19 接续证据](verification/evidence/p11-4c-resume-20261019.json)。
 
 P11.4C 使用服务端完整 canonical dependency graph 和纯 domain planner，不受 Web filter、
 pagination 或 viewport 影响。Date root + cascade、Relation create + cascade 使用 generic

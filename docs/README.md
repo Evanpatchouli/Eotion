@@ -26,7 +26,7 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `verification/p11-3d-timeline-mutation-final.md` | P11.3D 最终 Mutation 验收：Drag/Resize、inclusive end、CAS/unknown、identity、100/500、Web 与真实隔离 Mongo 证据及封板结论 |
 | `verification/p11-4a-dependency-read-lines.md` | P11.4A 现有 self Relation 只读依赖线：方向、共享几何、row window、preview、N+1 与 100/500 验收 |
 | `verification/p11-4b-dependency-editing.md` | P11.4B dependency 创建/删除：semantic mapping、单 Relation Cell CAS、conflict/unknown、取消、offline 与验收 |
-| `verification/p11-4c-auto-shift-policies.md` | P11.4C 服务端 canonical graph、纯调度器、atomic root/create cascade、三种策略/周末与回执验收 |
+| `verification/p11-4c-auto-shift-policies.md` | **P11.4C COMPLETE / PASS（Scope）**；服务端 canonical graph、纯调度器、atomic root/create cascade、三种策略/周末与回执验收；接续证据见 `verification/evidence/p11-4c-resume-20261019.json` |
 | `architecture/database-cell-mutations.md` | 通用 multi-record / multi-cell 单事务、CAS/版本、View policy context 与 receipt 三态 |
 | `context/README.md` | RAG 检索入口、模块索引和 Context Pack 规则 |
 | `specs/` | 产品行为、协议和验收契约 |

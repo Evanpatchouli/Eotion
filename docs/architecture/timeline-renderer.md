@@ -1,6 +1,6 @@
 # P11.2 Timeline Renderer 架构
 
-> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS；P11.3 Mutation COMPLETE；P11.4A Read Lines Scope PASS；P11.4B Dependency Editing COMPLETE / PASS**（实施/验收记录见 §20–§29；P11.4C/D未开始）
+> 架构状态：**P11.2.0 PASS；P11.2A/B/C Scope PASS；P11.2D 核心 Read Acceptance PASS；P11.3 Mutation COMPLETE；P11.4A Read Lines Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C COMPLETE / PASS（Scope）；P11.4D 未开始**（实施/验收记录见 §20–§30）
 > 基线：`25bd279585772bfdce43799de71fb3c3f5ba5436`（`master`），P11.1D PASS 之后。
 > 版本背景：当前版本 `0.0.1`，P11 目标版本 `0.0.3`。§1–§19 保留 P11.2.0 的架构基线；该阶段仅修改文档。P11.2A/B/C 的产品实施与验证见 §20–§22，API、schema、sync、MCP、依赖与版本保持。
 
@@ -677,9 +677,14 @@ membership 确认 create/delete结果，读取失败 staleReadonly、只允许�
 selection 在 edge 消失或 scope change时清空；scope ABA不复用旧选择。
 
 验收、100/500观察、真实Mongo、视觉与未运行项见
-[P11.4B](../verification/p11-4b-dependency-editing.md)。C 的独立实施见下节，D 仍未开始。
+[P11.4B](../verification/p11-4b-dependency-editing.md)。C 的独立实施见下节；当前
+**P11.4C COMPLETE / PASS（Scope）**，D 仍未开始。
 
 ## 30. P11.4C Auto Shift Policies
+
+状态：**P11.4C COMPLETE / PASS（Scope）**。验收和接续证据见
+[P11.4C 验收记录](../verification/p11-4c-auto-shift-policies.md) 与
+[2026-10-19 接续证据](../verification/evidence/p11-4c-resume-20261019.json)。
 
 active auto shift 的 Date drag/resize 和 dependency create 在 release 时提交一次 generic
 Database `cell-mutations`，仅传 root Cell intent 与 pointerdown 捕获的 Database/Record/View
