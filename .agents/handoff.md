@@ -1,5 +1,33 @@
 # Handoff
 
+## 2026-10-19 P11.4D Dependency Final Acceptance — COMPLETE / PASS（Scope）
+
+基线 `2f84ef5ca560bbcd6e8afa06b14ab1d8252bb743`，master，开始工作树干净。
+本轮只执行D1–D4；版本仍0.0.1/build2，不进入P11.5/P11 Final/发布。
+
+- `a1c2f4f`：D2 active Date/create 的not_committed成功刷新反馈，12/12 Web回归。
+- `965fa0e`：D3 Separate Start/End混合精度自动调度，按End精度计算finish、各Cell独立保持
+  shape/zone/ms/内部范围，Domain92/92、真实HTTP18/18。renderer mixed未排期与手动双Cell只读保持。
+- `5f7f56c`：D1真实键盘创建、合法目标循环、状态/焦点/取消与pending归属，15/15 Web回归。
+  真实readonly缺口修复为观察Editor DOM contenteditable，支持silent setEditable(false,false)。
+- `1e30603`：首完整220/221中的新双status回归，仅移除新live region冗余role并保留aria-live，
+  不改原测试断言；修后13/13定向通过，最终完整221/221。
+- 最终文档提交为包含本节和D验收报告的提交；实际最终SHA以交付消息及git log为准。
+
+Domain92/Contracts29/SDK24、Timeline logic88、真实Mongo Domain16/performance1/HTTP18通过；
+最终API/Web typecheck/build/version/diff门禁通过，独立review同意Scope PASS，无未修P1/P2。
+最终完整Database Web221/221（0fail/skip、单worker/零重试、7.6m），P11.3合25、A8/B27/C14/D27
+全通过；两次完整批次不合并计数，首220/221仍保留。正式矩阵/原始证据与限制见
+[D验收](../docs/verification/p11-4d-dependency-final-acceptance.md)。
+
+隔离Mongo8.2.3的61930/PID5360/rs eotion_p114d_f3612cb55d4b已关闭，PID退出且listener0；
+用户既有27017未访问。Web临时服务已关闭，最终父/子PID6452/45628/50120全部退出、7173无监听。
+既有PageView dirty-title refresh问题保留，C历史完整193/194及同机制baseline证据不删除；
+本轮未复现，未修改PageView/标题同步。本轮没有运行其余完整Product/native/Web真实API全链/正式FPS。
+
+下一阶段入口是docs/p11-timeline.md的P11.5与D报告的已知边界，需要新的明确任务。
+本轮交付后必须停止，不自动开始P11.5、P11 Final、tag/release或无关重构。
+
 ## 2026-10-19 P11.4C COMPLETE / PASS（Scope）
 
 当前只收口 P11.4C；**P11.4C COMPLETE / PASS（Scope）**。正式验证矩阵见

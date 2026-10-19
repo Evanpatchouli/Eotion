@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C COMPLETE / PASS（Scope）；P11.4D 未开始**
+> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C COMPLETE / PASS（Scope）；P11.4D COMPLETE / PASS（Dependency Scope）；P11.5 / P11 Final 未执行**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -676,6 +676,9 @@ interface TimelineViewOptions {
 - `date-property` 使用该 Property 的 normalized start/end；end 省略仍是单点。
 - `start-end` 的两个 ID 必须不同，各取对应 Property 值的 normalized start；各自
   对象中的 end 不充当该模式的边界。
+- 两个独立 Cell 各自遵守 Date 值契约，不要求跨 Cell 精度或 timeZone 相同。现有只读
+  renderer 将混合精度显示为“起止日期精度不同”的未排期记录；这不改变 generic Date
+  的合法性。自动调度按下述 P11.4D 精度规则处理完整 canonical graph。
 - config 合法性不依赖 Record 是否已填值；未配置 dateSource 的 Timeline 合法。
   缺值的 Record 保持存在，后续 renderer 处理未排期状态，不能偷偷赋日期。
 - 本轮仅冻结引用和语义，不新增 Record 的 Timeline 日期解析或写入行为。
@@ -1000,7 +1003,7 @@ Frozen Table 的显示、独立列投影与共享行对齐已由 P11.2C 完成�
 | P11.4A Dependency Read Model + Lines | **Scope PASS（2026-10-16）**：读取现有 self Relation，纯投影、共享 Bar geometry 与只读箭头 |
 | P11.4B Dependency Editing | **PASS（2026-10-16）**：predecessor→successor 创建/删除；现有 Relation Cell 单次 CAS PATCH，不移动日期 |
 | P11.4C Auto Shift Policies | **P11.4C COMPLETE / PASS（Scope）**：shiftMode / avoidWeekends 执行与原子日期联动；[验收记录](verification/p11-4c-auto-shift-policies.md)、[接续证据](verification/evidence/p11-4c-resume-20261019.json) |
-| P11.4D Dependency Final Acceptance | 后续独立验收整个 Dependency 能力 |
+| P11.4D Dependency Final Acceptance | **COMPLETE / PASS（Dependency Scope，2026-10-19）**；键盘创建、receipt反馈与混合精度收口，最终Database Web221/221，见 [D验收](verification/p11-4d-dependency-final-acceptance.md)；完成后停止 |
 
 P11.4A 的唯一数据来源是当前 View 已加载 canonical records 的 Relation `string[]` cell，
 配置沿用 §21.4；不增加 entity、API、collection 或持久 ID。`depends-on` 将 cell owner A
@@ -1025,6 +1028,11 @@ Relation，blocks 写 predecessor Relation，create/delete 共用纯 mapping。�
 self/duplicate 0 PATCH，cycle 允许，调度语义延后 P11.4C。offline不编辑；409不重试、刷新；
 unknown读取canonical membership确认，读取失败staleReadonly；只链接当前rendered Bar，不补取
 filtered/unloaded/unscheduled目标。没有 auto-shift、settings、picker、Undo/Redo 或版本改动。
+
+以上为 A/B 交付时的历史边界；active auto shift 的创建和 Date mutation 已由 C 使用通用
+原子 batch 与整批 receipt，未知结果不再根据单个 Cell 推断。D 的键盘候选同样只取当前
+rendered scheduled Bar，复用相同 mutation adapter。Separate Start/End 的服务端混合精度
+规则、交互生命周期和结果反馈见 [renderer §31](architecture/timeline-renderer.md#31-p114d-dependency-final-acceptance)。
 
 ### P11.5 Responsive + Visual Polish
 

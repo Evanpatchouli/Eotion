@@ -230,3 +230,16 @@ standalone/Board refresh、baseline source、null Cell 红绿和隔离 Mongo 生
 `apps/web/src/services/productDatabases.ts`（Cell mutation adapters）。先读取现有事务契约
 `../architecture/database-cell-mutations.md`，不要从 renderer 的局部 preview 推断 canonical graph。
 P11.4C Scope PASS：最终完整Web193/194（唯一已证基线标题草稿失败）、P11.3 25/25、A8/B27/C14通过，真实HTTP17/17；独立review无未修C blocker。P11.4B connector keyboard create P2留D/P11.5；D与P11 Final未开始，不据C范围结论宣称整体通过。
+
+P11.4D 接续入口（2026-10-19）：[Dependency Final Acceptance](../verification/p11-4d-dependency-final-acceptance.md)、
+[Renderer §31](../architecture/timeline-renderer.md#31-p114d-dependency-final-acceptance)。检索
+`useTimelineDependencyInteraction` 的 `startKeyboard`/`finishKeyboard`/`pendingOwner`，当前rendered
+合法目标、Enter/Space/方向键/Escape/Tab、live feedback与scope焦点归属；NodeView
+`timelineEditorEditableObserver`覆盖正式silent setEditable。`not_committed`成功刷新也明确反馈，
+unknown仍按同mutationId整批receipt，不retry。scheduling对Separate两Cell允许独立精度，End kind
+决定finish，混合位移保留各Cell shape/zone/ms/range；renderer mixed未排期与手动双Cell只读保持。
+实现a1c2f4f/965fa0e/5f7f56c，终验发现冗余status role由1e30603修复；完整批次与停止状态以D报告为准。
+**D COMPLETE / PASS（Scope）**：最终Database Web221/221（P11.3合25、A8/B27/C14/D27），
+首220/221失败与13/13定向单独保留；Domain92/Contracts29/SDK24/logic88、真实Mongo
+Domain16/performance1/HTTP18和API/Web门禁通过，独立review0blocker。Mongo/Vite已关闭，
+版本0.0.1/build2不变；停在D，不进入P11.5/P11 Final/发布。C历史193/194不改写，标题问题本轮未复现。

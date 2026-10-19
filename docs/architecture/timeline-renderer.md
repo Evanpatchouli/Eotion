@@ -678,7 +678,7 @@ selection 在 edge 消失或 scope change时清空；scope ABA不复用旧选择
 
 验收、100/500观察、真实Mongo、视觉与未运行项见
 [P11.4B](../verification/p11-4b-dependency-editing.md)。C 的独立实施见下节；当前
-**P11.4C COMPLETE / PASS（Scope）**，D 仍未开始。
+**P11.4C COMPLETE / PASS（Scope）**；D 的独立终验见 §31。
 
 ## 30. P11.4C Auto Shift Policies
 
@@ -715,4 +715,44 @@ scan 上限现有 10,000 records，affected 最多 500 records / 10,000 约束�
 
 正式契约：[Database transactional Cells](database-cell-mutations.md)；
 调度矩阵、真实 Mongo、测试和停止边界：[P11.4C 验收](../verification/p11-4c-auto-shift-policies.md)。
-P11.4D/P11.5/P11 Final 不属于本轮。connector keyboard create P2 留待 D 或 P11.5。
+以上为C交付边界；D的键盘创建与终验收口见下节。P11.5/P11 Final仍未执行。
+
+## 31. P11.4D Dependency Final Acceptance
+
+**COMPLETE / PASS（Dependency Scope）**，结果见 [P11.4D 验收](../verification/p11-4d-dependency-final-acceptance.md)。
+最终Database Web221/221、独立review无未修P1/P2；不据此宣称P11.5或P11 Final完成。
+
+### 键盘创建与结果反馈
+
+来源 connector 的 Enter/Space 启动与 Pointer 相同的 dependency capture；焦点留在来源，
+方向键循环当前 rendered scheduled 的合法目标，Home/End 选首末，Enter/Space 确认，
+Escape/Tab 取消且不发 mutation。self、已有 semantic edge 和未渲染目标不进入候选；
+不补 GET。复用 canonical mapping、preview geometry 与 mutateDependency，状态反馈和
+目标高亮属于临时交互，不形成第二套 graph。scope/config/viewport/root/online/writable
+失效或目标消失时 fail closed；旧响应不得更新新 View 的状态或焦点。
+
+Tiptap的isEditable是非响应式getter，正式Editor还会静默调用setEditable(...,false)。
+NodeView初始读取并通过MutationObserver仅观察editor.view.dom的contenteditable属性变化，
+将reactive editable合入Timeline writable；卸载disconnect。capture/commit仍即时读取
+editor.isEditable，保护observer微任务之前的同步窗口；不轮询或改动通用toolbar。
+
+active Date/create 的整批 receipt 为 not_committed 时，即使 canonical refresh 成功也
+明确告知“已确认未执行”；刷新失败明确区分结果已确认与数据尚未刷新。committed 不报事务
+失败；uncertain/receipt 读取失败保持未知与只读，不用单个可见 Cell 推测整批结果，不重试写入。
+
+### Separate Start/End 的独立精度
+
+Date 的同精度规则适用于单 Cell 的 start/end，不跨两个 Property。服务端 canonical 调度
+允许两个合法 Cell 精度不同；renderer §4 的 mixed 未排期诊断保持，手动双 Cell
+drag/resize 仍只读。本规则不承诺混合精度 Bar 的显示/手动编辑。
+
+外层 start 取 Start normalized start；End 缺失为 point，存在时 datetime finish 为精确
+instant，date-only finish 为该 UTC 日期次日日初。date-only End 需 finish>start；
+datetime End 允许显式零长度。各 Cell 自身的可选 end 不充当外层边界，但移动时跟随该 Cell。
+
+Start=date-only 时新 start 向未来 ceil 至 UTC 日初。Start=datetime、End=date-only 时，
+约束所需的正向 delta 向上取整至 UTC 整日，再按 Start 自身 IANA 时区执行 weekend roll。
+datetime Cell 两端使用实际 elapsed delta；date-only Cell 两端使用 Start 新旧 UTC 日期差。
+因此每 Cell 的 precision、wire shape、timeZone、毫秒和内部 duration 保留；混合外层没有
+统一的 elapsed duration 保证。跨 DST 的 weekend roll 可为 23/25 小时，date-only 仍按
+UTC 日期差移动。最终范围/值重新校验，越界或非法范围拒绝整批并回滚。

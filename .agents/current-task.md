@@ -1,4 +1,73 @@
-# 当前任务：P11.4C Auto Shift Policies — COMPLETE / PASS（Scope）
+# 当前任务：P11.4D Dependency Final Acceptance — COMPLETE / PASS（Scope）
+
+## D 阶段范围与基线（2026-10-19）
+
+仅执行 D1–D4；完成后停止，不进入 P11.5 / P11 Final / 发布。版本保持 0.0.1 / build 2。
+开始分支 master，工作树干净；HEAD 与 fetch 后 origin/master 均为
+`2f84ef5ca560bbcd6e8afa06b14ab1d8252bb743`。
+
+| 单元 | 模式 / 等级 / 角色 | 产出 | 状态 |
+| --- | --- | --- | --- |
+| D1a | investigate / S0 scout | connector、目标、focus、取消 fence Evidence Pack | 完成 |
+| D1b | decide / S2 主 Agent | 最小键盘创建 Implementation Brief | 已冻结，见下 |
+| D1c | execute / S1 fast_worker | 键盘创建与 Web 回归 | 5f7f56c；15/15 PASS，真实silent readonly修复/三尺寸L-D视检完成 |
+| D2a | investigate / S0 scout | receipt 三态反馈问题证据 | 已确认两条 not_committed 成功刷新分支缺提示 |
+| D2b | execute / S1 fast_worker | 已确认未提交反馈与边界回归 | a1c2f4f；Web 12/12 PASS，修前缺提示红证据保留 |
+| D3a | decide / S2 worker | 混合精度既有契约与 Implementation Brief | 已冻结，见下 |
+| D3b | execute / S1 fast_worker | Domain 与真实 HTTP 精度回归 | 965fa0e；Domain92/92、真实HTTP18/18、API build/typecheck通过 |
+| D4 | verify / S0 scout + independent reviewer | 分层矩阵、完整 Database Web、review、文档 | 首220/221的双status回归已由1e30603修复；定向13/13、最终完整221/221，0skip；独立review Scope PASS/0blocker |
+
+Evidence：Dependency 永久关系仍是 self Relation Cell；active Date/create 复用 generic
+cell-mutations 与同 mutationId 整批 receipt。手动 Separate Start/End 继续只读；D3 仅收口
+自动调度两个合法 Date Cell 的精度契约。不新增实体/API/候选查询/依赖，不削弱 lifecycle fence。
+C 已证 PageView dirty-title 基线问题隔离，不改标题同步；完整 Database Web 单 worker、零重试，
+保留实际结果。先做定向，再跑 A/B/C、P11.3、完整 Database、Domain/Contracts/SDK、隔离
+Mongo/HTTP CAS/rollback/receipt、API/Web typecheck/build/version/diff check 与最终独立 review。
+
+最终验证完成：Domain92/Contracts29/SDK24、Timeline logic88；真实Mongo Domain16/performance1/
+HTTP18；Web最终221/221，P11.3合25、A8/B27/C14/D27全部通过；API/Webtypecheck/build及版本
+门禁通过。Mongo61930/PID5360已退出、listener0；两轮Vite均已停、7173无监听。
+版本0.0.1/build2，独立review0未修P1/P2。最后实现提交1e30603；最终交付为包含本记录的文档
+提交，SHA见交付消息。仅D完成，停止；P11.5/P11 Final/发布未启动。
+
+## 历史：P11.4C COMPLETE / PASS（Scope）
+
+## D1 Implementation Brief（编码前冻结）
+
+D1 定向真实失败补充：editor.setEditable(false) 未触发 Timeline writable prop，active preview
+未取消（提交 liveguard 仍阻写）。reviewer进一步发现正式路径setEditable(...,false)不发update；
+NodeView仅为Timeline通过MutationObserver观察Editor view DOM的contenteditable属性，初始同步
+与变更同步reactive editable，卸载disconnect，并合入传入Timeline的writable。
+不扩通用toolbar/Board行为；真实silent false→true及DOM属性回归必须保留，不用props注入替代。
+
+- Enter/Space 在来源 connector 启动，捕获与 pointerdown 相同的 dependency snapshot。
+- 焦点保持来源 connector；上下/左右方向键在当前 rendered scheduled、非自身、非重复边的目标间循环，Home/End 可选首末。初始选第一个合法目标；没有候选时明确提示且不提交。
+- Enter/Space 再次确认，复用同一 mutateDependency；Escape 取消，0 mutation。Tab 离开取消，避免全局键盘劫持。
+- 复用 previewEdge 与 geometry 显示目标，持久 aria-live 状态宣告来源/目标/快捷键/保存及结果；候选 Bar 有可见选择反馈。
+- 成功/失败/取消后只在同一 scope、DOM root 有效且焦点仍由本交互占用或丢失时恢复来源 connector；不抢占用户已转移焦点，不把旧响应焦点带到新 View。
+- 保留 pointer capture/cancel、scope/config/viewport/online/writable fence；监听 rendered source/target 消失和重复边变化，立即取消或清目标，确认前再次验证合法性。keyboard linking 与 Date drag/resize、pending 互斥。
+- 不补取目标、不新增 API、不修改 Relation mapping；实现限 TimelineBar/Viewport/hook，Web真实交互回归沿用 product-database fixture。
+
+## D2 Implementation Brief（调查已确认）
+
+两条 active batch 的 not_committed receipt 分支，在 canonical refresh 后仍属当前 scope 时明确提示：
+刷新成功为“提交结果已确认未执行，已刷新服务器最新内容。”；刷新失败保留现有未完成提示。
+committed 不报事务失败，uncertain/receipt失败保持结果未知和只读，不 retry mutation。
+补 Date/create 两路径三态、receipt失败、refresh失败、scope变化回归；不改通用后端或身份边界。
+
+## D3 Implementation Brief（决策冻结）
+
+P11.1 的同精度校验只约束单 Cell 内部；两个独立原生 Date Cell 合法，§21.2 不要求跨 Cell 同精度。
+删除 planner 额外跨 Cell 拒绝；finish 使用 End Cell kind：datetime 精确 instant，date-only
+为该 UTC 日期次日边界。先算 finish 再检查范围；date-only End 需 finish>start，datetime End 允许相等。
+Start=date-only 时 required ceil 到 UTC 日初；Start=datetime、End=date-only 时正向 delta ceil
+到整 UTC 日，再按 Start 自身时区应用 weekend。每 datetime Cell 按实际 elapsed delta 移其全部端点；
+每 date-only Cell 按 Start 新旧 UTC 日期差移动，保留 shape/zone/ms/内部范围。
+混合外层没有统一 elapsed duration；DST weekend 后仍保持每 Cell 内部范围与 UTC calendar span，
+最终重新校验，越界失败整体回滚。普通同精度行为不变。
+现有 renderer mixed=incompatible-kinds 未排期诊断保持，明确 server canonical 支持不等于混合 Bar
+可视化或手动双 Cell 编辑。实现限 scheduling.ts、Domain测试、真实 HTTP Separate source Relation
+create+context 回归及契约文档；不改 Date validator、Contracts、模型或接口。
 
 ## 当前范围（2026-10-19）
 
