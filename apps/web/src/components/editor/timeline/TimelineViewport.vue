@@ -328,6 +328,15 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-dependency-live.is-visible { z-index:5; top:32px; left:8px; box-sizing:border-box; width:max-content; max-width:calc(100% - 16px); height:auto; overflow:hidden; clip:auto; clip-path:none; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:3px 8px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-primary, var(--editor-text)); font-size:11px; line-height:16px; white-space:normal; overflow-wrap:anywhere; pointer-events:none; }
 .eotion-timeline-ruler-anchor { position:absolute; top:0; left:0; width:100%; height:var(--timeline-header-height, 56px); overflow:hidden; background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
 .eotion-timeline-scroll { width:100%; min-width:0; max-width:100%; min-height:240px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; }
+@supports (scrollbar-color:auto) and (not selector(::-webkit-scrollbar)) {
+  .eotion-timeline-scroll { scrollbar-color:var(--e-color-text-muted, var(--editor-muted)) var(--e-color-canvas, var(--editor-canvas)); }
+}
+@supports selector(::-webkit-scrollbar) {
+  .eotion-timeline-scroll::-webkit-scrollbar { height:12px; }
+  .eotion-timeline-scroll::-webkit-scrollbar-track { background:var(--e-color-canvas, var(--editor-canvas)); }
+  .eotion-timeline-scroll::-webkit-scrollbar-thumb { min-width:24px; border:3px solid var(--e-color-canvas, var(--editor-canvas)); border-radius:8px; background:var(--e-color-text-muted, var(--editor-muted)); }
+  .eotion-timeline-scroll::-webkit-scrollbar-thumb:hover { background:var(--e-color-text-secondary, var(--editor-muted)); }
+}
 .eotion-timeline-scroll:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:-2px; }
 .eotion-timeline-canvas { position:relative; min-width:100%; min-height:240px; }
 .eotion-timeline-body { position:relative; width:100%; min-height:240px; isolation:isolate; }
@@ -344,5 +353,9 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-unscheduled-reason { flex:0 0 auto; }
 .eotion-timeline-unscheduled button { flex:0 0 auto; min-height:32px; border:0; border-radius:var(--e-radius-control, 6px); padding:0 8px; background:transparent; color:var(--e-color-accent, var(--editor-accent)); font:inherit; cursor:pointer; }
 .eotion-timeline-unscheduled button:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
+@media (pointer:coarse) {
+  .eotion-timeline-dependency-control { top:0; width:min(140px,calc(100% - 12px)); min-height:36px; }
+  .eotion-timeline-unscheduled button { min-height:36px; }
+}
 @media (prefers-reduced-motion: reduce) { .eotion-timeline-ruler-anchor { will-change:auto; } }
 </style>

@@ -116,6 +116,14 @@ test('week starts follow Intl locale data with deterministic fallback', () => {
   expect(sun.boundaryMs).toBe(instant('2023-12-31T00:00:00Z'))
 })
 
+test('month scale keeps minor day labels within readable tick widths', () => {
+  const transform: Transform = { originMs: instant('2026-10-13T00:00:00Z'), pxPerMs: pxPerMs('month'), scrollLeft: 0, width: 500, scale: 'month', generation: 0, displayTimeZone: 'Asia/Shanghai' }
+  const ticks = generateTimelineTicks({ transform, overscanStartMs: instant('2026-10-01T00:00:00Z'), overscanEndMs: instant('2026-11-01T00:00:00Z'), locale: 'zh-CN', weekStart: 1 })
+  expect(ticks.minor.length).toBeGreaterThan(0)
+  expect(ticks.minor.every(tick => /^\d+日$/u.test(tick.label))).toBe(true)
+  expect(ticks.major.some(tick => tick.label.includes('10月'))).toBe(true)
+})
+
 test('ticks stay within budget, keys are stable, and buckets change at major periods', () => {
   const transform: Transform = { originMs: instant('2020-01-01T00:00:00Z'), pxPerMs: pxPerMs('day'), scrollLeft: 0, width: 200_000, scale: 'day', generation: 0, displayTimeZone: 'UTC' }
   const args = { transform, overscanStartMs: instant('2019-01-01T00:00:00Z'), overscanEndMs: instant('2022-01-01T00:00:00Z'), locale: 'en-US', weekStart: 1 }

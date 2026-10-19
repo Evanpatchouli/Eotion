@@ -84,7 +84,7 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
 .eotion-timeline-frozen-cell { display:flex; flex:1 1 0; min-width:0; align-items:center; overflow:hidden; padding:0 8px; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; white-space:nowrap; }
 .eotion-timeline-frozen-cell.is-title { flex:1.35 1 0; color:var(--e-color-text-primary, var(--editor-text)); font-weight:600; }
 .eotion-timeline-frozen-cell > span,.eotion-timeline-frozen-title { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.eotion-timeline-frozen-title { width:100%; border:0; padding:0; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }
+.eotion-timeline-frozen-title { align-self:stretch; box-sizing:border-box; width:100%; height:100%; border:0; padding:0; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }
 .eotion-timeline-frozen-title:hover { color:var(--e-color-accent, var(--editor-accent)); }
 .eotion-timeline-frozen-title:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
 @media (prefers-reduced-motion: reduce) { .eotion-timeline-frozen-header { will-change:auto; } }

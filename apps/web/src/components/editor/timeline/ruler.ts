@@ -52,6 +52,7 @@ function numberFormatter(locale: string): Intl.NumberFormat {
 
 function makeLabel(ms: number, unit: CalendarUnit, level: 'major' | 'minor', locale: string, zone: string): string {
   const fields = zonedFields(ms, zone)
+  if (unit === 'day' && level === 'minor') return dateFormatter(locale, zone, { day: 'numeric' }).format(new Date(ms))
   if (unit === 'quarter') {
     const language = new Intl.Locale(locale).language
     const number = numberFormatter(locale).format(Math.floor((fields.month - 1) / 3) + 1)

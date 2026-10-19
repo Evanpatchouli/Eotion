@@ -241,6 +241,7 @@ const timelineSelectedPageId = computed(() => {
 const nextCursor = ref<string | null>(null)
 const loading = ref(false)
 const loadingMore = ref(false)
+const refreshing = ref(false)
 const creating = ref(false)
 const loadError = ref('')
 const mutationError = ref('')
@@ -760,6 +761,7 @@ async function loadTable(append = false): Promise<void> {
   const userId = auth.user?.id
   if (!workspace || !database || !view) return
   const epoch = ++requestEpoch
+  refreshing.value = false
   if (append) { loadingMore.value = true; moreError.value = '' }
   else { loading.value = true; loadError.value = ''; moreError.value = '' }
   try {
@@ -792,6 +794,7 @@ async function refreshLoadedWindow(): Promise<void> {
   const desiredCount = records.value.length
   const epoch = ++requestEpoch
   const identity = [workspaceId.value, databaseId.value, viewId.value, auth.user?.id].join('\u0000')
+  refreshing.value = true
   staleReadonly.value = true
   cellPopover.value = null
   propertyCreatorOpen.value = false
@@ -850,6 +853,8 @@ async function refreshLoadedWindow(): Promise<void> {
       staleReadonly.value = true
       refreshError.value = `更新未完成，已保留当前内容并切换为只读。${errorMessage(cause, '请重试加载。')}`
     }
+  } finally {
+    if (epoch === requestEpoch) refreshing.value = false
   }
 }
 
@@ -2072,6 +2077,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
   staleReadonly.value = false
   loading.value = false
   loadingMore.value = false
+  refreshing.value = false
   returnFocusTo.value = null
   externalRefreshPending = false
   if (current.some((value, index) => value !== previous[index])) {
@@ -2232,6 +2238,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
     <p v-if="visibleViewError" class="eotion-database-error" role="alert">{{ visibleViewError }}</p>
     <p v-if="!online && !loading && !loadError" class="eotion-database-offline" role="status">离线 · 数据库只读，已加载内容仍可查看</p>
     <p v-if="refreshError" class="eotion-database-error" role="alert"><span>{{ refreshError }}</span><button type="button" @click.stop="void refreshLoadedWindow()">重试刷新</button></p>
+    <p v-if="viewType === 'timeline' && refreshing" class="eotion-database-refreshing" role="status">正在刷新数据库…</p>
     <p v-if="loading" class="eotion-database-state" role="status">正在加载数据库…</p>
     <div v-else-if="loadError" class="eotion-database-error" role="alert"><span>{{ loadError }}</span><button type="button" @click.stop="loadTable()">重试加载</button></div>
     <template v-else>
@@ -2399,7 +2406,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
 .eotion-database-popover button { flex-shrink:0; white-space:nowrap; }
 .eotion-database-popover form input { flex:1; width:auto; }
 .eotion-database-option-edit span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.eotion-database-table tr:last-child td { border-bottom:0; }.eotion-database-state,.eotion-database-error { margin:0; padding:12px 14px; color:var(--editor-muted); font-size:13px; }.eotion-database-offline { margin:0; border-top:1px solid var(--border-editor); padding:7px 14px; color:var(--editor-muted); font-size:12px; }.eotion-database-error { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; color:var(--danger); }.eotion-database-more { margin:10px 14px; }
+.eotion-database-table tr:last-child td { border-bottom:0; }.eotion-database-state,.eotion-database-error { margin:0; padding:12px 14px; color:var(--editor-muted); font-size:13px; }.eotion-database-offline { margin:0; border-top:1px solid var(--border-editor); padding:7px 14px; color:var(--editor-muted); font-size:12px; }.eotion-database-error { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; color:var(--danger); overflow-wrap:anywhere; }.eotion-database-refreshing { margin:0; padding:6px 14px; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; }.eotion-database-more { margin:10px 14px; }
 @media (max-width:767px) {
   .eotion-database-header { display:grid; grid-template-columns:minmax(0,1fr) 44px 44px; grid-template-rows:auto 44px; gap:6px; padding:9px 10px; }
   .eotion-database-mark { display:none; }

@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { expect, test, type Locator, type Page, type Route, type TestInfo } from '@playwright/test'
+import { chromium, expect, test, type Locator, type Page, type Route, type TestInfo } from '@playwright/test'
 import type { Editor } from '@tiptap/core'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain/database'
@@ -11388,4 +11388,384 @@ test('P11.4D keyboard picker stays visible across Desktop, Tablet, and Phone in 
   }
   expect(p114bRelationPatch(api, 'p114b-blocks-relation')).toHaveLength(0)
   console.log(`P11.4D keyboard visual evidence: ${directory}`)
+})
+
+async function p115RefreshLoadedWindow(timeline: Locator): Promise<void> {
+  await timeline.evaluate(async root => {
+    let component = (root as HTMLElement & { __vueParentComponent?: any }).__vueParentComponent
+    while (component) {
+      const refresh = component.setupState?.refreshLoadedWindow
+      if (typeof refresh === 'function') { await refresh(); return }
+      component = component.parent
+    }
+    throw new Error('Expected DatabaseNodeView refreshLoadedWindow')
+  })
+}
+
+test('P11.5 Timeline stays contained, aligned, and theme-neutral at supported viewport widths', async ({ page }) => {
+  const { timeline, api } = await p114bFixture(page, 'blocks')
+  let baselineGeometry: unknown
+  for (const [width, height] of [[1440, 900], [1024, 900], [390, 844], [360, 800]] as const) {
+    await page.setViewportSize({ width, height })
+    if (width <= 390) {
+      const closeMobileNav = page.getByRole('button', { name: '关闭导航菜单' })
+      if (await closeMobileNav.isVisible()) await closeMobileNav.click()
+    }
+    await settleTimelineGestureLayout(timeline)
+    for (const theme of ['light', 'dark'] as const) {
+      await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
+      const evidence = await timeline.evaluate(root => {
+        const bounds = (selector: string) => {
+          const element = root.querySelector<HTMLElement>(selector)
+          const rect = element?.getBoundingClientRect()
+          return rect ? { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height } : null
+        }
+        const header = root.querySelector<HTMLElement>('.eotion-timeline-header')
+        const headerBounds = header?.getBoundingClientRect()
+        const rootBounds = root.getBoundingClientRect()
+        const rect = (element: HTMLElement | null) => {
+          if (!element) return null
+          const value = element.getBoundingClientRect()
+          return { x: value.x, y: value.y, right: value.right, bottom: value.bottom, width: value.width, height: value.height }
+        }
+        const arrows = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-arrow')].map(rect)
+        const navigationButtons = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-navigation button')]
+        const today = rect(navigationButtons[1] ?? null)
+        const scale = rect(root.querySelector<HTMLElement>('.eotion-timeline-scale-control'))
+        const period = rect(root.querySelector<HTMLElement>('.eotion-timeline-period'))
+        const frozen = root.querySelector<HTMLElement>('[data-timeline-frozen-row]')?.getBoundingClientRect()
+        const frozenTitle = root.querySelector<HTMLElement>('.eotion-timeline-frozen-title')
+        const frozenTitleBounds = frozenTitle?.getBoundingClientRect()
+        const row = root.querySelector<HTMLElement>('[data-testid="timeline-scroll"] [data-timeline-row]')?.getBoundingClientRect()
+        const scroller = root.querySelector<HTMLElement>('[data-testid="timeline-scroll"]')
+        const scrollerBounds = scroller?.getBoundingClientRect()
+        const minorLabels = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-ruler-label--minor')].map(element => {
+          const rect = element.getBoundingClientRect()
+          return { left: rect.left, right: rect.right, text: element.textContent?.trim() ?? '' }
+        }).sort((left, right) => left.left - right.left)
+        const duplicateScrollerCount = root.querySelectorAll('[data-testid="timeline-scroll"]').length
+        return {
+          rootX: rootBounds.x,
+          rootWidth: rootBounds.width,
+          rootFits: root.scrollWidth <= root.clientWidth,
+          headerDisplay: header ? getComputedStyle(header).display : '',
+          headerFits: !!headerBounds && headerBounds.left >= rootBounds.left && headerBounds.right <= rootBounds.right + 1,
+          arrows,
+          today,
+          scale,
+          period,
+          frozenRowTop: frozen?.top ?? null,
+          rowTop: row?.top ?? null,
+          rowHeight: row?.height ?? null,
+          frozenTitleHeight: frozenTitleBounds?.height ?? null,
+          frozenTitleTop: frozenTitleBounds?.top ?? null,
+          frozenTitleBottom: frozenTitleBounds?.bottom ?? null,
+          frozenRowBottom: frozen ? frozen.top + frozen.height : null,
+          scrollerCount: duplicateScrollerCount,
+          scrollerWidth: scroller?.clientWidth ?? 0,
+          canvasWidth: scroller?.scrollWidth ?? 0,
+          scrollerScrollbarColor: scroller ? getComputedStyle(scroller).scrollbarColor : '',
+          supportsWebkitScrollbar: CSS.supports('selector(::-webkit-scrollbar)'),
+          webkitScrollbarHeight: scroller ? getComputedStyle(scroller, '::-webkit-scrollbar').height : '',
+          webkitThumbMinWidth: scroller ? getComputedStyle(scroller, '::-webkit-scrollbar-thumb').minWidth : '',
+          bars: [...root.querySelectorAll<HTMLElement>('[data-testid="timeline-bar"]')].map(element => {
+            const rect = element.getBoundingClientRect()
+            return { recordId: element.dataset.recordId, x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+              phase: element.dataset.interactionPhase, saving: element.dataset.saving, selected: element.getAttribute('aria-pressed') }
+          }),
+          minorLabels,
+          pageFits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+        }
+      })
+      expect(evidence.rootFits, `${width}px ${theme} Timeline container fits`).toBe(true)
+      expect(evidence.headerFits, `${width}px ${theme} header fits`).toBe(true)
+      expect(evidence.pageFits, `${width}px ${theme} document fits`).toBe(true)
+      expect(evidence.scrollerCount).toBe(1)
+      expect(evidence.canvasWidth).toBeGreaterThanOrEqual(evidence.scrollerWidth)
+      expect(evidence.webkitScrollbarHeight).toBe('12px')
+      if (evidence.supportsWebkitScrollbar) expect(evidence.webkitThumbMinWidth).toBe('24px')
+      expect(evidence.frozenRowTop).not.toBeNull()
+      expect(Math.abs(evidence.frozenRowTop! - evidence.rowTop!)).toBeLessThanOrEqual(1)
+      expect(evidence.rowHeight).toBe(48)
+      expect(evidence.frozenTitleHeight).toBeGreaterThanOrEqual(44)
+      expect(evidence.frozenTitleTop).toBeGreaterThanOrEqual(evidence.frozenRowTop!)
+      expect(evidence.frozenTitleBottom).toBeLessThanOrEqual(evidence.frozenRowBottom! + 1)
+      expect(evidence.minorLabels.every((label, index, all) => index === 0 || all[index - 1]!.right <= label.left + 1)).toBe(true)
+      if (evidence.rootWidth <= 420) {
+        expect(evidence.headerDisplay).toBe('grid')
+        expect(evidence.arrows).toHaveLength(2)
+        expect(evidence.arrows.every(rect => !!rect && Math.abs((rect.y + rect.height / 2) - (evidence.today!.y + evidence.today!.height / 2)) <= 1)).toBe(true)
+        expect(Math.abs((evidence.today!.y + evidence.today!.height / 2) - (evidence.scale!.y + evidence.scale!.height / 2))).toBeLessThanOrEqual(1)
+        expect(evidence.period!.y).toBeGreaterThan(evidence.scale!.bottom - 1)
+        for (const rect of [...evidence.arrows, evidence.today!, evidence.scale!, evidence.period!]) {
+          expect(rect.x).toBeGreaterThanOrEqual(evidence.rootX)
+          expect(rect.right).toBeLessThanOrEqual(evidence.rootX + evidence.rootWidth + 1)
+        }
+      }
+      const themeGeometry = { headerDisplay: evidence.headerDisplay, rootWidth: evidence.rootWidth, frozenRowTop: evidence.frozenRowTop, rowTop: evidence.rowTop, rowHeight: evidence.rowHeight, scrollerWidth: evidence.scrollerWidth, canvasWidth: evidence.canvasWidth, bars: evidence.bars }
+      if (theme === 'light') baselineGeometry = themeGeometry
+      else expect(themeGeometry).toEqual(baselineGeometry)
+    }
+  }
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+
+})
+
+test('P11.5 refresh keeps the rendered Timeline during pending work and recovers from refresh failure', async ({ page }) => {
+  const { timeline, api } = await p114bFixture(page, 'blocks')
+  const databaseBlock = page.locator('#database-block-p114b-blocks-block')
+  let signalStarted!: () => void
+  let releaseRefresh!: () => void
+  const requestStarted = new Promise<void>(resolve => { signalStarted = resolve })
+  const responseGate = new Promise<void>(resolve => { releaseRefresh = resolve })
+  await page.route(url => new URL(url).pathname.endsWith('/table'), async route => {
+    signalStarted()
+    await responseGate
+    await route.fallback()
+  })
+  const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+  await expect(bar).toBeVisible()
+  await page.evaluate(() => { (window as Window & { __p115Bar?: HTMLElement }).__p115Bar = document.querySelector<HTMLElement>('[data-testid="timeline-bar"][data-record-id="p114b-a"]') ?? undefined })
+  const pendingRefresh = p115RefreshLoadedWindow(timeline)
+  try {
+    await requestStarted
+    await expect(page.getByText('正在刷新数据库…', { exact: true })).toBeVisible()
+    await expect(bar).toBeVisible()
+    expect(await page.evaluate(() => (window as Window & { __p115Bar?: HTMLElement }).__p115Bar?.isConnected)).toBe(true)
+  } finally {
+    releaseRefresh()
+  }
+  await pendingRefresh
+  await expect(page.getByText('正在刷新数据库…', { exact: true })).toHaveCount(0)
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+
+  api.failTableLoads = 1
+  await p115RefreshLoadedWindow(timeline)
+  await expect(databaseBlock.getByRole('alert')).toContainText('更新未完成')
+  await expect(bar).toBeVisible()
+  await expect(page.getByText('正在刷新数据库…', { exact: true })).toHaveCount(0)
+  await databaseBlock.getByRole('button', { name: '重试刷新' }).click()
+  await expect(databaseBlock.getByRole('alert')).toHaveCount(0)
+  await expect(bar).toBeVisible()
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+})
+
+test('P11.5 generic Timeline loading, retry, empty, unscheduled, mixed, offline, and reconnect states preserve behavior', async ({ page }) => {
+  const timelineView = view('p115-state-view', rootDatabase.id, 'State matrix', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' } } },
+  }, 'timeline')
+  const items = [record('p115-state-a', rootDatabase.id, 'p115-state-page-a', { 'root-title': 'Scheduled', 'root-date': '2026-10-13' })]
+  const api = await installApi(page, [block('p115-state-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: rootProperties, records: items, failTableLoads: 1, tableLoadDelayMs: 120,
+  })
+  await page.setViewportSize({ width: 1024, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+  const initialTableRequest = page.waitForRequest(request => request.url().includes(`/databases/${rootDatabase.id}/views/${timelineView.id}/table`))
+  const navigation = page.goto('/#/app/database-workspace/page/database-page')
+  await initialTableRequest
+  await expect(page.getByText('正在加载数据库…', { exact: true })).toBeVisible()
+  await navigation
+  const databaseBlock = page.locator('#database-block-p115-state-block')
+  await expect(databaseBlock.getByRole('alert')).toContainText('Database temporarily unavailable')
+  api.tableLoadDelayMs = 100
+  const retryLoading = expect(page.getByText('正在加载数据库…', { exact: true })).toBeVisible()
+  await databaseBlock.getByRole('button', { name: '重试加载' }).click()
+  await retryLoading
+  const timeline = databaseBlock.getByTestId('database-timeline')
+  await expect(timeline).toBeVisible()
+  await expect(timeline.locator('[data-testid="timeline-bar"]')).toHaveCount(1)
+
+  api.records.splice(0)
+  await p115RefreshLoadedWindow(timeline)
+  await expect(timeline.getByText('暂无记录', { exact: true })).toBeVisible()
+  await expect(timeline.locator('details')).toHaveCount(0)
+
+  api.records.push(record('p115-unscheduled', rootDatabase.id, 'p115-unscheduled-page', { 'root-title': 'Only unscheduled' }))
+  await p115RefreshLoadedWindow(timeline)
+  await expect(timeline.locator('[data-testid="timeline-bar"]')).toHaveCount(0)
+  const unscheduled = timeline.locator('.eotion-database-timeline-records')
+  await expect(unscheduled).toContainText('未排期（1）')
+  await unscheduled.locator('summary').click()
+  await expect(unscheduled.getByRole('button', { name: '打开记录：Only unscheduled' })).toBeVisible()
+
+  api.records.splice(0, api.records.length,
+    record('p115-scheduled', rootDatabase.id, 'p115-scheduled-page', { 'root-title': 'Scheduled again', 'root-date': '2026-10-14' }),
+    record('p115-unscheduled', rootDatabase.id, 'p115-unscheduled-page', { 'root-title': 'Mixed unscheduled' }),
+  )
+  await p115RefreshLoadedWindow(timeline)
+  await expect(timeline.locator('[data-testid="timeline-bar"]')).toHaveCount(1)
+  await expect(timeline.locator('.eotion-database-timeline-records')).toContainText('未排期（1）')
+
+  await page.context().setOffline(true)
+  await expect(databaseBlock.getByText('离线 · 数据库只读，已加载内容仍可查看', { exact: true })).toBeVisible()
+  await expect(timeline.locator('[data-testid="timeline-bar"]')).toBeVisible()
+  const readsBeforeReconnect = api.requests.filter(request => request.method === 'GET' && request.path.endsWith('/table')).length
+  await page.context().setOffline(false)
+  await expect.poll(() => api.requests.filter(request => request.method === 'GET' && request.path.endsWith('/table')).length).toBeGreaterThan(readsBeforeReconnect)
+  await expect(databaseBlock.getByText('离线 · 数据库只读，已加载内容仍可查看', { exact: true })).toHaveCount(0)
+  await expect(timeline.locator('[data-testid="timeline-bar"]')).toBeVisible()
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+})
+
+test('P11.5 coarse touch keeps controls reachable and scrolls the native Timeline surface', async () => {
+  const visibleScrollbarBrowser = await chromium.launch({ channel: 'chrome', ignoreDefaultArgs: ['--hide-scrollbars'] })
+  const context = await visibleScrollbarBrowser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 })
+  try {
+    const page = await context.newPage()
+    const items = [
+      record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Alpha', 'root-date': '2026-10-13', 'p114b-blocks-relation': ['p114b-b'] }),
+      record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Beta', 'root-date': '2026-10-14' }),
+      record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Unscheduled long title that still wraps safely' }),
+    ]
+    const { timeline, api } = await p114bFixture(page, 'blocks', items)
+    for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+    await page.reload()
+    await expect(timeline).toBeVisible()
+    const closeMobileNav = page.getByRole('button', { name: '关闭导航菜单' })
+    if (await closeMobileNav.isVisible()) await closeMobileNav.click()
+    const recordSurface = page.locator('.eotion-product-overlay--drawer[aria-label="记录"], .eotion-product-overlay--right-drawer[open][aria-label="记录"], .eotion-product-overlay--bottom-drawer[open][aria-label="记录"], .eotion-product-overlay--modal[open][aria-label="记录"], .eotion-product-overlay--page[aria-label="记录"]')
+    await timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]').tap()
+    await expect.poll(async () => await recordSurface.count() > 0 || page.url().includes('/page/p114b-page-a')).toBe(true)
+    if (page.url().includes('/page/p114b-page-a')) {
+      await page.goto('/#/app/database-workspace/page/database-page')
+      await expect(timeline).toBeVisible()
+    } else {
+      await page.keyboard.press('Escape')
+      await expect(recordSurface).toHaveCount(0)
+    }
+    for (const width of [390, 360]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 800 })
+      await expect.poll(() => timeline.locator('[data-testid="timeline-scroll"]').evaluate(element => element.clientWidth)).toBeGreaterThan(0)
+      const unscheduledDetails = timeline.locator('.eotion-database-timeline-records')
+      if (!(await unscheduledDetails.evaluate(element => element.open))) await unscheduledDetails.locator('summary').click()
+      const controls = await timeline.evaluate(root => {
+        const dependency = root.querySelector<HTMLElement>('.eotion-timeline-dependency-control')
+        const summary = root.querySelector<HTMLElement>('.eotion-database-timeline-records summary')
+        const unscheduledOpen = root.querySelector<HTMLElement>('.eotion-database-timeline-record-link')
+        const minorLabels = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-ruler-label--minor')]
+        const minorTextTop = Math.min(...minorLabels.map(label => {
+          const text = document.createRange()
+          text.selectNodeContents(label)
+          return text.getBoundingClientRect().top
+        }))
+        const bounds = (element: HTMLElement | null) => {
+          if (!element) return null
+          const rect = element.getBoundingClientRect()
+          return { x: rect.x, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }
+        }
+        return { dependency: bounds(dependency), summary: bounds(summary), unscheduledOpen: bounds(unscheduledOpen),
+          minorTextTop, minorTop: minorLabels[0] ? getComputedStyle(minorLabels[0]).top : '',
+          pageFits: document.documentElement.scrollWidth <= document.documentElement.clientWidth }
+      })
+      expect(controls.dependency?.height).toBeGreaterThanOrEqual(36)
+      expect(controls.dependency?.width).toBeLessThanOrEqual(140)
+      expect(controls.minorTop).toBe('32px')
+      expect(Number.isFinite(controls.minorTextTop)).toBe(true)
+      expect(controls.dependency!.bottom).toBeLessThanOrEqual(controls.minorTextTop)
+      expect(controls.summary?.height).toBeGreaterThanOrEqual(44)
+      expect(controls.unscheduledOpen?.height).toBeGreaterThanOrEqual(44)
+      expect(controls.pageFits).toBe(true)
+
+      const scroller = timeline.locator('[data-testid="timeline-scroll"]')
+      const before = await scroller.evaluate(element => ({ left: element.scrollLeft, width: element.clientWidth, scrollWidth: element.scrollWidth, top: element.getBoundingClientRect().top, height: element.clientHeight, rows: element.querySelectorAll('[data-timeline-row]').length }))
+      expect(before.scrollWidth).toBeGreaterThan(before.width)
+      const scrollbar = await scroller.evaluate(element => ({ occupiedHeight: element.offsetHeight - element.clientHeight, thumbColor: getComputedStyle(element, '::-webkit-scrollbar-thumb').backgroundColor }))
+      expect(scrollbar.occupiedHeight).toBeGreaterThan(0)
+      expect(scrollbar.thumbColor).not.toBe('rgba(0, 0, 0, 0)')
+      const session = await context.newCDPSession(page)
+      const startX = width - 24
+      const endX = Math.max(12, width - 110)
+      const y = before.top + Math.max(130, before.height - 28)
+      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: startX, y, id: 1 }] })
+      for (let step = 1; step <= 5; step++) {
+        await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: startX + (endX - startX) * step / 5, y, id: 1 }] })
+      }
+      await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+      await session.detach()
+      await expect.poll(() => scroller.evaluate(element => element.scrollLeft)).toBeGreaterThan(before.left)
+      if (width === 360) {
+        const track = await scroller.evaluate(element => {
+          const bounds = element.getBoundingClientRect()
+          const scrollbarHeight = element.offsetHeight - element.clientHeight
+          return { x: bounds.right - 8, y: bounds.top + element.clientHeight + scrollbarHeight / 2, scrollbarHeight, scrollLeft: element.scrollLeft }
+        })
+        expect(track.scrollbarHeight).toBeGreaterThan(0)
+        await page.mouse.click(track.x, track.y)
+        await expect.poll(() => scroller.evaluate(element => element.scrollLeft)).toBeGreaterThan(track.scrollLeft)
+      }
+    }
+    expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+  } finally {
+    await context.close()
+    await visibleScrollbarBrowser.close()
+  }
+})
+
+test('P11.5 coarse touch previews, cancels, moves, and resizes range and point dates once', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 })
+  try {
+    const page = await context.newPage()
+    const { timeline, api } = await p114bFixture(page, 'blocks', [
+      record('p114b-a', rootDatabase.id, 'p114b-page-a', { 'root-title': 'Short range', 'root-date': { start: '2026-10-13', end: '2026-10-13' } }),
+      record('p114b-b', rootDatabase.id, 'p114b-page-b', { 'root-title': 'Point', 'root-date': '2026-10-14' }),
+      record('p114b-c', rootDatabase.id, 'p114b-page-c', { 'root-title': 'Edge range', 'root-date': { start: '2026-10-15', end: '2026-10-16' } }),
+    ])
+    const closeMobileNav = page.getByRole('button', { name: '关闭导航菜单' })
+    if (await closeMobileNav.isVisible()) await closeMobileNav.click()
+    await page.setViewportSize({ width: 390, height: 844 })
+    const session = await context.newCDPSession(page)
+    const dragByTouch = async (target: Locator, deltaX: number, cancel = false) => {
+      const bounds = await target.boundingBox()
+      if (!bounds) throw new Error('Expected visible coarse touch Timeline target')
+      const x = bounds.x + bounds.width / 2
+      const y = bounds.y + bounds.height / 2
+      await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] })
+      for (let step = 1; step <= 5; step++) {
+        await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + deltaX * step / 5, y, id: 1 }] })
+      }
+      if (cancel) await session.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] })
+      else await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    }
+    const shortBar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-a"]')
+    const shortEnd = timeline.locator('[data-testid="timeline-resize-end"][data-record-id="p114b-a"]')
+    await expect(shortEnd).toBeVisible()
+    const [handleWidth, handleHeight] = await shortEnd.evaluate(element => { const rect = element.getBoundingClientRect(); return [rect.width, rect.height] })
+    expect(handleWidth).toBeLessThanOrEqual(12)
+    expect(handleHeight).toBeLessThanOrEqual(32)
+    await dragByTouch(shortBar, 36, true)
+    await expect(shortBar).toHaveAttribute('data-drag-state', 'idle')
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith('/cells/root-date'))).toHaveLength(0)
+    expect(api.records.find(item => item.id === 'p114b-a')?.properties['root-date']).toEqual({ start: '2026-10-13', end: '2026-10-13' })
+
+    await dragByTouch(shortBar, 36)
+    await expect.poll(() => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith('/cells/root-date')).length).toBe(1)
+    await expect.poll(() => api.records.find(item => item.id === 'p114b-a')?.properties['root-date']).toEqual({ start: '2026-10-14', end: '2026-10-14' })
+
+    const pointEnd = timeline.locator('[data-testid="timeline-resize-end"][data-record-id="p114b-b"]')
+    await expect(pointEnd).toBeVisible()
+    const pointBounds = await pointEnd.boundingBox()
+    const scrollerBounds = await timeline.getByTestId('timeline-scroll').boundingBox()
+    expect(pointBounds).not.toBeNull()
+    expect(scrollerBounds).not.toBeNull()
+    expect(pointBounds!.x + pointBounds!.width / 2).toBeGreaterThanOrEqual(scrollerBounds!.x)
+    expect(pointBounds!.x + pointBounds!.width / 2).toBeLessThanOrEqual(scrollerBounds!.x + scrollerBounds!.width)
+    await dragByTouch(pointEnd, 36)
+    await expect.poll(() => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith('/cells/root-date')).length).toBe(2)
+    await expect.poll(() => api.records.find(item => item.id === 'p114b-b')?.properties['root-date']).toMatchObject({ start: '2026-10-14', end: '2026-10-14' })
+
+    const edgeBar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p114b-c"]')
+    const edgeHandle = timeline.locator('[data-testid="timeline-resize-start"][data-record-id="p114b-c"]')
+    await expect(edgeHandle).toBeVisible()
+    const edge = await edgeHandle.boundingBox()
+    expect(edge).not.toBeNull()
+    expect(edge!.width).toBeLessThanOrEqual(12)
+    await dragByTouch(edgeHandle, -36, true)
+    await expect(edgeBar).toHaveAttribute('data-drag-state', 'idle')
+    expect(api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith('/cells/root-date'))).toHaveLength(2)
+    expect(api.records.find(item => item.id === 'p114b-c')?.properties['root-date']).toEqual({ start: '2026-10-15', end: '2026-10-16' })
+    await session.detach()
+  } finally {
+    await context.close()
+  }
 })

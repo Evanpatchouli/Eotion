@@ -57,5 +57,11 @@ const scales: { id: TimelineScaleId; label: string }[] = [
 .eotion-timeline-scale-control select { max-width:100%; min-height:36px; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:0 28px 0 10px; background:var(--e-color-surface, var(--editor-surface)); color:inherit; font:inherit; }
 .eotion-timeline-scale-control select:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:2px; }
 .eotion-sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; clip-path:inset(50%); }
-@media (max-width:420px) { .eotion-timeline-period { flex-basis:100%; margin-left:4px; } }
+@container eotion-timeline-root (max-width:420px) {
+  .eotion-timeline-header { display:grid; grid-template-columns:44px max-content 44px minmax(0,1fr); align-items:center; justify-content:initial; gap:4px; }
+  .eotion-timeline-navigation { display:contents; }
+  .eotion-timeline-period { grid-column:1 / -1; grid-row:2; margin:0; overflow:hidden; }
+  .eotion-timeline-scale-control { grid-column:4; grid-row:1; justify-self:end; min-width:0; }
+  .eotion-timeline-scale-control select { width:100%; }
+}
 </style>
