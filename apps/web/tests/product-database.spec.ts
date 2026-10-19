@@ -7207,6 +7207,7 @@ test('edits versioned cells and manages property options without losing stable I
   const optionInput = selectOptions.getByRole('textbox', { name: '新选项名称' })
   await optionInput.fill('Review')
   await selectOptions.getByRole('button', { name: '添加', exact: true }).click()
+  await expect.poll(() => api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Review')?.id).toBeTruthy()
   const reviewOption = api.properties.find((item) => item.id === 'root-select')?.options?.find((item) => item.name === 'Review')
   expect(reviewOption?.id).toBeTruthy()
   await page.keyboard.press('Escape')
