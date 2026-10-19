@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Locator, type Page, type Route, type TestInfo } from '@playwright/test'
+import type { Editor } from '@tiptap/core'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain/database'
 import { getTimelineScale, pxPerMs } from '../src/components/editor/timeline/scale'
@@ -1157,10 +1158,27 @@ async function chooseSelectCell(page: Page, trigger: Locator, option: string) {
 
 async function startDatabaseSlash(page: Page) {
   const editor = page.locator('.eotion-editor-content .tiptap')
+  const selection = () => editor.evaluate(element => {
+    let component = (element.closest('.eotion-editor') as (HTMLElement & { __vueParentComponent?: any }) | null)?.__vueParentComponent
+    while (component && component.type?.__name !== 'EotionEditor') component = component.parent
+    const exposed = component?.exposed?.editor ?? component?.setupState?.editor
+    const current = (exposed?.commands ? exposed : exposed?.value) as Editor | undefined
+    const state = current?.state
+    if (!state) return null
+    const { empty, $from } = state.selection
+    return {
+      empty,
+      atDocumentEnd: $from.parent.isTextblock && $from.pos === state.doc.content.size - 1,
+      emptyParagraph: $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0 && $from.parentOffset === 0,
+    }
+  })
   await editor.click()
   await page.keyboard.press('Escape')
   await page.keyboard.press('Control+End')
+  // Native caret navigation can precede ProseMirror's selection observer.
+  await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })
   await page.keyboard.press('Enter')
+  await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })
   await page.keyboard.press('/')
   await page.keyboard.type('database')
   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)
