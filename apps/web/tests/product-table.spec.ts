@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { chromium, expect, test, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
+import { waitForEditorSelection } from './helpers/editorSelection'
 
 const stamp = '2026-10-09T00:00:00.000Z'
 const user: AuthUserDto = { id: 'table-user', email: 'table@example.com', createdAt: stamp, updatedAt: stamp }
@@ -81,6 +82,7 @@ async function setCellSelection(page: Page, rowFrom: number, cellFrom: number, r
     selection.removeAllRanges()
     selection.addRange(range)
   }, { rowFrom, cellFrom, rowTo, cellTo })
+  await waitForEditorSelection(editor(page))
 }
 
 /** Which table cell currently contains the DOM caret. */
@@ -179,6 +181,7 @@ test('last cell Tab adds a row and the table keeps its identity across reload', 
   await installApi(page, server)
   await page.goto(pageUrl())
   await editor(page).locator('tr').nth(2).locator('td').nth(2).click()
+  await waitForEditorSelection(editor(page))
   await page.keyboard.press('End')
   await page.keyboard.press('Tab')
   await page.keyboard.type('J')
@@ -271,6 +274,7 @@ test('copy and paste inside cells and plain/TSV paste never produce an unsaveabl
 
   // Pasted tab/newline text stays plain text; it must not fabricate block nodes.
   await body.locator(':scope > p').last().click()
+  await waitForEditorSelection(body)
   await page.evaluate(() => {
     const target = document.querySelector('.eotion-editor-content .tiptap')!
     const transfer = new DataTransfer()
@@ -317,6 +321,7 @@ test('a table nests under a toggle and cell Tab never indents the table block', 
   const headers = editor(page).locator('.eotion-toggle th')
   await expect(headers).toHaveCount(3)
   await headers.first().click()
+  await waitForEditorSelection(editor(page))
   await page.keyboard.press('Home')
   await page.keyboard.press('Tab')
   // Tab navigates cells; it must not parent the table to a previous sibling.

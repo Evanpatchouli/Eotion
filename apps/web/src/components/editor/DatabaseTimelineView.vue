@@ -2,10 +2,11 @@
 import type { DatabasePropertyResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { DatabaseTimelineViewOptions, DatabaseViewConfig } from '@eotion/domain/database'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
-import type { TimelineMoveCommand } from './timeline/mutation'
+import type { TimelineMoveCommand, TimelineScheduleCapture, TimelineScheduleCommand } from './timeline/mutation'
+import { normalizeDatabaseDateValue } from '@eotion/domain/date'
 import { resolveTimelineDependencyProperty, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
 import { isWritableTimelineDateSource } from './timeline/mutation'
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 
 import { IconName } from '../ui/icons'
 import EotionIcon from '../ui/EotionIcon.vue'
@@ -18,6 +19,7 @@ import { projectTimelineRecords } from './timeline/projection'
 import { resolveTimelineTemporalGeometry } from './timeline/geometry'
 import { viewportTransform } from './timeline/viewport'
 import { useTimelineViewport } from './timeline/useTimelineViewport'
+import { timelineInstantBounds } from './timeline/coordinates'
 import { projectTimelineDependencies, selectTimelineDependencyEdges } from './timeline/dependency'
 
 type TimelineRecord = DatabaseViewRecordsResponse['records'][number]
@@ -33,7 +35,8 @@ const props = defineProps<{
   writable: boolean
   databaseVersion: number
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
-  moveRecord: (command: TimelineMoveCommand) => Promise<boolean>
+  prepareSchedule: (recordId: string) => TimelineScheduleCapture | null
+  moveRecord: (command: TimelineMoveCommand | TimelineScheduleCommand) => Promise<boolean>
   captureDependency: () => TimelineDependencyCapture | null
   mutateDependency: (command: TimelineDependencyCommand) => Promise<boolean>
 }>()
@@ -44,6 +47,9 @@ const emit = defineEmits<{
 }>()
 
 const recordsExpanded = ref(false)
+const scheduleForm = shallowRef<{ capture: TimelineScheduleCapture; title: string; trigger: HTMLElement; root: HTMLElement; error: string } | null>(null)
+const scheduleDate = ref('')
+const validScheduleDate = computed(() => Boolean(scheduleDate.value && normalizeDatabaseDateValue(scheduleDate.value)?.kind === 'date-only'))
 /**
  * Timeline-local pending fence: the window between pointer release, session
  * validation and the in-flight generic Cell PATCH. The shared Record Cell
@@ -68,6 +74,7 @@ const dependencyConfigKey = computed(() => JSON.stringify([
   props.scope, dependencyProperty.value?.configIdentity, dependencyProperty.value?.propertyVersion,
 ]))
 const online = ref(typeof navigator === 'undefined' || navigator.onLine)
+const offscreenNavigationBusy = ref(false)
 if (typeof window !== 'undefined') {
   const onOnline = () => { online.value = true }
   const onOffline = () => { online.value = false }
@@ -77,10 +84,12 @@ if (typeof window !== 'undefined') {
 }
 const barTransform = computed(() => viewport.state.value ? viewportTransform(viewport.state.value) : null)
 const recordVersionById = computed(() => new Map(props.records.map(record => [record.id, record.version])))
+const recordsById = computed(() => new Map(props.records.map(record => [record.id, record])))
 const writablePropertyId = computed(() => {
   const source = timelineOptions.value?.dateSource
   return isWritableTimelineDateSource(source) ? source.propertyId : ''
 })
+watch(() => JSON.stringify([props.scope, props.config]), () => { scheduleForm.value = null }, { flush: 'sync' })
 const recordMutationBusyById = computed(() => new Map([...pendingTimelineMutations.values()].map(pending => [pending.recordId, true] as const)))
 const frozenColumns = computed(() => resolveFrozenTableProperties(props.properties, props.config))
 const frozenTableVisible = computed(() => timelineOptions.value?.frozenTable?.visible === true)
@@ -98,7 +107,7 @@ const rowIndexByRecordId = computed(() => new Map(projectedItems.value.map(item 
 const focusedRowIndex = computed(() => focusedRecordId.value === null ? null : rowIndexByRecordId.value.get(focusedRecordId.value) ?? null)
 const unscheduledItems = computed(() => projectedItems.value.filter(item => item.kind === 'unscheduled'))
 watch(() => unscheduledItems.value.length, count => { if (count === 0) recordsExpanded.value = false })
-watch(() => props.scope, () => { focusedRecordId.value = null; hoveredRecordId.value = null; recordsExpanded.value = false }, { flush: 'sync' })
+watch(() => props.scope, () => { focusedRecordId.value = null; hoveredRecordId.value = null; recordsExpanded.value = false; scheduleForm.value = null }, { flush: 'sync' })
 const viewport = useTimelineViewport({
   root,
   scroller,
@@ -168,7 +177,7 @@ function prepareTimelineDrag(recordId: string): TimelineBarDragSession | null {
   return session?.expectedDatabaseVersion === props.databaseVersion && session.propertyId === propertyId ? session : null
 }
 
-async function commitTimelineDrag(command: TimelineMoveCommand): Promise<boolean> {
+async function commitTimelineDrag(command: TimelineMoveCommand | TimelineScheduleCommand): Promise<boolean> {
   const captured = { recordId: command.recordId, propertyId: command.propertyId }
   pendingTimelineMutations.set(captured.recordId, captured)
   try {
@@ -177,6 +186,57 @@ async function commitTimelineDrag(command: TimelineMoveCommand): Promise<boolean
     const pending = pendingTimelineMutations.get(captured.recordId)
     if (pending && pending.propertyId === captured.propertyId) pendingTimelineMutations.delete(captured.recordId)
   }
+}
+
+function canSchedule(recordId: string): boolean {
+  const source = timelineOptions.value?.dateSource
+  if (!isWritableTimelineDateSource(source) || !props.properties.some(property => property.id === source.propertyId && property.type === 'date')) return false
+  const record = recordsById.value.get(recordId)
+  return Boolean(record && (record.properties[source.propertyId] === null || record.properties[source.propertyId] === undefined))
+}
+
+async function openSchedule(event: MouseEvent, recordId: string): Promise<void> {
+  const trigger = event.currentTarget
+  const currentRoot = root.value
+  if (!(trigger instanceof HTMLElement) || !trigger.isConnected || !currentRoot?.contains(trigger)
+    || trigger.dataset.recordId !== recordId || trigger.dataset.scope !== props.scope) return
+  if (!props.writable || !online.value || pendingTimelineMutations.size || !canSchedule(recordId)) return
+  const capture = props.prepareSchedule(recordId)
+  if (!capture) return
+  const form = { capture, title: recordTitleById.value.get(recordId) || '无标题', trigger, root: currentRoot, error: '' }
+  const activeAtOpen = document.activeElement
+  scheduleDate.value = ''
+  scheduleForm.value = form
+  await nextTick()
+  if (scheduleForm.value === form && capture.scope === props.scope && root.value === currentRoot && currentRoot.isConnected
+    && (document.activeElement === activeAtOpen || document.activeElement === trigger || document.activeElement === document.body)) {
+    currentRoot.querySelector<HTMLInputElement>('[data-testid="timeline-schedule-form"] input')?.focus()
+  }
+}
+
+function cancelSchedule(): void {
+  const form = scheduleForm.value
+  if (!form || pendingTimelineMutations.size) return
+  scheduleForm.value = null
+  if (form.capture.scope === props.scope && root.value === form.root && form.trigger.isConnected && form.root.contains(form.trigger)) form.trigger.focus()
+}
+
+async function saveSchedule(): Promise<void> {
+  const form = scheduleForm.value
+  const expectedRoot = root.value
+  if (!form || !validScheduleDate.value || !props.writable || !online.value || pendingTimelineMutations.size) return
+  const saved = await commitTimelineDrag({ ...form.capture, value: scheduleDate.value })
+  if (scheduleForm.value !== form || form.capture.scope !== props.scope || root.value !== expectedRoot || !expectedRoot?.isConnected) return
+  if (!saved) { scheduleForm.value = { ...form, error: '日期未保存，请检查当前记录或重新加载后再安排。' }; return }
+  scheduleForm.value = null
+  const temporal = temporalMap.value.get(form.capture.recordId)
+  const row = rowIndexByRecordId.value.get(form.capture.recordId)
+  if (!temporal || row === undefined) return
+  const item = projectedItems.value.find(candidate => candidate.recordId === form.capture.recordId)
+  focusedRecordId.value = form.capture.recordId
+  await viewport.revealInstant(temporal.startMs, row, () => root.value === expectedRoot && props.scope === form.capture.scope && scheduleForm.value === null
+    && rowIndexByRecordId.value.get(form.capture.recordId) === row && temporalMap.value.get(form.capture.recordId) === temporal
+    && projectedItems.value[row] === item)
 }
 
 function isBarViewportCurrent(snapshot: NonNullable<typeof barTransform.value>): boolean {
@@ -216,6 +276,43 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
   const revealed = await viewport.revealRow(rowIndex)
   if (!revealed || capturedScope !== props.scope || rowIndexByRecordId.value.get(item.recordId) !== rowIndex || !root.value?.isConnected) return
   emit('openRecord', event, item.pageId)
+}
+
+async function navigateOffscreen(recordId: string, direction: 'left' | 'right'): Promise<void> {
+  if (offscreenNavigationBusy.value || pendingTimelineMutations.size > 0) return
+  if (root.value?.querySelector('[data-drag-state="armed"], [data-drag-state="dragging"]')) return
+  const row = rowGeometry.value.find(candidate => candidate.item.recordId === recordId)
+  const temporal = temporalMap.value.get(recordId)
+  const rowIndex = rowIndexByRecordId.value.get(recordId)
+  const expectedScope = props.scope
+  const expectedRoot = root.value
+  if (!row || row.item.kind === 'unscheduled' || !row.geometry || !temporal || rowIndex === undefined) return
+  const canGoLeft = row.geometry.offscreen === 'left' || row.geometry.clippedLeft
+  const canGoRight = row.geometry.offscreen === 'right' || row.geometry.clippedRight
+  if (direction === 'left' ? !canGoLeft : !canGoRight) return
+  const requestedInstant = direction === 'left' ? temporal.startMs : temporal.visualEndMs ?? temporal.startMs
+  const bounds = timelineInstantBounds(viewport.displayTimeZone.value)
+  if (!Number.isFinite(requestedInstant) || requestedInstant < bounds.minMs || requestedInstant > bounds.maxMsExclusive) return
+  const instantMs = Math.min(bounds.maxMsExclusive - 1, Math.max(bounds.minMs, requestedInstant))
+  const expectedTemporal = temporal
+  const expectedItem = row.item
+  const isTargetCurrent = () => {
+    const currentRow = rowGeometry.value.find(candidate => candidate.item.recordId === recordId)
+    return pendingTimelineMutations.size === 0
+      && props.scope === expectedScope && root.value === expectedRoot && expectedRoot?.isConnected === true
+      && rowIndexByRecordId.value.get(recordId) === rowIndex && currentRow?.item === expectedItem
+      && temporalMap.value.get(recordId) === expectedTemporal
+  }
+  if (!isTargetCurrent()) return
+  offscreenNavigationBusy.value = true
+  try {
+    focusedRecordId.value = recordId
+    const currentDuringNavigation = () => offscreenNavigationBusy.value && isTargetCurrent()
+    const revealed = await viewport.revealInstant(instantMs, rowIndex, currentDuringNavigation)
+    if (!revealed || !isTargetCurrent()) return
+  } finally {
+    offscreenNavigationBusy.value = false
+  }
 }
 </script>
 
@@ -283,6 +380,7 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
         :prepare-drag="prepareTimelineDrag"
         :commit-drag="commitTimelineDrag"
         :is-viewport-current="isBarViewportCurrent"
+        @navigate-offscreen="navigateOffscreen"
         @scroller-ref="viewport.bindScroller"
         @ruler-ref="viewport.bindRulerAnchor"
         @body-ref="viewport.bindBody"
@@ -306,6 +404,18 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
             <span>{{ item.title || '无标题' }}</span>
             <EotionIcon :name="IconName.ChevronRight" :size="16" aria-hidden="true" />
           </button>
+          <button v-if="canSchedule(item.recordId)" type="button" class="eotion-timeline-schedule-action"
+            :data-record-id="item.recordId" :data-scope="scope"
+            :aria-label="`安排：${item.title || item.recordId}`" :disabled="!writable || !online || pendingTimelineMutations.size > 0"
+            @click="openSchedule($event, item.recordId)">安排</button>
+          <form v-if="scheduleForm?.capture.recordId === item.recordId" class="eotion-timeline-schedule-form" data-testid="timeline-schedule-form" @submit.prevent="saveSchedule" @keydown.esc.stop.prevent="cancelSchedule">
+            <span>安排：{{ scheduleForm.title }}</span>
+            <p v-if="scheduleForm.error" role="status">{{ scheduleForm.error }}</p>
+            <label>安排日期<input v-model="scheduleDate" type="date" aria-label="安排日期" required
+              :disabled="!writable || !online || pendingTimelineMutations.size > 0" /></label>
+            <button type="submit" :disabled="!validScheduleDate || !writable || !online || pendingTimelineMutations.size > 0">保存</button>
+            <button type="button" :disabled="pendingTimelineMutations.size > 0" @click="cancelSchedule">取消</button>
+          </form>
         </li>
       </ul>
     </details>
@@ -313,6 +423,11 @@ async function openUnscheduledItem(event: MouseEvent, item: typeof unscheduledIt
 </template>
 
 <style scoped>
+.eotion-timeline-schedule-form { display:flex; flex:1 0 100%; flex-wrap:wrap; align-items:end; gap:8px; padding:12px; width:100%; max-width:100%; box-sizing:border-box; }
+.eotion-timeline-schedule-form > span { flex-basis:100%; }
+.eotion-timeline-schedule-form label { display:flex; flex-direction:column; gap:4px; min-width:0; max-width:100%; }
+.eotion-timeline-schedule-form input { min-width:0; max-width:100%; box-sizing:border-box; min-height:44px; }
+.eotion-timeline-schedule-form button, .eotion-timeline-schedule-action { min-height:44px; padding:6px 12px; }
 .eotion-database-timeline {
   position: relative;
   width: 100%;

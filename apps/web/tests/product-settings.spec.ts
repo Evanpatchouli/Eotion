@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { releaseNotesFor } from "../src/releaseInfo";
 import type {
   AuthUserDto,
   PageResponse,
@@ -11,15 +12,7 @@ const rootManifest = JSON.parse(
 ) as { version: string; eotion: { buildNumber: number } };
 const buildVersion = rootManifest.version;
 const buildNumber = rootManifest.eotion.buildNumber;
-const releaseHighlights = [
-  "Quiet Studio 产品界面与 Local-first 文档编辑",
-  "Workspace / Page Tree、图片与文件附件",
-  "高级文档区块：Callout、嵌套内容与 Table",
-  "Database：多表格视图、筛选、排序与列配置",
-  "Database 高级属性：Relation、Rollup 与 Formula",
-  "原生 MCP：Token 管理、搜索、阅读、创建与更新文档",
-  "Windows Desktop 与 Android / HarmonyOS 移动宿主基础",
-];
+const currentRelease = releaseNotesFor(buildVersion);
 
 const now = "2026-09-30T00:00:00.000Z";
 const later = "2027-09-30T00:00:00.000Z";
@@ -752,7 +745,7 @@ test("theme and toolbar controls support keyboard focus and activation in dark r
   await expect(toggle).toHaveAttribute("aria-checked", "true");
 });
 
-test("settings navigation ends with 软件说明 and /settings/about shows build info plus release notes", async ({
+test("settings navigation ends with 软件说明 and /settings/about shows exact-version release notes or an explicit empty state", async ({
   page,
 }) => {
   const pageErrors: string[] = [];
@@ -779,14 +772,18 @@ test("settings navigation ends with 软件说明 and /settings/about shows build
   await expect(page.getByTestId("about-version")).toContainText(buildVersion);
   await expect(page.getByTestId("about-version")).toContainText(/[0-9a-f]{6}|unknown/);
   await expect(page.getByTestId("about-version")).not.toContainText("Build ");
-  await expect(page.getByTestId("about-released")).toHaveText("2026-10-11");
+  await expect(page.getByTestId("about-released")).toHaveText(currentRelease?.releasedAt ?? "暂无记录");
   await expect(
     page.getByRole("heading", { name: "当前版本日志" }),
   ).toBeVisible();
   const notes = page.locator(".settings-about-notes li");
-  await expect(notes).toHaveCount(releaseHighlights.length);
-  for (const highlight of releaseHighlights)
-    await expect(notes.filter({ hasText: highlight })).toHaveCount(1);
+  await expect(notes).toHaveCount(currentRelease?.highlights.length ?? 0);
+  if (currentRelease) {
+    for (const highlight of currentRelease.highlights)
+      await expect(notes.filter({ hasText: highlight })).toHaveCount(1);
+  } else {
+    await expect(page.getByText("暂无当前版本的发行说明。", { exact: true })).toBeVisible();
+  }
   const widths = await page.evaluate(() => ({
     viewport: document.documentElement.clientWidth,
     content: document.documentElement.scrollWidth,

@@ -5,6 +5,7 @@ let originalOverflow = ''
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { withOverlayInitialFocus } from './overlayFocus'
 import type { ProductOverlayMode } from './productOverlay'
 
 const props = withDefaults(defineProps<{
@@ -99,18 +100,20 @@ function onDrawerEnter(element: Element, done: () => void) {
     }
     const hadModal = Boolean(dialog.value?.open)
     if (dialog.value?.open) { expectedCloses.add(dialog.value); dialog.value.close() }
-    if (node instanceof HTMLDialogElement) {
-      node.showModal()
-      maskedDrawers.add(node)
-      lockScroll()
-    } else if (hadModal) {
-      unlockScroll()
-    }
-    const focusTarget = node instanceof HTMLDialogElement ? node.querySelector<HTMLElement>('.eotion-product-overlay__body [autofocus]')
-      ?? node.querySelector<HTMLElement>('.eotion-product-overlay__body input:not([disabled]), .eotion-product-overlay__body textarea:not([disabled]), .eotion-product-overlay__body select:not([disabled]), .eotion-product-overlay__body [contenteditable="true"], .eotion-product-overlay__body button:not([disabled]), .eotion-product-overlay__body [tabindex="0"]')
-      ?? node.querySelector<HTMLElement>('.eotion-product-overlay__footer button:not([disabled]), .eotion-product-overlay__footer [tabindex="0"]')
-      ?? node.querySelector<HTMLElement>('.eotion-product-overlay__body') : node
-    focusTarget?.focus({ preventScroll: true })
+    withOverlayInitialFocus(node, () => {
+      if (node instanceof HTMLDialogElement) {
+        node.showModal()
+        maskedDrawers.add(node)
+        lockScroll()
+      } else if (hadModal) {
+        unlockScroll()
+      }
+      const focusTarget = node instanceof HTMLDialogElement ? node.querySelector<HTMLElement>('.eotion-product-overlay__body [autofocus]')
+        ?? node.querySelector<HTMLElement>('.eotion-product-overlay__body input:not([disabled]), .eotion-product-overlay__body textarea:not([disabled]), .eotion-product-overlay__body select:not([disabled]), .eotion-product-overlay__body [contenteditable="true"], .eotion-product-overlay__body button:not([disabled]), .eotion-product-overlay__body [tabindex="0"]')
+        ?? node.querySelector<HTMLElement>('.eotion-product-overlay__footer button:not([disabled]), .eotion-product-overlay__footer [tabindex="0"]')
+        ?? node.querySelector<HTMLElement>('.eotion-product-overlay__body') : node
+      focusTarget?.focus({ preventScroll: true })
+    })
     if (reducedMotion()) { node.dataset.motionState = 'open'; motions.delete(node); done(); return }
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (node.dataset.motionState !== 'entering' || !node.isConnected) return
@@ -158,13 +161,17 @@ async function syncSurface() {
   if (isOpen && isModalSurface(props.mode)) {
     await nextTick()
     if (!open.value || !isModalSurface(props.mode)) return
-    if (!dialog.value?.open) dialog.value?.showModal()
-    lockScroll()
-    const focusTarget = dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__body [autofocus]')
-      ?? dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__body input:not([disabled]), .eotion-product-overlay__body textarea:not([disabled]), .eotion-product-overlay__body select:not([disabled]), .eotion-product-overlay__body [contenteditable="true"], .eotion-product-overlay__body button:not([disabled]), .eotion-product-overlay__body [tabindex="0"]')
-      ?? dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__footer button:not([disabled]), .eotion-product-overlay__footer [tabindex="0"]')
-      ?? dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__body')
-    focusTarget?.focus({ preventScroll: true })
+    const currentDialog = dialog.value
+    if (!currentDialog) return
+    withOverlayInitialFocus(currentDialog, () => {
+      if (!currentDialog?.open) currentDialog?.showModal()
+      lockScroll()
+      const focusTarget = currentDialog?.querySelector<HTMLElement>('.eotion-product-overlay__body [autofocus]')
+        ?? currentDialog?.querySelector<HTMLElement>('.eotion-product-overlay__body input:not([disabled]), .eotion-product-overlay__body textarea:not([disabled]), .eotion-product-overlay__body select:not([disabled]), .eotion-product-overlay__body [contenteditable="true"], .eotion-product-overlay__body button:not([disabled]), .eotion-product-overlay__body [tabindex="0"]')
+        ?? currentDialog?.querySelector<HTMLElement>('.eotion-product-overlay__footer button:not([disabled]), .eotion-product-overlay__footer [tabindex="0"]')
+        ?? currentDialog?.querySelector<HTMLElement>('.eotion-product-overlay__body')
+      focusTarget?.focus({ preventScroll: true })
+    })
   } else {
     if (dialog.value?.open) {
       expectedCloses.add(dialog.value)

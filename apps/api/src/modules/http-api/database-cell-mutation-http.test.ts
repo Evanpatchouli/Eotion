@@ -344,10 +344,81 @@ test('generic cell batch is atomic, versioned, scoped, and has durable receipts'
     const afterBlankLink = await snapshot()
     assert.equal(row(afterBlankLink, 'batch-after-blank').properties['batch-date'].start, '2026-10-01')
 
+    for (const emptyKind of ['missing', 'null'] as const) {
+      const rootId = `batch-schedule-${emptyKind}`
+      const targetId = `${rootId}-target`
+      for (const id of [rootId, targetId]) {
+        if (emptyKind === 'null' && id === rootId) {
+          assert.equal((await request(base, '/api/workspaces/batch-ws/pages', 'POST', cookie,
+            { id: `${id}-page`, parentPageId: null, title: id, orderKey: id })).status, 201)
+          const user = await app.get(UserRepository).findAuthenticationByEmail(owner.email)
+          assert.ok(user)
+          await app.get(DatabaseService).createRecord(user.user.id, 'batch-ws', 'batch-db', {
+            id, pageId: `${id}-page`, properties: { 'batch-title': id, 'batch-date': null },
+          })
+          const stored = await repository.findInDatabase('batch-ws', 'batch-db', id)
+          assert.ok(stored && Object.hasOwn(stored.properties, 'batch-date'))
+          assert.equal(stored.properties['batch-date'], null, 'legitimate record create stores an explicit null Date')
+        } else assert.equal((await request(base, `${route}/records`, 'POST', cookie,
+          { id, pageId: `${id}-page`, title: id, orderKey: id })).status, 201)
+      }
+      const beforeSeed = await snapshot()
+      const seed = await request(base, `${route}/cell-mutations`, 'POST', cookie,
+        mutation(beforeSeed, `${rootId}-seed`, [
+          { recordId: rootId, expectedRecordVersion: row(beforeSeed, rootId).version,
+            cells: [{ propertyId: 'batch-links', value: [targetId] }] },
+          { recordId: targetId, expectedRecordVersion: row(beforeSeed, targetId).version,
+            cells: [{ propertyId: 'batch-date', value: { start: '2026-10-01', end: '2026-10-02' } }] },
+        ]))
+      assert.equal(seed.status, 201, JSON.stringify(seed.body))
+      const beforeSchedule = await snapshot()
+      assert.equal(row(beforeSchedule, rootId).properties['batch-date'], emptyKind === 'null' ? null : undefined)
+      const schedule = (mutationId: string) => ({
+        ...mutation(beforeSchedule, mutationId, [{ recordId: rootId,
+          expectedRecordVersion: row(beforeSchedule, rootId).version,
+          cells: [{ propertyId: 'batch-date', value: '2026-10-12' }] }]),
+        context: { viewId: 'batch-timeline', expectedViewVersion: filtered.body.view.version },
+      })
+      applied = 0
+      repository.updateProperties = async (...args) => {
+        applied++
+        return applied === 2 ? null : originalUpdate(...args)
+      }
+      try {
+        const conflict = await request(base, `${route}/cell-mutations`, 'POST', cookie, schedule(`${rootId}-conflict`))
+        assert.equal(conflict.status, 409, JSON.stringify(conflict.body))
+        assert.equal(applied, 2, 'downstream CAS fails after the empty root has been written in the transaction')
+      } finally {
+        repository.updateProperties = originalUpdate
+      }
+      const afterConflict = await snapshot()
+      assert.equal(afterConflict.database.version, beforeSchedule.database.version)
+      for (const id of [rootId, targetId]) {
+        assert.deepEqual(row(afterConflict, id), row(beforeSchedule, id), 'CAS rollback restores the complete record, including the empty Date')
+      }
+      assert.equal((await request(base, `${route}/cell-mutations/${rootId}-conflict`, 'GET', cookie)).body.status, 'not_committed')
+      const scheduled = await request(base, `${route}/cell-mutations`, 'POST', cookie, schedule(`${rootId}-committed`))
+      assert.equal(scheduled.status, 201, JSON.stringify(scheduled.body))
+      assert.equal(scheduled.body.database.version, beforeSchedule.database.version + 1)
+      assert.deepEqual(scheduled.body.records.map((record: any) => record.id).sort(), [rootId, targetId].sort())
+      const afterSchedule = await snapshot()
+      assert.equal(afterSchedule.database.version, beforeSchedule.database.version + 1, 'root and cascade bump the Database only once')
+      for (const [id, date] of [[rootId, '2026-10-12'],
+        [targetId, { start: '2026-10-12', end: '2026-10-13' }]] as const) {
+        assert.deepEqual(row(scheduled.body, id).properties['batch-date'], date, 'response contains the canonical Date')
+        assert.deepEqual(row(afterSchedule, id).properties['batch-date'], date, 'HTTP reload observes the persisted canonical Date')
+        assert.equal(row(scheduled.body, id).version, row(beforeSchedule, id).version + 1)
+        assert.equal(row(afterSchedule, id).version, row(beforeSchedule, id).version + 1)
+      }
+      const receipt = await request(base, `${route}/cell-mutations/${rootId}-committed`, 'GET', cookie)
+      assert.equal(receipt.status, 200)
+      assert.equal(receipt.body.status, 'committed')
+    }
+
     const formula = await request(base, `${route}/properties`, 'POST', cookie,
       { id: 'batch-derived', name: 'Derived', type: 'formula',
         config: { expression: { kind: 'property', propertyId: 'batch-date' }, resultType: 'date' },
-        expectedDatabaseVersion: afterBlankLink.database.version })
+        expectedDatabaseVersion: (await snapshot()).database.version })
     assert.equal(formula.status, 201, JSON.stringify(formula.body))
     const beforeDerivedWrite = await snapshot()
     assert.equal((await request(base, `${route}/cell-mutations`, 'POST', cookie,

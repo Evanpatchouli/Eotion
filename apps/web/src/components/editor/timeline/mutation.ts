@@ -35,6 +35,17 @@ export interface TimelineMoveCommand {
   value: DatabaseDateValue
 }
 
+/** Empty-cell intent; deliberately separate from the drag math contract. */
+export interface TimelineScheduleCapture extends Omit<TimelineMoveCommand, 'originalValue' | 'value'> {
+  kind: 'schedule'
+  originalValue: null
+  viewIdentityEpoch: number
+  viewRoot: HTMLElement | null
+}
+export interface TimelineScheduleCommand extends TimelineScheduleCapture {
+  value: string
+}
+
 export function timelineDateSourceIdentity(source: unknown): string | null {
   if (!source || typeof source !== 'object' || Array.isArray(source)) return null
   try { return JSON.stringify(source) } catch { return null }

@@ -1,5 +1,5 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
-import { floorCalendar, timeToScreenX, timeToX, addCalendar } from './coordinates'
+import { floorCalendar, timeToScreenX, timeToX, addCalendar, timelineInstantBounds } from './coordinates'
 import { generateTimelineTicks, timelineTickBucket } from './ruler'
 import { getWeekStart } from './scale'
 import { TIMELINE_ROW_HEIGHT, timelineRowWindow, type TimelineRowWindow } from './layout'
@@ -426,7 +426,7 @@ export function useTimelineViewport(options: Options) {
     queueFrame()
   }
 
-  async function revealRow(rowIndex: number): Promise<boolean> {
+  async function revealRow(rowIndex: number, isTargetCurrent: () => boolean = () => true, targetSelector = 'button'): Promise<boolean> {
     const capturedEpoch = epoch
     const capturedScope = toValue(options.scope)
     const root = options.root.value
@@ -436,7 +436,7 @@ export function useTimelineViewport(options: Options) {
     const isCurrent = () => !stopped && capturedEpoch === epoch && capturedScope === toValue(options.scope)
       && root === options.root.value && root?.isConnected === true
       && bodyElement === options.body.value && bodyElement?.isConnected === true
-      && host !== null && host === activeHost && host.isConnected
+      && host !== null && host === activeHost && host.isConnected && isTargetCurrent()
     if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= count || !root || !bodyElement || !host || !isCurrent()) return false
 
     const bodyRect = bodyElement.getBoundingClientRect()
@@ -453,11 +453,39 @@ export function useTimelineViewport(options: Options) {
     await nextTick()
     if (!isCurrent()) return false
     const row = bodyElement.querySelector<HTMLElement>(`[data-row-index="${rowIndex}"]`)
-    const target = row?.querySelector<HTMLButtonElement>('button')
+    const target = row?.querySelector<HTMLButtonElement>(targetSelector)
     if (!target?.isConnected || !isCurrent()) return false
     target.focus({ preventScroll: true })
     updatePin()
     return isCurrent() && document.activeElement === target
+  }
+
+  async function revealInstant(instantMs: number, rowIndex: number, isTargetCurrent: () => boolean = () => true): Promise<boolean> {
+    const capturedEpoch = epoch
+    const capturedScope = toValue(options.scope)
+    const root = options.root.value
+    const bodyElement = options.body.value
+    const host = activeHost
+    const current = state.value
+    const isCurrent = () => !stopped && capturedEpoch === epoch && capturedScope === toValue(options.scope)
+      && root === options.root.value && root?.isConnected === true
+      && bodyElement === options.body.value && bodyElement?.isConnected === true
+      && host !== null && host === activeHost && host.isConnected && isTargetCurrent()
+    if (!Number.isFinite(instantMs) || !current || !isCurrent()) return false
+    const bounds = timelineInstantBounds(displayTimeZone.value)
+    if (instantMs < bounds.minMs || instantMs >= bounds.maxMsExclusive) return false
+    const count = toValue(options.rowCount)
+    if (!Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= count) return false
+
+    const centered = centerViewport(current, instantMs)
+    if (!centered) return false
+    state.value = centered
+    refreshTicks(true)
+    syncNativeScroll()
+    queueFrame(capturedEpoch)
+    await nextTick()
+    if (!isCurrent()) return false
+    return revealRow(rowIndex, isCurrent, '[data-testid="timeline-bar"]')
   }
 
   watch(() => toValue(options.scope), (nextScope, previousScope) => {
@@ -507,6 +535,6 @@ export function useTimelineViewport(options: Options) {
   return {
     state, effectiveScale, locale, displayTimeZone, ticks: rawTicks, screenTicks, rulerTicks, todayMs, todayX, pinY, periodLabel, rowWindow,
     canvasWidthPx,
-    previous, next, today, selectScale, revealRow, bindScroller, bindRulerAnchor, bindBody,
+    previous, next, today, selectScale, revealRow, revealInstant, bindScroller, bindRulerAnchor, bindBody,
   }
 }

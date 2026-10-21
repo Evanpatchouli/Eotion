@@ -60,6 +60,8 @@ const unscheduledStyle = computed(() => ({
   left: `${props.state?.scrollLeft ?? 0}px`,
   width: `${props.state?.width ?? 0}px`,
 }))
+const offscreenLeftStyle = computed(() => ({ left: `${(props.state?.scrollLeft ?? 0) + 4}px` }))
+const offscreenRightStyle = computed(() => ({ right: `${Math.max(0, props.canvasWidthPx - ((props.state?.scrollLeft ?? 0) + (props.state?.width ?? 0))) + 4}px` }))
 const previewGeometryById = reactive(new Map<string, TimelineItemGeometry>())
 watch(() => props.scope, () => previewGeometryById.clear(), { flush: 'sync' })
 const canvasBody = ref<HTMLElement | null>(null)
@@ -153,6 +155,15 @@ function updatePreviewGeometry(recordId: string, geometry: TimelineItemGeometry 
   else previewGeometryById.delete(recordId)
 }
 
+function requestOffscreenNavigation(event: MouseEvent, recordId: string, direction: 'left' | 'right'): void {
+  const target = event.currentTarget
+  if (!(target instanceof HTMLButtonElement) || !target.isConnected || !canvasBody.value?.contains(target)
+    || target.dataset.recordId !== recordId || target.dataset.scope !== props.scope) return
+  if (dependency.active.value || dependency.pending.value || previewGeometryById.size > 0
+    || canvasBody.value?.querySelector('[data-drag-state="armed"], [data-drag-state="dragging"]')) return
+  emit('navigateOffscreen', recordId, direction)
+}
+
 const emit = defineEmits<{
   scrollerRef: [element: HTMLElement | null]
   rulerRef: [element: HTMLElement | null]
@@ -160,6 +171,7 @@ const emit = defineEmits<{
   openRecord: [event: MouseEvent, pageId: string]
   focusRow: [rowIndex: number]
   hoverRecord: [recordId: string | null]
+  navigateOffscreen: [recordId: string, direction: 'left' | 'right']
 }>()
 
 function setScroller(element: unknown): void {
@@ -274,6 +286,34 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
             @pointerleave="emit('hoverRecord', null)"
           >
             <div class="eotion-timeline-row-content" :style="row.item.kind === 'unscheduled' ? unscheduledStyle : undefined">
+              <button
+                v-if="row.geometry && (row.geometry.offscreen === 'left' || row.geometry.clippedLeft)"
+                class="eotion-timeline-offscreen-jump"
+                :class="{ 'is-clipped': row.geometry.offscreen === undefined }"
+                :style="offscreenLeftStyle"
+                type="button"
+                data-testid="timeline-offscreen-left"
+                :data-record-id="row.item.recordId"
+                :data-scope="scope"
+                :aria-label="`跳转到${row.item.title || '无标题'}的${row.item.kind === 'point' ? '日期' : '开始日期'}`"
+                @focus="emit('focusRow', row.rowIndex)"
+                @pointerdown.stop
+                @click.stop="requestOffscreenNavigation($event, row.item.recordId, 'left')"
+              >←</button>
+              <button
+                v-if="row.geometry && (row.geometry.offscreen === 'right' || row.geometry.clippedRight)"
+                class="eotion-timeline-offscreen-jump"
+                :class="{ 'is-clipped': row.geometry.offscreen === undefined }"
+                :style="offscreenRightStyle"
+                type="button"
+                data-testid="timeline-offscreen-right"
+                :data-record-id="row.item.recordId"
+                :data-scope="scope"
+                :aria-label="`跳转到${row.item.title || '无标题'}的${row.item.kind === 'point' ? '日期' : '结束日期'}`"
+                @focus="emit('focusRow', row.rowIndex)"
+                @pointerdown.stop
+                @click.stop="requestOffscreenNavigation($event, row.item.recordId, 'right')"
+              >→</button>
               <TimelineBar
                 v-if="row.geometry && !row.geometry.offscreen"
                 :geometry="row.geometry"
@@ -319,7 +359,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 </template>
 
 <style scoped>
-.eotion-timeline-viewport { position:relative; min-width:0; max-width:100%; overflow:clip; }
+.eotion-timeline-viewport { --timeline-offscreen-jump-size:28px; --timeline-dependency-handle-half-size:9px; position:relative; min-width:0; max-width:100%; overflow:clip; }
 .eotion-timeline-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); }
 .eotion-timeline-dependency-control { position:absolute; z-index:4; right:6px; top:4px; min-height:26px; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:2px 8px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-primary, var(--editor-text)); font:inherit; font-size:11px; cursor:pointer; }
 .eotion-timeline-dependency-control:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); }
@@ -347,6 +387,10 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-row.is-hovered { background:color-mix(in srgb, var(--e-color-hover, var(--editor-hover)) 48%, transparent); }
 .eotion-timeline-row.is-selected { background:color-mix(in srgb, var(--e-color-selected, var(--editor-selected)) 56%, transparent); }
 .eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+.eotion-timeline-offscreen-jump { position:absolute; z-index:7; top:50%; display:grid; width:var(--timeline-offscreen-jump-size); height:var(--timeline-offscreen-jump-size); transform:translateY(-50%); place-items:center; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:0; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; line-height:1; cursor:pointer; pointer-events:auto; }
+.eotion-timeline-offscreen-jump.is-clipped { top:0; height:20px; transform:none; }
+.eotion-timeline-offscreen-jump:hover { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }
+.eotion-timeline-offscreen-jump:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:2px; }
 .eotion-timeline-row--unscheduled { z-index:4; }
 .eotion-timeline-unscheduled { display:flex; width:100%; height:100%; align-items:center; gap:8px; overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); padding:0 8px; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; pointer-events:auto; }
 .eotion-timeline-unscheduled-title { min-width:0; overflow:hidden; color:var(--e-color-text-primary, var(--editor-text)); font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
@@ -356,6 +400,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 @media (pointer:coarse) {
   .eotion-timeline-dependency-control { top:0; width:min(140px,calc(100% - 12px)); min-height:36px; }
   .eotion-timeline-unscheduled button { min-height:36px; }
+  .eotion-timeline-viewport { --timeline-offscreen-jump-size:36px; --timeline-dependency-handle-half-size:14px; }
 }
 @media (prefers-reduced-motion: reduce) { .eotion-timeline-ruler-anchor { will-change:auto; } }
 </style>

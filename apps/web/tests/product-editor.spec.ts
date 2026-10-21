@@ -2,6 +2,7 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
+import { waitForEditorSelection } from './helpers/editorSelection'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -117,6 +118,7 @@ async function selectParagraphText(paragraph: Locator) {
     selection.removeAllRanges()
     selection.addRange(range)
   })
+  await waitForEditorSelection(editor(paragraph.page()))
 }
 
 async function canvasScreenshot(page: Page, name: string) {
@@ -1020,6 +1022,7 @@ test('selection bubble hides on collapse, blur, Escape and IME; stays in viewpor
   const body = editor(page)
   const menu = bubble(page)
   await body.locator('p').click()
+  await waitForEditorSelection(body)
   await expect(menu).toHaveCount(0)
   await selectParagraphText(body.locator('p'))
   await expect(menu).toBeVisible()
@@ -1030,6 +1033,7 @@ test('selection bubble hides on collapse, blur, Escape and IME; stays in viewpor
   await page.setViewportSize({ width: 800, height: 420 })
   await expect(page.locator('.product-shell')).toHaveAttribute('data-layout', 'tablet')
   await body.locator('p').click()
+  await waitForEditorSelection(body)
   await expect(menu).toHaveCount(0)
   await selectParagraphText(body.locator('p'))
   await expect(menu).toBeVisible()
@@ -1054,6 +1058,7 @@ test('selection bubble hides on collapse, blur, Escape and IME; stays in viewpor
   await page.keyboard.press('Escape')
   await expect(menu).toHaveCount(0)
   await body.locator('p').click()
+  await waitForEditorSelection(body)
   await expect(menu).toHaveCount(0)
   await selectParagraphText(body.locator('p'))
   await expect(menu).toBeVisible()
@@ -1061,12 +1066,14 @@ test('selection bubble hides on collapse, blur, Escape and IME; stays in viewpor
   await page.keyboard.press('Escape')
   await expect(menu).toHaveCount(0)
   await body.locator('p').click()
+  await waitForEditorSelection(body)
   await selectParagraphText(body.locator('p'))
   await expect(menu).toBeVisible()
   await menu.getByRole('button', { name: '粗体' }).focus()
   await page.keyboard.press('Escape')
   await expect(menu).toHaveCount(0)
   await body.locator('p').click()
+  await waitForEditorSelection(body)
   await selectParagraphText(body.locator('p'))
   await expect(menu).toBeVisible()
   await body.evaluate(node => node.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true })))
@@ -1337,23 +1344,59 @@ test('keeps a dirty draft across session expiry and saves it after the same user
 
 test('preserves a locally saved IME draft when page metadata sync expires the session', async ({ page }) => {
   const api = await installApi(page, { pages: [pageRecord('page-a', 'Alpha', 1)] })
+  let releaseMetadata!: () => void
+  const metadataHeld = new Promise<void>(resolve => { releaseMetadata = resolve })
+  let capturedMetadata: any
+  let gateUsed = false
+  const failures: Array<{ status: number; body: any }> = []
+  page.on('response', response => {
+    if (response.status() === 401 && new URL(response.url()).pathname === '/api/sync/operations') failures.push({ status: response.status(), body: response.request().postDataJSON() })
+  })
+  await page.route('**/api/sync/operations', async route => {
+    const body = route.request().postDataJSON()
+    if (!gateUsed && body.kind === 'page.upsert' && body.payload.id === 'page-a' && body.payload.title === 'Changed title') {
+      gateUsed = true
+      capturedMetadata = body
+      await metadataHeld
+    }
+    await route.fallback()
+  })
+  try {
   await page.goto('/#/app/ws-a/page/page-a')
   await expect(editor(page)).toBeVisible()
+  await editor(page).evaluate(element => {
+    ;(window as any).__imeCompositionEnds = 0
+    element.addEventListener('compositionend', () => { (window as any).__imeCompositionEnds += 1 })
+  })
   await editor(page).dispatchEvent('compositionstart', { data: '' })
   await editor(page).pressSequentially('Draft from another API')
-  api.controls.unauthorized = true
+  await page.getByRole('button', { name: '页面操作：Alpha' }).click()
+  await page.locator('.product-page-menu').getByRole('menuitem', { name: '重命名' }).click()
+  await page.getByLabel('页面标题').fill('Changed title')
+  await page.getByRole('button', { name: '保存标题' }).click()
+  await expect.poll(() => capturedMetadata).toMatchObject({ kind: 'page.upsert', payload: { id: 'page-a', title: 'Changed title' } })
+  expect(await page.evaluate(() => (window as any).__imeCompositionEnds)).toBe(0)
   await editor(page).dispatchEvent('compositionend', { data: 'Draft from another API' })
   await expect.poll(() => page.evaluate(async () => {
     const { useProductSyncStore } = await import('/src/stores/productSync.ts')
     const local = await useProductSyncStore().store()
     return JSON.stringify(await local.listBlocksByPage('page-a'))
   })).toContain('Draft from another API')
-  await page.getByRole('button', { name: '页面操作：Alpha' }).click()
-  await page.locator('.product-page-menu').getByRole('menuitem', { name: '重命名' }).click()
-  await page.getByLabel('页面标题').fill('Changed title')
-  await page.getByRole('button', { name: '保存标题' }).click()
+  const pending = await page.evaluate(async () => {
+    const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+    return (await (await useProductSyncStore().store()).getPendingOperations()).map(operation => ({ kind: operation.kind, sequence: operation.sequence, payload: operation.payload }))
+  })
+  expect(pending.map(operation => ({ kind: operation.kind, sequence: operation.sequence }))).toEqual([{ kind: 'page.upsert', sequence: 1 }, { kind: 'block.upsert', sequence: 2 }])
+  expect(pending[0]?.payload).toMatchObject({ id: 'page-a', title: 'Changed title' })
+  expect(api.blocks).toHaveLength(0)
+  // The held metadata operation owns the FIFO head; the body has only reached LocalStore.
+  expect(api.requests.filter(request => request.path === '/api/sync/operations')).toHaveLength(0)
+  api.controls.unauthorized = true
+  releaseMetadata()
   await expect(page).toHaveURL(/#\/login(?:\?redirect=.*)?$/)
   expect(api.blocks).toHaveLength(0)
+  expect(api.requests.filter(request => request.path === '/api/sync/operations').map(request => request.body.kind)).toEqual(['page.upsert'])
+  expect(failures).toEqual([{ status: 401, body: capturedMetadata }])
   await page.getByLabel('邮箱').fill('ava@example.com')
   await page.getByLabel('密码', { exact: true }).fill('test-password')
   await page.getByRole('button', { name: '登录', exact: true }).click()
@@ -1362,4 +1405,7 @@ test('preserves a locally saved IME draft when page metadata sync expires the se
   await expect(page).toHaveURL(/#\/app\/ws-a\/page\/page-a$/)
   await expect(editor(page)).toContainText('Draft from another API')
   await expect.poll(() => (api.blocks[0]?.props.node as any)?.content?.[0]?.text, { timeout: 5000 }).toBe('Draft from another API')
+  } finally {
+    releaseMetadata()
+  }
 })

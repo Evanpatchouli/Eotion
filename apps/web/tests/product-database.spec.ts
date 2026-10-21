@@ -6,6 +6,7 @@ import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from
 import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain/database'
 import { getTimelineScale, pxPerMs } from '../src/components/editor/timeline/scale'
 import { planDatabaseSchedule } from '../../../packages/domain/src/scheduling'
+import { waitForEditorSelection } from './helpers/editorSelection'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -1161,7 +1162,7 @@ async function chooseSelectCell(page: Page, trigger: Locator, option: string) {
   }).toPass({ timeout: 8_000 })
 }
 
-async function startDatabaseSlash(page: Page) {
+async function openDatabaseSlashMenu(page: Page) {
   const editor = page.locator('.eotion-editor-content .tiptap')
   const selection = () => editor.evaluate(element => {
     let component = (element.closest('.eotion-editor') as (HTMLElement & { __vueParentComponent?: any }) | null)?.__vueParentComponent
@@ -1177,17 +1178,25 @@ async function startDatabaseSlash(page: Page) {
       emptyParagraph: $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0 && $from.parentOffset === 0,
     }
   })
-  await editor.click()
+  await editor.focus()
   await page.keyboard.press('Escape')
   await page.keyboard.press('Control+End')
+  await waitForEditorSelection(editor)
   // Native caret navigation can precede ProseMirror's selection observer.
   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })
+  // Moving to an existing /database query can reopen its suggestion. Dismiss it
+  // at the final caret before Enter, otherwise Enter selects that old query.
+  await page.keyboard.press('Escape')
   await page.keyboard.press('Enter')
   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })
   await page.keyboard.press('/')
   await page.keyboard.type('database')
   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)
   await expect(page.locator('.p2-slash-icon[data-icon-name="database"] svg')).toHaveCount(1)
+}
+
+async function startDatabaseSlash(page: Page) {
+  await openDatabaseSlashMenu(page)
   await page.locator('.p2-slash-menu').getByRole('option', { name: '数据库', exact: true }).click()
   await expect(page.getByRole('dialog', { name: '数据库' })).toBeVisible()
 }
@@ -1793,8 +1802,17 @@ test('database UX controls render library icons instead of text glyphs', async (
   await openDatabaseSetting(page, table, '排序')
   const sorts = page.getByRole('group', { name: '排序条件' })
   await sorts.getByRole('button', { name: '添加排序' }).click()
+  const settleSortControls = async (width: number) => {
+    const surface = page.locator(`dialog.eotion-product-overlay--${width < 768 ? 'bottom-drawer' : 'modal'}[open]`).filter({ has: sorts })
+    await expect(surface).toHaveCount(1)
+    if (width < 768) await expect(surface).toHaveAttribute('data-motion-state', 'open')
+    await expect(sorts).toHaveCount(1)
+    await expect(sorts.locator('.eotion-database-sort-row')).toHaveCount(1)
+    await expect(sorts.locator('.eotion-database-sort-row .settings-icon-button')).toHaveCount(3)
+  }
   for (const viewport of [{ width: 1440, height: 900, suffix: 'desktop' }, { width: 390, height: 844, suffix: 'phone' }] as const) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
+    await settleSortControls(viewport.width)
     for (const theme of ['light', 'dark'] as const) {
       await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
       const addSort = sorts.getByRole('button', { name: '添加排序' })
@@ -1805,6 +1823,7 @@ test('database UX controls render library icons instead of text glyphs', async (
   }
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'))
   await page.setViewportSize({ width: 1440, height: 900 })
+  await settleSortControls(1440)
   for (const control of await sorts.locator('.eotion-database-sort-row .settings-icon-button').all()) {
     await expect(control.locator('svg')).toHaveCount(1)
     expect((await control.textContent())?.trim()).toBe('')
@@ -5359,6 +5378,7 @@ test('P11.4C offline and changed view config reject a prepared gesture before se
   expect(p114cBatchPosts(api)).toHaveLength(0)
   await page.context().setOffline(false)
   await page.evaluate(() => window.dispatchEvent(new Event('online')))
+  await expect(bar).toHaveAttribute('data-draggable', 'true')
   await gesture(4)
   api.databases[0]!.version += 1
   api.views.find(item => item.id === timelineView.id)!.version += 1
@@ -6367,15 +6387,22 @@ test('board renderer groups generic records by option IDs with projected titles 
 
   for (const viewport of [{ width: 834, height: 1112 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport)
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
     const columns = board.locator('.eotion-database-board-column')
-    const first = await columns.nth(0).boundingBox()
-    const second = await columns.nth(1).boundingBox()
-    expect(first && second).toBeTruthy()
     if (viewport.width === 390) {
-      expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height)
-      expect(await board.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
-    } else expect(second!.x).toBeGreaterThan(first!.x)
+      await expect.poll(() => columns.evaluateAll(elements => {
+        const first = elements[0]!.getBoundingClientRect()
+        const second = elements[1]!.getBoundingClientRect()
+        return second.y - (first.y + first.height)
+      })).toBeGreaterThanOrEqual(0)
+      await expect.poll(() => board.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    } else {
+      await expect.poll(() => columns.evaluateAll(elements => {
+        const first = elements[0]!.getBoundingClientRect()
+        const second = elements[1]!.getBoundingClientRect()
+        return second.x - first.x
+      })).toBeGreaterThan(0)
+    }
   }
   await card.getByRole('button', { name: '打开记录：Projected board-a' }).click()
   await expect(page.getByRole('button', { name: '关闭记录' })).toBeVisible()
@@ -6664,6 +6691,8 @@ test('board grouping mutation updates the record, keeps linked Table and List in
   await drawer.evaluate(element => element.setAttribute('data-board-mutation-lifecycle', 'stable'))
   const keyboardPicker = movedDoneCard.getByRole('button', { name: '移动记录分组' })
   await keyboardPicker.focus()
+  await expect(movedDoneCard.getByRole('button', { name: '打开记录：Draft survives Board mutation', exact: true })).toBeVisible()
+  await expect(keyboardPicker).toBeEnabled()
   await keyboardPicker.press('Enter')
   const keyboardMenu = page.getByRole('menu', { name: '移动记录分组' })
   const keyboardOption = keyboardMenu.getByRole('menuitem', { name: 'Open', exact: true })
@@ -6985,12 +7014,7 @@ test('unconfirmed inline database creation fences further create or link attempt
     const { isProductDatabaseInsertionUncertain } = await import('/src/services/productDatabases.ts')
     return isProductDatabaseInsertionUncertain('database-user', 'database-workspace', 'database-page')
   })).toBe(true)
-  await editor.click()
-  await page.keyboard.press('Escape')
-  await page.keyboard.press('Control+End')
-  await page.keyboard.press('Enter')
-  await page.keyboard.press('/')
-  await page.keyboard.type('database')
+  await openDatabaseSlashMenu(page)
   await page.locator('.p2-slash-menu').getByRole('option', { name: '数据库', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText(uncertainMessage)
   expect(api.requests.filter(({ method, path }) => method === 'POST' && (path.endsWith('/databases') || path.endsWith('/database-links')))).toHaveLength(1)
@@ -8900,7 +8924,7 @@ test('P11.3B datetime resize snaps from the dragged endpoint on every scale and 
   const markerDrawer = page.locator('[data-overlay-mode="drawer"]')
   await expect(markerDrawer).toBeVisible()
   expect(zeroPatchCount()).toBe(beforeClamp)
-  await page.keyboard.press('Escape')
+  await markerDrawer.getByRole('button', { name: '关闭记录' }).click()
   await expect(markerDrawer).toBeHidden()
   await p113bResize(page, zeroBar, zeroStartHandle, 'day', '2026-10-13T10:15:30.123Z')
   await expect.poll(() => zero.properties[zeroDate.id]).toEqual({ start: '2026-10-13T10:15:30.123Z', end: '2026-10-13T10:15:30.123Z', timeZone: 'America/New_York' })
@@ -11608,6 +11632,295 @@ test('P11.5 generic Timeline loading, retry, empty, unscheduled, mixed, offline,
   expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
 })
 
+test('P11.6 offscreen Timeline controls reveal the projected endpoint without loading or mutating records', async ({ page }) => {
+  const timelineView = view('p116-offscreen-view', rootDatabase.id, 'Offscreen timeline', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' }, frozenTable: { visible: true, visibleProperties: null, propertyOrder: null } } },
+  }, 'timeline')
+  const items = [
+    record('p116-left', rootDatabase.id, 'p116-left-page', { 'root-title': 'Left point', 'root-date': '2020-06-01' }),
+    record('p116-right', rootDatabase.id, 'p116-right-page', { 'root-title': 'Right point', 'root-date': '2032-06-01' }),
+    record('p116-range', rootDatabase.id, 'p116-range-page', { 'root-title': 'Wide range', 'root-date': { start: '2019-01-01', end: '9999-12-31' } }),
+  ]
+  const api = await installApi(page, [block('p116-offscreen-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: rootProperties, records: items,
+  })
+  await page.setViewportSize({ width: 1024, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-p116-offscreen-block').getByTestId('database-timeline')
+  await expect(timeline).toBeVisible()
+  const scroller = timeline.getByTestId('timeline-scroll')
+  await expect.poll(() => timeline.evaluate(root => (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState?.rowGeometry?.length)).toBe(3)
+  const readsBefore = api.requests.filter(request => request.method === 'GET' && request.path.endsWith('/table')).length
+  const patchesBefore = api.requests.filter(request => request.method === 'PATCH').length
+
+  await expect(timeline.locator('[data-testid="timeline-offscreen-left"][data-record-id="p116-left"]')).toBeVisible()
+  await expect(timeline.locator('[data-testid="timeline-offscreen-right"][data-record-id="p116-right"]')).toBeVisible()
+  await expect(timeline.locator('[data-testid="timeline-offscreen-left"][data-record-id="p116-range"]')).toBeVisible()
+  await expect(timeline.locator('[data-testid="timeline-offscreen-right"][data-record-id="p116-range"]')).toBeVisible()
+  await expect(timeline.getByTestId('timeline-frozen-table').locator('[data-record-id="p116-range"]')).toHaveCount(1)
+  const initialRangeGeometry = await timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    const row = setup?.rowGeometry?.find((candidate: any) => candidate.item.recordId === 'p116-range')
+    return { clippedLeft: row?.geometry?.clippedLeft, clippedRight: row?.geometry?.clippedRight }
+  })
+  expect(initialRangeGeometry).toEqual({ clippedLeft: true, clippedRight: true })
+
+  await timeline.locator('[data-testid="timeline-offscreen-left"][data-record-id="p116-left"]').click()
+  await expect.poll(async () => {
+    const { state, target } = await timeline.evaluate(root => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      return { state: setup?.viewport?.state?.value, target: setup?.temporalMap?.get('p116-left')?.startMs }
+    })
+    return state && Math.abs((state.visibleStartMs + state.visibleEndMs) / 2 - target) < 1000
+  }).toBe(true)
+  await expect(timeline.locator('[data-testid="timeline-bar"][data-record-id="p116-left"]')).toBeVisible()
+
+  const rightJump = timeline.locator('[data-testid="timeline-offscreen-right"][data-record-id="p116-range"]')
+  await rightJump.focus()
+  await rightJump.press('Enter')
+  await expect.poll(async () => {
+    const { state, target } = await timeline.evaluate(root => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      const temporalEnd = setup?.temporalMap?.get('p116-range')?.visualEndMs
+      const maximum = Date.parse('9999-12-31T23:59:59.999Z')
+      return { state: setup?.viewport?.state?.value, target: temporalEnd !== undefined ? Math.min(maximum, temporalEnd) : null }
+    })
+    return state && Math.abs((state.visibleStartMs + state.visibleEndMs) / 2 - target) < 1000
+  }).toBe(true)
+  await expect.poll(() => timeline.evaluate(root => (document.activeElement as HTMLElement | null)?.dataset.recordId ?? null)).toBe('p116-range')
+  await expect(timeline.locator('[data-testid="timeline-bar"][data-record-id="p116-range"]')).toBeFocused()
+  expect(api.requests.filter(request => request.method === 'GET' && request.path.endsWith('/table'))).toHaveLength(readsBefore)
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(patchesBefore)
+  await expect(scroller).toBeVisible()
+  api.records.splice(0)
+  await p115RefreshLoadedWindow(timeline)
+  await expect(timeline.getByText('暂无记录', { exact: true })).toBeVisible()
+  await expect(timeline.locator('[data-testid^="timeline-offscreen-"]')).toHaveCount(0)
+})
+
+test('P11.6 offscreen navigation preserves a 500-row Frozen window and rejects a stale control scope', async ({ page }) => {
+  const timelineView = view('p116-window-view', rootDatabase.id, 'Large offscreen timeline', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' }, frozenTable: { visible: true, visibleProperties: null, propertyOrder: null } } },
+  }, 'timeline')
+  const boardView = view('p116-window-board-view', rootDatabase.id, 'Offscreen board', { ...DEFAULT_DATABASE_VIEW_CONFIG }, 'board')
+  const items = Array.from({ length: 500 }, (_, index) => record(
+    `p116-window-${index}`, rootDatabase.id, `p116-window-page-${index}`,
+    index === 0
+      ? { 'root-title': 'Virtualized target', 'root-date': '2001-04-05' }
+      : { 'root-title': `Unscheduled ${index}` },
+  ))
+  const api = await installApi(page, [block('p116-window-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView, boardView], properties: rootProperties, records: items,
+  })
+  await page.setViewportSize({ width: 1024, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-p116-window-block').getByTestId('database-timeline')
+  await expect(timeline).toBeVisible()
+  const projectedCount = () => timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    return setup?.projectedItems?.length
+  })
+  await expect.poll(projectedCount).toBe(25)
+  const loadMore = page.locator('#database-block-p116-window-block').getByRole('button', { name: '加载更多' })
+  let loaded = 25
+  while (loaded < 500) {
+    await expect(loadMore).toBeVisible()
+    await loadMore.click()
+    loaded = Math.min(500, loaded + 25)
+    await expect.poll(projectedCount).toBe(loaded)
+  }
+  await expect(page.locator('#database-block-p116-window-block').getByRole('button', { name: '加载更多' })).toHaveCount(0)
+  await page.evaluate(() => {
+    const root = document.querySelector<HTMLElement>('#database-block-p116-window-block [data-testid="database-timeline"]')!
+    const host = root.closest<HTMLElement>('.document-wrap') ?? document.scrollingElement as HTMLElement
+    host.scrollTop = 0
+  })
+  await expect.poll(() => timeline.locator('[data-testid="timeline-canvas-body"]').getAttribute('data-row-window-first')).toBe('0')
+  await expect(timeline.locator('[data-testid="timeline-offscreen-left"][data-record-id="p116-window-0"]')).toBeVisible()
+  const windowEvidence = await timeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    const canvasIds = [...root.querySelectorAll<HTMLElement>('[data-testid="timeline-canvas-body"] [data-timeline-row]')].map(row => row.dataset.recordId)
+    const frozenIds = [...root.querySelectorAll<HTMLElement>('[data-testid="timeline-frozen-body"] [data-timeline-frozen-row]')].map(row => row.dataset.recordId)
+    return { projected: setup?.projectedItems?.length, rendered: canvasIds.length, canvasIds, frozenIds }
+  })
+  expect(windowEvidence.projected).toBe(500)
+  expect(windowEvidence.rendered).toBeLessThan(500)
+  expect(windowEvidence.frozenIds).toEqual(windowEvidence.canvasIds)
+  await expect(timeline.locator('[data-testid="timeline-offscreen-left"][data-record-id^="p116-window-"]')).toHaveCount(1)
+
+  const staleControl = timeline.locator('[data-testid="timeline-offscreen-left"][data-record-id="p116-window-0"]')
+  await staleControl.focus()
+  await page.evaluate(() => {
+    const root = document.querySelector<HTMLElement>('#database-block-p116-window-block [data-testid="database-timeline"]')!
+    const host = root.closest<HTMLElement>('.document-wrap') ?? document.scrollingElement as HTMLElement
+    host.scrollTop = host.scrollHeight
+  })
+  await expect.poll(() => timeline.locator('[data-testid="timeline-canvas-body"]').getAttribute('data-row-window-first')).not.toBe('0')
+  const focusRetention = await timeline.evaluate(root => {
+    const button = root.querySelector<HTMLElement>('[data-testid="timeline-offscreen-left"][data-record-id="p116-window-0"]')
+    const frozenRow = root.querySelector<HTMLElement>('[data-timeline-frozen-row][data-record-id="p116-window-0"]')
+    return { connected: button?.isConnected, active: document.activeElement === button, frozenAligned: frozenRow !== null }
+  })
+  expect(focusRetention).toEqual({ connected: true, active: true, frozenAligned: true })
+  await page.evaluate(() => {
+    const root = document.querySelector<HTMLElement>('#database-block-p116-window-block [data-testid="database-timeline"]')!
+    const host = root.closest<HTMLElement>('.document-wrap') ?? document.scrollingElement as HTMLElement
+    host.scrollTop = 0
+  })
+  await page.evaluate(() => {
+    const oldButton = document.querySelector<HTMLElement>('#database-block-p116-window-block [data-testid="timeline-offscreen-left"][data-record-id="p116-window-0"]')!
+    ;(window as Window & { __p116OldOffscreenButton?: HTMLElement }).__p116OldOffscreenButton = oldButton
+  })
+  const databaseBlock = page.locator('#database-block-p116-window-block')
+  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Offscreen board', exact: true }).click()
+  await expect(databaseBlock.getByTestId('database-board')).toBeVisible()
+  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Large offscreen timeline', exact: true }).click()
+  const returnedTimeline = databaseBlock.getByTestId('database-timeline')
+  await expect(returnedTimeline).toBeVisible()
+  const before = await returnedTimeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    const state = setup?.viewport?.state?.value
+    return (state.visibleStartMs + state.visibleEndMs) / 2
+  })
+  await page.evaluate(() => {
+    const stale = (window as Window & { __p116OldOffscreenButton?: HTMLElement }).__p116OldOffscreenButton
+    stale?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+  })
+  await expect.poll(() => returnedTimeline.evaluate(root => {
+    const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+    const state = setup?.viewport?.state?.value
+    return (state.visibleStartMs + state.visibleEndMs) / 2
+  })).toBe(before)
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+})
+
+test('P11.6 coarse clipped-right arrow and dependency handle have separate touch targets at 390 and 360', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 })
+  try {
+    const page = await context.newPage()
+    const relation = { ...property('p116-coarse-relation', rootDatabase.id, 'Dependencies', 'relation'), config: { targetDatabaseId: rootDatabase.id } } as TestProperty
+    const timelineView = view('p116-coarse-view', rootDatabase.id, 'Coarse offscreen', {
+      ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: {
+        scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' },
+        dependency: { propertyId: relation.id, direction: 'depends-on', shiftMode: 'no_auto_shift', avoidWeekends: false },
+      } },
+    }, 'timeline')
+    const records = [
+      record('p116-coarse-short', rootDatabase.id, 'p116-coarse-short-page', { 'root-title': 'Short clipped range', 'root-date': { start: '2026-10-14', end: '2036-01-01' } }),
+      record('p116-coarse-integration', rootDatabase.id, 'p116-coarse-integration-page', { 'root-title': 'Integration range', 'root-date': { start: '2019-01-01', end: '2036-01-01' } }),
+      record('p116-coarse-peer', rootDatabase.id, 'p116-coarse-peer-page', { 'root-title': 'Peer', 'root-date': '2026-10-20' }),
+    ]
+    const api = await installApi(page, [block('p116-coarse-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+      databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, relation], records,
+    })
+    await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const timeline = page.locator('#database-block-p116-coarse-block').getByTestId('database-timeline')
+    const scroller = timeline.getByTestId('timeline-scroll')
+    await expect(timeline).toBeVisible()
+
+    for (const width of [390, 360]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 800 })
+      for (const recordId of ['p116-coarse-short', 'p116-coarse-integration']) {
+        await timeline.getByRole('button', { name: '今天' }).click()
+        const arrow = timeline.locator(`[data-testid="timeline-offscreen-right"][data-record-id="${recordId}"]`)
+        const connector = timeline.locator(`[data-testid="timeline-dependency-handle"][data-record-id="${recordId}"]`)
+        await expect(arrow).toBeVisible()
+        await expect(connector).toBeVisible()
+        const hitEvidence = await timeline.evaluate((root, id) => {
+        const arrowSelector = `[data-testid="timeline-offscreen-right"][data-record-id="${id}"]`
+        const connectorSelector = `[data-testid="timeline-dependency-handle"][data-record-id="${id}"]`
+        const barSelector = `[data-testid="timeline-bar"][data-record-id="${id}"]`
+        const arrowElement = root.querySelector<HTMLElement>(arrowSelector)!
+        const connectorElement = root.querySelector<HTMLElement>(connectorSelector)!
+        const barElement = root.querySelector<HTMLElement>(barSelector)!
+        const resizeElement = root.querySelector<HTMLElement>(`[data-testid="timeline-resize-start"][data-record-id="${id}"]`)
+        const scrollerElement = root.querySelector<HTMLElement>('[data-testid="timeline-scroll"]')!
+        const arrow = arrowElement.getBoundingClientRect()
+        const connector = connectorElement.getBoundingClientRect()
+        const bar = barElement.getBoundingClientRect()
+        const scroller = scrollerElement.getBoundingClientRect()
+        const arrowCenter = { x: arrow.left + arrow.width / 2, y: arrow.top + arrow.height / 2 }
+        const connectorCenter = { x: connector.left + connector.width / 2, y: connector.top + connector.height / 2 }
+        const barCenter = { x: bar.left + bar.width / 2, y: bar.top + bar.height / 2 }
+        const arrowCorners = [
+          { x: arrow.left + 2, y: arrow.top + 2 }, { x: arrow.right - 2, y: arrow.top + 2 },
+          { x: arrow.left + 2, y: arrow.bottom - 2 }, { x: arrow.right - 2, y: arrow.bottom - 2 },
+        ]
+        const formerOverlap = { x: scroller.right - 13, y: arrow.top + 29 }
+        const overlap = { width: Math.max(0, Math.min(arrow.right, connector.right) - Math.max(arrow.left, connector.left)), height: Math.max(0, Math.min(arrow.bottom, connector.bottom) - Math.max(arrow.top, connector.top)) }
+        const hit = (point: { x: number; y: number }, selector: string) => document.elementFromPoint(point.x, point.y)?.closest(selector) === root.querySelector(selector)
+        const resize = resizeElement?.getBoundingClientRect()
+        return {
+          arrow: { x: arrow.x, y: arrow.y, width: arrow.width, height: arrow.height },
+          connector: { x: connector.x, y: connector.y, width: connector.width, height: connector.height },
+          bar: { x: bar.x, y: bar.y, width: bar.width, height: bar.height }, overlap, formerOverlap,
+          arrowCenterWins: hit(arrowCenter, arrowSelector),
+          arrowCornersWin: arrowCorners.map(point => hit(point, arrowSelector)),
+          connectorCenterWins: hit(connectorCenter, connectorSelector),
+          barCenterWins: hit(barCenter, barSelector),
+          formerOverlapWinsBar: hit(formerOverlap, barSelector),
+          resizeCenterWins: resize ? hit({ x: resize.left + resize.width / 2, y: resize.top + resize.height / 2 }, `[data-testid="timeline-resize-start"][data-record-id="${id}"]`) : false,
+        }
+        }, recordId)
+      expect(hitEvidence.arrow.width).toBe(36)
+      expect(hitEvidence.arrow.height).toBe(20)
+      expect(hitEvidence.connector.width).toBe(28)
+      expect(hitEvidence.overlap.width).toBe(0)
+      expect(hitEvidence.arrowCenterWins).toBe(true)
+      expect(hitEvidence.arrowCornersWin).toEqual([true, true, true, true])
+      expect(hitEvidence.connectorCenterWins).toBe(true)
+      expect(hitEvidence.barCenterWins).toBe(true)
+      expect(hitEvidence.formerOverlapWinsBar).toBe(true)
+      if (recordId === 'p116-coarse-short') expect(hitEvidence.resizeCenterWins).toBe(true)
+
+      const beforeConnectorTap = await timeline.evaluate(root => {
+        const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+        const state = setup?.viewport?.state?.value
+        return (state.visibleStartMs + state.visibleEndMs) / 2
+      })
+      const viewport = timeline.getByTestId('timeline-viewport')
+      const pointer = await context.newCDPSession(page)
+      const connectorCenter = { x: hitEvidence.connector.x + hitEvidence.connector.width / 2, y: hitEvidence.connector.y + hitEvidence.connector.height / 2 }
+      await pointer.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...connectorCenter, id: 1 }] })
+      await expect.poll(() => viewport.evaluate(element => {
+        const setup = (element as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+        return setup?.dependency?.active?.value?.mode ?? null
+      })).toBe('pointer')
+      await pointer.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+      await expect.poll(() => viewport.evaluate(element => {
+        const setup = (element as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+        return setup?.dependency?.active?.value?.mode ?? null
+      })).toBe(null)
+      await pointer.detach()
+      await expect.poll(() => timeline.evaluate(root => {
+        const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+        const state = setup?.viewport?.state?.value
+        return (state.visibleStartMs + state.visibleEndMs) / 2
+      })).toBe(beforeConnectorTap)
+      await page.touchscreen.tap(hitEvidence.arrow.x + hitEvidence.arrow.width / 2, hitEvidence.arrow.y + hitEvidence.arrow.height / 2)
+      await expect.poll(async () => {
+        const { state, target } = await timeline.evaluate((root, id) => {
+          const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+          return { state: setup?.viewport?.state?.value, target: setup?.temporalMap?.get(id)?.visualEndMs }
+        }, recordId)
+        return Math.abs((state.visibleStartMs + state.visibleEndMs) / 2 - target) < 1000
+      }).toBe(true)
+      }
+    }
+    expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+  } finally {
+    await context.close()
+  }
+})
+
 test('P11.5 coarse touch keeps controls reachable and scrolls the native Timeline surface', async () => {
   const visibleScrollbarBrowser = await chromium.launch({ channel: 'chrome', ignoreDefaultArgs: ['--hide-scrollbars'] })
   const context = await visibleScrollbarBrowser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 })
@@ -11631,7 +11944,7 @@ test('P11.5 coarse touch keeps controls reachable and scrolls the native Timelin
       await page.goto('/#/app/database-workspace/page/database-page')
       await expect(timeline).toBeVisible()
     } else {
-      await page.keyboard.press('Escape')
+      await recordSurface.getByRole('button', { name: '关闭记录', exact: true }).tap()
       await expect(recordSurface).toHaveCount(0)
     }
     for (const width of [390, 360]) {
@@ -11668,6 +11981,7 @@ test('P11.5 coarse touch keeps controls reachable and scrolls the native Timelin
       expect(controls.pageFits).toBe(true)
 
       const scroller = timeline.locator('[data-testid="timeline-scroll"]')
+      await scroller.tap({ trial: true })
       const before = await scroller.evaluate(element => ({ left: element.scrollLeft, width: element.clientWidth, scrollWidth: element.scrollWidth, top: element.getBoundingClientRect().top, height: element.clientHeight, rows: element.querySelectorAll('[data-timeline-row]').length }))
       expect(before.scrollWidth).toBeGreaterThan(before.width)
       const scrollbar = await scroller.evaluate(element => ({ occupiedHeight: element.offsetHeight - element.clientHeight, thumbColor: getComputedStyle(element, '::-webkit-scrollbar-thumb').backgroundColor }))
@@ -11769,3 +12083,388 @@ test('P11.5 coarse touch previews, cancels, moves, and resizes range and point d
     await context.close()
   }
 })
+// P11.6 explicit empty-cell scheduling shares the frozen Date mutation adapter.
+async function p116ScheduleFixture(page: Page, options: Parameters<typeof installApi>[2] = {}, active = false) {
+  return p114bFixture(page, 'depends-on', [
+    record('p116-empty', rootDatabase.id, 'p116-empty-page', { 'root-title': 'Unplanned', 'root-date': null }),
+    record('p116-second', rootDatabase.id, 'p116-second-page', { 'root-title': 'Second unplanned' }),
+    record('p116-invalid', rootDatabase.id, 'p116-invalid-page', { 'root-title': 'Invalid', 'root-date': 'bad-date' }),
+    record('p116-child', rootDatabase.id, 'p116-child-page', { 'root-title': 'Child', 'root-date': '2026-10-14', 'p114b-depends-on-relation': ['p116-empty'] }),
+  ], options, active ? 'shift_when_overlapping' : 'no_auto_shift')
+}
+
+async function p116OpenSchedule(timeline: Locator) {
+  const details = timeline.locator('details')
+  if (!(await details.evaluate(element => (element as HTMLDetailsElement).open))) await details.locator('summary').click()
+  await details.getByRole('button', { name: '安排：Unplanned', exact: true }).click()
+  return timeline.getByTestId('timeline-schedule-form')
+}
+
+test('P11.6 arrange explicit date has no default and cancel has zero writes', async ({ page }) => {
+  const { timeline, api } = await p116ScheduleFixture(page)
+  const form = await p116OpenSchedule(timeline)
+  await expect(form.getByLabel('安排日期')).toHaveValue('')
+  await expect(form.getByLabel('安排日期')).toBeFocused()
+  await expect(form.getByRole('button', { name: '保存', exact: true })).toBeDisabled()
+  await form.getByLabel('安排日期').fill('2026-10-20')
+  await form.getByRole('button', { name: '取消', exact: true }).click()
+  await expect(form).toHaveCount(0)
+  await expect(timeline.getByRole('button', { name: '安排：Unplanned', exact: true })).toBeFocused()
+  await p116OpenSchedule(timeline)
+  await form.getByLabel('安排日期').press('Escape')
+  await expect(form).toHaveCount(0)
+  expect(api.requests.filter(request => request.method === 'PATCH')).toHaveLength(0)
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  expect(api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBeNull()
+})
+
+test('P11.6 arrange persists one native Date CAS and reloads canonical point', async ({ page }) => {
+  const { timeline, api } = await p116ScheduleFixture(page)
+  const form = await p116OpenSchedule(timeline)
+  await form.getByLabel('安排日期').fill('2032-06-01')
+  await form.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(form).toHaveCount(0)
+  const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p116-empty"]')
+  await expect(bar).toBeVisible()
+  await expect(bar).toBeFocused()
+  expect(p114bRelationPatch(api, 'root-date')).toHaveLength(1)
+  expect(p114bRelationPatch(api, 'root-date')[0]?.payload).toMatchObject({ value: '2032-06-01', expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  expect(api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBe('2032-06-01')
+  const details = timeline.locator('details')
+  if (!(await details.evaluate(element => (element as HTMLDetailsElement).open))) await details.locator('summary').click()
+  const second = details.getByRole('button', { name: '安排：Second unplanned', exact: true })
+  await expect(second).toBeEnabled()
+  await second.click()
+  await form.getByLabel('安排日期').fill('2032-06-02')
+  await form.getByRole('button', { name: '保存', exact: true }).click()
+  await expect.poll(() => p114bRelationPatch(api, 'root-date').length).toBe(2)
+  await expect(form).toHaveCount(0)
+  const databaseBlock = page.locator('#database-block-p114b-depends-on-block')
+  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Fallback table', exact: true }).click()
+  await expect(databaseBlock.locator('tr').filter({ has: page.getByRole('button', { name: '编辑名称：Unplanned', exact: true }) })).toContainText('2032-06-01')
+  await page.reload()
+  await expect(timeline).toBeVisible()
+  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Fallback table', exact: true }).click()
+  await expect(databaseBlock.locator('tr').filter({ has: page.getByRole('button', { name: '编辑名称：Unplanned', exact: true }) })).toContainText('2032-06-01')
+})
+
+test('P11.6 arrange active policy uses one atomic batch and canonical downstream dates', async ({ page }) => {
+  const { timeline, api, timelineView } = await p116ScheduleFixture(page, {}, true)
+  const form = await p116OpenSchedule(timeline)
+  await form.getByLabel('安排日期').fill('2026-10-20')
+  await form.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(form).toHaveCount(0)
+  expect(p114cBatchPosts(api)).toHaveLength(1)
+  expect(p114cBatchPosts(api)[0]?.payload).toMatchObject({ context: { viewId: timelineView.id, expectedViewVersion: 1 }, records: [{ recordId: 'p116-empty', expectedRecordVersion: 1, cells: [{ propertyId: 'root-date', value: '2026-10-20' }] }] })
+  expect(p114bRelationPatch(api, 'root-date')).toHaveLength(0)
+  // A point has no exclusive end; the frozen planner moves an overlapping child
+  // to the same date boundary (ranges retain their exclusive endpoint rule).
+  expect(api.records.find(item => item.id === 'p116-child')?.properties['root-date']).toBe('2026-10-20')
+})
+
+for (const outcome of ['conflict', 'uncertain', 'refresh-failure'] as const) {
+  test(`P11.6 arrange ${outcome} never retries or claims batch success`, async ({ page }) => {
+    const { timeline, api } = await p116ScheduleFixture(page, outcome === 'conflict'
+      ? { conflictCellBatchMutations: 1 } : { cellBatchMutationOutcome: 'uncertain' }, true)
+    const form = await p116OpenSchedule(timeline)
+    await form.getByLabel('安排日期').fill('2026-10-20')
+    if (outcome === 'refresh-failure') api.failTableLoads = 1
+    await form.getByRole('button', { name: '保存', exact: true }).click()
+    const databaseBlock = page.locator('#database-block-p114b-depends-on-block')
+    const mutationAlert = databaseBlock.locator(':scope > .eotion-database-error').filter({ hasText: outcome === 'conflict' ? /^相关记录已发生变化，已刷新到最新版本。$/u : /^提交结果暂未确认，请重新加载当前视图。$/u })
+    await expect(mutationAlert).toHaveCount(1)
+    expect(p114cBatchPosts(api)).toHaveLength(1)
+    expect(p114bRelationPatch(api, 'root-date')).toHaveLength(0)
+    expect(api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBeNull()
+  })
+}
+
+test('P11.6 arrange rejects stale record capture and offline submit, excludes invalid cells', async ({ page }) => {
+  const { timeline, api } = await p116ScheduleFixture(page)
+  let form = await p116OpenSchedule(timeline)
+  await expect(timeline.getByRole('button', { name: '安排：Invalid', exact: true })).toHaveCount(0)
+  await form.getByLabel('安排日期').fill('2026-10-20')
+  await page.context().setOffline(true)
+  await expect(form.getByRole('button', { name: '保存', exact: true })).toBeDisabled()
+  await page.context().setOffline(false)
+  await expect(form.getByRole('button', { name: '保存', exact: true })).toBeEnabled()
+  api.records.find(item => item.id === 'p116-empty')!.version += 1
+  await p115RefreshLoadedWindow(timeline)
+  form = timeline.getByTestId('timeline-schedule-form')
+  await form.getByRole('button', { name: '保存', exact: true }).click()
+  expect(p114bRelationPatch(api, 'root-date')).toHaveLength(0)
+})
+
+for (const width of [390, 360]) {
+  test.describe(`P11.6 arrange ${width}px coarse context`, () => {
+  test.use({ viewport: { width, height: 844 }, hasTouch: true, isMobile: true })
+  test(`P11.6 arrange ${width}px touch form stays inside viewport`, async ({ page }) => {
+    const { timeline, api } = await p116ScheduleFixture(page)
+    await page.setViewportSize({ width, height: 844 })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true)
+    const form = await p116OpenSchedule(timeline)
+    await form.getByLabel('安排日期').fill('2026-10-20')
+    for (const control of await form.locator('input, button').all()) {
+      const bounds = await control.boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds!.x).toBeGreaterThanOrEqual(0)
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width)
+      expect(bounds!.height).toBeGreaterThanOrEqual(44)
+    }
+    await form.getByRole('button', { name: '取消', exact: true }).tap()
+    expect(p114bRelationPatch(api, 'root-date')).toHaveLength(0)
+  })
+  })
+}
+
+test('P11.6 arrange configuration and view scope invalidate the captured form; Separate remains read only', async ({ page }) => {
+  const { timeline, timelineView, api } = await p116ScheduleFixture(page)
+  let form = await p116OpenSchedule(timeline)
+  await form.getByLabel('安排日期').fill('2026-10-20')
+  const canonicalView = api.views.find(item => item.id === timelineView.id)!
+  const originalConfig = canonicalView.config
+  canonicalView.config = { ...canonicalView.config, options: { timeline: { scale: 'week', dateSource: { mode: 'start-end', startPropertyId: 'root-date', endPropertyId: 'root-date' } } } }
+  canonicalView.version += 1
+  await p115RefreshLoadedWindow(timeline)
+  await expect(form).toHaveCount(0)
+  await expect(timeline.getByRole('button', { name: /^安排：/u })).toHaveCount(0)
+  canonicalView.config = originalConfig
+  canonicalView.version += 1
+  await p115RefreshLoadedWindow(timeline)
+  form = await p116OpenSchedule(timeline)
+  const databaseBlock = page.locator('#database-block-p114b-depends-on-block')
+  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Fallback table', exact: true }).click()
+  await expect(form).toHaveCount(0)
+  expect(p114bRelationPatch(api, 'root-date')).toHaveLength(0)
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+})
+
+
+// R2 focus ownership: hold local body loading without changing the original identity case.
+async function r2AutofocusFixture(page: Page, initialTitle = 'Identity row') {
+  const item = record('r2-focus-record', rootDatabase.id, 'r2-focus-page', { 'root-title': initialTitle })
+  const api = await installApi(page, [block('r2-focus-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100)], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [item] })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: initialTitle, role: 'database-record' })
+  const body = block('r2-focus-body', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Identity body' }] }, 100)
+  body.pageId = item.pageId
+  api.blocks.push(body)
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })
+  await expect(open).toBeVisible()
+  await page.evaluate(async pageId => {
+    const { PagePersistence } = await import('/src/editor/pagePersistence.ts')
+    const original = PagePersistence.prototype.load
+    let release!: () => void
+    const gate = new Promise<void>(resolve => { release = resolve })
+    ;(window as any).__r2ReleaseBody = release
+    PagePersistence.prototype.load = async function(signal?: AbortSignal) {
+      if ((this as unknown as { pageId: string }).pageId === pageId) await gate
+      return original.call(this, signal)
+    }
+  }, item.pageId)
+  return { api, item, open }
+}
+
+for (const device of ['desktop', 'phone'] as const) {
+  test.describe(`R2 record autofocus ownership ${device}`, () => {
+    test.use({ viewport: device === 'phone' ? { width: 390, height: 844 } : { width: 1440, height: 900 }, hasTouch: device === 'phone', isMobile: device === 'phone', reducedMotion: 'reduce' })
+    for (const userClaimsTitle of [false, true]) {
+      test(userClaimsTitle ? 'title focus before body load wins and saves without body pollution' : 'named record body receives initial focus after overlay opening', async ({ page }) => {
+        const { api, item, open } = await r2AutofocusFixture(page)
+        await open.click()
+        const surface = page.locator(device === 'phone' ? 'dialog.eotion-product-overlay--bottom-drawer[open]' : '[data-overlay-mode="drawer"]')
+        await expect(surface).toBeVisible()
+        const title = surface.getByRole('textbox', { name: '记录标题' })
+        const body = surface.locator('.eotion-editor-content .tiptap')
+        await expect(title).toHaveValue('Identity row')
+        await expect(body).toHaveCount(0)
+        if (userClaimsTitle) {
+          await title.click()
+          await expect(title).toBeFocused()
+        }
+        await page.evaluate(() => (window as any).__r2ReleaseBody())
+        await expect(body).toHaveText('Identity body')
+        // Cross a frame boundary so the pending initial focus has actually had its turn.
+        await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+        if (userClaimsTitle) {
+          await expect(title).toBeFocused()
+          await title.fill('Edited record title')
+          await title.press('Tab')
+          await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Edited record title')
+          await expect(body).toHaveText('Identity body')
+          expect(JSON.stringify(api.blocks.find(candidate => candidate.id === 'r2-focus-body')?.props)).toContain('Identity body')
+          expect(JSON.stringify(api.blocks.find(candidate => candidate.id === 'r2-focus-body')?.props)).not.toContain('Edited record title')
+        } else {
+          await expect(body).toBeFocused()
+          await expect(title).toHaveValue('Identity row')
+          expect(api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Identity row')
+        }
+      })
+    }
+  })
+}
+
+async function r2HoldInitialFocusFrames(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const target = window as any
+    const original = window.requestAnimationFrame.bind(window)
+    const originalCancel = window.cancelAnimationFrame.bind(window)
+    const callbacks: Array<{ id: number; callback: FrameRequestCallback; cancelled: boolean }> = []
+    let id = 1000000
+    window.requestAnimationFrame = callback => {
+      callbacks.push({ id: ++id, callback, cancelled: false })
+      return id
+    }
+    window.cancelAnimationFrame = frame => {
+      const captured = callbacks.find(entry => entry.id === frame)
+      if (captured) captured.cancelled = true
+      else originalCancel(frame)
+    }
+    target.__r2CapturedFocusFrames = callbacks
+    target.__r2FlushFocusFrames = () => {
+      window.requestAnimationFrame = original
+      window.cancelAnimationFrame = originalCancel
+      // Invoke cancelled entries too: cancellation alone must not allow a stale callback to act.
+      for (const entry of callbacks) entry.callback(performance.now())
+    }
+    target.__r2ReleaseBody()
+  })
+}
+
+async function r2ExpectPendingInitialFocus(page: Page, body: Locator): Promise<void> {
+  await expect(body).toHaveText('Identity body')
+  await expect.poll(() => body.evaluate(element => {
+    let component = (element.closest('.eotion-editor') as (HTMLElement & { __vueParentComponent?: any }) | null)?.__vueParentComponent
+    while (component && component.type?.__name !== 'EotionEditor') component = component.parent
+    const exposed = component?.exposed?.editor ?? component?.setupState?.editor
+    const current = exposed?.commands ? exposed : exposed?.value
+    return Boolean(current?.isInitialized && (window as any).__r2CapturedFocusFrames.length > 0)
+  })).toBe(true)
+}
+
+test('R2 pending initial body focus preserves a user caret', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  const { open } = await r2AutofocusFixture(page)
+  await open.click()
+  const surface = page.locator('[data-overlay-mode="drawer"]')
+  await expect(surface).toBeVisible()
+  await r2HoldInitialFocusFrames(page)
+  const body = surface.locator('.eotion-editor-content .tiptap')
+  await r2ExpectPendingInitialFocus(page, body)
+  await body.evaluate(element => {
+    element.focus()
+    const selection = window.getSelection()!
+    const text = element.querySelector('p')!.firstChild!
+    selection.setPosition(text, 8)
+  })
+  await page.evaluate(() => (window as any).__r2FlushFocusFrames())
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await expect(body).toBeFocused()
+  expect(await body.evaluate(() => window.getSelection()?.anchorOffset)).toBe(8)
+})
+
+test('R2 closing a record cancels the pending initial body focus callback', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  const { open } = await r2AutofocusFixture(page)
+  await open.click()
+  const surface = page.locator('[data-overlay-mode="drawer"]')
+  await expect(surface).toBeVisible()
+  await r2HoldInitialFocusFrames(page)
+  await r2ExpectPendingInitialFocus(page, surface.locator('.eotion-editor-content .tiptap'))
+  await page.getByRole('button', { name: '关闭记录' }).click()
+  await expect(surface).toHaveCount(0)
+  await expect(open).toBeFocused()
+  await page.evaluate(() => (window as any).__r2FlushFocusFrames())
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await expect(open).toBeFocused()
+})
+
+test('R2 renaming an unnamed record before body load retains the user focus and keeps body unchanged', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  const { api, item, open } = await r2AutofocusFixture(page, '无标题')
+  await open.click()
+  const surface = page.locator('[data-overlay-mode="drawer"]')
+  await expect(surface).toBeVisible()
+  const title = surface.getByRole('textbox', { name: '记录标题' })
+  const body = surface.locator('.eotion-editor-content .tiptap')
+  await expect(title).toHaveValue('无标题')
+  await expect(body).toHaveCount(0)
+  await title.fill('Edited record title')
+  await title.press('Tab')
+  await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Edited record title')
+  await page.evaluate(() => { (window as any).__r2UntitledFocusOwner = document.activeElement })
+  await page.evaluate(() => (window as any).__r2ReleaseBody())
+  await expect(body).toHaveText('Identity body')
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  expect(await page.evaluate(() => document.activeElement === (window as any).__r2UntitledFocusOwner)).toBe(true)
+  await expect(body).not.toBeFocused()
+  await title.fill('Renamed record title')
+  await title.press('Tab')
+  await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Renamed record title')
+  await expect(body).toHaveText('Identity body')
+  expect(JSON.stringify(api.blocks.find(candidate => candidate.id === 'r2-focus-body')?.props)).toContain('Identity body')
+  expect(JSON.stringify(api.blocks.find(candidate => candidate.id === 'r2-focus-body')?.props)).not.toContain('record title')
+})
+
+for (const behavior of ['dirty refresh', 'clean canonical refresh', 'actual identity switch'] as const) {
+  test(`R4 record title reconciliation ${behavior}`, async ({ page }) => {
+    const { api, item, open } = await r2AutofocusFixture(page)
+    await open.click()
+    await page.evaluate(() => (window as any).__r2ReleaseBody())
+    const title = page.getByRole('textbox', { name: '记录标题' })
+    await expect(page.locator('[data-overlay-mode="drawer"] .tiptap')).toHaveText('Identity body')
+    await title.click()
+    if (behavior === 'dirty refresh') {
+      await title.fill('Dirty refresh draft')
+      const rebuilt = await page.evaluate(async () => {
+        const { useProductPagesStore } = await import('/src/stores/productPages.ts')
+        const pages = useProductPagesStore()
+        const previous = pages.items.find(item => item.id === 'r2-focus-page')
+        await pages.refresh()
+        return previous !== pages.items.find(item => item.id === 'r2-focus-page')
+      })
+      expect(rebuilt).toBe(true)
+      await expect(title).toBeFocused()
+      await expect(title).toHaveValue('Dirty refresh draft')
+      await title.press('Tab')
+      await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Dirty refresh draft')
+    } else if (behavior === 'clean canonical refresh') {
+      await page.evaluate(async () => {
+        const { useProductPagesStore } = await import('/src/stores/productPages.ts')
+        const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+        const local = await useProductSyncStore().store()
+        const pages = useProductPagesStore()
+        const canonical = pages.items.find(item => item.id === 'r2-focus-page')!
+        await local.upsertPage({ ...canonical, title: 'Canonical changed title' })
+        await pages.refresh()
+      })
+      await expect(title).toHaveValue('Canonical changed title')
+      await expect(title).toBeFocused()
+    } else {
+      await title.fill('Old identity draft')
+      await page.evaluate(async () => {
+        const { useProductPagesStore } = await import('/src/stores/productPages.ts')
+        const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+        const local = await useProductSyncStore().store()
+        const pages = useProductPagesStore()
+        const canonical = pages.items.find(item => item.id === 'r2-focus-page')!
+        await local.upsertPage({ ...canonical, id: 'r4-next-page', title: 'Next identity title' })
+        await pages.refresh()
+        const input = document.querySelector('[aria-label="记录标题"]') as HTMLElement & { __vueParentComponent?: any }
+        let component = input.__vueParentComponent
+        while (component && component.type?.__name !== 'PageView') component = component.parent
+        if (!component) throw new Error('Expected mounted record PageView')
+        component.props.embeddedPageId = 'r4-next-page'
+      })
+      await expect(title).toHaveValue('Next identity title')
+    }
+  })
+}

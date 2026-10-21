@@ -808,7 +808,7 @@ test('mobile page actions use modal dialogs with focus, stable tree and a scroll
   expect(await move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(544)
   await screenshot('mobile-move')
   await page.setViewportSize({ width: 390, height: 380 })
-  expect(await move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(348)
+  await expect.poll(() => move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(348)
   await moveTarget(page, '阅读清单 30').check()
   const submit = move.getByRole('button', { name: '移动', exact: true })
   await expect(submit).toBeInViewport()

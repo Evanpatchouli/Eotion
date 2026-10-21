@@ -23,7 +23,7 @@ import DatabaseTimelineView from './DatabaseTimelineView.vue'
 import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTitleColumn } from './timeline/frozenTable'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import { beginTimelineDateMutation, endTimelineDateMutation } from './timeline/interaction'
-import type { TimelineMoveCommand } from './timeline/mutation'
+import type { TimelineMoveCommand, TimelineScheduleCapture, TimelineScheduleCommand } from './timeline/mutation'
 import { isWritableTimelineDateSource, timelineDateSourceIdentity } from './timeline/mutation'
 import { resolveTimelineDependencyProperty, timelineDependencyConfigIdentity, prepareDependencyRelationMutation, isDependencyRelationMutationConfirmed, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
 
@@ -494,14 +494,15 @@ async function mutateTimelineDependency(command: TimelineDependencyCommand): Pro
   }
 }
 
-function prepareTimelineBarDrag(recordId: string): TimelineBarDragSession | null {
+function captureTimelineDate(recordId: string, schedule: boolean): TimelineBarDragSession | TimelineScheduleCapture | null {
   const source = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline?.dateSource
   if (!props.editor.isEditable || !writable.value || !viewReady.value || viewType.value !== 'timeline' || !isWritableTimelineDateSource(source)) return null
   const property = properties.value.find(item => item.id === source.propertyId)
   const record = recordsById.value.get(recordId)
   const rawValue = record ? getCellValue(record, source.propertyId) : undefined
-  if (!property || property.type !== 'date' || !record || !isValidDatabaseDateValue(rawValue)) return null
-  const originalValue = typeof rawValue === 'string' ? rawValue : { ...rawValue }
+  if (!online.value || !property || property.type !== 'date' || !record) return null
+  if (schedule ? rawValue !== null && rawValue !== undefined : !isValidDatabaseDateValue(rawValue)) return null
+  const originalValue = schedule ? null : typeof rawValue === 'string' ? rawValue : { ...(rawValue as object) }
   const viewRoot = document.getElementById(`database-block-${blockId.value}`)
   return Object.freeze({
     scope: timelineScope.value,
@@ -513,16 +514,24 @@ function prepareTimelineBarDrag(recordId: string): TimelineBarDragSession | null
     dateSourceIdentity: timelineDateSourceIdentity(source) ?? undefined,
     dependencyConfigIdentity: timelineDependencyConfigIdentity(viewConfig.value) ?? undefined,
     originalValue,
+    ...(schedule ? { kind: 'schedule' as const } : {}),
     viewIdentityEpoch,
     viewRoot,
-  }) as TimelineBarDragSession
+  }) as TimelineBarDragSession | TimelineScheduleCapture
+}
+
+function prepareTimelineBarDrag(recordId: string): TimelineBarDragSession | null {
+  return captureTimelineDate(recordId, false) as TimelineBarDragSession | null
+}
+function prepareTimelineSchedule(recordId: string): TimelineScheduleCapture | null {
+  return captureTimelineDate(recordId, true) as TimelineScheduleCapture | null
 }
 
 /**
  * A release submits one root Date intent. Active policy uses the generic atomic
  * batch; the server plans the full graph. Unknown batches resolve by receipt.
  */
-async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean> {
+async function moveTimelineRecord(command: TimelineMoveCommand | TimelineScheduleCommand): Promise<boolean> {
   const capturedEpoch = (command as TimelineMoveCommand & { viewIdentityEpoch?: number }).viewIdentityEpoch
   const capturedRoot = (command as TimelineMoveCommand & { viewRoot?: HTMLElement | null }).viewRoot
   const isCurrent = (): boolean => {
@@ -537,7 +546,7 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
   }
   // Last-line defence in front of the generic Cell API: identity, writability,
   // captured Database version and view type are all re-checked here.
-  if (!isCurrent() || !writable.value || command.expectedDatabaseVersion !== databaseVersion.value || viewType.value !== 'timeline') return false
+  if (!isCurrent() || !online.value || !writable.value || command.expectedDatabaseVersion !== databaseVersion.value || viewType.value !== 'timeline') return false
   const timeline = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline
   if (!isWritableTimelineDateSource(timeline?.dateSource) || timeline.dateSource.propertyId !== command.propertyId) return false
   const shiftMode = timeline.dependency?.shiftMode
@@ -555,7 +564,12 @@ async function moveTimelineRecord(command: TimelineMoveCommand): Promise<boolean
   const record = recordsById.value.get(command.recordId)
   if (!property || property.type !== 'date' || !record || record.version !== command.expectedRecordVersion) return false
   const currentValue = getCellValue(record, property.id)
-  if (!isValidDatabaseDateValue(currentValue) || JSON.stringify(currentValue) !== JSON.stringify(command.originalValue) || !isValidDatabaseDateValue(command.value)) return false
+  const scheduling = 'kind' in command && command.kind === 'schedule'
+  if (scheduling) {
+    if (command.originalValue !== null || currentValue !== null && currentValue !== undefined
+      || typeof command.value !== 'string'
+      || normalizeDatabaseDateValue(command.value)?.kind !== 'date-only') return false
+  } else if (!isValidDatabaseDateValue(currentValue) || JSON.stringify(currentValue) !== JSON.stringify(command.originalValue) || !isValidDatabaseDateValue(command.value)) return false
   // Wire-shape aware no-op guard: an explicit equal `end` is not an absent end,
   // so a resize that only re-states the canonical value must not send a PATCH.
   if (JSON.stringify(normalizeDatabaseDateValue(currentValue)) === JSON.stringify(normalizeDatabaseDateValue(command.value))) return false
@@ -2245,7 +2259,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable && timelineEditorEditable" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable && timelineEditorEditable" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :prepare-schedule="prepareTimelineSchedule" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
       <div v-else-if="viewType === 'table' && properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>

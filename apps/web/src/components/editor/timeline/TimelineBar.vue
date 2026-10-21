@@ -101,10 +101,15 @@ const endHandleStyle = computed(() => ({
 }))
 const startHandleCompact = computed(() => handleCenters.value.startClamped && (barGeometry.value.marker || barGeometry.value.width < 24))
 const endHandleCompact = computed(() => handleCenters.value.endClamped && (barGeometry.value.marker || barGeometry.value.width < 24))
-const dependencyHandleStyle = computed(() => ({
-  left: `${Math.min((props.transform?.scrollLeft ?? 0) + (props.transform?.width ?? Number.POSITIVE_INFINITY) - 9, Math.max((props.transform?.scrollLeft ?? 0) + 9, barGeometry.value.rawX + (barGeometry.value.marker ? 0 : barGeometry.value.rawWidth) + 9))}px`,
-  top: `${barGeometry.value.top - barGeometry.value.rowTop + barGeometry.value.height / 2 + 10}px`,
-}))
+const dependencyHandleStyle = computed(() => {
+  const scrollLeft = props.transform?.scrollLeft ?? 0
+  const viewportRight = scrollLeft + (props.transform?.width ?? Number.POSITIVE_INFINITY)
+  const anchor = Math.min(viewportRight - 9, Math.max(scrollLeft + 9, barGeometry.value.rawX + (barGeometry.value.marker ? 0 : barGeometry.value.rawWidth) + 9))
+  const left = barGeometry.value.clippedRight
+    ? `max(${scrollLeft + 9}px, min(calc(${viewportRight}px - var(--timeline-offscreen-jump-size, 28px) - 4px - var(--timeline-dependency-handle-half-size, 9px) - 4px), ${anchor}px))`
+    : `${anchor}px`
+  return { left, top: `${barGeometry.value.top - barGeometry.value.rowTop + barGeometry.value.height / 2 + 10}px` }
+})
 
 function tooltip(): string {
   const details = props.visibleProperties.filter(property => property.displayText).map(property => property.displayText)

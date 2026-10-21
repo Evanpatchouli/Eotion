@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { RouterLink, onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router'
 import { createLocalId } from '@eotion/storage'
 import { assignBlockTreeOrder } from '@eotion/domain/order'
@@ -10,6 +10,7 @@ import EotionEditor from '../components/editor/EotionEditor.vue'
 import EotionButton from '../components/ui/EotionButton.vue'
 import EotionIcon from '../components/ui/EotionIcon.vue'
 import EotionProductOverlay from '../components/ui/EotionProductOverlay.vue'
+import { isOverlayInitialFocusTarget } from '../components/ui/overlayFocus'
 import { IconName } from '../components/ui/icons'
 import { useRuntimeContext } from '../composables/useRuntimeContext'
 import { registerActivePageEditor } from '../editor/activePageEditor'
@@ -55,6 +56,20 @@ const workspaceId = computed(() => surfaceProps.embeddedWorkspaceId || (typeof r
 const pageId = computed(() => surfaceProps.embeddedPageId || (typeof route.params.pageId === 'string' ? route.params.pageId : ''))
 const page = computed(() => pages.items.find((item) => item.id === pageId.value) ?? null)
 const recordPage = computed(() => surfaceProps.embedded || route.query.edit === 'record' || page.value?.role === 'database-record')
+const initialEditorFocusCancelled = ref(false)
+watch([workspaceId, pageId], () => { initialEditorFocusCancelled.value = false }, { flush: 'sync' })
+function claimInitialEditorFocus(event: Event): void {
+  if (!recordPage.value || initialEditorFocusCancelled.value) return
+  if (event.type === 'focusin' && isOverlayInitialFocusTarget(event.target)) return
+  initialEditorFocusCancelled.value = true
+}
+const focusClaimEvents = ['pointerdown', 'keydown', 'beforeinput', 'focusin'] as const
+onMounted(() => {
+  for (const type of focusClaimEvents) window.document.addEventListener(type, claimInitialEditorFocus, true)
+})
+onBeforeUnmount(() => {
+  for (const type of focusClaimEvents) window.document.removeEventListener(type, claimInitialEditorFocus, true)
+})
 const titleDraft = ref('')
 const titleError = ref('')
 const titleSaving = ref(false)
@@ -92,8 +107,20 @@ let databaseEpoch = 0
 
 const databaseCreationUncertain = computed(() => isProductDatabaseInsertionUncertain(auth.user?.id ?? '', workspaceId.value, pageId.value))
 
-watch(() => [page.value?.id, page.value?.title], () => {
-  if (!titleSaving.value) titleDraft.value = page.value?.title ?? ''
+let titleIdentity: string | null = null
+let persistedTitle: string | undefined
+watch([workspaceId, pageId, () => page.value?.id, () => page.value?.title], ([workspace, targetPage, canonicalId, canonicalTitle]) => {
+  const identity = JSON.stringify([workspace, targetPage])
+  if (identity !== titleIdentity) {
+    titleIdentity = identity
+    persistedTitle = canonicalId ? canonicalTitle : undefined
+    titleDraft.value = canonicalTitle ?? ''
+    return
+  }
+  if (!canonicalId || canonicalTitle === undefined) return
+  const dirty = persistedTitle !== undefined && titleDraft.value.trim() !== persistedTitle
+  persistedTitle = canonicalTitle
+  if (!titleSaving.value && !dirty) titleDraft.value = canonicalTitle
 }, { immediate: true })
 
 function saveRecordTitle(): Promise<boolean> {
@@ -517,7 +544,7 @@ onBeforeUnmount(() => {
         :create-database-reference="createDatabaseReference"
         :commit-database-reference="commitDatabaseReference"
         :touch-toolbar="layoutMode === 'mobile' || inputMode !== 'mouse'"
-        :autofocus="recordPage && page.title !== '无标题'"
+        :autofocus="recordPage && page.title !== '无标题' && !initialEditorFocusCancelled"
         aria-label="页面正文编辑区域"
         @update="onEditorUpdate"
         @composition="(active) => persistence?.setComposing(active)"

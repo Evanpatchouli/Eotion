@@ -7,8 +7,8 @@ import { exitSuggestion } from '@tiptap/suggestion'
 import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
 import { blockTypeForNode } from '@eotion/domain/block-types'
 import { createLocalId } from '@eotion/storage'
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { NodeSelection, Plugin } from '@tiptap/pm/state'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { NodeSelection, Plugin, Selection } from '@tiptap/pm/state'
 
 import '../../styles/editor-content.css'
 import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
@@ -106,6 +106,16 @@ let uploadOrder = 0
 let pickerTarget: UploadTarget | undefined
 let disposed = false
 let caretScrollFrame: number | undefined
+let initialFocusFrame: number | undefined
+let initialFocusToken = 0
+function cancelInitialFocus(): void {
+  initialFocusToken += 1
+  if (initialFocusFrame !== undefined) cancelAnimationFrame(initialFocusFrame)
+  initialFocusFrame = undefined
+}
+watch(() => props.autofocus, autofocus => {
+  if (!autofocus) cancelInitialFocus()
+}, { flush: 'sync' })
 
 function updateKeyboardInset() {
   const viewport = window.visualViewport
@@ -141,6 +151,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   disposed = true
+  cancelInitialFocus()
   pageEpoch += 1
   for (const task of uploads.value) {
     task.controller?.abort()
@@ -179,7 +190,18 @@ const { editor, getDocument } = useDocumentEditor({
   },
   onCreate: ({ editor: createdEditor }) => {
     updateSelection()
-    if (props.autofocus) requestAnimationFrame(() => createdEditor.commands.focus('start'))
+    if (!props.autofocus) return
+    const token = ++initialFocusToken
+    const view = createdEditor.view
+    const root = view.dom
+    initialFocusFrame = requestAnimationFrame(() => {
+      initialFocusFrame = undefined
+      if (token !== initialFocusToken || !props.autofocus || disposed || createdEditor.isDestroyed
+        || editor.value !== createdEditor || createdEditor.view !== view || view.dom !== root || !root.isConnected) return
+      if (view.hasFocus()) return
+      view.dispatch(view.state.tr.setSelection(Selection.atStart(view.state.doc)).scrollIntoView())
+      view.focus()
+    })
   },
   onSelectionUpdate: updateSelection,
   onUpdate: document => {

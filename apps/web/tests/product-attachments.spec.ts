@@ -2,6 +2,7 @@ import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { expect, test, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
+import { waitForEditorSelection } from './helpers/editorSelection'
 
 const now = '2026-09-30T00:00:00.000Z'
 const later = '2027-09-30T00:00:00.000Z'
@@ -692,7 +693,8 @@ test('offline file selection stays local, does not call upload, keeps text edita
   const requestCount = uploadRequests(api).length
   await insertFile(page, 'file', 'offline.txt', 'text/plain')
   await expect(page.locator('.eotion-upload-item')).toContainText('附件上传需要联网')
-  await editor(page).click()
+  await editor(page).locator(':scope > p').last().click()
+  await waitForEditorSelection(editor(page))
   await editor(page).pressSequentially('正文仍然可编辑')
   await expect(editor(page)).toContainText('正文仍然可编辑')
   await expect.poll(() => page.evaluate(async (id) => {

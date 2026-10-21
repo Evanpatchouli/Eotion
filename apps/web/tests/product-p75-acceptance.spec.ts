@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { chromium, expect, test, type Page, type Route } from '@playwright/test'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
+import { waitForEditorSelection } from './helpers/editorSelection'
 
 const stamp = '2026-10-11T00:00:00.000Z'
 const user: AuthUserDto = { id: 'p75-user', email: 'p75@example.com', createdAt: stamp, updatedAt: stamp }
@@ -445,6 +446,7 @@ test('seeded mixed document keeps local-first identity, nesting, callout attrs a
     await page.keyboard.press('End')
     await page.keyboard.type(' offline')
     await body.getByText('Grandchild', { exact: true }).click()
+    await waitForEditorSelection(body)
     await page.keyboard.press('End')
     await page.keyboard.press('Enter')
     await page.keyboard.type('Offline sibling')
