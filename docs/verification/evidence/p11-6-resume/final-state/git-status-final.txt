@@ -1,0 +1,39 @@
+ M .agents/current-task.md
+ M .agents/handoff.md
+ M apps/api/src/modules/http-api/database-cell-mutation-http.test.ts
+ M apps/web/playwright.visual.config.ts
+ M apps/web/src/components/editor/DatabaseNodeView.vue
+ M apps/web/src/components/editor/DatabaseTimelineView.vue
+ M apps/web/src/components/editor/EotionEditor.vue
+ M apps/web/src/components/editor/timeline/TimelineBar.vue
+ M apps/web/src/components/editor/timeline/TimelineViewport.vue
+ M apps/web/src/components/editor/timeline/mutation.ts
+ M apps/web/src/components/editor/timeline/useTimelineViewport.ts
+ M apps/web/src/components/ui/EotionProductOverlay.vue
+ M apps/web/src/views/PageView.vue
+ M apps/web/tests/product-attachments.spec.ts
+ M apps/web/tests/product-database.spec.ts
+ M apps/web/tests/product-editor.spec.ts
+ M apps/web/tests/product-p75-acceptance.spec.ts
+ M apps/web/tests/product-pages.spec.ts
+ M apps/web/tests/product-settings.spec.ts
+ M apps/web/tests/product-table.spec.ts
+ M apps/web/tests/visual-regression.spec.ts-snapshots/page-mobile-light.png
+ M apps/web/tests/visual-regression.spec.ts-snapshots/page-tablet-light.png
+ M apps/web/tests/visual-regression.spec.ts-snapshots/settings-desktop-light.png
+ M apps/web/tests/visual-regression.spec.ts-snapshots/settings-profile-mobile-light.png
+ M docs/architecture/timeline-renderer.md
+ M docs/p11-timeline.md
+?? apps/web/scripts/read-visual-environment.ps1
+?? apps/web/src/components/ui/overlayFocus.ts
+?? apps/web/tests/helpers/editorSelection.ts
+?? apps/web/tests/helpers/visualEnvironment.ts
+?? apps/web/tests/visual-regression.spec.ts-snapshots/environment.json
+?? docs/verification/evidence/p11-6-backend/
+?? docs/verification/evidence/p11-6-gates/
+?? docs/verification/evidence/p11-6-offscreen/
+?? docs/verification/evidence/p11-6-product/
+?? docs/verification/evidence/p11-6-resume/
+?? docs/verification/evidence/p11-6-visual/
+?? docs/verification/evidence/p11-6-web-gates/
+?? docs/verification/p11-6-timeline-final-acceptance.md

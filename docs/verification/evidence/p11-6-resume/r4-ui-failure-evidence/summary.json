@@ -1,0 +1,289 @@
+{
+  "readOnly": true,
+  "browserRuns": 0,
+  "sourceChanges": 0,
+  "limitations": [
+    "Trace DOM snapshot ProseMirror-focused supports editor focus; document.activeElement and keydown event.target were not separately instrumented.",
+    "No runtime reproduction performed; conclusions use the separate original Product/Database traces.",
+    "database-ime extraction directory was an initial diagnostic naming error caused by milliseconds matching /IME/i and is excluded from all evidence and archive."
+  ],
+  "cases": [
+    {
+      "name": "product-icons",
+      "pageErrorEvents": 0,
+      "apiRequests": 10,
+      "lastApiRequests": [
+        {
+          "time": 172151.325,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 172185.827,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 172198.551,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/sync/workspaces/database-workspace/snapshot",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 172291.181,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/view-root-id/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 173133.446,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 173142.526,
+          "method": "POST",
+          "url": "http://127.0.0.1:7173/api/sync/operations",
+          "status": 200,
+          "body": "{\"id\":\"PzelwUQorFSOn03dhctOi\",\"clientId\":\"iF_o73IuG3Dj3l22-RsDj\",\"sequence\":1,\"workspaceId\":\"database-workspace\",\"createdAt\":\"2026-10-21T04:44:05.938Z\",\"kind\":\"block.move\",\"payload\":{\"id\":\"icon-audit-database\",\"pageId\":\"database-page\",\"parentBlockId\":null,\"orderKey\":\"000000000000000001000000000000\"}}"
+        },
+        {
+          "time": 173152.082,
+          "method": "POST",
+          "url": "http://127.0.0.1:7173/api/sync/operations",
+          "status": 200,
+          "body": "{\"id\":\"RlwVvzSTGBnY5QjL19xIe\",\"clientId\":\"iF_o73IuG3Dj3l22-RsDj\",\"sequence\":2,\"workspaceId\":\"database-workspace\",\"createdAt\":\"2026-10-21T04:44:05.941Z\",\"kind\":\"block.upsert\",\"payload\":{\"id\":\"FZrbx5PxfVOAPcRheqYLI\",\"pageId\":\"database-page\",\"parentBlockId\":null,\"type\":\"paragraph\",\"orderKey\":\"000000000000000002000000000000\",\"props\":{\"node\":{\"type\":\"paragraph\"}}}}"
+        },
+        {
+          "time": 173161.852,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/sync/workspaces/database-workspace/snapshot",
+          "status": 200,
+          "body": null
+        }
+      ],
+      "snapshotEvidenceFile": "product-icons/compact-evidence.json"
+    },
+    {
+      "name": "product-ime",
+      "pageErrorEvents": 0,
+      "apiRequests": 8,
+      "lastApiRequests": [
+        {
+          "time": 964307.503,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/auth/me",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 964763.63,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/ws-a/database-navigation?limit=100",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 964765.606,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 964785.623,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 964799.711,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/sync/workspaces/ws-a/snapshot",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 965683.065,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 965944.332,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 965955.211,
+          "method": "POST",
+          "url": "http://127.0.0.1:7173/api/sync/operations",
+          "status": 401,
+          "body": "{\"id\":\"pKVka9dOuY3m2k_btNnUY\",\"clientId\":\"JZiekCxweEy5yQYaNzB7d\",\"sequence\":1,\"workspaceId\":\"ws-a\",\"createdAt\":\"2026-10-21T04:57:18.749Z\",\"kind\":\"block.upsert\",\"payload\":{\"id\":\"IFf4y5y8r3yzXA8RIsLCL\",\"pageId\":\"page-a\",\"parentBlockId\":null,\"type\":\"paragraph\",\"orderKey\":\"000000000000000001000000000000\",\"props\":{\"node\":{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Draft from another API\"}]}}}}"
+        }
+      ],
+      "snapshotEvidenceFile": "product-ime/compact-evidence.json"
+    },
+    {
+      "name": "product-datetime",
+      "pageErrorEvents": 0,
+      "apiRequests": 138,
+      "lastApiRequests": [
+        {
+          "time": 617219.849,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/database-navigation?limit=100",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 617220.002,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-hour-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 617221.98,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-day-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 617222.092,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-week-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 617222.157,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-biweek-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 617222.206,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-month-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 617222.251,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-quarter-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 617222.299,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-year-view/table?limit=25",
+          "status": 200,
+          "body": null
+        }
+      ],
+      "snapshotEvidenceFile": "product-datetime/compact-evidence.json"
+    },
+    {
+      "name": "database-datetime",
+      "pageErrorEvents": 0,
+      "apiRequests": 138,
+      "lastApiRequests": [
+        {
+          "time": 420084.784,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/database-navigation?limit=100",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 420084.95,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-hour-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 420086.715,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-day-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 420086.79,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-week-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 420086.843,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-biweek-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 420086.89,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-month-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 420086.932,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-quarter-view/table?limit=25",
+          "status": 200,
+          "body": null
+        },
+        {
+          "time": 420086.976,
+          "method": "GET",
+          "url": "http://127.0.0.1:7173/api/workspaces/database-workspace/databases/database-root-id/views/p113b-year-view/table?limit=25",
+          "status": 200,
+          "body": null
+        }
+      ],
+      "snapshotEvidenceFile": "database-datetime/compact-evidence.json"
+    }
+  ],
+  "conclusions": {
+    "icons": {
+      "evidence": "Phone queryCount 3; desktop setViewport end178345.485; queryCount6 at178369-178375; nth5 svg count succeeds178544.576; nth5 textContent begins178551.039 and never resolves. Final accessibility tree contains only3 sort icon buttons.",
+      "classification": "Responsive mode transition creates temporary duplicate controls; all() freezes6 nth locators then outgoing surface disappears. No icon assertion mismatch observed.",
+      "brief": "After returning desktop, assert sorts has stable single active surface and icon collection count3 before all(); preserve every SVG/text/geometry assertion; no timeout/retry change."
+    },
+    "ime": {
+      "evidence": "Save-title click starts965928.557; sync POST starts965955.211 and responds401; request body.kind block.upsert contains Draft from another API. Final page is login. No rename HTTP or page metadata sync operation exists.",
+      "classification": "Unauthorized block autosave wins race before metadata title submission; intended metadata-expiry scenario not reached.",
+      "brief": "Needs S2 fixture sequencing decision: keep unauthorized block autosave from preempting intended metadata operation, preserving real IME/local-save and post-login draft assertions. Do not force-click or accept early login as success."
+    },
+    "datetime": {
+      "separateRuns": [
+        "product-datetime",
+        "database-datetime"
+      ],
+      "evidence": "Both runs reach8914 no-new-PATCH assertion; key Escape completes; open drawer snapshot contains contenteditable=true ProseMirror-focused editor; overlay source232-240 skips contenteditable target. Subsequent8917 resize not executed.",
+      "classification": "Setup close uses keyboard in editor-reserved Escape context. Trace supports focus via ProseMirror-focused; actual event target not directly recorded.",
+      "brief": "At8915 replace only await page.keyboard.press('Escape') with await markerDrawer.getByRole('button', { name: '关闭记录', exact: true }).click(); keep8916 hidden and all Date/CAS/patch assertions unchanged. Verify targeted run before full gates."
+    }
+  }
+}

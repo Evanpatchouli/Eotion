@@ -1,0 +1,68 @@
+{
+  "sourceShaVerification": "All four original source SHA values matched before apply",
+  "files": [
+    {
+      "path": "apps/web/src/views/PageView.vue",
+      "originalSha256": "88f26bbbc06f7abb702153541f5570f3c36a81388b9690f69bd27fdeb40f4081",
+      "candidateSha256": "7d3a6622d56dea10ffef8c2fb2294221cef8e2206ff83162577f1637c5e68e47",
+      "appliedSha256": "db362b7fbfc3a15d3ea7837cde48cb2edd2a64633a5b5207c69eda1a00895017",
+      "appliedBytes": 32296,
+      "method": "original SHA verified before git apply source-only.patch",
+      "matchesCandidateBytes": false,
+      "matchesCandidateNormalizedText": true,
+      "appliedNormalizedTextSha256": "7d3a6622d56dea10ffef8c2fb2294221cef8e2206ff83162577f1637c5e68e47",
+      "candidateNormalizedTextSha256": "7d3a6622d56dea10ffef8c2fb2294221cef8e2206ff83162577f1637c5e68e47"
+    },
+    {
+      "path": "apps/web/src/components/editor/EotionEditor.vue",
+      "originalSha256": "4c8a1a94f7be85f08ef26c9162bc9ad6ce8c9d19e8418e097596e9beb360f875",
+      "candidateSha256": "b6f4c946ddcb6736d361cf855c59dfe67ba2367bc1cfc642b8ea42f9151305d9",
+      "appliedSha256": "3bbb5aaeada29a43048523ed54f3821f8df8b979f59c08997ed77548b1b3869c",
+      "appliedBytes": 47816,
+      "method": "original SHA verified before git apply source-only.patch",
+      "matchesCandidateBytes": false,
+      "matchesCandidateNormalizedText": true,
+      "appliedNormalizedTextSha256": "b6f4c946ddcb6736d361cf855c59dfe67ba2367bc1cfc642b8ea42f9151305d9",
+      "candidateNormalizedTextSha256": "b6f4c946ddcb6736d361cf855c59dfe67ba2367bc1cfc642b8ea42f9151305d9"
+    },
+    {
+      "path": "apps/web/src/components/ui/EotionProductOverlay.vue",
+      "originalSha256": "6434373ba2604a63b2b1f6686c02a792751809d90c97550e9f2e867f8139a114",
+      "candidateSha256": "3839c748989d1ec53314c632dcc81b3d3ed933bd38b6bfc986de821e1a42f92f",
+      "appliedSha256": "dc6f145f961abe073a2a39aa372d44ccc418869ba6b8ff25f469bb57ada970a1",
+      "appliedBytes": 21253,
+      "method": "original SHA verified before git apply source-only.patch",
+      "matchesCandidateBytes": false,
+      "matchesCandidateNormalizedText": true,
+      "appliedNormalizedTextSha256": "3839c748989d1ec53314c632dcc81b3d3ed933bd38b6bfc986de821e1a42f92f",
+      "candidateNormalizedTextSha256": "3839c748989d1ec53314c632dcc81b3d3ed933bd38b6bfc986de821e1a42f92f"
+    },
+    {
+      "path": "apps/web/src/components/ui/overlayFocus.ts",
+      "originalSha256": null,
+      "candidateSha256": "8ece1ad497896af27477aa0204c088f92eefe1a4ea3e102f6b5e27ef70389482",
+      "appliedSha256": "8ece1ad497896af27477aa0204c088f92eefe1a4ea3e102f6b5e27ef70389482",
+      "appliedBytes": 542,
+      "method": "original SHA verified before git apply source-only.patch",
+      "matchesCandidateBytes": true,
+      "matchesCandidateNormalizedText": true,
+      "appliedNormalizedTextSha256": "78eb606995465bb85e260adfd3c64fb2d917ec91c890ca8cf875aaec615b1fc4",
+      "candidateNormalizedTextSha256": "78eb606995465bb85e260adfd3c64fb2d917ec91c890ca8cf875aaec615b1fc4"
+    },
+    {
+      "path": "apps/web/tests/product-database.spec.ts",
+      "originalSha256": "df2b292861c14650ebc80ab2003ed45a025d6b103685b79e2b2d0563cfb32942",
+      "apply": "append product-database.append.ts only; do not overwrite concurrent coarse setup patch",
+      "candidateSha256": "283d5e7728894ef32c79773eccd8f34533c4dcb896083193209e88be6691bcaf",
+      "appliedSha256": "4f44fc3741eb47393efdf2118ed5a25e6382d839ca1b889064c4cdab34a04e0f",
+      "appliedBytes": 885476,
+      "method": "EOF bytes append only; preserve concurrent coarse tap edit",
+      "matchesCandidateBytes": false,
+      "matchesCandidateNormalizedText": false,
+      "appliedNormalizedTextSha256": "8db0e5f7c862db53c2d383853c572672d7527db66ca4ff87852236cd4714de68",
+      "candidateNormalizedTextSha256": "283d5e7728894ef32c79773eccd8f34533c4dcb896083193209e88be6691bcaf"
+    }
+  ],
+  "noBuildOrDependencyOrVersionOrCommit": "No build, dependency, version, commit or push operation in this work unit",
+  "lineEndings": "git apply preserves existing source CRLF/LF context; source candidates are normalized-text identical despite raw SHA differences. Test snapshot additionally precedes the separately authorized coarse close tap edit."
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "path": "database-datetime/actions.json",
+    "sha256": "dec8271c19306a6a13bbed3295c3aa5fcc01476c493b4491817c965ccd8c331e"
+  },
+  {
+    "path": "database-datetime/compact-evidence.json",
+    "sha256": "9a33652bdcdf71cb3f44d5314c8b81e38aadbe84f65021323510562d2885593b"
+  },
+  {
+    "path": "database-datetime/network.json",
+    "sha256": "6425121fc573ceaaf5de5c3893e030e03a21cd4045d2d30adc447a3687c5336d"
+  },
+  {
+    "path": "parse.cjs",
+    "sha256": "96b12aaaa8a207c0387d977e80ea09799d3a47ef349fd38a9cb66937950f80d5"
+  },
+  {
+    "path": "product-datetime/actions.json",
+    "sha256": "378af5095f80342eb31249390b72b6574d3f1ba86f32379048d7514e9936e0f8"
+  },
+  {
+    "path": "product-datetime/compact-evidence.json",
+    "sha256": "6d8334b851fe03bf5939b10b4ae0843218d700dabec4276ecc813ce45b697d27"
+  },
+  {
+    "path": "product-datetime/network.json",
+    "sha256": "5a8a481084c1edce43efea0ad4cccc09e0cab20916614802c75793dd90cabc85"
+  },
+  {
+    "path": "product-icons/actions.json",
+    "sha256": "0ce9ce04c7af8eab613c82c2a5be32088f662560dd0e3cd533765be2981eae29"
+  },
+  {
+    "path": "product-icons/compact-evidence.json",
+    "sha256": "739e6e9a609e856299ecbd1b8652aa255d4ba79f9c86a926082e225994473e48"
+  },
+  {
+    "path": "product-icons/network.json",
+    "sha256": "6f33bf1d4d3bdd49f633b25eb5bcabc5022a11435a12cd24a132f5ff9034491b"
+  },
+  {
+    "path": "product-ime/actions.json",
+    "sha256": "4b50b505a1847e3d5b5cae39b3eef52ca59b054d6653efe62225761731630124"
+  },
+  {
+    "path": "product-ime/compact-evidence.json",
+    "sha256": "9726aecc4e5c467159a868d4465ccf2671203a98188ecd5631a8dc27365ae248"
+  },
+  {
+    "path": "product-ime/network.json",
+    "sha256": "a7267e6cd5640faffff293853a901e878de2ea6587b70624dd4a6e4c54efc124"
+  },
+  {
+    "path": "summarize.cjs",
+    "sha256": "7a950c8fe84d3aa86fc148c944130477bfcd2d8d850f9a10d2d7a360c6c0184e"
+  },
+  {
+    "path": "summary.json",
+    "sha256": "86a7fbbe6abdb504dc47ef12c4697b50992274d789c0e72ec6ab6046c0d5e20e"
+  }
+]

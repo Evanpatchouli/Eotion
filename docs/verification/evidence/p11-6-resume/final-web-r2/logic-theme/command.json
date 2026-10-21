@@ -1,0 +1,24 @@
+{
+  "exe": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+  "args": [
+    "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\node_modules\\@playwright\\test\\cli.js",
+    "test",
+    "--config",
+    "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\playwright.full.config.mjs",
+    "tests/theme.spec.ts",
+    "tests/timeline-atomic-capture.spec.ts",
+    "tests/timeline-coordinate.spec.ts",
+    "tests/timeline-dependency-mutation.spec.ts",
+    "tests/timeline-dependency.spec.ts",
+    "tests/timeline-frozen-table.spec.ts",
+    "tests/timeline-interaction.spec.ts",
+    "tests/timeline-layout.spec.ts",
+    "tests/timeline-mutation.spec.ts",
+    "tests/timeline-projection.spec.ts",
+    "--workers=1",
+    "--retries=0",
+    "--output",
+    "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\logic-theme\\test-results"
+  ],
+  "cwd": "C:/Users/31250/Work/Eotion/apps/web"
+}

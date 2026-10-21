@@ -1,0 +1,66 @@
+{
+  "width": 390,
+  "results": [
+    {
+      "target": "short-bar-center",
+      "point": {
+        "x": 327,
+        "y": 542
+      },
+      "events": [
+        {
+          "type": "pointerdown",
+          "testId": "timeline-bar"
+        },
+        {
+          "type": "click",
+          "testId": "timeline-bar"
+        }
+      ],
+      "viewportCenterChanged": false,
+      "recordSurface": 2
+    },
+    {
+      "target": "short-arrow-center",
+      "error": "TimeoutError: locator.boundingBox: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#database-block-timeline-visual-block').getByTestId('database-timeline').locator('[data-record-id=\"timeline-short\"] [data-testid=\"timeline-offscreen-right\"]')\u001b[22m\n"
+    },
+    {
+      "target": "short-connector-center",
+      "point": {
+        "x": 364,
+        "y": 556
+      },
+      "events": [
+        {
+          "type": "pointerdown",
+          "testId": "timeline-dependency-handle"
+        },
+        {
+          "type": "click",
+          "testId": "timeline-dependency-handle"
+        }
+      ],
+      "viewportCenterChanged": false,
+      "recordSurface": 1
+    },
+    {
+      "target": "short-resize-start-center",
+      "point": {
+        "x": 285,
+        "y": 542
+      },
+      "events": [
+        {
+          "type": "pointerdown",
+          "testId": "timeline-resize-start"
+        },
+        {
+          "type": "click",
+          "testId": "timeline-resize-start"
+        }
+      ],
+      "viewportCenterChanged": false,
+      "recordSurface": 1
+    }
+  ]
+}

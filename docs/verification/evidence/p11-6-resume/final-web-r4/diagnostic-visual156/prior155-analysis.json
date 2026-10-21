@@ -1,0 +1,241 @@
+{
+  "priorManifest": {
+    "browser": "155.0.8059.85",
+    "scenarios": [
+      {
+        "name": "desktop-light",
+        "width": 1440,
+        "height": 900,
+        "theme": "light",
+        "allUnscheduled": false,
+        "offscreenControls": 0
+      },
+      {
+        "name": "desktop-dark",
+        "width": 1440,
+        "height": 900,
+        "theme": "dark",
+        "allUnscheduled": false,
+        "offscreenControls": 0
+      },
+      {
+        "name": "tablet-light",
+        "width": 1024,
+        "height": 900,
+        "theme": "light",
+        "allUnscheduled": false,
+        "offscreenControls": 0
+      },
+      {
+        "name": "mobile-light",
+        "width": 390,
+        "height": 844,
+        "theme": "light",
+        "allUnscheduled": false,
+        "offscreenControls": 3
+      },
+      {
+        "name": "mobile-dark",
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "allUnscheduled": false,
+        "offscreenControls": 3
+      },
+      {
+        "name": "all-unscheduled",
+        "width": 1440,
+        "height": 900,
+        "theme": "light",
+        "allUnscheduled": true,
+        "offscreenControls": 0
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "timeline-all-unscheduled-desktop-light.png",
+      "mode": "156 raw vs explicitly155 prior raw",
+      "priorPath": "C:/Users/31250/Work/Eotion/docs/verification/evidence/p11-6-gates/review-six/all-unscheduled.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-all-unscheduled\\timeline-all-unscheduled-desktop-light.png",
+      "bufferIdentical": true,
+      "rgba": {
+        "count": 0,
+        "bounds": null
+      },
+      "strictMessage": null,
+      "residual": {
+        "count": 0,
+        "bounds": null
+      }
+    },
+    {
+      "name": "timeline-desktop-dark.png",
+      "mode": "156 raw vs explicitly155 prior raw",
+      "priorPath": "C:/Users/31250/Work/Eotion/docs/verification/evidence/p11-6-gates/review-six/desktop-dark.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-dark\\timeline-desktop-dark.png",
+      "bufferIdentical": false,
+      "rgba": {
+        "count": 1,
+        "bounds": [
+          947,
+          462,
+          947,
+          462
+        ]
+      },
+      "strictMessage": null,
+      "residual": {
+        "count": 0,
+        "bounds": null
+      }
+    },
+    {
+      "name": "timeline-desktop-light.png",
+      "mode": "156 raw vs explicitly155 prior raw",
+      "priorPath": "C:/Users/31250/Work/Eotion/docs/verification/evidence/p11-6-gates/review-six/desktop-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-light\\timeline-desktop-light.png",
+      "bufferIdentical": false,
+      "rgba": {
+        "count": 1,
+        "bounds": [
+          947,
+          462,
+          947,
+          462
+        ]
+      },
+      "strictMessage": null,
+      "residual": {
+        "count": 0,
+        "bounds": null
+      }
+    },
+    {
+      "name": "timeline-mobile-dark.png",
+      "mode": "156 raw vs explicitly155 prior raw",
+      "priorPath": "C:/Users/31250/Work/Eotion/docs/verification/evidence/p11-6-gates/review-six/mobile-dark.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-90683-ontext-Timeline-mobile-dark\\timeline-mobile-dark.png",
+      "bufferIdentical": false,
+      "rgba": {
+        "count": 1,
+        "bounds": [
+          238,
+          490,
+          238,
+          490
+        ]
+      },
+      "strictMessage": null,
+      "residual": {
+        "count": 0,
+        "bounds": null
+      }
+    },
+    {
+      "name": "timeline-mobile-light.png",
+      "mode": "156 raw vs explicitly155 prior raw",
+      "priorPath": "C:/Users/31250/Work/Eotion/docs/verification/evidence/p11-6-gates/review-six/mobile-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-b1d5f-ntext-Timeline-mobile-light\\timeline-mobile-light.png",
+      "bufferIdentical": false,
+      "rgba": {
+        "count": 1,
+        "bounds": [
+          238,
+          490,
+          238,
+          490
+        ]
+      },
+      "strictMessage": null,
+      "residual": {
+        "count": 0,
+        "bounds": null
+      }
+    },
+    {
+      "name": "timeline-tablet-light.png",
+      "mode": "156 raw vs explicitly155 prior raw",
+      "priorPath": "C:/Users/31250/Work/Eotion/docs/verification/evidence/p11-6-gates/review-six/tablet-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-tablet-light\\timeline-tablet-light.png",
+      "bufferIdentical": false,
+      "rgba": {
+        "count": 1,
+        "bounds": [
+          718,
+          444,
+          718,
+          444
+        ]
+      },
+      "strictMessage": null,
+      "residual": {
+        "count": 0,
+        "bounds": null
+      }
+    },
+    {
+      "name": "connectivity-backend-unavailable-desktop.png",
+      "mode": "156 actual RAM-only RB reversal vs golden",
+      "priorPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\connectivity-backend-unavailable-desktop.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Connectivity-backend-unavailable-desktop\\connectivity-backend-unavailable-desktop.png",
+      "bufferIdentical": null,
+      "rgba": {
+        "count": 1215599,
+        "bounds": [
+          0,
+          0,
+          1439,
+          899
+        ]
+      },
+      "strictMessage": null,
+      "residual": {
+        "count": 0,
+        "bounds": null
+      }
+    },
+    {
+      "name": "page-desktop-dark.png",
+      "mode": "156 actual RAM-only RB reversal vs golden",
+      "priorPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-desktop-dark.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-dark\\page-desktop-dark.png",
+      "bufferIdentical": null,
+      "rgba": {
+        "count": 1296000,
+        "bounds": [
+          0,
+          0,
+          1439,
+          899
+        ]
+      },
+      "strictMessage": null,
+      "residual": {
+        "count": 0,
+        "bounds": null
+      }
+    },
+    {
+      "name": "page-desktop-light.png",
+      "mode": "156 actual RAM-only RB reversal vs golden",
+      "priorPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-desktop-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-light\\page-desktop-light.png",
+      "bufferIdentical": null,
+      "rgba": {
+        "count": 1296000,
+        "bounds": [
+          0,
+          0,
+          1439,
+          899
+        ]
+      },
+      "strictMessage": null,
+      "residual": {
+        "count": 0,
+        "bounds": null
+      }
+    }
+  ]
+}

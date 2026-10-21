@@ -1,0 +1,146 @@
+{
+  "pointerCoarse": true,
+  "details": [
+    {
+      "id": "timeline-foundation",
+      "arrow": false,
+      "connector": true
+    },
+    {
+      "id": "timeline-integration",
+      "arrow": {
+        "x": 333,
+        "y": 476,
+        "left": 333,
+        "right": 369,
+        "top": 476,
+        "bottom": 512,
+        "width": 36,
+        "height": 36
+      },
+      "connector": {
+        "x": 301,
+        "y": 498,
+        "left": 301,
+        "right": 329,
+        "top": 498,
+        "bottom": 518,
+        "width": 28,
+        "height": 20
+      },
+      "overlap": {
+        "left": 333,
+        "right": 329,
+        "top": 498,
+        "bottom": 512
+      },
+      "points": [
+        {
+          "name": "arrow-center",
+          "x": 351,
+          "y": 494,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "arrow-left-edge",
+          "x": 335,
+          "y": 494,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "arrow-right-edge",
+          "x": 367,
+          "y": 494,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "arrow-lower-left",
+          "x": 335,
+          "y": 510,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "arrow-lower-right",
+          "x": 367,
+          "y": 510,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "connector-center",
+          "x": 315,
+          "y": 508,
+          "hitTestId": "timeline-dependency-handle",
+          "hitLabel": "创建依赖：接口联调"
+        },
+        {
+          "name": "connector-left-edge",
+          "x": 303,
+          "y": 508,
+          "hitTestId": "timeline-dependency-handle",
+          "hitLabel": "创建依赖：接口联调"
+        },
+        {
+          "name": "connector-right-edge",
+          "x": 327,
+          "y": 508,
+          "hitTestId": "timeline-dependency-handle",
+          "hitLabel": "创建依赖：接口联调"
+        },
+        {
+          "name": "overlap-center",
+          "x": 331,
+          "y": 505,
+          "hitTestId": "timeline-bar",
+          "hitLabel": "接口联调 · 2026-10-19 → 2026-10-23 · 进行中"
+        }
+      ],
+      "bar": {
+        "box": {
+          "x": 255,
+          "y": 478,
+          "left": 255,
+          "right": 373,
+          "top": 478,
+          "bottom": 510,
+          "width": 118,
+          "height": 32
+        },
+        "hitTestId": "timeline-bar"
+      },
+      "resizeStart": {
+        "box": {
+          "x": 244,
+          "y": 478,
+          "left": 244,
+          "right": 254,
+          "top": 478,
+          "bottom": 510,
+          "width": 10,
+          "height": 32
+        },
+        "hitTestId": "timeline-resize-start"
+      },
+      "resizeEnd": null
+    },
+    {
+      "id": "timeline-short",
+      "arrow": false,
+      "connector": true
+    },
+    {
+      "id": "timeline-point",
+      "arrow": true,
+      "connector": false
+    },
+    {
+      "id": "timeline-unscheduled",
+      "arrow": false,
+      "connector": false
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "command": "node C:/Users/31250/Work/Eotion/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/cli.js test --config=C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-original-repeat.config.ts --workers=1 --retries=0 --repeat-each=3",
+  "cwd": "C:\\Users\\31250\\Work\\Eotion",
+  "stdout": "stdout.log",
+  "stderr": "stderr.log",
+  "exitCode": 0,
+  "reconstructedFromExecutedInvocation": true
+}

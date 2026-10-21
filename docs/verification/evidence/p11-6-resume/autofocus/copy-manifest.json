@@ -1,0 +1,648 @@
+{
+  "files": [
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r2-autofocus-implementation-brief.json",
+      "bytes": 6756,
+      "sha256": "54533ea1c6d4e75760b5da06f905d0748a3cf701f7cd77962114cdda2780c6a2",
+      "archive": "r2-autofocus-implementation-brief.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r2-title-focus-evidence.json",
+      "bytes": 3793,
+      "sha256": "059a927d53c150459f89b6214ce93515af636d5be877f05eba9e60aee1943358",
+      "archive": "r2-title-focus-evidence.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\product\\test-results\\product-database-P11-3A-dr-c93c7-out-opening-a-second-drawer\\trace.zip",
+      "bytes": 551525,
+      "sha256": "116048877f3c917b576fba5aa9818447a38132346506408569563be27de28b18",
+      "archive": "original-r2-identity-trace.zip"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\candidate.patch",
+      "bytes": 21361,
+      "sha256": "d4958553fd64727d32cbcd45aa024a0bb40b7cd4f3af7ee4aa5054a2a866166b",
+      "archive": "candidate/candidate.patch"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-original-repeat.config.ts",
+      "bytes": 672,
+      "sha256": "ddefb0d43d0d0fb297612c5e2c67f70f68191d6d506527e6ca9b53476e76a2b4",
+      "archive": "candidate/focus-original-repeat.config.ts"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression-green.config.ts",
+      "bytes": 596,
+      "sha256": "d9955cf0f366bb97e0314a405ed45196228bbb7612e01137efb334d7b33c5eab",
+      "archive": "candidate/focus-regression-green.config.ts"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression-red.config.ts",
+      "bytes": 592,
+      "sha256": "f840a49590c2fb5af557b3a29fb44d3b421e0604366fec345064d22759516ad4",
+      "archive": "candidate/focus-regression-red.config.ts"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression.config.ts",
+      "bytes": 550,
+      "sha256": "681d36ed22dd326ea44e79ad365d5137f99d817cf32ca9665e65f5b263ee5860",
+      "archive": "candidate/focus-regression.config.ts"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-related.config.ts",
+      "bytes": 1223,
+      "sha256": "f3edba0f7a7a22e1270dcd9c3784f665bbbf41f212a4659629414dae930100c5",
+      "archive": "candidate/focus-related.config.ts"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\manifest.json",
+      "bytes": 1305,
+      "sha256": "4cae875572f7ca0a7222cf54db4afe570e7f95e84983055d45a63f7a5b81a5a4",
+      "archive": "candidate/manifest.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\product-database.append.ts",
+      "bytes": 9575,
+      "sha256": "91803ac0fb4c72308a945ff76d21c6df2f9d85f0791d01a55c9a2c84b902c5f1",
+      "archive": "candidate/product-database.append.ts"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\source-only.patch",
+      "bytes": 10813,
+      "sha256": "71aeab1f4e7d50a96e5db618ed5c99a98011e6efeba2ad42f65fa8d5a5e89d13",
+      "archive": "candidate/source-only.patch"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\syntax-validation.json",
+      "bytes": 422,
+      "sha256": "6f5197da78b7cd83d50784011d8bd9973249bdde9ff6708bba4aaab564d50ac5",
+      "archive": "candidate/syntax-validation.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\tests-append.patch",
+      "bytes": 10548,
+      "sha256": "995275b85236cde939b6c2055117097fccfabf23cd2cb15d8adf2fe4a0749970",
+      "archive": "candidate/tests-append.patch"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\stderr.log",
+      "bytes": 1162,
+      "sha256": "b75cc338a19b26163424776a95dcbfe6e35357fc6885639d528281236f03912d",
+      "archive": "autofocus-red-setup1/stderr.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\stdout.log",
+      "bytes": 26532,
+      "sha256": "19ef56e1e7d1db173c3510a5da3d1ebe92555c95b4c0a9cdea0d0854661441f7",
+      "archive": "autofocus-red-setup1/stdout.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\summary.json",
+      "bytes": 50252,
+      "sha256": "a468906ee14303a68681f8fca65dfe8b5a90d509ddd3aa2f7fb9eb5f38fc75e9",
+      "archive": "autofocus-red-setup1/summary.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\.last-run.json",
+      "bytes": 390,
+      "sha256": "93ce9ad9ecff61dda8fd67406120dbbb4779d3c0c410a25791b61168ff7c1c35",
+      "archive": "autofocus-red-setup1/results/.last-run.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\error-context.md",
+      "bytes": 15753,
+      "sha256": "0c57d0a5b19d69a5ed9362dadf474722d246d73d7bcb469c0abb1e8585445b5a",
+      "archive": "autofocus-red-setup1/results/product-database-R2-closin-13226-initial-body-focus-callback/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\test-failed-1.png",
+      "bytes": 35083,
+      "sha256": "db41459cd69ea09b21697322abc0d07adc09786094498e0f1ea0377be31a75d1",
+      "archive": "autofocus-red-setup1/results/product-database-R2-closin-13226-initial-body-focus-callback/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\trace.zip",
+      "bytes": 310589,
+      "sha256": "7aac6ff4a74b4ce99560c100517ba6091fd8f13b0849faac480a0fe0c6136256",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\error-context.md",
+      "bytes": 15738,
+      "sha256": "c2a0f270e432dd79a2f8518431efda5211afc3297685ae121eb3e722c81bb517",
+      "archive": "autofocus-red-setup1/results/product-database-R2-pendin-220d5-ocus-preserves-a-user-caret/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\test-failed-1.png",
+      "bytes": 35083,
+      "sha256": "db41459cd69ea09b21697322abc0d07adc09786094498e0f1ea0377be31a75d1",
+      "archive": "autofocus-red-setup1/results/product-database-R2-pendin-220d5-ocus-preserves-a-user-caret/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\trace.zip",
+      "bytes": 313940,
+      "sha256": "49844db329a0095e303a67e48e43e778b6df852020df57be7b89b8211c3a1f7b",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\error-context.md",
+      "bytes": 15794,
+      "sha256": "e112cb835142ebeb0907b1b8129de78cee4693af75f5db3ddd8d9c2e50d44439",
+      "archive": "autofocus-red-setup1/results/product-database-R2-record-00b7b-aves-without-body-pollution/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\test-failed-1.png",
+      "bytes": 35083,
+      "sha256": "db41459cd69ea09b21697322abc0d07adc09786094498e0f1ea0377be31a75d1",
+      "archive": "autofocus-red-setup1/results/product-database-R2-record-00b7b-aves-without-body-pollution/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\trace.zip",
+      "bytes": 323255,
+      "sha256": "e00b027faf37479bee8c86b0f606f2336f2be3a6bfc0077f2f9f525b31744b3a",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-2f873-focus-after-overlay-opening\\error-context.md",
+      "bytes": 15790,
+      "sha256": "01ade710995e67e1f16477c38a993a07e9919a32f8a3ea6208810bca07dbc040",
+      "archive": "autofocus-red-setup1/results/product-database-R2-record-2f873-focus-after-overlay-opening/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-2f873-focus-after-overlay-opening\\test-failed-1.png",
+      "bytes": 35083,
+      "sha256": "db41459cd69ea09b21697322abc0d07adc09786094498e0f1ea0377be31a75d1",
+      "archive": "autofocus-red-setup1/results/product-database-R2-record-2f873-focus-after-overlay-opening/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-2f873-focus-after-overlay-opening\\trace.zip",
+      "bytes": 325696,
+      "sha256": "65d78885c1b6d706aa5e1998d08f34d913cf58dfdd198027148fcc1805cdbce0",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\error-context.md",
+      "bytes": 15602,
+      "sha256": "a998784d804bab1cf8d471d3dc77e9916e1f01905a63b031d7c8bc381123eaf2",
+      "archive": "autofocus-red-setup1/results/product-database-R2-record-834b8-aves-without-body-pollution/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\test-failed-1.png",
+      "bytes": 22325,
+      "sha256": "f68f07eb01ab93dc930ca716a1cf9773e51bb30a00d809e91cb9348998e12627",
+      "archive": "autofocus-red-setup1/results/product-database-R2-record-834b8-aves-without-body-pollution/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\trace.zip",
+      "bytes": 342340,
+      "sha256": "b1a2bd756fbb731ae72e1f78b38083eb6bd9cb2795497125f5dce082bd64cb06",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-d90c5-focus-after-overlay-opening\\error-context.md",
+      "bytes": 15598,
+      "sha256": "97605afc3d66a3e44f1fccc38324151f2e87d30576ae3a467ef8094340b9c57c",
+      "archive": "autofocus-red-setup1/results/product-database-R2-record-d90c5-focus-after-overlay-opening/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-d90c5-focus-after-overlay-opening\\test-failed-1.png",
+      "bytes": 22325,
+      "sha256": "f68f07eb01ab93dc930ca716a1cf9773e51bb30a00d809e91cb9348998e12627",
+      "archive": "autofocus-red-setup1/results/product-database-R2-record-d90c5-focus-after-overlay-opening/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-record-d90c5-focus-after-overlay-opening\\trace.zip",
+      "bytes": 341957,
+      "sha256": "cabf9a2f1e769c73d5cc65a26bb106b7b40352208b16fb28714a46ad02116eac",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\error-context.md",
+      "bytes": 15771,
+      "sha256": "b80d08d661842447ed98d10fd43a5fd380d9857b80ac3023275b9706cfeeb4c4",
+      "archive": "autofocus-red-setup1/results/product-database-R2-renami-12315-us-and-keeps-body-unchanged/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\test-failed-1.png",
+      "bytes": 35083,
+      "sha256": "db41459cd69ea09b21697322abc0d07adc09786094498e0f1ea0377be31a75d1",
+      "archive": "autofocus-red-setup1/results/product-database-R2-renami-12315-us-and-keeps-body-unchanged/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red-setup1\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\trace.zip",
+      "bytes": 322702,
+      "sha256": "bf9f3e6a59152ec18e34f917636819d5d3028d390f42769251a570a8c4688f4d",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\stderr.log",
+      "bytes": 830,
+      "sha256": "40f87e531d316f9a165c1546c56e2a931b2446b929988d05f75b66f0aa8b6331",
+      "archive": "autofocus-red/stderr.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\stdout.log",
+      "bytes": 18943,
+      "sha256": "0dc3f2be6a494290d9d0795aef7f4885976f8bf4bcec4504d50db9dfc9e79dde",
+      "archive": "autofocus-red/stdout.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\summary.json",
+      "bytes": 38522,
+      "sha256": "ea7cd1df05f24ab3475fe8d933426c329e4cffdf1d97359e1a73571b471a38c1",
+      "archive": "autofocus-red/summary.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\.last-run.json",
+      "bytes": 292,
+      "sha256": "f92d7b76287244b9c4b1047ee7a85707e0af34c52de96dbc3444104f575ac911",
+      "archive": "autofocus-red/results/.last-run.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\error-context.md",
+      "bytes": 5972,
+      "sha256": "19628d4cee25ab65ba9b5eb3bcc62a68c19d5fe80fedbc2d960d2d0eafcaa912",
+      "archive": "autofocus-red/results/product-database-R2-closin-13226-initial-body-focus-callback/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\test-failed-1.png",
+      "bytes": 36815,
+      "sha256": "9d9f60e7e2c78d0c8a3d87a14f3076417cfcb532452340e23572c95fe182c873",
+      "archive": "autofocus-red/results/product-database-R2-closin-13226-initial-body-focus-callback/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\trace.zip",
+      "bytes": 428783,
+      "sha256": "ddf0d1989c7493a788cd2ec54441d6033b7a68b2c206edab83da541761ac4352",
+      "archive": "autofocus-red/results/product-database-R2-closin-13226-initial-body-focus-callback/trace.zip"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\error-context.md",
+      "bytes": 16124,
+      "sha256": "070a5a985ce64e72b38407df2ed73be1ba786234ab738e0addbedb635a4ac2b2",
+      "archive": "autofocus-red/results/product-database-R2-pendin-220d5-ocus-preserves-a-user-caret/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\test-failed-1.png",
+      "bytes": 42755,
+      "sha256": "6199f7f54891184556a50e62370ee3ca091db68eaeb7964f1a548c84a78adaa8",
+      "archive": "autofocus-red/results/product-database-R2-pendin-220d5-ocus-preserves-a-user-caret/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\trace.zip",
+      "bytes": 429408,
+      "sha256": "9106abae9f5137cc5bad6adde571b2dd80de0c175834360aaecfcc21376bd7b2",
+      "archive": "autofocus-red/results/product-database-R2-pendin-220d5-ocus-preserves-a-user-caret/trace.zip"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\error-context.md",
+      "bytes": 14266,
+      "sha256": "f6dd98cf08bf030e775c990a7c580e6c72db9862ca4e22f71c8bc210dffb3b74",
+      "archive": "autofocus-red/results/product-database-R2-record-00b7b-aves-without-body-pollution/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\test-failed-1.png",
+      "bytes": 42154,
+      "sha256": "aeacba8ea860c862f3214cd6db777b324e6b919b8f5a93f74cc27dae276ad349",
+      "archive": "autofocus-red/results/product-database-R2-record-00b7b-aves-without-body-pollution/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\trace.zip",
+      "bytes": 679533,
+      "sha256": "729fa3e12d23366ed31f3f3d24fd4a6c41efe709e647ddde75dd5eb5db9e7204",
+      "archive": "autofocus-red/results/product-database-R2-record-00b7b-aves-without-body-pollution/trace.zip"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-2f873-focus-after-overlay-opening\\trace.zip",
+      "bytes": 406139,
+      "sha256": "f3113b26f3874719d3d175a88ea0df61fcd186fc22425f000923113bd0de2b10",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\error-context.md",
+      "bytes": 14330,
+      "sha256": "c7b10b9678f187fe544e97d77a5290ab6bb6ead95d7b5707795ba4522aa27b23",
+      "archive": "autofocus-red/results/product-database-R2-record-834b8-aves-without-body-pollution/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\test-failed-1.png",
+      "bytes": 19605,
+      "sha256": "0fe19abd51acd5b68f5c3838c5c32c63a04d56bffbadf725cb352686881ee8dc",
+      "archive": "autofocus-red/results/product-database-R2-record-834b8-aves-without-body-pollution/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\trace.zip",
+      "bytes": 598002,
+      "sha256": "cdd2b3987d915fea3f27d455e9d006418003892042e849c2de48a996fe11529e",
+      "archive": "autofocus-red/results/product-database-R2-record-834b8-aves-without-body-pollution/trace.zip"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-d90c5-focus-after-overlay-opening\\trace.zip",
+      "bytes": 391400,
+      "sha256": "b626c0fb7c6452dd9fb78e453ec2490607a70c3edf2b6bc481cb8e8a09753f01",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\error-context.md",
+      "bytes": 13414,
+      "sha256": "90b21d2eaa24706acc096f565b3bbfcaea78d8bd2be38f0df0a01738dd5123bc",
+      "archive": "autofocus-red/results/product-database-R2-renami-12315-us-and-keeps-body-unchanged/error-context.md"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\test-failed-1.png",
+      "bytes": 43310,
+      "sha256": "73d972cad8c14981f233a9524b81b31df405636b2f2c12c634a1764887bc8798",
+      "archive": "autofocus-red/results/product-database-R2-renami-12315-us-and-keeps-body-unchanged/test-failed-1.png"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\trace.zip",
+      "bytes": 532180,
+      "sha256": "636030286bb830292bdcf242da0f72264d0ec1dc936e3f90ad77a93932cc5b98",
+      "archive": "autofocus-red/results/product-database-R2-renami-12315-us-and-keeps-body-unchanged/trace.zip"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\stderr.log",
+      "bytes": 166,
+      "sha256": "0accafc0d5dbd1f2bb33caf4a6842762a1b89354166ca5612beb8bb449a9b0ce",
+      "archive": "autofocus-green/stderr.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\stdout.log",
+      "bytes": 1852,
+      "sha256": "dd344f26208e2988725d98feafe8913bf88b1589bc5839e2155e00af66fbce93",
+      "archive": "autofocus-green/stdout.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\summary.json",
+      "bytes": 13653,
+      "sha256": "4f902479a5738284118ca4c41199a7ff70d96b561757a0d828927e59a4c33b81",
+      "archive": "autofocus-green/summary.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\typecheck.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive": "autofocus-green/typecheck.stderr.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\typecheck.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive": "autofocus-green/typecheck.stdout.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\results\\.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "archive": "autofocus-green/results/.last-run.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\trace.zip",
+      "bytes": 399349,
+      "sha256": "9524186df21bc7b47fc48cfb752d5928cd42f45bdd31fcaeb31449dfe3c2ed8d",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\trace.zip",
+      "bytes": 370150,
+      "sha256": "36ed2fbc7420f0705f724b63a0ee3a992cc94cf64023648ecd62526fb54e7dac",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\trace.zip",
+      "bytes": 501726,
+      "sha256": "1ae6f01e16011fdbc509186e72a0e254b18f3e301813a353e045bd3a5e8fc22f",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\results\\product-database-R2-record-2f873-focus-after-overlay-opening\\trace.zip",
+      "bytes": 385165,
+      "sha256": "570edeed6dcae188d63824b61337842f4c22c51f452dac544c128d8fd5a5559a",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\trace.zip",
+      "bytes": 546093,
+      "sha256": "2c6fa2a5519acefe1b454388bd7abc45070d4da7ad16af9aed6a14a313fdacb1",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\results\\product-database-R2-record-d90c5-focus-after-overlay-opening\\trace.zip",
+      "bytes": 391161,
+      "sha256": "1d5bff30f1acbd94a7436f0b1151ee044f8344b5ea52944d4e9642131d900941",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-green\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\trace.zip",
+      "bytes": 505284,
+      "sha256": "8de8d39f4d3a64651347b4d2312016f7ad181fc1e8bcc0cf9c4fae04e9e1c08f",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\stderr.log",
+      "bytes": 498,
+      "sha256": "cae8527bc8c023c095d9280e9d2126cfe9922fff40a7fd8ef435ff6474342716",
+      "archive": "autofocus-original-repeat/stderr.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\stdout.log",
+      "bytes": 1049,
+      "sha256": "0eab8f3da8e9c8366c6cfef16db80a246f5f084141c57255b1efcda136c932d1",
+      "archive": "autofocus-original-repeat/stdout.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\summary.json",
+      "bytes": 11274,
+      "sha256": "bbbdab7745549f7278ac645d7888a9e73db570f59f6d8f841ddb3a804a4720ce",
+      "archive": "autofocus-original-repeat/summary.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\results\\.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "archive": "autofocus-original-repeat/results/.last-run.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\results\\product-database-P11-3A-dr-c93c7-out-opening-a-second-drawer\\trace.zip",
+      "bytes": 821026,
+      "sha256": "a9fccceaeda7469b7d7d83a24a1c6cbf241856ada724d3c0fbe5d79b9a66673c",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\results\\product-database-P11-3A-dr-c93c7-out-opening-a-second-drawer-repeat1\\trace.zip",
+      "bytes": 749274,
+      "sha256": "1dad464eaf77b64380af7704e09d767f6b50d8b35ab6842d8780e5d7ddca03b4",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\results\\product-database-P11-3A-dr-c93c7-out-opening-a-second-drawer-repeat2\\trace.zip",
+      "bytes": 781994,
+      "sha256": "1c4f25df63adbbcc75b8f45121752aac98050e100ffe2f9b022173aaf67a70ac",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\results\\product-database-P11-5-coa-62442-the-native-Timeline-surface\\trace.zip",
+      "bytes": 2166547,
+      "sha256": "ec35c09d1f845b95cd5ad2656cbf94a17ab146569bb63664f892afee90f9c7e6",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\results\\product-database-P11-5-coa-62442-the-native-Timeline-surface-repeat1\\trace.zip",
+      "bytes": 2325648,
+      "sha256": "1dacb698d93aabc522e5cd6c0eca208c4afc60838355ed5e5e74a127e23ea49d",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-original-repeat\\results\\product-database-P11-5-coa-62442-the-native-Timeline-surface-repeat2\\trace.zip",
+      "bytes": 2062130,
+      "sha256": "6d77b7e0843a3b38657291150c496e9522a7d9f92f9f05c444b0d508e23b97ca",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\stderr.log",
+      "bytes": 166,
+      "sha256": "6c36d7767339e3be8fa818ff874ce1c0aa086843e2487529a975de163c41df13",
+      "archive": "autofocus-related/stderr.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\stdout.log",
+      "bytes": 1905,
+      "sha256": "42c785e28c1dcb74b9afceaf1fa5fb1c686fe694b0dd67ad324ad51092ca47e2",
+      "archive": "autofocus-related/stdout.log"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\summary.json",
+      "bytes": 21545,
+      "sha256": "f498316f302f23d3da166740b02df363ae7e4c78ca7789d5039f8e24a692a5fe",
+      "archive": "autofocus-related/summary.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "archive": "autofocus-related/results/.last-run.json"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-database-closing-a-c4b57-s-focused-title-draft-first\\trace.zip",
+      "bytes": 657742,
+      "sha256": "17dbcf21aefa9bb28e69384e81d11ee889c4705d43d94772cf15abe931df994c",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-database-new-recor-cfd9d-le-and-no-header-title-form\\trace.zip",
+      "bytes": 422007,
+      "sha256": "941133d7324390f8ae5de4783833b1d5830f0ab78971ad6833fc50bc8ad480b0",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-editor-empty-page--067df-ith-a-stable-block-identity\\trace.zip",
+      "bytes": 282996,
+      "sha256": "6c99a4562ee731e0ea4c670e5d8ee2afb7aaaeaa7df92a04a524cdb3906aa3f5",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-editor-flushes-edi-ace2f-ates-the-next-page-document\\trace.zip",
+      "bytes": 270048,
+      "sha256": "0ab385386fda6f0ba66fd98e946a192200441b25a3705704364ad8a3f1514a96",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-editor-reads-both--76560-t-mixing-them-on-navigation\\trace.zip",
+      "bytes": 131959,
+      "sha256": "925dc0c1440ce4a082af066ca3fceb6868cdcfc2659104664b02a17b428b3d66",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-editor-touch-caret-82d70-t-and-requires-editor-focus\\trace.zip",
+      "bytes": 967209,
+      "sha256": "7665780294029ddc07e0516be20dd6a4b203561ceee95f525b70b6c40d8c27da",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-overlay-bottom-dra-e4836-m-Escape-and-restores-focus\\trace.zip",
+      "bytes": 169682,
+      "sha256": "57d34ed12ae46e221e11d45fa885098256189c068035babaf4722134f9e176f3",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-overlay-closing-a--a9b26--and-restores-trigger-focus\\trace.zip",
+      "bytes": 71514,
+      "sha256": "804565092d5f2278373c6250775ab562bb1e0cc2751b779191275221430f80ae",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-overlay-closing-be-ff9fc-eaves-no-stale-native-state\\trace.zip",
+      "bytes": 102196,
+      "sha256": "65954a32909f6faa80c63c9a127c2efb499804734943aa75854560d69d9e81e8",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-overlay-desktop-dr-48029-eractive-and-restores-focus\\trace.zip",
+      "bytes": 214011,
+      "sha256": "7cee72281793b588c02c71221745eeee6cc9a4d1c18b828306ca823bb7f4f657",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-overlay-desktop-mo-a6d97-s-and-blocks-the-background\\trace.zip",
+      "bytes": 69999,
+      "sha256": "2c58f3b4e7fbe4f7490b807ac3c7bc71acaedfacad0b6b16339c95645d276df6",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-overlay-modal-trap-29ab0-m-Escape-and-restores-focus\\trace.zip",
+      "bytes": 89104,
+      "sha256": "f81da62404e71f91d6a981dcb7169ff2884afbe53e776200ba31bed09ea61c7d",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-related\\results\\product-overlay-right-draw-dba0d-m-Escape-and-restores-focus\\trace.zip",
+      "bytes": 147174,
+      "sha256": "b0fb6b8f7fe035de7178eef2a5282a1801fd55caed306bff8b444a1d7d39adba",
+      "retention": "TEMP only",
+      "reason": "passing test trace retained without repository duplication"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+      "bytes": 873567,
+      "sha256": "bddaff316e021c14e6ef98485d5b4142a63481001fd31d1c2be3ebd60e08a3a3",
+      "retention": "TEMP only",
+      "reason": "full 12k-line duplicate fixture omitted; use archived append plus generator"
+    }
+  ],
+  "archivedFiles": 65,
+  "tempOnlyFiles": 36
+}

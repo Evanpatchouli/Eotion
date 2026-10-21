@@ -1,0 +1,80 @@
+[
+  {
+    "gate": "typecheck",
+    "start": "2026-10-21T04:40:24.664Z",
+    "end": "2026-10-21T04:40:35.369Z",
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "gate": "build",
+    "start": "2026-10-21T04:40:35.376Z",
+    "end": "2026-10-21T04:40:57.845Z",
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "gate": "logic-theme",
+    "start": "2026-10-21T04:40:57.854Z",
+    "end": "2026-10-21T04:41:12.979Z",
+    "exitCode": 0,
+    "signal": null,
+    "stats": {
+      "startTime": "2026-10-21T04:40:58.902Z",
+      "duration": 14047.287999999999,
+      "expected": 92,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "errors": []
+  },
+  {
+    "gate": "product",
+    "start": "2026-10-21T04:41:12.989Z",
+    "end": "2026-10-21T05:04:08.314Z",
+    "exitCode": 1,
+    "signal": null,
+    "stats": {
+      "startTime": "2026-10-21T04:41:13.711Z",
+      "duration": 1374538.545,
+      "expected": 499,
+      "skipped": 0,
+      "unexpected": 4,
+      "flaky": 0
+    },
+    "errors": []
+  },
+  {
+    "gate": "database",
+    "start": "2026-10-21T05:04:08.322Z",
+    "end": "2026-10-21T05:14:38.077Z",
+    "exitCode": 1,
+    "signal": null,
+    "stats": {
+      "startTime": "2026-10-21T05:04:08.979Z",
+      "duration": 629067.199,
+      "expected": 245,
+      "skipped": 0,
+      "unexpected": 1,
+      "flaky": 0
+    },
+    "errors": []
+  },
+  {
+    "gate": "visual",
+    "start": "2026-10-21T05:14:38.084Z",
+    "end": "2026-10-21T05:15:00.522Z",
+    "exitCode": 0,
+    "signal": null,
+    "stats": {
+      "startTime": "2026-10-21T05:14:38.700Z",
+      "duration": 21803.452999999998,
+      "expected": 13,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "errors": []
+  }
+]

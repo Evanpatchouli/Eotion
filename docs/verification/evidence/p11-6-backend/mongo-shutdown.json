@@ -1,0 +1,14 @@
+{
+  "shutdownCommand": "node -e mongoose admin shutdown owned URI",
+  "shutdownExitCode": 0,
+  "shutdownAt": "2026-10-19T10:16:56.5092157Z",
+  "pid": 58520,
+  "processPresent": false,
+  "listenerCount": 0,
+  "listenerDetails": [],
+  "port": 54463,
+  "uri": "mongodb://127.0.0.1:54463/?replicaSet=p116_c91e3284",
+  "mongodLog": "logs/mongod.log",
+  "shutdownStdout": "logs/mongo-shutdown.stdout.log",
+  "shutdownStderr": "logs/mongo-shutdown.stderr.log"
+}

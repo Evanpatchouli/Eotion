@@ -1,0 +1,32 @@
+[
+  {
+    "gate": "typecheck",
+    "start": "2026-10-20T12:00:08.673Z",
+    "end": "2026-10-20T12:00:18.670Z",
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "gate": "build",
+    "start": "2026-10-20T12:00:18.677Z",
+    "end": "2026-10-20T12:00:32.135Z",
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "gate": "logic-theme",
+    "start": "2026-10-20T12:00:32.142Z",
+    "end": "2026-10-20T12:00:43.222Z",
+    "exitCode": 0,
+    "signal": null,
+    "stats": {
+      "startTime": "2026-10-20T12:00:32.821Z",
+      "duration": 10378.376,
+      "expected": 92,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "errors": []
+  }
+]

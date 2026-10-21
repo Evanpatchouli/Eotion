@@ -1,0 +1,68 @@
+{
+  "expectedLiteral": "还没有页面",
+  "expectedCodepoints": [
+    "U+8FD8",
+    "U+6CA1",
+    "U+6709",
+    "U+9875",
+    "U+9762"
+  ],
+  "expectedUtf8Hex": "e8bf98e6b2a1e69c89e9a1b5e99da2",
+  "sourceFirstLiteralByteOffset": 4791,
+  "sourceLiteralByteHex": "e8bf98e6b2a1e69c89e9a1b5e99da2",
+  "reportRawUfffdUtf8Count": 0,
+  "sourceRawUfffdUtf8Count": 0,
+  "fields": {
+    "errorMessage": {
+      "literal": "还没有页面",
+      "literalCodepoints": [
+        "U+8FD8",
+        "U+6CA1",
+        "U+6709",
+        "U+9875",
+        "U+9762"
+      ],
+      "containsUfffd": false,
+      "countUfffd": 0
+    },
+    "errorSnippet": {
+      "literal": "还没有页面",
+      "literalCodepoints": [
+        "U+8FD8",
+        "U+6CA1",
+        "U+6709",
+        "U+9875",
+        "U+9762"
+      ],
+      "containsUfffd": false,
+      "countUfffd": 0
+    },
+    "errorsMessage": {
+      "literal": "还没有页面",
+      "literalCodepoints": [
+        "U+8FD8",
+        "U+6CA1",
+        "U+6709",
+        "U+9875",
+        "U+9762"
+      ],
+      "containsUfffd": false,
+      "countUfffd": 0
+    },
+    "sourceLine494": {
+      "literal": "还没有页面",
+      "literalCodepoints": [
+        "U+8FD8",
+        "U+6CA1",
+        "U+6709",
+        "U+9875",
+        "U+9762"
+      ],
+      "containsUfffd": false,
+      "countUfffd": 0
+    }
+  },
+  "sourceLine494ByteStart": 30033,
+  "sourceLine494LiteralByteOffset": 30064,
+  "sourceLine494LiteralByteHex": "e8bf98e6b2a1e69c89e9a1b5e99da2"
+}

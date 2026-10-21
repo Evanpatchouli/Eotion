@@ -1,0 +1,416 @@
+[
+  {
+    "t": 687.1999999992549,
+    "tag": "input:capture",
+    "target": "<input data-v-54b65381=\"\" class=\"eotion-file-input\" type=\"file\" multiple=\"\" aria-label=\"选择文件附件\">",
+    "xy": {},
+    "prevented": false,
+    "active": "<body>\n    <div id=\"app\" data-v-app=\"\"><div data-v-7a7a37b1=\"\" class=\"app-viewport\" data-runtime=\"web\" data-route=\"product-page\"><!--v-if--><div data-v-b30e6842=\"\" data-v-7a7a37b1=\"\" class=\"workspace-shell product-shell\" data-layout=\"deskto",
+    "dom": {
+      "text": "",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "node",
+        "anchor": 0
+      },
+      "text": "",
+      "focus": false
+    }
+  },
+  {
+    "t": 748.6999999992549,
+    "tag": "mousedown:capture",
+    "target": "<p><br class=\"ProseMirror-trailingBreak\"></p>",
+    "xy": {
+      "x": 766,
+      "y": 405
+    },
+    "prevented": false,
+    "active": "<body>\n    <div id=\"app\" data-v-app=\"\"><div data-v-7a7a37b1=\"\" class=\"app-viewport\" data-runtime=\"web\" data-route=\"product-page\"><!--v-if--><div data-v-b30e6842=\"\" data-v-7a7a37b1=\"\" class=\"workspace-shell product-shell\" data-layout=\"deskto",
+    "dom": {
+      "text": "",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "node",
+        "anchor": 0
+      },
+      "text": "",
+      "focus": false
+    }
+  },
+  {
+    "t": 751.2999999970198,
+    "tag": "mouseup:capture",
+    "target": "<p><br class=\"ProseMirror-trailingBreak\"></p>",
+    "xy": {
+      "x": 766,
+      "y": 405
+    },
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file P",
+    "dom": {
+      "text": "",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "node",
+        "anchor": 0
+      },
+      "text": "",
+      "focus": true
+    }
+  },
+  {
+    "t": 753.2999999970198,
+    "tag": "click:capture",
+    "target": "<p><br class=\"ProseMirror-trailingBreak\"></p>",
+    "xy": {
+      "x": 766,
+      "y": 405
+    },
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 2,
+        "head": 2
+      },
+      "text": "",
+      "focus": true
+    }
+  },
+  {
+    "t": 764.2999999970198,
+    "tag": "beforeinput:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "正",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 2,
+        "head": 2
+      },
+      "text": "",
+      "focus": true
+    }
+  },
+  {
+    "t": 765.7999999970198,
+    "tag": "input:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "正",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正</p>",
+      "offset": 1
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 2,
+        "head": 2
+      },
+      "text": "",
+      "focus": true
+    }
+  },
+  {
+    "t": 771.5,
+    "tag": "beforeinput:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "文",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正</p>",
+      "offset": 1
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 3,
+        "head": 3
+      },
+      "text": "正",
+      "focus": true
+    }
+  },
+  {
+    "t": 772.0999999977648,
+    "tag": "input:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "文",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文</p>",
+      "offset": 2
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 3,
+        "head": 3
+      },
+      "text": "正",
+      "focus": true
+    }
+  },
+  {
+    "t": 774,
+    "tag": "beforeinput:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "仍",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文</p>",
+      "offset": 2
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 4
+      },
+      "text": "正文",
+      "focus": true
+    }
+  },
+  {
+    "t": 774.5,
+    "tag": "input:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "仍",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文仍</p>",
+      "offset": 3
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 4
+      },
+      "text": "正文",
+      "focus": true
+    }
+  },
+  {
+    "t": 777.1999999992549,
+    "tag": "beforeinput:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "然",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文仍</p>",
+      "offset": 3
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 5,
+        "head": 5
+      },
+      "text": "正文仍",
+      "focus": true
+    }
+  },
+  {
+    "t": 777.8999999985099,
+    "tag": "input:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "然",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文仍然</p>",
+      "offset": 4
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 5,
+        "head": 5
+      },
+      "text": "正文仍",
+      "focus": true
+    }
+  },
+  {
+    "t": 780.2999999970198,
+    "tag": "beforeinput:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "可",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文仍然</p>",
+      "offset": 4
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 6,
+        "head": 6
+      },
+      "text": "正文仍然",
+      "focus": true
+    }
+  },
+  {
+    "t": 781,
+    "tag": "input:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "可",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文仍然可</p>",
+      "offset": 5
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 6,
+        "head": 6
+      },
+      "text": "正文仍然",
+      "focus": true
+    }
+  },
+  {
+    "t": 783.5999999977648,
+    "tag": "beforeinput:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "编",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文仍然可</p>",
+      "offset": 5
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 7,
+        "head": 7
+      },
+      "text": "正文仍然可",
+      "focus": true
+    }
+  },
+  {
+    "t": 784.5999999977648,
+    "tag": "input:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "编",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文仍然可编</p>",
+      "offset": 6
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 7,
+        "head": 7
+      },
+      "text": "正文仍然可",
+      "focus": true
+    }
+  },
+  {
+    "t": 787.0999999977648,
+    "tag": "beforeinput:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "辑",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文仍然可编</p>",
+      "offset": 6
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 8,
+        "head": 8
+      },
+      "text": "正文仍然可编",
+      "focus": true
+    }
+  },
+  {
+    "t": 788.0999999977648,
+    "tag": "input:capture",
+    "target": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "xy": {},
+    "data": "辑",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><div data-v-e051f0b7=\"\" class=\"attachment attachment-file\" ",
+    "dom": {
+      "text": "",
+      "anchor": "<p>正文仍然可编辑</p>",
+      "offset": 7
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 8,
+        "head": 8
+      },
+      "text": "正文仍然可编",
+      "focus": true
+    }
+  }
+]

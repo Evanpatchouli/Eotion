@@ -1,0 +1,13 @@
+import fs from 'node:fs';import crypto from 'node:crypto';
+const current='C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/sync-startup-probe';
+const dir=current+'/baseline';fs.mkdirSync(dir,{recursive:true});
+const sourceRoot='C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay';
+const raw=fs.readFileSync(sourceRoot+'/apps/web/tests/product-sync.spec.ts','utf8');
+const tail=fs.readFileSync(current+'/product-sync.spec.ts','utf8').split('// TEMP observational instrumentation;')[1];
+let source=raw.replace(/\r\n/g,'\n').replace("from '@playwright/test'","from 'C:/Users/31250/Work/Eotion/apps/web/node_modules/@playwright/test/index.mjs'").replace("async function mockApi(page: Page, server: Server = { pages: [], blocks: [] }) {","async function mockApi(page: Page, server: Server = { pages: [], blocks: [] }) {\n  await installStartupDiagnostics(page)");
+source+='\n// TEMP observational instrumentation;'+tail;
+fs.writeFileSync(dir+'/product-sync.spec.ts',source);
+for(const name of ['playwright.config.ts','package.json'])fs.copyFileSync(current+'/'+name,dir+'/'+name);
+fs.writeFileSync(dir+'/run.ps1',fs.readFileSync(current+'/run.ps1','utf8').replaceAll(current,current+'/baseline'));
+fs.writeFileSync(dir+'/plan.json',JSON.stringify({sourceRoot,sourceSpec:'apps/web/tests/product-sync.spec.ts',sourceSha256:crypto.createHash('sha256').update(raw).digest('hex'),probeSha256:crypto.createHash('sha256').update(source).digest('hex'),status:'Prepared only; must serve the confirmed baseline source before running. Shared original project Playwright runtime avoids dependency drift.',steps:['baseline-single','baseline-full-sync']},null,2));
+console.log(dir);

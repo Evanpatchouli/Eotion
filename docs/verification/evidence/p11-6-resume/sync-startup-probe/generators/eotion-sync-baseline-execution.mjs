@@ -1,0 +1,5 @@
+import fs from 'node:fs';
+const root='C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/sync-startup-probe';const dir=root+'/baseline-executed';fs.mkdirSync(dir,{recursive:true});for(const name of ['playwright.config.ts','package.json','product-sync.spec.ts','plan.json'])fs.copyFileSync(root+'/baseline/'+name,dir+'/'+name);let runner=fs.readFileSync(root+'/executed/run.ps1','utf8').replaceAll(root+'/executed',dir).replace("'http://127.0.0.1:7173'","'http://127.0.0.1:7176'");fs.writeFileSync(dir+'/run.ps1',runner);
+const archive='C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay';
+const packagePaths=['apps/web/node_modules','apps/web/node_modules/@eotion/contracts','apps/web/node_modules/@eotion/domain','apps/web/node_modules/@eotion/storage','apps/web/node_modules/@eotion/sdk'];fs.writeFileSync(root+'/baseline/shared-runtime-paths.json',JSON.stringify(packagePaths.map(p=>({archivePath:archive+'/'+p,realPath:fs.realpathSync(archive+'/'+p)})),null,2));
+console.log(dir);

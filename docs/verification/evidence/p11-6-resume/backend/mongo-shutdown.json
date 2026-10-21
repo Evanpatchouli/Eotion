@@ -1,0 +1,9 @@
+{
+  "finishedAt": "2026-10-20T10:32:10.5906739Z",
+  "command": "node mongo-admin.cjs shutdown",
+  "processStillRunning": false,
+  "pid": 59276,
+  "port": 55479,
+  "listenerStillOpen": false,
+  "adminCommandExitCode": 0
+}

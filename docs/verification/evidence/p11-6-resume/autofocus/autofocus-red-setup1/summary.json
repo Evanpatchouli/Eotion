@@ -1,0 +1,624 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\playwright@1.63.0\\node_modules\\playwright\\cli.js",
+      "test",
+      "--config=C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/autofocus-candidate/focus-regression-red.config.ts",
+      "--workers=1",
+      "--retries=0"
+    ],
+    "configFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression-red.config.ts",
+    "rootDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/autofocus-candidate/focus-regression",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/autofocus-red/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/autofocus-candidate/focus-regression",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../autofocus-red/summary.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "product-database.spec.ts",
+      "file": "product-database.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "R2 pending initial body focus preserves a user caret",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6065,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12341:20",
+                    "location": {
+                      "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                      "column": 22,
+                      "line": 12246
+                    },
+                    "snippet": "  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 22,
+                        "line": 12246
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n\n  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12341:20"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T11:54:02.156Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                    "column": 22,
+                    "line": 12246
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-a492b93c874bcb80860a",
+          "file": "product-database.spec.ts",
+          "line": 12338,
+          "column": 5
+        },
+        {
+          "title": "R2 closing a record cancels the pending initial body focus callback",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 5896,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12363:20",
+                    "location": {
+                      "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                      "column": 22,
+                      "line": 12246
+                    },
+                    "snippet": "  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 22,
+                        "line": 12246
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n\n  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12363:20"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T11:54:10.050Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                    "column": 22,
+                    "line": 12246
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-1d8ce8ff767c7d0e693d",
+          "file": "product-database.spec.ts",
+          "line": 12360,
+          "column": 5
+        },
+        {
+          "title": "R2 renaming an unnamed record before body load retains the user focus and keeps body unchanged",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6033,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：无标题' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：无标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：无标题' })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：无标题' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：无标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：无标题' })\u001b[22m\n\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12380:31",
+                    "location": {
+                      "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                      "column": 22,
+                      "line": 12246
+                    },
+                    "snippet": "  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 22,
+                        "line": 12246
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：无标题' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：无标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：无标题' })\u001b[22m\n\n\n  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12380:31"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T11:54:17.517Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                    "column": 22,
+                    "line": 12246
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-5b9f9c347ac8f5f99f64",
+          "file": "product-database.spec.ts",
+          "line": 12377,
+          "column": 5
+        }
+      ],
+      "suites": [
+        {
+          "title": "R2 record autofocus ownership desktop",
+          "file": "product-database.spec.ts",
+          "line": 12262,
+          "column": 8,
+          "specs": [
+            {
+              "title": "named record body receives initial focus after overlay opening",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 6050,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12266:37",
+                        "location": {
+                          "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                          "column": 22,
+                          "line": 12246
+                        },
+                        "snippet": "  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                            "column": 22,
+                            "line": 12246
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n\n  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12266:37"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T11:53:29.993Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-2f873-focus-after-overlay-opening\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-2f873-focus-after-overlay-opening\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-2f873-focus-after-overlay-opening\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 22,
+                        "line": 12246
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "afc23a477cd9d0a43a76-d7013121a80105f02bb4",
+              "file": "product-database.spec.ts",
+              "line": 12265,
+              "column": 11
+            },
+            {
+              "title": "title focus before body load wins and saves without body pollution",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5897,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12266:37",
+                        "location": {
+                          "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                          "column": 22,
+                          "line": 12246
+                        },
+                        "snippet": "  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                            "column": 22,
+                            "line": 12246
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n\n  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12266:37"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T11:53:38.428Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 22,
+                        "line": 12246
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "afc23a477cd9d0a43a76-979ea0b5d9e36f407a19",
+              "file": "product-database.spec.ts",
+              "line": 12265,
+              "column": 11
+            }
+          ]
+        },
+        {
+          "title": "R2 record autofocus ownership phone",
+          "file": "product-database.spec.ts",
+          "line": 12262,
+          "column": 8,
+          "specs": [
+            {
+              "title": "named record body receives initial focus after overlay opening",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5980,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12266:37",
+                        "location": {
+                          "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                          "column": 22,
+                          "line": 12246
+                        },
+                        "snippet": "  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                            "column": 22,
+                            "line": 12246
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n\n  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12266:37"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T11:53:46.133Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-d90c5-focus-after-overlay-opening\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-d90c5-focus-after-overlay-opening\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-d90c5-focus-after-overlay-opening\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 22,
+                        "line": 12246
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "afc23a477cd9d0a43a76-e4290d647125f39040fd",
+              "file": "product-database.spec.ts",
+              "line": 12265,
+              "column": 11
+            },
+            {
+              "title": "title focus before body load wins and saves without body pollution",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 6086,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12266:37",
+                        "location": {
+                          "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                          "column": 22,
+                          "line": 12246
+                        },
+                        "snippet": "  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                            "column": 22,
+                            "line": 12246
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('button', { name: '打开记录：Identity row' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('button', { name: '打开记录：Identity row' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('button', { name: '打开记录：Identity row' })\u001b[22m\n\n\n  12244 |   await page.goto('/#/app/database-workspace/page/database-page')\n  12245 |   const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })\n> 12246 |   await expect(open).toBeVisible()\n        |                      ^\n  12247 |   await page.evaluate(async pageId => {\n  12248 |     const { PagePersistence } = await import('/src/editor/pagePersistence.ts')\n  12249 |     const original = PagePersistence.prototype.load\n    at r2AutofocusFixture (C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12246:22)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12266:37"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T11:53:54.066Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 22,
+                        "line": 12246
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "afc23a477cd9d0a43a76-43e82d232a87f6e9b7e5",
+              "file": "product-database.spec.ts",
+              "line": 12265,
+              "column": 11
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-20T11:53:27.030Z",
+    "duration": 57577.038,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 7,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,230 @@
+[
+  {
+    "title": "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata",
+    "current": "unexpected",
+    "baseline": "expected",
+    "currentErrors": [
+      "Error: expect(locator).toContainText(expected) failed\n\nLocator: locator('.eotion-editor-content .tiptap')\nExpected substring: \"正文仍然可编辑\"\nReceived string:    \"existing.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试文仍然可编辑\"\nTimeout: 5000ms\n\nCall log:\n  - Expect \"toContainText\" locator('.eotion-editor-content .tiptap') with timeout 5000ms\n  - waiting for locator('.eotion-editor-content .tiptap')\n    14 × locator resolved to <div tabindex=\"0\" role=\"textbox\" translate=\"no\" spellcheck=\"false\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" contenteditable=\"true\" class=\"tiptap ProseMirror ProseMirror-focused\">…</div>\n       - unexpected value \"existing.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试文仍然可编辑\"\n\n\n  695 |   await editor(page).click()\n  696 |   await editor(page).pressSequentially('正文仍然可编辑')\n> 697 |   await expect(editor(page)).toContainText('正文仍然可编辑')\n      |                              ^\n  698 |   await expect.poll(() => page.evaluate(async (id) => {\n  699 |     const { useProductSyncStore } = await import('/src/stores/productSync.ts')\n  700 |     const local = await useProductSyncStore().store()\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-attachments.spec.ts:697:30"
+    ],
+    "baselineErrors": [],
+    "currentLocation": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-attachments.spec.ts",
+        "column": 30,
+        "line": 697
+      }
+    ],
+    "baselineLocation": []
+  },
+  {
+    "title": "P11.4C offline and changed view config reject a prepared gesture before sending a batch",
+    "current": "expected",
+    "baseline": "expected",
+    "currentErrors": [],
+    "baselineErrors": [],
+    "currentLocation": [],
+    "baselineLocation": []
+  },
+  {
+    "title": "board renderer groups generic records by option IDs with projected titles and configured properties",
+    "current": "expected",
+    "baseline": "expected",
+    "currentErrors": [],
+    "baselineErrors": [],
+    "currentLocation": [],
+    "baselineLocation": []
+  },
+  {
+    "title": "unconfirmed inline database creation fences further create or link attempts until page refresh",
+    "current": "expected",
+    "baseline": "expected",
+    "currentErrors": [],
+    "baselineErrors": [],
+    "currentLocation": [],
+    "baselineLocation": []
+  },
+  {
+    "title": "selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark",
+    "current": "unexpected",
+    "baseline": "unexpected",
+    "currentErrors": [
+      "Error: expect(locator).toBeVisible() failed\n\nLocator: getByRole('toolbar', { name: '选区格式' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByRole('toolbar', { name: '选区格式' }) with timeout 5000ms\n  - waiting for getByRole('toolbar', { name: '选区格式' })\n\n\n  1033 |   await expect(menu).toHaveCount(0)\n  1034 |   await selectParagraphText(body.locator('p'))\n> 1035 |   await expect(menu).toBeVisible()\n       |                      ^\n  1036 |   const position = await menu.evaluate(node => {\n  1037 |     const rect = node.getBoundingClientRect()\n  1038 |     return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: innerWidth, height: innerHeight }\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts:1035:22"
+    ],
+    "baselineErrors": [
+      "Error: expect(locator).toBeVisible() failed\n\nLocator: getByRole('toolbar', { name: '选区格式' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByRole('toolbar', { name: '选区格式' }) with timeout 5000ms\n  - waiting for getByRole('toolbar', { name: '选区格式' })\n\n\n  1033 |   await expect(menu).toHaveCount(0)\n  1034 |   await selectParagraphText(body.locator('p'))\n> 1035 |   await expect(menu).toBeVisible()\n       |                      ^\n  1036 |   const position = await menu.evaluate(node => {\n  1037 |     const rect = node.getBoundingClientRect()\n  1038 |     return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: innerWidth, height: innerHeight }\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-editor.spec.ts:1035:22"
+    ],
+    "currentLocation": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "column": 22,
+        "line": 1035
+      }
+    ],
+    "baselineLocation": [
+      {
+        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-editor.spec.ts",
+        "column": 22,
+        "line": 1035
+      }
+    ]
+  },
+  {
+    "title": "seeded mixed document keeps local-first identity, nesting, callout attrs and table grid across offline restart and reconnect",
+    "current": "unexpected",
+    "baseline": "unexpected",
+    "currentErrors": [
+      "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n  473 |         && outerTable && (blockContent(outerTable) as string[][])[0]?.[0] === 'H1+offline',\n  474 |       )\n> 475 |     }, { timeout: 15000 }).toBe(true)\n      |                            ^\n  476 |\n  477 |     // Local content is durable: reload keeps every edit and every identity.\n  478 |     await page.reload()\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-p75-acceptance.spec.ts:475:28"
+    ],
+    "baselineErrors": [
+      "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n  473 |         && outerTable && (blockContent(outerTable) as string[][])[0]?.[0] === 'H1+offline',\n  474 |       )\n> 475 |     }, { timeout: 15000 }).toBe(true)\n      |                            ^\n  476 |\n  477 |     // Local content is durable: reload keeps every edit and every identity.\n  478 |     await page.reload()\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-p75-acceptance.spec.ts:475:28"
+    ],
+    "currentLocation": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-p75-acceptance.spec.ts",
+        "column": 28,
+        "line": 475
+      }
+    ],
+    "baselineLocation": [
+      {
+        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-p75-acceptance.spec.ts",
+        "column": 28,
+        "line": 475
+      }
+    ]
+  },
+  {
+    "title": "mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list",
+    "current": "unexpected",
+    "baseline": "unexpected",
+    "currentErrors": [
+      "Error: expect(received).toBeLessThanOrEqual(expected)\n\nExpected: <= 348\nReceived:    544\n\n  809 |   await screenshot('mobile-move')\n  810 |   await page.setViewportSize({ width: 390, height: 380 })\n> 811 |   expect(await move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(348)\n      |                                                                                  ^\n  812 |   await moveTarget(page, '阅读清单 30').check()\n  813 |   const submit = move.getByRole('button', { name: '移动', exact: true })\n  814 |   await expect(submit).toBeInViewport()\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-pages.spec.ts:811:82"
+    ],
+    "baselineErrors": [
+      "Error: expect(received).toBeLessThanOrEqual(expected)\n\nExpected: <= 348\nReceived:    544\n\n  809 |   await screenshot('mobile-move')\n  810 |   await page.setViewportSize({ width: 390, height: 380 })\n> 811 |   expect(await move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(348)\n      |                                                                                  ^\n  812 |   await moveTarget(page, '阅读清单 30').check()\n  813 |   const submit = move.getByRole('button', { name: '移动', exact: true })\n  814 |   await expect(submit).toBeInViewport()\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-pages.spec.ts:811:82"
+    ],
+    "currentLocation": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-pages.spec.ts",
+        "column": 82,
+        "line": 811
+      }
+    ],
+    "baselineLocation": [
+      {
+        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-pages.spec.ts",
+        "column": 82,
+        "line": 811
+      }
+    ]
+  },
+  {
+    "title": "settings navigation ends with 软件说明 and /settings/about shows build info plus release notes",
+    "current": "unexpected",
+    "baseline": "unexpected",
+    "currentErrors": [
+      "Error: expect(locator).toHaveText(expected) failed\n\nLocator:  getByTestId('about-released')\nExpected: \"2026-10-11\"\nReceived: \"暂无记录\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveText\" getByTestId('about-released') with timeout 5000ms\n  - waiting for getByTestId('about-released')\n    14 × locator resolved to <dd data-testid=\"about-released\" class=\"settings-about-released\">暂无记录</dd>\n       - unexpected value \"暂无记录\"\n\n\n  780 |   await expect(page.getByTestId(\"about-version\")).toContainText(/[0-9a-f]{6}|unknown/);\n  781 |   await expect(page.getByTestId(\"about-version\")).not.toContainText(\"Build \");\n> 782 |   await expect(page.getByTestId(\"about-released\")).toHaveText(\"2026-10-11\");\n      |                                                    ^\n  783 |   await expect(\n  784 |     page.getByRole(\"heading\", { name: \"当前版本日志\" }),\n  785 |   ).toBeVisible();\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-settings.spec.ts:782:52"
+    ],
+    "baselineErrors": [
+      "Error: expect(locator).toHaveText(expected) failed\n\nLocator:  getByTestId('about-released')\nExpected: \"2026-10-11\"\nReceived: \"暂无记录\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveText\" getByTestId('about-released') with timeout 5000ms\n  - waiting for getByTestId('about-released')\n    14 × locator resolved to <dd data-testid=\"about-released\" class=\"settings-about-released\">暂无记录</dd>\n       - unexpected value \"暂无记录\"\n\n\n  780 |   await expect(page.getByTestId(\"about-version\")).toContainText(/[0-9a-f]{6}|unknown/);\n  781 |   await expect(page.getByTestId(\"about-version\")).not.toContainText(\"Build \");\n> 782 |   await expect(page.getByTestId(\"about-released\")).toHaveText(\"2026-10-11\");\n      |                                                    ^\n  783 |   await expect(\n  784 |     page.getByRole(\"heading\", { name: \"当前版本日志\" }),\n  785 |   ).toBeVisible();\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-settings.spec.ts:782:52"
+    ],
+    "currentLocation": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-settings.spec.ts",
+        "column": 52,
+        "line": 782
+      }
+    ],
+    "baselineLocation": [
+      {
+        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-settings.spec.ts",
+        "column": 52,
+        "line": 782
+      }
+    ]
+  },
+  {
+    "title": "last cell Tab adds a row and the table keeps its identity across reload",
+    "current": "expected",
+    "baseline": "expected",
+    "currentErrors": [],
+    "baselineErrors": [],
+    "currentLocation": [],
+    "baselineLocation": []
+  },
+  {
+    "title": "copy and paste inside cells and plain/TSV paste never produce an unsaveable document",
+    "current": "unexpected",
+    "baseline": "unexpected",
+    "currentErrors": [
+      "Error: expect(locator).toHaveCount(expected) failed\n\nLocator:  locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\nExpected: 0\nReceived: 1\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveCount\" locator('.eotion-editor-content .tiptap').getByText('E', { exact: true }) with timeout 5000ms\n  - waiting for locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\n    14 × locator resolved to 1 element\n       - unexpected value \"1\"\n\n\n  256 |   await setCellSelection(page, 1, 1, 1, 1)\n  257 |   await page.keyboard.press('Control+V')\n> 258 |   await expect(body.getByText('E', { exact: true })).toHaveCount(0)\n      |                                                      ^\n  259 |   expect(await tableGrid(page)).toEqual([['A', 'B', 'C'], ['D', 'A', 'F'], ['G', 'H', 'I']])\n  260 |   await expect.poll(() => tableGridFromProps(server)[1]?.[1], { timeout: 5000 }).toBe('A')\n  261 |\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts:258:54"
+    ],
+    "baselineErrors": [
+      "Error: expect(locator).toHaveCount(expected) failed\n\nLocator:  locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\nExpected: 0\nReceived: 1\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveCount\" locator('.eotion-editor-content .tiptap').getByText('E', { exact: true }) with timeout 5000ms\n  - waiting for locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\n    14 × locator resolved to 1 element\n       - unexpected value \"1\"\n\n\n  256 |   await setCellSelection(page, 1, 1, 1, 1)\n  257 |   await page.keyboard.press('Control+V')\n> 258 |   await expect(body.getByText('E', { exact: true })).toHaveCount(0)\n      |                                                      ^\n  259 |   expect(await tableGrid(page)).toEqual([['A', 'B', 'C'], ['D', 'A', 'F'], ['G', 'H', 'I']])\n  260 |   await expect.poll(() => tableGridFromProps(server)[1]?.[1], { timeout: 5000 }).toBe('A')\n  261 |\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-table.spec.ts:258:54"
+    ],
+    "currentLocation": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+        "column": 54,
+        "line": 258
+      }
+    ],
+    "baselineLocation": [
+      {
+        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-table.spec.ts",
+        "column": 54,
+        "line": 258
+      }
+    ]
+  },
+  {
+    "title": "a table nests under a toggle and cell Tab never indents the table block",
+    "current": "unexpected",
+    "baseline": "unexpected",
+    "currentErrors": [
+      "Error: expect(locator).toHaveText(expected) failed\n\nLocator:  locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\nExpected: \"Bmoved\"\nReceived: \"B\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveText\" locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1) with timeout 5000ms\n  - waiting for locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\n    14 × locator resolved to <th colspan=\"1\" rowspan=\"1\">…</th>\n       - unexpected value \"B\"\n\n\n  323 |   await page.keyboard.press('End')\n  324 |   await page.keyboard.type('moved')\n> 325 |   await expect(editor(page).locator('.eotion-toggle th').nth(1)).toHaveText('Bmoved')\n      |                                                                  ^\n  326 |   expect(savedTable(server)?.parentBlockId).toBe('toggle-a')\n  327 | })\n  328 |\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts:325:66"
+    ],
+    "baselineErrors": [
+      "Error: expect(locator).toHaveText(expected) failed\n\nLocator:  locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\nExpected: \"Bmoved\"\nReceived: \"B\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveText\" locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1) with timeout 5000ms\n  - waiting for locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\n    14 × locator resolved to <th colspan=\"1\" rowspan=\"1\">…</th>\n       - unexpected value \"B\"\n\n\n  323 |   await page.keyboard.press('End')\n  324 |   await page.keyboard.type('moved')\n> 325 |   await expect(editor(page).locator('.eotion-toggle th').nth(1)).toHaveText('Bmoved')\n      |                                                                  ^\n  326 |   expect(savedTable(server)?.parentBlockId).toBe('toggle-a')\n  327 | })\n  328 |\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-table.spec.ts:325:66"
+    ],
+    "currentLocation": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+        "column": 66,
+        "line": 325
+      }
+    ],
+    "baselineLocation": [
+      {
+        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-table.spec.ts",
+        "column": 66,
+        "line": 325
+      }
+    ]
+  },
+  {
+    "title": "cell inline marks and hard breaks persist through save and reload",
+    "current": "unexpected",
+    "baseline": "unexpected",
+    "currentErrors": [
+      "Error: expect(received).toContain(expected) // indexOf\n\nExpected substring: \"bold\"\nReceived string:    \"{\\\"node\\\":{\\\"type\\\":\\\"table\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"A\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"B\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"C\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"D\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"E note\\\"},{\\\"type\\\":\\\"hardBreak\\\"},{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"line two\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"F\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"G\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"H\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"I\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]}]}}\"\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  367 |   await setCellSelection(page, 1, 1, 1, 1)\n  368 |   await page.keyboard.press('Control+B')\n> 369 |   await expect.poll(() => JSON.stringify(server.blocks.find((block) => block.type === 'table')?.props ?? {}), { timeout: 5000 }).toContain('bold')\n      |                                                                                                                                  ^\n  370 |   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()\n  371 |   expect(JSON.stringify(server.blocks.find((block) => block.type === 'table')?.props)).toContain('hardBreak')\n  372 |   await page.reload()\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts:369:130"
+    ],
+    "baselineErrors": [
+      "Error: expect(received).toContain(expected) // indexOf\n\nExpected substring: \"bold\"\nReceived string:    \"{\\\"node\\\":{\\\"type\\\":\\\"table\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"A\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"B\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"C\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"D\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"E note\\\"},{\\\"type\\\":\\\"hardBreak\\\"},{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"line two\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"F\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"G\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"H\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"I\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]}]}}\"\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  367 |   await setCellSelection(page, 1, 1, 1, 1)\n  368 |   await page.keyboard.press('Control+B')\n> 369 |   await expect.poll(() => JSON.stringify(server.blocks.find((block) => block.type === 'table')?.props ?? {}), { timeout: 5000 }).toContain('bold')\n      |                                                                                                                                  ^\n  370 |   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()\n  371 |   expect(JSON.stringify(server.blocks.find((block) => block.type === 'table')?.props)).toContain('hardBreak')\n  372 |   await page.reload()\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-table.spec.ts:369:130"
+    ],
+    "currentLocation": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+        "column": 130,
+        "line": 369
+      }
+    ],
+    "baselineLocation": [
+      {
+        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\tests\\product-table.spec.ts",
+        "column": 130,
+        "line": 369
+      }
+    ]
+  }
+]

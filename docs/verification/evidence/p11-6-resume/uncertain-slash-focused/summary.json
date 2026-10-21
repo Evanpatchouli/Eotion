@@ -1,0 +1,237 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/product-database.spec.ts",
+      "--config=C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/full-suite/playwright.full.config.mjs",
+      "--workers=1",
+      "--retries=0",
+      "--repeat-each=2",
+      "--grep",
+      "unconfirmed inline database creation fences",
+      "--output=C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/uncertain-slash-focused/output"
+    ],
+    "configFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\playwright.full.config.mjs",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/uncertain-slash-focused/output",
+        "repeatEach": 2,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\summary.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": {
+      "command": "pnpm dev",
+      "url": "http://127.0.0.1:7173",
+      "reuseExistingServer": true,
+      "timeout": 30000,
+      "cwd": "C:/Users/31250/Work/Eotion/apps/web"
+    }
+  },
+  "suites": [
+    {
+      "title": "product-database.spec.ts",
+      "file": "product-database.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "unconfirmed inline database creation fences further create or link attempts until page refresh",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6614,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n    at openDatabaseSlashMenu (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:1188:32)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:7002:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                      "column": 32,
+                      "line": 1188
+                    },
+                    "snippet": "  1186 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })\n  1187 |   await page.keyboard.press('Enter')\n> 1188 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })\n       |                                ^\n  1189 |   await page.keyboard.press('/')\n  1190 |   await page.keyboard.type('database')\n  1191 |   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                        "column": 32,
+                        "line": 1188
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  1186 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })\n  1187 |   await page.keyboard.press('Enter')\n> 1188 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })\n       |                                ^\n  1189 |   await page.keyboard.press('/')\n  1190 |   await page.keyboard.type('database')\n  1191 |   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)\n    at openDatabaseSlashMenu (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:1188:32)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:7002:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:12:16.347Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                    "column": 32,
+                    "line": 1188
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-f4b768e8922383764ca7",
+          "file": "product-database.spec.ts",
+          "line": 6979,
+          "column": 1
+        },
+        {
+          "title": "unconfirmed inline database creation fences further create or link attempts until page refresh",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6485,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n    at openDatabaseSlashMenu (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:1188:32)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:7002:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                      "column": 32,
+                      "line": 1188
+                    },
+                    "snippet": "  1186 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })\n  1187 |   await page.keyboard.press('Enter')\n> 1188 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })\n       |                                ^\n  1189 |   await page.keyboard.press('/')\n  1190 |   await page.keyboard.type('database')\n  1191 |   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                        "column": 32,
+                        "line": 1188
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  1186 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })\n  1187 |   await page.keyboard.press('Enter')\n> 1188 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })\n       |                                ^\n  1189 |   await page.keyboard.press('/')\n  1190 |   await page.keyboard.type('database')\n  1191 |   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)\n    at openDatabaseSlashMenu (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:1188:32)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:7002:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:12:24.561Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                    "column": 32,
+                    "line": 1188
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-53219c7c2840e20c539e",
+          "file": "product-database.spec.ts",
+          "line": 6979,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-20T10:12:14.191Z",
+    "duration": 17735.109,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

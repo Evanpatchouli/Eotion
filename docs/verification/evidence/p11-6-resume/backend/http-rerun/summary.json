@@ -1,0 +1,8 @@
+{
+  "mongoUri": "mongodb://127.0.0.1:55479/?replicaSet=p116_dfbb4269",
+  "command": "pnpm --filter @eotion/api test:http",
+  "finishedAt": "2026-10-20T10:28:13.2006461Z",
+  "startedAt": "2026-10-20T10:27:48.4722166Z",
+  "exitCode": 1,
+  "reason": "Original full HTTP gate failed because new test incorrectly expected object Date wire for a valid date-only string; only root expected wire corrected."
+}

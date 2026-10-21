@@ -1,0 +1,1011 @@
+{
+  "observations": [
+    {
+      "type": "scroll",
+      "timestamp": 1806,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 1806,
+      "left": 7941,
+      "width": 502,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 7941,
+        "width": 502,
+        "generation": 0,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "pointerdown",
+      "timestamp": 1868,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-bar",
+      "now": 1868,
+      "left": 7941,
+      "width": 502,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 7941,
+        "width": 502,
+        "generation": 0,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "touchstart",
+      "timestamp": 1869,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-bar",
+      "now": 1869,
+      "left": 7941,
+      "width": 502,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 7941,
+        "width": 502,
+        "generation": 0,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "pointerup",
+      "timestamp": 1869,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-bar",
+      "now": 1869,
+      "left": 7941,
+      "width": 502,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 7941,
+        "width": 502,
+        "generation": 0,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "touchend",
+      "timestamp": 1871,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-bar",
+      "now": 1871,
+      "left": 7941,
+      "width": 502,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 7941,
+        "width": 502,
+        "generation": 0,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2022,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2022,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "pointermove",
+      "timestamp": 2038,
+      "prevented": false,
+      "cancelable": true,
+      "target": "",
+      "now": 2038,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "pointerdown",
+      "timestamp": 2038,
+      "prevented": false,
+      "cancelable": true,
+      "target": "",
+      "now": 2038,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "pointerup",
+      "timestamp": 2041,
+      "prevented": false,
+      "cancelable": true,
+      "target": "",
+      "now": 2041,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "before",
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "top": 354,
+      "height": 240,
+      "rows": 3,
+      "hit": [
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-body",
+          "testId": "timeline-canvas-body",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-canvas",
+          "testId": null,
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-scroll",
+          "testId": "timeline-scroll",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-viewport",
+          "testId": "timeline-viewport",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-content",
+          "testId": "timeline-content",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "SECTION",
+          "cls": "eotion-database-timeline",
+          "testId": "database-timeline",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-database ProseMirror-selectednode",
+          "testId": null,
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "tiptap ProseMirror ProseMirror-hideselection ProseMirror-focused",
+          "testId": null,
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        }
+      ],
+      "x": 366,
+      "y": 566,
+      "state": {
+        "now": 2078,
+        "left": 8074,
+        "width": 236,
+        "scrollWidth": 16384,
+        "state": {
+          "left": 8074,
+          "width": 236,
+          "generation": 1,
+          "originMs": 1772160000000
+        }
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2082,
+      "prevented": false,
+      "cancelable": false,
+      "target": "document-wrap",
+      "now": 2082,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "pointerdown",
+      "timestamp": 2100,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-canvas-body",
+      "now": 2100,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "touchstart",
+      "timestamp": 2100,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-canvas-body",
+      "now": 2100,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "pointermove",
+      "timestamp": 2131,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-canvas-body",
+      "now": 2131,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "touchmove",
+      "timestamp": 2131,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-canvas-body",
+      "now": 2131,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "pointercancel",
+      "timestamp": 2132,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2132,
+      "left": 8074,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2164,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2164,
+      "left": 8076,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8074,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "touchmove",
+      "timestamp": 2182,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2182,
+      "left": 8093,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8076,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2183,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2183,
+      "left": 8093,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8076,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2215,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2215,
+      "left": 8111,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8093,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "touchmove",
+      "timestamp": 2239,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2239,
+      "left": 8111,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8111,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2250,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2250,
+      "left": 8128,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8111,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2281,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2281,
+      "left": 8145,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8128,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "touchmove",
+      "timestamp": 2305,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2305,
+      "left": 8145,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8145,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "touchend",
+      "timestamp": 2305,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2305,
+      "left": 8145,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8145,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2316,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2316,
+      "left": 8153,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8145,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2332,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2332,
+      "left": 8157,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8153,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2349,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2349,
+      "left": 8163,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8157,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2366,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2366,
+      "left": 8168,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8163,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2382,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2382,
+      "left": 8173,
+      "width": 236,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8168,
+        "width": 236,
+        "generation": 1,
+        "originMs": 1772160000000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2419,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2419,
+      "left": 8089,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8089,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "before",
+      "left": 8089,
+      "width": 206,
+      "scrollWidth": 16384,
+      "top": 310,
+      "height": 240,
+      "rows": 3,
+      "hit": [
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-body",
+          "testId": "timeline-canvas-body",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-canvas",
+          "testId": null,
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-scroll",
+          "testId": "timeline-scroll",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-viewport",
+          "testId": "timeline-viewport",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-timeline-content",
+          "testId": "timeline-content",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "SECTION",
+          "cls": "eotion-database-timeline",
+          "testId": "database-timeline",
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "eotion-database ProseMirror-selectednode",
+          "testId": null,
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        },
+        {
+          "tag": "DIV",
+          "cls": "tiptap ProseMirror ProseMirror-hideselection ProseMirror-focused",
+          "testId": null,
+          "touchAction": "auto",
+          "pointerEvents": "auto"
+        }
+      ],
+      "x": 336,
+      "y": 522,
+      "state": {
+        "now": 2425,
+        "left": 8089,
+        "width": 206,
+        "scrollWidth": 16384,
+        "state": {
+          "left": 8089,
+          "width": 206,
+          "generation": 2,
+          "originMs": 1772397600000
+        }
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2432,
+      "prevented": false,
+      "cancelable": false,
+      "target": "document-wrap",
+      "now": 2432,
+      "left": 8099,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8089,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2432,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2432,
+      "left": 8099,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8089,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2448,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2449,
+      "left": 8102,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8099,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "pointerdown",
+      "timestamp": 2465,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-canvas-body",
+      "now": 2465,
+      "left": 8104,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8099,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "touchstart",
+      "timestamp": 2465,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2465,
+      "left": 8104,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8099,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2466,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2466,
+      "left": 8104,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8099,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2484,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2484,
+      "left": 8105,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8104,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "pointermove",
+      "timestamp": 2507,
+      "prevented": false,
+      "cancelable": true,
+      "target": "timeline-canvas-body",
+      "now": 2507,
+      "left": 8105,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8105,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "touchmove",
+      "timestamp": 2507,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2507,
+      "left": 8105,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8105,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "pointercancel",
+      "timestamp": 2508,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2508,
+      "left": 8105,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8105,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2515,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2515,
+      "left": 8107,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8105,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "touchmove",
+      "timestamp": 2538,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2538,
+      "left": 8107,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8107,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2548,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2548,
+      "left": 8124,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8107,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2581,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2581,
+      "left": 8141,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8124,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "touchmove",
+      "timestamp": 2607,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2607,
+      "left": 8141,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8141,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2614,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2614,
+      "left": 8159,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8141,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "scroll",
+      "timestamp": 2648,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-scroll",
+      "now": 2648,
+      "left": 8176,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8159,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "touchmove",
+      "timestamp": 2672,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2672,
+      "left": 8176,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8176,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    },
+    {
+      "type": "touchend",
+      "timestamp": 2672,
+      "prevented": false,
+      "cancelable": false,
+      "target": "timeline-canvas-body",
+      "now": 2672,
+      "left": 8176,
+      "width": 206,
+      "scrollWidth": 16384,
+      "state": {
+        "left": 8176,
+        "width": 206,
+        "generation": 2,
+        "originMs": 1772397600000
+      }
+    }
+  ],
+  "final": {
+    "now": 2680,
+    "left": 8176,
+    "width": 206,
+    "scrollWidth": 16384,
+    "state": {
+      "left": 8176,
+      "width": 206,
+      "generation": 2,
+      "originMs": 1772397600000
+    }
+  }
+}

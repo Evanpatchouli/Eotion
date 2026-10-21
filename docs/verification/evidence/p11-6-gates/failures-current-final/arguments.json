@@ -1,0 +1,17 @@
+[
+  "node_modules/@playwright/test/cli.js",
+  "test",
+  "tests/product-attachments.spec.ts",
+  "tests/product-database.spec.ts",
+  "tests/product-editor.spec.ts",
+  "tests/product-p75-acceptance.spec.ts",
+  "tests/product-pages.spec.ts",
+  "tests/product-settings.spec.ts",
+  "tests/product-table.spec.ts",
+  "--config=C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/full-suite/playwright.full.config.mjs",
+  "--workers=1",
+  "--retries=0",
+  "--grep",
+  "a\\ table\\ nests\\ under\\ a\\ toggle\\ and\\ cell\\ Tab\\ never\\ indents\\ the\\ table\\ block|board\\ renderer\\ groups\\ generic\\ records\\ by\\ option\\ IDs\\ with\\ projected\\ titles\\ and\\ configured\\ properties|cell\\ inline\\ marks\\ and\\ hard\\ breaks\\ persist\\ through\\ save\\ and\\ reload|copy\\ and\\ paste\\ inside\\ cells\\ and\\ plain/TSV\\ paste\\ never\\ produce\\ an\\ unsaveable\\ document|last\\ cell\\ Tab\\ adds\\ a\\ row\\ and\\ the\\ table\\ keeps\\ its\\ identity\\ across\\ reload|mobile\\ page\\ actions\\ use\\ modal\\ dialogs\\ with\\ focus,\\ stable\\ tree\\ and\\ a\\ scrollable\\ destination\\ list|offline\\ file\\ selection\\ stays\\ local,\\ does\\ not\\ call\\ upload,\\ keeps\\ text\\ editable\\ and\\ reloads\\ attachment\\ metadata|P11\\.4C\\ offline\\ and\\ changed\\ view\\ config\\ reject\\ a\\ prepared\\ gesture\\ before\\ sending\\ a\\ batch|seeded\\ mixed\\ document\\ keeps\\ local-first\\ identity,\\ nesting,\\ callout\\ attrs\\ and\\ table\\ grid\\ across\\ offline\\ restart\\ and\\ reconnect|selection\\ bubble\\ hides\\ on\\ collapse,\\ blur,\\ Escape\\ and\\ IME;\\ stays\\ in\\ viewport\\ in\\ light\\ and\\ dark|settings\\ navigation\\ ends\\ with\\ 软件说明\\ and\\ /settings/about\\ shows\\ build\\ info\\ plus\\ release\\ notes|unconfirmed\\ inline\\ database\\ creation\\ fences\\ further\\ create\\ or\\ link\\ attempts\\ until\\ page\\ refresh",
+  "--output=C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/full-suite/failures-current-final/output"
+]

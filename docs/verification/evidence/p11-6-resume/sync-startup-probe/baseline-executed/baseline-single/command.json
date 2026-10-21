@@ -1,0 +1,17 @@
+{
+  "started": "2026-10-20T19:07:34.0376920+08:00",
+  "sourcePlan": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\baseline-executed\\plan.json",
+  "cwd": "C:/Users/31250/Work/Eotion/apps/web",
+  "baseUrl": "http://127.0.0.1:7176",
+  "arguments": [
+    "C:/Users/31250/Work/Eotion/apps/web/node_modules/@playwright/test/cli.js",
+    "test",
+    "--config",
+    "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\baseline-executed\\playwright.config.ts",
+    "--workers=1",
+    "--retries=0",
+    "--grep",
+    "a second client pulls sequential changes and remote deletion removes local pages"
+  ],
+  "executable": "node"
+}

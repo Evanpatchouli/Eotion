@@ -1,0 +1,24 @@
+{
+  "capturedAt": "2026-10-21T05:46:04.0426438Z",
+  "processes": [
+    {
+      "ProcessId": 33692,
+      "ParentProcessId": 37100,
+      "Name": "node.exe",
+      "CommandLine": "\"C:\\Users\\31250\\.vite-plus\\bin\\node.exe\" C:/Users/31250/Work/Eotion/apps/web/node_modules/vite/bin/vite.js --host 127.0.0.1 --port 7173 --strictPort"
+    },
+    {
+      "ProcessId": 33160,
+      "ParentProcessId": 15464,
+      "Name": "node.exe",
+      "CommandLine": "\"C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe\" C:/Users/31250/Work/Eotion/apps/web/node_modules/vite/bin/vite.js --host 127.0.0.1 --port 7173 --strictPort"
+    }
+  ],
+  "listeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 7173,
+      "OwningProcess": 33160
+    }
+  ]
+}

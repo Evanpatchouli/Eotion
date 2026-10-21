@@ -1,0 +1,37 @@
+[
+  {
+    "path": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/final-web/product/command.json",
+    "bytes": 1117,
+    "sha256": "2b4db2fa286dbcf64fa439432255e6091ec599218f3df7a8cf07ebadb0c31877",
+    "reason": "complete original Product raw report/log retained with startup failure evidence",
+    "repositoryRelativePath": "original-failure/full-product/command.json"
+  },
+  {
+    "path": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/final-web/product/stdout.log",
+    "bytes": 74195,
+    "sha256": "1991e7eb0f0895c61124f97460e2f4e46f751dd2c46c5929b0a5aa45c70086e6",
+    "reason": "complete original Product raw report/log retained with startup failure evidence",
+    "repositoryRelativePath": "original-failure/full-product/stdout.log"
+  },
+  {
+    "path": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/final-web/product/stderr.log",
+    "bytes": 327,
+    "sha256": "f7e64d32187cded10dd6a40533c10d578a60b2d8056128bcf94d85fa7f772768",
+    "reason": "complete original Product raw report/log retained with startup failure evidence",
+    "repositoryRelativePath": "original-failure/full-product/stderr.log"
+  },
+  {
+    "path": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/final-web/product/summary.json",
+    "bytes": 317,
+    "sha256": "e51f8f7ba97b8478202385e91e96e01bc2a4b6aeb32dff72bdd2dd5cdc25a187",
+    "reason": "complete original Product raw report/log retained with startup failure evidence",
+    "repositoryRelativePath": "original-failure/full-product/summary.json"
+  },
+  {
+    "path": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/final-web/product/results.json",
+    "bytes": 555485,
+    "sha256": "fffc1bc714010dd5b506c798e34843bc53cf78dbe816b0347a78d991b329703a",
+    "reason": "complete original Product raw report/log retained with startup failure evidence",
+    "repositoryRelativePath": "original-failure/full-product/results.json"
+  }
+]

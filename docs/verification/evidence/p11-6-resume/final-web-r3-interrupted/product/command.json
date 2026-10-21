@@ -1,0 +1,28 @@
+{
+  "exe": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+  "args": [
+    "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\node_modules\\@playwright\\test\\cli.js",
+    "test",
+    "--config",
+    "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r3\\playwright.full.config.mjs",
+    "tests/product-flow.spec.ts",
+    "tests/product-pages.spec.ts",
+    "tests/product-editor.spec.ts",
+    "tests/product-blocks.spec.ts",
+    "tests/product-nested.spec.ts",
+    "tests/product-table.spec.ts",
+    "tests/product-database.spec.ts",
+    "tests/product-overlay.spec.ts",
+    "tests/product-slash-context.spec.ts",
+    "tests/product-content-rules.spec.ts",
+    "tests/product-p75-acceptance.spec.ts",
+    "tests/product-sync.spec.ts",
+    "tests/product-attachments.spec.ts",
+    "tests/product-settings.spec.ts",
+    "--workers=1",
+    "--retries=0",
+    "--output",
+    "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r3\\product\\test-results"
+  ],
+  "cwd": "C:/Users/31250/Work/Eotion/apps/web"
+}

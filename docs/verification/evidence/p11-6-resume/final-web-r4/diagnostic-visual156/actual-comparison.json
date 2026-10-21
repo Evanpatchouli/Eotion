@@ -1,0 +1,275 @@
+[
+  {
+    "name": "timeline-all-unscheduled-desktop-light.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-all-unscheduled\\timeline-all-unscheduled-desktop-light.png",
+        "actualSHA256": "c38a8dd97210980da9c139aa08441127bc543eee021038e9646937aa4843819e",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-all-unscheduled-desktop-light.png",
+        "expectedSHA256": "c38a8dd97210980da9c139aa08441127bc543eee021038e9646937aa4843819e",
+        "byteIdentical": true
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-all-unscheduled-repeat1\\timeline-all-unscheduled-desktop-light.png",
+        "actualSHA256": "c38a8dd97210980da9c139aa08441127bc543eee021038e9646937aa4843819e",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-all-unscheduled-desktop-light.png",
+        "expectedSHA256": "c38a8dd97210980da9c139aa08441127bc543eee021038e9646937aa4843819e",
+        "byteIdentical": true
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": true
+  },
+  {
+    "name": "timeline-desktop-dark.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-dark\\timeline-desktop-dark.png",
+        "actualSHA256": "6016e1b68a19afe82c46037bb83dbb97851421b6e68e4db880df95bae513e9f7",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-desktop-dark.png",
+        "expectedSHA256": "6d68a4766d11be0c18c7f4a054851690022d9f1b6acaaa3b66e5df517e58aac6",
+        "byteIdentical": false
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-dark-repeat1\\timeline-desktop-dark.png",
+        "actualSHA256": "6016e1b68a19afe82c46037bb83dbb97851421b6e68e4db880df95bae513e9f7",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-desktop-dark.png",
+        "expectedSHA256": "6d68a4766d11be0c18c7f4a054851690022d9f1b6acaaa3b66e5df517e58aac6",
+        "byteIdentical": false
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": false
+  },
+  {
+    "name": "timeline-desktop-light.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-light\\timeline-desktop-light.png",
+        "actualSHA256": "53aed343a26b9a4ce87b0458a14da6a09793f66620aa0895ac6b7ca590643cbc",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-desktop-light.png",
+        "expectedSHA256": "87b29875e306a945d036ec974fa00f9fefe44f7e3fe80833ba9b670d02dcbee0",
+        "byteIdentical": false
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-light-repeat1\\timeline-desktop-light.png",
+        "actualSHA256": "53aed343a26b9a4ce87b0458a14da6a09793f66620aa0895ac6b7ca590643cbc",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-desktop-light.png",
+        "expectedSHA256": "87b29875e306a945d036ec974fa00f9fefe44f7e3fe80833ba9b670d02dcbee0",
+        "byteIdentical": false
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": false
+  },
+  {
+    "name": "timeline-mobile-dark.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-90683-ontext-Timeline-mobile-dark\\timeline-mobile-dark.png",
+        "actualSHA256": "badcf11c24d2a0d7e57c3a6deab8976e17bf411fab6a1831b3de5b5cdec5c46e",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-mobile-dark.png",
+        "expectedSHA256": "538d94cb09cecb97113e25447077a62a2839495387107e2ee74a67a04c82ecd4",
+        "byteIdentical": false
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-90683-ontext-Timeline-mobile-dark-repeat1\\timeline-mobile-dark.png",
+        "actualSHA256": "badcf11c24d2a0d7e57c3a6deab8976e17bf411fab6a1831b3de5b5cdec5c46e",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-mobile-dark.png",
+        "expectedSHA256": "538d94cb09cecb97113e25447077a62a2839495387107e2ee74a67a04c82ecd4",
+        "byteIdentical": false
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": false
+  },
+  {
+    "name": "timeline-mobile-light.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-b1d5f-ntext-Timeline-mobile-light\\timeline-mobile-light.png",
+        "actualSHA256": "991cd68dd16860ab0f7f92735973f5cbe58c107ae398b7f1e32324187614f76e",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-mobile-light.png",
+        "expectedSHA256": "36f9ffee171ef48d0851ae07d174ae68d30933480a8dcb4d622e24bcd2ddd721",
+        "byteIdentical": false
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-b1d5f-ntext-Timeline-mobile-light-repeat1\\timeline-mobile-light.png",
+        "actualSHA256": "991cd68dd16860ab0f7f92735973f5cbe58c107ae398b7f1e32324187614f76e",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-mobile-light.png",
+        "expectedSHA256": "36f9ffee171ef48d0851ae07d174ae68d30933480a8dcb4d622e24bcd2ddd721",
+        "byteIdentical": false
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": false
+  },
+  {
+    "name": "timeline-tablet-light.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-tablet-light\\timeline-tablet-light.png",
+        "actualSHA256": "460cf305c67f377db7d1a7b97ad3d0ddae66ba705d48e61fcc8c8016f02ed857",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-tablet-light.png",
+        "expectedSHA256": "dcb663d0b6e80f007548a107fb0ac427f9ca8e98f85e122c57431513f23eaa5f",
+        "byteIdentical": false
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-tablet-light-repeat1\\timeline-tablet-light.png",
+        "actualSHA256": "460cf305c67f377db7d1a7b97ad3d0ddae66ba705d48e61fcc8c8016f02ed857",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-tablet-light.png",
+        "expectedSHA256": "dcb663d0b6e80f007548a107fb0ac427f9ca8e98f85e122c57431513f23eaa5f",
+        "byteIdentical": false
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": false
+  },
+  {
+    "name": "connectivity-backend-unavailable-desktop.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Connectivity-backend-unavailable-desktop\\connectivity-backend-unavailable-desktop.png",
+        "actualSHA256": "44336d3ba87d4ff0fc64ba3122599d1321f2a8c446c8309530ba1dac4d80ab62",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\connectivity-backend-unavailable-desktop.png",
+        "expectedSHA256": "33406d1683102270b804f706df9dfd85a2f6ff1e38974afbcbb8b9dabcce0c74",
+        "byteIdentical": false
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Connectivity-backend-unavailable-desktop-repeat1\\connectivity-backend-unavailable-desktop.png",
+        "actualSHA256": "44336d3ba87d4ff0fc64ba3122599d1321f2a8c446c8309530ba1dac4d80ab62",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\connectivity-backend-unavailable-desktop.png",
+        "expectedSHA256": "33406d1683102270b804f706df9dfd85a2f6ff1e38974afbcbb8b9dabcce0c74",
+        "byteIdentical": false
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": false
+  },
+  {
+    "name": "page-mobile-light.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light.png",
+        "actualSHA256": "a455c3bf511c7bbb8f476ec179a25af663cb1c710d2d12e8d36fbab520cf9c98",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-mobile-light.png",
+        "expectedSHA256": "a455c3bf511c7bbb8f476ec179a25af663cb1c710d2d12e8d36fbab520cf9c98",
+        "byteIdentical": true
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\page-mobile-light.png",
+        "actualSHA256": "a455c3bf511c7bbb8f476ec179a25af663cb1c710d2d12e8d36fbab520cf9c98",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-mobile-light.png",
+        "expectedSHA256": "a455c3bf511c7bbb8f476ec179a25af663cb1c710d2d12e8d36fbab520cf9c98",
+        "byteIdentical": true
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": true
+  },
+  {
+    "name": "page-desktop-dark.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-dark\\page-desktop-dark.png",
+        "actualSHA256": "22ff997545e51662bf358259b89b4592623b4546529f4b02833d21c9c2f85489",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-desktop-dark.png",
+        "expectedSHA256": "e42f04fd00f0edfa41571f83fb0b9e57c99e09710e909411e32c9d80ce6c47c4",
+        "byteIdentical": false
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-dark-repeat1\\page-desktop-dark.png",
+        "actualSHA256": "22ff997545e51662bf358259b89b4592623b4546529f4b02833d21c9c2f85489",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-desktop-dark.png",
+        "expectedSHA256": "e42f04fd00f0edfa41571f83fb0b9e57c99e09710e909411e32c9d80ce6c47c4",
+        "byteIdentical": false
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": false
+  },
+  {
+    "name": "page-desktop-light.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-light\\page-desktop-light.png",
+        "actualSHA256": "61019429cd93e84c9ad4f1514a8bc3b14bdd3f85ae9212d984d2bc38ce13e866",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-desktop-light.png",
+        "expectedSHA256": "71dda31d2813c048fc903027906a30e2dd91b0257434fc8143e7cfb4a6efd0e4",
+        "byteIdentical": false
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-light-repeat1\\page-desktop-light.png",
+        "actualSHA256": "61019429cd93e84c9ad4f1514a8bc3b14bdd3f85ae9212d984d2bc38ce13e866",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-desktop-light.png",
+        "expectedSHA256": "71dda31d2813c048fc903027906a30e2dd91b0257434fc8143e7cfb4a6efd0e4",
+        "byteIdentical": false
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": false
+  },
+  {
+    "name": "page-tablet-light.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-tablet-light\\page-tablet-light.png",
+        "actualSHA256": "12b4d0d4f24f18ad39d34536dbf7f6435620622f1bc23f85e3cb00c378ed1322",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-tablet-light.png",
+        "expectedSHA256": "12b4d0d4f24f18ad39d34536dbf7f6435620622f1bc23f85e3cb00c378ed1322",
+        "byteIdentical": true
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-tablet-light-repeat1\\page-tablet-light.png",
+        "actualSHA256": "12b4d0d4f24f18ad39d34536dbf7f6435620622f1bc23f85e3cb00c378ed1322",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-tablet-light.png",
+        "expectedSHA256": "12b4d0d4f24f18ad39d34536dbf7f6435620622f1bc23f85e3cb00c378ed1322",
+        "byteIdentical": true
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": true
+  },
+  {
+    "name": "settings-desktop-light.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-desktop-light\\settings-desktop-light.png",
+        "actualSHA256": "6752cef0ba25443fa0c1dd900e6489846c26e8e760de91cc5c2beb165e09ad4d",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-desktop-light.png",
+        "expectedSHA256": "6752cef0ba25443fa0c1dd900e6489846c26e8e760de91cc5c2beb165e09ad4d",
+        "byteIdentical": true
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-desktop-light-repeat1\\settings-desktop-light.png",
+        "actualSHA256": "6752cef0ba25443fa0c1dd900e6489846c26e8e760de91cc5c2beb165e09ad4d",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-desktop-light.png",
+        "expectedSHA256": "6752cef0ba25443fa0c1dd900e6489846c26e8e760de91cc5c2beb165e09ad4d",
+        "byteIdentical": true
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": true
+  },
+  {
+    "name": "settings-profile-mobile-light.png",
+    "runs": [
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light.png",
+        "actualSHA256": "fe7ad87834c932a442500a24bd9af9e8d87961820eb6ed0afb816b55d8617d6a",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-profile-mobile-light.png",
+        "expectedSHA256": "fe7ad87834c932a442500a24bd9af9e8d87961820eb6ed0afb816b55d8617d6a",
+        "byteIdentical": true
+      },
+      {
+        "actual": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\settings-profile-mobile-light.png",
+        "actualSHA256": "fe7ad87834c932a442500a24bd9af9e8d87961820eb6ed0afb816b55d8617d6a",
+        "expected": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-profile-mobile-light.png",
+        "expectedSHA256": "fe7ad87834c932a442500a24bd9af9e8d87961820eb6ed0afb816b55d8617d6a",
+        "byteIdentical": true
+      }
+    ],
+    "repeatByteIdentical": true,
+    "expectedByteIdentical": true
+  }
+]

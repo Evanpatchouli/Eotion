@@ -1,0 +1,6 @@
+{
+  "command": "pnpm --filter @eotion/api typecheck",
+  "reason": "Final fixture edits landed after initial typecheck; this read-only check runs after the complete HTTP rebuild and does not rebuild dist during Product.",
+  "exitCode": 0,
+  "capturedAt": "2026-10-20T10:36:34.5998257Z"
+}

@@ -1,0 +1,15 @@
+{
+  "started": "2026-10-20T19:00:52.5465144+08:00",
+  "sourcePlan": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\executed\\plan.json",
+  "baseUrl": "http://127.0.0.1:7173",
+  "executable": "node",
+  "cwd": "C:/Users/31250/Work/Eotion/apps/web",
+  "arguments": [
+    "C:/Users/31250/Work/Eotion/apps/web/node_modules/@playwright/test/cli.js",
+    "test",
+    "--config",
+    "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\executed\\playwright.config.ts",
+    "--workers=1",
+    "--retries=0"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "executable": "pwsh",
+  "arguments": [
+    "-NoProfile",
+    "-File",
+    "C:/Users/31250/AppData/Local/Temp/eotion-stop-owned7176.ps1"
+  ],
+  "authorization": "Root explicitly requested owned7176 shutdown only",
+  "exitCode": 0
+}

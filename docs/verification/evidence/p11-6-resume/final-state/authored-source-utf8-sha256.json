@@ -1,0 +1,198 @@
+[
+  {
+    "path": ".agents/current-task.md",
+    "bytes": 23094,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "d67d3df620e9b948edcefd785b3ff3e0a08af24e8fa6d2eac19beab30ade7ccd"
+  },
+  {
+    "path": ".agents/handoff.md",
+    "bytes": 168965,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "b36bd4ab21f02a946d8bf5242cc20e94348e57306a41909e38509f12c128e254"
+  },
+  {
+    "path": "apps/api/src/modules/http-api/database-cell-mutation-http.test.ts",
+    "bytes": 67176,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "fc5018d7cdc6dbd54177d9f0a1820ed6f5f9b7d99e773423572f8f19fbe48443"
+  },
+  {
+    "path": "apps/web/playwright.visual.config.ts",
+    "bytes": 1084,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "1d9524a984fa79aa56bc8e08fb0ac028401a27d715d880407aa7b61510c076f6"
+  },
+  {
+    "path": "apps/web/scripts/read-visual-environment.ps1",
+    "bytes": 1591,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "001a25f577c437869abcd55c3c1da85445172493c85769745b745db8ecfe210c"
+  },
+  {
+    "path": "apps/web/src/components/editor/DatabaseNodeView.vue",
+    "bytes": 185101,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "9a3b85624680ae4a02eb25e51091f6072d47beb6491149d53eb4e3ea615ada05"
+  },
+  {
+    "path": "apps/web/src/components/editor/DatabaseTimelineView.vue",
+    "bytes": 26312,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "660aa27202127bd37363795c9b2fa825a71336591edc926a27bd5ebc0e99e94c"
+  },
+  {
+    "path": "apps/web/src/components/editor/EotionEditor.vue",
+    "bytes": 47816,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "3bbb5aaeada29a43048523ed54f3821f8df8b979f59c08997ed77548b1b3869c"
+  },
+  {
+    "path": "apps/web/src/components/editor/timeline/mutation.ts",
+    "bytes": 11195,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "5ff0bd1cebaadee195143834d9baf5b14fbfd13526047f4b5346c87a1b6b6ad2"
+  },
+  {
+    "path": "apps/web/src/components/editor/timeline/TimelineBar.vue",
+    "bytes": 20996,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "6ac1c0236ea62ceeb6c59c26ba612245d4238921f338fd040b5dd9d489d8ef65"
+  },
+  {
+    "path": "apps/web/src/components/editor/timeline/TimelineViewport.vue",
+    "bytes": 25827,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "671b76206b7e56021a68c7eb705e0b80cb00627aebe78a03f9aa61c2ba6ccbcd"
+  },
+  {
+    "path": "apps/web/src/components/editor/timeline/useTimelineViewport.ts",
+    "bytes": 23516,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "619239129f6843ac9e649fa2b3b887d8c66759f595803c51e280edf4eeeefd31"
+  },
+  {
+    "path": "apps/web/src/components/ui/EotionProductOverlay.vue",
+    "bytes": 21253,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "dc6f145f961abe073a2a39aa372d44ccc418869ba6b8ff25f469bb57ada970a1"
+  },
+  {
+    "path": "apps/web/src/components/ui/overlayFocus.ts",
+    "bytes": 542,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "8ece1ad497896af27477aa0204c088f92eefe1a4ea3e102f6b5e27ef70389482"
+  },
+  {
+    "path": "apps/web/src/views/PageView.vue",
+    "bytes": 32896,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "57cf4eb2fbc37e32b97bc440e14254f714153ef69a51eb475961b2241c9615e5"
+  },
+  {
+    "path": "apps/web/tests/helpers/editorSelection.ts",
+    "bytes": 876,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "f9953353a204576fb705016458f9ea4e9487416f264dad2f9594b3c6825e5e9e"
+  },
+  {
+    "path": "apps/web/tests/helpers/visualEnvironment.ts",
+    "bytes": 2014,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "91fea9b90276f9e85beb558f8aaf90cb0d7c175dcdd305ef3e63cb7e10f7af3e"
+  },
+  {
+    "path": "apps/web/tests/product-attachments.spec.ts",
+    "bytes": 53027,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "34af9ec6bc93c0757149966a80600ee6a8f84aa4e0342fc9ac6f54e4deb0f469"
+  },
+  {
+    "path": "apps/web/tests/product-database.spec.ts",
+    "bytes": 889353,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "f43f7608649df23832cd450e0c4a1cbe41ad182dcbf6a14727a8bee706523b54"
+  },
+  {
+    "path": "apps/web/tests/product-editor.spec.ts",
+    "bytes": 81142,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "7c1415dbc0700ab558887f855d36df6d45ccae44aa7e2576f7374ad7ab29f0a5"
+  },
+  {
+    "path": "apps/web/tests/product-p75-acceptance.spec.ts",
+    "bytes": 33139,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "ff302437d82cf59550356f885284eec9e983d39529fd6f5d3871559d4d35b2c4"
+  },
+  {
+    "path": "apps/web/tests/product-pages.spec.ts",
+    "bytes": 46499,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "f3837fe1150023f13d4a4cfbac614a0891726e3e3acb9de7c15dda24106ae72f"
+  },
+  {
+    "path": "apps/web/tests/product-settings.spec.ts",
+    "bytes": 34940,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "df51797e0f8ac77173fd26fbd3c57f84343c43e5886a45eb92ece903cfb2c9c4"
+  },
+  {
+    "path": "apps/web/tests/product-table.spec.ts",
+    "bytes": 29591,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "a6885e30729467a28b6322c75eeb2dd8a0aed823436c8800cab68f1f5fd102df"
+  },
+  {
+    "path": "apps/web/tests/visual-regression.spec.ts-snapshots/environment.json",
+    "bytes": 693,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "1b166c9d9f199fc2f0843234cb0b8c1c2f6c8d4804330026d3f11770badc8a61"
+  },
+  {
+    "path": "docs/architecture/timeline-renderer.md",
+    "bytes": 76048,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "155dbb49c6fa17188d14e911b999796d953f826488b99a0e47333b4084fd016b"
+  },
+  {
+    "path": "docs/p11-timeline.md",
+    "bytes": 64135,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "88cbe3ca12d079821db579503b7e43114e76cf8539151af43510942eed1e39f3"
+  },
+  {
+    "path": "docs/verification/p11-6-timeline-final-acceptance.md",
+    "bytes": 62362,
+    "strictUtf8": true,
+    "bom": false,
+    "sha256": "388c355354f5bf9f07f703bb3bdf30eb2c07c7b9e22cd18f25e8963726499520"
+  }
+]

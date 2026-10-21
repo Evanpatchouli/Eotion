@@ -1,0 +1,212 @@
+[
+  {
+    "gate": "product",
+    "title": "product-database.spec.ts > database UX controls render library icons instead of text glyphs",
+    "file": "product-database.spec.ts",
+    "line": 1714,
+    "column": 1,
+    "status": "timedOut",
+    "errors": [
+      {
+        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+      },
+      {
+        "location": {
+          "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+          "column": 27,
+          "line": 1819
+        },
+        "message": "Error: locator.textContent: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('group', { name: '排序条件' }).locator('.eotion-database-sort-row .settings-icon-button').nth(5)\u001b[22m\n\n\n  1817 |   for (const control of await sorts.locator('.eotion-database-sort-row .settings-icon-button').all()) {\n  1818 |     await expect(control.locator('svg')).toHaveCount(1)\n> 1819 |     expect((await control.textContent())?.trim()).toBe('')\n       |                           ^\n  1820 |   }\n  1821 |   await page.keyboard.press('Escape')\n  1822 |   await expect(sorts).toHaveCount(0)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:1819:27"
+      }
+    ],
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-database-database--f26e6-cons-instead-of-text-glyphs\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-database-database--f26e6-cons-instead-of-text-glyphs\\error-context.md"
+      },
+      {
+        "name": "trace",
+        "contentType": "application/zip",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-database-database--f26e6-cons-instead-of-text-glyphs\\trace.zip"
+      }
+    ],
+    "stdout": [],
+    "stderr": [],
+    "phase": "sort icon controls text-content validation",
+    "sameCaseInOtherGate": [],
+    "attachmentPathsExist": true
+  },
+  {
+    "gate": "product",
+    "title": "product-database.spec.ts > board grouping mutation updates the record, keeps linked Table and List in sync, and preserves Table editing",
+    "file": "product-database.spec.ts",
+    "line": 6605,
+    "column": 1,
+    "status": "failed",
+    "errors": [
+      {
+        "location": {
+          "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+          "column": 28,
+          "line": 6693
+        },
+        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' })\nExpected: \u001b[32m\"Draft survives Board mutation\"\u001b[39m\nReceived: \u001b[31m\"Move me\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"Move me\"\u001b[22m\n\n\n  6691 |   await expect(boardBlock).toHaveAttribute('data-board-mutation-lifecycle', 'stable')\n  6692 |   await expect(page.locator('.eotion-editor-content').first()).toHaveAttribute('data-board-mutation-lifecycle', 'stable')\n> 6693 |   await expect(titleDraft).toHaveValue('Draft survives Board mutation')\n       |                            ^\n  6694 |\n  6695 |   await closeRecordSurface(page)\n  6696 |   const draftRow = tableBlock.locator('tbody tr').filter({ hasText: 'Draft survives Board mutation' })\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:6693:28"
+      }
+    ],
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-database-board-gro-2ce16-and-preserves-Table-editing\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-database-board-gro-2ce16-and-preserves-Table-editing\\error-context.md"
+      },
+      {
+        "name": "trace",
+        "contentType": "application/zip",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-database-board-gro-2ce16-and-preserves-Table-editing\\trace.zip"
+      }
+    ],
+    "stdout": [],
+    "stderr": [],
+    "phase": "Board grouping mutation after stable lifecycle; drawer title draft preservation",
+    "sameCaseInOtherGate": [],
+    "attachmentPathsExist": true
+  },
+  {
+    "gate": "product",
+    "title": "product-database.spec.ts > P11.3B datetime resize snaps from the dragged endpoint on every scale and preserves timezone and milliseconds",
+    "file": "product-database.spec.ts",
+    "line": 8836,
+    "column": 1,
+    "status": "failed",
+    "errors": [
+      {
+        "location": {
+          "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+          "column": 30,
+          "line": 8916
+        },
+        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeHidden\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('[data-overlay-mode=\"drawer\"]')\nExpected: hidden\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeHidden\" locator('[data-overlay-mode=\"drawer\"]') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-overlay-mode=\"drawer\"]')\u001b[22m\n\u001b[2m    14 × locator resolved to <aside tabindex=\"-1\" aria-label=\"记录\" data-v-3481ec6c=\"\" data-motion-state=\"open\" data-overlay-mode=\"drawer\" class=\"eotion-product-overlay eotion-product-overlay--drawer\">…</aside>\u001b[22m\n\u001b[2m       - unexpected value \"visible\"\u001b[22m\n\n\n  8914 |   expect(zeroPatchCount()).toBe(beforeClamp)\n  8915 |   await page.keyboard.press('Escape')\n> 8916 |   await expect(markerDrawer).toBeHidden()\n       |                              ^\n  8917 |   await p113bResize(page, zeroBar, zeroStartHandle, 'day', '2026-10-13T10:15:30.123Z')\n  8918 |   await expect.poll(() => zero.properties[zeroDate.id]).toEqual({ start: '2026-10-13T10:15:30.123Z', end: '2026-10-13T10:15:30.123Z', timeZone: 'America/New_York' })\n  8919 |   expect(zeroPatchCount()).toBe(beforeClamp)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:8916:30"
+      }
+    ],
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-database-P11-3B-da-3e7c8-s-timezone-and-milliseconds\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-database-P11-3B-da-3e7c8-s-timezone-and-milliseconds\\error-context.md"
+      },
+      {
+        "name": "trace",
+        "contentType": "application/zip",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-database-P11-3B-da-3e7c8-s-timezone-and-milliseconds\\trace.zip"
+      }
+    ],
+    "stdout": [],
+    "stderr": [],
+    "phase": "datetime resize zero-length clamp checks; Escape closes marker drawer before next resize",
+    "sameCaseInOtherGate": [
+      "database"
+    ],
+    "attachmentPathsExist": true
+  },
+  {
+    "gate": "product",
+    "title": "product-editor.spec.ts > preserves a locally saved IME draft when page metadata sync expires the session",
+    "file": "product-editor.spec.ts",
+    "line": 1345,
+    "column": 1,
+    "status": "timedOut",
+    "errors": [
+      {
+        "message": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m"
+      },
+      {
+        "location": {
+          "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+          "column": 52,
+          "line": 1361
+        },
+        "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: '保存标题' })\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"submit\" data-v-fe3c5b23=\"\" class=\"eotion-button eotion-button--primary\">保存标题</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not stable\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m  - element was detached from the DOM, retrying\u001b[22m\n\n\n  1359 |   await page.locator('.product-page-menu').getByRole('menuitem', { name: '重命名' }).click()\n  1360 |   await page.getByLabel('页面标题').fill('Changed title')\n> 1361 |   await page.getByRole('button', { name: '保存标题' }).click()\n       |                                                    ^\n  1362 |   await expect(page).toHaveURL(/#\\/login(?:\\?redirect=.*)?$/)\n  1363 |   expect(api.blocks).toHaveLength(0)\n  1364 |   await page.getByLabel('邮箱').fill('ava@example.com')\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts:1361:52"
+      }
+    ],
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-editor-preserves-a-b72c6-ta-sync-expires-the-session\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-editor-preserves-a-b72c6-ta-sync-expires-the-session\\error-context.md"
+      },
+      {
+        "name": "trace",
+        "contentType": "application/zip",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\product\\test-results\\product-editor-preserves-a-b72c6-ta-sync-expires-the-session\\trace.zip"
+      }
+    ],
+    "stdout": [],
+    "stderr": [],
+    "phase": "IME metadata session-expiry flow; saving renamed page title",
+    "sameCaseInOtherGate": [],
+    "attachmentPathsExist": true
+  },
+  {
+    "gate": "database",
+    "title": "product-database.spec.ts > P11.3B datetime resize snaps from the dragged endpoint on every scale and preserves timezone and milliseconds",
+    "file": "product-database.spec.ts",
+    "line": 8836,
+    "column": 1,
+    "status": "failed",
+    "errors": [
+      {
+        "location": {
+          "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+          "column": 30,
+          "line": 8916
+        },
+        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeHidden\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('[data-overlay-mode=\"drawer\"]')\nExpected: hidden\nReceived: visible\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeHidden\" locator('[data-overlay-mode=\"drawer\"]') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-overlay-mode=\"drawer\"]')\u001b[22m\n\u001b[2m    14 × locator resolved to <aside tabindex=\"-1\" aria-label=\"记录\" data-v-3481ec6c=\"\" data-motion-state=\"open\" data-overlay-mode=\"drawer\" class=\"eotion-product-overlay eotion-product-overlay--drawer\">…</aside>\u001b[22m\n\u001b[2m       - unexpected value \"visible\"\u001b[22m\n\n\n  8914 |   expect(zeroPatchCount()).toBe(beforeClamp)\n  8915 |   await page.keyboard.press('Escape')\n> 8916 |   await expect(markerDrawer).toBeHidden()\n       |                              ^\n  8917 |   await p113bResize(page, zeroBar, zeroStartHandle, 'day', '2026-10-13T10:15:30.123Z')\n  8918 |   await expect.poll(() => zero.properties[zeroDate.id]).toEqual({ start: '2026-10-13T10:15:30.123Z', end: '2026-10-13T10:15:30.123Z', timeZone: 'America/New_York' })\n  8919 |   expect(zeroPatchCount()).toBe(beforeClamp)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:8916:30"
+      }
+    ],
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\database\\test-results\\product-database-P11-3B-da-3e7c8-s-timezone-and-milliseconds\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\database\\test-results\\product-database-P11-3B-da-3e7c8-s-timezone-and-milliseconds\\error-context.md"
+      },
+      {
+        "name": "trace",
+        "contentType": "application/zip",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\database\\test-results\\product-database-P11-3B-da-3e7c8-s-timezone-and-milliseconds\\trace.zip"
+      }
+    ],
+    "stdout": [],
+    "stderr": [],
+    "phase": "datetime resize zero-length clamp checks; Escape closes marker drawer before next resize",
+    "sameCaseInOtherGate": [
+      "product"
+    ],
+    "attachmentPathsExist": true
+  }
+]

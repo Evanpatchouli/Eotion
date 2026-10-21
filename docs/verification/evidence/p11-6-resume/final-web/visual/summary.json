@@ -1,0 +1,16 @@
+{
+  "gate": "visual",
+  "start": "2026-10-20T10:59:03.417Z",
+  "end": "2026-10-20T10:59:26.958Z",
+  "exitCode": 0,
+  "signal": null,
+  "stats": {
+    "startTime": "2026-10-20T10:59:04.202Z",
+    "duration": 22733.994,
+    "expected": 13,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "errors": []
+}

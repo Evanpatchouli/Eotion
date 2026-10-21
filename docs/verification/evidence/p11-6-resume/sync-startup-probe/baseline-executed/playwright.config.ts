@@ -1,0 +1,2 @@
+import {defineConfig} from 'C:/Users/31250/Work/Eotion/apps/web/node_modules/@playwright/test/index.mjs';
+export default defineConfig({testDir:'.',testMatch:'product-sync.spec.ts',workers:1,retries:0,timeout:30000,preserveOutput:'always',use:{baseURL:process.env.EOTION_PROBE_BASE_URL??'http://127.0.0.1:7173',browserName:'chromium',channel:'chrome',trace:'on',screenshot:'only-on-failure'},reporter:[['list'],['json',{outputFile:process.env.EOTION_PROBE_RESULTS}]],outputDir:process.env.EOTION_PROBE_OUTPUT});

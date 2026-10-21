@@ -1,0 +1,238 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "-c",
+      "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/r4-fixes/playwright.config.ts",
+      "-g",
+      "R4 record title reconciliation"
+    ],
+    "configFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\playwright.config.ts",
+    "rootDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/r4-fixes",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/r4-fixes/red-test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/r4-fixes",
+        "testIgnore": [],
+        "testMatch": [
+          "product-database.red.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "red-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "product-database.red.spec.ts",
+      "file": "product-database.red.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "R4 record title reconciliation dirty refresh",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7358,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('textbox', { name: '记录标题' })\nExpected: \u001b[32m\"Dirty refresh draft\"\u001b[39m\nReceived: \u001b[31m\"Identity row\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"Identity row\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('textbox', { name: '记录标题' })\nExpected: \u001b[32m\"Dirty refresh draft\"\u001b[39m\nReceived: \u001b[31m\"Identity row\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"Identity row\"\u001b[22m\n\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\product-database.red.spec.ts:12424:27",
+                    "location": {
+                      "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\product-database.red.spec.ts",
+                      "column": 27,
+                      "line": 12424
+                    },
+                    "snippet": "  12422 |       expect(rebuilt).toBe(true)\n  12423 |       await expect(title).toBeFocused()\n> 12424 |       await expect(title).toHaveValue('Dirty refresh draft')\n        |                           ^\n  12425 |       await title.press('Tab')\n  12426 |       await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Dirty refresh draft')\n  12427 |     } else if (behavior === 'clean canonical refresh') {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\product-database.red.spec.ts",
+                        "column": 27,
+                        "line": 12424
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveValue\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByRole('textbox', { name: '记录标题' })\nExpected: \u001b[32m\"Dirty refresh draft\"\u001b[39m\nReceived: \u001b[31m\"Identity row\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveValue\" getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"Identity row\"\u001b[22m\n\n\n  12422 |       expect(rebuilt).toBe(true)\n  12423 |       await expect(title).toBeFocused()\n> 12424 |       await expect(title).toHaveValue('Dirty refresh draft')\n        |                           ^\n  12425 |       await title.press('Tab')\n  12426 |       await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Dirty refresh draft')\n  12427 |     } else if (behavior === 'clean canonical refresh') {\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\product-database.red.spec.ts:12424:27"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T06:03:38.082Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\red-test-results\\product-database.red-R4-re-6d264-econciliation-dirty-refresh\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\red-test-results\\product-database.red-R4-re-6d264-econciliation-dirty-refresh\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\product-database.red.spec.ts",
+                    "column": 27,
+                    "line": 12424
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "82c425bda6331385c151-33ab97baf9a9417147ae",
+          "file": "product-database.red.spec.ts",
+          "line": 12406,
+          "column": 7
+        },
+        {
+          "title": "R4 record title reconciliation clean canonical refresh",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2266,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T06:03:47.257Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\red-test-results\\product-database.red-R4-re-91e0e-ion-clean-canonical-refresh\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "82c425bda6331385c151-d1198e08203adfc05c64",
+          "file": "product-database.red.spec.ts",
+          "line": 12406,
+          "column": 7
+        },
+        {
+          "title": "R4 record title reconciliation actual identity switch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2234,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T06:03:50.127Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\r4-fixes\\red-test-results\\product-database.red-R4-re-7063b-tion-actual-identity-switch\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "82c425bda6331385c151-1bd8b49ef661f209a258",
+          "file": "product-database.red.spec.ts",
+          "line": 12406,
+          "column": 7
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-21T06:03:35.513Z",
+    "duration": 17404.994,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "cwd": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/apps/web",
+  "pid": 61892,
+  "port": 7176,
+  "purpose": "ff0901c startup sync comparison; retain for coarse baseline",
+  "executable": "C:\\Users\\31250\\.vite-plus\\bin\\node.exe",
+  "started": "2026-10-20T19:07:21.4296484+08:00",
+  "args": [
+    "C:/Users/31250/Work/Eotion/apps/web/node_modules/vite/bin/vite.js",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "7176",
+    "--strictPort"
+  ],
+  "owner": "product_rootcause_resume",
+  "buildRun": false
+}

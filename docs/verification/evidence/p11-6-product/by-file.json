@@ -1,0 +1,86 @@
+[
+  {
+    "file": "product-attachments.spec.ts",
+    "total": 23,
+    "pass": 22,
+    "fail": 1
+  },
+  {
+    "file": "product-blocks.spec.ts",
+    "total": 14,
+    "pass": 14,
+    "fail": 0
+  },
+  {
+    "file": "product-content-rules.spec.ts",
+    "total": 2,
+    "pass": 2,
+    "fail": 0
+  },
+  {
+    "file": "product-database.spec.ts",
+    "total": 229,
+    "pass": 228,
+    "fail": 1
+  },
+  {
+    "file": "product-editor.spec.ts",
+    "total": 45,
+    "pass": 44,
+    "fail": 1
+  },
+  {
+    "file": "product-flow.spec.ts",
+    "total": 10,
+    "pass": 10,
+    "fail": 0
+  },
+  {
+    "file": "product-nested.spec.ts",
+    "total": 17,
+    "pass": 17,
+    "fail": 0
+  },
+  {
+    "file": "product-overlay.spec.ts",
+    "total": 38,
+    "pass": 38,
+    "fail": 0
+  },
+  {
+    "file": "product-p75-acceptance.spec.ts",
+    "total": 3,
+    "pass": 2,
+    "fail": 1
+  },
+  {
+    "file": "product-pages.spec.ts",
+    "total": 25,
+    "pass": 24,
+    "fail": 1
+  },
+  {
+    "file": "product-settings.spec.ts",
+    "total": 21,
+    "pass": 20,
+    "fail": 1
+  },
+  {
+    "file": "product-slash-context.spec.ts",
+    "total": 3,
+    "pass": 3,
+    "fail": 0
+  },
+  {
+    "file": "product-sync.spec.ts",
+    "total": 42,
+    "pass": 42,
+    "fail": 0
+  },
+  {
+    "file": "product-table.spec.ts",
+    "total": 14,
+    "pass": 10,
+    "fail": 4
+  }
+]

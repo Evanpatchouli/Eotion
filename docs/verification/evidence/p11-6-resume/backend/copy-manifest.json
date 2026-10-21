@@ -1,0 +1,352 @@
+[
+  {
+    "path": "final-summary.json",
+    "bytes": 2335,
+    "sha256": "75206914dc29bc4612fdf1e941723dbdc37a010aa0936ba3549c52cf888293cd",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\final-summary.json"
+  },
+  {
+    "path": "mongo-admin.cjs",
+    "bytes": 1052,
+    "sha256": "f27a8d57d653d6ff1ad703038726ec59a75a33acc06cdb8c78a1b5703b660216",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\mongo-admin.cjs"
+  },
+  {
+    "path": "mongo-shutdown.json",
+    "bytes": 230,
+    "sha256": "a02737b8007c310ac7c730f08c98355eb356624229ec5de5ababa3ca67bcfe97",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\mongo-shutdown.json"
+  },
+  {
+    "path": "mongo-start.json",
+    "bytes": 623,
+    "sha256": "df75832b953afcce6fb206e3ffdcafdcb41f45955fa989f55ca6d0c4659bb2ae",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\mongo-start.json"
+  },
+  {
+    "path": "run-gates.ps1",
+    "bytes": 2383,
+    "sha256": "d37f6b52320132384963a8c72971eb28257db3c7451b2f6d0eeecde85fcda282",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\run-gates.ps1"
+  },
+  {
+    "path": "summary.json",
+    "bytes": 6231,
+    "sha256": "3d8ca2fe759244b23ac254d8e0df6aeabf4df71be091c763c677cf9b5ffbdbfa",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\summary.json"
+  },
+  {
+    "path": "http-rerun/command.txt",
+    "bytes": 68,
+    "sha256": "888965fc3d50364578fc304c56aba4d5c9fc91b7eeeb1915b6e1b1ee1be86368",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun\\command.txt"
+  },
+  {
+    "path": "http-rerun/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun\\stderr.log"
+  },
+  {
+    "path": "http-rerun/stdout.log",
+    "bytes": 4310,
+    "sha256": "be8c4be048b2f07dc38d6f089f35c311ea64f402afac1928dad111e8c5c58134",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun\\stdout.log"
+  },
+  {
+    "path": "http-rerun/summary.json",
+    "bytes": 410,
+    "sha256": "9546f2e5d02590afafdf8d075af1b50ce6d107623ed6d67a3cbf1271336f5f57",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun\\summary.json"
+  },
+  {
+    "path": "http-rerun2/command.txt",
+    "bytes": 68,
+    "sha256": "e60a34452587fd09162b041f7a9f29617772d07e854292bb5ac821523a1ec6d0",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun2\\command.txt"
+  },
+  {
+    "path": "http-rerun2/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun2\\stderr.log"
+  },
+  {
+    "path": "http-rerun2/stdout.log",
+    "bytes": 4309,
+    "sha256": "2f4c62dabceaf78099b6f1b84364b85f8108d0c3f2b59d7559984e16e869f165",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun2\\stdout.log"
+  },
+  {
+    "path": "http-rerun2/summary.json",
+    "bytes": 400,
+    "sha256": "21c3f25807e5b37e6c3f23496d84467fa3d001898b013d0c4d097110283e2e7c",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun2\\summary.json"
+  },
+  {
+    "path": "http-rerun3/command.txt",
+    "bytes": 68,
+    "sha256": "da43fc11468a3fcbcc952c9856c137d35eaa05c993fcca08f47f4e73642a2ca8",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun3\\command.txt"
+  },
+  {
+    "path": "http-rerun3/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun3\\stderr.log"
+  },
+  {
+    "path": "http-rerun3/stdout.log",
+    "bytes": 6289,
+    "sha256": "7ac1e0530cc6c76dcdb0d97d9cf695147b0734f2d97ac0ec9067773b0e77de4b",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun3\\stdout.log"
+  },
+  {
+    "path": "http-rerun3/summary.json",
+    "bytes": 421,
+    "sha256": "7141580fda83aae8ba2c5b8b094947f90b94ad5a324ab88307d1f1f5b5b62885",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\http-rerun3\\summary.json"
+  },
+  {
+    "path": "logs/api-build.command.txt",
+    "bytes": 64,
+    "sha256": "44cd56c055da04eab36dab42e7b260a5686db7f114e66badba0bfb56128adbcd",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-build.command.txt"
+  },
+  {
+    "path": "logs/api-build.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-build.stderr.log"
+  },
+  {
+    "path": "logs/api-build.stdout.log",
+    "bytes": 458,
+    "sha256": "9c1f5bfa9ec9f97333658ca2aaddb9ab4e3b645f2814afcc3caa33efe29b7b68",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-build.stdout.log"
+  },
+  {
+    "path": "logs/api-database-performance-real-mongo.command.txt",
+    "bytes": 84,
+    "sha256": "14cde8225e6ac4e8a761aee3f826bd7c519751271a939e747c0b40f9150ff2a4",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-database-performance-real-mongo.command.txt"
+  },
+  {
+    "path": "logs/api-database-performance-real-mongo.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-database-performance-real-mongo.stderr.log"
+  },
+  {
+    "path": "logs/api-database-performance-real-mongo.stdout.log",
+    "bytes": 41825,
+    "sha256": "20a7c7b92c789a3e9894ed264a52a476da0dcc1cc60bc805f6ef8d56907806e6",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-database-performance-real-mongo.stdout.log"
+  },
+  {
+    "path": "logs/api-domain-real-mongo.command.txt",
+    "bytes": 70,
+    "sha256": "189c6e1f8dea703d9145accfc662e69ef8517644c44856eead55b92f4ff256c4",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-domain-real-mongo.command.txt"
+  },
+  {
+    "path": "logs/api-domain-real-mongo.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-domain-real-mongo.stderr.log"
+  },
+  {
+    "path": "logs/api-domain-real-mongo.stdout.log",
+    "bytes": 2475,
+    "sha256": "2fa888e115e3976c4eb956adfbe96fb4a5010f79c0d4d13e69fe5a14937ad522",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-domain-real-mongo.stdout.log"
+  },
+  {
+    "path": "logs/api-http-real-mongo.command.txt",
+    "bytes": 68,
+    "sha256": "4b0df292a46ab8784894e5874701bd2ba1cd6da539a6cb19035d820c75b9eb02",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-http-real-mongo.command.txt"
+  },
+  {
+    "path": "logs/api-http-real-mongo.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-http-real-mongo.stderr.log"
+  },
+  {
+    "path": "logs/api-http-real-mongo.stdout.log",
+    "bytes": 4368,
+    "sha256": "4d631acb902df797505759d6aaf6dc8187ff0c213cec12f86a377a02b5597c87",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-http-real-mongo.stdout.log"
+  },
+  {
+    "path": "logs/api-mcp-real-mongo.command.txt",
+    "bytes": 67,
+    "sha256": "73bb9c6d71a7f3e64dc12bf936e7d589b07c76d753fc24ff22edb4b2986ac091",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-mcp-real-mongo.command.txt"
+  },
+  {
+    "path": "logs/api-mcp-real-mongo.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-mcp-real-mongo.stderr.log"
+  },
+  {
+    "path": "logs/api-mcp-real-mongo.stdout.log",
+    "bytes": 4203,
+    "sha256": "d43d5bda04edea5d4bac4abd8283cf008c0282fe134d85612c1fde9c202898b0",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-mcp-real-mongo.stdout.log"
+  },
+  {
+    "path": "logs/api-typecheck.command.txt",
+    "bytes": 68,
+    "sha256": "c8aee5f53169f65730075a8c49635fc857f97db0ceaa9c965474b0038ea7589f",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-typecheck.command.txt"
+  },
+  {
+    "path": "logs/api-typecheck.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-typecheck.stderr.log"
+  },
+  {
+    "path": "logs/api-typecheck.stdout.log",
+    "bytes": 83,
+    "sha256": "69c42698ff78433b036b769f88d23f03d3f4a644facfa636a3fc89edd3b675ec",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\api-typecheck.stdout.log"
+  },
+  {
+    "path": "logs/contracts-test.command.txt",
+    "bytes": 69,
+    "sha256": "e888166b7c91acbfe14ee7259177fd84f62c45cb7e0544b114e200d31bb4319d",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\contracts-test.command.txt"
+  },
+  {
+    "path": "logs/contracts-test.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\contracts-test.stderr.log"
+  },
+  {
+    "path": "logs/contracts-test.stdout.log",
+    "bytes": 3036,
+    "sha256": "4a0f8e5ffc6abfb90f08898a3c67b057c1b68ce77056bcf2ebef30ced88d9872",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\contracts-test.stdout.log"
+  },
+  {
+    "path": "logs/domain-test.command.txt",
+    "bytes": 66,
+    "sha256": "cb2b71e8402162bd9afb7b8331b6fbce6d842eb2533e85ec9ad9ba86feed782e",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\domain-test.command.txt"
+  },
+  {
+    "path": "logs/domain-test.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\domain-test.stderr.log"
+  },
+  {
+    "path": "logs/domain-test.stdout.log",
+    "bytes": 8221,
+    "sha256": "dc235b50534918d827cdd115a06fd7349e1417817c431c2907562cf7878c3908",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\domain-test.stdout.log"
+  },
+  {
+    "path": "logs/mongo-init.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\mongo-init.stderr.log"
+  },
+  {
+    "path": "logs/mongo-init.stdout.log",
+    "bytes": 1121,
+    "sha256": "5e99202f51c2f6ab9f9ba554350ef646c752c6ec0614e8a42ebc4e472566573f",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\mongo-init.stdout.log"
+  },
+  {
+    "path": "logs/mongo-shutdown.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\mongo-shutdown.stderr.log"
+  },
+  {
+    "path": "logs/mongo-shutdown.stdout.log",
+    "bytes": 37,
+    "sha256": "3d0c90c949dccbac68436d2b061e9430a70a808bcf9401b8a98b7be3fb3dddc2",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\mongo-shutdown.stdout.log"
+  },
+  {
+    "path": "logs/mongod.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\mongod.stderr.log"
+  },
+  {
+    "path": "logs/mongod.stdout.log",
+    "bytes": 163,
+    "sha256": "435c79ce1a3013c9e336db9bda1b56bc7e7767933c630991e44d8e8b83acb291",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\mongod.stdout.log"
+  },
+  {
+    "path": "logs/sdk-test.command.txt",
+    "bytes": 63,
+    "sha256": "b99d7a1b60e9472a4f244132c0245ae2f496715ef80d2bc018d029d78d9f04eb",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\sdk-test.command.txt"
+  },
+  {
+    "path": "logs/sdk-test.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\sdk-test.stderr.log"
+  },
+  {
+    "path": "logs/sdk-test.stdout.log",
+    "bytes": 2707,
+    "sha256": "d2a5323b5e2bc4c2aebce2d3ae94f0c19c41e4288095d0994effebd5d8b23b5d",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\sdk-test.stdout.log"
+  },
+  {
+    "path": "logs/storage-test.command.txt",
+    "bytes": 67,
+    "sha256": "bc3cc5f09752847e7b35c103fc924da6464ed3c9257b32649ceae135152adcf9",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\storage-test.command.txt"
+  },
+  {
+    "path": "logs/storage-test.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\storage-test.stderr.log"
+  },
+  {
+    "path": "logs/storage-test.stdout.log",
+    "bytes": 1020,
+    "sha256": "3dd6e42a834176fb50a912626f0b9be3a874481f32d317652da06ff71111c1c3",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\storage-test.stdout.log"
+  },
+  {
+    "path": "logs/version-check.command.txt",
+    "bytes": 51,
+    "sha256": "f4f462a369ed8e51db86656f27919b6bee5431a16bf39a884dac1ce10a1f48dc",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\version-check.command.txt"
+  },
+  {
+    "path": "logs/version-check.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\version-check.stderr.log"
+  },
+  {
+    "path": "logs/version-check.stdout.log",
+    "bytes": 167,
+    "sha256": "1bcd92f1aa6e5d148609d24b4fd213213c52868927da5f2a078c360e625e3558",
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\backend\\logs\\version-check.stdout.log"
+  },
+  {
+    "path": "logs/mongod.log.gz",
+    "bytes": 5903020,
+    "sha256": "aa079d07da9b4f0bc26624c3acea54be86e3ce589779af7dd48a2c3b5a55d7dc",
+    "source": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/backend/logs/mongod.log",
+    "compression": "gzip lossless",
+    "uncompressedBytes": 92151493
+  }
+]

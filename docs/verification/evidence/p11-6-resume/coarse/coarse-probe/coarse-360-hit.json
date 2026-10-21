@@ -1,0 +1,163 @@
+{
+  "before": {
+    "left": 8089,
+    "width": 206,
+    "scrollWidth": 16384,
+    "top": 310,
+    "height": 240,
+    "rows": 3
+  },
+  "hit": {
+    "x": 336,
+    "endX": 250,
+    "y": 522,
+    "start": [
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-body",
+        "testId": "timeline-canvas-body",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-canvas",
+        "testId": null,
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-scroll",
+        "testId": "timeline-scroll",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "auto",
+        "overflowY": "hidden"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-viewport",
+        "testId": "timeline-viewport",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "clip",
+        "overflowY": "clip"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-content",
+        "testId": "timeline-content",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "clip",
+        "overflowY": "clip"
+      },
+      {
+        "tag": "SECTION",
+        "cls": "eotion-database-timeline",
+        "testId": "database-timeline",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "clip",
+        "overflowY": "clip"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-database ProseMirror-selectednode",
+        "testId": null,
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "hidden",
+        "overflowY": "hidden"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tiptap ProseMirror ProseMirror-hideselection ProseMirror-focused",
+        "testId": null,
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      }
+    ],
+    "end": [
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-body",
+        "testId": "timeline-canvas-body",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-canvas",
+        "testId": null,
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-scroll",
+        "testId": "timeline-scroll",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "auto",
+        "overflowY": "hidden"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-viewport",
+        "testId": "timeline-viewport",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "clip",
+        "overflowY": "clip"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-timeline-content",
+        "testId": "timeline-content",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "clip",
+        "overflowY": "clip"
+      },
+      {
+        "tag": "SECTION",
+        "cls": "eotion-database-timeline",
+        "testId": "database-timeline",
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "clip",
+        "overflowY": "clip"
+      },
+      {
+        "tag": "DIV",
+        "cls": "eotion-database ProseMirror-selectednode",
+        "testId": null,
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "hidden",
+        "overflowY": "hidden"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tiptap ProseMirror ProseMirror-hideselection ProseMirror-focused",
+        "testId": null,
+        "touchAction": "auto",
+        "pointerEvents": "auto",
+        "overflowX": "visible",
+        "overflowY": "visible"
+      }
+    ]
+  }
+}

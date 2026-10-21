@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C COMPLETE / PASS（Scope）；P11.4D COMPLETE / PASS（Dependency Scope）；P11.5 COMPLETE / Scope PASS（用户接受旧视觉例外）；P11 Final 未执行**
+> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C COMPLETE / PASS（Scope）；P11.4D COMPLETE / PASS（Dependency Scope）；P11.5 COMPLETE / Scope PASS（用户接受旧视觉例外）；P11.6 HOLD，未具备 P11 Final PASS 条件**
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
@@ -577,6 +577,10 @@ Notion Timeline 支持按属性分组。Eotion P11 若实现 grouping，必须�
 
 由于截图基准未展示 group，本能力可以在 P11 主 renderer 稳定后实施，但 **P11 Final Acceptance 前是否要求 full Notion grouping parity，应在 P11.1 scope freeze 时明确记录，不得默默遗漏。**
 
+P11.6 范围裁定（2026-10-19）：用户明确选择“后置；本轮按 §24 最低矩阵验收”。
+Timeline grouping 和持久行重排后置，不进入本轮通用 View 数据/配置设计；本轮不宣称完整
+Notion parity。此裁定不改变 §24 其余强制项，也不豁免未排期安排或视觉门禁。
+
 ## 19. Responsive
 
 ### Desktop >= 1200
@@ -1054,6 +1058,26 @@ rendered scheduled Bar，复用相同 mutation adapter。Separate Start/End 的�
 ### P11.6 Final Acceptance
 
 独立验收后才允许版本切到 `0.0.3`。
+
+本轮已执行，结论HOLD；Evidence Pack、四项旧视觉的逐项裁定、必要offscreen导航实施与完整门禁见
+[P11.6 Final Acceptance](verification/p11-6-timeline-final-acceptance.md)。
+P11.5 的自动视觉历史结果仍为9/13；其Scope例外不延伸到Final。版本继续0.0.1/build2，
+即使后续验收通过也等待用户独立版本指令，不创建tag/Release。
+
+2026-10-20续推补齐§24最低Unplanned入口：空的单原生Date Cell可在未排期索引内显式选日期
+并保存/取消，复用generic CAS及active-policy原子batch/receipt；不默认今天、不覆盖非空坏值，
+Separate Start/End仍遵守手动编辑边界。§17的拖入交互未在本轮实现，不宣称完整拖入parity。
+四项旧视觉经RGB/BGR方向及内容区域逐项审查后，仅更新对应四图；P11.5历史9/13保留。
+用户明确P10缺失仍须列Final HOLD，本阶段不扩展P10/P15。最后完整门禁与review以新报告为准。
+
+2026-10-21末态仍为 **P11.6 HOLD**：完整R5 Product505/506（启动模块资源错误1项、来源未定）、
+独立Database249/249、Visual13/13；旧R1白屏仍未归因，P10工具前提仍缺。最低Unplanned与
+offscreen已完成，四旧图已逐项裁定；历史P11.5结果不改写。版本不变，未提交/推送/发布，
+阶段到此停止。最终§24逐项结果与独立review见验收报告顶部。
+
+后续用户明确授权提交并推送当前成果、重组最终汇报；实现及视觉维护已分别提交，证据和
+报告随文档提交保存。此授权不改变P11.6 HOLD、不补齐P10，也不授权版本升级或发布。
+交付SHA与推送后状态见最终汇报；上文“未提交”保留为授权前验收事实。
 
 ## 24. Final Acceptance 最低矩阵
 

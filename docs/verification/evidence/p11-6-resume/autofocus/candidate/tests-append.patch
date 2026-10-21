@@ -1,0 +1,185 @@
+--- a/apps/web/tests/product-database.spec.ts
++++ b/apps/web/tests/product-database.spec.ts
+@@ -11932,7 +11932,7 @@
+       await page.goto('/#/app/database-workspace/page/database-page')
+       await expect(timeline).toBeVisible()
+     } else {
+-      await recordSurface.getByRole('button', { name: '关闭记录', exact: true }).tap()
++      await page.keyboard.press('Escape')
+       await expect(recordSurface).toHaveCount(0)
+     }
+     for (const width of [390, 360]) {
+@@ -12231,3 +12231,173 @@
+   expect(p114bRelationPatch(api, 'root-date')).toHaveLength(0)
+   expect(p114cBatchPosts(api)).toHaveLength(0)
+ })
++
++
++// R2 focus ownership: hold local body loading without changing the original identity case.
++async function r2AutofocusFixture(page: Page, initialTitle = 'Identity row') {
++  const item = record('r2-focus-record', rootDatabase.id, 'r2-focus-page', { 'root-title': initialTitle })
++  const api = await installApi(page, [block('r2-focus-database', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100)], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: rootProperties, records: [item] })
++  api.pages.push({ ...pageRecord, id: item.pageId, title: initialTitle, role: 'database-record' })
++  const body = block('r2-focus-body', 'paragraph', { type: 'paragraph', content: [{ type: 'text', text: 'Identity body' }] }, 100)
++  body.pageId = item.pageId
++  api.blocks.push(body)
++  await page.goto('/#/app/database-workspace/page/database-page')
++  const open = page.getByRole('button', { name: `打开记录：${initialTitle}` })
++  await expect(open).toBeVisible()
++  await page.evaluate(async pageId => {
++    const { PagePersistence } = await import('/src/editor/pagePersistence.ts')
++    const original = PagePersistence.prototype.load
++    let release!: () => void
++    const gate = new Promise<void>(resolve => { release = resolve })
++    ;(window as any).__r2ReleaseBody = release
++    PagePersistence.prototype.load = async function(signal?: AbortSignal) {
++      if ((this as unknown as { pageId: string }).pageId === pageId) await gate
++      return original.call(this, signal)
++    }
++  }, item.pageId)
++  return { api, item, open }
++}
++
++for (const device of ['desktop', 'phone'] as const) {
++  test.describe(`R2 record autofocus ownership ${device}`, () => {
++    test.use({ viewport: device === 'phone' ? { width: 390, height: 844 } : { width: 1440, height: 900 }, hasTouch: device === 'phone', isMobile: device === 'phone', reducedMotion: 'reduce' })
++    for (const userClaimsTitle of [false, true]) {
++      test(userClaimsTitle ? 'title focus before body load wins and saves without body pollution' : 'named record body receives initial focus after overlay opening', async ({ page }) => {
++        const { api, item, open } = await r2AutofocusFixture(page)
++        await open.click()
++        const surface = page.locator(device === 'phone' ? 'dialog.eotion-product-overlay--bottom-drawer[open]' : '[data-overlay-mode="drawer"]')
++        await expect(surface).toBeVisible()
++        const title = surface.getByRole('textbox', { name: '记录标题' })
++        const body = surface.locator('.eotion-editor-content .tiptap')
++        await expect(title).toHaveValue('Identity row')
++        await expect(body).toHaveCount(0)
++        if (userClaimsTitle) {
++          await title.click()
++          await expect(title).toBeFocused()
++        }
++        await page.evaluate(() => (window as any).__r2ReleaseBody())
++        await expect(body).toHaveText('Identity body')
++        // Cross a frame boundary so the pending initial focus has actually had its turn.
++        await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
++        if (userClaimsTitle) {
++          await expect(title).toBeFocused()
++          await title.fill('Edited record title')
++          await title.press('Tab')
++          await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Edited record title')
++          await expect(body).toHaveText('Identity body')
++          expect(JSON.stringify(api.blocks.find(candidate => candidate.id === 'r2-focus-body')?.props)).toContain('Identity body')
++          expect(JSON.stringify(api.blocks.find(candidate => candidate.id === 'r2-focus-body')?.props)).not.toContain('Edited record title')
++        } else {
++          await expect(body).toBeFocused()
++          await expect(title).toHaveValue('Identity row')
++          expect(api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Identity row')
++        }
++      })
++    }
++  })
++}
++
++async function r2HoldInitialFocusFrames(page: Page): Promise<void> {
++  await page.evaluate(() => {
++    const target = window as any
++    const original = window.requestAnimationFrame.bind(window)
++    const originalCancel = window.cancelAnimationFrame.bind(window)
++    const callbacks: Array<{ id: number; callback: FrameRequestCallback; cancelled: boolean }> = []
++    let id = 1000000
++    window.requestAnimationFrame = callback => {
++      callbacks.push({ id: ++id, callback, cancelled: false })
++      return id
++    }
++    window.cancelAnimationFrame = frame => {
++      const captured = callbacks.find(entry => entry.id === frame)
++      if (captured) captured.cancelled = true
++      else originalCancel(frame)
++    }
++    target.__r2CapturedFocusFrames = callbacks
++    target.__r2FlushFocusFrames = () => {
++      window.requestAnimationFrame = original
++      window.cancelAnimationFrame = originalCancel
++      // Invoke cancelled entries too: cancellation alone must not allow a stale callback to act.
++      for (const entry of callbacks) entry.callback(performance.now())
++    }
++    target.__r2ReleaseBody()
++  })
++}
++
++async function r2ExpectPendingInitialFocus(page: Page, body: Locator): Promise<void> {
++  await expect(body).toHaveText('Identity body')
++  await expect.poll(() => body.evaluate(element => {
++    let component = (element.closest('.eotion-editor') as (HTMLElement & { __vueParentComponent?: any }) | null)?.__vueParentComponent
++    while (component && component.type?.__name !== 'EotionEditor') component = component.parent
++    const exposed = component?.exposed?.editor ?? component?.setupState?.editor
++    const current = exposed?.commands ? exposed : exposed?.value
++    return Boolean(current?.isInitialized && (window as any).__r2CapturedFocusFrames.length > 0)
++  })).toBe(true)
++}
++
++test('R2 pending initial body focus preserves a user caret', async ({ page }) => {
++  await page.setViewportSize({ width: 1440, height: 900 })
++  await page.emulateMedia({ reducedMotion: 'reduce' })
++  const { open } = await r2AutofocusFixture(page)
++  await open.click()
++  const surface = page.locator('[data-overlay-mode="drawer"]')
++  await expect(surface).toBeVisible()
++  await r2HoldInitialFocusFrames(page)
++  const body = surface.locator('.eotion-editor-content .tiptap')
++  await r2ExpectPendingInitialFocus(page, body)
++  await body.evaluate(element => {
++    element.focus()
++    const selection = window.getSelection()!
++    const text = element.querySelector('p')!.firstChild!
++    selection.setPosition(text, 8)
++  })
++  await page.evaluate(() => (window as any).__r2FlushFocusFrames())
++  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
++  await expect(body).toBeFocused()
++  expect(await body.evaluate(() => window.getSelection()?.anchorOffset)).toBe(8)
++})
++
++test('R2 closing a record cancels the pending initial body focus callback', async ({ page }) => {
++  await page.setViewportSize({ width: 1440, height: 900 })
++  await page.emulateMedia({ reducedMotion: 'reduce' })
++  const { open } = await r2AutofocusFixture(page)
++  await open.click()
++  const surface = page.locator('[data-overlay-mode="drawer"]')
++  await expect(surface).toBeVisible()
++  await r2HoldInitialFocusFrames(page)
++  await r2ExpectPendingInitialFocus(page, surface.locator('.eotion-editor-content .tiptap'))
++  await page.getByRole('button', { name: '关闭记录' }).click()
++  await expect(surface).toHaveCount(0)
++  await expect(open).toBeFocused()
++  await page.evaluate(() => (window as any).__r2FlushFocusFrames())
++  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
++  await expect(open).toBeFocused()
++})
++
++test('R2 renaming an unnamed record before body load retains the user focus and keeps body unchanged', async ({ page }) => {
++  await page.setViewportSize({ width: 1440, height: 900 })
++  await page.emulateMedia({ reducedMotion: 'reduce' })
++  const { api, item, open } = await r2AutofocusFixture(page, '无标题')
++  await open.click()
++  const surface = page.locator('[data-overlay-mode="drawer"]')
++  await expect(surface).toBeVisible()
++  const title = surface.getByRole('textbox', { name: '记录标题' })
++  const body = surface.locator('.eotion-editor-content .tiptap')
++  await expect(title).toHaveValue('无标题')
++  await expect(body).toHaveCount(0)
++  await title.fill('Edited record title')
++  await title.press('Tab')
++  await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Edited record title')
++  await page.evaluate(() => { (window as any).__r2UntitledFocusOwner = document.activeElement })
++  await page.evaluate(() => (window as any).__r2ReleaseBody())
++  await expect(body).toHaveText('Identity body')
++  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
++  expect(await page.evaluate(() => document.activeElement === (window as any).__r2UntitledFocusOwner)).toBe(true)
++  await expect(body).not.toBeFocused()
++  await title.fill('Renamed record title')
++  await title.press('Tab')
++  await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Renamed record title')
++  await expect(body).toHaveText('Identity body')
++  expect(JSON.stringify(api.blocks.find(candidate => candidate.id === 'r2-focus-body')?.props)).toContain('Identity body')
++  expect(JSON.stringify(api.blocks.find(candidate => candidate.id === 'r2-focus-body')?.props)).not.toContain('record title')
++})

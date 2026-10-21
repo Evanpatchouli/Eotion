@@ -1,0 +1,188 @@
+--- a/apps/web/src/views/PageView.vue
++++ b/apps/web/src/views/PageView.vue
+@@ -1,5 +1,5 @@
+ <script setup lang="ts">
+-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
++import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+ import { RouterLink, onBeforeRouteLeave, onBeforeRouteUpdate, useRoute } from 'vue-router'
+ import { createLocalId } from '@eotion/storage'
+ import { assignBlockTreeOrder } from '@eotion/domain/order'
+@@ -10,6 +10,7 @@
+ import EotionButton from '../components/ui/EotionButton.vue'
+ import EotionIcon from '../components/ui/EotionIcon.vue'
+ import EotionProductOverlay from '../components/ui/EotionProductOverlay.vue'
++import { isOverlayInitialFocusTarget } from '../components/ui/overlayFocus'
+ import { IconName } from '../components/ui/icons'
+ import { useRuntimeContext } from '../composables/useRuntimeContext'
+ import { registerActivePageEditor } from '../editor/activePageEditor'
+@@ -55,6 +56,20 @@
+ const pageId = computed(() => surfaceProps.embeddedPageId || (typeof route.params.pageId === 'string' ? route.params.pageId : ''))
+ const page = computed(() => pages.items.find((item) => item.id === pageId.value) ?? null)
+ const recordPage = computed(() => surfaceProps.embedded || route.query.edit === 'record' || page.value?.role === 'database-record')
++const initialEditorFocusCancelled = ref(false)
++watch([workspaceId, pageId], () => { initialEditorFocusCancelled.value = false }, { flush: 'sync' })
++function claimInitialEditorFocus(event: Event): void {
++  if (!recordPage.value || initialEditorFocusCancelled.value) return
++  if (event.type === 'focusin' && isOverlayInitialFocusTarget(event.target)) return
++  initialEditorFocusCancelled.value = true
++}
++const focusClaimEvents = ['pointerdown', 'keydown', 'beforeinput', 'focusin'] as const
++onMounted(() => {
++  for (const type of focusClaimEvents) window.document.addEventListener(type, claimInitialEditorFocus, true)
++})
++onBeforeUnmount(() => {
++  for (const type of focusClaimEvents) window.document.removeEventListener(type, claimInitialEditorFocus, true)
++})
+ const titleDraft = ref('')
+ const titleError = ref('')
+ const titleSaving = ref(false)
+@@ -517,7 +532,7 @@
+         :create-database-reference="createDatabaseReference"
+         :commit-database-reference="commitDatabaseReference"
+         :touch-toolbar="layoutMode === 'mobile' || inputMode !== 'mouse'"
+-        :autofocus="recordPage && page.title !== '无标题'"
++        :autofocus="recordPage && page.title !== '无标题' && !initialEditorFocusCancelled"
+         aria-label="页面正文编辑区域"
+         @update="onEditorUpdate"
+         @composition="(active) => persistence?.setComposing(active)"
+--- a/apps/web/src/components/editor/EotionEditor.vue
++++ b/apps/web/src/components/editor/EotionEditor.vue
+@@ -7,8 +7,8 @@
+ import { AttachmentAttrsSchema, SAFE_IMAGE_MIME_TYPES } from '@eotion/contracts'
+ import { blockTypeForNode } from '@eotion/domain/block-types'
+ import { createLocalId } from '@eotion/storage'
+-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+-import { NodeSelection, Plugin } from '@tiptap/pm/state'
++import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
++import { NodeSelection, Plugin, Selection } from '@tiptap/pm/state'
+ 
+ import '../../styles/editor-content.css'
+ import { AttachmentLifetime, EotionFile, EotionImage, EotionTodo } from '../../editor/attachmentNodes'
+@@ -106,6 +106,16 @@
+ let pickerTarget: UploadTarget | undefined
+ let disposed = false
+ let caretScrollFrame: number | undefined
++let initialFocusFrame: number | undefined
++let initialFocusToken = 0
++function cancelInitialFocus(): void {
++  initialFocusToken += 1
++  if (initialFocusFrame !== undefined) cancelAnimationFrame(initialFocusFrame)
++  initialFocusFrame = undefined
++}
++watch(() => props.autofocus, autofocus => {
++  if (!autofocus) cancelInitialFocus()
++}, { flush: 'sync' })
+ 
+ function updateKeyboardInset() {
+   const viewport = window.visualViewport
+@@ -141,6 +151,7 @@
+ })
+ onBeforeUnmount(() => {
+   disposed = true
++  cancelInitialFocus()
+   pageEpoch += 1
+   for (const task of uploads.value) {
+     task.controller?.abort()
+@@ -179,7 +190,18 @@
+   },
+   onCreate: ({ editor: createdEditor }) => {
+     updateSelection()
+-    if (props.autofocus) requestAnimationFrame(() => createdEditor.commands.focus('start'))
++    if (!props.autofocus) return
++    const token = ++initialFocusToken
++    const view = createdEditor.view
++    const root = view.dom
++    initialFocusFrame = requestAnimationFrame(() => {
++      initialFocusFrame = undefined
++      if (token !== initialFocusToken || !props.autofocus || disposed || createdEditor.isDestroyed
++        || editor.value !== createdEditor || createdEditor.view !== view || view.dom !== root || !root.isConnected) return
++      if (view.hasFocus()) return
++      view.dispatch(view.state.tr.setSelection(Selection.atStart(view.state.doc)).scrollIntoView())
++      view.focus()
++    })
+   },
+   onSelectionUpdate: updateSelection,
+   onUpdate: document => {
+--- a/apps/web/src/components/ui/EotionProductOverlay.vue
++++ b/apps/web/src/components/ui/EotionProductOverlay.vue
+@@ -5,6 +5,7 @@
+ 
+ <script setup lang="ts">
+ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
++import { withOverlayInitialFocus } from './overlayFocus'
+ import type { ProductOverlayMode } from './productOverlay'
+ 
+ const props = withDefaults(defineProps<{
+@@ -99,18 +100,20 @@
+     }
+     const hadModal = Boolean(dialog.value?.open)
+     if (dialog.value?.open) { expectedCloses.add(dialog.value); dialog.value.close() }
+-    if (node instanceof HTMLDialogElement) {
+-      node.showModal()
+-      maskedDrawers.add(node)
+-      lockScroll()
+-    } else if (hadModal) {
+-      unlockScroll()
+-    }
+-    const focusTarget = node instanceof HTMLDialogElement ? node.querySelector<HTMLElement>('.eotion-product-overlay__body [autofocus]')
+-      ?? node.querySelector<HTMLElement>('.eotion-product-overlay__body input:not([disabled]), .eotion-product-overlay__body textarea:not([disabled]), .eotion-product-overlay__body select:not([disabled]), .eotion-product-overlay__body [contenteditable="true"], .eotion-product-overlay__body button:not([disabled]), .eotion-product-overlay__body [tabindex="0"]')
+-      ?? node.querySelector<HTMLElement>('.eotion-product-overlay__footer button:not([disabled]), .eotion-product-overlay__footer [tabindex="0"]')
+-      ?? node.querySelector<HTMLElement>('.eotion-product-overlay__body') : node
+-    focusTarget?.focus({ preventScroll: true })
++    withOverlayInitialFocus(node, () => {
++      if (node instanceof HTMLDialogElement) {
++        node.showModal()
++        maskedDrawers.add(node)
++        lockScroll()
++      } else if (hadModal) {
++        unlockScroll()
++      }
++      const focusTarget = node instanceof HTMLDialogElement ? node.querySelector<HTMLElement>('.eotion-product-overlay__body [autofocus]')
++        ?? node.querySelector<HTMLElement>('.eotion-product-overlay__body input:not([disabled]), .eotion-product-overlay__body textarea:not([disabled]), .eotion-product-overlay__body select:not([disabled]), .eotion-product-overlay__body [contenteditable="true"], .eotion-product-overlay__body button:not([disabled]), .eotion-product-overlay__body [tabindex="0"]')
++        ?? node.querySelector<HTMLElement>('.eotion-product-overlay__footer button:not([disabled]), .eotion-product-overlay__footer [tabindex="0"]')
++        ?? node.querySelector<HTMLElement>('.eotion-product-overlay__body') : node
++      focusTarget?.focus({ preventScroll: true })
++    })
+     if (reducedMotion()) { node.dataset.motionState = 'open'; motions.delete(node); done(); return }
+     requestAnimationFrame(() => requestAnimationFrame(() => {
+       if (node.dataset.motionState !== 'entering' || !node.isConnected) return
+@@ -158,13 +161,17 @@
+   if (isOpen && isModalSurface(props.mode)) {
+     await nextTick()
+     if (!open.value || !isModalSurface(props.mode)) return
+-    if (!dialog.value?.open) dialog.value?.showModal()
+-    lockScroll()
+-    const focusTarget = dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__body [autofocus]')
+-      ?? dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__body input:not([disabled]), .eotion-product-overlay__body textarea:not([disabled]), .eotion-product-overlay__body select:not([disabled]), .eotion-product-overlay__body [contenteditable="true"], .eotion-product-overlay__body button:not([disabled]), .eotion-product-overlay__body [tabindex="0"]')
+-      ?? dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__footer button:not([disabled]), .eotion-product-overlay__footer [tabindex="0"]')
+-      ?? dialog.value?.querySelector<HTMLElement>('.eotion-product-overlay__body')
+-    focusTarget?.focus({ preventScroll: true })
++    const currentDialog = dialog.value
++    if (!currentDialog) return
++    withOverlayInitialFocus(currentDialog, () => {
++      if (!currentDialog?.open) currentDialog?.showModal()
++      lockScroll()
++      const focusTarget = currentDialog?.querySelector<HTMLElement>('.eotion-product-overlay__body [autofocus]')
++        ?? currentDialog?.querySelector<HTMLElement>('.eotion-product-overlay__body input:not([disabled]), .eotion-product-overlay__body textarea:not([disabled]), .eotion-product-overlay__body select:not([disabled]), .eotion-product-overlay__body [contenteditable="true"], .eotion-product-overlay__body button:not([disabled]), .eotion-product-overlay__body [tabindex="0"]')
++        ?? currentDialog?.querySelector<HTMLElement>('.eotion-product-overlay__footer button:not([disabled]), .eotion-product-overlay__footer [tabindex="0"]')
++        ?? currentDialog?.querySelector<HTMLElement>('.eotion-product-overlay__body')
++      focusTarget?.focus({ preventScroll: true })
++    })
+   } else {
+     if (dialog.value?.open) {
+       expectedCloses.add(dialog.value)
+--- /dev/null
++++ b/apps/web/src/components/ui/overlayFocus.ts
+@@ -0,0 +1,12 @@
++const initialFocusRoots: HTMLElement[] = []
++
++/** Only synchronous overlay opening focus is exempt from a user's focus claim. */
++export function withOverlayInitialFocus(root: HTMLElement, action: () => void): void {
++  const length = initialFocusRoots.length
++  initialFocusRoots.push(root)
++  try { action() } finally { initialFocusRoots.length = length }
++}
++
++export function isOverlayInitialFocusTarget(target: EventTarget | null): boolean {
++  return target instanceof Node && initialFocusRoots.some(root => root.contains(target))
++}

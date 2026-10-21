@@ -1,0 +1,22 @@
+[
+  {
+    "name": "page-tablet-light",
+    "actualSha256": "12B4D0D4F24F18AD39D34536DBF7F6435620622F1BC23F85E3CB00C378ED1322",
+    "matchesReviewedHistoricalActual": true
+  },
+  {
+    "name": "page-mobile-light",
+    "actualSha256": "A455C3BF511C7BBB8F476EC179A25AF663CB1C710D2D12E8D36FBAB520CF9C98",
+    "matchesReviewedHistoricalActual": true
+  },
+  {
+    "name": "settings-desktop-light",
+    "actualSha256": "6752CEF0BA25443FA0C1DD900E6489846C26E8E760DE91CC5C2BEB165E09AD4D",
+    "matchesReviewedHistoricalActual": true
+  },
+  {
+    "name": "settings-profile-mobile-light",
+    "actualSha256": "FE7AD87834C932A442500A24BD9AF9E8D87961820EB6ED0AFB816B55D8617D6A",
+    "matchesReviewedHistoricalActual": true
+  }
+]

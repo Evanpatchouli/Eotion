@@ -1,0 +1,192 @@
+[
+  {
+    "file": "product-attachments.spec.ts",
+    "line": 686,
+    "title": "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.eotion-editor-content .tiptap')\nExpected substring: \u001b[32m\"\u001b[7m正文\u001b[27m仍然可编辑\"\u001b[39m\nReceived string:    \u001b[31m\"\u001b[7mexisting.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试\u001b[27m仍然可编辑\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.eotion-editor-content .tiptap') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap')\u001b[22m\n\u001b[2m    14 × locator resolved to <div tabindex=\"0\" role=\"textbox\" translate=\"no\" spellcheck=\"false\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" contenteditable=\"true\" class=\"tiptap ProseMirror ProseMirror-focused\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"existing.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试仍然可编辑\"\u001b[22m\n",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  },
+  {
+    "file": "product-database.spec.ts",
+    "line": 6965,
+    "title": "unconfirmed inline database creation fences further create or link attempts until page refresh",
+    "error": "\u001b[31mTest timeout of 30000ms exceeded.\u001b[39m",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  },
+  {
+    "file": "product-editor.spec.ts",
+    "line": 1012,
+    "title": "selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('toolbar', { name: '选区格式' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('toolbar', { name: '选区格式' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('toolbar', { name: '选区格式' })\u001b[22m\n",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-editor-selection-b-81edf--viewport-in-light-and-dark\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-editor-selection-b-81edf--viewport-in-light-and-dark\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  },
+  {
+    "file": "product-p75-acceptance.spec.ts",
+    "line": 427,
+    "title": "seeded mixed document keeps local-first identity, nesting, callout attrs and table grid across offline restart and reconnect",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-p75-acceptance-see-2b358-fline-restart-and-reconnect\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-p75-acceptance-see-2b358-fline-restart-and-reconnect\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  },
+  {
+    "file": "product-pages.spec.ts",
+    "line": 745,
+    "title": "mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m348\u001b[39m\nReceived:    \u001b[31m544\u001b[39m",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-pages-touch-page-a-74367-scrollable-destination-list\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-pages-touch-page-a-74367-scrollable-destination-list\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  },
+  {
+    "file": "product-settings.spec.ts",
+    "line": 755,
+    "title": "settings navigation ends with 软件说明 and /settings/about shows build info plus release notes",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('about-released')\nExpected: \u001b[32m\"2026-10-11\"\u001b[39m\nReceived: \u001b[31m\"暂无记录\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" getByTestId('about-released') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('about-released')\u001b[22m\n\u001b[2m    14 × locator resolved to <dd data-testid=\"about-released\" class=\"settings-about-released\">暂无记录</dd>\u001b[22m\n\u001b[2m       - unexpected value \"暂无记录\"\u001b[22m\n",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-settings-settings--e7b55-ild-info-plus-release-notes\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-settings-settings--e7b55-ild-info-plus-release-notes\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  },
+  {
+    "file": "product-table.spec.ts",
+    "line": 177,
+    "title": "last cell Tab adds a row and the table keeps its identity across reload",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m4\u001b[39m\nReceived: \u001b[31m3\u001b[39m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-table-last-cell-Ta-3278f--its-identity-across-reload\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-table-last-cell-Ta-3278f--its-identity-across-reload\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  },
+  {
+    "file": "product-table.spec.ts",
+    "line": 245,
+    "title": "copy and paste inside cells and plain/TSV paste never produce an unsaveable document",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  },
+  {
+    "file": "product-table.spec.ts",
+    "line": 306,
+    "title": "a table nests under a toggle and cell Tab never indents the table block",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\nExpected: \u001b[32m\"B\u001b[7mmoved\u001b[27m\"\u001b[39m\nReceived: \u001b[31m\"B\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\u001b[22m\n\u001b[2m    14 × locator resolved to <th colspan=\"1\" rowspan=\"1\">…</th>\u001b[22m\n\u001b[2m       - unexpected value \"B\"\u001b[22m\n",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-table-a-table-nest-689fa-ver-indents-the-table-block\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-table-a-table-nest-689fa-ver-indents-the-table-block\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  },
+  {
+    "file": "product-table.spec.ts",
+    "line": 357,
+    "title": "cell inline marks and hard breaks persist through save and reload",
+    "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"bold\"\u001b[39m\nReceived string:    \u001b[31m\"{\\\"node\\\":{\\\"type\\\":\\\"table\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"A\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"B\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"C\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"D\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"E note\\\"},{\\\"type\\\":\\\"hardBreak\\\"},{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"line two\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"F\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"G\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"H\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"I\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]}]}}\"\u001b[39m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-table-cell-inline--71806-ist-through-save-and-reload\\test-failed-1.png"
+      },
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-table-cell-inline--71806-ist-through-save-and-reload\\error-context.md"
+      }
+    ],
+    "attempts": 1
+  }
+]

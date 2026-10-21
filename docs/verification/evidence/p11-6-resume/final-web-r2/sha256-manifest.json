@@ -1,0 +1,440 @@
+{
+  "algorithm": "SHA-256",
+  "files": [
+    {
+      "path": "build/command.json",
+      "bytes": 147,
+      "sha256": "0ec1d2c7473bd9d1057c8db22271639a15aae81dea479b438d3fc12759fcad33"
+    },
+    {
+      "path": "build/stderr.log",
+      "bytes": 360,
+      "sha256": "351b524197fb492920789369e7f1a271420c757633fbb553b280a181ac4c31a4"
+    },
+    {
+      "path": "build/stdout.log",
+      "bytes": 2712,
+      "sha256": "9d581dd7d608ebe284e35efd2f2d0df5e599540b932842960d8add20d61be892"
+    },
+    {
+      "path": "build/summary.json",
+      "bytes": 132,
+      "sha256": "a0e01da207a2e2d256f70af3116a5bac0b4e90ffe944ed5186181b62ba8100e2"
+    },
+    {
+      "path": "database/command.json",
+      "bytes": 632,
+      "sha256": "51247efe7292e81d2bc4347a60c8d92d6fb78af06996cb5c9b74d32172da7802"
+    },
+    {
+      "path": "database/results.json",
+      "bytes": 270336,
+      "sha256": "485619feb6c5edf1c7e593a9cd3c241523198c8458345a29124880782d9d2fa1"
+    },
+    {
+      "path": "database/stderr.log",
+      "bytes": 164,
+      "sha256": "533ee43b3af3e663f3565a031965d2e8a1c661672042597e1d7c485bceacb9ae"
+    },
+    {
+      "path": "database/stdout.log",
+      "bytes": 38151,
+      "sha256": "b588cd62f3a8794bfbe2e0b52130161c282bc9c25a5258e2779ff291d7ad5dff"
+    },
+    {
+      "path": "database/summary.json",
+      "bytes": 317,
+      "sha256": "cdbe3c2412158f458f938d33a35eb8e1cca4c8fbd948ed0253e91cee380ea439"
+    },
+    {
+      "path": "database/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "database/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/attachments/p112d-timeline-all-unscheduled-png-85228f8ffb07387b38635f854113ec9b6206cf6f.png",
+      "bytes": 41252,
+      "sha256": "bd7c5826f50be3fd32b3d1f47bff7000f3553a1f7b6de316470a959c94fa01d3"
+    },
+    {
+      "path": "database/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/attachments/p112d-timeline-empty-png-9ac94203208b8c48419ef43d0dd10c82fc7e2c60.png",
+      "bytes": 55631,
+      "sha256": "959378be0432621042e308847392f1b2318ed4d27c5a8d506e8f40763a36a942"
+    },
+    {
+      "path": "database/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/attachments/p112d-timeline-scale-dom-cache-samples-json-c6f970a97e730bac1dac5efe4e33b7011e265fd5.json",
+      "bytes": 96766,
+      "sha256": "aae249d25f7d1c4d9c563416617be76bfa12840eeb3719b5d76f1012b3daf7a1"
+    },
+    {
+      "path": "database/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/p112d-timeline-all-unscheduled.png",
+      "bytes": 41252,
+      "sha256": "bd7c5826f50be3fd32b3d1f47bff7000f3553a1f7b6de316470a959c94fa01d3"
+    },
+    {
+      "path": "database/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/p112d-timeline-empty.png",
+      "bytes": 55631,
+      "sha256": "959378be0432621042e308847392f1b2318ed4d27c5a8d506e8f40763a36a942"
+    },
+    {
+      "path": "database/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/p112d-timeline-scale-dom-cache-samples.json",
+      "bytes": 96766,
+      "sha256": "aae249d25f7d1c4d9c563416617be76bfa12840eeb3719b5d76f1012b3daf7a1"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--12b4e-s-and-has-no-table-fallback/p112a-timeline-shell-desktop-dark.png",
+      "bytes": 56573,
+      "sha256": "5bf44cf56bacb3fe7d06ba07de6f05836ecd5aca3260625612eecfc985e16e76"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--12b4e-s-and-has-no-table-fallback/p112a-timeline-shell-desktop-light.png",
+      "bytes": 56715,
+      "sha256": "627bcff13b0039972d757b544de85f422c46b8b60051126b8a9a0d68b234f626"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--12b4e-s-and-has-no-table-fallback/p112a-timeline-shell-phone-dark.png",
+      "bytes": 31700,
+      "sha256": "217471be081b08f877d779c18acadd740ef8e6b114927b5c2f794a3163a29330"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--12b4e-s-and-has-no-table-fallback/p112a-timeline-shell-phone-light.png",
+      "bytes": 30953,
+      "sha256": "fad34fa88da6794ef69e2e6975e1a021b836942664d82aea1e4399887ddfe700"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--7db51-ns-the-existing-Record-Host/p112c-frozen-projection-desktop-dark.png",
+      "bytes": 43279,
+      "sha256": "07df524161cf2ea2113f0978fbb12001511c5df6f7ffbfb6d1c946a61f911c09"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--7db51-ns-the-existing-Record-Host/p112c-frozen-projection-desktop-light.png",
+      "bytes": 43168,
+      "sha256": "3af0d63f341950cc8a65f911cfb2a661905a63aa8e36f0f122826cb32e5a37c8"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--7db51-ns-the-existing-Record-Host/p112c-frozen-projection-phone-dark.png",
+      "bytes": 28009,
+      "sha256": "08a022a319d26cba14e4325abc386409d65a8065a3b340148fdc03050675917e"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--7db51-ns-the-existing-Record-Host/p112c-frozen-projection-phone-light.png",
+      "bytes": 27676,
+      "sha256": "b667047b1b632c86642962df7cda271a307ed740eb313ac18d29311d1da58f9e"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--b0a5b-alizes-without-reprojecting/attachments/timeline-100-browser-samples-json-f7158f5652160abad50248aa03fa5b6abb0a2b50.json",
+      "bytes": 3284,
+      "sha256": "e0a42cafe5cf6fafa3088579d56c7b75fb6ecbc6299a7686d8c2134ae3eafbd8"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--b0a5b-alizes-without-reprojecting/timeline-100-browser-samples.json",
+      "bytes": 3284,
+      "sha256": "e0a42cafe5cf6fafa3088579d56c7b75fb6ecbc6299a7686d8c2134ae3eafbd8"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--de966-alizes-without-reprojecting/attachments/timeline-500-browser-samples-json-5a0a45f2bcf54d5588383a2ea1dba2aa5542be83.json",
+      "bytes": 20464,
+      "sha256": "064eb3df1815446d12e282d55a629821e9d3fe9469f70065922da28629c23f25"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--de966-alizes-without-reprojecting/timeline-500-browser-samples.json",
+      "bytes": 20464,
+      "sha256": "064eb3df1815446d12e282d55a629821e9d3fe9469f70065922da28629c23f25"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--e09b4-e-selected-record-read-only/p112b-generic-timeline-desktop-dark.png",
+      "bytes": 66400,
+      "sha256": "c536a80f366d2cf001b7df1cd143995236740d1660513863c07b3bb2fbc6405a"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--e09b4-e-selected-record-read-only/p112b-generic-timeline-desktop-light.png",
+      "bytes": 67475,
+      "sha256": "fa92dc29e9b189c31201e72dc37a9725e46cf0c2129ad61e3c730d65e8b98926"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--e09b4-e-selected-record-read-only/p112b-generic-timeline-phone-dark.png",
+      "bytes": 41877,
+      "sha256": "cce0c62f2f92e88708dbcab4195cbe5fb4388fe3ab3edc4d8f7b415e3bae4a34"
+    },
+    {
+      "path": "database/test-results/product-database-Timeline--e09b4-e-selected-record-read-only/p112b-generic-timeline-phone-light.png",
+      "bytes": 41717,
+      "sha256": "7801c43ca1d28df696cd98bbee29d31ff82b2bf9be1ade3013e7f7a36cd32227"
+    },
+    {
+      "path": "logic-theme/command.json",
+      "bytes": 1003,
+      "sha256": "f6dc9645a44b3c9e7f6a38f607bbcd3bf5c49759465b1e5f6b1248fecda97a4d"
+    },
+    {
+      "path": "logic-theme/results.json",
+      "bytes": 103089,
+      "sha256": "ce17fa10a71c521cb8d3e79178f949cd6018b84144bbc6efc5cb814703618a87"
+    },
+    {
+      "path": "logic-theme/stderr.log",
+      "bytes": 164,
+      "sha256": "a59c8c744dfe9181c7cfab46d0e656aaed6c667fe7b6f8bd85e789ee9f6fcf0f"
+    },
+    {
+      "path": "logic-theme/stdout.log",
+      "bytes": 12492,
+      "sha256": "ce8e90e49b6ee72fae251e1c64b6abcf88fa386cf4b5d3be3dba39609600c2a2"
+    },
+    {
+      "path": "logic-theme/summary.json",
+      "bytes": 327,
+      "sha256": "5e0d68512adab4e64dadaf98bc484aac539fc2cb9c14183280fe6836a0f8ebc1"
+    },
+    {
+      "path": "logic-theme/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "playwright.full.config.mjs",
+      "bytes": 424,
+      "sha256": "ce6d0117bc1ae5170cd56cdf0e3ace066bfe2e898324b739c6fda307e48dc1a9"
+    },
+    {
+      "path": "playwright.visual.config.mjs",
+      "bytes": 493,
+      "sha256": "cc0ab67f802f642c085ee7a5ed5317567d8966de49005fd1cf5a4a89336e3e98"
+    },
+    {
+      "path": "product/command.json",
+      "bytes": 1123,
+      "sha256": "b2892757f688ef1ebadc6d67f53cf58eb678fc87124257e806b786c3aba01d88"
+    },
+    {
+      "path": "product/results.json",
+      "bytes": 559683,
+      "sha256": "5eb76e9a4820450445ef7b245d6d7f1a9adfdd4fa3bd2ee71e89c71d7530ee98"
+    },
+    {
+      "path": "product/stderr.log",
+      "bytes": 492,
+      "sha256": "75b7d715ce75fd1c4f45cc8693cc682e0347d7cb8ced70b0d323105b8c9f47cc"
+    },
+    {
+      "path": "product/stdout.log",
+      "bytes": 78816,
+      "sha256": "c4d7ae2730f6a191928644277ce53c5790922d415692503bdeabe55a50de1c6b"
+    },
+    {
+      "path": "product/summary.json",
+      "bytes": 324,
+      "sha256": "5881e185e622b061a96d4912dc9d471e725aea61932ebb8d7994c7c9c4629ee0"
+    },
+    {
+      "path": "product/test-results/.last-run.json",
+      "bytes": 145,
+      "sha256": "13f556895049155d8e4685233e9a42cf1ca2eea8aac1bccb2dbf151303825fa1"
+    },
+    {
+      "path": "product/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/attachments/p112d-timeline-all-unscheduled-png-76274b65fadb66706ef3caa845915038dffe71c3.png",
+      "bytes": 41252,
+      "sha256": "bd7c5826f50be3fd32b3d1f47bff7000f3553a1f7b6de316470a959c94fa01d3"
+    },
+    {
+      "path": "product/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/attachments/p112d-timeline-empty-png-d202017e9c7418a0751e703faa6519f6366ef9e8.png",
+      "bytes": 55631,
+      "sha256": "959378be0432621042e308847392f1b2318ed4d27c5a8d506e8f40763a36a942"
+    },
+    {
+      "path": "product/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/attachments/p112d-timeline-scale-dom-cache-samples-json-98143aaec84f282852f02fbb6f3f235b281dfa52.json",
+      "bytes": 96766,
+      "sha256": "aae249d25f7d1c4d9c563416617be76bfa12840eeb3719b5d76f1012b3daf7a1"
+    },
+    {
+      "path": "product/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/p112d-timeline-all-unscheduled.png",
+      "bytes": 41252,
+      "sha256": "bd7c5826f50be3fd32b3d1f47bff7000f3553a1f7b6de316470a959c94fa01d3"
+    },
+    {
+      "path": "product/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/p112d-timeline-empty.png",
+      "bytes": 55631,
+      "sha256": "959378be0432621042e308847392f1b2318ed4d27c5a8d506e8f40763a36a942"
+    },
+    {
+      "path": "product/test-results/product-database-P11-2D-Ti-8ccfa-lence-and-empty-screenshots/p112d-timeline-scale-dom-cache-samples.json",
+      "bytes": 96766,
+      "sha256": "aae249d25f7d1c4d9c563416617be76bfa12840eeb3719b5d76f1012b3daf7a1"
+    },
+    {
+      "path": "product/test-results/product-database-P11-3A-dr-c93c7-out-opening-a-second-drawer/error-context.md",
+      "bytes": 22028,
+      "sha256": "c5a24880b43e5c4d482deefba3a8781601521502f9d4c1c8aaee499a397fea94"
+    },
+    {
+      "path": "product/test-results/product-database-P11-3A-dr-c93c7-out-opening-a-second-drawer/test-failed-1.png",
+      "bytes": 53807,
+      "sha256": "3ce74fafaf6880d075f7354b29a56c16320972b3530fea906c2a24d6775acc81"
+    },
+    {
+      "path": "product/test-results/product-database-P11-3A-dr-c93c7-out-opening-a-second-drawer/trace.zip",
+      "bytes": 551525,
+      "sha256": "116048877f3c917b576fba5aa9818447a38132346506408569563be27de28b18"
+    },
+    {
+      "path": "product/test-results/product-database-P11-5-coa-62442-the-native-Timeline-surface/error-context.md",
+      "bytes": 413,
+      "sha256": "fdd09e9d7865c3cd50bdf0b50802921975eeb0e540ed7c6f26986287011dfb64"
+    },
+    {
+      "path": "product/test-results/product-database-P11-5-coa-62442-the-native-Timeline-surface/test-failed-1.png",
+      "bytes": 53220,
+      "sha256": "d12c1d684fba69506e8866491324f9dedb555900cc431e993c9fa50b64896f61"
+    },
+    {
+      "path": "product/test-results/product-database-P11-5-coa-62442-the-native-Timeline-surface/trace.zip",
+      "bytes": 607486,
+      "sha256": "6e7381eeac08fa6cd1c7e1fbd0c57d914d2dcbc3254efee96d58d46850e4f801"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--12b4e-s-and-has-no-table-fallback/p112a-timeline-shell-desktop-dark.png",
+      "bytes": 56573,
+      "sha256": "5bf44cf56bacb3fe7d06ba07de6f05836ecd5aca3260625612eecfc985e16e76"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--12b4e-s-and-has-no-table-fallback/p112a-timeline-shell-desktop-light.png",
+      "bytes": 56715,
+      "sha256": "627bcff13b0039972d757b544de85f422c46b8b60051126b8a9a0d68b234f626"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--12b4e-s-and-has-no-table-fallback/p112a-timeline-shell-phone-dark.png",
+      "bytes": 31499,
+      "sha256": "40177b61ed0c41384c2602542ef78030d93080300a60223684bbdeb223b4654b"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--12b4e-s-and-has-no-table-fallback/p112a-timeline-shell-phone-light.png",
+      "bytes": 30953,
+      "sha256": "fad34fa88da6794ef69e2e6975e1a021b836942664d82aea1e4399887ddfe700"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--7db51-ns-the-existing-Record-Host/p112c-frozen-projection-desktop-dark.png",
+      "bytes": 43279,
+      "sha256": "07df524161cf2ea2113f0978fbb12001511c5df6f7ffbfb6d1c946a61f911c09"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--7db51-ns-the-existing-Record-Host/p112c-frozen-projection-desktop-light.png",
+      "bytes": 43168,
+      "sha256": "3af0d63f341950cc8a65f911cfb2a661905a63aa8e36f0f122826cb32e5a37c8"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--7db51-ns-the-existing-Record-Host/p112c-frozen-projection-phone-dark.png",
+      "bytes": 28009,
+      "sha256": "08a022a319d26cba14e4325abc386409d65a8065a3b340148fdc03050675917e"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--7db51-ns-the-existing-Record-Host/p112c-frozen-projection-phone-light.png",
+      "bytes": 27480,
+      "sha256": "6f2d7505cab530531cf6a70f491a6a7ada73a7cd542c28e86eb58362caa35b5f"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--b0a5b-alizes-without-reprojecting/attachments/timeline-100-browser-samples-json-ad023108b8f9c26cbd0a5c4fee12968eeba183bc.json",
+      "bytes": 3282,
+      "sha256": "2ee748b295f2cdad22d158e445b7f69482ed6b02d6b0716e5b131a2d2282e7fe"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--b0a5b-alizes-without-reprojecting/timeline-100-browser-samples.json",
+      "bytes": 3282,
+      "sha256": "2ee748b295f2cdad22d158e445b7f69482ed6b02d6b0716e5b131a2d2282e7fe"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--de966-alizes-without-reprojecting/attachments/timeline-500-browser-samples-json-f18af8a82348193e0e79e81fb0134da1479f7119.json",
+      "bytes": 21067,
+      "sha256": "833f29c5dc6714be67cfc9ec81b8c1b410619e8130ca1abe5119a4c122a3faae"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--de966-alizes-without-reprojecting/timeline-500-browser-samples.json",
+      "bytes": 21067,
+      "sha256": "833f29c5dc6714be67cfc9ec81b8c1b410619e8130ca1abe5119a4c122a3faae"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--e09b4-e-selected-record-read-only/p112b-generic-timeline-desktop-dark.png",
+      "bytes": 66371,
+      "sha256": "75554c92128ba21f3ded6a4d1f4963e836548cc88c51b574c307dde335b63663"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--e09b4-e-selected-record-read-only/p112b-generic-timeline-desktop-light.png",
+      "bytes": 67475,
+      "sha256": "fa92dc29e9b189c31201e72dc37a9725e46cf0c2129ad61e3c730d65e8b98926"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--e09b4-e-selected-record-read-only/p112b-generic-timeline-phone-dark.png",
+      "bytes": 41877,
+      "sha256": "cce0c62f2f92e88708dbcab4195cbe5fb4388fe3ab3edc4d8f7b415e3bae4a34"
+    },
+    {
+      "path": "product/test-results/product-database-Timeline--e09b4-e-selected-record-read-only/p112b-generic-timeline-phone-light.png",
+      "bytes": 41717,
+      "sha256": "7801c43ca1d28df696cd98bbee29d31ff82b2bf9be1ade3013e7f7a36cd32227"
+    },
+    {
+      "path": "run-gates.cjs",
+      "bytes": 3030,
+      "sha256": "432b8a270360a0a0a26b952aee7e2336665c40a94ae8c9287217d6457e428345"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 1719,
+      "sha256": "7c58861d27a4fafe67ab821afce84dc8711273c1be32d93ca128f8648271a899"
+    },
+    {
+      "path": "typecheck/command.json",
+      "bytes": 151,
+      "sha256": "7da36025aa33a2d6506455f8ff119f397a1b92a7576b5569e29709bab99198b0"
+    },
+    {
+      "path": "typecheck/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "typecheck/stdout.log",
+      "bytes": 87,
+      "sha256": "3e77cb68bbd4699f2862c159cc717c881e6ad89b47dee02bc8030256fb8a2663"
+    },
+    {
+      "path": "typecheck/summary.json",
+      "bytes": 136,
+      "sha256": "ef8ff08774af611f101678a094bdb99833886c0f05d5f149440ea4537a048ed4"
+    },
+    {
+      "path": "visual/command.json",
+      "bytes": 594,
+      "sha256": "e5e6bf30dc697f6848d384ad325d28ceffe7f166cbc93aba9cec522ee398adfb"
+    },
+    {
+      "path": "visual/results.json",
+      "bytes": 19062,
+      "sha256": "4528ca36c9bc891821b5d0700a6f0cfd55c5652b8e87eed3e96bd2167ad63a42"
+    },
+    {
+      "path": "visual/stderr.log",
+      "bytes": 328,
+      "sha256": "5090d348828395f520d8457132c6bf5ad4e964a938b84146691b561f765c047c"
+    },
+    {
+      "path": "visual/stdout.log",
+      "bytes": 1180,
+      "sha256": "d4a2bf365868c070924158755beb741ef7577f70d059f099ae67243e51089957"
+    },
+    {
+      "path": "visual/summary.json",
+      "bytes": 313,
+      "sha256": "f9c844e836aab1f4836d100baa86940bea648669d5328e55b103fcf5b141b82e"
+    },
+    {
+      "path": "visual/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "path": "visual/test-results/visual-environment.json",
+      "bytes": 795,
+      "sha256": "c5cdc4dc18a896983d21d1ba87fa06951df5bd0eb29ee36b12883674375bd73d"
+    }
+  ]
+}

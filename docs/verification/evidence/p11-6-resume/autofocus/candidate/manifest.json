@@ -1,0 +1,28 @@
+[
+  {
+    "path": "apps/web/src/views/PageView.vue",
+    "originalSha256": "88f26bbbc06f7abb702153541f5570f3c36a81388b9690f69bd27fdeb40f4081",
+    "candidateSha256": "7d3a6622d56dea10ffef8c2fb2294221cef8e2206ff83162577f1637c5e68e47"
+  },
+  {
+    "path": "apps/web/src/components/editor/EotionEditor.vue",
+    "originalSha256": "4c8a1a94f7be85f08ef26c9162bc9ad6ce8c9d19e8418e097596e9beb360f875",
+    "candidateSha256": "b6f4c946ddcb6736d361cf855c59dfe67ba2367bc1cfc642b8ea42f9151305d9"
+  },
+  {
+    "path": "apps/web/src/components/ui/EotionProductOverlay.vue",
+    "originalSha256": "6434373ba2604a63b2b1f6686c02a792751809d90c97550e9f2e867f8139a114",
+    "candidateSha256": "3839c748989d1ec53314c632dcc81b3d3ed933bd38b6bfc986de821e1a42f92f"
+  },
+  {
+    "path": "apps/web/src/components/ui/overlayFocus.ts",
+    "originalSha256": null,
+    "candidateSha256": "8ece1ad497896af27477aa0204c088f92eefe1a4ea3e102f6b5e27ef70389482"
+  },
+  {
+    "path": "apps/web/tests/product-database.spec.ts",
+    "originalSha256": "df2b292861c14650ebc80ab2003ed45a025d6b103685b79e2b2d0563cfb32942",
+    "apply": "append product-database.append.ts only; do not overwrite concurrent coarse setup patch",
+    "candidateSha256": "283d5e7728894ef32c79773eccd8f34533c4dcb896083193209e88be6691bcaf"
+  }
+]

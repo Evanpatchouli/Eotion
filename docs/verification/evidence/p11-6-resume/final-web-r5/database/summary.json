@@ -1,0 +1,16 @@
+{
+  "gate": "database",
+  "start": "2026-10-21T06:37:27.919Z",
+  "end": "2026-10-21T06:47:58.279Z",
+  "exitCode": 0,
+  "signal": null,
+  "stats": {
+    "startTime": "2026-10-21T06:37:28.515Z",
+    "duration": 629732.8200000001,
+    "expected": 249,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "errors": []
+}

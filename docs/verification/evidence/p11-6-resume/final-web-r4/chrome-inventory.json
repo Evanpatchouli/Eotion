@@ -1,0 +1,41 @@
+[
+  {
+    "FullName": "C:\\Program Files\\Google\\Chrome\\Application\\156.0.8078.47"
+  },
+  {
+    "FullName": "C:\\Program Files\\Google\\Chrome\\Application\\PlatformExperienceHelper"
+  },
+  {
+    "FullName": "C:\\Program Files\\Google\\Chrome\\Application\\SetupMetrics"
+  },
+  {
+    "FullName": "C:\\Program Files\\Google\\Chrome\\Application\\chrome_proxy.exe"
+  },
+  {
+    "FullName": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+  },
+  {
+    "FullName": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.VisualElementsManifest.xml"
+  },
+  {
+    "FullName": "C:\\Program Files\\Google\\Chrome\\Application\\initial_preferences"
+  },
+  {
+    "FullName": "C:\\Program Files\\Google\\Chrome\\Application\\new_chrome_proxy.exe"
+  },
+  {
+    "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome_proxy.exe",
+    "version": "156.0.8078.47",
+    "sha256": "B78527FE1F9FFCCF50D26832DFA18EEA042F19A6D6A258534D0179A0B1ADB458"
+  },
+  {
+    "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "version": "156.0.8078.47",
+    "sha256": "10D6EE85BE41B8B87BE6C99A4C4C60C017416A35669F660B5C748B6103A1EC50"
+  },
+  {
+    "path": "C:\\Program Files\\Google\\Chrome\\Application\\new_chrome_proxy.exe",
+    "version": "152.0.7977.83",
+    "sha256": "70321CE8B93847AD128B8444F04CD4886DF8A6EE421B94C75A59EAC78C074430"
+  }
+]

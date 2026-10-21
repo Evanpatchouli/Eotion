@@ -1,0 +1,129 @@
+{
+  "task": "P11.6 backend verification",
+  "capturedAt": "2026-10-19T10:17:24.3249158Z",
+  "repository": "C:\\Users\\31250\\Work\\Eotion",
+  "gitHead": "ff0901c7545c9bc1addad9114cc1d41492a52eb3",
+  "pnpm": "10.34.2",
+  "node": "v24.22.0",
+  "powershell": "7.6.6",
+  "mongoServerVersion": "8.2.3",
+  "mongoUri": "mongodb://127.0.0.1:54463/?replicaSet=p116_c91e3284",
+  "mongoPort": 54463,
+  "mongoReplicaSet": "p116_c91e3284",
+  "mongoPid": 58520,
+  "sourceEnvironmentFileModified": false,
+  "mongod27017Connected": false,
+  "p4MongoUriScopedToGateRunnerProcess": true,
+  "gates": [
+    {
+      "name": "domain-test",
+      "command": "pnpm --filter @eotion/domain test",
+      "startedAt": "2026-10-19T10:06:31.3399326Z",
+      "finishedAt": "2026-10-19T10:06:34.2953423Z",
+      "exitCode": 0,
+      "mongoUri": null,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\domain-test.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\domain-test.stderr.log"
+    },
+    {
+      "name": "contracts-test",
+      "command": "pnpm --filter @eotion/contracts test",
+      "startedAt": "2026-10-19T10:06:34.3198463Z",
+      "finishedAt": "2026-10-19T10:06:38.5591768Z",
+      "exitCode": 0,
+      "mongoUri": null,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\contracts-test.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\contracts-test.stderr.log"
+    },
+    {
+      "name": "sdk-test",
+      "command": "pnpm --filter @eotion/sdk test",
+      "startedAt": "2026-10-19T10:06:38.5671637Z",
+      "finishedAt": "2026-10-19T10:06:43.1560849Z",
+      "exitCode": 0,
+      "mongoUri": null,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\sdk-test.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\sdk-test.stderr.log"
+    },
+    {
+      "name": "storage-test",
+      "command": "pnpm --filter @eotion/storage test",
+      "startedAt": "2026-10-19T10:06:43.1593366Z",
+      "finishedAt": "2026-10-19T10:06:45.5861105Z",
+      "exitCode": 0,
+      "mongoUri": null,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\storage-test.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\storage-test.stderr.log"
+    },
+    {
+      "name": "api-domain-real-mongo",
+      "command": "pnpm --filter @eotion/api test:domain",
+      "startedAt": "2026-10-19T10:06:45.5900681Z",
+      "finishedAt": "2026-10-19T10:07:31.0445938Z",
+      "exitCode": 0,
+      "mongoUri": "mongodb://127.0.0.1:54463/?replicaSet=p116_c91e3284",
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-domain-real-mongo.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-domain-real-mongo.stderr.log"
+    },
+    {
+      "name": "api-http-real-mongo",
+      "command": "pnpm --filter @eotion/api test:http",
+      "startedAt": "2026-10-19T10:07:31.0489866Z",
+      "finishedAt": "2026-10-19T10:09:39.9088783Z",
+      "exitCode": 0,
+      "mongoUri": "mongodb://127.0.0.1:54463/?replicaSet=p116_c91e3284",
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-http-real-mongo.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-http-real-mongo.stderr.log"
+    },
+    {
+      "name": "api-mcp-real-mongo",
+      "command": "pnpm --filter @eotion/api test:mcp",
+      "startedAt": "2026-10-19T10:09:39.9128815Z",
+      "finishedAt": "2026-10-19T10:10:04.9007429Z",
+      "exitCode": 0,
+      "mongoUri": "mongodb://127.0.0.1:54463/?replicaSet=p116_c91e3284",
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-mcp-real-mongo.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-mcp-real-mongo.stderr.log"
+    },
+    {
+      "name": "api-database-performance-real-mongo",
+      "command": "pnpm --filter @eotion/api test:database:performance",
+      "startedAt": "2026-10-19T10:10:04.9042195Z",
+      "finishedAt": "2026-10-19T10:10:49.4718641Z",
+      "exitCode": 0,
+      "mongoUri": "mongodb://127.0.0.1:54463/?replicaSet=p116_c91e3284",
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-database-performance-real-mongo.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-database-performance-real-mongo.stderr.log"
+    },
+    {
+      "name": "api-typecheck",
+      "command": "pnpm --filter @eotion/api typecheck",
+      "startedAt": "2026-10-19T10:10:49.474843Z",
+      "finishedAt": "2026-10-19T10:10:57.677707Z",
+      "exitCode": 0,
+      "mongoUri": null,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-typecheck.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-typecheck.stderr.log"
+    },
+    {
+      "name": "api-build",
+      "command": "pnpm --filter @eotion/api build",
+      "startedAt": "2026-10-19T10:10:57.6815358Z",
+      "finishedAt": "2026-10-19T10:11:16.1508866Z",
+      "exitCode": 0,
+      "mongoUri": null,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-build.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\api-build.stderr.log"
+    },
+    {
+      "name": "version-check",
+      "command": "pnpm version:check",
+      "startedAt": "2026-10-19T10:11:16.1543122Z",
+      "finishedAt": "2026-10-19T10:11:17.1307922Z",
+      "exitCode": 0,
+      "mongoUri": null,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\version-check.stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\logs\\version-check.stderr.log"
+    }
+  ]
+}

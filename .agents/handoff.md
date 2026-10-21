@@ -1,5 +1,107 @@
 # Handoff
 
+## 最新授权：提交推送并重新组织最终汇报
+
+用户在最终HOLD后明确要求提交并推送改动；该指令覆盖此前不提交门禁，验收HOLD不变。
+实现98ba631、视觉893e8e8，报告与673份验收证据文件随本记录所在文档提交保存；最终SHA见Git
+和最终回复。提交前fetch无远端新增，产品源/测试与原验收SHA清单一致，没有重跑完整套件。
+推送后核对本地与origin/master一致、工作树干净。版本仍0.0.1/build2，无tag/Release/deploy。
+P10、R5资源来源、R1未归因白屏继续HOLD；阶段交付后停止。下方dirty/禁提交描述保留历史。
+
+## 2026-10-21 P11.6 最终 HOLD（本阶段停止）
+
+权威结果见docs/verification/p11-6-timeline-final-acceptance.md顶部，以下旧过程保留历史时态。
+R5完整Product505/506、独立Database249/249、Visual13/13、logic/theme92/92，skip/flaky0，
+全部workers1/retries0；API/Web typecheck/build、后端242/242与version check通过。
+四旧视觉已分别裁定，精准更新四图；最低Unplanned安排、offscreen、初始focus竞态及dirty
+标题覆盖已修且独立复核。Product仍因启动模块ERR_NO_BUFFER_SPACE未挂载失败1项，资源
+来源尚未确定；R1旧白屏无trace，不能等同R5。P10缺失按用户决定仍Final HOLD，不扩展工具。
+raw R5 92文件及SHA在evidence/p11-6-resume/final-web-r5；后端/旧红结果完整保留。
+自有Mongo已admin shutdown，Vite33160/33692精确核验后停止，runner47364退出；7173/7176/
+55479/54463/4175无监听。用户Mongo未触碰。master/ff0901c、版本0.0.1/build2，未提交改动
+必须保留；不commit/push/tag/Release/deploy，不具备升级0.0.3条件。最终review/Git见报告。
+
+## 2026-10-21 P11.6 恢复（R4完整门禁运行中）
+
+源/HEAD未丢，仍master/ff0901c且未提交，版本0.0.1/build2。旧R3仅typecheck/build/logic92完整；
+Product记录18/503后进程消失无summary，原因未知，原始部分归档p11-6-resume/final-web-r3-interrupted。
+恢复时旧7173/7176/55479无监听；新owned Vite7173 PID33692，R4/vite-service.json记录。用户Mongo
+进程不触碰。Chrome实际156.0.8078.47与原155manifest不符，正式preflight阻断后做TEMP诊断26PASS，
+不是正式visual gate；13actual重复稳定。四已更新图与golden精确同，Timeline对prior155只有各1pixel/
+strict0或完全同，Mobile旧golden箭头差已在155。3旧图glyph RGB/BGR RAM reversal strict0，缺直接
+155raw限制保留。主Agent/独立reviewer逐图认可仅改manifest.browserVersion为156，不改PNG/ratio/flags。
+final_gates_recovery现从头R4完整6gate，正常preflight，预期503/246但按actualJSON。final_review_recovery
+等待正式结果和终稿终审；静态源码无确认新P1/P2。P10及未归因首屏white仍HOLD，不提交/推送/发布。
+
+## 2026-10-20 P11.6 续推（最终完整Web门禁运行中）
+
+用户确认P10缺失仍须Final HOLD；不扩展P10/P15，不commit/push/publish，0.0.1/build2不变。
+新证据根TEMP `eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d`，已归档
+`docs/verification/evidence/p11-6-resume/`。报告顶部是续推结果，下方前次HOLD原始记录保留。
+四旧图RGB/BGR方向已证，Mobile工具栏/Desktop导航另有B内容历史；只更新对应4个未经变换的
+actual，其他9图及阈值/flags不改。只读visual环境preflight已加入；更新后完整visual13/13。
+编辑/附件/Table/Bubble失败已证DOM/PM选区/输入目标时序，测试只等语义ready；resize仍原界限，
+About按精确version真实空态，Slash在最终caret处Escape，原业务断言保留。
+未排期显式date-only安排已复用generic CAS/active atomic batch/receipt，打开捕获scope/epoch/root/
+版本/source/dependency指纹，空值限定null/undefined，Separate/非空坏值不可安排；10定向PASS。
+backend最终242/242、skip0、API typecheck/build/version PASS；新增HTTP fixture经历3次红run后
+修为合法字符串wire期望及service真实Mongo显式null setup，全部红日志保留，HTTP18+sync1+file24绿。
+Mongo55479/PID59276已shutdown并验证无监听；final API typecheck在fixture末改后再次通过。
+Web typecheck/build与logic/theme92/92 PASS，Product496项1worker/retries0同一run执行中，随后
+独立Database及完整visual。自有Vite7173仍运行，结束须关闭并核对PID/端口。
+续推完整Product已结束495/496、1FAIL、0skip/0flaky。新失败sync.spec.ts:494首次空态断言，
+原PNG全白，尚未执行second client，不可归因远程删除。Database239项正在独立完整运行；
+product_rootcause_resume只读调查首屏启动路径，待所有门禁释放browser后独立复现，未改代码。
+后续调查：首屏current单1/1+fullsync42/42、ff0901c单1/1+fullsync42/42均PASS，原白屏未知，
+不得说已修复或确认为历史失败。相关trace/核源/日志归档p11-6-resume/sync-startup-probe。
+coarse独立复现后minimal3=2PASS1FAIL，定位before坐标读取后document-wrap向上滚68px、
+实际touchstart非canvas；无viewport回写证据。唯一正式测试修复是before读取前trial tap稳定检查，
+原手势/5秒/scroll增加/零mutation不动；正式repeat5 PASS、事件repeat3 PASS且无额外真实tap。
+独立review已认可，全部coarse原红绿在p11-6-resume/coarse。代码/测试已冻结。
+final-web-r2完整6门禁已开（Product/Database保留失败trace），typecheck/build/logic92 PASS，
+Product496项运行中，随后独立Database239和Visual13。最终仍需报告收口/独立终审/服务关闭。
+7176基线自有服务链61892→54984→51776保留（实际listener51776），最终与7173一并安全关闭。
+独立review静态未发现新未修P1/P2；最终门禁和报告收口后需让resume_final_review终审确认。
+HEAD/fetch origin/master仍ff0901c；工作树保留未提交改动。不得依据阶段绿提前提交或升级。
+
+## 2026-10-19～20 P11.6 Timeline Final Acceptance — HOLD
+
+起始master/HEAD/fetch后origin/master均 `ff0901c7545c9bc1addad9114cc1d41492a52eb3`，
+工作树开始干净；版本冻结0.0.1/build2。用户要求所有强制门禁+独立review满足后才提交推送，
+因此当前无新commit/tag/Release。报告：`docs/verification/p11-6-timeline-final-acceptance.md`。
+
+首优旧视觉已逐项查看12原图并复制repo evidence/p11-6-visual：Tablet/Profile主要字形边缘
+原因未定；Mobile toolbar有P7.3已证旧内容，Desktop Settings有MCP/About旧内容；整项均HOLD。
+正式配置repeat2共8FAIL，四actual每次稳定同P11.5 hash，不把它当视觉正确/豁免证据，旧4未更新。
+新增offscreen左右/裁切导航复用原coordinates/viewport/row geometry/window；3条定向+coarse
+角点增补1/1、typecheck通过。独立review发现并闭合3个新P2：右跳焦点、虚拟焦点行、触控命中。
+partial箭头行顶高20px、宽28/36为密集目标例外；Bar/resize geometry与持久dependency anchors不变。
+当前review增量0未修P1/P2，不代表Final PASS。
+
+已发现强制缺口：§24 Unplanned无Timeline内安排（仅Table workaround）；P10 Database MCP
+尚未实施（实际仅六P6工具），不能把MCP30/30当P10工具兼容PASS。用户已明确grouping/持久
+行重排后置、按§24最低矩阵验收，该范围决定不豁免前述缺口。
+
+本轮TEMP根：`C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690`。
+backend全PASS：Domain92/Contracts29/SDK24/Storage7；隔离Mongo Domain16/HTTP18+sync1+
+file24/MCP30/performance1；API typecheck/build/version通过。Mongo8.2.3 54463/PID58520已停。
+初批logic/theme92PASS并带2个生产themeSKIP；最终已用正式production config重建，2/2PASS。
+
+Web首误8worker批已停不计；第二正确1worker批因worker机械误删旧P11.2D scroller const报错，
+已停止142/486、失败PNG/context保留。主Agent恢复原行、旧tests现在零diff，原case1/1通过。
+正确第三完整Product在 `full-suite/final-product-restored/` 已完成476/486、10FAIL、0SKIP；
+独立Database226/229、3FAIL，visual9/13（原四失败、Timeline六通过，未更新快照）；
+全部workers1/retries0。Webbuild/typecheck与正式productiontheme2/2通过。
+12唯一失败独立对照current4PASS/8FAIL、ff5PASS/7FAIL；附件currentFAIL而baselinePASS未归因。
+Table粘贴的完整与定向失败时点不同，不称同根因；其余定向通过不抹除完整失败。机器对照已复制repo。
+原reviewer/验证Agent因额度不可用，主Agent接续实际测试并回退独立GPT-6.1 Sol High终审。
+回退独立终审已完成并明确认可HOLD，未发现新确定代码P1/P2或报告blocker，不代表门禁通过。
+10-20自有Vite43836已停，7173/7176/4175/54463无监听；git-final/service-cleanup JSON在repo证据。
+另有ff0901c普通archive的独立离线依赖baseline已准备，7176从未启动；不用删除junction。
+上述“从未启动”为10-19准备时状态；10-20最终baseline12项已用其7176运行并由Playwright退出清理。
+本地/远端仍ff0901c，因用户要求全部门禁PASS后才允许提交，当前工作树保留未提交验收改动。
+正式结论HOLD，不能升级0.0.3，未commit/push/tag/Release。交付后停止，不自动进入其他阶段。
+
 ## 2026-10-19 P11.5 Responsive + Visual Polish — COMPLETE / PASS（Scope，用户接受旧视觉例外）
 
 基线master `a94f0cc4ee7dfd994b5073370f15bef23b49393c`，开始工作树干净、fetch后origin一致。

@@ -1,0 +1,28 @@
+{
+  "osBuild": "26200",
+  "spi": {
+    "type": 2,
+    "contrast": 1200,
+    "orientation": 0
+  },
+  "avalon": {
+    "HKCU": {
+      "PixelStructure": 2,
+      "GammaLevel": 1800,
+      "ClearTypeLevel": 100
+    },
+    "HKLM": {
+      "PixelStructure": 2,
+      "GammaLevel": 1800,
+      "ClearTypeLevel": null
+    }
+  },
+  "fonts": {
+    "msyh.ttc": "D79C55E68B1131EEA0CC1C47BE4F572D964F28C682E143DB2AD09C1E4CB07A3F",
+    "msyhbd.ttc": "4508821B3DFFE01F0EF5E5326A3E60DF705A44633858811F67B6982DCE3F6EE6",
+    "segoeui.ttf": "704EADA12961A27FD271F7D3B09E2066520E758390C1776744EFF430FEE30F6E",
+    "arial.ttf": "B3658EADAE55E682B5F69EB64C439C1ECC8F196C0BB8D4756D145D13BC86476A"
+  },
+  "browserVersion": "156.0.8078.47",
+  "playwrightVersion": "1.63.0"
+}

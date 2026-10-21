@@ -1,0 +1,11 @@
+{
+  "sourceRoot": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay",
+  "sourceSpec": "apps/web/tests/product-sync.spec.ts",
+  "sourceSha256": "d5321c6eb95ff2c3bdd1fdb9108fb46179a97be2cb75f6effdbb57659ca701ca",
+  "probeSha256": "f945f2628b32e6bf79d954542bfb8c69393f35bc416b0497504503b654095621",
+  "status": "Prepared only; must serve the confirmed baseline source before running. Shared original project Playwright runtime avoids dependency drift.",
+  "steps": [
+    "baseline-single",
+    "baseline-full-sync"
+  ]
+}

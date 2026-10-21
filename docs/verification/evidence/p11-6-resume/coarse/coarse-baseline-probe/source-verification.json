@@ -1,0 +1,34 @@
+{
+  "commit": "ff0901c7545c9bc1addad9114cc1d41492a52eb3",
+  "baselineRoot": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay",
+  "files": [
+    {
+      "path": "apps/web/src/components/editor/DatabaseTimelineView.vue",
+      "gitSha256": "f4d9720bc9b22a5116ee29075804214f1a41b2b84acf4e1f07569c4e7b22eb3e",
+      "baselineSha256": "bc6142c3f05e51993cb27f19defc03ab95497c3ce5e7a96ce536752d118e1988",
+      "exactEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/components/editor/timeline/TimelineViewport.vue",
+      "gitSha256": "c6e15a3c302262f8afa799fb0e22513d112b234bc14f5682cb647da8388dee2f",
+      "baselineSha256": "fe8eace1a5cab133525bfce782b2dac08e54673b32eb08f6ca288afe68540776",
+      "exactEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/components/editor/timeline/useTimelineViewport.ts",
+      "gitSha256": "57aae72b94202abd7da3b3a440a4676fde3881c1ad52b20ddb702836673b8b42",
+      "baselineSha256": "5555790ad0aa94a2b04223ae1023633aa8669aa809c1a74143a48efb65598a9a",
+      "exactEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/tests/product-database.spec.ts",
+      "gitSha256": "ea94e43f3e13d43c04bfce6ffd7a075a9e17f81628c4109e4aaa09a89ed4e1b6",
+      "baselineSha256": "d10727abe4e99f3a999c2b5703e153b00151d32e21325a9249b73cc04ed13820",
+      "exactEqual": false,
+      "normalizedLfEqual": true
+    }
+  ]
+}

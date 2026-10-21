@@ -1,0 +1,9 @@
+{
+  "exe": "pwsh",
+  "args": [
+    "-NoProfile",
+    "-Command",
+    "pnpm --filter @eotion/web typecheck"
+  ],
+  "cwd": "C:/Users/31250/Work/Eotion"
+}

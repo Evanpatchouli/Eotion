@@ -1,0 +1,9 @@
+{
+  "uri": "mongodb://127.0.0.1:55479/?replicaSet=p116_dfbb4269",
+  "port": 55479,
+  "dbpath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/backend/mongo-data",
+  "replicaSet": "p116_dfbb4269",
+  "startedAt": "2026-10-20T10:24:44.9432564Z",
+  "pid": 59276,
+  "command": "mongod --bind_ip 127.0.0.1 --port 55479 --replSet p116_dfbb4269 --dbpath C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/backend/mongo-data --logpath C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/backend/logs/mongod.log"
+}

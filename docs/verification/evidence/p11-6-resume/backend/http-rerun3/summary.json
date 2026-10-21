@@ -1,0 +1,8 @@
+{
+  "reason": "Use legitimate DatabaseService.createRecord explicit-null fixture, matching existing null preservation regression. Generic clear unsets rather than storing null.",
+  "exitCode": 0,
+  "startedAt": "2026-10-20T10:29:51.8370699Z",
+  "mongoUri": "mongodb://127.0.0.1:55479/?replicaSet=p116_dfbb4269",
+  "command": "pnpm --filter @eotion/api test:http",
+  "finishedAt": "2026-10-20T10:31:54.0641144Z"
+}

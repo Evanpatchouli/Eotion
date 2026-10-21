@@ -1,0 +1,72 @@
+{
+  "completed": "2026-10-20T19:51:50.3766568+08:00",
+  "events": [
+    {
+      "time": "2026-10-20T19:51:37.8640165+08:00",
+      "action": "identity-and-listener-verified",
+      "detail": {
+        "pids": [
+          61892,
+          54984,
+          51776
+        ],
+        "listenerPid": [
+          51776
+        ],
+        "sourceRecord": "vite-service.json + vite-process-chain.json + vite-intermediate-process.json"
+      }
+    },
+    {
+      "time": "2026-10-20T19:51:37.9233623+08:00",
+      "action": "normal-window-close-attempt",
+      "detail": {
+        "accepted": false,
+        "reason": "Hidden Vite process has no controllable PTY/stdin handle; do not signal a shared console",
+        "pid": 51776
+      }
+    },
+    {
+      "time": "2026-10-20T19:51:38.8287631+08:00",
+      "action": "stop-owned-process",
+      "detail": {
+        "creationDate": "2026-10-20T19:07:21.54857+08:00",
+        "commandLine": "\"C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe\" C:/Users/31250/Work/Eotion/apps/web/node_modules/vite/bin/vite.js --host 127.0.0.1 --port 7176 --strictPort",
+        "pid": 51776
+      }
+    },
+    {
+      "time": "2026-10-20T19:51:39.8726656+08:00",
+      "action": "already-exited",
+      "detail": {
+        "pid": 54984
+      }
+    },
+    {
+      "time": "2026-10-20T19:51:40.7915037+08:00",
+      "action": "already-exited",
+      "detail": {
+        "pid": 61892
+      }
+    }
+  ],
+  "remainingRecordedPids": [],
+  "port7176Listeners": [],
+  "port7173Before": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 7173,
+      "OwningProcess": 53028
+    }
+  ],
+  "port7173After": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 7173,
+      "OwningProcess": 53028
+    }
+  ],
+  "port7173Touched": false,
+  "directoriesDeleted": false,
+  "browserRun": false,
+  "buildRun": false
+}

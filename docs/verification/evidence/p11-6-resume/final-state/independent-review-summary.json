@@ -1,0 +1,18 @@
+{
+  "verdict": "P11.6 HOLD",
+  "reviewer": "independent final_review_recovery",
+  "confirmedCounts": {
+    "visual": "13/13",
+    "database": "249/249",
+    "product": "505/506",
+    "logicTheme": "92/92"
+  },
+  "unresolvedConfirmedNewCodeP1P2": 0,
+  "reportBlockers": 0,
+  "retainedHolds": [
+    "P10 tools missing",
+    "R5 startup resource error source unresolved",
+    "R1 white startup independently unclassified"
+  ],
+  "accepted": true
+}

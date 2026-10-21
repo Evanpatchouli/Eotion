@@ -1,0 +1,1 @@
+[2026-10-19T10:06:31.3399326Z] pnpm --filter @eotion/domain test

@@ -1,0 +1,173 @@
+{
+  "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r5\\product\\test-results\\product-nested-universal-c-bf6fe-ot-squeeze-or-cover-content\\trace.zip",
+  "consoleErrors": [
+    {
+      "type": "console",
+      "messageType": "error",
+      "text": "Failed to load resource: net::ERR_NO_BUFFER_SPACE",
+      "args": [],
+      "location": {
+        "url": "http://127.0.0.1:7173/src/webRuntimePreferences.ts",
+        "lineNumber": 0,
+        "columnNumber": 0
+      },
+      "time": 931968.016,
+      "pageId": "page@249b18a3a1b480ec9bfede8fda288e6e"
+    }
+  ],
+  "network": [
+    {
+      "url": "http://127.0.0.1:7173/",
+      "status": 200,
+      "content": {
+        "size": 1253,
+        "mimeType": "text/html",
+        "compression": 0,
+        "_file": "resources/e039b34407491e42a760905ea6291e4b41783833.html"
+      },
+      "failureText": null,
+      "time": 7.951
+    },
+    {
+      "url": "http://127.0.0.1:7173/src/main.ts?t=1792562665776",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 23.884
+    },
+    {
+      "url": "http://127.0.0.1:7173/@vite/client",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 20.63
+    },
+    {
+      "url": "http://127.0.0.1:7173/src/webRuntimePreferences.ts",
+      "status": -1,
+      "content": {
+        "size": -1,
+        "mimeType": "x-unknown"
+      },
+      "failureText": null,
+      "time": 10.097999999998137
+    },
+    {
+      "url": "http://127.0.0.1:7173/node_modules/.vite/deps/pinia.js?v=8eb5255f",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 8.401
+    },
+    {
+      "url": "http://127.0.0.1:7173/node_modules/.vite/deps/vue.js?v=8eb5255f",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 11.669999999999998
+    },
+    {
+      "url": "http://127.0.0.1:7173/src/theme.ts",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 17.442999999999998
+    },
+    {
+      "url": "http://127.0.0.1:7173/src/App.vue",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 16.104
+    },
+    {
+      "url": "http://127.0.0.1:7173/src/styles/tokens.css",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 16.898
+    },
+    {
+      "url": "http://127.0.0.1:7173/src/router.ts?t=1792562665776",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 10.908999999999999
+    },
+    {
+      "url": "http://127.0.0.1:7173/src/styles/base.css",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 16.631999999999998
+    },
+    {
+      "url": "http://127.0.0.1:7173/@fs/C:/Users/31250/Work/Eotion/node_modules/.pnpm/vite@8.3.0_@types+node@24.13.6_jiti@2.7.0_terser@5.51.2/node_modules/vite/dist/client/env.mjs",
+      "status": 200,
+      "content": {
+        "size": -1,
+        "mimeType": "text/javascript",
+        "compression": 0
+      },
+      "failureText": null,
+      "time": 8.686
+    },
+    {
+      "url": "http://127.0.0.1:7173/eotion-icon.png",
+      "status": 200,
+      "content": {
+        "size": 6291,
+        "mimeType": "image/png",
+        "compression": 0,
+        "_file": "resources/751d1dc6882dfad7d4e75ccb8ca0e0fc7306a855.png"
+      },
+      "failureText": null,
+      "time": 3.705
+    }
+  ],
+  "facts": [
+    "Failure is at first editor visible assertion before any controls action.",
+    "webRuntimePreferences.ts module returned network status -1 and console net::ERR_NO_BUFFER_SPACE; other initial modules returned200.",
+    "Image is all white; app main module dependency never loaded."
+  ],
+  "limits": [
+    "No causal identity proof with R1 old white screenshot because no old trace.",
+    "No proof of exact OS buffer/queue origin or port exhaustion."
+  ]
+}

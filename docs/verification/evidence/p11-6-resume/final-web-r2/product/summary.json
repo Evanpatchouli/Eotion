@@ -1,0 +1,16 @@
+{
+  "gate": "product",
+  "start": "2026-10-20T11:16:35.058Z",
+  "end": "2026-10-20T11:40:14.213Z",
+  "exitCode": 1,
+  "signal": null,
+  "stats": {
+    "startTime": "2026-10-20T11:16:35.647Z",
+    "duration": 1418515.6989999998,
+    "expected": 494,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  },
+  "errors": []
+}

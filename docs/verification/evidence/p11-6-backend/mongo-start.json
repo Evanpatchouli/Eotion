@@ -1,0 +1,15 @@
+{
+  "startedAt": "2026-10-19T10:06:00.7051278Z",
+  "executable": "C:\\Program Files\\MongoDB\\Server\\8.2\\bin\\mongod.exe",
+  "version": "8.2.3",
+  "pid": 58520,
+  "port": 54463,
+  "replicaSet": "p116_c91e3284",
+  "dbpath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\backend\\mongo-data",
+  "uri": "mongodb://127.0.0.1:54463/?replicaSet=p116_c91e3284",
+  "existingDefault27017": {
+    "LocalAddress": "127.0.0.1",
+    "LocalPort": 27017,
+    "OwningProcess": 4812
+  }
+}

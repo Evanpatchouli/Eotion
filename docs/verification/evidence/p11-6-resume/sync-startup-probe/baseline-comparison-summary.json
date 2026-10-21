@@ -1,0 +1,64 @@
+{
+  "commit": "ff0901c7545c9bc1addad9114cc1d41492a52eb3",
+  "baselineRoot": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay",
+  "verifiedFiles": 16,
+  "allNormalizedLfEqual": true,
+  "exactByteDifference": "CRLF versus git blob LF only in all checked files",
+  "syncTestOverlayDifference": "No semantic difference from git show ff0901c after LF normalization",
+  "runs": [
+    {
+      "path": "executed/current-single",
+      "stats": {
+        "startTime": "2026-10-20T11:00:38.298Z",
+        "duration": 4343.286,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "path": "executed/current-full-sync",
+      "stats": {
+        "startTime": "2026-10-20T11:00:53.327Z",
+        "duration": 101542.59999999999,
+        "expected": 42,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "path": "baseline-executed/baseline-single",
+      "stats": {
+        "startTime": "2026-10-20T11:07:34.923Z",
+        "duration": 5737.803,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    },
+    {
+      "path": "baseline-executed/baseline-full-sync",
+      "stats": {
+        "startTime": "2026-10-20T11:07:59.414Z",
+        "duration": 138005.14,
+        "expected": 42,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      }
+    }
+  ],
+  "browserStatus": "Released; all test runner commands exited",
+  "viteStatus": "Retained for authorized coarse baseline",
+  "vitePort": 7176,
+  "viteOwnedPids": [
+    61892,
+    54984,
+    51776
+  ],
+  "buildPerformed": false,
+  "conclusion": "Current and baseline single case and full sync file all pass. Original final Product startup white page remains unexplained; these runs do not prove historical failure or a fix."
+}

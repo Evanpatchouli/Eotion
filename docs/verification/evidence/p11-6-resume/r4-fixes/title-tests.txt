@@ -1,0 +1,55 @@
+
+for (const behavior of ['dirty refresh', 'clean canonical refresh', 'actual identity switch'] as const) {
+  test(`R4 record title reconciliation ${behavior}`, async ({ page }) => {
+    const { api, item, open } = await r2AutofocusFixture(page)
+    await open.click()
+    await page.evaluate(() => (window as any).__r2ReleaseBody())
+    const title = page.getByRole('textbox', { name: '记录标题' })
+    await expect(page.locator('[data-overlay-mode="drawer"] .tiptap')).toHaveText('Identity body')
+    await title.click()
+    if (behavior === 'dirty refresh') {
+      await title.fill('Dirty refresh draft')
+      const rebuilt = await page.evaluate(async () => {
+        const { useProductPagesStore } = await import('/src/stores/productPages.ts')
+        const pages = useProductPagesStore()
+        const previous = pages.items.find(item => item.id === 'r2-focus-page')
+        await pages.refresh()
+        return previous !== pages.items.find(item => item.id === 'r2-focus-page')
+      })
+      expect(rebuilt).toBe(true)
+      await expect(title).toBeFocused()
+      await expect(title).toHaveValue('Dirty refresh draft')
+      await title.press('Tab')
+      await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Dirty refresh draft')
+    } else if (behavior === 'clean canonical refresh') {
+      await page.evaluate(async () => {
+        const { useProductPagesStore } = await import('/src/stores/productPages.ts')
+        const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+        const local = await useProductSyncStore().store()
+        const pages = useProductPagesStore()
+        const canonical = pages.items.find(item => item.id === 'r2-focus-page')!
+        await local.upsertPage({ ...canonical, title: 'Canonical changed title' })
+        await pages.refresh()
+      })
+      await expect(title).toHaveValue('Canonical changed title')
+      await expect(title).toBeFocused()
+    } else {
+      await title.fill('Old identity draft')
+      await page.evaluate(async () => {
+        const { useProductPagesStore } = await import('/src/stores/productPages.ts')
+        const { useProductSyncStore } = await import('/src/stores/productSync.ts')
+        const local = await useProductSyncStore().store()
+        const pages = useProductPagesStore()
+        const canonical = pages.items.find(item => item.id === 'r2-focus-page')!
+        await local.upsertPage({ ...canonical, id: 'r4-next-page', title: 'Next identity title' })
+        await pages.refresh()
+        const input = document.querySelector('[aria-label="记录标题"]') as HTMLElement & { __vueParentComponent?: any }
+        let component = input.__vueParentComponent
+        while (component && component.type?.__name !== 'PageView') component = component.parent
+        if (!component) throw new Error('Expected mounted record PageView')
+        component.props.embeddedPageId = 'r4-next-page'
+      })
+      await expect(title).toHaveValue('Next identity title')
+    }
+  })
+}

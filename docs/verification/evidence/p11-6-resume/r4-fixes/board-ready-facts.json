@@ -1,0 +1,17 @@
+{
+  "source": "主Agent冻结的S2 trace派生事实",
+  "observed": [
+    "菜单ariaControls v-5未remount",
+    "title page.upsert成功后records refresh将picker disabled=true",
+    "EotionPopover disabled watcher合法关闭菜单",
+    "失败阶段没有第二次Board cell PATCH"
+  ],
+  "change": [
+    "真实picker.focus触发标题blur保存",
+    "等待打开记录按钮canonical title投影可见",
+    "等待picker enabled后执行原键盘Enter流程"
+  ],
+  "result": "7 cases repeat-each=2 workers=1 retries=0: 14 passed",
+  "typecheck": "PASS",
+  "diffcheck": "PASS"
+}

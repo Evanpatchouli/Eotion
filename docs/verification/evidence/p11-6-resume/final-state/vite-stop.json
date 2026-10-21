@@ -1,0 +1,9 @@
+{
+  "observedUtc": "2026-10-21T06:54:19.7175866Z",
+  "verifiedPids": [
+    33160,
+    33692
+  ],
+  "closeMainWindow": false,
+  "method": "Verified hidden owned Vite leaf stopped; verified wrapper stopped if still present; unknown processes untouched"
+}

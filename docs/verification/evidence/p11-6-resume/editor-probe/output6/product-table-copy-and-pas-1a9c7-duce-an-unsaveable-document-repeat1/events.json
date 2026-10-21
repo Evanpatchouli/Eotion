@@ -1,0 +1,727 @@
+[
+  {
+    "t": 482.80000000074506,
+    "tag": "editor:attach",
+    "active": "<body>\n    <div id=\"app\" data-v-app=\"\"><div data-v-7a7a37b1=\"\" class=\"app-viewport\" data-runtime=\"web\" data-route=\"product-page\"><!--v-if--><div data-v-b30e6842=\"\" data-v-7a7a37b1=\"\" class=\"workspace-shell product-shell\" data-layout=\"deskto",
+    "dom": {
+      "text": "",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 4
+      },
+      "text": "ABCDEFGHITail",
+      "focus": false
+    }
+  },
+  {
+    "t": 534,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" contenteditable=\"fals",
+    "dom": {
+      "text": "",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 4
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    },
+    "steps": [],
+    "meta": {
+      "focus": {
+        "event": {
+          "isTrusted": true
+        }
+      },
+      "addToHistory": false
+    }
+  },
+  {
+    "t": 534.1999999992549,
+    "tag": "focusin:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 4
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 536.5,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 5
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    },
+    "steps": [],
+    "meta": {}
+  },
+  {
+    "t": 537.8000000007451,
+    "tag": "selectionchange:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 5
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 542,
+    "tag": "keydown:capture",
+    "key": "Control",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 5
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 542.1000000014901,
+    "tag": "keydown:after",
+    "key": "Control",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 5
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 543.3000000007451,
+    "tag": "keydown:capture",
+    "key": "C",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 5
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 543.5,
+    "tag": "keydown:after",
+    "key": "C",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 5
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 545.1999999992549,
+    "tag": "keyup:capture",
+    "key": "C",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 5
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 545.5,
+    "tag": "keyup:capture",
+    "key": "Control",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 5
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 554.1999999992549,
+    "tag": "selectionchange:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "E",
+      "anchor": "<p>E</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 5
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 555.5,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "E",
+      "anchor": "<p>E</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 26,
+        "head": 27
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    },
+    "steps": [],
+    "meta": {}
+  },
+  {
+    "t": 654.6000000014901,
+    "tag": "keydown:capture",
+    "key": "Control",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "E",
+      "anchor": "<p>E</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 26,
+        "head": 27
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 654.6999999992549,
+    "tag": "keydown:after",
+    "key": "Control",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "E",
+      "anchor": "<p>E</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 26,
+        "head": 27
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 655.4000000022352,
+    "tag": "keydown:capture",
+    "key": "V",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "E",
+      "anchor": "<p>E</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 26,
+        "head": 27
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 655.5,
+    "tag": "keydown:after",
+    "key": "V",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "E",
+      "anchor": "<p>E</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 26,
+        "head": 27
+      },
+      "text": "ABCDEFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 675.8000000007451,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>A</p>",
+      "offset": 1
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 27,
+        "head": 27
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    },
+    "steps": [
+      {
+        "stepType": "replace",
+        "from": 26,
+        "to": 27,
+        "slice": {
+          "content": [
+            {
+              "type": "text",
+              "text": "A"
+            }
+          ]
+        }
+      }
+    ],
+    "meta": {
+      "paste": true,
+      "uiEvent": "paste"
+    }
+  },
+  {
+    "t": 680.5,
+    "tag": "keyup:capture",
+    "key": "V",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>A</p>",
+      "offset": 1
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 27,
+        "head": 27
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 681.4000000022352,
+    "tag": "keyup:capture",
+    "key": "Control",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>A</p>",
+      "offset": 1
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 27,
+        "head": 27
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 686.8000000007451,
+    "tag": "selectionchange:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>A</p>",
+      "offset": 1
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 27,
+        "head": 27
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 1596.199999999255,
+    "tag": "selectionchange:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A\n\nB",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 27,
+        "head": 27
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 1596.9000000022352,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A\n\nB",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 10
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    },
+    "steps": [],
+    "meta": {}
+  },
+  {
+    "t": 1601.1000000014901,
+    "tag": "keydown:capture",
+    "key": "Control",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A\n\nB",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 10
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 1601.1000000014901,
+    "tag": "keydown:after",
+    "key": "Control",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A\n\nB",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 10
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 1601.699999999255,
+    "tag": "keydown:capture",
+    "key": "C",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A\n\nB",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 10
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 1601.800000000745,
+    "tag": "keydown:after",
+    "key": "C",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A\n\nB",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 10
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 1602.699999999255,
+    "tag": "keyup:capture",
+    "key": "C",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A\n\nB",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 10
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 1603.5,
+    "tag": "keyup:capture",
+    "key": "Control",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "A\n\nB",
+      "anchor": "<p>A</p>",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 10
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 1646.699999999255,
+    "tag": "click:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>Tail</p>",
+      "offset": 4
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 4,
+        "head": 10
+      },
+      "text": "ABCDAFGHITail",
+      "focus": true
+    }
+  },
+  {
+    "t": 1661.1000000014901,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>Z\tW</p>",
+      "offset": 3
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 16,
+        "head": 16
+      },
+      "text": "X\tYZ\tWCDAFGHITail",
+      "focus": true
+    },
+    "steps": [
+      {
+        "stepType": "replace",
+        "from": 4,
+        "to": 10,
+        "slice": {
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "blockId": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "X\tY"
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "attrs": {
+                "blockId": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Z\tW"
+                }
+              ]
+            }
+          ],
+          "openStart": 1,
+          "openEnd": 1
+        }
+      }
+    ],
+    "meta": {
+      "paste": true,
+      "uiEvent": "paste"
+    }
+  },
+  {
+    "t": 1664.1000000014901,
+    "tag": "selectionchange:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>Z\tW</p>",
+      "offset": 3
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 16,
+        "head": 16
+      },
+      "text": "X\tYZ\tWCDAFGHITail",
+      "focus": true
+    }
+  }
+]

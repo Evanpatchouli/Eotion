@@ -1,0 +1,3 @@
+# Preserve generated P11.6 acceptance evidence byte-for-byte, including logs.
+# Whitespace inside generated artifacts is evidence, not authored source style.
+/docs/verification/evidence/p11-6*/** -text -whitespace

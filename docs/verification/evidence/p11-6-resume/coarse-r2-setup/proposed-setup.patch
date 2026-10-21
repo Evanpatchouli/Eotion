@@ -1,0 +1,8 @@
+--- a/apps/web/tests/product-database.spec.ts
++++ b/apps/web/tests/product-database.spec.ts
+@@
+     } else {
+-      await page.keyboard.press('Escape')
++      await recordSurface.getByRole('button', { name: '关闭记录', exact: true }).tap()
+       await expect(recordSurface).toHaveCount(0)
+     }

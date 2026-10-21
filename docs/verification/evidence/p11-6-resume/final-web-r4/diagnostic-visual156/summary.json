@@ -1,0 +1,14 @@
+{
+  "start": "2026-10-21T04:30:21.596Z",
+  "end": "2026-10-21T04:31:05.213Z",
+  "exitCode": 0,
+  "diagnostic": true,
+  "stats": {
+    "startTime": "2026-10-21T04:30:22.129Z",
+    "duration": 43063.565,
+    "expected": 26,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

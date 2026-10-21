@@ -1,0 +1,555 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\playwright@1.63.0\\node_modules\\playwright\\cli.js",
+      "test",
+      "--config=C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/autofocus-candidate/focus-regression-red.config.ts",
+      "--workers=1",
+      "--retries=0"
+    ],
+    "configFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression-red.config.ts",
+    "rootDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/autofocus-candidate/focus-regression",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/autofocus-red/results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/autofocus-candidate/focus-regression",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../autofocus-red/summary.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "product-database.spec.ts",
+      "file": "product-database.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "R2 pending initial body focus preserves a user caret",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 2400,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m8\u001b[39m\nReceived: \u001b[31m0\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m8\u001b[39m\nReceived: \u001b[31m0\u001b[39m\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12357:74",
+                    "location": {
+                      "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                      "column": 74,
+                      "line": 12357
+                    },
+                    "snippet": "  12355 |   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))\n  12356 |   await expect(body).toBeFocused()\n> 12357 |   expect(await body.evaluate(() => window.getSelection()?.anchorOffset)).toBe(8)\n        |                                                                          ^\n  12358 | })\n  12359 |\n  12360 | test('R2 closing a record cancels the pending initial body focus callback', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 74,
+                        "line": 12357
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m8\u001b[39m\nReceived: \u001b[31m0\u001b[39m\n\n  12355 |   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))\n  12356 |   await expect(body).toBeFocused()\n> 12357 |   expect(await body.evaluate(() => window.getSelection()?.anchorOffset)).toBe(8)\n        |                                                                          ^\n  12358 | })\n  12359 |\n  12360 | test('R2 closing a record cancels the pending initial body focus callback', async ({ page }) => {\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12357:74"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T11:55:28.900Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-pendin-220d5-ocus-preserves-a-user-caret\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                    "column": 74,
+                    "line": 12357
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-a492b93c874bcb80860a",
+          "file": "product-database.spec.ts",
+          "line": 12338,
+          "column": 5
+        },
+        {
+          "title": "R2 closing a record cancels the pending initial body focus callback",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 2247,
+                  "error": {
+                    "message": "Error: page.evaluate: TypeError: Cannot read properties of null (reading 'commands')\n    at get commands (http://127.0.0.1:7173/node_modules/.vite/deps/dist-B8qYCS5K.js?v=8eb5255f:6728:30)\n    at Object.callback (http://127.0.0.1:7173/src/components/editor/EotionEditor.vue?t=1792491860773:228:68)\n    at target.__r2FlushFocusFrames (eval at evaluate (:311:30), <anonymous>:24:44)\n    at eval (eval at evaluate (:311:30), <anonymous>:1:14)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+                    "stack": "Error: page.evaluate: TypeError: Cannot read properties of null (reading 'commands')\n    at get commands (http://127.0.0.1:7173/node_modules/.vite/deps/dist-B8qYCS5K.js?v=8eb5255f:6728:30)\n    at Object.callback (http://127.0.0.1:7173/src/components/editor/EotionEditor.vue?t=1792491860773:228:68)\n    at target.__r2FlushFocusFrames (eval at evaluate (:311:30), <anonymous>:24:44)\n    at eval (eval at evaluate (:311:30), <anonymous>:1:14)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at get commands (http://127.0.0.1:7173/node_modules/.vite/deps/dist-B8qYCS5K.js?v=8eb5255f:6728:30)\n    at Object.callback (http://127.0.0.1:7173/src/components/editor/EotionEditor.vue?t=1792491860773:228:68)\n    at target.__r2FlushFocusFrames (eval at evaluate (:311:30), <anonymous>:24:44)\n    at eval (eval at evaluate (:311:30), <anonymous>:1:14)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12372:14",
+                    "location": {
+                      "file": "http://127.0.0.1:7173/node_modules/.vite/deps/dist-B8qYCS5K.js?v=8eb5255f",
+                      "column": 30,
+                      "line": 6728
+                    }
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "http://127.0.0.1:7173/node_modules/.vite/deps/dist-B8qYCS5K.js?v=8eb5255f",
+                        "column": 30,
+                        "line": 6728
+                      },
+                      "message": "Error: page.evaluate: TypeError: Cannot read properties of null (reading 'commands')\n    at get commands (http://127.0.0.1:7173/node_modules/.vite/deps/dist-B8qYCS5K.js?v=8eb5255f:6728:30)\n    at Object.callback (http://127.0.0.1:7173/src/components/editor/EotionEditor.vue?t=1792491860773:228:68)\n    at target.__r2FlushFocusFrames (eval at evaluate (:311:30), <anonymous>:24:44)\n    at eval (eval at evaluate (:311:30), <anonymous>:1:14)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at get commands (http://127.0.0.1:7173/node_modules/.vite/deps/dist-B8qYCS5K.js?v=8eb5255f:6728:30)\n    at Object.callback (http://127.0.0.1:7173/src/components/editor/EotionEditor.vue?t=1792491860773:228:68)\n    at target.__r2FlushFocusFrames (eval at evaluate (:311:30), <anonymous>:24:44)\n    at eval (eval at evaluate (:311:30), <anonymous>:1:14)\n    at UtilityScript.evaluate (<anonymous>:313:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12372:14"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T11:55:33.220Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-closin-13226-initial-body-focus-callback\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "http://127.0.0.1:7173/node_modules/.vite/deps/dist-B8qYCS5K.js?v=8eb5255f",
+                    "column": 30,
+                    "line": 6728
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-1d8ce8ff767c7d0e693d",
+          "file": "product-database.spec.ts",
+          "line": 12360,
+          "column": 5
+        },
+        {
+          "title": "R2 renaming an unnamed record before body load retains the user focus and keeps body unchanged",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 2476,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12395:104",
+                    "location": {
+                      "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                      "column": 104,
+                      "line": 12395
+                    },
+                    "snippet": "  12393 |   await expect(body).toHaveText('Identity body')\n  12394 |   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))\n> 12395 |   expect(await page.evaluate(() => document.activeElement === (window as any).__r2UntitledFocusOwner)).toBe(true)\n        |                                                                                                        ^\n  12396 |   await expect(body).not.toBeFocused()\n  12397 |   await title.fill('Renamed record title')\n  12398 |   await title.press('Tab')"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 104,
+                        "line": 12395
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\n  12393 |   await expect(body).toHaveText('Identity body')\n  12394 |   await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))\n> 12395 |   expect(await page.evaluate(() => document.activeElement === (window as any).__r2UntitledFocusOwner)).toBe(true)\n        |                                                                                                        ^\n  12396 |   await expect(body).not.toBeFocused()\n  12397 |   await title.fill('Renamed record title')\n  12398 |   await title.press('Tab')\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12395:104"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T11:55:37.150Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-renami-12315-us-and-keeps-body-unchanged\\trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                    "column": 104,
+                    "line": 12395
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-5b9f9c347ac8f5f99f64",
+          "file": "product-database.spec.ts",
+          "line": 12377,
+          "column": 5
+        }
+      ],
+      "suites": [
+        {
+          "title": "R2 record autofocus ownership desktop",
+          "file": "product-database.spec.ts",
+          "line": 12262,
+          "column": 8,
+          "specs": [
+            {
+              "title": "named record body receives initial focus after overlay opening",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2747,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T11:55:03.529Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-2f873-focus-after-overlay-opening\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "afc23a477cd9d0a43a76-d7013121a80105f02bb4",
+              "file": "product-database.spec.ts",
+              "line": 12265,
+              "column": 11
+            },
+            {
+              "title": "title focus before body load wins and saves without body pollution",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 7343,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12283:31",
+                        "location": {
+                          "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                          "column": 31,
+                          "line": 12283
+                        },
+                        "snippet": "  12281 |         await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))\n  12282 |         if (userClaimsTitle) {\n> 12283 |           await expect(title).toBeFocused()\n        |                               ^\n  12284 |           await title.fill('Edited record title')\n  12285 |           await title.press('Tab')\n  12286 |           await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Edited record title')"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                            "column": 31,
+                            "line": 12283
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-overlay-mode=\"drawer\"]').getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n\n\n  12281 |         await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))\n  12282 |         if (userClaimsTitle) {\n> 12283 |           await expect(title).toBeFocused()\n        |                               ^\n  12284 |           await title.fill('Edited record title')\n  12285 |           await title.press('Tab')\n  12286 |           await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Edited record title')\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12283:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T11:55:07.268Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-00b7b-aves-without-body-pollution\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 31,
+                        "line": 12283
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "afc23a477cd9d0a43a76-979ea0b5d9e36f407a19",
+              "file": "product-database.spec.ts",
+              "line": 12265,
+              "column": 11
+            }
+          ]
+        },
+        {
+          "title": "R2 record autofocus ownership phone",
+          "file": "product-database.spec.ts",
+          "line": 12262,
+          "column": 8,
+          "specs": [
+            {
+              "title": "named record body receives initial focus after overlay opening",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2539,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T11:55:16.121Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-d90c5-focus-after-overlay-opening\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "afc23a477cd9d0a43a76-e4290d647125f39040fd",
+              "file": "product-database.spec.ts",
+              "line": 12265,
+              "column": 11
+            },
+            {
+              "title": "title focus before body load wins and saves without body pollution",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 6861,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('dialog.eotion-product-overlay--bottom-drawer[open]').getByRole('textbox', { name: '记录标题' })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" locator('dialog.eotion-product-overlay--bottom-drawer[open]').getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('dialog.eotion-product-overlay--bottom-drawer[open]').getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('dialog.eotion-product-overlay--bottom-drawer[open]').getByRole('textbox', { name: '记录标题' })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" locator('dialog.eotion-product-overlay--bottom-drawer[open]').getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('dialog.eotion-product-overlay--bottom-drawer[open]').getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12283:31",
+                        "location": {
+                          "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                          "column": 31,
+                          "line": 12283
+                        },
+                        "snippet": "  12281 |         await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))\n  12282 |         if (userClaimsTitle) {\n> 12283 |           await expect(title).toBeFocused()\n        |                               ^\n  12284 |           await title.fill('Edited record title')\n  12285 |           await title.press('Tab')\n  12286 |           await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Edited record title')"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                            "column": 31,
+                            "line": 12283
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeFocused\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('dialog.eotion-product-overlay--bottom-drawer[open]').getByRole('textbox', { name: '记录标题' })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toBeFocused\" locator('dialog.eotion-product-overlay--bottom-drawer[open]').getByRole('textbox', { name: '记录标题' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('dialog.eotion-product-overlay--bottom-drawer[open]').getByRole('textbox', { name: '记录标题' })\u001b[22m\n\u001b[2m    14 × locator resolved to <input maxlength=\"200\" aria-label=\"记录标题\" data-v-ec941511=\"\" class=\"product-record-title\"/>\u001b[22m\n\u001b[2m       - unexpected value \"inactive\"\u001b[22m\n\n\n  12281 |         await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))\n  12282 |         if (userClaimsTitle) {\n> 12283 |           await expect(title).toBeFocused()\n        |                               ^\n  12284 |           await title.fill('Edited record title')\n  12285 |           await title.press('Tab')\n  12286 |           await expect.poll(() => api.pages.find(candidate => candidate.id === item.pageId)?.title).toBe('Edited record title')\n    at C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts:12283:31"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T11:55:19.560Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-red\\results\\product-database-R2-record-834b8-aves-without-body-pollution\\trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\autofocus-candidate\\focus-regression\\product-database.spec.ts",
+                        "column": 31,
+                        "line": 12283
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "afc23a477cd9d0a43a76-43e82d232a87f6e9b7e5",
+              "file": "product-database.spec.ts",
+              "line": 12265,
+              "column": 11
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-20T11:55:00.612Z",
+    "duration": 40233.380999999994,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 5,
+    "flaky": 0
+  }
+}

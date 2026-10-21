@@ -782,3 +782,55 @@ UTC 日期差移动。最终范围/值重新校验，越界或非法范围拒绝
   让截图/命中验证实际轨道；旧七张visual的启动参数与基线保持。
 
 Domain调度、Date wire、Relation mapping、API/SDK/MCP、Editor identity与版本未变。
+
+## 33. P11.6 Offscreen 导航与最终验收
+
+P11.6 的必要补齐是已加载 scheduled row 的左右方向导航；正式门禁与最终裁定见
+[P11.6 验收记录](../verification/p11-6-timeline-final-acceptance.md)，不继承 P11.5 的旧视觉例外。
+
+- `layoutTimelineItem` 的既有 offscreen/clipped flags 决定对应原行的方向按钮；未加载、
+  无效或未排期记录不造提示。左侧跳到 temporal.startMs，右侧跳到 visualEndMs（point
+  为startMs），只读导航不修改日期、Record、共享配置，也不补取数据。
+- `useTimelineViewport.revealInstant` 复用同一 centerViewport、原生scroll同步、ticks和
+  revealRow流程；极端inclusive end边界仅将导航instant约束在合法轴内，不改变存储值。
+- 同一controller验证scope/epoch/root/body/page-host与连接状态，父层补充record/item/
+  temporal/rowIndex identity guard；await前后和focus前重查，拒绝旧按钮/旧目标。scheduled
+  jump聚焦新揭示的Bar；未排期原行导航仍用原默认目标。方向按钮focus接入共享focus island，
+  Frozen和canvas继续消费相同行窗口，不增加第二套纵向滚动或坐标。
+- Date preview/pending、dependency linking/pending期间不接受方向跳转。部分裁切range的
+  右导航与dependency connector共享目标尺寸变量进行横向留位，永久dependency端点不变，
+  防止触控同一点触发错误操作。完全离屏按钮为fine28px/coarse36px方形；部分裁切range
+  的导航位于行上缘，高20px、宽28/36px，属于48px密集行内目标例外，避免覆盖Bar主入口。
+  保留键盘路径与实际命中回归，不将此规格描述为44px目标或真机可用性签字。
+
+用户在2026-10-19明确将Timeline grouping和持久行重排后置，本轮只按§24最低矩阵验收。
+这不等于完整Notion parity，也不豁免Unplanned可安排及其他Final门禁。
+
+### P11.6 未排期显式安排
+
+未排期索引的“安排”只面向单个原生Date Property且Cell为null/undefined的记录。
+用户显式选择date-only日期，无默认今天；非空无效值、派生Date与Separate Start/End不走此入口。
+表单内保存/取消、Escape和44px控件复用同一Web renderer，不改变共享48px行或持久配置。
+
+打开时捕获scope/epoch/DOM root、Database/Record/View版本、Date source和dependency指纹；
+提交重查身份与原空值。私有Schedule command独立于非空Bar drag数学契约，仍进入原有generic
+Cell CAS或active-policy原子batch/receipt分支，不新增API、不修改调度规则、不自动retry。
+pending复用Date忙状态；取消零写入，scope/config变化移除表单，旧响应不得关闭新表单或抢焦点。
+canonical成功后通过原viewport.revealInstant揭示并聚焦原记录Bar，await前后验证行及投影身份。
+
+2026-10-20用户确认：P10工具缺失仍是Final HOLD，不在本阶段扩大MCP surface；现有MCP
+回归仅证明已实现工具不回归，不能代替尚不存在的Database/View/Record工具兼容性。
+
+### Record 编辑器首次聚焦兼容性
+
+Final中真实trace发现命名Record初始化的两层异步autofocus会把标题输入送入正文。
+PageView现在持有可撤销的一次初始聚焦意图：用户选择控件或输入后撤销，仅实际page identity
+变化重置，snapshot/标题刷新/editorRevision不重置。Overlay仅在同步初始focus作用域内标记
+其showModal和随后focus，不把正常modal初始化误认为用户操作；restoreFocus不获此例外。
+Editor仅安排一个可取消RAF，执行时检查当前prop、实例与连接root；使用当前doc合法起始
+selection和同步view.focus，已有焦点不重置caret。卸载/取消后的旧callback不能抢新焦点。
+这修复Record Host/标题草稿兼容性，不改变标题保存、同步、Date/Relation调度或持久API。
+
+同值页面对象刷新也不得覆盖未保存标题：PageView以workspace/page身份及canonical id/title的
+scalar变化reconcile，dirty相对上一持久标题基线判断；同身份dirty保留、clean接受新canonical，
+实际身份切换初始化，saving期间不覆盖。对象替换本身不代表新标题，不改变Record标题写入协议。

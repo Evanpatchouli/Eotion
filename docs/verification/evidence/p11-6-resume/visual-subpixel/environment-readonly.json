@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-20T17:54:55.1688685+08:00",
+  "spi": [
+    {
+      "Action": "200A",
+      "Success": true,
+      "Value": 2
+    },
+    {
+      "Action": "200C",
+      "Success": true,
+      "Value": 1200
+    },
+    {
+      "Action": "2012",
+      "Success": true,
+      "Value": 0
+    }
+  ],
+  "desktopRegistry": {
+    "FontSmoothing": "2",
+    "FontSmoothingType": 2,
+    "FontSmoothingGamma": 1200,
+    "FontSmoothingOrientation": 0
+  },
+  "avalon": [
+    {
+      "PSPath": "Microsoft.PowerShell.Core\\Registry::HKEY_CURRENT_USER\\Software\\Microsoft\\Avalon.Graphics\\DISPLAY1",
+      "PixelStructure": 2,
+      "GammaLevel": 1800,
+      "EnhancedContrast": null,
+      "ClearTypeLevel": 100
+    },
+    {
+      "PSPath": "Microsoft.PowerShell.Core\\Registry::HKEY_CURRENT_USER\\Software\\Microsoft\\Avalon.Graphics\\IgnoreDwmFlushErrors",
+      "PixelStructure": null,
+      "GammaLevel": null,
+      "EnhancedContrast": null,
+      "ClearTypeLevel": null
+    },
+    {
+      "PSPath": "Microsoft.PowerShell.Core\\Registry::HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Avalon.Graphics\\DISPLAY1",
+      "PixelStructure": 2,
+      "GammaLevel": 1800,
+      "EnhancedContrast": null,
+      "ClearTypeLevel": null
+    }
+  ],
+  "os": {
+    "Caption": "Microsoft Windows 11 专业版",
+    "Version": "10.0.26200",
+    "BuildNumber": "26200"
+  },
+  "chrome": {
+    "FullName": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "ProductVersion": "155.0.8059.85"
+  },
+  "chromeSha256": "DE999BCE6A1C954DF71A8F15BF751B336172F55AC1A0325BB0580CBC2121268C",
+  "fontFiles": [
+    {
+      "path": "C:/Windows/Fonts/msyh.ttc",
+      "size": 19704352,
+      "lastWriteTimeUtc": "2025-11-19T05:20:11.6987483Z",
+      "sha256": "D79C55E68B1131EEA0CC1C47BE4F572D964F28C682E143DB2AD09C1E4CB07A3F"
+    },
+    {
+      "path": "C:/Windows/Fonts/msyhbd.ttc",
+      "size": 16883552,
+      "lastWriteTimeUtc": "2025-11-19T05:20:11.6867295Z",
+      "sha256": "4508821B3DFFE01F0EF5E5326A3E60DF705A44633858811F67B6982DCE3F6EE6"
+    },
+    {
+      "path": "C:/Windows/Fonts/segoeui.ttf",
+      "size": 960076,
+      "lastWriteTimeUtc": "2026-10-14T02:53:03.3805161Z",
+      "sha256": "704EADA12961A27FD271F7D3B09E2066520E758390C1776744EFF430FEE30F6E"
+    },
+    {
+      "path": "C:/Windows/Fonts/arial.ttf",
+      "size": 1045720,
+      "lastWriteTimeUtc": "2026-06-08T07:51:35.9517682Z",
+      "sha256": "B3658EADAE55E682B5F69EB64C439C1ECC8F196C0BB8D4756D145D13BC86476A"
+    }
+  ],
+  "mutation": "none; Get API only; no browser launched"
+}

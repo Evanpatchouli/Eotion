@@ -1,0 +1,16 @@
+{
+  "gate": "logic-theme",
+  "start": "2026-10-20T11:16:22.570Z",
+  "end": "2026-10-20T11:16:35.051Z",
+  "exitCode": 0,
+  "signal": null,
+  "stats": {
+    "startTime": "2026-10-20T11:16:23.546Z",
+    "duration": 11479.259999999998,
+    "expected": 92,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "errors": []
+}

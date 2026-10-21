@@ -1,0 +1,833 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.visual.config.ts",
+      "--grep",
+      "(Page tablet light|Page mobile light|Settings desktop light|Settings profile detail mobile light)",
+      "--repeat-each=2",
+      "--workers=1",
+      "--retries=0",
+      "--reporter=list,json",
+      "--output=C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/visual-before-update/output"
+    ],
+    "configFile": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\playwright.visual.config.ts",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\helpers\\visualEnvironment.ts",
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "visualEnvironment": {
+        "osBuild": "26200",
+        "spi": {
+          "type": 2,
+          "contrast": 1200,
+          "orientation": 0
+        },
+        "avalon": {
+          "HKCU": {
+            "PixelStructure": 2,
+            "GammaLevel": 1800,
+            "ClearTypeLevel": 100
+          },
+          "HKLM": {
+            "PixelStructure": 2,
+            "GammaLevel": 1800,
+            "ClearTypeLevel": null
+          }
+        },
+        "fonts": {
+          "msyh.ttc": "D79C55E68B1131EEA0CC1C47BE4F572D964F28C682E143DB2AD09C1E4CB07A3F",
+          "msyhbd.ttc": "4508821B3DFFE01F0EF5E5326A3E60DF705A44633858811F67B6982DCE3F6EE6",
+          "segoeui.ttf": "704EADA12961A27FD271F7D3B09E2066520E758390C1776744EFF430FEE30F6E",
+          "arial.ttf": "B3658EADAE55E682B5F69EB64C439C1ECC8F196C0BB8D4756D145D13BC86476A"
+        },
+        "browserVersion": "155.0.8059.85",
+        "playwrightVersion": "1.63.0"
+      },
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/visual-before-update/output",
+        "repeatEach": 2,
+        "retries": 0,
+        "metadata": {
+          "visualEnvironment": {
+            "osBuild": "26200",
+            "spi": {
+              "type": 2,
+              "contrast": 1200,
+              "orientation": 0
+            },
+            "avalon": {
+              "HKCU": {
+                "PixelStructure": 2,
+                "GammaLevel": 1800,
+                "ClearTypeLevel": 100
+              },
+              "HKLM": {
+                "PixelStructure": 2,
+                "GammaLevel": 1800,
+                "ClearTypeLevel": null
+              }
+            },
+            "fonts": {
+              "msyh.ttc": "D79C55E68B1131EEA0CC1C47BE4F572D964F28C682E143DB2AD09C1E4CB07A3F",
+              "msyhbd.ttc": "4508821B3DFFE01F0EF5E5326A3E60DF705A44633858811F67B6982DCE3F6EE6",
+              "segoeui.ttf": "704EADA12961A27FD271F7D3B09E2066520E758390C1776744EFF430FEE30F6E",
+              "arial.ttf": "B3658EADAE55E682B5F69EB64C439C1ECC8F196C0BB8D4756D145D13BC86476A"
+            },
+            "browserVersion": "155.0.8059.85",
+            "playwrightVersion": "1.63.0"
+          },
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "visual-regression.spec.ts",
+          "timeline-visual.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": {
+      "command": "pnpm exec vite --host 127.0.0.1 --port 7173 --strictPort",
+      "url": "http://127.0.0.1:7173",
+      "reuseExistingServer": true,
+      "timeout": 30000
+    }
+  },
+  "suites": [
+    {
+      "title": "visual-regression.spec.ts",
+      "file": "visual-regression.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Page tablet light",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1547,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1251 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-tablet-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-tablet-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1251 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-tablet-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-tablet-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:95:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                      "column": 22,
+                      "line": 78
+                    },
+                    "snippet": "  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                        "column": 22,
+                        "line": 78
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1251 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-tablet-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-tablet-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n\n  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:95:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:03:38.622Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "page-tablet-light-expected.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-tablet-light.png"
+                    },
+                    {
+                      "name": "page-tablet-light-actual.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\page-tablet-light-actual.png"
+                    },
+                    {
+                      "name": "page-tablet-light-diff.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\page-tablet-light-diff.png"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                    "column": 22,
+                    "line": 78
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-61543c61b8fcac4099d2",
+          "file": "visual-regression.spec.ts",
+          "line": 92,
+          "column": 1
+        },
+        {
+          "title": "Settings desktop light",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1398,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  2006 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-desktop-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-desktop-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  2006 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-desktop-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-desktop-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:112:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                      "column": 22,
+                      "line": 78
+                    },
+                    "snippet": "  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                        "column": 22,
+                        "line": 78
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  2006 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-desktop-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-desktop-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n\n  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:112:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:03:44.186Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "settings-desktop-light-expected.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-desktop-light.png"
+                    },
+                    {
+                      "name": "settings-desktop-light-actual.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\settings-desktop-light-actual.png"
+                    },
+                    {
+                      "name": "settings-desktop-light-diff.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\settings-desktop-light-diff.png"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                    "column": 22,
+                    "line": 78
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-fde9525cafefc2b663fd",
+          "file": "visual-regression.spec.ts",
+          "line": 110,
+          "column": 1
+        },
+        {
+          "title": "Settings profile detail mobile light",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1124,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1132 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-profile-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-profile-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1132 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-profile-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-profile-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:125:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                      "column": 22,
+                      "line": 78
+                    },
+                    "snippet": "  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                        "column": 22,
+                        "line": 78
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1132 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-profile-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-profile-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n\n  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:125:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:03:46.786Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "settings-profile-mobile-light-expected.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-profile-mobile-light.png"
+                    },
+                    {
+                      "name": "settings-profile-mobile-light-actual.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light-actual.png"
+                    },
+                    {
+                      "name": "settings-profile-mobile-light-diff.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light-diff.png"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                    "column": 22,
+                    "line": 78
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-4e90b7a827e3ce42d4ba",
+          "file": "visual-regression.spec.ts",
+          "line": 115,
+          "column": 1
+        },
+        {
+          "title": "Page tablet light",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1512,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1251 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-tablet-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-tablet-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1251 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-tablet-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-tablet-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:95:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                      "column": 22,
+                      "line": 78
+                    },
+                    "snippet": "  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                        "column": 22,
+                        "line": 78
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1251 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-tablet-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-tablet-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1251 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n\n  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:95:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:03:49.102Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "page-tablet-light-expected.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-tablet-light.png"
+                    },
+                    {
+                      "name": "page-tablet-light-actual.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\page-tablet-light-actual.png"
+                    },
+                    {
+                      "name": "page-tablet-light-diff.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\page-tablet-light-diff.png"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                    "column": 22,
+                    "line": 78
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-e54f867ec480cea3a8d6",
+          "file": "visual-regression.spec.ts",
+          "line": 92,
+          "column": 1
+        },
+        {
+          "title": "Settings desktop light",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1211,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  2006 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-desktop-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-desktop-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  2006 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-desktop-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-desktop-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:112:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                      "column": 22,
+                      "line": 78
+                    },
+                    "snippet": "  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                        "column": 22,
+                        "line": 78
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  2006 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-desktop-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-desktop-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 2006 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n\n  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:112:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:03:54.517Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "settings-desktop-light-expected.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-desktop-light.png"
+                    },
+                    {
+                      "name": "settings-desktop-light-actual.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\settings-desktop-light-actual.png"
+                    },
+                    {
+                      "name": "settings-desktop-light-diff.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\settings-desktop-light-diff.png"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                    "column": 22,
+                    "line": 78
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-fc41005818690c4ef843",
+          "file": "visual-regression.spec.ts",
+          "line": 110,
+          "column": 1
+        },
+        {
+          "title": "Settings profile detail mobile light",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 977,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1132 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-profile-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-profile-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1132 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-profile-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-profile-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:125:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                      "column": 22,
+                      "line": 78
+                    },
+                    "snippet": "  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                        "column": 22,
+                        "line": 78
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1132 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: settings-profile-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(settings-profile-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1132 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n\n  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:125:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:03:57.007Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "settings-profile-mobile-light-expected.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-profile-mobile-light.png"
+                    },
+                    {
+                      "name": "settings-profile-mobile-light-actual.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\settings-profile-mobile-light-actual.png"
+                    },
+                    {
+                      "name": "settings-profile-mobile-light-diff.png",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\settings-profile-mobile-light-diff.png"
+                    },
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                    "column": 22,
+                    "line": 78
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-cae91f72ef6d690e2460",
+          "file": "visual-regression.spec.ts",
+          "line": 115,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "mobile touch context",
+          "file": "visual-regression.spec.ts",
+          "line": 98,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page mobile light",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1362,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1175 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1175 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:106:5",
+                        "location": {
+                          "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                          "column": 22,
+                          "line": 78
+                        },
+                        "snippet": "  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                            "column": 22,
+                            "line": 78
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1175 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n\n  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:106:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T10:03:41.589Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "page-mobile-light-expected.png",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-mobile-light.png"
+                        },
+                        {
+                          "name": "page-mobile-light-actual.png",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light-actual.png"
+                        },
+                        {
+                          "name": "page-mobile-light-diff.png",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light-diff.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                        "column": 22,
+                        "line": 78
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-2fdbecc87cd023c2b3bd",
+              "file": "visual-regression.spec.ts",
+              "line": 101,
+              "column": 3
+            },
+            {
+              "title": "Page mobile light",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1288,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1175 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1175 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:106:5",
+                        "location": {
+                          "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                          "column": 22,
+                          "line": 78
+                        },
+                        "snippet": "  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                            "column": 22,
+                            "line": 78
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveScreenshot\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\n  1175 pixels (ratio 0.01 of all image pixels) are different.\n\n  Snapshot: page-mobile-light.png\n\nCall log:\n\u001b[2m  - Expect \"toHaveScreenshot(page-mobile-light.png)\" with timeout 5000ms\u001b[22m\n\u001b[2m    - verifying given screenshot expectation\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\u001b[2m  - waiting 100ms before taking screenshot\u001b[22m\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m    - disabled all CSS animations\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n\u001b[2m  - captured a stable screenshot\u001b[22m\n\u001b[2m  - 1175 pixels (ratio 0.01 of all image pixels) are different.\u001b[22m\n\n\n  76 | async function capture(page: Page, name: string) {\n  77 |   await page.evaluate(async () => document.fonts.ready)\n> 78 |   await expect(page).toHaveScreenshot(name)\n     |                      ^\n  79 | }\n  80 |\n  81 | test('Page desktop light', async ({ page }) => {\n    at capture (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:78:22)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts:106:5"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T10:03:51.827Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "page-mobile-light-expected.png",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-mobile-light.png"
+                        },
+                        {
+                          "name": "page-mobile-light-actual.png",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\page-mobile-light-actual.png"
+                        },
+                        {
+                          "name": "page-mobile-light-diff.png",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\page-mobile-light-diff.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts",
+                        "column": 22,
+                        "line": 78
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-4e14a5c27c96645e2ddf",
+              "file": "visual-regression.spec.ts",
+              "line": 101,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-20T10:03:35.425Z",
+    "duration": 23350.127,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 8,
+    "flaky": 0
+  }
+}

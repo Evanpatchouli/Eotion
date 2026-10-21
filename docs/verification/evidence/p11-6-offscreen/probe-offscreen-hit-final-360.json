@@ -1,0 +1,262 @@
+{
+  "pointerCoarse": true,
+  "details": [
+    {
+      "id": "timeline-foundation",
+      "arrow": false,
+      "connector": true
+    },
+    {
+      "id": "timeline-integration",
+      "arrow": {
+        "x": 303,
+        "y": 470,
+        "left": 303,
+        "right": 339,
+        "top": 470,
+        "bottom": 490,
+        "width": 36,
+        "height": 20
+      },
+      "connector": {
+        "x": 271,
+        "y": 498,
+        "left": 271,
+        "right": 299,
+        "top": 498,
+        "bottom": 518,
+        "width": 28,
+        "height": 20
+      },
+      "overlap": {
+        "left": 303,
+        "right": 299,
+        "top": 498,
+        "bottom": 490
+      },
+      "points": [
+        {
+          "name": "arrow-center",
+          "x": 321,
+          "y": 480,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "arrow-left-edge",
+          "x": 305,
+          "y": 480,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "arrow-right-edge",
+          "x": 337,
+          "y": 480,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "arrow-lower-left",
+          "x": 305,
+          "y": 488,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "arrow-lower-right",
+          "x": 337,
+          "y": 488,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到接口联调的结束日期"
+        },
+        {
+          "name": "connector-center",
+          "x": 285,
+          "y": 508,
+          "hitTestId": "timeline-dependency-handle",
+          "hitLabel": "创建依赖：接口联调"
+        },
+        {
+          "name": "connector-left-edge",
+          "x": 273,
+          "y": 508,
+          "hitTestId": "timeline-dependency-handle",
+          "hitLabel": "创建依赖：接口联调"
+        },
+        {
+          "name": "connector-right-edge",
+          "x": 297,
+          "y": 508,
+          "hitTestId": "timeline-dependency-handle",
+          "hitLabel": "创建依赖：接口联调"
+        },
+        {
+          "name": "overlap-center",
+          "x": 301,
+          "y": 494,
+          "hitTestId": "timeline-bar",
+          "hitLabel": "接口联调 · 2026-10-19 → 2026-10-23 · 进行中"
+        }
+      ],
+      "bar": {
+        "box": {
+          "x": 240,
+          "y": 478,
+          "left": 240,
+          "right": 343,
+          "top": 478,
+          "bottom": 510,
+          "width": 103,
+          "height": 32
+        },
+        "hitTestId": "timeline-bar"
+      },
+      "resizeStart": {
+        "box": {
+          "x": 229,
+          "y": 478,
+          "left": 229,
+          "right": 239,
+          "top": 478,
+          "bottom": 510,
+          "width": 10,
+          "height": 32
+        },
+        "hitTestId": "timeline-resize-start"
+      },
+      "resizeEnd": null
+    },
+    {
+      "id": "timeline-short",
+      "arrow": {
+        "x": 303,
+        "y": 518,
+        "left": 303,
+        "right": 339,
+        "top": 518,
+        "bottom": 538,
+        "width": 36,
+        "height": 20
+      },
+      "connector": {
+        "x": 271,
+        "y": 546,
+        "left": 271,
+        "right": 299,
+        "top": 546,
+        "bottom": 566,
+        "width": 28,
+        "height": 20
+      },
+      "overlap": {
+        "left": 303,
+        "right": 299,
+        "top": 546,
+        "bottom": 538
+      },
+      "points": [
+        {
+          "name": "arrow-center",
+          "x": 321,
+          "y": 528,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到文案校对的结束日期"
+        },
+        {
+          "name": "arrow-left-edge",
+          "x": 305,
+          "y": 528,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到文案校对的结束日期"
+        },
+        {
+          "name": "arrow-right-edge",
+          "x": 337,
+          "y": 528,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到文案校对的结束日期"
+        },
+        {
+          "name": "arrow-lower-left",
+          "x": 305,
+          "y": 536,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到文案校对的结束日期"
+        },
+        {
+          "name": "arrow-lower-right",
+          "x": 337,
+          "y": 536,
+          "hitTestId": "timeline-offscreen-right",
+          "hitLabel": "跳转到文案校对的结束日期"
+        },
+        {
+          "name": "connector-center",
+          "x": 285,
+          "y": 556,
+          "hitTestId": "timeline-dependency-handle",
+          "hitLabel": "创建依赖：文案校对"
+        },
+        {
+          "name": "connector-left-edge",
+          "x": 273,
+          "y": 556,
+          "hitTestId": "timeline-dependency-handle",
+          "hitLabel": "创建依赖：文案校对"
+        },
+        {
+          "name": "connector-right-edge",
+          "x": 297,
+          "y": 556,
+          "hitTestId": "timeline-dependency-handle",
+          "hitLabel": "创建依赖：文案校对"
+        },
+        {
+          "name": "overlap-center",
+          "x": 301,
+          "y": 542,
+          "hitTestId": "timeline-bar",
+          "hitLabel": "文案校对 · 2026-10-20 → 2026-10-21 · 进行中"
+        }
+      ],
+      "bar": {
+        "box": {
+          "x": 276,
+          "y": 526,
+          "left": 276,
+          "right": 343,
+          "top": 526,
+          "bottom": 558,
+          "width": 67,
+          "height": 32
+        },
+        "hitTestId": "timeline-bar"
+      },
+      "resizeStart": {
+        "box": {
+          "x": 265,
+          "y": 526,
+          "left": 265,
+          "right": 275,
+          "top": 526,
+          "bottom": 558,
+          "width": 10,
+          "height": 32
+        },
+        "hitTestId": "timeline-resize-start"
+      },
+      "resizeEnd": null
+    },
+    {
+      "id": "timeline-point",
+      "arrow": true,
+      "connector": false
+    },
+    {
+      "id": "timeline-unscheduled",
+      "arrow": false,
+      "connector": false
+    }
+  ]
+}

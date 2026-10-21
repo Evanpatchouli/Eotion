@@ -1,0 +1,68 @@
+{
+  "source": "P11.5 stable existing-seven artifacts; copied without pixel modification for P11.6 review",
+  "sourceDirectory": "C:/Users/31250/AppData/Local/Temp/eotion-visual-regression-existing7-stable-eb5b16e6d9d242e084dd18b718cbd226",
+  "baselineCommit": "a94f0cc4ee7dfd994b5073370f15bef23b49393c",
+  "p116StartingCommit": "ff0901c7545c9bc1addad9114cc1d41492a52eb3",
+  "files": [
+    {
+      "name": "page-mobile-light-actual.png",
+      "bytes": 23132,
+      "sha256": "A455C3BF511C7BBB8F476EC179A25AF663CB1C710D2D12E8D36FBAB520CF9C98"
+    },
+    {
+      "name": "page-mobile-light-diff.png",
+      "bytes": 23526,
+      "sha256": "CC07422D6DED3724004451BCA9DC5877C9CA40CA54B0117196211FE6726AA1CD"
+    },
+    {
+      "name": "page-mobile-light-expected.png",
+      "bytes": 21692,
+      "sha256": "9D35C2ACDA753F12588D4BCC8FC5E544AF870604FD84CE37433943A58B59294F"
+    },
+    {
+      "name": "page-tablet-light-actual.png",
+      "bytes": 30264,
+      "sha256": "12B4D0D4F24F18AD39D34536DBF7F6435620622F1BC23F85E3CB00C378ED1322"
+    },
+    {
+      "name": "page-tablet-light-diff.png",
+      "bytes": 31596,
+      "sha256": "BC22C78770B9010BDBA41A755CEB46D3051ACCF310AD2BCAB139402D23134857"
+    },
+    {
+      "name": "page-tablet-light-expected.png",
+      "bytes": 28443,
+      "sha256": "25BBEFEDFBC2B639B409B43368113F9482FAF089FB3E258242E47EB56E27C66E"
+    },
+    {
+      "name": "settings-desktop-light-actual.png",
+      "bytes": 40410,
+      "sha256": "6752CEF0BA25443FA0C1DD900E6489846C26E8E760DE91CC5C2BEB165E09AD4D"
+    },
+    {
+      "name": "settings-desktop-light-diff.png",
+      "bytes": 43629,
+      "sha256": "564D2D5E63BB9A79279C776F4E3B0D4D5A265B1A24C946E0A59F8A46A6D765E0"
+    },
+    {
+      "name": "settings-desktop-light-expected.png",
+      "bytes": 37161,
+      "sha256": "0FB585E349AED310A03A30AC0F8A4C70E4C897EA26F1E8DC46668654B971E957"
+    },
+    {
+      "name": "settings-profile-mobile-light-actual.png",
+      "bytes": 24374,
+      "sha256": "FE7AD87834C932A442500A24BD9AF9E8D87961820EB6ED0AFB816B55D8617D6A"
+    },
+    {
+      "name": "settings-profile-mobile-light-diff.png",
+      "bytes": 26371,
+      "sha256": "DD283EE9BCC1822CEFB6D7F684BF7A535BD9B74C7649E7A2DB6B86392BBDD980"
+    },
+    {
+      "name": "settings-profile-mobile-light-expected.png",
+      "bytes": 22923,
+      "sha256": "4E14562C54DF764EB28453D6C8B404E0EE6CEC2EDFD27D3846E14EADD8F91B41"
+    }
+  ]
+}

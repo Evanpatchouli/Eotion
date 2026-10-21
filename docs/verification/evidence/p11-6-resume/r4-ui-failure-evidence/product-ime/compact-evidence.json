@@ -1,0 +1,1682 @@
+{
+  "name": "product-ime",
+  "network": [
+    {
+      "time": 964307.503,
+      "method": "GET",
+      "url": "http://127.0.0.1:7173/api/auth/me",
+      "status": 200,
+      "body": null
+    },
+    {
+      "time": 964763.63,
+      "method": "GET",
+      "url": "http://127.0.0.1:7173/api/workspaces/ws-a/database-navigation?limit=100",
+      "status": 200,
+      "body": null
+    },
+    {
+      "time": 964765.606,
+      "method": "GET",
+      "url": "http://127.0.0.1:7173/api/workspaces",
+      "status": 200,
+      "body": null
+    },
+    {
+      "time": 964785.623,
+      "method": "GET",
+      "url": "http://127.0.0.1:7173/api/workspaces",
+      "status": 200,
+      "body": null
+    },
+    {
+      "time": 964799.711,
+      "method": "GET",
+      "url": "http://127.0.0.1:7173/api/sync/workspaces/ws-a/snapshot",
+      "status": 200,
+      "body": null
+    },
+    {
+      "time": 965683.065,
+      "method": "GET",
+      "url": "http://127.0.0.1:7173/api/workspaces",
+      "status": 200,
+      "body": null
+    },
+    {
+      "time": 965944.332,
+      "method": "GET",
+      "url": "http://127.0.0.1:7173/api/workspaces",
+      "status": 200,
+      "body": null
+    },
+    {
+      "time": 965955.211,
+      "method": "POST",
+      "url": "http://127.0.0.1:7173/api/sync/operations",
+      "status": 401,
+      "body": "{\"id\":\"pKVka9dOuY3m2k_btNnUY\",\"clientId\":\"JZiekCxweEy5yQYaNzB7d\",\"sequence\":1,\"workspaceId\":\"ws-a\",\"createdAt\":\"2026-10-21T04:57:18.749Z\",\"kind\":\"block.upsert\",\"payload\":{\"id\":\"IFf4y5y8r3yzXA8RIsLCL\",\"pageId\":\"page-a\",\"parentBlockId\":null,\"type\":\"paragraph\",\"orderKey\":\"000000000000000001000000000000\",\"props\":{\"node\":{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Draft from another API\"}]}}}}"
+    }
+  ],
+  "pageErrors": [],
+  "actions": [
+    {
+      "type": "before",
+      "callId": "call@13246",
+      "startTime": 965684.192,
+      "class": "Route",
+      "method": "fulfill",
+      "params": {
+        "status": 200,
+        "headers": [
+          {
+            "name": "content-type",
+            "value": "application/json"
+          },
+          {
+            "name": "content-length",
+            "value": "133"
+          }
+        ],
+        "body": "[{\"id\":\"ws-a\",\"name\":\"Ava space\",\"ownerId\":\"user-ava\",\"createdAt\":\"2026-09-30T00:00:00.000Z\",\"updatedAt\":\"2026-09-30T00:00:00.000Z\"}]",
+        "isBase64": false
+      },
+      "stepId": "pw:api@50",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "after",
+      "callId": "call@13246",
+      "endTime": 965684.943,
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "before",
+      "callId": "call@13248",
+      "startTime": 965804.31,
+      "class": "Frame",
+      "method": "evaluateExpression",
+      "params": {
+        "expression": "async () => {\n    const {\n      useProductSyncStore\n    } = await import('/src/stores/productSync.ts');\n    const local = await useProductSyncStore().store();\n    return JSON.stringify(await local.listBlocksByPage('page-a'));\n  }",
+        "isFunction": true,
+        "arg": {
+          "value": {
+            "v": "undefined"
+          },
+          "handles": []
+        }
+      },
+      "stepId": "pw:api@51",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "after",
+      "callId": "call@13248",
+      "endTime": 965807.424,
+      "result": {
+        "value": {
+          "s": "[{\"id\":\"IFf4y5y8r3yzXA8RIsLCL\",\"workspaceId\":\"ws-a\",\"pageId\":\"page-a\",\"parentBlockId\":null,\"type\":\"paragraph\",\"orderKey\":\"000000000000000001000000000000\",\"props\":{\"node\":{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Draft from another API\"}]}},\"createdAt\":\"2026-10-21T04:57:18.748Z\",\"updatedAt\":\"2026-10-21T04:57:18.748Z\"}]"
+        }
+      },
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "before",
+      "callId": "call@13250",
+      "startTime": 965809.666,
+      "class": "Frame",
+      "method": "click",
+      "params": {
+        "selector": "internal:role=button[name=\"页面操作：Alpha\"i]",
+        "strict": true
+      },
+      "stepId": "pw:api@53",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965810.85,
+      "message": "waiting for getByRole('button', { name: '页面操作：Alpha' })",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965814.526,
+      "message": "  locator resolved to <button type=\"button\" aria-controls=\"v-1\" aria-haspopup=\"menu\" aria-expanded=\"false\" aria-label=\"页面操作：Alpha\" class=\"product-page-menu-trigger\">…</button>",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965815.254,
+      "message": "attempting click action",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965815.28,
+      "message": "  waiting for element to be visible, enabled and stable",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965831.147,
+      "message": "  element is visible, enabled and stable",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965831.16,
+      "message": "  scrolling into view if needed",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965831.56,
+      "message": "  done scrolling",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965836.511,
+      "message": "  performing click action",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965846.882,
+      "message": "  click action done",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965846.895,
+      "message": "  waiting for scheduled navigations to finish",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13250",
+      "time": 965849.669,
+      "message": "  navigations have finished",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "after",
+      "callId": "call@13250",
+      "endTime": 965849.784,
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "before",
+      "callId": "call@13252",
+      "startTime": 965853.285,
+      "class": "Frame",
+      "method": "click",
+      "params": {
+        "selector": ".product-page-menu >> internal:role=menuitem[name=\"重命名\"i]",
+        "strict": true
+      },
+      "stepId": "pw:api@54",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965855.145,
+      "message": "waiting for locator('.product-page-menu').getByRole('menuitem', { name: '重命名' })",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965858.809,
+      "message": "  locator resolved to <button type=\"button\" role=\"menuitem\" data-v-749fbba4=\"\" data-popover-item=\"\" class=\"eotion-context-menu__item\">…</button>",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965859.757,
+      "message": "attempting click action",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965859.784,
+      "message": "  waiting for element to be visible, enabled and stable",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965881.596,
+      "message": "  element is visible, enabled and stable",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965881.616,
+      "message": "  scrolling into view if needed",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965882.336,
+      "message": "  done scrolling",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965887.628,
+      "message": "  performing click action",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965905.402,
+      "message": "  click action done",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965905.426,
+      "message": "  waiting for scheduled navigations to finish",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13252",
+      "time": 965906.199,
+      "message": "  navigations have finished",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "after",
+      "callId": "call@13252",
+      "endTime": 965906.308,
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "before",
+      "callId": "call@13254",
+      "startTime": 965911.729,
+      "class": "Frame",
+      "method": "fill",
+      "params": {
+        "selector": "internal:label=\"页面标题\"i",
+        "strict": true,
+        "value": "Changed title"
+      },
+      "stepId": "pw:api@55",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13254",
+      "time": 965913.446,
+      "message": "waiting for getByLabel('页面标题')",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13254",
+      "time": 965918.685,
+      "message": "  locator resolved to <input required=\"\" value=\"Alpha\" maxlength=\"200\" aria-label=\"页面标题\" data-v-61e2bbc7=\"\" class=\"eotion-input\" data-page-rename-input=\"\"/>",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13254",
+      "time": 965920.021,
+      "message": "  fill(\"Changed title\")",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13254",
+      "time": 965920.031,
+      "message": "attempting fill action",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13254",
+      "time": 965922.254,
+      "message": "  waiting for element to be visible, enabled and editable",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "after",
+      "callId": "call@13254",
+      "endTime": 965926.559,
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "before",
+      "callId": "call@13256",
+      "startTime": 965928.753,
+      "class": "Frame",
+      "method": "click",
+      "params": {
+        "selector": "internal:role=button[name=\"保存标题\"i]",
+        "strict": true
+      },
+      "stepId": "pw:api@56",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13256",
+      "time": 965930.084,
+      "message": "waiting for getByRole('button', { name: '保存标题' })",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13256",
+      "time": 965934.077,
+      "message": "  locator resolved to <button type=\"submit\" data-v-fe3c5b23=\"\" class=\"eotion-button eotion-button--primary\">保存标题</button>",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13256",
+      "time": 965934.946,
+      "message": "attempting click action",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13256",
+      "time": 965934.97,
+      "message": "  waiting for element to be visible, enabled and stable",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "before",
+      "callId": "call@13258",
+      "startTime": 965945.337,
+      "class": "Route",
+      "method": "fulfill",
+      "params": {
+        "status": 200,
+        "headers": [
+          {
+            "name": "content-type",
+            "value": "application/json"
+          },
+          {
+            "name": "content-length",
+            "value": "133"
+          }
+        ],
+        "body": "[{\"id\":\"ws-a\",\"name\":\"Ava space\",\"ownerId\":\"user-ava\",\"createdAt\":\"2026-09-30T00:00:00.000Z\",\"updatedAt\":\"2026-09-30T00:00:00.000Z\"}]",
+        "isBase64": false
+      },
+      "stepId": "pw:api@57",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "after",
+      "callId": "call@13258",
+      "endTime": 965945.971,
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "before",
+      "callId": "call@13260",
+      "startTime": 965956.388,
+      "class": "Route",
+      "method": "fulfill",
+      "params": {
+        "status": 401,
+        "headers": [
+          {
+            "name": "content-type",
+            "value": "application/json"
+          },
+          {
+            "name": "content-length",
+            "value": "69"
+          }
+        ],
+        "body": "{\"statusCode\":401,\"message\":\"Session expired\",\"error\":\"Unauthorized\"}",
+        "isBase64": false
+      },
+      "stepId": "pw:api@58",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "after",
+      "callId": "call@13260",
+      "endTime": 965957.132,
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "console",
+      "messageType": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "args": [],
+      "location": {
+        "url": "http://127.0.0.1:7173/api/sync/operations",
+        "lineNumber": 0,
+        "columnNumber": 0
+      },
+      "time": 965957.575,
+      "pageId": "page@910f8f0e1bf26adc18a77c1e3de9407f",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13256",
+      "time": 965964.806,
+      "message": "  element is not stable",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13256",
+      "time": 965964.832,
+      "message": "retrying click action",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13256",
+      "time": 965964.879,
+      "message": "  waiting for element to be visible, enabled and stable",
+      "source": "1-trace.trace"
+    },
+    {
+      "type": "log",
+      "callId": "call@13256",
+      "time": 965998.109,
+      "message": "element was detached from the DOM, retrying",
+      "source": "1-trace.trace"
+    }
+  ],
+  "rawSnapshots": [
+    {
+      "callId": "call@13252",
+      "phase": "after",
+      "pageId": "page@910f8f0e1bf26adc18a77c1e3de9407f",
+      "frameId": "frame@70f6beea238fb7eb540efde672886bc6",
+      "frameUrl": "http://127.0.0.1:7173/#/app/ws-a/page/page-a",
+      "doctype": "html",
+      "html": [
+        "HTML",
+        {
+          "lang": "zh-CN",
+          "data-theme": "light",
+          "style": "color-scheme: light;",
+          "class": "eotion-page-zoom-disabled"
+        },
+        [
+          [
+            19,
+            72
+          ]
+        ],
+        [
+          [
+            21,
+            28
+          ]
+        ],
+        [
+          "BODY",
+          {},
+          [
+            [
+              21,
+              29
+            ]
+          ],
+          [
+            "DIV",
+            {
+              "id": "app",
+              "data-v-app": ""
+            },
+            [
+              "DIV",
+              {
+                "data-v-7a7a37b1": "",
+                "class": "app-viewport",
+                "data-runtime": "web",
+                "data-route": "product-page"
+              },
+              [
+                "DIV",
+                {
+                  "data-v-b30e6842": "",
+                  "data-v-7a7a37b1": "",
+                  "class": "workspace-shell product-shell",
+                  "data-layout": "desktop",
+                  "data-input": "mouse",
+                  "data-runtime": "web"
+                },
+                [
+                  "ASIDE",
+                  {
+                    "data-v-b30e6842": "",
+                    "class": "sidebar product-sidebar",
+                    "aria-hidden": "false",
+                    "aria-label": "工作区导航"
+                  },
+                  [
+                    [
+                      19,
+                      86
+                    ]
+                  ],
+                  [
+                    [
+                      19,
+                      102
+                    ]
+                  ],
+                  [
+                    "DIV",
+                    {
+                      "data-v-b30e6842": "",
+                      "class": "product-page-scroll"
+                    },
+                    [
+                      "DIV",
+                      {
+                        "data-v-b30e6842": "",
+                        "class": "product-sidebar-section product-pages-section"
+                      },
+                      [
+                        [
+                          19,
+                          108
+                        ]
+                      ],
+                      [
+                        "UL",
+                        {
+                          "class": "product-page-tree",
+                          "role": "tree",
+                          "aria-label": "页面树"
+                        },
+                        [
+                          [
+                            19,
+                            109
+                          ]
+                        ],
+                        [
+                          [
+                            19,
+                            110
+                          ]
+                        ],
+                        [
+                          [
+                            19,
+                            111
+                          ]
+                        ],
+                        [
+                          [
+                            19,
+                            112
+                          ]
+                        ],
+                        [
+                          "LI",
+                          {
+                            "class": "product-page-node",
+                            "data-page-id": "page-a",
+                            "role": "treeitem",
+                            "aria-level": "1",
+                            "aria-selected": "true"
+                          },
+                          [
+                            [
+                              19,
+                              113
+                            ]
+                          ],
+                          [
+                            "SPAN",
+                            {
+                              "data-v-f63d876e": "",
+                              "class": "eotion-popover-anchor"
+                            },
+                            [
+                              [
+                                19,
+                                114
+                              ]
+                            ],
+                            [
+                              "DIV",
+                              {
+                                "class": "product-page-context"
+                              },
+                              [
+                                "DIV",
+                                {
+                                  "data-v-5b8fadae": "",
+                                  "class": "eotion-nav-item product-page-row eotion-nav-item--active",
+                                  "style": "padding-left: 8px;"
+                                },
+                                [
+                                  [
+                                    19,
+                                    124
+                                  ]
+                                ],
+                                [
+                                  "SPAN",
+                                  {
+                                    "data-v-5b8fadae": "",
+                                    "class": "eotion-nav-item__trailing"
+                                  },
+                                  [
+                                    [
+                                      19,
+                                      125
+                                    ]
+                                  ],
+                                  [
+                                    "BUTTON",
+                                    {
+                                      "type": "button",
+                                      "aria-haspopup": "dialog",
+                                      "aria-expanded": "true",
+                                      "aria-controls": "v-1",
+                                      "class": "product-page-menu-trigger",
+                                      "aria-label": "页面操作：Alpha"
+                                    },
+                                    [
+                                      [
+                                        19,
+                                        127
+                                      ]
+                                    ]
+                                  ],
+                                  [
+                                    [
+                                      19,
+                                      129
+                                    ]
+                                  ]
+                                ]
+                              ]
+                            ],
+                            [
+                              [
+                                19,
+                                133
+                              ]
+                            ]
+                          ],
+                          [
+                            [
+                              19,
+                              135
+                            ]
+                          ]
+                        ],
+                        [
+                          [
+                            19,
+                            137
+                          ]
+                        ],
+                        [
+                          [
+                            19,
+                            138
+                          ]
+                        ],
+                        [
+                          [
+                            19,
+                            139
+                          ]
+                        ],
+                        [
+                          [
+                            19,
+                            140
+                          ]
+                        ]
+                      ]
+                    ]
+                  ],
+                  [
+                    [
+                      19,
+                      162
+                    ]
+                  ]
+                ],
+                [
+                  [
+                    3,
+                    17
+                  ]
+                ],
+                [
+                  [
+                    19,
+                    200
+                  ]
+                ],
+                [
+                  [
+                    19,
+                    201
+                  ]
+                ]
+              ]
+            ]
+          ],
+          [
+            [
+              21,
+              32
+            ]
+          ],
+          [
+            [
+              21,
+              33
+            ]
+          ],
+          [
+            [
+              19,
+              205
+            ]
+          ],
+          [
+            [
+              19,
+              208
+            ]
+          ],
+          [
+            [
+              19,
+              209
+            ]
+          ],
+          [
+            [
+              19,
+              210
+            ]
+          ],
+          [
+            [
+              19,
+              213
+            ]
+          ],
+          [
+            [
+              19,
+              214
+            ]
+          ],
+          [
+            [
+              19,
+              215
+            ]
+          ],
+          [
+            [
+              19,
+              216
+            ]
+          ],
+          [
+            [
+              19,
+              217
+            ]
+          ],
+          [
+            [
+              19,
+              218
+            ]
+          ],
+          [
+            [
+              19,
+              219
+            ]
+          ],
+          [
+            [
+              19,
+              220
+            ]
+          ],
+          [
+            [
+              3,
+              21
+            ]
+          ],
+          [
+            "DIV",
+            {
+              "data-v-f63d876e": "",
+              "id": "v-1",
+              "class": "eotion-popover-panel",
+              "role": "dialog",
+              "aria-label": "重命名页面",
+              "data-placement": "bottom",
+              "style": "left: 228px; top: 199px; max-height: 513px; width: 280px;",
+              "tabindex": "-1"
+            },
+            [
+              [
+                3,
+                22
+              ]
+            ],
+            [
+              "FORM",
+              {
+                "class": "product-popover-form product-page-rename-form"
+              },
+              [
+                "LABEL",
+                {
+                  "class": "product-page-rename-field"
+                },
+                [
+                  "SPAN",
+                  {},
+                  "页面标题"
+                ],
+                [
+                  "INPUT",
+                  {
+                    "__playwright_value_": "Alpha",
+                    "data-v-61e2bbc7": "",
+                    "data-page-rename-input": "",
+                    "aria-label": "页面标题",
+                    "maxlength": "200",
+                    "required": "",
+                    "class": "eotion-input",
+                    "value": "Alpha"
+                  }
+                ]
+              ],
+              [
+                "DIV",
+                {
+                  "class": "product-popover-form__actions"
+                },
+                [
+                  "BUTTON",
+                  {
+                    "data-v-fe3c5b23": "",
+                    "class": "eotion-button eotion-button--primary",
+                    "type": "submit",
+                    "disabled": ""
+                  },
+                  "",
+                  "保存标题",
+                  ""
+                ],
+                [
+                  "BUTTON",
+                  {
+                    "data-v-fe3c5b23": "",
+                    "class": "eotion-button eotion-button--secondary",
+                    "type": "button"
+                  },
+                  "",
+                  "取消",
+                  ""
+                ]
+              ]
+            ],
+            [
+              [
+                3,
+                46
+              ]
+            ]
+          ],
+          [
+            [
+              3,
+              48
+            ]
+          ]
+        ]
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "timestamp": 965910.564,
+      "wallTime": 1792558638969,
+      "collectionTime": 2.200000001117587,
+      "resourceOverrides": [],
+      "isMainFrame": true
+    },
+    {
+      "callId": "call@13254",
+      "phase": "before",
+      "pageId": "page@910f8f0e1bf26adc18a77c1e3de9407f",
+      "frameId": "frame@70f6beea238fb7eb540efde672886bc6",
+      "frameUrl": "http://127.0.0.1:7173/#/app/ws-a/page/page-a",
+      "doctype": "html",
+      "html": [
+        [
+          1,
+          29
+        ]
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "timestamp": 965913.279,
+      "wallTime": 1792558638972,
+      "collectionTime": 0.599999999627471,
+      "resourceOverrides": [],
+      "isMainFrame": true
+    },
+    {
+      "callId": "call@13254",
+      "phase": "action",
+      "pageId": "page@910f8f0e1bf26adc18a77c1e3de9407f",
+      "frameId": "frame@70f6beea238fb7eb540efde672886bc6",
+      "frameUrl": "http://127.0.0.1:7173/#/app/ws-a/page/page-a",
+      "doctype": "html",
+      "html": [
+        "HTML",
+        {
+          "lang": "zh-CN",
+          "data-theme": "light",
+          "style": "color-scheme: light;",
+          "class": "eotion-page-zoom-disabled"
+        },
+        [
+          [
+            21,
+            72
+          ]
+        ],
+        [
+          [
+            23,
+            28
+          ]
+        ],
+        [
+          "BODY",
+          {},
+          [
+            [
+              23,
+              29
+            ]
+          ],
+          [
+            [
+              2,
+              12
+            ]
+          ],
+          [
+            [
+              23,
+              32
+            ]
+          ],
+          [
+            [
+              23,
+              33
+            ]
+          ],
+          [
+            [
+              21,
+              205
+            ]
+          ],
+          [
+            [
+              21,
+              208
+            ]
+          ],
+          [
+            [
+              21,
+              209
+            ]
+          ],
+          [
+            [
+              21,
+              210
+            ]
+          ],
+          [
+            [
+              21,
+              213
+            ]
+          ],
+          [
+            [
+              21,
+              214
+            ]
+          ],
+          [
+            [
+              21,
+              215
+            ]
+          ],
+          [
+            [
+              21,
+              216
+            ]
+          ],
+          [
+            [
+              21,
+              217
+            ]
+          ],
+          [
+            [
+              21,
+              218
+            ]
+          ],
+          [
+            [
+              21,
+              219
+            ]
+          ],
+          [
+            [
+              21,
+              220
+            ]
+          ],
+          [
+            [
+              5,
+              21
+            ]
+          ],
+          [
+            "DIV",
+            {
+              "data-v-f63d876e": "",
+              "id": "v-1",
+              "class": "eotion-popover-panel",
+              "role": "dialog",
+              "aria-label": "重命名页面",
+              "data-placement": "bottom",
+              "style": "left: 228px; top: 199px; max-height: 513px; width: 280px;",
+              "tabindex": "-1"
+            },
+            [
+              [
+                5,
+                22
+              ]
+            ],
+            [
+              "FORM",
+              {
+                "class": "product-popover-form product-page-rename-form"
+              },
+              [
+                "LABEL",
+                {
+                  "class": "product-page-rename-field"
+                },
+                [
+                  [
+                    2,
+                    14
+                  ]
+                ],
+                [
+                  "INPUT",
+                  {
+                    "__playwright_value_": "Alpha",
+                    "__playwright_target__": "",
+                    "data-v-61e2bbc7": "",
+                    "data-page-rename-input": "",
+                    "aria-label": "页面标题",
+                    "maxlength": "200",
+                    "required": "",
+                    "class": "eotion-input",
+                    "value": "Alpha"
+                  }
+                ]
+              ],
+              [
+                [
+                  2,
+                  25
+                ]
+              ]
+            ],
+            [
+              [
+                5,
+                46
+              ]
+            ]
+          ],
+          [
+            [
+              5,
+              48
+            ]
+          ]
+        ]
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "timestamp": 965922.108,
+      "wallTime": 1792558638981,
+      "collectionTime": 0.7999999988824129,
+      "resourceOverrides": [],
+      "isMainFrame": true
+    },
+    {
+      "callId": "call@13254",
+      "phase": "after",
+      "pageId": "page@910f8f0e1bf26adc18a77c1e3de9407f",
+      "frameId": "frame@70f6beea238fb7eb540efde672886bc6",
+      "frameUrl": "http://127.0.0.1:7173/#/app/ws-a/page/page-a",
+      "doctype": "html",
+      "html": [
+        "HTML",
+        {
+          "lang": "zh-CN",
+          "data-theme": "light",
+          "style": "color-scheme: light;",
+          "class": "eotion-page-zoom-disabled"
+        },
+        [
+          [
+            22,
+            72
+          ]
+        ],
+        [
+          [
+            24,
+            28
+          ]
+        ],
+        [
+          "BODY",
+          {},
+          [
+            [
+              24,
+              29
+            ]
+          ],
+          [
+            [
+              3,
+              12
+            ]
+          ],
+          [
+            [
+              24,
+              32
+            ]
+          ],
+          [
+            [
+              24,
+              33
+            ]
+          ],
+          [
+            [
+              22,
+              205
+            ]
+          ],
+          [
+            [
+              22,
+              208
+            ]
+          ],
+          [
+            [
+              22,
+              209
+            ]
+          ],
+          [
+            [
+              22,
+              210
+            ]
+          ],
+          [
+            [
+              22,
+              213
+            ]
+          ],
+          [
+            [
+              22,
+              214
+            ]
+          ],
+          [
+            [
+              22,
+              215
+            ]
+          ],
+          [
+            [
+              22,
+              216
+            ]
+          ],
+          [
+            [
+              22,
+              217
+            ]
+          ],
+          [
+            [
+              22,
+              218
+            ]
+          ],
+          [
+            [
+              22,
+              219
+            ]
+          ],
+          [
+            [
+              22,
+              220
+            ]
+          ],
+          [
+            [
+              6,
+              21
+            ]
+          ],
+          [
+            "DIV",
+            {
+              "data-v-f63d876e": "",
+              "id": "v-1",
+              "class": "eotion-popover-panel",
+              "role": "dialog",
+              "aria-label": "重命名页面",
+              "data-placement": "bottom",
+              "style": "left: 228px; top: 199px; max-height: 513px; width: 280px;",
+              "tabindex": "-1"
+            },
+            [
+              [
+                6,
+                22
+              ]
+            ],
+            [
+              "FORM",
+              {
+                "class": "product-popover-form product-page-rename-form"
+              },
+              [
+                "LABEL",
+                {
+                  "class": "product-page-rename-field"
+                },
+                [
+                  [
+                    3,
+                    14
+                  ]
+                ],
+                [
+                  "INPUT",
+                  {
+                    "__playwright_value_": "Changed title",
+                    "__playwright_target__": "",
+                    "data-v-61e2bbc7": "",
+                    "data-page-rename-input": "",
+                    "aria-label": "页面标题",
+                    "maxlength": "200",
+                    "required": "",
+                    "class": "eotion-input",
+                    "value": "Changed title"
+                  }
+                ]
+              ],
+              [
+                "DIV",
+                {
+                  "class": "product-popover-form__actions"
+                },
+                [
+                  "BUTTON",
+                  {
+                    "data-v-fe3c5b23": "",
+                    "class": "eotion-button eotion-button--primary",
+                    "type": "submit"
+                  },
+                  [
+                    [
+                      3,
+                      17
+                    ]
+                  ],
+                  [
+                    [
+                      3,
+                      18
+                    ]
+                  ],
+                  [
+                    [
+                      3,
+                      19
+                    ]
+                  ]
+                ],
+                [
+                  [
+                    3,
+                    24
+                  ]
+                ]
+              ]
+            ],
+            [
+              [
+                6,
+                46
+              ]
+            ]
+          ],
+          [
+            [
+              6,
+              48
+            ]
+          ]
+        ]
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "timestamp": 965927.992,
+      "wallTime": 1792558638987,
+      "collectionTime": 0.599999999627471,
+      "resourceOverrides": [],
+      "isMainFrame": true
+    },
+    {
+      "callId": "call@13256",
+      "phase": "before",
+      "pageId": "page@910f8f0e1bf26adc18a77c1e3de9407f",
+      "frameId": "frame@70f6beea238fb7eb540efde672886bc6",
+      "frameUrl": "http://127.0.0.1:7173/#/app/ws-a/page/page-a",
+      "doctype": "html",
+      "html": [
+        "HTML",
+        {
+          "lang": "zh-CN",
+          "data-theme": "light",
+          "style": "color-scheme: light;",
+          "class": "eotion-page-zoom-disabled"
+        },
+        [
+          [
+            23,
+            72
+          ]
+        ],
+        [
+          [
+            25,
+            28
+          ]
+        ],
+        [
+          "BODY",
+          {},
+          [
+            [
+              25,
+              29
+            ]
+          ],
+          [
+            [
+              4,
+              12
+            ]
+          ],
+          [
+            [
+              25,
+              32
+            ]
+          ],
+          [
+            [
+              25,
+              33
+            ]
+          ],
+          [
+            [
+              23,
+              205
+            ]
+          ],
+          [
+            [
+              23,
+              208
+            ]
+          ],
+          [
+            [
+              23,
+              209
+            ]
+          ],
+          [
+            [
+              23,
+              210
+            ]
+          ],
+          [
+            [
+              23,
+              213
+            ]
+          ],
+          [
+            [
+              23,
+              214
+            ]
+          ],
+          [
+            [
+              23,
+              215
+            ]
+          ],
+          [
+            [
+              23,
+              216
+            ]
+          ],
+          [
+            [
+              23,
+              217
+            ]
+          ],
+          [
+            [
+              23,
+              218
+            ]
+          ],
+          [
+            [
+              23,
+              219
+            ]
+          ],
+          [
+            [
+              23,
+              220
+            ]
+          ],
+          [
+            [
+              7,
+              21
+            ]
+          ],
+          [
+            "DIV",
+            {
+              "data-v-f63d876e": "",
+              "id": "v-1",
+              "class": "eotion-popover-panel",
+              "role": "dialog",
+              "aria-label": "重命名页面",
+              "data-placement": "bottom",
+              "style": "left: 228px; top: 199px; max-height: 513px; width: 280px;",
+              "tabindex": "-1"
+            },
+            [
+              [
+                7,
+                22
+              ]
+            ],
+            [
+              "FORM",
+              {
+                "class": "product-popover-form product-page-rename-form"
+              },
+              [
+                "LABEL",
+                {
+                  "class": "product-page-rename-field"
+                },
+                [
+                  [
+                    4,
+                    14
+                  ]
+                ],
+                [
+                  "INPUT",
+                  {
+                    "__playwright_value_": "Changed title",
+                    "data-v-61e2bbc7": "",
+                    "data-page-rename-input": "",
+                    "aria-label": "页面标题",
+                    "maxlength": "200",
+                    "required": "",
+                    "class": "eotion-input",
+                    "value": "Changed title"
+                  }
+                ]
+              ],
+              [
+                [
+                  1,
+                  3
+                ]
+              ]
+            ],
+            [
+              [
+                7,
+                46
+              ]
+            ]
+          ],
+          [
+            [
+              7,
+              48
+            ]
+          ]
+        ]
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "timestamp": 965929.97,
+      "wallTime": 1792558638989,
+      "collectionTime": 0.599999999627471,
+      "resourceOverrides": [],
+      "isMainFrame": true
+    }
+  ]
+}

@@ -1,0 +1,935 @@
+{
+  "schemaVersion": 1,
+  "createdAtUtc": "2026-10-20T10:27:05.5031374Z",
+  "sourceRoot": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d",
+  "archiveRoot": "docs/verification/evidence/p11-6-resume",
+  "notes": [
+    "Original files copied byte-for-byte; source and destination SHA256 verified.",
+    "Diagnostic run*.log files and unscheduled-r5.log combine stdout and stderr; these must not be described as separate stream captures. Explicit stdout.log/stderr.log files retain their original names and bytes.",
+    "No standalone typecheck log was present in the selected completed source areas. Typecheck output from tool calls is not fabricated as a file.",
+    "Earlier unscheduled-r2/r3/r4 console output was not saved as raw log files; their available Playwright artifacts are preserved.",
+    "Running backend/final-web, node_modules, Mongo data, temporary copied *.spec.ts suites, editor-probe package.json and unrelated vite logs excluded."
+  ],
+  "selectedDirectories": [
+    "visual-subpixel",
+    "visual-before-update",
+    "update-reviewed-four",
+    "compare-all13",
+    "fixed-failures-repeat2",
+    "uncertain-slash-focused",
+    "uncertain-slash-dismiss",
+    "editor-probe",
+    "unscheduled-r2",
+    "unscheduled-r3",
+    "unscheduled-r4",
+    "unscheduled-r5"
+  ],
+  "fileCount": 147,
+  "totalBytes": 2181736.0,
+  "files": [
+    {
+      "bytes": 2619,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-subpixel/environment-readonly.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-subpixel\\environment-readonly.json",
+      "sha256": "7dcd1c484b5d872111fc8457be8427b42637897e969ab544e680606348401e3d"
+    },
+    {
+      "bytes": 2617,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-subpixel/environment-readonly.stdout.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-subpixel\\environment-readonly.stdout.log",
+      "sha256": "5e311deed3e782f83a3c55515363ea91ddf03bdf2e59d15d9120c7d72e335b22"
+    },
+    {
+      "bytes": 6981,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-subpixel/evidence-brief.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-subpixel\\evidence-brief.md",
+      "sha256": "15edb8720c559b37f7db6bea1bc4c68372b1fa5283aedf29b3cdfcb2e05d602f"
+    },
+    {
+      "bytes": 42459,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-subpixel/glyph-evidence.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-subpixel\\glyph-evidence.json",
+      "sha256": "2cb5f70cf1eba55e6fd65431bfddf590b0f6c85b4dbcfd445a71273505fcc7a2"
+    },
+    {
+      "bytes": 5195,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-subpixel/inspect-glyphs.cjs",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-subpixel\\inspect-glyphs.cjs",
+      "sha256": "8ce9800d28ec294c72d0a655c5ac6af180512394acf63ebbdaf7f57637d54a36"
+    },
+    {
+      "bytes": 44435,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-subpixel/pixel-statistics.stdout.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-subpixel\\pixel-statistics.stdout.log",
+      "sha256": "ed47ce6ffef75cb02414dc999e06c6ff750ca184d52a52d0ee35555c3a615c30"
+    },
+    {
+      "bytes": 2198,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-subpixel/read-environment.ps1",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-subpixel\\read-environment.ps1",
+      "sha256": "c06215e72cdaca54521c4a1fb73d2569748327d2c71c186aada60f00fa6d637e"
+    },
+    {
+      "bytes": 2939,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/actual-hashes.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\actual-hashes.json",
+      "sha256": "47df3f276066dab28383eabb66e4f740a1307eccde4877240043e0f11d1e3dfc"
+    },
+    {
+      "bytes": 3,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/exit-code.txt",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\exit-code.txt",
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "bytes": 1328,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/stderr.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\stderr.log",
+      "sha256": "fbce9f1497ebaa78123e80bb55be12783531cce8024754aaac6054a9895ffc8a"
+    },
+    {
+      "bytes": 28467,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/stdout.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\stdout.log",
+      "sha256": "f80d10516dc1544a67c362ac6ae3fcf7896a5f06189a11bf3ce7c8232e75635e"
+    },
+    {
+      "bytes": 70629,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/summary.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\summary.json",
+      "sha256": "054f9e4c5995248323178b09c1bc1658480d9613f956e2b9d0ff41ae4f3fc682"
+    },
+    {
+      "bytes": 439,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\.last-run.json",
+      "sha256": "b619508d29b2355eaee6c196462bf5f6d393cc1bdf47690054c280fc17945828"
+    },
+    {
+      "bytes": 795,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-environment.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-environment.json",
+      "sha256": "d2377bd25cf4e0dbc419216881530f37afb10d0936199fe6c1dcde31388e5064"
+    },
+    {
+      "bytes": 11845,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\error-context.md",
+      "sha256": "9db79555b4ef49308b670b79d1a8ca4ab97425455ef728576cebfad1643f6663"
+    },
+    {
+      "bytes": 23132,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light/page-mobile-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light-actual.png",
+      "sha256": "a455c3bf511c7bbb8f476ec179a25af663cb1c710d2d12e8d36fbab520cf9c98"
+    },
+    {
+      "bytes": 23526,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light/page-mobile-light-diff.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light-diff.png",
+      "sha256": "cc07422d6ded3724004451bca9dc5877c9ca40ca54b0117196211fe6726aa1cd"
+    },
+    {
+      "bytes": 21692,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light/page-mobile-light-expected.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light-expected.png",
+      "sha256": "9d35c2acda753f12588d4bcc8fc5e544af870604fd84ce37433943a58b59294f"
+    },
+    {
+      "bytes": 23132,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\test-failed-1.png",
+      "sha256": "a455c3bf511c7bbb8f476ec179a25af663cb1c710d2d12e8d36fbab520cf9c98"
+    },
+    {
+      "bytes": 11845,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light-repeat1/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\error-context.md",
+      "sha256": "9db79555b4ef49308b670b79d1a8ca4ab97425455ef728576cebfad1643f6663"
+    },
+    {
+      "bytes": 23132,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light-repeat1/page-mobile-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\page-mobile-light-actual.png",
+      "sha256": "a455c3bf511c7bbb8f476ec179a25af663cb1c710d2d12e8d36fbab520cf9c98"
+    },
+    {
+      "bytes": 23526,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light-repeat1/page-mobile-light-diff.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\page-mobile-light-diff.png",
+      "sha256": "cc07422d6ded3724004451bca9dc5877c9ca40ca54b0117196211fe6726aa1cd"
+    },
+    {
+      "bytes": 21692,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light-repeat1/page-mobile-light-expected.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\page-mobile-light-expected.png",
+      "sha256": "9d35c2acda753f12588d4bcc8fc5e544af870604fd84ce37433943a58b59294f"
+    },
+    {
+      "bytes": 23132,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-mobile-touch-context-Page-mobile-light-repeat1/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\test-failed-1.png",
+      "sha256": "a455c3bf511c7bbb8f476ec179a25af663cb1c710d2d12e8d36fbab520cf9c98"
+    },
+    {
+      "bytes": 11424,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\error-context.md",
+      "sha256": "e6ea75ff70d403155f86b4de992e1251de76305ece7f0f4f8507b906a3856e4b"
+    },
+    {
+      "bytes": 30264,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light/page-tablet-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\page-tablet-light-actual.png",
+      "sha256": "12b4d0d4f24f18ad39d34536dbf7f6435620622f1bc23f85e3cb00c378ed1322"
+    },
+    {
+      "bytes": 31596,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light/page-tablet-light-diff.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\page-tablet-light-diff.png",
+      "sha256": "bc22c78770b9010bdba41a755ceb46d3051accf310ad2bcab139402d23134857"
+    },
+    {
+      "bytes": 28443,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light/page-tablet-light-expected.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\page-tablet-light-expected.png",
+      "sha256": "25bbefedfbc2b639b409b43368113f9482faf089fb3e258242e47eb56e27c66e"
+    },
+    {
+      "bytes": 30264,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\test-failed-1.png",
+      "sha256": "12b4d0d4f24f18ad39d34536dbf7f6435620622f1bc23f85e3cb00c378ed1322"
+    },
+    {
+      "bytes": 11424,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light-repeat1/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\error-context.md",
+      "sha256": "e6ea75ff70d403155f86b4de992e1251de76305ece7f0f4f8507b906a3856e4b"
+    },
+    {
+      "bytes": 30264,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light-repeat1/page-tablet-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\page-tablet-light-actual.png",
+      "sha256": "12b4d0d4f24f18ad39d34536dbf7f6435620622f1bc23f85e3cb00c378ed1322"
+    },
+    {
+      "bytes": 31596,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light-repeat1/page-tablet-light-diff.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\page-tablet-light-diff.png",
+      "sha256": "bc22c78770b9010bdba41a755ceb46d3051accf310ad2bcab139402d23134857"
+    },
+    {
+      "bytes": 28443,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light-repeat1/page-tablet-light-expected.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\page-tablet-light-expected.png",
+      "sha256": "25bbefedfbc2b639b409b43368113f9482faf089fb3e258242e47eb56e27c66e"
+    },
+    {
+      "bytes": 30264,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Page-tablet-light-repeat1/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\test-failed-1.png",
+      "sha256": "12b4d0d4f24f18ad39d34536dbf7f6435620622f1bc23f85e3cb00c378ed1322"
+    },
+    {
+      "bytes": 12642,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\error-context.md",
+      "sha256": "bf1fee745ee8ee776eb66029d307abc45c152a5fdc4850b7a45cb80efaa552f5"
+    },
+    {
+      "bytes": 40410,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light/settings-desktop-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\settings-desktop-light-actual.png",
+      "sha256": "6752cef0ba25443fa0c1dd900e6489846c26e8e760de91cc5c2beb165e09ad4d"
+    },
+    {
+      "bytes": 43629,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light/settings-desktop-light-diff.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\settings-desktop-light-diff.png",
+      "sha256": "564d2d5e63bb9a79279c776f4e3b0d4d5a265b1a24c946e0a59f8a46a6d765e0"
+    },
+    {
+      "bytes": 37161,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light/settings-desktop-light-expected.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\settings-desktop-light-expected.png",
+      "sha256": "0fb585e349aed310a03a30ac0f8a4c70e4c897ea26f1e8dc46668654b971e957"
+    },
+    {
+      "bytes": 40410,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\test-failed-1.png",
+      "sha256": "6752cef0ba25443fa0c1dd900e6489846c26e8e760de91cc5c2beb165e09ad4d"
+    },
+    {
+      "bytes": 12642,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light-repeat1/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\error-context.md",
+      "sha256": "bf1fee745ee8ee776eb66029d307abc45c152a5fdc4850b7a45cb80efaa552f5"
+    },
+    {
+      "bytes": 40410,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light-repeat1/settings-desktop-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\settings-desktop-light-actual.png",
+      "sha256": "6752cef0ba25443fa0c1dd900e6489846c26e8e760de91cc5c2beb165e09ad4d"
+    },
+    {
+      "bytes": 43629,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light-repeat1/settings-desktop-light-diff.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\settings-desktop-light-diff.png",
+      "sha256": "564d2d5e63bb9a79279c776f4e3b0d4d5a265b1a24c946e0a59f8a46a6d765e0"
+    },
+    {
+      "bytes": 37161,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light-repeat1/settings-desktop-light-expected.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\settings-desktop-light-expected.png",
+      "sha256": "0fb585e349aed310a03a30ac0f8a4c70e4c897ea26f1e8dc46668654b971e957"
+    },
+    {
+      "bytes": 40410,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-desktop-light-repeat1/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\test-failed-1.png",
+      "sha256": "6752cef0ba25443fa0c1dd900e6489846c26e8e760de91cc5c2beb165e09ad4d"
+    },
+    {
+      "bytes": 11146,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\error-context.md",
+      "sha256": "c954a6958304dcc5d434074ae800995f1e4cd3ecf3926c084ede68b66fb16eae"
+    },
+    {
+      "bytes": 24374,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light/settings-profile-mobile-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light-actual.png",
+      "sha256": "fe7ad87834c932a442500a24bd9af9e8d87961820eb6ed0afb816b55d8617d6a"
+    },
+    {
+      "bytes": 26371,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light/settings-profile-mobile-light-diff.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light-diff.png",
+      "sha256": "dd283ee9bcc1822cefb6d7f684bf7a535bd9b74c7649e7a2db6b86392bbdd980"
+    },
+    {
+      "bytes": 22923,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light/settings-profile-mobile-light-expected.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light-expected.png",
+      "sha256": "4e14562c54df764eb28453d6c8b404e0ee6cec2edfd27d3846e14eadd8f91b41"
+    },
+    {
+      "bytes": 24374,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\test-failed-1.png",
+      "sha256": "fe7ad87834c932a442500a24bd9af9e8d87961820eb6ed0afb816b55d8617d6a"
+    },
+    {
+      "bytes": 11146,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light-repeat1/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\error-context.md",
+      "sha256": "c954a6958304dcc5d434074ae800995f1e4cd3ecf3926c084ede68b66fb16eae"
+    },
+    {
+      "bytes": 24374,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light-repeat1/settings-profile-mobile-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\settings-profile-mobile-light-actual.png",
+      "sha256": "fe7ad87834c932a442500a24bd9af9e8d87961820eb6ed0afb816b55d8617d6a"
+    },
+    {
+      "bytes": 26371,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light-repeat1/settings-profile-mobile-light-diff.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\settings-profile-mobile-light-diff.png",
+      "sha256": "dd283ee9bcc1822cefb6d7f684bf7a535bd9b74c7649e7a2db6b86392bbdd980"
+    },
+    {
+      "bytes": 22923,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light-repeat1/settings-profile-mobile-light-expected.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\settings-profile-mobile-light-expected.png",
+      "sha256": "4e14562c54df764eb28453d6c8b404e0ee6cec2edfd27d3846e14eadd8f91b41"
+    },
+    {
+      "bytes": 24374,
+      "destination": "docs/verification/evidence/p11-6-resume/visual-before-update/output/visual-regression-Settings-profile-detail-mobile-light-repeat1/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\test-failed-1.png",
+      "sha256": "fe7ad87834c932a442500a24bd9af9e8d87961820eb6ed0afb816b55d8617d6a"
+    },
+    {
+      "bytes": 3,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/exit-code.txt",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\exit-code.txt",
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "bytes": 166,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/stderr.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\stderr.log",
+      "sha256": "418e396b4207d0b2e1ee2d87c31e9a900cd53eb4babba56629af4392b178ba87"
+    },
+    {
+      "bytes": 1495,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/stdout.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\stdout.log",
+      "sha256": "41225c1ddcca90cbd011de4602680245d30d72b3e2315b1099f17ad0820eea0b"
+    },
+    {
+      "bytes": 10922,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/summary.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\summary.json",
+      "sha256": "96ddd9bc4dd102f7a6f31087e4616000c40fb8d56a812f222e8f2301116ec1e4"
+    },
+    {
+      "bytes": 45,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/output/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\output\\.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "bytes": 795,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/output/visual-environment.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\output\\visual-environment.json",
+      "sha256": "2b4b40051b835a7c24738783c329f61e57bdb685415b428cf493d153493e7701"
+    },
+    {
+      "bytes": 23132,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/output/visual-regression-mobile-touch-context-Page-mobile-light/page-mobile-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light-actual.png",
+      "sha256": "a455c3bf511c7bbb8f476ec179a25af663cb1c710d2d12e8d36fbab520cf9c98"
+    },
+    {
+      "bytes": 30264,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/output/visual-regression-Page-tablet-light/page-tablet-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\output\\visual-regression-Page-tablet-light\\page-tablet-light-actual.png",
+      "sha256": "12b4d0d4f24f18ad39d34536dbf7f6435620622f1bc23f85e3cb00c378ed1322"
+    },
+    {
+      "bytes": 40410,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/output/visual-regression-Settings-desktop-light/settings-desktop-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\output\\visual-regression-Settings-desktop-light\\settings-desktop-light-actual.png",
+      "sha256": "6752cef0ba25443fa0c1dd900e6489846c26e8e760de91cc5c2beb165e09ad4d"
+    },
+    {
+      "bytes": 24374,
+      "destination": "docs/verification/evidence/p11-6-resume/update-reviewed-four/output/visual-regression-Settings-profile-detail-mobile-light/settings-profile-mobile-light-actual.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\update-reviewed-four\\output\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light-actual.png",
+      "sha256": "fe7ad87834c932a442500a24bd9af9e8d87961820eb6ed0afb816b55d8617d6a"
+    },
+    {
+      "bytes": 3,
+      "destination": "docs/verification/evidence/p11-6-resume/compare-all13/exit-code.txt",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\compare-all13\\exit-code.txt",
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "bytes": 331,
+      "destination": "docs/verification/evidence/p11-6-resume/compare-all13/stderr.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\compare-all13\\stderr.log",
+      "sha256": "2ea259f5c4a3abebcdab831cd06af770e7f5bf770bb5772251ce7fc55eb79a0c"
+    },
+    {
+      "bytes": 1181,
+      "destination": "docs/verification/evidence/p11-6-resume/compare-all13/stdout.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\compare-all13\\stdout.log",
+      "sha256": "e661779a78a641462a23c1549514ab5254a4ca5864e1ae71a997c7c0b10f673d"
+    },
+    {
+      "bytes": 18632,
+      "destination": "docs/verification/evidence/p11-6-resume/compare-all13/summary.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\compare-all13\\summary.json",
+      "sha256": "fd0fdc112b49af15ad3f332d13864e8c66d67ddf093e69cd82ad2a5c81021171"
+    },
+    {
+      "bytes": 45,
+      "destination": "docs/verification/evidence/p11-6-resume/compare-all13/output/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\compare-all13\\output\\.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "bytes": 795,
+      "destination": "docs/verification/evidence/p11-6-resume/compare-all13/output/visual-environment.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\compare-all13\\output\\visual-environment.json",
+      "sha256": "0a8c9b7ffd19fd124866dfb1ec8b7e913e52c1be06d0af323b7f7fd871dccba3"
+    },
+    {
+      "bytes": 1988,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/arguments.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\arguments.json",
+      "sha256": "3e3a441ba34254915f9b4abf8f53eabd572d03aa753328fb98f6346a3251d850"
+    },
+    {
+      "bytes": 3,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/exit-code.txt",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\exit-code.txt",
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "bytes": 664,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/stderr.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\stderr.log",
+      "sha256": "8144d140de714ddd3a05901c469fd2cdf30e621f1b1b1352a5473752f565fba9"
+    },
+    {
+      "bytes": 8166,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/stdout.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\stdout.log",
+      "sha256": "fb499f2cb1328f5b1fe6be33c4f97ae5dcbeac3918e7081dde4fd2bea38471e0"
+    },
+    {
+      "bytes": 41425,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/summary.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\summary.json",
+      "sha256": "c501dbca0eab915676493b630865a641cfa331b9463836c2a503bfa1578da1c0"
+    },
+    {
+      "bytes": 145,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/output/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\output\\.last-run.json",
+      "sha256": "46c908cf264d4b9f6a34f3138d6d4641c8102e6c48cf58212a9e1fbc8cb0b794"
+    },
+    {
+      "bytes": 17657,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/output/product-database-unconfirm-fc68e-attempts-until-page-refresh/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\error-context.md",
+      "sha256": "99b29dbf2cf4913134b2e8a5b8ca8e464350c67de0566d94adefa1432323ad14"
+    },
+    {
+      "bytes": 32997,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/output/product-database-unconfirm-fc68e-attempts-until-page-refresh/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\test-failed-1.png",
+      "sha256": "1ba0f704a3c26482edc946039d733b6975fb9e2d5a33b99b988efce0cdccf99f"
+    },
+    {
+      "bytes": 17657,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/output/product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1\\error-context.md",
+      "sha256": "99b29dbf2cf4913134b2e8a5b8ca8e464350c67de0566d94adefa1432323ad14"
+    },
+    {
+      "bytes": 32997,
+      "destination": "docs/verification/evidence/p11-6-resume/fixed-failures-repeat2/output/product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1\\test-failed-1.png",
+      "sha256": "1ba0f704a3c26482edc946039d733b6975fb9e2d5a33b99b988efce0cdccf99f"
+    },
+    {
+      "bytes": 3,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-focused/exit-code.txt",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\exit-code.txt",
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "bytes": 332,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-focused/stderr.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\stderr.log",
+      "sha256": "3414f63019324028171cc537724a455e44ac7b3d4e91cd8873c4a2abf694be51"
+    },
+    {
+      "bytes": 4800,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-focused/stdout.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\stdout.log",
+      "sha256": "218e98fc2186b70bd6c6b1d76026eb2eef9ae6377f29b39840787e030a364e2c"
+    },
+    {
+      "bytes": 14573,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-focused/summary.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\summary.json",
+      "sha256": "0b72c02851a54db1f44b778d1dbdb608c2a4f26d19fb36a6afeb704a93abcc0d"
+    },
+    {
+      "bytes": 145,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-focused/output/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\output\\.last-run.json",
+      "sha256": "46c908cf264d4b9f6a34f3138d6d4641c8102e6c48cf58212a9e1fbc8cb0b794"
+    },
+    {
+      "bytes": 17615,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-focused/output/product-database-unconfirm-fc68e-attempts-until-page-refresh/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\error-context.md",
+      "sha256": "e14ac018d7fe8378accf0f61c6fb91d5377e3d0de5926e39e4294ee3cb5ffa3e"
+    },
+    {
+      "bytes": 32966,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-focused/output/product-database-unconfirm-fc68e-attempts-until-page-refresh/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\test-failed-1.png",
+      "sha256": "f7888bb53a868a0fdbd1dd552f3bc7e1b02f0f3e59ce79b79869528b75a7d721"
+    },
+    {
+      "bytes": 17615,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-focused/output/product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1\\error-context.md",
+      "sha256": "e14ac018d7fe8378accf0f61c6fb91d5377e3d0de5926e39e4294ee3cb5ffa3e"
+    },
+    {
+      "bytes": 32966,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-focused/output/product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1/test-failed-1.png",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-focused\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1\\test-failed-1.png",
+      "sha256": "f7888bb53a868a0fdbd1dd552f3bc7e1b02f0f3e59ce79b79869528b75a7d721"
+    },
+    {
+      "bytes": 3,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-dismiss/exit-code.txt",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-dismiss\\exit-code.txt",
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "bytes": 332,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-dismiss/stderr.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-dismiss\\stderr.log",
+      "sha256": "61fe922101ccb535ea58d0e9f3df4093b76b0e3c6cbea991b9e0af0c3e22cc3d"
+    },
+    {
+      "bytes": 354,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-dismiss/stdout.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-dismiss\\stdout.log",
+      "sha256": "f1c7abce9d021928687424aba40db67cc04809e1a710d607ff69192f5eb25b40"
+    },
+    {
+      "bytes": 4967,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-dismiss/summary.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-dismiss\\summary.json",
+      "sha256": "99f97cc27e2f3be2b8494e8f85481fbc385d6633ee78faa55f3bf52c63ea7a0e"
+    },
+    {
+      "bytes": 45,
+      "destination": "docs/verification/evidence/p11-6-resume/uncertain-slash-dismiss/output/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\uncertain-slash-dismiss\\output\\.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "bytes": 404,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/playwright.config.ts",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\playwright.config.ts",
+      "sha256": "9b218b0a7317cb544ba74f8f4b1d2b10f4b25f0e5ec300cafecd94475410448f"
+    },
+    {
+      "bytes": 2218,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/run2.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\run2.log",
+      "sha256": "d47ac7966e0dd127d636f493fd14857b928715dc07be848780891afd15d9280c"
+    },
+    {
+      "bytes": 20618,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/run3.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\run3.log",
+      "sha256": "57ae79c1dd6e8445e00a48566e469f5b9c26f9d065b0b12e288040ce4e7bc7f3"
+    },
+    {
+      "bytes": 19152,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/run4.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\run4.log",
+      "sha256": "f21b922ed80ebe7c3f8fe7d88cd63822794cf48fa8f59310cdb1f93843b8ad48"
+    },
+    {
+      "bytes": 8625,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/run5.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\run5.log",
+      "sha256": "f241e4fb08dfd488ade0982b657f5dc22f61ebefefdf1b860f9150cda2866e08"
+    },
+    {
+      "bytes": 13760,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/run6.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\run6.log",
+      "sha256": "1762a604433e10a8ed996f19bbca46f5e457acad6cac5e1dd534571aba614e48"
+    },
+    {
+      "bytes": 868,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/run7.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\run7.log",
+      "sha256": "99d2bfa94911f599d3388146ddb022fc51788aaec80a2344d65219082f4c8981"
+    },
+    {
+      "bytes": 845,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/run8.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\run8.log",
+      "sha256": "6c8272dd89c47078f0a826861757488aea6cc7a413de9a5767b09e9e9271ad88"
+    },
+    {
+      "bytes": 96,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output\\.last-run.json",
+      "sha256": "2897cd72b5f82e7349e64e33e941aed2820226f483861c65f86a7b5258ca1867"
+    },
+    {
+      "bytes": 547,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output/product-attachments-offlin-f1bfa-reloads-attachment-metadata/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\events.json",
+      "sha256": "dd60621e0f91baea8643072dd12db3886ea0d69d089916d710df5f61f276a881"
+    },
+    {
+      "bytes": 23608,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output/product-attachments-offlin-f1bfa-reloads-attachment-metadata/typing-events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\typing-events.json",
+      "sha256": "5e0cf9c2526a52459cf382b15ae5576df635cce4e117459aede60a8fbd777680"
+    },
+    {
+      "bytes": 15790,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output/product-p75-acceptance-see-2b358-fline-restart-and-reconnect/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output\\product-p75-acceptance-see-2b358-fline-restart-and-reconnect\\error-context.md",
+      "sha256": "c219eb078a4c6d9398ac5d5e318e4721826d30ea52ab23f7192c29207c5509f4"
+    },
+    {
+      "bytes": 96,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output5/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output5\\.last-run.json",
+      "sha256": "264d4e25334f629cfccbf3851d1c287f55f9a9bc7f74c58d1ef2076d9fe0e21d"
+    },
+    {
+      "bytes": 547,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output5/product-attachments-offlin-f1bfa-reloads-attachment-metadata/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output5\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\events.json",
+      "sha256": "802c43b488d81e173bb9544418548c5bcbd015b51b6c39df34d0f7c5e5daffc2"
+    },
+    {
+      "bytes": 23632,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output5/product-attachments-offlin-f1bfa-reloads-attachment-metadata/typing-events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output5\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\typing-events.json",
+      "sha256": "bedcdc0639f64b04469d309f765ad237feaaa5570fdc04cb98153c094cf966de"
+    },
+    {
+      "bytes": 16669,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output5/product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output5\\product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1\\error-context.md",
+      "sha256": "01aaddb181b589b5747e9d5eb8c72e71c15ac9e2295b31a0dad0953a7d44a049"
+    },
+    {
+      "bytes": 17479,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output5/product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output5\\product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1\\events.json",
+      "sha256": "f5683d01424f13674027b19cd05b22f96b4eb373af2d4a8d154f7d021802b21b"
+    },
+    {
+      "bytes": 17479,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output5/product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1/typing-events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output5\\product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1\\typing-events.json",
+      "sha256": "f5683d01424f13674027b19cd05b22f96b4eb373af2d4a8d154f7d021802b21b"
+    },
+    {
+      "bytes": 547,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output5/product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat2/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output5\\product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat2\\events.json",
+      "sha256": "d50035896af2bb7658ad36bdb0262b966b0242a4e865c8e58c40d78291114e1d"
+    },
+    {
+      "bytes": 24279,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output5/product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat2/typing-events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output5\\product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat2\\typing-events.json",
+      "sha256": "af9f48423cf6cc86b0ec338b3a6e081b05f8e7c5822540bb0442fe06f9f79154"
+    },
+    {
+      "bytes": 243,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\.last-run.json",
+      "sha256": "f2ca65e970df4dd377e7bc8906696af175477e57ccaa1769932fecdd62aa0c4b"
+    },
+    {
+      "bytes": 2,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-attachments-offlin-f1bfa-reloads-attachment-metadata/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\events.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "bytes": 16650,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-attachments-offlin-f1bfa-reloads-attachment-metadata/typing-events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\typing-events.json",
+      "sha256": "bc96bad0ea783a8a3fce309447dbc1bdf13d4a689dd3d0d1a0a420f9912992c8"
+    },
+    {
+      "bytes": 2,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1\\events.json",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "bytes": 16648,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1/typing-events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-attachments-offlin-f1bfa-reloads-attachment-metadata-repeat1\\typing-events.json",
+      "sha256": "ef7d41cea00efb1613681b2991aa0ea22b43f93a3d57be471258707ea2de50a2"
+    },
+    {
+      "bytes": 15838,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-editor-selection-b-81edf--viewport-in-light-and-dark/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-editor-selection-b-81edf--viewport-in-light-and-dark\\error-context.md",
+      "sha256": "503f5e3c007f84c69571c98a810fc4c23226b94b5e01559bba3918bd8e1d32a5"
+    },
+    {
+      "bytes": 8152,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-editor-selection-b-81edf--viewport-in-light-and-dark/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-editor-selection-b-81edf--viewport-in-light-and-dark\\events.json",
+      "sha256": "12cc4cf0404a2c361ee9c22abe3e53e34666c412e1ee525ddcf59760fe15f842"
+    },
+    {
+      "bytes": 15838,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-editor-selection-b-81edf--viewport-in-light-and-dark-repeat1/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-editor-selection-b-81edf--viewport-in-light-and-dark-repeat1\\error-context.md",
+      "sha256": "503f5e3c007f84c69571c98a810fc4c23226b94b5e01559bba3918bd8e1d32a5"
+    },
+    {
+      "bytes": 8126,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-editor-selection-b-81edf--viewport-in-light-and-dark-repeat1/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-editor-selection-b-81edf--viewport-in-light-and-dark-repeat1\\events.json",
+      "sha256": "f4917243113116e5a613e3f1d5637d02744ce87c97ec60d007f7bd4c7b7f136f"
+    },
+    {
+      "bytes": 30677,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-a-table-nest-689fa-ver-indents-the-table-block/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-a-table-nest-689fa-ver-indents-the-table-block\\events.json",
+      "sha256": "28d8b7808023181758a7559e718ed68bff1c19e254a864fb0980ef6f1998345c"
+    },
+    {
+      "bytes": 30729,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-a-table-nest-689fa-ver-indents-the-table-block-repeat1/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-a-table-nest-689fa-ver-indents-the-table-block-repeat1\\events.json",
+      "sha256": "5d56836feb2ed8f575f024647627dbc8825eb457a7165115a7b9b41036cf1b4b"
+    },
+    {
+      "bytes": 555,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-cell-inline--71806-ist-through-save-and-reload/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-cell-inline--71806-ist-through-save-and-reload\\events.json",
+      "sha256": "b13f0b6bf7ff940208e40dc7d7569889f34c62999f2c54145fb36650673fbdaa"
+    },
+    {
+      "bytes": 568,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-cell-inline--71806-ist-through-save-and-reload-repeat1/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-cell-inline--71806-ist-through-save-and-reload-repeat1\\events.json",
+      "sha256": "a87dcf8c000cb9d0b0afdf691fc54781d2c3a6d2cd9f6d51fe3c77139aaf30b9"
+    },
+    {
+      "bytes": 16817,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document\\error-context.md",
+      "sha256": "fb943496dd1e2bb04f494823372525eded56425de78a5358e1960af9670fac46"
+    },
+    {
+      "bytes": 21825,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document\\events.json",
+      "sha256": "f96bea073a93cf7ce8b3630b4f3323d50a8851e0758cff800be6770a126d783b"
+    },
+    {
+      "bytes": 16817,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document-repeat1/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document-repeat1\\error-context.md",
+      "sha256": "fb943496dd1e2bb04f494823372525eded56425de78a5358e1960af9670fac46"
+    },
+    {
+      "bytes": 21816,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document-repeat1/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document-repeat1\\events.json",
+      "sha256": "f5502e28cd1eaf7a0e4818931913bf453cb9585b849245eddaa1261e4b15570f"
+    },
+    {
+      "bytes": 556,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-last-cell-Ta-3278f--its-identity-across-reload/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-last-cell-Ta-3278f--its-identity-across-reload\\events.json",
+      "sha256": "0d89f75c38875c6d7ced518065bf29808e37e89b5079af468c9e9681bdfea878"
+    },
+    {
+      "bytes": 555,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output6/product-table-last-cell-Ta-3278f--its-identity-across-reload-repeat1/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output6\\product-table-last-cell-Ta-3278f--its-identity-across-reload-repeat1\\events.json",
+      "sha256": "a64a66bb5910cf7c7e777ce9b07291f9292fbdbf3f1a8e4620238b955e80b7fe"
+    },
+    {
+      "bytes": 45,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output7/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output7\\.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "bytes": 3684,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output7/product-editor-selection-b-81edf--viewport-in-light-and-dark/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output7\\product-editor-selection-b-81edf--viewport-in-light-and-dark\\events.json",
+      "sha256": "7327a32856cfaa3f3609eadba3b423e33b4835ccfcac27cb6946bdfc28059a3b"
+    },
+    {
+      "bytes": 3681,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output7/product-editor-selection-b-81edf--viewport-in-light-and-dark-repeat1/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output7\\product-editor-selection-b-81edf--viewport-in-light-and-dark-repeat1\\events.json",
+      "sha256": "0394d9d6dd2e5376da0cdcefb4ceb5a8c63116d825dd2eee5ac58f5a6a096871"
+    },
+    {
+      "bytes": 45,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output8/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output8\\.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "bytes": 566,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output8/product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output8\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document\\events.json",
+      "sha256": "2ad8817afc2a3ddc25ecb79e04f62977db9136e61db75380b90f21f930d5f55d"
+    },
+    {
+      "bytes": 567,
+      "destination": "docs/verification/evidence/p11-6-resume/editor-probe/output8/product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document-repeat1/events.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\output8\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document-repeat1\\events.json",
+      "sha256": "e650fb63b3009ea8c49e80325d98daffa2f24b8bea8b11825ac09912ba1abd66"
+    },
+    {
+      "bytes": 45,
+      "destination": "docs/verification/evidence/p11-6-resume/unscheduled-r2/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\unscheduled-r2\\.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "bytes": 145,
+      "destination": "docs/verification/evidence/p11-6-resume/unscheduled-r3/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\unscheduled-r3\\.last-run.json",
+      "sha256": "9c7b6aa947fe1adc283716d84fea2840a4d5c3e2ef452d926335f3a95ba6a5dd"
+    },
+    {
+      "bytes": 16835,
+      "destination": "docs/verification/evidence/p11-6-resume/unscheduled-r3/product-database-P11-6-arr-1922c--and-cancel-has-zero-writes/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\unscheduled-r3\\product-database-P11-6-arr-1922c--and-cancel-has-zero-writes\\error-context.md",
+      "sha256": "e94d039e2dbd155c6401c2d9410608e680b730c01c2199cb640654a70af72407"
+    },
+    {
+      "bytes": 24872,
+      "destination": "docs/verification/evidence/p11-6-resume/unscheduled-r3/product-database-P11-6-arr-7ecde-and-reloads-canonical-point/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\unscheduled-r3\\product-database-P11-6-arr-7ecde-and-reloads-canonical-point\\error-context.md",
+      "sha256": "929f975e5423b3c5bb4171419460c9d520dd1638c741ff6741eab88dc4f9d0f5"
+    },
+    {
+      "bytes": 96,
+      "destination": "docs/verification/evidence/p11-6-resume/unscheduled-r4/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\unscheduled-r4\\.last-run.json",
+      "sha256": "8bc3459015cdb6844043edf72ee915c1032e94d781c29a9e345c2956b956a62e"
+    },
+    {
+      "bytes": 18287,
+      "destination": "docs/verification/evidence/p11-6-resume/unscheduled-r4/product-database-P11-6-arr-7ecde-and-reloads-canonical-point/error-context.md",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\unscheduled-r4\\product-database-P11-6-arr-7ecde-and-reloads-canonical-point\\error-context.md",
+      "sha256": "f7de3b6ba5430967e77b0fde0825fb8022afcbce61e90b80d4dcba233efa81a0"
+    },
+    {
+      "bytes": 45,
+      "destination": "docs/verification/evidence/p11-6-resume/unscheduled-r5/.last-run.json",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\unscheduled-r5\\.last-run.json",
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "bytes": 1522,
+      "destination": "docs/verification/evidence/p11-6-resume/unscheduled-r5.log",
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\unscheduled-r5.log",
+      "sha256": "58a1d7c9bb750f186486bc7bdbd73e25dfe1b79bd321fd692e98dda50ee6e4c2"
+    }
+  ],
+  "excludedFiles": [
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\package.json",
+      "reason": "temporary copied test suite/runtime scaffolding excluded"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\product-attachments.spec.ts",
+      "reason": "temporary copied test suite/runtime scaffolding excluded"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\product-editor.spec.ts",
+      "reason": "temporary copied test suite/runtime scaffolding excluded"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\product-p75-acceptance.spec.ts",
+      "reason": "temporary copied test suite/runtime scaffolding excluded"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\editor-probe\\product-table.spec.ts",
+      "reason": "temporary copied test suite/runtime scaffolding excluded"
+    }
+  ]
+}

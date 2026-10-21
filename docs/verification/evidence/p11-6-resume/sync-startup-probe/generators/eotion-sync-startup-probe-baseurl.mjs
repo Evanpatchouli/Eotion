@@ -1,0 +1,1 @@
+import fs from 'node:fs'; const p='C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/sync-startup-probe/playwright.config.ts';let s=fs.readFileSync(p,'utf8').replace("baseURL:'http://127.0.0.1:7173'","baseURL:process.env.EOTION_PROBE_BASE_URL??'http://127.0.0.1:7173'");fs.writeFileSync(p,s);

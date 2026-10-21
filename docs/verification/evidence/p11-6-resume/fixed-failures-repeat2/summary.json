@@ -1,0 +1,1048 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/product-attachments.spec.ts",
+      "tests/product-database.spec.ts",
+      "tests/product-editor.spec.ts",
+      "tests/product-p75-acceptance.spec.ts",
+      "tests/product-pages.spec.ts",
+      "tests/product-settings.spec.ts",
+      "tests/product-table.spec.ts",
+      "--config=C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/full-suite/playwright.full.config.mjs",
+      "--workers=1",
+      "--retries=0",
+      "--repeat-each=2",
+      "--grep",
+      "a\\ table\\ nests\\ under\\ a\\ toggle\\ and\\ cell\\ Tab\\ never\\ indents\\ the\\ table\\ block|board\\ renderer\\ groups\\ generic\\ records\\ by\\ option\\ IDs\\ with\\ projected\\ titles\\ and\\ configured\\ properties|cell\\ inline\\ marks\\ and\\ hard\\ breaks\\ persist\\ through\\ save\\ and\\ reload|copy\\ and\\ paste\\ inside\\ cells\\ and\\ plain/TSV\\ paste\\ never\\ produce\\ an\\ unsaveable\\ document|last\\ cell\\ Tab\\ adds\\ a\\ row\\ and\\ the\\ table\\ keeps\\ its\\ identity\\ across\\ reload|mobile\\ page\\ actions\\ use\\ modal\\ dialogs\\ with\\ focus,\\ stable\\ tree\\ and\\ a\\ scrollable\\ destination\\ list|offline\\ file\\ selection\\ stays\\ local,\\ does\\ not\\ call\\ upload,\\ keeps\\ text\\ editable\\ and\\ reloads\\ attachment\\ metadata|P11\\.4C\\ offline\\ and\\ changed\\ view\\ config\\ reject\\ a\\ prepared\\ gesture\\ before\\ sending\\ a\\ batch|seeded\\ mixed\\ document\\ keeps\\ local-first\\ identity,\\ nesting,\\ callout\\ attrs\\ and\\ table\\ grid\\ across\\ offline\\ restart\\ and\\ reconnect|selection\\ bubble\\ hides\\ on\\ collapse,\\ blur,\\ Escape\\ and\\ IME;\\ stays\\ in\\ viewport\\ in\\ light\\ and\\ dark|unconfirmed\\ inline\\ database\\ creation\\ fences\\ further\\ create\\ or\\ link\\ attempts\\ until\\ page\\ refresh|settings navigation ends",
+      "--output=C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2/output"
+    ],
+    "configFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\playwright.full.config.mjs",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/fixed-failures-repeat2/output",
+        "repeatEach": 2,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\summary.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": {
+      "command": "pnpm dev",
+      "url": "http://127.0.0.1:7173",
+      "reuseExistingServer": true,
+      "timeout": 30000,
+      "cwd": "C:/Users/31250/Work/Eotion/apps/web"
+    }
+  },
+  "suites": [
+    {
+      "title": "product-attachments.spec.ts",
+      "file": "product-attachments.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4241,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:09:30.678Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "795b022f16f486ff1f67-6b8d871c651cd9b0f901",
+          "file": "product-attachments.spec.ts",
+          "line": 687,
+          "column": 1
+        },
+        {
+          "title": "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2466,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:16.678Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "795b022f16f486ff1f67-eb7702e2880c0b167187",
+          "file": "product-attachments.spec.ts",
+          "line": 687,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-database.spec.ts",
+      "file": "product-database.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "P11.4C offline and changed view config reject a prepared gesture before sending a batch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2210,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:09:36.099Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-fbb4831a61511fbd29a1",
+          "file": "product-database.spec.ts",
+          "line": 5347,
+          "column": 1
+        },
+        {
+          "title": "board renderer groups generic records by option IDs with projected titles and configured properties",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1747,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:09:38.336Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-ad9bee36b19a248a51b2",
+          "file": "product-database.spec.ts",
+          "line": 6327,
+          "column": 1
+        },
+        {
+          "title": "unconfirmed inline database creation fences further create or link attempts until page refresh",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7085,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n    at openDatabaseSlashMenu (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:1186:32)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:7000:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                      "column": 32,
+                      "line": 1186
+                    },
+                    "snippet": "  1184 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })\n  1185 |   await page.keyboard.press('Enter')\n> 1186 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })\n       |                                ^\n  1187 |   await page.keyboard.press('/')\n  1188 |   await page.keyboard.type('database')\n  1189 |   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                        "column": 32,
+                        "line": 1186
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  1184 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })\n  1185 |   await page.keyboard.press('Enter')\n> 1186 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })\n       |                                ^\n  1187 |   await page.keyboard.press('/')\n  1188 |   await page.keyboard.type('database')\n  1189 |   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)\n    at openDatabaseSlashMenu (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:1186:32)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:7000:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:09:40.104Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                    "column": 32,
+                    "line": 1186
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-f4b768e8922383764ca7",
+          "file": "product-database.spec.ts",
+          "line": 6977,
+          "column": 1
+        },
+        {
+          "title": "P11.4C offline and changed view config reject a prepared gesture before sending a batch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1347,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:19.912Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-b076a4d9f38d07dd58ae",
+          "file": "product-database.spec.ts",
+          "line": 5347,
+          "column": 1
+        },
+        {
+          "title": "board renderer groups generic records by option IDs with projected titles and configured properties",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1060,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:21.277Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-508ad487c94296333622",
+          "file": "product-database.spec.ts",
+          "line": 6327,
+          "column": 1
+        },
+        {
+          "title": "unconfirmed inline database creation fences further create or link attempts until page refresh",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6479,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n    at openDatabaseSlashMenu (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:1186:32)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:7000:3",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                      "column": 32,
+                      "line": 1186
+                    },
+                    "snippet": "  1184 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })\n  1185 |   await page.keyboard.press('Enter')\n> 1186 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })\n       |                                ^\n  1187 |   await page.keyboard.press('/')\n  1188 |   await page.keyboard.type('database')\n  1189 |   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                        "column": 32,
+                        "line": 1186
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoMatchObject\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[32m- Expected  - 1\u001b[39m\n\u001b[31m+ Received  + 1\u001b[39m\n\n\u001b[2m  Object {\u001b[22m\n\u001b[2m    \"atDocumentEnd\": true,\u001b[22m\n\u001b[2m    \"empty\": true,\u001b[22m\n\u001b[32m-   \"emptyParagraph\": true,\u001b[39m\n\u001b[31m+   \"emptyParagraph\": false,\u001b[39m\n\u001b[2m  }\u001b[22m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  1184 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true })\n  1185 |   await page.keyboard.press('Enter')\n> 1186 |   await expect.poll(selection).toMatchObject({ empty: true, atDocumentEnd: true, emptyParagraph: true })\n       |                                ^\n  1187 |   await page.keyboard.press('/')\n  1188 |   await page.keyboard.type('database')\n  1189 |   await expect(page.locator('.p2-slash-menu').getByRole('option')).toHaveCount(1)\n    at openDatabaseSlashMenu (C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:1186:32)\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts:7000:3"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:22.351Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\fixed-failures-repeat2\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh-repeat1\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-database.spec.ts",
+                    "column": 32,
+                    "line": 1186
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-53219c7c2840e20c539e",
+          "file": "product-database.spec.ts",
+          "line": 6977,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-editor.spec.ts",
+      "file": "product-editor.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4667,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:09:48.150Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7d16fbd1f356ab33b137-3d85f9aae08c3cd9d132",
+          "file": "product-editor.spec.ts",
+          "line": 1014,
+          "column": 1
+        },
+        {
+          "title": "selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5261,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:29.877Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "7d16fbd1f356ab33b137-ab8257ef533c01049957",
+          "file": "product-editor.spec.ts",
+          "line": 1014,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-p75-acceptance.spec.ts",
+      "file": "product-p75-acceptance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "seeded mixed document keeps local-first identity, nesting, callout attrs and table grid across offline restart and reconnect",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7609,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:09:53.328Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6f53631d2be8900d7579-18d88d7df67ce7e987a0",
+          "file": "product-p75-acceptance.spec.ts",
+          "line": 428,
+          "column": 1
+        },
+        {
+          "title": "seeded mixed document keeps local-first identity, nesting, callout attrs and table grid across offline restart and reconnect",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8830,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:35.678Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6f53631d2be8900d7579-e129a348c64253679266",
+          "file": "product-p75-acceptance.spec.ts",
+          "line": 428,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-pages.spec.ts",
+      "file": "product-pages.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "touch page action dialogs",
+          "file": "product-pages.spec.ts",
+          "line": 708,
+          "column": 6,
+          "specs": [
+            {
+              "title": "mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2568,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T10:10:00.982Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dfa890cdf7c7150141d1-d0c76b8725cefce14d16",
+              "file": "product-pages.spec.ts",
+              "line": 745,
+              "column": 1
+            },
+            {
+              "title": "mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2692,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T10:10:44.557Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dfa890cdf7c7150141d1-0dd6261448edaa191908",
+              "file": "product-pages.spec.ts",
+              "line": 745,
+              "column": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "product-settings.spec.ts",
+      "file": "product-settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "settings navigation ends with 软件说明 and /settings/about shows exact-version release notes or an explicit empty state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 846,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:03.587Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c6e52d40d6f8694b17a9-14687e9753a97363d327",
+          "file": "product-settings.spec.ts",
+          "line": 748,
+          "column": 1
+        },
+        {
+          "title": "settings navigation ends with 软件说明 and /settings/about shows exact-version release notes or an explicit empty state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 819,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:47.296Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "c6e52d40d6f8694b17a9-954154ff6a497dcd608f",
+          "file": "product-settings.spec.ts",
+          "line": 748,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-table.spec.ts",
+      "file": "product-table.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "last cell Tab adds a row and the table keeps its identity across reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2373,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:04.477Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-501720ac2816e9a9fcea",
+          "file": "product-table.spec.ts",
+          "line": 179,
+          "column": 1
+        },
+        {
+          "title": "copy and paste inside cells and plain/TSV paste never produce an unsaveable document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3314,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:06.864Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-48312b1789ca6e50f30e",
+          "file": "product-table.spec.ts",
+          "line": 248,
+          "column": 1
+        },
+        {
+          "title": "a table nests under a toggle and cell Tab never indents the table block",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3167,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:10.192Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-fde7d4f839d2ac275540",
+          "file": "product-table.spec.ts",
+          "line": 310,
+          "column": 1
+        },
+        {
+          "title": "cell inline marks and hard breaks persist through save and reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2404,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:13.372Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-5e0c60842ac8fd12c95c",
+          "file": "product-table.spec.ts",
+          "line": 362,
+          "column": 1
+        },
+        {
+          "title": "last cell Tab adds a row and the table keeps its identity across reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2960,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:48.160Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-efbeca1256dc25ff5495",
+          "file": "product-table.spec.ts",
+          "line": 179,
+          "column": 1
+        },
+        {
+          "title": "copy and paste inside cells and plain/TSV paste never produce an unsaveable document",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4567,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:51.134Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-661a6a3d0507889386c8",
+          "file": "product-table.spec.ts",
+          "line": 248,
+          "column": 1
+        },
+        {
+          "title": "a table nests under a toggle and cell Tab never indents the table block",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2460,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:55.713Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-fba247921c38bc37aec9",
+          "file": "product-table.spec.ts",
+          "line": 310,
+          "column": 1
+        },
+        {
+          "title": "cell inline marks and hard breaks persist through save and reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2424,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T10:10:58.184Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-d117e9099e13dfbc85f4",
+          "file": "product-table.spec.ts",
+          "line": 362,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-20T10:09:27.474Z",
+    "duration": 93580.792,
+    "expected": 22,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

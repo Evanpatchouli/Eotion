@@ -1,0 +1,42 @@
+{
+  "capturedAt": "2026-10-19T10:48:14.8299615Z",
+  "browserStarted": false,
+  "attachments": {
+    "test": "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata",
+    "testLocation": "product-attachments.spec.ts:686",
+    "failedAssertion": "line 697: expect(editor(page)).toContainText(\"正文仍然可编辑\")",
+    "actualText": "existing.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试仍然可编辑",
+    "stepBoundary": "failure happens before local-store assertion line 698, upload-request count assertion line 703, and reload/metadata assertions lines 704-706",
+    "errorContext": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\error-context.md",
+    "screenshot": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\test-failed-1.png",
+    "testHashCurrent": "EF85CEF063D54E561FE5BC6C3A903785311AFD902ED1499AF7CB88EFBC1F11D8",
+    "testHashFf0901c": "EF85CEF063D54E561FE5BC6C3A903785311AFD902ED1499AF7CB88EFBC1F11D8",
+    "testIdentical": true,
+    "testHistory": "822c51c7 (2026-09-30); the local-store persistence assertion was added in 9438679a (2026-10-03)"
+  },
+  "inlineDatabase": {
+    "test": "unconfirmed inline database creation fences further create or link attempts until page refresh",
+    "testLocation": "product-database.spec.ts:6965",
+    "fixture": "abortDatabaseCreatesAfterCommit=1; failDatabaseReferenceReads=1; extra page Other page",
+    "failedAction": "after uncertain alert, navigation away/back, and keyboard /database entry, locator click waits for exact slash-menu option 数据库",
+    "error": "30s test timeout waiting for .p2-slash-menu option",
+    "pageSnapshot": "uncertain alert remains visible, editor contenteditable=true, literal /database appears, slash menu/option absent",
+    "testHashCurrentSlice": "48A9B3D970D224FC06DDB0E6FD16E45524E4DBF6A7EDF37E6F8298AC02A5EF1C",
+    "testHashFf0901cSlice": "48A9B3D970D224FC06DDB0E6FD16E45524E4DBF6A7EDF37E6F8298AC02A5EF1C",
+    "testSliceIdentical": true,
+    "testHistory": "014ddbbcb1b4be104a7c9c08950e1a545102de99 (2026-10-09 02:54 +0800); no runtime historical PASS inferred",
+    "unreached": "option selection, subsequent uncertain alert assertion and POST count assertion at line 6996 did not execute",
+    "errorContext": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\error-context.md",
+    "screenshot": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\final-product-restored\\output\\product-database-unconfirm-fc68e-attempts-until-page-refresh\\test-failed-1.png"
+  },
+  "relevantCurrentBaselineIdentical": [
+    "productDatabases.ts",
+    "EotionEditor.vue",
+    "PageView.vue",
+    "slashCommand.ts",
+    "EotionBubbleMenu.vue",
+    "DatabaseNodeView.vue",
+    "product-attachments.spec.ts"
+  ],
+  "commands": "Commands are prepared under logs-baseline-overlay; no browser run until main Agent authorizes after suite completion."
+}

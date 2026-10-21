@@ -1,0 +1,925 @@
+{
+  "schemaVersion": 1,
+  "createdAtUtc": "2026-10-20T11:16:04.020793+00:00",
+  "sourceRoot": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d",
+  "fileCount": 143,
+  "totalBytes": 7706604,
+  "notes": [
+    "Copied byte-for-byte and SHA256 verified; no TEMP files deleted.",
+    "stdout.log and stderr.log for coarse runs were captured separately. JSON attachments decoded to run-*.json are derived convenience copies; results.json remains authoritative.",
+    "Original failure and minimal observation failure retained. Screenshot-heavy observation runs passed and may change timing; they do not establish the root cause.",
+    "Baseline original and geometry runs passed. This does not prove the current implementation introduced a regression or establish absence of the same race in baseline.",
+    "Formal fix only adds Playwright trial tap actionability readiness before original geometry read; no genuine tap, scrollLeft assignment, assertion/gesture/time-limit/retry change.",
+    "Temporary copied specs are excluded from archive with hashes; generation scripts and exact source-verification metadata retained."
+  ],
+  "files": [
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\exit-code.txt",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/exit-code.txt",
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\results.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/results.json",
+      "bytes": 1181318,
+      "sha256": "aa90c55c0c9e77a626e1c3f7a4bc2c847f54762ef4c1f05c9cba6f6df987f0db"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-0-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-0-passed-minimal-coarse-360.json",
+      "bytes": 125691,
+      "sha256": "cab11cf6a915bd0f24246adeaed0e0145ff4fa07f7cc6bcad5185c8fc8a718bc"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-0-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-0-passed-minimal-coarse-390.json",
+      "bytes": 62079,
+      "sha256": "393fe1c6c8d617b6e86e14898178b9bfa1cebdc083fc15f32da4fc8791b2d24b"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-1-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-1-passed-minimal-coarse-360.json",
+      "bytes": 101531,
+      "sha256": "2bc439f73bfccce1a58ffc48ded11fc795577df6301d8b58267d093b35e053a0"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-1-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-1-passed-minimal-coarse-390.json",
+      "bytes": 59662,
+      "sha256": "dce2b930aa59138f74da5aa7918b4bb90eafba79479ae23c382736a12a464254"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-2-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-2-passed-minimal-coarse-360.json",
+      "bytes": 123281,
+      "sha256": "7444b0e5413545b9f7bf5dd38280c7cabb0726a6b4ffee22f9044a8f9ba7cd43"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-2-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-2-passed-minimal-coarse-390.json",
+      "bytes": 62079,
+      "sha256": "329ed87f495aedb97bc89252cfb8b32662c6d81351ee3c4c23d5c2ac8f5bb7cc"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-3-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-3-passed-minimal-coarse-360.json",
+      "bytes": 101531,
+      "sha256": "3ee64d1424090062be71b4e6ac07b5656b164b38c5345d29f100d18a205ad899"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-3-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-3-passed-minimal-coarse-390.json",
+      "bytes": 59662,
+      "sha256": "096379274daf156bfd5a0c5affe59902432c7ed47c9c8395225b26ed3b88429c"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-4-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-4-passed-minimal-coarse-360.json",
+      "bytes": 120852,
+      "sha256": "921edc4c3dea35d6e6d070cafa87460695c99efc8ebd3d36f01737b2bf60275f"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\run-4-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/run-4-passed-minimal-coarse-390.json",
+      "bytes": 62079,
+      "sha256": "bfea7d82f218a948c82a98286638719f4165f52e84bcc5562b9222f0a90d8b53"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\stderr.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/stderr.log",
+      "bytes": 830,
+      "sha256": "83832686bdab92f5cfe4a37307dda7eab9ed60e77893ab019ffb7be6e3ea44dc"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\stdout.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/stdout.log",
+      "bytes": 1237,
+      "sha256": "395c1a111031d16ef95af66dacbdd8f11b84c9e2213d4cc21a4249be45547406"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\.last-run.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface/minimal-coarse-360-after.png",
+      "bytes": 32988,
+      "sha256": "dfd643b344fa06cc0855cd2b4e87efef1c5009c154cd002fc2b4d59b0f50e776"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface/minimal-coarse-390-after.png",
+      "bytes": 37654,
+      "sha256": "dca90588478faaf3444050d67d51f9bc13cd04285fec6821ff91cf1fde7d6437"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat1\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat1/minimal-coarse-360-after.png",
+      "bytes": 33068,
+      "sha256": "427c4396ccec19c5db60b7c1aa41ec34d592464ce1199e4027bda3fe1a973a57"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat1\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat1/minimal-coarse-390-after.png",
+      "bytes": 37626,
+      "sha256": "5aa0ba86a93c70fdb2d58bae5e787c104815fdccef8606fd83479d2c36f9b598"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat2\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat2/minimal-coarse-360-after.png",
+      "bytes": 33105,
+      "sha256": "513dda0970d70306c71ab00e163736bba0e26a87c7ba2a6077f79e8b9b2f9f00"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat2\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat2/minimal-coarse-390-after.png",
+      "bytes": 37597,
+      "sha256": "f6ba83994d0273facd1bbaba8b046e2d68fea8bd74d39a4d037338451d26d422"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat3\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat3/minimal-coarse-360-after.png",
+      "bytes": 33068,
+      "sha256": "427c4396ccec19c5db60b7c1aa41ec34d592464ce1199e4027bda3fe1a973a57"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat3\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat3/minimal-coarse-390-after.png",
+      "bytes": 37626,
+      "sha256": "5aa0ba86a93c70fdb2d58bae5e787c104815fdccef8606fd83479d2c36f9b598"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat4\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat4/minimal-coarse-360-after.png",
+      "bytes": 33063,
+      "sha256": "3ef4441b92ac086358feaec9bd9273b3cfff7437bb7f6888039a30d7e98c40ee"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat4\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat4/minimal-coarse-390-after.png",
+      "bytes": 37665,
+      "sha256": "4e55163cd9581d6dd0cb01c148138a9d121730b38dcc451338247f2f8fb69606"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-original\\exit-code.txt",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-original/exit-code.txt",
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-original\\results.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-original/results.json",
+      "bytes": 3693,
+      "sha256": "dbb2256dd919b5b1d94a5a94f8298bb5ecdcd9415cd2520037dd11ee286c588d"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-original\\stderr.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-original/stderr.log",
+      "bytes": 166,
+      "sha256": "171a9a228c08ba97fbf74a8c93d1433eef3a324cb734591517d7baee389deb02"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-original\\stdout.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-original/stdout.log",
+      "bytes": 288,
+      "sha256": "de2e5cc884ba81a075ce956cc32ad0ba26bf8864d4ebe50c9afba177e1c89c51"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-original\\test-results\\.last-run.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-original/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-probe\\playwright.geometry.config.ts",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-probe/playwright.geometry.config.ts",
+      "bytes": 238,
+      "sha256": "2300269c76f5081ddaf7f834d79205769a40b31464b2ae0222d4ad816c38016a"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-probe\\playwright.original.config.ts",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-probe/playwright.original.config.ts",
+      "bytes": 238,
+      "sha256": "bd6c174dac74174db39a7a8095420c87b6ce38f5dabaf11c47a0cfb5ed0c6309"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-probe\\prepare-geometry.py",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-probe/prepare-geometry.py",
+      "bytes": 5588,
+      "sha256": "c56b85b882f75de552e6fd4e93f879381537ec3ca900623d538bfaa73386f539"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-probe\\prepare.py",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-probe/prepare.py",
+      "bytes": 2489,
+      "sha256": "26f14ed85b8263717e593e53fe1197d8c0bc6e02d3d1e31b33447eb369033056"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-probe\\source-verification.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-baseline-probe/source-verification.json",
+      "bytes": 1524,
+      "sha256": "2cdbfb32a19572922aefde31c720b3da117f7b1f16e5435546f9671b16e95584"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\exit-code.txt",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/exit-code.txt",
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\results.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/results.json",
+      "bytes": 1178200,
+      "sha256": "87a384c092a9a9d85ed4a625cdf195eeb1548353158a5feb3f0ef74d2e784f87"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-0-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-0-passed-minimal-coarse-360.json",
+      "bytes": 128127,
+      "sha256": "9854f06165e0008f47a1ddeef9da63cd7c3ab62b0d86f1956dfea140e47fd247"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-0-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-0-passed-minimal-coarse-390.json",
+      "bytes": 64496,
+      "sha256": "60a43178e26ceeb1b555e7285127cb7c86273c8e3b2c8c54f2f9fa60e7a21309"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-1-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-1-passed-minimal-coarse-360.json",
+      "bytes": 130553,
+      "sha256": "2cf6f1be8905413b4045b056ab6c2756a22cdb29be2a9e8f0cef419690aae96c"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-1-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-1-passed-minimal-coarse-390.json",
+      "bytes": 62079,
+      "sha256": "5965bfd48558371490fe7a1ccc2743593a4a907221f1849b76702455797e45cd"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-2-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-2-passed-minimal-coarse-360.json",
+      "bytes": 106387,
+      "sha256": "9c546498472cd967e82b260bac7dc367ce8fde6cc88ee8e8b7ea34af5a6f0d61"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-2-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-2-passed-minimal-coarse-390.json",
+      "bytes": 59662,
+      "sha256": "57c9903ca86dbdf92bb9131acd5ba9711d3f2e4aa19b7dc940d6af591a610293"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-3-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-3-passed-minimal-coarse-360.json",
+      "bytes": 101549,
+      "sha256": "f374a7d6c8084f46b0dedd90a7986b1b71b45f9947d03df490d2980bed1d3e26"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-3-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-3-passed-minimal-coarse-390.json",
+      "bytes": 59662,
+      "sha256": "2afa9df1a5899a71ade0218f7463cdd532e4e3a404ffca25aae01650c6a8a4bd"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-4-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-4-passed-minimal-coarse-360.json",
+      "bytes": 103968,
+      "sha256": "ac7c1a847edfe7830983ab3585f82eb642ccd7f9ce4ef331ebf946780b9fb753"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\run-4-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/run-4-passed-minimal-coarse-390.json",
+      "bytes": 59662,
+      "sha256": "eb3029beb3fbef4ba23a0e920d162688cdf49d03985d4114a37209bbb1a4b45f"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\stderr.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/stderr.log",
+      "bytes": 830,
+      "sha256": "2cef69355362762a363d3c2fb4fad94b5762f87497afcfe942793f7418d771a9"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\stdout.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/stdout.log",
+      "bytes": 1192,
+      "sha256": "ba71e882e2b6e1534dd684e3805d00f3cc925f8b936ce0cf1dd942b78b4741c0"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\.last-run.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface/minimal-coarse-360-after.png",
+      "bytes": 29356,
+      "sha256": "3de848af1184f48b4a4e0afcc44e4a7952ecf0f80a2fc8a76933ed223477e9e1"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface/minimal-coarse-390-after.png",
+      "bytes": 36485,
+      "sha256": "77286e5971a895577cb0b5d30e3c810bf5cf2e2154e61f08a3710696fff7526a"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat1\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat1/minimal-coarse-360-after.png",
+      "bytes": 29134,
+      "sha256": "79911e5dab378923d6147584ad1a1afa4c51a54b8a964b04c7e1ea71e8bd75e0"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat1\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat1/minimal-coarse-390-after.png",
+      "bytes": 36529,
+      "sha256": "5d6c5055e43af64ce6a100e977fb72e453c2d0ed2ced63ce2199833a44306ca2"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat2\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat2/minimal-coarse-360-after.png",
+      "bytes": 29191,
+      "sha256": "634ee9bdadff22b738ad1c36eaeec9cc93281b6dd133bcd24fbb0ee62a5047b1"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat2\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat2/minimal-coarse-390-after.png",
+      "bytes": 36513,
+      "sha256": "faccdfa436687d3d3d5768b75e160683d0f1dd80665e929012714598c2c1f2c2"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat3\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat3/minimal-coarse-360-after.png",
+      "bytes": 29319,
+      "sha256": "bea77ea4420596f114f7d9e6e1fb8fe849157c4aa21d4216d746b4927050fba3"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat3\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat3/minimal-coarse-390-after.png",
+      "bytes": 36513,
+      "sha256": "faccdfa436687d3d3d5768b75e160683d0f1dd80665e929012714598c2c1f2c2"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat4\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat4/minimal-coarse-360-after.png",
+      "bytes": 29343,
+      "sha256": "d9f32c3471f9c9e4392bf5a91fa75fc964842ff98e0a1cd1d2f4ae38172bc77e"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-geometry-repeat5\\test-results\\product-database.geometry--74814-the-native-Timeline-surface-repeat4\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-geometry-repeat5/test-results/product-database.geometry--74814-the-native-Timeline-surface-repeat4/minimal-coarse-390-after.png",
+      "bytes": 36513,
+      "sha256": "faccdfa436687d3d3d5768b75e160683d0f1dd80665e929012714598c2c1f2c2"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\exit-code.txt",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/exit-code.txt",
+      "bytes": 1,
+      "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\results.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/results.json",
+      "bytes": 113272,
+      "sha256": "0a3803159e099d0b1bb6841befe6e3255492a3e036fb2b50aef9f46dadbde22e"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\run-0-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/run-0-passed-minimal-coarse-360.json",
+      "bytes": 22369,
+      "sha256": "19035794d3bd3d7106e267316c02782445e235eb17a2a119838791e4b93ebc82"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\run-0-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/run-0-passed-minimal-coarse-390.json",
+      "bytes": 11102,
+      "sha256": "6f8e665c9adbc525cf984d3f605b213dd951fb8973960a40a8c9417ee1973fc3"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\run-1-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/run-1-passed-minimal-coarse-360.json",
+      "bytes": 22734,
+      "sha256": "cc855a528122cb1f7b16745b34aa7723b3d992b4cce1fe1ca05059fac70f6b0d"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\run-1-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/run-1-passed-minimal-coarse-390.json",
+      "bytes": 11467,
+      "sha256": "e712a4927463f508a9d2b6f67490a77692b34c5844f03dcf0ca941d9fbb4fb56"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\run-2-failed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/run-2-failed-minimal-coarse-390.json",
+      "bytes": 9097,
+      "sha256": "155026c4141b882e7c0a835537952d4903f1c1df05636135b5d826cc36ae3765"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\stderr.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/stderr.log",
+      "bytes": 498,
+      "sha256": "ac7d874b1d9cfbc4159b4e358ffb86698eec4c8867bf1b7246045948a81e8cbf"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\stdout.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/stdout.log",
+      "bytes": 2388,
+      "sha256": "9134ff5deb7ced82d20c88a089832eea029bd741c04a4227d044398cd4e603d6"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\test-results\\.last-run.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/test-results/.last-run.json",
+      "bytes": 96,
+      "sha256": "d4957895aad23e6d4abd6d230c5c302b58a9e0009779ba746d4fb86e5e6f55ef"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\test-results\\product-database.minimal-P-e4982-the-native-Timeline-surface\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/test-results/product-database.minimal-P-e4982-the-native-Timeline-surface/minimal-coarse-360-after.png",
+      "bytes": 29167,
+      "sha256": "f84f0ae8806528b79be7806000dc75a8ccb62af52e017bc12770fd077416793e"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\test-results\\product-database.minimal-P-e4982-the-native-Timeline-surface\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/test-results/product-database.minimal-P-e4982-the-native-Timeline-surface/minimal-coarse-390-after.png",
+      "bytes": 36563,
+      "sha256": "95804618faa45755c637f175085178ed0d2e2513c0703363a26407dacd24f908"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\test-results\\product-database.minimal-P-e4982-the-native-Timeline-surface-repeat1\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/test-results/product-database.minimal-P-e4982-the-native-Timeline-surface-repeat1/minimal-coarse-360-after.png",
+      "bytes": 29149,
+      "sha256": "568f8e224eb2de3ea6a3d1c1e3d347d65eec0de5b75875194a6cea8b9991ec10"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\test-results\\product-database.minimal-P-e4982-the-native-Timeline-surface-repeat1\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/test-results/product-database.minimal-P-e4982-the-native-Timeline-surface-repeat1/minimal-coarse-390-after.png",
+      "bytes": 36522,
+      "sha256": "615f354ce58ed5e64ba7607006de95842895d5feaf04d419939cee1bd24764e3"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\test-results\\product-database.minimal-P-e4982-the-native-Timeline-surface-repeat2\\error-context.md",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/test-results/product-database.minimal-P-e4982-the-native-Timeline-surface-repeat2/error-context.md",
+      "bytes": 17206,
+      "sha256": "a6b634d51185af27c4cf35e924bd276cf9248a2f2c3f6f5cf4b3423ff9cf8f54"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\test-results\\product-database.minimal-P-e4982-the-native-Timeline-surface-repeat2\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-minimal-repeat3/test-results/product-database.minimal-P-e4982-the-native-Timeline-surface-repeat2/minimal-coarse-390-after.png",
+      "bytes": 36541,
+      "sha256": "bdbb01fb60386ed2758d9a045a2f689ab5cee28a6ee50977728958370c695453"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-original\\exit-code.txt",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-original/exit-code.txt",
+      "bytes": 1,
+      "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-original\\stderr.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-original/stderr.log",
+      "bytes": 165,
+      "sha256": "660eac7f246256e8c4e5263beff72855ac1ca2e269b12d32d2a153b7c23870ab"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-original\\stdout.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-original/stdout.log",
+      "bytes": 1470,
+      "sha256": "0c0a4470d91a7cdd153538c7ddf9be683224006806f4f2d925ed45bd99e5bff4"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-original\\test-results\\.last-run.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-original/test-results/.last-run.json",
+      "bytes": 96,
+      "sha256": "ea6c2ed9e9fac84797d0a0bc4575769612370b044d68f11fbbd29a29c8b03b5c"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-original\\test-results\\product-database-P11-5-coa-62442-the-native-Timeline-surface\\error-context.md",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-original/test-results/product-database-P11-5-coa-62442-the-native-Timeline-surface/error-context.md",
+      "bytes": 16974,
+      "sha256": "9ee7dc80e0a608105633b74fbc38751066c0721417c308a4fb13d90402d19ad8"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\coarse-360-hit.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/coarse-360-hit.json",
+      "bytes": 4164,
+      "sha256": "2d4eadd4bceec31b7117a53c37ec7702ee751d4532c907cbff88c27887839e0b"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\coarse-360-observations.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/coarse-360-observations.json",
+      "bytes": 25488,
+      "sha256": "57497f3f219929bef157405c1bc87cec1fd7bf28fd548b1b4418cefe8367f09e"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\coarse-390-hit.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/coarse-390-hit.json",
+      "bytes": 4164,
+      "sha256": "96218eb96737dac5b915d62805fca7e00c257d9833182c17664b5a1c0cb75e23"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\coarse-390-observations.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/coarse-390-observations.json",
+      "bytes": 22786,
+      "sha256": "ca73bd38efc88de71179c8e9aec79dde8b5a4475223ecc7456543b21b61feb3f"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\exit-code.txt",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/exit-code.txt",
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\playwright.config.ts",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/playwright.config.ts",
+      "bytes": 334,
+      "sha256": "f11142e1e4031751f196d8e9032bf596df4c4a8d2afad10bc23b89d433490444"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\playwright.geometry.config.ts",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/playwright.geometry.config.ts",
+      "bytes": 238,
+      "sha256": "b7f8cb1da8409f5a4b1c00eb5a39f9b7ede285edabe3d189c7885254855c2f45"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\playwright.minimal.config.ts",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/playwright.minimal.config.ts",
+      "bytes": 237,
+      "sha256": "d72aa6d9729f5df8401a678a3df548508ebace0840b0b0fa98dccdd47929c87e"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\playwright.trial.config.ts",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/playwright.trial.config.ts",
+      "bytes": 235,
+      "sha256": "c2dd6116ac8159468e0e93fc08b44f4ed24a80d1d32419704855612d45b8e2a6"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\prepare-minimal.py",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/prepare-minimal.py",
+      "bytes": 5448,
+      "sha256": "4ec005279dfbcc578cd42ff3975a40d170154327eebed0ac06ae38c7832fcd73"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\prepare-trial.py",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/prepare-trial.py",
+      "bytes": 5439,
+      "sha256": "c4a5c254f2c8e06200be555c8d79e3c1c07e9953d1e341e6c6c31ece4dd79c30"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\prepare.py",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/prepare.py",
+      "bytes": 5951,
+      "sha256": "c46924b7635fd5dec6c855c8b1bc8c8c1f998791801aafed5d27553306ee46f0"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\results.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/results.json",
+      "bytes": 79614,
+      "sha256": "8cf6af100d8ce48ddee49b19174791894f078275236c4fbf3bd827c582c68497"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\run-original.ps1",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/run-original.ps1",
+      "bytes": 838,
+      "sha256": "e00f5383ff6be87aed54e79b5f6b6ca943d5602eca7a87da83f61e7b08fde4b2"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\run-probe.ps1",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/run-probe.ps1",
+      "bytes": 597,
+      "sha256": "307cb363e65260a384300458b4edce6ae761726076d8ac5d7faad456e945045d"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\stderr.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/stderr.log",
+      "bytes": 166,
+      "sha256": "930d51b9d94077dc43f23e4ced4cc539d1b1c8500c4b80ef6afd281a8bc8d538"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\stdout.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/stdout.log",
+      "bytes": 185,
+      "sha256": "3d57d270965b738d3769bd91b28fdff0c945548b364866c48a5415c0aa2dae25"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\test-results\\.last-run.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface\\coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface/coarse-360-after.png",
+      "bytes": 29052,
+      "sha256": "e1ecd18d2c440ff4cc67cf2931306bbef53a854d9f57246003c6ebf7d337150a"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface\\coarse-360-before.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface/coarse-360-before.png",
+      "bytes": 29963,
+      "sha256": "fbf4d6304018e161ee4058422d4eb4d1eacb5751b17557d8545d6ec98d55e4b5"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface\\coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface/coarse-390-after.png",
+      "bytes": 36587,
+      "sha256": "d729f78a19db05dfd5b17217f82a88c1383ce582b8f41581d9b34a5dcc54ca0e"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface\\coarse-390-before.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface/coarse-390-before.png",
+      "bytes": 36703,
+      "sha256": "5f5962c63c9f1dcd8820766a17c28e29e344e6e0ae0a4b43ebe900843404c2b4"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\exit-code.txt",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/exit-code.txt",
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\results.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/results.json",
+      "bytes": 239430,
+      "sha256": "5ae8cb2d5b22f68fdbe14b354708f72fa97d20a67b5e7d2d93963aec9f41f4d6"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\stderr.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/stderr.log",
+      "bytes": 498,
+      "sha256": "afe93dd5a7318cd7011b6b5a6ed39d9d3f209415742a629a61490d2e937cdee0"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\stdout.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/stdout.log",
+      "bytes": 727,
+      "sha256": "74e96b4f07dbf926d4805cbce3425ed259f7f707e2b3fc70acc880d5f885cce8"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\.last-run.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface\\coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface/coarse-360-after.png",
+      "bytes": 29101,
+      "sha256": "efe2f6751e01d01dd67a46823cb5d875ba6a9405dbd6aff0e27d539b7c6a6837"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface\\coarse-360-before.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface/coarse-360-before.png",
+      "bytes": 29898,
+      "sha256": "ac8e9c8ce3ace4dc0da8cb524c7d96b135f17242555881fd34d119bc8cc14419"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface\\coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface/coarse-390-after.png",
+      "bytes": 36552,
+      "sha256": "6f49ac2e9a96a07c17d87d03e0917e4c46d410bb61bb52a649d9beef6e00cc8a"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface\\coarse-390-before.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface/coarse-390-before.png",
+      "bytes": 36541,
+      "sha256": "bdbb01fb60386ed2758d9a045a2f689ab5cee28a6ee50977728958370c695453"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface-repeat1\\coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface-repeat1/coarse-360-after.png",
+      "bytes": 29073,
+      "sha256": "f786644e3e8f3a8a53715a60ba2366a7ad18333843b29f63d884ad9c0af83265"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface-repeat1\\coarse-360-before.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface-repeat1/coarse-360-before.png",
+      "bytes": 29983,
+      "sha256": "14be96c1c5e4d88b553fa3889fa2ed23c7b331e5bfb6ae44a25d3ca5fba19db9"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface-repeat1\\coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface-repeat1/coarse-390-after.png",
+      "bytes": 36525,
+      "sha256": "53e8a88bbc5ae7a8ce078202d6c1b548deb2d6fb73c056310ab1f6e700b9565f"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface-repeat1\\coarse-390-before.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface-repeat1/coarse-390-before.png",
+      "bytes": 36541,
+      "sha256": "bdbb01fb60386ed2758d9a045a2f689ab5cee28a6ee50977728958370c695453"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface-repeat2\\coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface-repeat2/coarse-360-after.png",
+      "bytes": 29055,
+      "sha256": "f49342986308a3e4641707c8de32f170d6042df63d523eae05949bec4a45fbd3"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface-repeat2\\coarse-360-before.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface-repeat2/coarse-360-before.png",
+      "bytes": 29958,
+      "sha256": "e19c33f05d843cebdfdc67763f39f2adf86087b15c7982b4fae9ccc3f16b753e"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface-repeat2\\coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface-repeat2/coarse-390-after.png",
+      "bytes": 36563,
+      "sha256": "95804618faa45755c637f175085178ed0d2e2513c0703363a26407dacd24f908"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe-repeat3\\test-results\\product-database.probe-P11-4e733-the-native-Timeline-surface-repeat2\\coarse-390-before.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-probe-repeat3/test-results/product-database.probe-P11-4e733-the-native-Timeline-surface-repeat2/coarse-390-before.png",
+      "bytes": 36541,
+      "sha256": "bdbb01fb60386ed2758d9a045a2f689ab5cee28a6ee50977728958370c695453"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-fixed-repeat5\\exit-code.txt",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-fixed-repeat5/exit-code.txt",
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-fixed-repeat5\\results.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-fixed-repeat5/results.json",
+      "bytes": 7824,
+      "sha256": "4ca903ce1f32f11860e3c779e18cee089a9acbc0bf75104e88262254162481ac"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-fixed-repeat5\\run-metadata.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-fixed-repeat5/run-metadata.json",
+      "bytes": 1004,
+      "sha256": "bbc53f0be7d830a18ba0c2f5152e2fb6499b3cedb3e97fa0c66973c8d9353a98"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-fixed-repeat5\\stderr.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-fixed-repeat5/stderr.log",
+      "bytes": 830,
+      "sha256": "cae547384d7548c39e1e6394cede62502e59e49cffdda110e77f116be0529722"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-fixed-repeat5\\stdout.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-fixed-repeat5/stdout.log",
+      "bytes": 727,
+      "sha256": "bbd7a0b07577d01dddc2a8c893547c705d9818475667266260d3655340643f43"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-fixed-repeat5\\test-results\\.last-run.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-fixed-repeat5/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\exit-code.txt",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/exit-code.txt",
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\results.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/results.json",
+      "bytes": 780758,
+      "sha256": "5dbc057bf9205fe6755a7bd5fbb4e9cd07cb21ead934d95bfa6a96555db11c26"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\run-0-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/run-0-passed-minimal-coarse-360.json",
+      "bytes": 130553,
+      "sha256": "3a8dab59e23511365aa89f642e4714e5b172360be71897691ab720e963b6419b"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\run-0-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/run-0-passed-minimal-coarse-390.json",
+      "bytes": 62079,
+      "sha256": "c7bda2c4b85ea32a7235ed65432f4fe303286a3cdb7612a6843f4b1e9c4f8b91"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\run-1-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/run-1-passed-minimal-coarse-360.json",
+      "bytes": 130553,
+      "sha256": "7e2ee9662be801bbba9f22151c5eb975ea0b9d7ab02ac4c25c168888cccdcad1"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\run-1-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/run-1-passed-minimal-coarse-390.json",
+      "bytes": 62079,
+      "sha256": "59f51edace48f5ca742bc9dcf6b5f35077bd93b00f83c8579e913770d4fa87a0"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\run-2-passed-minimal-coarse-360.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/run-2-passed-minimal-coarse-360.json",
+      "bytes": 130544,
+      "sha256": "546e9c1ec093bded99ff13b3363e82d14bb566cc3372bede9cab27d5a571f106"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\run-2-passed-minimal-coarse-390.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/run-2-passed-minimal-coarse-390.json",
+      "bytes": 64496,
+      "sha256": "39ea8f307b162c4a5fd52c2510fe0a24cef0d2369c59b1b752c8ea028f5a7081"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\stderr.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/stderr.log",
+      "bytes": 497,
+      "sha256": "4b9186af4fe5cde6eb37097e49ea045a510e27d82f07588d8daeca46c86aa572"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\stdout.log",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/stdout.log",
+      "bytes": 727,
+      "sha256": "2a53249938a9031b55542a194a4e520cddce98dd5ca44bccfc66eb9537ad117d"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\test-results\\.last-run.json",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/test-results/.last-run.json",
+      "bytes": 45,
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\test-results\\product-database.trial-P11-b417b-the-native-Timeline-surface\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/test-results/product-database.trial-P11-b417b-the-native-Timeline-surface/minimal-coarse-360-after.png",
+      "bytes": 29106,
+      "sha256": "f3aa05f411b327b6ce56a138cd0d3ce68692ac902ce2d48f8f6032137f0c4f6f"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\test-results\\product-database.trial-P11-b417b-the-native-Timeline-surface\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/test-results/product-database.trial-P11-b417b-the-native-Timeline-surface/minimal-coarse-390-after.png",
+      "bytes": 36542,
+      "sha256": "4fa828f8f47a8523cbf4e3ca7bcee801596d53219a35472c9049ffbe6f8f0ff3"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\test-results\\product-database.trial-P11-b417b-the-native-Timeline-surface-repeat1\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/test-results/product-database.trial-P11-b417b-the-native-Timeline-surface-repeat1/minimal-coarse-360-after.png",
+      "bytes": 29150,
+      "sha256": "eb9d17f84ff4a0284a88c2eef285d76a2de8b2519407d29c37fc37da677ef463"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\test-results\\product-database.trial-P11-b417b-the-native-Timeline-surface-repeat1\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/test-results/product-database.trial-P11-b417b-the-native-Timeline-surface-repeat1/minimal-coarse-390-after.png",
+      "bytes": 36545,
+      "sha256": "00de9f8af3d204a96885497d3f03961d11e7b73f5d5b7fa6e34e75f8502321a7"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\test-results\\product-database.trial-P11-b417b-the-native-Timeline-surface-repeat2\\minimal-coarse-360-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/test-results/product-database.trial-P11-b417b-the-native-Timeline-surface-repeat2/minimal-coarse-360-after.png",
+      "bytes": 28994,
+      "sha256": "9abb80da819ae5271a593c6490973399e3120dc223308da8ad0e75259fee8479"
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-trial-probe-repeat3\\test-results\\product-database.trial-P11-b417b-the-native-Timeline-surface-repeat2\\minimal-coarse-390-after.png",
+      "destination": "docs/verification/evidence/p11-6-resume/coarse/coarse-trial-probe-repeat3/test-results/product-database.trial-P11-b417b-the-native-Timeline-surface-repeat2/minimal-coarse-390-after.png",
+      "bytes": 36442,
+      "sha256": "0e050eae3382148fb0335ef89c664fa1fd4a2ce2c11ae6764cbc9723d08a9c46"
+    }
+  ],
+  "excluded": [
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-probe\\product-database.geometry.spec.ts",
+      "bytes": 846786,
+      "sha256": "14e6cdb301a1ed45c5b041d27170b7291d5bff01e2d62a705a12565acead758c",
+      "reason": "Temporary source copy or ambiguous duplicate decoded attachment; source retained in TEMP. Full authoritative results.json is copied."
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-baseline-probe\\product-database.original.spec.ts",
+      "bytes": 843463,
+      "sha256": "4281e988ad86bb660237086ccdc55a469862fb328b24bedd3fc7142a88433869",
+      "reason": "Temporary source copy or ambiguous duplicate decoded attachment; source retained in TEMP. Full authoritative results.json is copied."
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\repeat--minimal-coarse-360.json",
+      "bytes": 22734,
+      "sha256": "cc855a528122cb1f7b16745b34aa7723b3d992b4cce1fe1ca05059fac70f6b0d",
+      "reason": "Temporary source copy or ambiguous duplicate decoded attachment; source retained in TEMP. Full authoritative results.json is copied."
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-minimal-repeat3\\repeat--minimal-coarse-390.json",
+      "bytes": 9097,
+      "sha256": "155026c4141b882e7c0a835537952d4903f1c1df05636135b5d826cc36ae3765",
+      "reason": "Temporary source copy or ambiguous duplicate decoded attachment; source retained in TEMP. Full authoritative results.json is copied."
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\product-database.geometry.spec.ts",
+      "bytes": 879223,
+      "sha256": "6c0b1553b41e97813f63d9cc545924544ef5a339e0bd8299ae94f9f5d9b60490",
+      "reason": "Temporary source copy or ambiguous duplicate decoded attachment; source retained in TEMP. Full authoritative results.json is copied."
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\product-database.minimal.spec.ts",
+      "bytes": 878461,
+      "sha256": "72badf8668b5fa243f9a4e221f50e5228ee4d30f5ff34200341849c01461acdd",
+      "reason": "Temporary source copy or ambiguous duplicate decoded attachment; source retained in TEMP. Full authoritative results.json is copied."
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\product-database.probe.spec.ts",
+      "bytes": 879832,
+      "sha256": "397306291a3f5c562aac1a288e391087c404ee97a78e710a11ad32a78b18daf3",
+      "reason": "Temporary source copy or ambiguous duplicate decoded attachment; source retained in TEMP. Full authoritative results.json is copied."
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\coarse-probe\\product-database.trial.spec.ts",
+      "bytes": 879266,
+      "sha256": "50efe0988c7225a28af15fd32b1d0ebf31e5a3fcd76a0e84ee875240ee00cb0b",
+      "reason": "Temporary source copy or ambiguous duplicate decoded attachment; source retained in TEMP. Full authoritative results.json is copied."
+    }
+  ]
+}

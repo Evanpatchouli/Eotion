@@ -1,0 +1,135 @@
+{
+  "commit": "ff0901c7545c9bc1addad9114cc1d41492a52eb3",
+  "baselineRoot": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay",
+  "method": "git show <resolved ff0901c>:<path> Buffer compared with archived file raw bytes; LF-normalized comparison additionally reported",
+  "files": [
+    {
+      "path": "apps/web/src/main.ts",
+      "gitExit": 0,
+      "gitSha256": "6326aa5367c41e7cc1fa21d66082b31481cfd3c231e43ed2c24ba6c2e19dd220",
+      "archiveSha256": "d32a9966fda3e98ac4cb86c44dbed49c6e496c62e5f8e81f6c103257209f7e41",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/App.vue",
+      "gitExit": 0,
+      "gitSha256": "18656249b9da503fa66dd5ed2d8fc7e19c95da63a9ad501d1047fa44e9d68dbd",
+      "archiveSha256": "60876e10ce87c0f6fd39f68bb49e20765e3ecf86cf828b0b0e706028c411a8ba",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/router.ts",
+      "gitExit": 0,
+      "gitSha256": "485d303640715c97d1f09d5fe74248e1c50599b5fba9e122b58b23810d0a17e9",
+      "archiveSha256": "8dba37fa2c189fa1fbe4d69e00f721b4e982b1f3f2be9bc827edb3dedf660743",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/stores/auth.ts",
+      "gitExit": 0,
+      "gitSha256": "1f6a410b0abe1ba9595fbcfcb3eca544cd431474c5f169dc03f8aa603567d769",
+      "archiveSha256": "a688b886373c34b31f8954a903d920dd2fa3d5c0da85fe9a8fc12e9b7e4ac62c",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/stores/productSync.ts",
+      "gitExit": 0,
+      "gitSha256": "8326d02b5920e45027f43d604a6097e7b434df175a5a8f7bc7b7372aa295cbe9",
+      "archiveSha256": "6311fc66bb3483936002db54e5594da123412ff1f8e8c7a7cd6284077403ebf3",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/layouts/ProductShell.vue",
+      "gitExit": 0,
+      "gitSha256": "9060afe1280122ae94136a590be5b96fd49f97db1922a892f8df9925c875d3aa",
+      "archiveSha256": "db42fb6d40b0bbcd62dabff47f7b42582b51b7fb6c93226e74c85deb3863712c",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/services/productApi.ts",
+      "gitExit": 0,
+      "gitSha256": "0cb34d74f045f43af3766ad8dbf6765349ebafd012bef2c542a1101a2b357bde",
+      "archiveSha256": "dca7a02cfa78071e00da8df6ab4908aeaff2fb3b274df8b72785f1397bee221c",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/storage/createLocalStore.ts",
+      "gitExit": 0,
+      "gitSha256": "6e2a037a229afacb23ed4104cdf57d7f17b7b58e9454ca8e54c2b0ee320c77b0",
+      "archiveSha256": "07d04d2267cb24eb6d25f078d60dd3c0b191eba6e93f1acec225187f9dfabfad",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/theme.ts",
+      "gitExit": 0,
+      "gitSha256": "2fadc8af93f3dcdeef8e87197a5b1ca4b79da57d82bf36a1e77efa547a0c7714",
+      "archiveSha256": "224f40d588ce228edd3b3d6c2132ad0dea73f7bd47a92775485225edccd93fc3",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/src/webRuntimePreferences.ts",
+      "gitExit": 0,
+      "gitSha256": "0578341af504a47fcb4b1d6cd3edf2b1d4762c93aea2777dbc5cc88d73694c49",
+      "archiveSha256": "34208098cc3f58e02fece5213f5f26816b5b69802baa0f7ba25e6cb1b3ef373c",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/vite.config.ts",
+      "gitExit": 0,
+      "gitSha256": "95f100ebdf4654d2ed797712dca3e11cd3a07a4a8003be8d9273bcc44e38052d",
+      "archiveSha256": "ea3a81d6d23f24f51473d5b10e23f3e9f7141343be9a3404484d73b11d6f1b6f",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/index.html",
+      "gitExit": 0,
+      "gitSha256": "f71075ce374c2955370bcaf94f76e3d61952672231e7bf603120719b76e44d57",
+      "archiveSha256": "72f9505bbb9a353e2789949cd8b1d6715ded20ab597c70dd88941a07eceb2c8e",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/package.json",
+      "gitExit": 0,
+      "gitSha256": "baa70cf61e6feb5a12afa4a60612851e4194dedb452488be9bb8ac5e093ae5df",
+      "archiveSha256": "535ae3c90b9c675fad2d003b9a0c9e9395d42140145b0d504d90c710b109975e",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "package.json",
+      "gitExit": 0,
+      "gitSha256": "f213d9a80a8df93b1dc66db6ab1b315b291af4842800f22631154ed066042c85",
+      "archiveSha256": "2f0495f4003a4432a6db04401f22765c6062b03bae9941d5864d95e24d77a5a3",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "gitExit": 0,
+      "gitSha256": "549f354284c89d1e8e13782086548ca88304e57b3ab4e975571ca1f214343039",
+      "archiveSha256": "5dea4e0277b81b5434e6957c0d234b3c411c2fe6e40441364570def849f208df",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    },
+    {
+      "path": "apps/web/tests/product-sync.spec.ts",
+      "gitExit": 0,
+      "gitSha256": "8359ed8e53654ca71195639d14778032c0fc7f2cc37c6190b31dea399e2f1094",
+      "archiveSha256": "d5321c6eb95ff2c3bdd1fdb9108fb46179a97be2cb75f6effdbb57659ca701ca",
+      "exactBytesEqual": false,
+      "normalizedLfEqual": true
+    }
+  ]
+}

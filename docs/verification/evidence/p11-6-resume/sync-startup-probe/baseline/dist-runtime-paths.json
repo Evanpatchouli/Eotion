@@ -1,0 +1,88 @@
+[
+  {
+    "package": "contracts",
+    "exports": {
+      ".": {
+        "types": "./src/index.ts",
+        "node": "./dist/index.js",
+        "import": "./src/index.ts",
+        "require": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./mobile": {
+        "types": "./src/mobile.ts",
+        "node": "./dist/mobile.js",
+        "import": "./src/mobile.ts",
+        "require": "./dist/mobile.js",
+        "default": "./dist/mobile.js"
+      }
+    },
+    "distPath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/packages/contracts/dist",
+    "realDistPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\packages\\contracts\\dist"
+  },
+  {
+    "package": "domain",
+    "exports": {
+      ".": {
+        "types": "./src/index.ts",
+        "require": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./block-types": {
+        "types": "./src/block-types.ts",
+        "node": "./dist/block-types.js",
+        "import": "./src/block-types.ts",
+        "require": "./dist/block-types.js",
+        "default": "./dist/block-types.js"
+      },
+      "./database": {
+        "types": "./src/database.ts",
+        "node": "./dist/database.js",
+        "import": "./src/database.ts",
+        "require": "./dist/database.js",
+        "default": "./dist/database.js"
+      },
+      "./date": {
+        "types": "./src/date.ts",
+        "node": "./dist/date.js",
+        "import": "./src/date.ts",
+        "require": "./dist/date.js",
+        "default": "./dist/date.js"
+      },
+      "./order": {
+        "types": "./src/order.ts",
+        "import": "./src/order.ts",
+        "require": "./dist/order.js",
+        "default": "./dist/order.js"
+      },
+      "./block-tree": {
+        "types": "./src/block-tree.ts",
+        "node": "./dist/block-tree.js",
+        "import": "./src/block-tree.ts",
+        "default": "./src/block-tree.ts"
+      }
+    },
+    "distPath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/packages/domain/dist",
+    "realDistPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\packages\\domain\\dist"
+  },
+  {
+    "package": "storage",
+    "exports": {
+      ".": "./src/index.ts"
+    },
+    "distPath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/packages/storage/dist",
+    "realDistPath": null
+  },
+  {
+    "package": "sdk",
+    "exports": {
+      ".": {
+        "types": "./src/index.ts",
+        "import": "./src/index.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "distPath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/packages/sdk/dist",
+    "realDistPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\packages\\sdk\\dist"
+  }
+]

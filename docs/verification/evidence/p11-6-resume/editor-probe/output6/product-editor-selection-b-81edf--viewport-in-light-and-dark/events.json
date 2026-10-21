@@ -1,0 +1,233 @@
+[
+  {
+    "t": 551.6000000014901,
+    "tag": "editor:attach",
+    "active": "<body>\n    <div id=\"app\" data-v-app=\"\"><div data-v-7a7a37b1=\"\" class=\"app-viewport\" data-runtime=\"web\" data-route=\"product-page\"><!--v-if--><div data-v-b30e6842=\"\" data-v-7a7a37b1=\"\" class=\"workspace-shell product-shell\" data-layout=\"tablet",
+    "dom": {
+      "text": "",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 1,
+        "head": 1
+      },
+      "text": "Selection near viewport edge",
+      "focus": false
+    }
+  },
+  {
+    "t": 582.3000000007451,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" contenteditable=\"fals",
+    "dom": {
+      "text": "",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 1,
+        "head": 1
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    },
+    "steps": [],
+    "meta": {
+      "focus": {
+        "event": {
+          "isTrusted": true
+        }
+      },
+      "addToHistory": false
+    }
+  },
+  {
+    "t": 582.8000000007451,
+    "tag": "focusin:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 1,
+        "head": 1
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    }
+  },
+  {
+    "t": 583.8000000007451,
+    "tag": "click:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>Selection near viewport edge</p>",
+      "offset": 28
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 1,
+        "head": 1
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    }
+  },
+  {
+    "t": 591.9000000022352,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>Selection near viewport edge</p>",
+      "offset": 28
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 29,
+        "head": 29
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    },
+    "steps": [],
+    "meta": {
+      "pointer": true
+    }
+  },
+  {
+    "t": 593.4000000022352,
+    "tag": "selectionchange:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "",
+      "anchor": "<p>Selection near viewport edge</p>",
+      "offset": 28
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 29,
+        "head": 29
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    }
+  },
+  {
+    "t": 721.5,
+    "tag": "selectionchange:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "Selection near viewport edge",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 29,
+        "head": 29
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    }
+  },
+  {
+    "t": 722.3000000007451,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "Selection near viewport edge",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 1,
+        "head": 29
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    },
+    "steps": [],
+    "meta": {}
+  },
+  {
+    "t": 1059.300000000745,
+    "tag": "transaction",
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "Selection near viewport edge",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 1,
+        "head": 29
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    },
+    "steps": [],
+    "meta": {
+      "eotionSelectionBubble": "hide"
+    }
+  },
+  {
+    "t": 1343.9000000022352,
+    "tag": "click:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "Selection near viewport edge",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 1,
+        "head": 29
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    }
+  },
+  {
+    "t": 1358.300000000745,
+    "tag": "selectionchange:capture",
+    "prevented": false,
+    "active": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap ProseMirror ProseMirror-focused\" tabindex=\"0\"><span class=\"eotion-block-drag-anchor ProseMirror-widget\" c",
+    "dom": {
+      "text": "Selection near viewport edge",
+      "anchor": "<div contenteditable=\"true\" role=\"textbox\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" spellcheck=\"false\" translate=\"no\" class=\"tiptap Prose",
+      "offset": 0
+    },
+    "pm": {
+      "sel": {
+        "type": "text",
+        "anchor": 1,
+        "head": 29
+      },
+      "text": "Selection near viewport edge",
+      "focus": true
+    }
+  }
+]

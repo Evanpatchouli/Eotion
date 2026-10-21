@@ -1,0 +1,1975 @@
+[
+  {
+    "type": "before",
+    "callId": "call@13218",
+    "startTime": 963892.672,
+    "class": "BrowserContext",
+    "method": "newPage",
+    "params": {},
+    "stepId": "pw:api@33",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "event",
+    "time": 964043.152,
+    "class": "BrowserContext",
+    "method": "page",
+    "params": {
+      "pageId": "page@910f8f0e1bf26adc18a77c1e3de9407f"
+    },
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13218",
+    "endTime": 964043.236,
+    "result": {
+      "page": "<Page>"
+    },
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13220",
+    "startTime": 964045.092,
+    "title": "Route requests",
+    "class": "Page",
+    "method": "setNetworkInterceptionPatterns",
+    "params": {
+      "patterns": [
+        {
+          "glob": "**/api/**"
+        }
+      ]
+    },
+    "stepId": "pw:api@34",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13220",
+    "endTime": 964046.855,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13222",
+    "startTime": 964048.747,
+    "class": "Frame",
+    "method": "goto",
+    "params": {
+      "url": "/#/app/ws-a/page/page-a",
+      "waitUntil": "load"
+    },
+    "stepId": "pw:api@35",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13222",
+    "time": 964052.236,
+    "message": "navigating to \"http://127.0.0.1:7173/#/app/ws-a/page/page-a\", waiting until \"load\"",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13224",
+    "startTime": 964309.175,
+    "class": "Route",
+    "method": "fulfill",
+    "params": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "content-length",
+          "value": "121"
+        }
+      ],
+      "body": "{\"id\":\"user-ava\",\"email\":\"ava@example.com\",\"createdAt\":\"2026-09-30T00:00:00.000Z\",\"updatedAt\":\"2026-09-30T00:00:00.000Z\"}",
+      "isBase64": false
+    },
+    "stepId": "pw:api@36",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13224",
+    "endTime": 964310.083,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13222",
+    "endTime": 964416.969,
+    "result": {
+      "response": "<Response>"
+    },
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13226",
+    "startTime": 964425.091,
+    "title": "Expect \"toBeVisible\"",
+    "class": "Frame",
+    "method": "expect",
+    "params": {
+      "selector": ".eotion-editor-content .tiptap",
+      "expression": "to.be.visible",
+      "expectedValue": {
+        "value": {
+          "v": "undefined"
+        },
+        "handles": []
+      },
+      "isNot": false,
+      "timeout": 5000
+    },
+    "stepId": "expect@37",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13226",
+    "time": 964429.03,
+    "message": "Expect \"toBeVisible\" locator('.eotion-editor-content .tiptap') with timeout 5000ms",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13226",
+    "time": 964429.036,
+    "message": "waiting for locator('.eotion-editor-content .tiptap')",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13228",
+    "startTime": 964766.201,
+    "class": "Route",
+    "method": "fulfill",
+    "params": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "content-length",
+          "value": "30"
+        }
+      ],
+      "body": "{\"items\":[],\"nextCursor\":null}",
+      "isBase64": false
+    },
+    "stepId": "pw:api@38",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13230",
+    "startTime": 964767.755,
+    "class": "Route",
+    "method": "fulfill",
+    "params": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "content-length",
+          "value": "133"
+        }
+      ],
+      "body": "[{\"id\":\"ws-a\",\"name\":\"Ava space\",\"ownerId\":\"user-ava\",\"createdAt\":\"2026-09-30T00:00:00.000Z\",\"updatedAt\":\"2026-09-30T00:00:00.000Z\"}]",
+      "isBase64": false
+    },
+    "stepId": "pw:api@39",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13228",
+    "endTime": 964768.282,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13230",
+    "endTime": 964768.701,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13232",
+    "startTime": 964787.571,
+    "class": "Route",
+    "method": "fulfill",
+    "params": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "content-length",
+          "value": "133"
+        }
+      ],
+      "body": "[{\"id\":\"ws-a\",\"name\":\"Ava space\",\"ownerId\":\"user-ava\",\"createdAt\":\"2026-09-30T00:00:00.000Z\",\"updatedAt\":\"2026-09-30T00:00:00.000Z\"}]",
+      "isBase64": false
+    },
+    "stepId": "pw:api@40",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13232",
+    "endTime": 964788.414,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13234",
+    "startTime": 964800.507,
+    "class": "Route",
+    "method": "fulfill",
+    "params": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "content-length",
+          "value": "204"
+        }
+      ],
+      "body": "{\"pages\":[{\"id\":\"page-a\",\"workspaceId\":\"ws-a\",\"parentPageId\":null,\"title\":\"Alpha\",\"orderKey\":\"0000000000000001\",\"createdAt\":\"2026-09-30T00:00:00.000Z\",\"updatedAt\":\"2026-09-30T00:00:00.000Z\"}],\"blocks\":[]}",
+      "isBase64": false
+    },
+    "stepId": "pw:api@41",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13234",
+    "endTime": 964801.195,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13226",
+    "time": 965297.386,
+    "message": "  locator resolved to <div tabindex=\"0\" role=\"textbox\" translate=\"no\" spellcheck=\"false\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" contenteditable=\"true\" class=\"tiptap ProseMirror\">…</div>",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13226",
+    "endTime": 965297.475,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13236",
+    "startTime": 965305.152,
+    "class": "Frame",
+    "method": "dispatchEvent",
+    "params": {
+      "selector": ".eotion-editor-content .tiptap",
+      "strict": true,
+      "type": "compositionstart",
+      "eventInit": {
+        "value": {
+          "o": [
+            {
+              "k": "data",
+              "v": {
+                "s": ""
+              }
+            }
+          ],
+          "id": 1
+        },
+        "handles": []
+      }
+    },
+    "stepId": "pw:api@42",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13236",
+    "time": 965307.968,
+    "message": "waiting for locator('.eotion-editor-content .tiptap')",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13236",
+    "time": 965326.654,
+    "message": "  locator resolved to <div tabindex=\"0\" role=\"textbox\" translate=\"no\" spellcheck=\"false\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" contenteditable=\"true\" class=\"tiptap ProseMirror\">…</div>",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13236",
+    "endTime": 965326.692,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13238",
+    "startTime": 965329.808,
+    "class": "Frame",
+    "method": "type",
+    "params": {
+      "selector": ".eotion-editor-content .tiptap",
+      "strict": true,
+      "text": "Draft from another API"
+    },
+    "stepId": "pw:api@43",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13238",
+    "time": 965332.479,
+    "message": "waiting for locator('.eotion-editor-content .tiptap')",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13238",
+    "time": 965334.925,
+    "message": "  locator resolved to <div tabindex=\"0\" role=\"textbox\" translate=\"no\" spellcheck=\"false\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" contenteditable=\"true\" class=\"tiptap ProseMirror\">…</div>",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13238",
+    "time": 965335.759,
+    "message": "elementHandle.type(\"Draft from another API\")",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13238",
+    "endTime": 965425.3,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13240",
+    "startTime": 965428.103,
+    "class": "Frame",
+    "method": "dispatchEvent",
+    "params": {
+      "selector": ".eotion-editor-content .tiptap",
+      "strict": true,
+      "type": "compositionend",
+      "eventInit": {
+        "value": {
+          "o": [
+            {
+              "k": "data",
+              "v": {
+                "s": "Draft from another API"
+              }
+            }
+          ],
+          "id": 1
+        },
+        "handles": []
+      }
+    },
+    "stepId": "pw:api@44",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13240",
+    "time": 965429.803,
+    "message": "waiting for locator('.eotion-editor-content .tiptap')",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13240",
+    "time": 965432.117,
+    "message": "  locator resolved to <div tabindex=\"0\" role=\"textbox\" translate=\"no\" spellcheck=\"false\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" contenteditable=\"true\" class=\"tiptap ProseMirror ProseMirror-focused\">…</div>",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13240",
+    "endTime": 965432.161,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13242",
+    "startTime": 965439.49,
+    "class": "Frame",
+    "method": "evaluateExpression",
+    "params": {
+      "expression": "async () => {\n    const {\n      useProductSyncStore\n    } = await import('/src/stores/productSync.ts');\n    const local = await useProductSyncStore().store();\n    return JSON.stringify(await local.listBlocksByPage('page-a'));\n  }",
+      "isFunction": true,
+      "arg": {
+        "value": {
+          "v": "undefined"
+        },
+        "handles": []
+      }
+    },
+    "stepId": "pw:api@46",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13242",
+    "endTime": 965444.617,
+    "result": {
+      "value": {
+        "s": "[]"
+      }
+    },
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13244",
+    "startTime": 965547.284,
+    "class": "Frame",
+    "method": "evaluateExpression",
+    "params": {
+      "expression": "async () => {\n    const {\n      useProductSyncStore\n    } = await import('/src/stores/productSync.ts');\n    const local = await useProductSyncStore().store();\n    return JSON.stringify(await local.listBlocksByPage('page-a'));\n  }",
+      "isFunction": true,
+      "arg": {
+        "value": {
+          "v": "undefined"
+        },
+        "handles": []
+      }
+    },
+    "stepId": "pw:api@48",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13244",
+    "endTime": 965550.146,
+    "result": {
+      "value": {
+        "s": "[]"
+      }
+    },
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13246",
+    "startTime": 965684.192,
+    "class": "Route",
+    "method": "fulfill",
+    "params": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "content-length",
+          "value": "133"
+        }
+      ],
+      "body": "[{\"id\":\"ws-a\",\"name\":\"Ava space\",\"ownerId\":\"user-ava\",\"createdAt\":\"2026-09-30T00:00:00.000Z\",\"updatedAt\":\"2026-09-30T00:00:00.000Z\"}]",
+      "isBase64": false
+    },
+    "stepId": "pw:api@50",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13246",
+    "endTime": 965684.943,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13248",
+    "startTime": 965804.31,
+    "class": "Frame",
+    "method": "evaluateExpression",
+    "params": {
+      "expression": "async () => {\n    const {\n      useProductSyncStore\n    } = await import('/src/stores/productSync.ts');\n    const local = await useProductSyncStore().store();\n    return JSON.stringify(await local.listBlocksByPage('page-a'));\n  }",
+      "isFunction": true,
+      "arg": {
+        "value": {
+          "v": "undefined"
+        },
+        "handles": []
+      }
+    },
+    "stepId": "pw:api@51",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13248",
+    "endTime": 965807.424,
+    "result": {
+      "value": {
+        "s": "[{\"id\":\"IFf4y5y8r3yzXA8RIsLCL\",\"workspaceId\":\"ws-a\",\"pageId\":\"page-a\",\"parentBlockId\":null,\"type\":\"paragraph\",\"orderKey\":\"000000000000000001000000000000\",\"props\":{\"node\":{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"Draft from another API\"}]}},\"createdAt\":\"2026-10-21T04:57:18.748Z\",\"updatedAt\":\"2026-10-21T04:57:18.748Z\"}]"
+      }
+    },
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13250",
+    "startTime": 965809.666,
+    "class": "Frame",
+    "method": "click",
+    "params": {
+      "selector": "internal:role=button[name=\"页面操作：Alpha\"i]",
+      "strict": true
+    },
+    "stepId": "pw:api@53",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965810.85,
+    "message": "waiting for getByRole('button', { name: '页面操作：Alpha' })",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965814.526,
+    "message": "  locator resolved to <button type=\"button\" aria-controls=\"v-1\" aria-haspopup=\"menu\" aria-expanded=\"false\" aria-label=\"页面操作：Alpha\" class=\"product-page-menu-trigger\">…</button>",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965815.254,
+    "message": "attempting click action",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965815.28,
+    "message": "  waiting for element to be visible, enabled and stable",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965831.147,
+    "message": "  element is visible, enabled and stable",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965831.16,
+    "message": "  scrolling into view if needed",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965831.56,
+    "message": "  done scrolling",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965836.511,
+    "message": "  performing click action",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965846.882,
+    "message": "  click action done",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965846.895,
+    "message": "  waiting for scheduled navigations to finish",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13250",
+    "time": 965849.669,
+    "message": "  navigations have finished",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13250",
+    "endTime": 965849.784,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13252",
+    "startTime": 965853.285,
+    "class": "Frame",
+    "method": "click",
+    "params": {
+      "selector": ".product-page-menu >> internal:role=menuitem[name=\"重命名\"i]",
+      "strict": true
+    },
+    "stepId": "pw:api@54",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965855.145,
+    "message": "waiting for locator('.product-page-menu').getByRole('menuitem', { name: '重命名' })",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965858.809,
+    "message": "  locator resolved to <button type=\"button\" role=\"menuitem\" data-v-749fbba4=\"\" data-popover-item=\"\" class=\"eotion-context-menu__item\">…</button>",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965859.757,
+    "message": "attempting click action",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965859.784,
+    "message": "  waiting for element to be visible, enabled and stable",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965881.596,
+    "message": "  element is visible, enabled and stable",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965881.616,
+    "message": "  scrolling into view if needed",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965882.336,
+    "message": "  done scrolling",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965887.628,
+    "message": "  performing click action",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965905.402,
+    "message": "  click action done",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965905.426,
+    "message": "  waiting for scheduled navigations to finish",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13252",
+    "time": 965906.199,
+    "message": "  navigations have finished",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13252",
+    "endTime": 965906.308,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13254",
+    "startTime": 965911.729,
+    "class": "Frame",
+    "method": "fill",
+    "params": {
+      "selector": "internal:label=\"页面标题\"i",
+      "strict": true,
+      "value": "Changed title"
+    },
+    "stepId": "pw:api@55",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13254",
+    "time": 965913.446,
+    "message": "waiting for getByLabel('页面标题')",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13254",
+    "time": 965918.685,
+    "message": "  locator resolved to <input required=\"\" value=\"Alpha\" maxlength=\"200\" aria-label=\"页面标题\" data-v-61e2bbc7=\"\" class=\"eotion-input\" data-page-rename-input=\"\"/>",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13254",
+    "time": 965920.021,
+    "message": "  fill(\"Changed title\")",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13254",
+    "time": 965920.031,
+    "message": "attempting fill action",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13254",
+    "time": 965922.254,
+    "message": "  waiting for element to be visible, enabled and editable",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13254",
+    "endTime": 965926.559,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13256",
+    "startTime": 965928.753,
+    "class": "Frame",
+    "method": "click",
+    "params": {
+      "selector": "internal:role=button[name=\"保存标题\"i]",
+      "strict": true
+    },
+    "stepId": "pw:api@56",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13256",
+    "time": 965930.084,
+    "message": "waiting for getByRole('button', { name: '保存标题' })",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13256",
+    "time": 965934.077,
+    "message": "  locator resolved to <button type=\"submit\" data-v-fe3c5b23=\"\" class=\"eotion-button eotion-button--primary\">保存标题</button>",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13256",
+    "time": 965934.946,
+    "message": "attempting click action",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13256",
+    "time": 965934.97,
+    "message": "  waiting for element to be visible, enabled and stable",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13258",
+    "startTime": 965945.337,
+    "class": "Route",
+    "method": "fulfill",
+    "params": {
+      "status": 200,
+      "headers": [
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "content-length",
+          "value": "133"
+        }
+      ],
+      "body": "[{\"id\":\"ws-a\",\"name\":\"Ava space\",\"ownerId\":\"user-ava\",\"createdAt\":\"2026-09-30T00:00:00.000Z\",\"updatedAt\":\"2026-09-30T00:00:00.000Z\"}]",
+      "isBase64": false
+    },
+    "stepId": "pw:api@57",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13258",
+    "endTime": 965945.971,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "call@13260",
+    "startTime": 965956.388,
+    "class": "Route",
+    "method": "fulfill",
+    "params": {
+      "status": 401,
+      "headers": [
+        {
+          "name": "content-type",
+          "value": "application/json"
+        },
+        {
+          "name": "content-length",
+          "value": "69"
+        }
+      ],
+      "body": "{\"statusCode\":401,\"message\":\"Session expired\",\"error\":\"Unauthorized\"}",
+      "isBase64": false
+    },
+    "stepId": "pw:api@58",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "after",
+    "callId": "call@13260",
+    "endTime": 965957.132,
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13256",
+    "time": 965964.806,
+    "message": "  element is not stable",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13256",
+    "time": 965964.832,
+    "message": "retrying click action",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13256",
+    "time": 965964.879,
+    "message": "  waiting for element to be visible, enabled and stable",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "log",
+    "callId": "call@13256",
+    "time": 965998.109,
+    "message": "element was detached from the DOM, retrying",
+    "source": "1-trace.trace"
+  },
+  {
+    "type": "before",
+    "callId": "hook@1",
+    "stepId": "hook@1",
+    "startTime": 963855.01,
+    "class": "Test",
+    "method": "hook",
+    "title": "Before Hooks",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "fixture@30",
+    "stepId": "fixture@30",
+    "parentId": "hook@1",
+    "startTime": 963858.853,
+    "class": "Test",
+    "method": "fixture",
+    "title": "Fixture \"context\"",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@31",
+    "stepId": "pw:api@31",
+    "parentId": "fixture@30",
+    "startTime": 963859.367,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Create context",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@31",
+    "endTime": 963889.95,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "fixture@30",
+    "endTime": 963891.77,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "fixture@32",
+    "stepId": "fixture@32",
+    "parentId": "hook@1",
+    "startTime": 963891.973,
+    "class": "Test",
+    "method": "fixture",
+    "title": "Fixture \"page\"",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@33",
+    "stepId": "pw:api@33",
+    "parentId": "fixture@32",
+    "startTime": 963892.526,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Create page",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@33",
+    "endTime": 964043.852,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "fixture@32",
+    "endTime": 964043.902,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "hook@1",
+    "endTime": 964043.944,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@34",
+    "stepId": "pw:api@34",
+    "startTime": 964044.717,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Route requests",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 43,
+        "column": 14,
+        "function": "installApi"
+      }
+    ],
+    "group": "route",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@34",
+    "endTime": 964047.225,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@35",
+    "stepId": "pw:api@35",
+    "startTime": 964048.281,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Navigate",
+    "subtitle": "/#/app/ws-a/page/page-a",
+    "params": {
+      "url": "/#/app/ws-a/page/page-a"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1347,
+        "column": 14
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@36",
+    "stepId": "pw:api@36",
+    "startTime": 964308.689,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Fulfill request",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 39,
+        "column": 71,
+        "function": "json"
+      }
+    ],
+    "group": "route",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@36",
+    "endTime": 964310.292,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@35",
+    "endTime": 964423.246,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "expect@37",
+    "stepId": "expect@37",
+    "startTime": 964423.986,
+    "class": "Test",
+    "method": "expect",
+    "title": "Expect \"toBeVisible\"",
+    "subtitle": "locator('.eotion-editor-content .tiptap')",
+    "params": {
+      "locator": "locator('.eotion-editor-content .tiptap')"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1348,
+        "column": 30
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@38",
+    "stepId": "pw:api@38",
+    "startTime": 964764.921,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Fulfill request",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 39,
+        "column": 71,
+        "function": "json"
+      }
+    ],
+    "group": "route",
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@39",
+    "stepId": "pw:api@39",
+    "startTime": 964767.153,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Fulfill request",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 39,
+        "column": 71,
+        "function": "json"
+      }
+    ],
+    "group": "route",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@38",
+    "endTime": 964768.533,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@39",
+    "endTime": 964768.821,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@40",
+    "stepId": "pw:api@40",
+    "startTime": 964786.736,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Fulfill request",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 39,
+        "column": 71,
+        "function": "json"
+      }
+    ],
+    "group": "route",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@40",
+    "endTime": 964788.525,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@41",
+    "stepId": "pw:api@41",
+    "startTime": 964800.227,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Fulfill request",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 39,
+        "column": 71,
+        "function": "json"
+      }
+    ],
+    "group": "route",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@41",
+    "endTime": 964801.334,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "expect@37",
+    "endTime": 965304.245,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@42",
+    "stepId": "pw:api@42",
+    "startTime": 965304.801,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Dispatch \"compositionstart\"",
+    "subtitle": "locator('.eotion-editor-content .tiptap')",
+    "params": {
+      "locator": "locator('.eotion-editor-content .tiptap')",
+      "type": "compositionstart"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1349,
+        "column": 22
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@42",
+    "endTime": 965328.813,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@43",
+    "stepId": "pw:api@43",
+    "startTime": 965329.516,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Type \"Draft from another API\"",
+    "subtitle": "locator('.eotion-editor-content .tiptap')",
+    "params": {
+      "locator": "locator('.eotion-editor-content .tiptap')",
+      "text": "Draft from another API"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1350,
+        "column": 22
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@43",
+    "endTime": 965427.334,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@44",
+    "stepId": "pw:api@44",
+    "startTime": 965427.892,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Dispatch \"compositionend\"",
+    "subtitle": "locator('.eotion-editor-content .tiptap')",
+    "params": {
+      "locator": "locator('.eotion-editor-content .tiptap')",
+      "type": "compositionend"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1352,
+        "column": 22
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@44",
+    "endTime": 965437.762,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "expect@45",
+    "stepId": "expect@45",
+    "startTime": 965438.419,
+    "class": "Test",
+    "method": "expect",
+    "title": "Expect \"poll toContain\"",
+    "params": {
+      "expected": "Draft from another API"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1357,
+        "column": 7
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@46",
+    "stepId": "pw:api@46",
+    "parentId": "expect@45",
+    "startTime": 965439.207,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Evaluate",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1353,
+        "column": 32
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@46",
+    "endTime": 965445.891,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "expect@47",
+    "stepId": "expect@47",
+    "parentId": "expect@45",
+    "startTime": 965446.156,
+    "class": "Test",
+    "method": "expect",
+    "title": "Expect \"toContain\"",
+    "params": {
+      "expected": "Draft from another API"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1353,
+        "column": 3
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "expect@47",
+    "endTime": 965446.457,
+    "annotations": [],
+    "error": {
+      "name": "",
+      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"Draft from another API\"\u001b[39m\nReceived string:    \u001b[31m\"[]\"\u001b[39m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"Draft from another API\"\u001b[39m\nReceived string:    \u001b[31m\"[]\"\u001b[39m\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts:1353:3"
+    },
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@48",
+    "stepId": "pw:api@48",
+    "parentId": "expect@45",
+    "startTime": 965547.092,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Evaluate",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1353,
+        "column": 32
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@48",
+    "endTime": 965551.73,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "expect@49",
+    "stepId": "expect@49",
+    "parentId": "expect@45",
+    "startTime": 965552.009,
+    "class": "Test",
+    "method": "expect",
+    "title": "Expect \"toContain\"",
+    "params": {
+      "expected": "Draft from another API"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1353,
+        "column": 3
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "expect@49",
+    "endTime": 965552.152,
+    "annotations": [],
+    "error": {
+      "name": "",
+      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"Draft from another API\"\u001b[39m\nReceived string:    \u001b[31m\"[]\"\u001b[39m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"Draft from another API\"\u001b[39m\nReceived string:    \u001b[31m\"[]\"\u001b[39m\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts:1353:3"
+    },
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@50",
+    "stepId": "pw:api@50",
+    "startTime": 965683.753,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Fulfill request",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 39,
+        "column": 71,
+        "function": "json"
+      }
+    ],
+    "group": "route",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@50",
+    "endTime": 965685.135,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@51",
+    "stepId": "pw:api@51",
+    "parentId": "expect@45",
+    "startTime": 965804.07,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Evaluate",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1353,
+        "column": 32
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@51",
+    "endTime": 965808.826,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "expect@52",
+    "stepId": "expect@52",
+    "parentId": "expect@45",
+    "startTime": 965809.086,
+    "class": "Test",
+    "method": "expect",
+    "title": "Expect \"toContain\"",
+    "params": {
+      "expected": "Draft from another API"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1353,
+        "column": 3
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "expect@52",
+    "endTime": 965809.124,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "expect@45",
+    "endTime": 965809.146,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@53",
+    "stepId": "pw:api@53",
+    "startTime": 965809.49,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Click",
+    "subtitle": "getByRole('button', { name: '页面操作：Alpha' })",
+    "params": {
+      "locator": "getByRole('button', { name: '页面操作：Alpha' })"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1358,
+        "column": 58
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@53",
+    "endTime": 965852.44,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@54",
+    "stepId": "pw:api@54",
+    "startTime": 965853.012,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Click",
+    "subtitle": "locator('.product-page-menu').getByRole('menuitem', { name: '重命名' })",
+    "params": {
+      "locator": "locator('.product-page-menu').getByRole('menuitem', { name: '重命名' })"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1359,
+        "column": 83
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@54",
+    "endTime": 965910.845,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@55",
+    "stepId": "pw:api@55",
+    "startTime": 965911.45,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Fill \"Changed title\"",
+    "subtitle": "getByLabel('页面标题')",
+    "params": {
+      "locator": "getByLabel('页面标题')",
+      "value": "Changed title"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1360,
+        "column": 33
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@55",
+    "endTime": 965928.141,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@56",
+    "stepId": "pw:api@56",
+    "startTime": 965928.557,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Click",
+    "subtitle": "getByRole('button', { name: '保存标题' })",
+    "params": {
+      "locator": "getByRole('button', { name: '保存标题' })"
+    },
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 1361,
+        "column": 52
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@57",
+    "stepId": "pw:api@57",
+    "startTime": 965944.947,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Fulfill request",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 39,
+        "column": 71,
+        "function": "json"
+      }
+    ],
+    "group": "route",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@57",
+    "endTime": 965946.107,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@58",
+    "stepId": "pw:api@58",
+    "startTime": 965955.978,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Fulfill request",
+    "params": {},
+    "stack": [
+      {
+        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+        "line": 39,
+        "column": 71,
+        "function": "json"
+      }
+    ],
+    "group": "route",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@58",
+    "endTime": 965957.251,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "hook@59",
+    "stepId": "hook@59",
+    "startTime": 993859.838,
+    "class": "Test",
+    "method": "hook",
+    "title": "After Hooks",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "fixture@60",
+    "stepId": "fixture@60",
+    "parentId": "hook@59",
+    "startTime": 993889.103,
+    "class": "Test",
+    "method": "fixture",
+    "title": "Fixture \"page\"",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "fixture@60",
+    "endTime": 993889.183,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "fixture@61",
+    "stepId": "fixture@61",
+    "parentId": "hook@59",
+    "startTime": 993889.333,
+    "class": "Test",
+    "method": "fixture",
+    "title": "Fixture \"context\"",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "pw:api@62",
+    "stepId": "pw:api@62",
+    "parentId": "fixture@61",
+    "startTime": 993946.988,
+    "class": "Test",
+    "method": "pw:api",
+    "title": "Close context",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@56",
+    "endTime": 993955.049,
+    "annotations": [],
+    "error": {
+      "name": "",
+      "message": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: '保存标题' })\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"submit\" data-v-fe3c5b23=\"\" class=\"eotion-button eotion-button--primary\">保存标题</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not stable\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m  - element was detached from the DOM, retrying\u001b[22m\n",
+      "stack": "Error: locator.click: Test timeout of 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: '保存标题' })\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"submit\" data-v-fe3c5b23=\"\" class=\"eotion-button eotion-button--primary\">保存标题</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not stable\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m  - element was detached from the DOM, retrying\u001b[22m\n\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts:1361:52"
+    },
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "pw:api@62",
+    "endTime": 993956.913,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "fixture@61",
+    "endTime": 993956.967,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "attach@c81f4546b6ca8fe08b0c1093da7dba7d",
+    "stepId": "attach@c81f4546b6ca8fe08b0c1093da7dba7d",
+    "startTime": 993962.605,
+    "class": "Test",
+    "method": "test.attach",
+    "title": "Attach \"error-context\"",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "attach@c81f4546b6ca8fe08b0c1093da7dba7d",
+    "endTime": 993962.619,
+    "attachments": [
+      {
+        "name": "error-context",
+        "contentType": "text/markdown",
+        "file": "attachments/47abec0ce0aa434e384c531fc98c782b000683ae"
+      }
+    ],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "fixture@71",
+    "stepId": "fixture@71",
+    "parentId": "hook@59",
+    "startTime": 993963.396,
+    "class": "Test",
+    "method": "fixture",
+    "title": "Fixture \"baseURL\"",
+    "params": {},
+    "stack": [
+      {
+        "file": "project#",
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "group": "configuration",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "fixture@71",
+    "endTime": 993963.416,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "hook@59",
+    "endTime": 993966.595,
+    "attachments": [
+      {
+        "name": "screenshot",
+        "contentType": "image/png",
+        "file": "attachments/4c0b17097e158cc3af6867645d6a72fa3d14f535"
+      }
+    ],
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "hook@96",
+    "stepId": "hook@96",
+    "startTime": 993966.807,
+    "class": "Test",
+    "method": "hook",
+    "title": "Worker Cleanup",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "fixture@101",
+    "stepId": "fixture@101",
+    "parentId": "hook@96",
+    "startTime": 993967.896,
+    "class": "Test",
+    "method": "fixture",
+    "title": "Fixture \"browser\"",
+    "params": {},
+    "stack": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "fixture@101",
+    "endTime": 994279.817,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "fixture@104",
+    "stepId": "fixture@104",
+    "parentId": "hook@96",
+    "startTime": 994280.178,
+    "class": "Test",
+    "method": "fixture",
+    "title": "Fixture \"browserName\"",
+    "params": {},
+    "stack": [
+      {
+        "file": "project#",
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "group": "configuration",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "fixture@104",
+    "endTime": 994280.187,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "fixture@105",
+    "stepId": "fixture@105",
+    "parentId": "hook@96",
+    "startTime": 994280.192,
+    "class": "Test",
+    "method": "fixture",
+    "title": "Fixture \"screenshot\"",
+    "params": {},
+    "stack": [
+      {
+        "file": "project#",
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "group": "configuration",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "fixture@105",
+    "endTime": 994280.196,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "before",
+    "callId": "fixture@107",
+    "stepId": "fixture@107",
+    "parentId": "hook@96",
+    "startTime": 994280.306,
+    "class": "Test",
+    "method": "fixture",
+    "title": "Fixture \"channel\"",
+    "params": {},
+    "stack": [
+      {
+        "file": "project#",
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "group": "configuration",
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "fixture@107",
+    "endTime": 994280.312,
+    "annotations": [],
+    "source": "test.trace"
+  },
+  {
+    "type": "after",
+    "callId": "hook@96",
+    "endTime": 994280.63,
+    "annotations": [],
+    "source": "test.trace"
+  }
+]

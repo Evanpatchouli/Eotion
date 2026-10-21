@@ -1,0 +1,23 @@
+{
+  "purpose": "Formal coarse case after actionability-only trial tap readiness",
+  "source": "apps/web/tests/product-database.spec.ts",
+  "sourceSha256": "ae8835ea0167945af0a6fa8430f1fa6f10cf995a05e4e2dae2154258016c5cb9",
+  "change": "await scroller.tap({ trial: true }) before original before-geometry read; no real tap, no speed/timeout/assertion change",
+  "nodeExecutable": "C:/Users/31250/.vite-plus/bin/node.exe",
+  "playwrightCli": "C:/Users/31250/Work/Eotion/apps/web/node_modules/@playwright/test/cli.js",
+  "playwrightVersion": "1.63.0",
+  "channel": "chrome",
+  "workers": 1,
+  "retries": 0,
+  "repeatEach": 5,
+  "stats": {
+    "startTime": "2026-10-20T11:14:20.083Z",
+    "duration": 29613.186,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "streams": "stdout.log and stderr.log captured separately",
+  "limits": "Earlier baseline passes and instrumented passes do not prove absence of an existing race; raw failure traces retained."
+}

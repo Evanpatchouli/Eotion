@@ -1,0 +1,34 @@
+[
+  {
+    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\visual-repeat\\playwright-output\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light-actual.png",
+    "sha256": "A455C3BF511C7BBB8F476EC179A25AF663CB1C710D2D12E8D36FBAB520CF9C98"
+  },
+  {
+    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\visual-repeat\\playwright-output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\page-mobile-light-actual.png",
+    "sha256": "A455C3BF511C7BBB8F476EC179A25AF663CB1C710D2D12E8D36FBAB520CF9C98"
+  },
+  {
+    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\visual-repeat\\playwright-output\\visual-regression-Page-tablet-light\\page-tablet-light-actual.png",
+    "sha256": "12B4D0D4F24F18AD39D34536DBF7F6435620622F1BC23F85E3CB00C378ED1322"
+  },
+  {
+    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\visual-repeat\\playwright-output\\visual-regression-Page-tablet-light-repeat1\\page-tablet-light-actual.png",
+    "sha256": "12B4D0D4F24F18AD39D34536DBF7F6435620622F1BC23F85E3CB00C378ED1322"
+  },
+  {
+    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\visual-repeat\\playwright-output\\visual-regression-Settings-desktop-light\\settings-desktop-light-actual.png",
+    "sha256": "6752CEF0BA25443FA0C1DD900E6489846C26E8E760DE91CC5C2BEB165E09AD4D"
+  },
+  {
+    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\visual-repeat\\playwright-output\\visual-regression-Settings-desktop-light-repeat1\\settings-desktop-light-actual.png",
+    "sha256": "6752CEF0BA25443FA0C1DD900E6489846C26E8E760DE91CC5C2BEB165E09AD4D"
+  },
+  {
+    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\visual-repeat\\playwright-output\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light-actual.png",
+    "sha256": "FE7AD87834C932A442500A24BD9AF9E8D87961820EB6ED0AFB816B55D8617D6A"
+  },
+  {
+    "file": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\visual-repeat\\playwright-output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\settings-profile-mobile-light-actual.png",
+    "sha256": "FE7AD87834C932A442500A24BD9AF9E8D87961820EB6ED0AFB816B55D8617D6A"
+  }
+]

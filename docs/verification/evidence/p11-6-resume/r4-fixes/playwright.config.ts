@@ -1,0 +1,2 @@
+import { defineConfig } from 'C:/Users/31250/Work/Eotion/apps/web/node_modules/@playwright/test'
+export default defineConfig({testDir: '.', testMatch: 'product-database.red.spec.ts', use:{baseURL:'http://127.0.0.1:7173',browserName:'chromium',channel:'chrome',trace:'on'}, workers:1,retries:0, reporter:[['list'],['json',{outputFile:'red-results.json'}]],outputDir:'red-test-results'})

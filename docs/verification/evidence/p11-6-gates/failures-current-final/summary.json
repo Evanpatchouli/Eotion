@@ -1,0 +1,849 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/product-attachments.spec.ts",
+      "tests/product-database.spec.ts",
+      "tests/product-editor.spec.ts",
+      "tests/product-p75-acceptance.spec.ts",
+      "tests/product-pages.spec.ts",
+      "tests/product-settings.spec.ts",
+      "tests/product-table.spec.ts",
+      "--config=C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/full-suite/playwright.full.config.mjs",
+      "--workers=1",
+      "--retries=0",
+      "--grep",
+      "a\\ table\\ nests\\ under\\ a\\ toggle\\ and\\ cell\\ Tab\\ never\\ indents\\ the\\ table\\ block|board\\ renderer\\ groups\\ generic\\ records\\ by\\ option\\ IDs\\ with\\ projected\\ titles\\ and\\ configured\\ properties|cell\\ inline\\ marks\\ and\\ hard\\ breaks\\ persist\\ through\\ save\\ and\\ reload|copy\\ and\\ paste\\ inside\\ cells\\ and\\ plain/TSV\\ paste\\ never\\ produce\\ an\\ unsaveable\\ document|last\\ cell\\ Tab\\ adds\\ a\\ row\\ and\\ the\\ table\\ keeps\\ its\\ identity\\ across\\ reload|mobile\\ page\\ actions\\ use\\ modal\\ dialogs\\ with\\ focus,\\ stable\\ tree\\ and\\ a\\ scrollable\\ destination\\ list|offline\\ file\\ selection\\ stays\\ local,\\ does\\ not\\ call\\ upload,\\ keeps\\ text\\ editable\\ and\\ reloads\\ attachment\\ metadata|P11\\.4C\\ offline\\ and\\ changed\\ view\\ config\\ reject\\ a\\ prepared\\ gesture\\ before\\ sending\\ a\\ batch|seeded\\ mixed\\ document\\ keeps\\ local-first\\ identity,\\ nesting,\\ callout\\ attrs\\ and\\ table\\ grid\\ across\\ offline\\ restart\\ and\\ reconnect|selection\\ bubble\\ hides\\ on\\ collapse,\\ blur,\\ Escape\\ and\\ IME;\\ stays\\ in\\ viewport\\ in\\ light\\ and\\ dark|settings\\ navigation\\ ends\\ with\\ 软件说明\\ and\\ /settings/about\\ shows\\ build\\ info\\ plus\\ release\\ notes|unconfirmed\\ inline\\ database\\ creation\\ fences\\ further\\ create\\ or\\ link\\ attempts\\ until\\ page\\ refresh",
+      "--output=C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/full-suite/failures-current-final/output"
+    ],
+    "configFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\playwright.full.config.mjs",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/full-suite/failures-current-final/output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/full-suite/failures-current-final/summary.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": {
+      "command": "pnpm dev",
+      "url": "http://127.0.0.1:7173",
+      "reuseExistingServer": true,
+      "timeout": 30000,
+      "cwd": "C:/Users/31250/Work/Eotion/apps/web"
+    }
+  },
+  "suites": [
+    {
+      "title": "product-attachments.spec.ts",
+      "file": "product-attachments.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7788,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.eotion-editor-content .tiptap')\nExpected substring: \u001b[32m\"\u001b[7m正\u001b[27m文仍然可编辑\"\u001b[39m\nReceived string:    \u001b[31m\"\u001b[7mexisting.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试\u001b[27m文仍然可编辑\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.eotion-editor-content .tiptap') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap')\u001b[22m\n\u001b[2m    14 × locator resolved to <div tabindex=\"0\" role=\"textbox\" translate=\"no\" spellcheck=\"false\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" contenteditable=\"true\" class=\"tiptap ProseMirror ProseMirror-focused\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"existing.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试文仍然可编辑\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.eotion-editor-content .tiptap')\nExpected substring: \u001b[32m\"\u001b[7m正\u001b[27m文仍然可编辑\"\u001b[39m\nReceived string:    \u001b[31m\"\u001b[7mexisting.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试\u001b[27m文仍然可编辑\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.eotion-editor-content .tiptap') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap')\u001b[22m\n\u001b[2m    14 × locator resolved to <div tabindex=\"0\" role=\"textbox\" translate=\"no\" spellcheck=\"false\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" contenteditable=\"true\" class=\"tiptap ProseMirror ProseMirror-focused\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"existing.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试文仍然可编辑\"\u001b[22m\n\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-attachments.spec.ts:697:30",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-attachments.spec.ts",
+                      "column": 30,
+                      "line": 697
+                    },
+                    "snippet": "  695 |   await editor(page).click()\n  696 |   await editor(page).pressSequentially('正文仍然可编辑')\n> 697 |   await expect(editor(page)).toContainText('正文仍然可编辑')\n      |                              ^\n  698 |   await expect.poll(() => page.evaluate(async (id) => {\n  699 |     const { useProductSyncStore } = await import('/src/stores/productSync.ts')\n  700 |     const local = await useProductSyncStore().store()"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-attachments.spec.ts",
+                        "column": 30,
+                        "line": 697
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.eotion-editor-content .tiptap')\nExpected substring: \u001b[32m\"\u001b[7m正\u001b[27m文仍然可编辑\"\u001b[39m\nReceived string:    \u001b[31m\"\u001b[7mexisting.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试\u001b[27m文仍然可编辑\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" locator('.eotion-editor-content .tiptap') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap')\u001b[22m\n\u001b[2m    14 × locator resolved to <div tabindex=\"0\" role=\"textbox\" translate=\"no\" spellcheck=\"false\" aria-multiline=\"true\" aria-label=\"页面正文编辑区域\" contenteditable=\"true\" class=\"tiptap ProseMirror ProseMirror-focused\">…</div>\u001b[22m\n\u001b[2m       - unexpected value \"existing.txt纯文本 · 9 Boffline.txt上传失败 · 附件上传需要联网；正文仍可继续编辑。 重试文仍然可编辑\"\u001b[22m\n\n\n  695 |   await editor(page).click()\n  696 |   await editor(page).pressSequentially('正文仍然可编辑')\n> 697 |   await expect(editor(page)).toContainText('正文仍然可编辑')\n      |                              ^\n  698 |   await expect.poll(() => page.evaluate(async (id) => {\n  699 |     const { useProductSyncStore } = await import('/src/stores/productSync.ts')\n  700 |     const local = await useProductSyncStore().store()\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-attachments.spec.ts:697:30"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:48:20.197Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-attachments-offlin-f1bfa-reloads-attachment-metadata\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-attachments.spec.ts",
+                    "column": 30,
+                    "line": 697
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "795b022f16f486ff1f67-6b8d871c651cd9b0f901",
+          "file": "product-attachments.spec.ts",
+          "line": 686,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-database.spec.ts",
+      "file": "product-database.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "P11.4C offline and changed view config reject a prepared gesture before sending a batch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1601,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:48:30.373Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-fbb4831a61511fbd29a1",
+          "file": "product-database.spec.ts",
+          "line": 5343,
+          "column": 1
+        },
+        {
+          "title": "board renderer groups generic records by option IDs with projected titles and configured properties",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1017,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:48:32.398Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-ad9bee36b19a248a51b2",
+          "file": "product-database.spec.ts",
+          "line": 6322,
+          "column": 1
+        },
+        {
+          "title": "unconfirmed inline database creation fences further create or link attempts until page refresh",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1493,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:48:33.432Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "afc23a477cd9d0a43a76-f4b768e8922383764ca7",
+          "file": "product-database.spec.ts",
+          "line": 6965,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-editor.spec.ts",
+      "file": "product-editor.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 6531,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('toolbar', { name: '选区格式' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('toolbar', { name: '选区格式' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('toolbar', { name: '选区格式' })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('toolbar', { name: '选区格式' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('toolbar', { name: '选区格式' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('toolbar', { name: '选区格式' })\u001b[22m\n\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts:1035:22",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+                      "column": 22,
+                      "line": 1035
+                    },
+                    "snippet": "  1033 |   await expect(menu).toHaveCount(0)\n  1034 |   await selectParagraphText(body.locator('p'))\n> 1035 |   await expect(menu).toBeVisible()\n       |                      ^\n  1036 |   const position = await menu.evaluate(node => {\n  1037 |     const rect = node.getBoundingClientRect()\n  1038 |     return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: innerWidth, height: innerHeight }"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+                        "column": 22,
+                        "line": 1035
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('toolbar', { name: '选区格式' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" getByRole('toolbar', { name: '选区格式' }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('toolbar', { name: '选区格式' })\u001b[22m\n\n\n  1033 |   await expect(menu).toHaveCount(0)\n  1034 |   await selectParagraphText(body.locator('p'))\n> 1035 |   await expect(menu).toBeVisible()\n       |                      ^\n  1036 |   const position = await menu.evaluate(node => {\n  1037 |     const rect = node.getBoundingClientRect()\n  1038 |     return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: innerWidth, height: innerHeight }\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts:1035:22"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:48:34.979Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-editor-selection-b-81edf--viewport-in-light-and-dark\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-editor-selection-b-81edf--viewport-in-light-and-dark\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-editor.spec.ts",
+                    "column": 22,
+                    "line": 1035
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "7d16fbd1f356ab33b137-3d85f9aae08c3cd9d132",
+          "file": "product-editor.spec.ts",
+          "line": 1012,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-p75-acceptance.spec.ts",
+      "file": "product-p75-acceptance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "seeded mixed document keeps local-first identity, nesting, callout attrs and table grid across offline restart and reconnect",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 17758,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-p75-acceptance.spec.ts:475:28",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-p75-acceptance.spec.ts",
+                      "column": 28,
+                      "line": 475
+                    },
+                    "snippet": "  473 |         && outerTable && (blockContent(outerTable) as string[][])[0]?.[0] === 'H1+offline',\n  474 |       )\n> 475 |     }, { timeout: 15000 }).toBe(true)\n      |                            ^\n  476 |\n  477 |     // Local content is durable: reload keeps every edit and every identity.\n  478 |     await page.reload()"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-p75-acceptance.spec.ts",
+                        "column": 28,
+                        "line": 475
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mfalse\u001b[39m\n\nCall Log:\n- Timeout 15000ms exceeded while waiting on the predicate\n\n  473 |         && outerTable && (blockContent(outerTable) as string[][])[0]?.[0] === 'H1+offline',\n  474 |       )\n> 475 |     }, { timeout: 15000 }).toBe(true)\n      |                            ^\n  476 |\n  477 |     // Local content is durable: reload keeps every edit and every identity.\n  478 |     await page.reload()\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-p75-acceptance.spec.ts:475:28"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:48:42.378Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-p75-acceptance-see-2b358-fline-restart-and-reconnect\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-p75-acceptance-see-2b358-fline-restart-and-reconnect\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-p75-acceptance.spec.ts",
+                    "column": 28,
+                    "line": 475
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "6f53631d2be8900d7579-18d88d7df67ce7e987a0",
+          "file": "product-p75-acceptance.spec.ts",
+          "line": 427,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-pages.spec.ts",
+      "file": "product-pages.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "touch page action dialogs",
+          "file": "product-pages.spec.ts",
+          "line": 708,
+          "column": 6,
+          "specs": [
+            {
+              "title": "mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 2004,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m348\u001b[39m\nReceived:    \u001b[31m544\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m348\u001b[39m\nReceived:    \u001b[31m544\u001b[39m\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-pages.spec.ts:811:82",
+                        "location": {
+                          "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-pages.spec.ts",
+                          "column": 82,
+                          "line": 811
+                        },
+                        "snippet": "  809 |   await screenshot('mobile-move')\n  810 |   await page.setViewportSize({ width: 390, height: 380 })\n> 811 |   expect(await move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(348)\n      |                                                                                  ^\n  812 |   await moveTarget(page, '阅读清单 30').check()\n  813 |   const submit = move.getByRole('button', { name: '移动', exact: true })\n  814 |   await expect(submit).toBeInViewport()"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-pages.spec.ts",
+                            "column": 82,
+                            "line": 811
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m348\u001b[39m\nReceived:    \u001b[31m544\u001b[39m\n\n  809 |   await screenshot('mobile-move')\n  810 |   await page.setViewportSize({ width: 390, height: 380 })\n> 811 |   expect(await move.evaluate(element => element.getBoundingClientRect().height)).toBeLessThanOrEqual(348)\n      |                                                                                  ^\n  812 |   await moveTarget(page, '阅读清单 30').check()\n  813 |   const submit = move.getByRole('button', { name: '移动', exact: true })\n  814 |   await expect(submit).toBeInViewport()\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-pages.spec.ts:811:82"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-20T08:49:00.655Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-pages-touch-page-a-74367-scrollable-destination-list\\test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-pages-touch-page-a-74367-scrollable-destination-list\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-pages.spec.ts",
+                        "column": 82,
+                        "line": 811
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dfa890cdf7c7150141d1-d0c76b8725cefce14d16",
+              "file": "product-pages.spec.ts",
+              "line": 745,
+              "column": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "product-settings.spec.ts",
+      "file": "product-settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "settings navigation ends with 软件说明 and /settings/about shows build info plus release notes",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 5800,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('about-released')\nExpected: \u001b[32m\"2026-10-11\"\u001b[39m\nReceived: \u001b[31m\"暂无记录\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" getByTestId('about-released') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('about-released')\u001b[22m\n\u001b[2m    14 × locator resolved to <dd data-testid=\"about-released\" class=\"settings-about-released\">暂无记录</dd>\u001b[22m\n\u001b[2m       - unexpected value \"暂无记录\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('about-released')\nExpected: \u001b[32m\"2026-10-11\"\u001b[39m\nReceived: \u001b[31m\"暂无记录\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" getByTestId('about-released') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('about-released')\u001b[22m\n\u001b[2m    14 × locator resolved to <dd data-testid=\"about-released\" class=\"settings-about-released\">暂无记录</dd>\u001b[22m\n\u001b[2m       - unexpected value \"暂无记录\"\u001b[22m\n\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-settings.spec.ts:782:52",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-settings.spec.ts",
+                      "column": 52,
+                      "line": 782
+                    },
+                    "snippet": "  780 |   await expect(page.getByTestId(\"about-version\")).toContainText(/[0-9a-f]{6}|unknown/);\n  781 |   await expect(page.getByTestId(\"about-version\")).not.toContainText(\"Build \");\n> 782 |   await expect(page.getByTestId(\"about-released\")).toHaveText(\"2026-10-11\");\n      |                                                    ^\n  783 |   await expect(\n  784 |     page.getByRole(\"heading\", { name: \"当前版本日志\" }),\n  785 |   ).toBeVisible();"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-settings.spec.ts",
+                        "column": 52,
+                        "line": 782
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  getByTestId('about-released')\nExpected: \u001b[32m\"2026-10-11\"\u001b[39m\nReceived: \u001b[31m\"暂无记录\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" getByTestId('about-released') with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('about-released')\u001b[22m\n\u001b[2m    14 × locator resolved to <dd data-testid=\"about-released\" class=\"settings-about-released\">暂无记录</dd>\u001b[22m\n\u001b[2m       - unexpected value \"暂无记录\"\u001b[22m\n\n\n  780 |   await expect(page.getByTestId(\"about-version\")).toContainText(/[0-9a-f]{6}|unknown/);\n  781 |   await expect(page.getByTestId(\"about-version\")).not.toContainText(\"Build \");\n> 782 |   await expect(page.getByTestId(\"about-released\")).toHaveText(\"2026-10-11\");\n      |                                                    ^\n  783 |   await expect(\n  784 |     page.getByRole(\"heading\", { name: \"当前版本日志\" }),\n  785 |   ).toBeVisible();\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-settings.spec.ts:782:52"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:49:03.937Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-settings-settings--e7b55-ild-info-plus-release-notes\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-settings-settings--e7b55-ild-info-plus-release-notes\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-settings.spec.ts",
+                    "column": 52,
+                    "line": 782
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "c6e52d40d6f8694b17a9-e7d9c95523958f7ecd62",
+          "file": "product-settings.spec.ts",
+          "line": 755,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "product-table.spec.ts",
+      "file": "product-table.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "last cell Tab adds a row and the table keeps its identity across reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2741,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:49:10.966Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-501720ac2816e9a9fcea",
+          "file": "product-table.spec.ts",
+          "line": 177,
+          "column": 1
+        },
+        {
+          "title": "copy and paste inside cells and plain/TSV paste never produce an unsaveable document",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 5,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 5957,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m1\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" locator('.eotion-editor-content .tiptap').getByText('E', { exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to 1 element\u001b[22m\n\u001b[2m       - unexpected value \"1\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m1\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" locator('.eotion-editor-content .tiptap').getByText('E', { exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to 1 element\u001b[22m\n\u001b[2m       - unexpected value \"1\"\u001b[22m\n\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts:258:54",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+                      "column": 54,
+                      "line": 258
+                    },
+                    "snippet": "  256 |   await setCellSelection(page, 1, 1, 1, 1)\n  257 |   await page.keyboard.press('Control+V')\n> 258 |   await expect(body.getByText('E', { exact: true })).toHaveCount(0)\n      |                                                      ^\n  259 |   expect(await tableGrid(page)).toEqual([['A', 'B', 'C'], ['D', 'A', 'F'], ['G', 'H', 'I']])\n  260 |   await expect.poll(() => tableGridFromProps(server)[1]?.[1], { timeout: 5000 }).toBe('A')\n  261 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+                        "column": 54,
+                        "line": 258
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveCount\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m1\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveCount\" locator('.eotion-editor-content .tiptap').getByText('E', { exact: true }) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap').getByText('E', { exact: true })\u001b[22m\n\u001b[2m    14 × locator resolved to 1 element\u001b[22m\n\u001b[2m       - unexpected value \"1\"\u001b[22m\n\n\n  256 |   await setCellSelection(page, 1, 1, 1, 1)\n  257 |   await page.keyboard.press('Control+V')\n> 258 |   await expect(body.getByText('E', { exact: true })).toHaveCount(0)\n      |                                                      ^\n  259 |   expect(await tableGrid(page)).toEqual([['A', 'B', 'C'], ['D', 'A', 'F'], ['G', 'H', 'I']])\n  260 |   await expect.poll(() => tableGridFromProps(server)[1]?.[1], { timeout: 5000 }).toBe('A')\n  261 |\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts:258:54"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:49:14.131Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-table-copy-and-pas-1a9c7-duce-an-unsaveable-document\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+                    "column": 54,
+                    "line": 258
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-48312b1789ca6e50f30e",
+          "file": "product-table.spec.ts",
+          "line": 245,
+          "column": 1
+        },
+        {
+          "title": "a table nests under a toggle and cell Tab never indents the table block",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 6,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 7512,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\nExpected: \u001b[32m\"B\u001b[7mmoved\u001b[27m\"\u001b[39m\nReceived: \u001b[31m\"B\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\u001b[22m\n\u001b[2m    14 × locator resolved to <th colspan=\"1\" rowspan=\"1\">…</th>\u001b[22m\n\u001b[2m       - unexpected value \"B\"\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\nExpected: \u001b[32m\"B\u001b[7mmoved\u001b[27m\"\u001b[39m\nReceived: \u001b[31m\"B\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\u001b[22m\n\u001b[2m    14 × locator resolved to <th colspan=\"1\" rowspan=\"1\">…</th>\u001b[22m\n\u001b[2m       - unexpected value \"B\"\u001b[22m\n\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts:325:66",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+                      "column": 66,
+                      "line": 325
+                    },
+                    "snippet": "  323 |   await page.keyboard.press('End')\n  324 |   await page.keyboard.type('moved')\n> 325 |   await expect(editor(page).locator('.eotion-toggle th').nth(1)).toHaveText('Bmoved')\n      |                                                                  ^\n  326 |   expect(savedTable(server)?.parentBlockId).toBe('toggle-a')\n  327 | })\n  328 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+                        "column": 66,
+                        "line": 325
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoHaveText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator:  locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\nExpected: \u001b[32m\"B\u001b[7mmoved\u001b[27m\"\u001b[39m\nReceived: \u001b[31m\"B\"\u001b[39m\nTimeout:  5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveText\" locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1) with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.eotion-editor-content .tiptap').locator('.eotion-toggle th').nth(1)\u001b[22m\n\u001b[2m    14 × locator resolved to <th colspan=\"1\" rowspan=\"1\">…</th>\u001b[22m\n\u001b[2m       - unexpected value \"B\"\u001b[22m\n\n\n  323 |   await page.keyboard.press('End')\n  324 |   await page.keyboard.type('moved')\n> 325 |   await expect(editor(page).locator('.eotion-toggle th').nth(1)).toHaveText('Bmoved')\n      |                                                                  ^\n  326 |   expect(savedTable(server)?.parentBlockId).toBe('toggle-a')\n  327 | })\n  328 |\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts:325:66"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:49:20.962Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-table-a-table-nest-689fa-ver-indents-the-table-block\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-table-a-table-nest-689fa-ver-indents-the-table-block\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+                    "column": 66,
+                    "line": 325
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-fde7d4f839d2ac275540",
+          "file": "product-table.spec.ts",
+          "line": 306,
+          "column": 1
+        },
+        {
+          "title": "cell inline marks and hard breaks persist through save and reload",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 5905,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"bold\"\u001b[39m\nReceived string:    \u001b[31m\"{\\\"node\\\":{\\\"type\\\":\\\"table\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"A\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"B\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"C\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"D\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"E note\\\"},{\\\"type\\\":\\\"hardBreak\\\"},{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"line two\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"F\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"G\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"H\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"I\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]}]}}\"\u001b[39m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"bold\"\u001b[39m\nReceived string:    \u001b[31m\"{\\\"node\\\":{\\\"type\\\":\\\"table\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"A\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"B\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"C\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"D\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"E note\\\"},{\\\"type\\\":\\\"hardBreak\\\"},{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"line two\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"F\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"G\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"H\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"I\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]}]}}\"\u001b[39m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts:369:130",
+                    "location": {
+                      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+                      "column": 130,
+                      "line": 369
+                    },
+                    "snippet": "  367 |   await setCellSelection(page, 1, 1, 1, 1)\n  368 |   await page.keyboard.press('Control+B')\n> 369 |   await expect.poll(() => JSON.stringify(server.blocks.find((block) => block.type === 'table')?.props ?? {}), { timeout: 5000 }).toContain('bold')\n      |                                                                                                                                  ^\n  370 |   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()\n  371 |   expect(JSON.stringify(server.blocks.find((block) => block.type === 'table')?.props)).toContain('hardBreak')\n  372 |   await page.reload()"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+                        "column": 130,
+                        "line": 369
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoContain\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // indexOf\u001b[22m\n\nExpected substring: \u001b[32m\"bold\"\u001b[39m\nReceived string:    \u001b[31m\"{\\\"node\\\":{\\\"type\\\":\\\"table\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"A\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"B\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableHeader\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"C\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"D\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"E note\\\"},{\\\"type\\\":\\\"hardBreak\\\"},{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"line two\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"F\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]},{\\\"type\\\":\\\"tableRow\\\",\\\"content\\\":[{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"G\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"H\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}},{\\\"type\\\":\\\"tableCell\\\",\\\"content\\\":[{\\\"type\\\":\\\"paragraph\\\",\\\"content\\\":[{\\\"type\\\":\\\"text\\\",\\\"text\\\":\\\"I\\\"}]}],\\\"attrs\\\":{\\\"colspan\\\":1,\\\"rowspan\\\":1,\\\"colwidth\\\":null}}]}]}}\"\u001b[39m\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate\n\n  367 |   await setCellSelection(page, 1, 1, 1, 1)\n  368 |   await page.keyboard.press('Control+B')\n> 369 |   await expect.poll(() => JSON.stringify(server.blocks.find((block) => block.type === 'table')?.props ?? {}), { timeout: 5000 }).toContain('bold')\n      |                                                                                                                                  ^\n  370 |   await expect(page.getByRole('status').filter({ hasText: '已同步' })).toBeVisible()\n  371 |   expect(JSON.stringify(server.blocks.find((block) => block.type === 'table')?.props)).toContain('hardBreak')\n  372 |   await page.reload()\n    at C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts:369:130"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-20T08:49:29.758Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-table-cell-inline--71806-ist-through-save-and-reload\\test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\full-suite\\failures-current-final\\output\\product-table-cell-inline--71806-ist-through-save-and-reload\\error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\product-table.spec.ts",
+                    "column": 130,
+                    "line": 369
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "ad3d6f1b841ad1ca8fcc-5e0c60842ac8fd12c95c",
+          "file": "product-table.spec.ts",
+          "line": 357,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-20T08:48:19.098Z",
+    "duration": 77374.63500000001,
+    "expected": 4,
+    "skipped": 0,
+    "unexpected": 8,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,292 @@
+{
+  "decoder": "installed sharp ensureAlpha raw RGBA (no source PNG rewritten)",
+  "cases": [
+    {
+      "name": "timeline-all-unscheduled-desktop-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-all-unscheduled\\timeline-all-unscheduled-desktop-light.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-all-unscheduled-desktop-light.png",
+      "diffPath": null,
+      "width": 1440,
+      "height": 900,
+      "expectedRGBAHash": "bb54625cd9cca77fb8c2525a707972dae64b1fc42d001613a16330cad0de322d",
+      "actualRGBAHash": "bb54625cd9cca77fb8c2525a707972dae64b1fc42d001613a16330cad0de322d",
+      "rawDifferentPixels": 0,
+      "bounds": null,
+      "maxChannelDelta": 0,
+      "strictComparatorMessage": null,
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "timeline-desktop-dark.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-dark\\timeline-desktop-dark.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-desktop-dark.png",
+      "diffPath": null,
+      "width": 1440,
+      "height": 900,
+      "expectedRGBAHash": "c01d831a4ed7aa7340c63ac1fae8960a9e8681d9080d75fd871f16c17d3c691b",
+      "actualRGBAHash": "b51676f54af7e5814f6a288aa3c9b0eb7ab6c773f3ff49c06bd0c2e2da0eeb8c",
+      "rawDifferentPixels": 1,
+      "bounds": [
+        947,
+        462,
+        947,
+        462
+      ],
+      "maxChannelDelta": 23,
+      "strictComparatorMessage": null,
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "timeline-desktop-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-light\\timeline-desktop-light.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-desktop-light.png",
+      "diffPath": null,
+      "width": 1440,
+      "height": 900,
+      "expectedRGBAHash": "9dd73ba6bdd5e7bd76ce6e0b7414ddfc0ebbd06a18e8632ebe067d0317ba77c7",
+      "actualRGBAHash": "19de892a7c791582da47079a6df7a9d0d21dc583e8b88cf344764534abc9296b",
+      "rawDifferentPixels": 1,
+      "bounds": [
+        947,
+        462,
+        947,
+        462
+      ],
+      "maxChannelDelta": 33,
+      "strictComparatorMessage": null,
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "timeline-mobile-dark.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-90683-ontext-Timeline-mobile-dark\\timeline-mobile-dark.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-mobile-dark.png",
+      "diffPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156/timeline-mobile-dark-strict-diff.png",
+      "width": 390,
+      "height": 844,
+      "expectedRGBAHash": "d0bb66712fdf26b95ddbcbe519ee11b2d8619ea4ada7ec372868f1fcccd2b789",
+      "actualRGBAHash": "74cec18e6eb6dade83175c05cdd1ce4158a48cafd259cbb52d40a153caa838af",
+      "rawDifferentPixels": 3570,
+      "bounds": [
+        141,
+        422,
+        372,
+        607
+      ],
+      "maxChannelDelta": 201,
+      "strictComparatorMessage": "115 pixels (ratio 0.01 of all image pixels) are different.",
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "timeline-mobile-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-b1d5f-ntext-Timeline-mobile-light\\timeline-mobile-light.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-mobile-light.png",
+      "diffPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156/timeline-mobile-light-strict-diff.png",
+      "width": 390,
+      "height": 844,
+      "expectedRGBAHash": "8c2b04ec3e06a091d0b89bd0a54ca91224a7ad4c08e0bb2c98ee639a9dfe1feb",
+      "actualRGBAHash": "da76d4aa1f246b49bf2539a2e526b461fb1aef0e8e101d560ebbdf9a30299dcd",
+      "rawDifferentPixels": 1884,
+      "bounds": [
+        141,
+        422,
+        372,
+        607
+      ],
+      "maxChannelDelta": 225,
+      "strictComparatorMessage": "118 pixels (ratio 0.01 of all image pixels) are different.",
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "timeline-tablet-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-tablet-light\\timeline-tablet-light.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\timeline-visual.spec.ts-snapshots\\timeline-tablet-light.png",
+      "diffPath": null,
+      "width": 1024,
+      "height": 900,
+      "expectedRGBAHash": "ec63f8dc19e6fcbb2c978f9ad98d465484f9f351eaf9f83dbc20ce0f600781c0",
+      "actualRGBAHash": "26f2912859bda7a9434daa7c1b094612f09af99b395903ff9671970f46c394f8",
+      "rawDifferentPixels": 1,
+      "bounds": [
+        718,
+        444,
+        718,
+        444
+      ],
+      "maxChannelDelta": 33,
+      "strictComparatorMessage": null,
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "connectivity-backend-unavailable-desktop.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Connectivity-backend-unavailable-desktop\\connectivity-backend-unavailable-desktop.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\connectivity-backend-unavailable-desktop.png",
+      "diffPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156/connectivity-backend-unavailable-desktop-strict-diff.png",
+      "width": 1440,
+      "height": 900,
+      "expectedRGBAHash": "7260afdb437e374493c33dda0d3b57e90f867f1e5e03573f419bb02c874091ce",
+      "actualRGBAHash": "e44197a9709bc3ca0dd8dda28d9e38a4c4f976ad0b38c488994ef6b34dbe1761",
+      "rawDifferentPixels": 20081,
+      "bounds": [
+        490,
+        300,
+        949,
+        623
+      ],
+      "maxChannelDelta": 184,
+      "strictComparatorMessage": "319 pixels (ratio 0.01 of all image pixels) are different.",
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "page-mobile-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-mobile-light.png",
+      "diffPath": null,
+      "width": 390,
+      "height": 844,
+      "expectedRGBAHash": "a52e45a7ddff951d54c2ff66483e40f542760db6544be4942a6124ed46699851",
+      "actualRGBAHash": "a52e45a7ddff951d54c2ff66483e40f542760db6544be4942a6124ed46699851",
+      "rawDifferentPixels": 0,
+      "bounds": null,
+      "maxChannelDelta": 0,
+      "strictComparatorMessage": null,
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "page-desktop-dark.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-dark\\page-desktop-dark.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-desktop-dark.png",
+      "diffPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156/page-desktop-dark-strict-diff.png",
+      "width": 1440,
+      "height": 900,
+      "expectedRGBAHash": "25b5d394151c32652df866e816e6dcb4cef2f16fbe35d3b6e35f03f5e6c09a8c",
+      "actualRGBAHash": "5de393ac4299cf969063fe624b81e7ef9b342eaa9eb060029e040759bc3176eb",
+      "rawDifferentPixels": 8545,
+      "bounds": [
+        10,
+        0,
+        1425,
+        899
+      ],
+      "maxChannelDelta": 179,
+      "strictComparatorMessage": "1009 pixels (ratio 0.01 of all image pixels) are different.",
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "page-desktop-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-light\\page-desktop-light.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-desktop-light.png",
+      "diffPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156/page-desktop-light-strict-diff.png",
+      "width": 1440,
+      "height": 900,
+      "expectedRGBAHash": "d0f5251e2cd20a746e6f5e97ae4e89e91ad628559cbbad05d28384a8a6eac2a4",
+      "actualRGBAHash": "b1ff4af16338bca5b936a9e57750878e56df1482045292f07b9f4642775dedf5",
+      "rawDifferentPixels": 8512,
+      "bounds": [
+        10,
+        0,
+        1425,
+        899
+      ],
+      "maxChannelDelta": 163,
+      "strictComparatorMessage": "1276 pixels (ratio 0.01 of all image pixels) are different.",
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "page-tablet-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-tablet-light\\page-tablet-light.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\page-tablet-light.png",
+      "diffPath": null,
+      "width": 1024,
+      "height": 900,
+      "expectedRGBAHash": "41394761dc891f21ef5675e179466af355e6bb3ec3012476c0a1f405c1f2e58a",
+      "actualRGBAHash": "41394761dc891f21ef5675e179466af355e6bb3ec3012476c0a1f405c1f2e58a",
+      "rawDifferentPixels": 0,
+      "bounds": null,
+      "maxChannelDelta": 0,
+      "strictComparatorMessage": null,
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "settings-desktop-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-desktop-light\\settings-desktop-light.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-desktop-light.png",
+      "diffPath": null,
+      "width": 1440,
+      "height": 900,
+      "expectedRGBAHash": "e6d546d7cf37d4073a3509cf36d1a5e53aae6290939bd352caf91492a6521074",
+      "actualRGBAHash": "e6d546d7cf37d4073a3509cf36d1a5e53aae6290939bd352caf91492a6521074",
+      "rawDifferentPixels": 0,
+      "bounds": null,
+      "maxChannelDelta": 0,
+      "strictComparatorMessage": null,
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    },
+    {
+      "name": "settings-profile-mobile-light.png",
+      "actualPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light.png",
+      "expectedPath": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\visual-regression.spec.ts-snapshots\\settings-profile-mobile-light.png",
+      "diffPath": null,
+      "width": 390,
+      "height": 844,
+      "expectedRGBAHash": "1502403c03e76130a3757aebb3cf11b56104ba951b39cbb242e605894f68311a",
+      "actualRGBAHash": "1502403c03e76130a3757aebb3cf11b56104ba951b39cbb242e605894f68311a",
+      "rawDifferentPixels": 0,
+      "bounds": null,
+      "maxChannelDelta": 0,
+      "strictComparatorMessage": null,
+      "comparator": {
+        "threshold": 0.2,
+        "maxDiffPixels": 0
+      },
+      "repeatByteIdentical": true
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "ProcessId": 54984,
+  "ParentProcessId": 61892,
+  "ExecutablePath": "C:\\Users\\31250\\.vite-plus\\current\\bin\\vp.exe",
+  "CommandLine": "\"C:\\Users\\31250\\.vite-plus\\current\\bin\\vp.exe\" C:/Users/31250/Work/Eotion/apps/web/node_modules/vite/bin/vite.js --host 127.0.0.1 --port 7176 --strictPort",
+  "CreationDate": "2026-10-20T19:07:21.489754+08:00"
+}

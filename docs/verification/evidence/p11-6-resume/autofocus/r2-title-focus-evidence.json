@@ -1,0 +1,108 @@
+{
+  "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\product\\test-results\\product-database-P11-3A-dr-c93c7-out-opening-a-second-drawer\\trace.zip",
+  "originalFailure": "product-database.spec.ts:8606 title expected Edited record title, api.pages actual Identity row; before drag and intended body edits",
+  "timeline": [
+    {
+      "at": 562225.387,
+      "event": "native fill starts",
+      "callId": "call@24116",
+      "target": "record title textbox",
+      "value": "Edited record title"
+    },
+    {
+      "at": 562239.95,
+      "event": "fill action snapshot",
+      "titleValue": "Identity row"
+    },
+    {
+      "at": 562266.558,
+      "event": "fill after snapshot",
+      "body": "Edited record titleIdentity body",
+      "editorClass": "tiptap ProseMirror ProseMirror-focused"
+    },
+    {
+      "at": 562269.645,
+      "event": "native title textbox Tab starts",
+      "callId": "call@24118"
+    },
+    {
+      "at": 562275.912,
+      "event": "Tab before snapshot",
+      "titleValue": "Identity row"
+    },
+    {
+      "at": 562295.506,
+      "event": "native Tab completes"
+    }
+  ],
+  "network": {
+    "titlePatchCount": 0,
+    "pageUpsertCount": 0,
+    "bodyWrite": {
+      "id": "dRfpAeCGhC7m5QpQG3AUl",
+      "clientId": "KSeOeDlUDGy6HXoN_qHD1",
+      "sequence": 1,
+      "workspaceId": "database-workspace",
+      "createdAt": "2026-10-13T00:00:00.000Z",
+      "kind": "block.upsert",
+      "payload": {
+        "id": "p113a-identity-body",
+        "pageId": "p113a-identity-page",
+        "parentBlockId": null,
+        "type": "paragraph",
+        "orderKey": "0000000000000100",
+        "props": {
+          "node": {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Edited record titleIdentity body"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "subsequentPage": {
+      "id": "p113a-identity-page",
+      "workspaceId": "database-workspace",
+      "parentPageId": null,
+      "title": "Identity row",
+      "orderKey": "0000000000000001",
+      "createdAt": "2026-09-30T00:00:00.000Z",
+      "updatedAt": "2026-09-30T00:00:00.000Z",
+      "role": "database-record"
+    },
+    "subsequentBody": {
+      "id": "p113a-identity-body",
+      "pageId": "p113a-identity-page",
+      "parentBlockId": null,
+      "type": "paragraph",
+      "orderKey": "0000000000000100",
+      "props": {
+        "node": {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Edited record titleIdentity body"
+            }
+          ]
+        }
+      },
+      "workspaceId": "database-workspace",
+      "createdAt": "2026-09-30T00:00:00.000Z",
+      "updatedAt": "2027-09-30T00:00:00.000Z"
+    }
+  },
+  "consoleErrors": [],
+  "sourcePath": [
+    "PageView.vue:520 autofocus true for named record",
+    "EotionEditor.vue:180-182 onCreate outer requestAnimationFrame -> commands.focus(start)",
+    "Tiptap core commands/focus.ts:61-69 inner requestAnimationFrame -> view.focus with only editor.isDestroyed guard",
+    "PageView.vue:499 input blur -> saveRecordTitle; unchanged title returns early :106-107"
+  ],
+  "limit": "Trace does not retain native focusin/blur/activeElement events. Body insertion and PM focused class plus native fill action verify wrong receiver; exact focus transition source still needs deterministic instrumented reproduction.",
+  "suggestedBoundary": "Product editor initial autofocus ownership/cancellation; do not modify title persistence or Timeline mutation logic; do not fix solely by test waiting."
+}

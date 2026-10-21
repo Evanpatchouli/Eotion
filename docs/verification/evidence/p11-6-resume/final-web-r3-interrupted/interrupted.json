@@ -1,0 +1,15 @@
+{
+  "status": "interrupted",
+  "reason": "unknown",
+  "completeGates": [
+    "typecheck",
+    "build",
+    "logic-theme"
+  ],
+  "incompleteGates": [
+    "product",
+    "database",
+    "visual"
+  ],
+  "note": "Product has early logs but no final summary; do not interpret as complete."
+}

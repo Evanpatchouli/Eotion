@@ -1,0 +1,13 @@
+{
+  "source": "Independent Chrome DOM probe output captured before connector separation; script: probe-offscreen-hit.mts; Timeline visual fixture; Asia/Shanghai; month scale; coarse pointer",
+  "viewport": { "width": 390, "height": 844 },
+  "recordId": "timeline-integration",
+  "arrow": { "left": 333, "right": 369, "top": 476, "bottom": 512 },
+  "connector": { "left": 350, "right": 378, "top": 498, "bottom": 518 },
+  "overlap": { "left": 350, "right": 369, "top": 498, "bottom": 512 },
+  "hits": {
+    "arrowCenter": { "x": 351, "y": 494, "testId": "timeline-offscreen-right" },
+    "connectorCenter": { "x": 364, "y": 508, "testId": "timeline-dependency-handle" },
+    "overlapCenter": { "x": 359.5, "y": 505, "testId": "timeline-dependency-handle" }
+  }
+}

@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+const base='C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d';
+const sourceBytes=fs.readFileSync('C:/Users/31250/Work/Eotion/apps/web/tests/product-sync.spec.ts');
+const source=sourceBytes.toString('utf8');
+const reportBytes=fs.readFileSync(base+'/final-web/product/results.json');const report=JSON.parse(reportBytes.toString('utf8'));
+const found=[];function walk(x){if(x&&typeof x==='object'){if(x.title==='a second client pulls sequential changes and remote deletion removes local pages')found.push(x);for(const v of Object.values(x))if(typeof v==='object')walk(v)}}walk(report);
+const result=found[0].tests[0].results[0];
+const literal='还没有页面';
+const cp=s=>Array.from(s).map(ch=>'U+'+ch.codePointAt(0).toString(16).toUpperCase().padStart(4,'0'));
+const fields={errorMessage:result.error.message,errorSnippet:result.error.snippet,errorsMessage:result.errors[0].message,sourceLine494:source.replace(/\r\n/g,'\n').split('\n')[493]};
+const summary=Object.fromEntries(Object.entries(fields).map(([name,text])=>{const match=text.match(/getByText\('([^']+)'\)/);return [name,{literal:match?.[1],literalCodepoints:match?cp(match[1]):[],containsUfffd:text.includes('\uFFFD'),countUfffd:Array.from(text).filter(c=>c==='\uFFFD').length}]}));
+const index=sourceBytes.indexOf(Buffer.from(literal,'utf8'));
+const output={expectedLiteral:literal,expectedCodepoints:cp(literal),expectedUtf8Hex:Buffer.from(literal,'utf8').toString('hex'),sourceFirstLiteralByteOffset:index,sourceLiteralByteHex:sourceBytes.subarray(index,index+Buffer.byteLength(literal)).toString('hex'),reportRawUfffdUtf8Count:reportBytes.toString('hex').split('efbfbd').length-1,sourceRawUfffdUtf8Count:sourceBytes.toString('hex').split('efbfbd').length-1,fields:summary};
+fs.writeFileSync(base+'/sync-startup-probe/encoding-audit.json',JSON.stringify(output,null,2));
+console.log(JSON.stringify(output,null,2));

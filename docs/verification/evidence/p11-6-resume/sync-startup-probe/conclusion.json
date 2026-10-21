@@ -1,0 +1,59 @@
+{
+  "status": "原正式 Product 首屏纯白原因仍未知；未宣称修复或历史失败",
+  "originalFailure": {
+    "test": "a second client pulls sequential changes and remote deletion removes local pages",
+    "originalAssertion": "product-sync.spec.ts:494 first-page empty-workspace assertion",
+    "assertionTimeoutMs": 5000,
+    "secondClientReached": false
+  },
+  "observedRuns": [
+    {
+      "run": "executed/current-single",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "run": "executed/current-full-sync",
+      "pass": 42,
+      "fail": 0
+    },
+    {
+      "run": "baseline-executed/baseline-single",
+      "pass": 1,
+      "fail": 0
+    },
+    {
+      "run": "baseline-executed/baseline-full-sync",
+      "pass": 42,
+      "fail": 0
+    }
+  ],
+  "nonProductLaunchFailures": [
+    {
+      "run": "current-single",
+      "reason": "pnpm 11 engine mismatch before browser startup",
+      "countAsProductFail": false
+    },
+    {
+      "run": "direct/current-single",
+      "reason": "anchored grep did not match full Playwright test name; no browser/test executed",
+      "countAsProductFail": false
+    }
+  ],
+  "baseline": {
+    "commit": "ff0901c7545c9bc1addad9114cc1d41492a52eb3",
+    "verifiedFiles": 16,
+    "sourceEquivalence": "LF normalization matches git blob; raw SHA differences are CRLF line endings",
+    "syncSpecOverlay": "no semantic difference from ff source",
+    "buildPerformed": false,
+    "port": 7176,
+    "service": "retained for root/coarse task; no process stopped"
+  },
+  "limitations": [
+    "Passing diagnostic runs do not explain original white screen",
+    "No timeout/assertion/retry relaxation",
+    "Shared current Playwright/Vite CLI, archived application packages and existing dist are explicitly recorded",
+    "Original full Product raw report/log paths and hashes are pinned separately"
+  ],
+  "copyVerification": "Every copied source byte checked after copy"
+}

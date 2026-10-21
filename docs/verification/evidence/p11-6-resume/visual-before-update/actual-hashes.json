@@ -1,0 +1,42 @@
+[
+  {
+    "name": "page-mobile-light-actual.png",
+    "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light\\page-mobile-light-actual.png",
+    "sha256": "A455C3BF511C7BBB8F476EC179A25AF663CB1C710D2D12E8D36FBAB520CF9C98"
+  },
+  {
+    "name": "page-mobile-light-actual.png",
+    "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\page-mobile-light-actual.png",
+    "sha256": "A455C3BF511C7BBB8F476EC179A25AF663CB1C710D2D12E8D36FBAB520CF9C98"
+  },
+  {
+    "name": "page-tablet-light-actual.png",
+    "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light\\page-tablet-light-actual.png",
+    "sha256": "12B4D0D4F24F18AD39D34536DBF7F6435620622F1BC23F85E3CB00C378ED1322"
+  },
+  {
+    "name": "page-tablet-light-actual.png",
+    "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Page-tablet-light-repeat1\\page-tablet-light-actual.png",
+    "sha256": "12B4D0D4F24F18AD39D34536DBF7F6435620622F1BC23F85E3CB00C378ED1322"
+  },
+  {
+    "name": "settings-desktop-light-actual.png",
+    "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light\\settings-desktop-light-actual.png",
+    "sha256": "6752CEF0BA25443FA0C1DD900E6489846C26E8E760DE91CC5C2BEB165E09AD4D"
+  },
+  {
+    "name": "settings-desktop-light-actual.png",
+    "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-desktop-light-repeat1\\settings-desktop-light-actual.png",
+    "sha256": "6752CEF0BA25443FA0C1DD900E6489846C26E8E760DE91CC5C2BEB165E09AD4D"
+  },
+  {
+    "name": "settings-profile-mobile-light-actual.png",
+    "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light\\settings-profile-mobile-light-actual.png",
+    "sha256": "FE7AD87834C932A442500A24BD9AF9E8D87961820EB6ED0AFB816B55D8617D6A"
+  },
+  {
+    "name": "settings-profile-mobile-light-actual.png",
+    "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\visual-before-update\\output\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\settings-profile-mobile-light-actual.png",
+    "sha256": "FE7AD87834C932A442500A24BD9AF9E8D87961820EB6ED0AFB816B55D8617D6A"
+  }
+]

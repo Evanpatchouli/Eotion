@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-19T18:05:18.7722371+08:00",
+  "os": "Microsoft Windows 11 专业版 10.0.26200 build 26200",
+  "browser": "Google Chrome 155.0.8059.79",
+  "config": "apps/web/playwright.visual.config.ts (Desktop Chrome channel, workers=1, retries=0, viewport config 1440x900; tests override viewport)",
+  "fonts": [
+    {
+      "name": "Arial (TrueType)",
+      "installed": true
+    },
+    {
+      "name": "Microsoft YaHei & Microsoft YaHei UI (TrueType)",
+      "installed": true
+    },
+    {
+      "name": "Segoe UI (TrueType)",
+      "installed": true
+    },
+    {
+      "name": "SimSun & NSimSun (TrueType)",
+      "installed": true
+    },
+    {
+      "name": "DengXian (TrueType)",
+      "installed": true
+    },
+    {
+      "name": "SimHei (TrueType)",
+      "installed": true
+    }
+  ],
+  "run": "4 visual cases x repeatEach=2; no snapshot update; output isolated",
+  "exitCode": "1"
+}

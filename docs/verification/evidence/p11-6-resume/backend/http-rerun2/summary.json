@@ -1,0 +1,8 @@
+{
+  "command": "pnpm --filter @eotion/api test:http",
+  "reason": "Correct test fixture: seed actual Date then clear through generic mutation to obtain stored explicit null; absent-to-null is existing no-op.",
+  "exitCode": 1,
+  "startedAt": "2026-10-20T10:28:47.9094000Z",
+  "finishedAt": "2026-10-20T10:29:19.1343165Z",
+  "mongoUri": "mongodb://127.0.0.1:55479/?replicaSet=p116_dfbb4269"
+}

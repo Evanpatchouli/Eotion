@@ -1,0 +1,7 @@
+{
+  "command": "node C:/Users/31250/Work/Eotion/node_modules/.pnpm/vue-tsc@3.3.11_typescript@6.0.3/node_modules/vue-tsc/bin/vue-tsc.js --noEmit",
+  "cwd": "C:\\Users\\31250\\Work\\Eotion\\apps\\web",
+  "exitCode": 0,
+  "stdout": "typecheck.stdout.log",
+  "stderr": "typecheck.stderr.log"
+}

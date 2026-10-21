@@ -1,0 +1,106 @@
+{
+  "originalRun": "summary.json",
+  "originalHttp": "logs/api-http-real-mongo.stdout.log",
+  "httpCorrectionRuns": [
+    "http-rerun",
+    "http-rerun2",
+    "http-rerun3"
+  ],
+  "finalHttp": "http-rerun3/summary.json",
+  "results": [
+    {
+      "skipped": 0,
+      "pass": 92,
+      "fail": 0,
+      "gate": "domain",
+      "tests": 92
+    },
+    {
+      "skipped": 0,
+      "pass": 29,
+      "fail": 0,
+      "gate": "contracts",
+      "tests": 29
+    },
+    {
+      "skipped": 0,
+      "pass": 24,
+      "fail": 0,
+      "gate": "sdk",
+      "tests": 24
+    },
+    {
+      "skipped": 0,
+      "pass": 7,
+      "fail": 0,
+      "gate": "storage",
+      "tests": 7
+    },
+    {
+      "skipped": 0,
+      "pass": 16,
+      "fail": 0,
+      "gate": "api-domain",
+      "tests": 16
+    },
+    {
+      "skipped": 0,
+      "pass": 18,
+      "fail": 0,
+      "gate": "api-http",
+      "tests": 18
+    },
+    {
+      "skipped": 0,
+      "pass": 1,
+      "fail": 0,
+      "gate": "api-sync-http",
+      "tests": 1
+    },
+    {
+      "skipped": 0,
+      "pass": 24,
+      "fail": 0,
+      "gate": "api-file-http",
+      "tests": 24
+    },
+    {
+      "skipped": 0,
+      "pass": 30,
+      "fail": 0,
+      "gate": "api-mcp",
+      "tests": 30
+    },
+    {
+      "skipped": 0,
+      "pass": 1,
+      "fail": 0,
+      "gate": "api-database-performance",
+      "tests": 1
+    }
+  ],
+  "totalTests": 242,
+  "totalPassed": 242,
+  "totalFailed": 0,
+  "totalSkipped": 0,
+  "checks": {
+    "versionCheck": 0,
+    "apiBuild": 0,
+    "diffCheck": 0,
+    "apiTypecheck": 0
+  },
+  "httpRedEvidence": {
+    "final": "Reused legitimate DatabaseService.createRecord explicit-null fixture, backed by real Mongo; scheduling, GET, receipts and rollback remain real HTTP",
+    "rerun1": "New null fixture wrongly expected absent-to-null to store explicit null",
+    "original": "New test wrongly expected object for valid date-only string root wire",
+    "rerun2": "New null fixture wrongly expected generic clear to store explicit null; existing API unsets"
+  },
+  "mongoCleanup": {
+    "listenerStillOpen": false,
+    "processStillRunning": false,
+    "adminCommandExitCode": 0,
+    "pid": 59276,
+    "port": 55479
+  },
+  "excluded": "mongo-data/**"
+}

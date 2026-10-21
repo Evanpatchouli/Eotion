@@ -1,0 +1,270 @@
+[
+  {
+    "phase": "executed/current-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\executed\\current-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "testRunner",
+      "browserName": "",
+      "playwrightVersion": "1.63.0",
+      "options": {},
+      "platform": "win32",
+      "wallTime": 1792494038915,
+      "monotonicTime": 1188.186,
+      "sdkLanguage": "javascript",
+      "testTimeout": 30000,
+      "annotations": []
+    }
+  },
+  {
+    "phase": "executed/current-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\executed\\current-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "library",
+      "browserName": "chromium",
+      "playwrightVersion": "1.63.0",
+      "options": {
+        "noDefaultViewport": false,
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "ignoreHTTPSErrors": false,
+        "javaScriptEnabled": true,
+        "bypassCSP": false,
+        "locale": "en-US",
+        "offline": false,
+        "isMobile": false,
+        "hasTouch": false,
+        "colorScheme": "light",
+        "reducedMotion": "no-preference",
+        "forcedColors": "none",
+        "acceptDownloads": "accept",
+        "contrast": "no-preference",
+        "baseURL": "http://127.0.0.1:7173",
+        "serviceWorkers": "allow",
+        "selectorEngines": [],
+        "testIdAttributeName": "data-testid"
+      },
+      "platform": "win32",
+      "wallTime": 1792494039424,
+      "monotonicTime": 1697.407,
+      "sdkLanguage": "javascript",
+      "testIdAttributeName": "data-testid",
+      "channel": "chrome",
+      "title": "product-sync.spec.ts:492 \u203a a second client pulls sequential changes and remote deletion removes local pages"
+    }
+  },
+  {
+    "phase": "executed/current-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\executed\\current-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "library",
+      "browserName": "",
+      "playwrightVersion": "1.63.0",
+      "options": {},
+      "platform": "win32",
+      "wallTime": 1792494039428,
+      "monotonicTime": 1701.486,
+      "sdkLanguage": "javascript",
+      "title": "product-sync.spec.ts:492 \u203a a second client pulls sequential changes and remote deletion removes local pages"
+    }
+  },
+  {
+    "phase": "executed/current-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\executed\\current-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "library",
+      "browserName": "chromium",
+      "playwrightVersion": "1.63.0",
+      "options": {
+        "noDefaultViewport": false,
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "ignoreHTTPSErrors": false,
+        "javaScriptEnabled": true,
+        "bypassCSP": false,
+        "locale": "en-US",
+        "offline": false,
+        "isMobile": false,
+        "hasTouch": false,
+        "colorScheme": "light",
+        "reducedMotion": "no-preference",
+        "forcedColors": "none",
+        "acceptDownloads": "accept",
+        "contrast": "no-preference",
+        "baseURL": "http://127.0.0.1:7173",
+        "serviceWorkers": "allow",
+        "selectorEngines": [],
+        "testIdAttributeName": "data-testid"
+      },
+      "platform": "win32",
+      "wallTime": 1792494040832,
+      "monotonicTime": 3106.036,
+      "sdkLanguage": "javascript",
+      "testIdAttributeName": "data-testid",
+      "channel": "chrome",
+      "title": "product-sync.spec.ts:492 \u203a a second client pulls sequential changes and remote deletion removes local pages"
+    }
+  },
+  {
+    "phase": "executed/current-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\executed\\current-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "library",
+      "browserName": "",
+      "playwrightVersion": "1.63.0",
+      "options": {},
+      "platform": "win32",
+      "wallTime": 1792494040833,
+      "monotonicTime": 3107.117,
+      "sdkLanguage": "javascript",
+      "title": "product-sync.spec.ts:492 \u203a a second client pulls sequential changes and remote deletion removes local pages"
+    }
+  },
+  {
+    "phase": "baseline-executed/baseline-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\baseline-executed\\baseline-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "testRunner",
+      "browserName": "",
+      "playwrightVersion": "1.63.0",
+      "options": {},
+      "platform": "win32",
+      "wallTime": 1792494455557,
+      "monotonicTime": 1279.176,
+      "sdkLanguage": "javascript",
+      "testTimeout": 30000,
+      "annotations": []
+    }
+  },
+  {
+    "phase": "baseline-executed/baseline-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\baseline-executed\\baseline-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "library",
+      "browserName": "chromium",
+      "playwrightVersion": "1.63.0",
+      "options": {
+        "noDefaultViewport": false,
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "ignoreHTTPSErrors": false,
+        "javaScriptEnabled": true,
+        "bypassCSP": false,
+        "locale": "en-US",
+        "offline": false,
+        "isMobile": false,
+        "hasTouch": false,
+        "colorScheme": "light",
+        "reducedMotion": "no-preference",
+        "forcedColors": "none",
+        "acceptDownloads": "accept",
+        "contrast": "no-preference",
+        "baseURL": "http://127.0.0.1:7176",
+        "serviceWorkers": "allow",
+        "selectorEngines": [],
+        "testIdAttributeName": "data-testid"
+      },
+      "platform": "win32",
+      "wallTime": 1792494456032,
+      "monotonicTime": 1754.216,
+      "sdkLanguage": "javascript",
+      "testIdAttributeName": "data-testid",
+      "channel": "chrome",
+      "title": "product-sync.spec.ts:492 \u203a a second client pulls sequential changes and remote deletion removes local pages"
+    }
+  },
+  {
+    "phase": "baseline-executed/baseline-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\baseline-executed\\baseline-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "library",
+      "browserName": "",
+      "playwrightVersion": "1.63.0",
+      "options": {},
+      "platform": "win32",
+      "wallTime": 1792494456037,
+      "monotonicTime": 1758.67,
+      "sdkLanguage": "javascript",
+      "title": "product-sync.spec.ts:492 \u203a a second client pulls sequential changes and remote deletion removes local pages"
+    }
+  },
+  {
+    "phase": "baseline-executed/baseline-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\baseline-executed\\baseline-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "library",
+      "browserName": "chromium",
+      "playwrightVersion": "1.63.0",
+      "options": {
+        "noDefaultViewport": false,
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        },
+        "ignoreHTTPSErrors": false,
+        "javaScriptEnabled": true,
+        "bypassCSP": false,
+        "locale": "en-US",
+        "offline": false,
+        "isMobile": false,
+        "hasTouch": false,
+        "colorScheme": "light",
+        "reducedMotion": "no-preference",
+        "forcedColors": "none",
+        "acceptDownloads": "accept",
+        "contrast": "no-preference",
+        "baseURL": "http://127.0.0.1:7176",
+        "serviceWorkers": "allow",
+        "selectorEngines": [],
+        "testIdAttributeName": "data-testid"
+      },
+      "platform": "win32",
+      "wallTime": 1792494458491,
+      "monotonicTime": 4212.664,
+      "sdkLanguage": "javascript",
+      "testIdAttributeName": "data-testid",
+      "channel": "chrome",
+      "title": "product-sync.spec.ts:492 \u203a a second client pulls sequential changes and remote deletion removes local pages"
+    }
+  },
+  {
+    "phase": "baseline-executed/baseline-single",
+    "trace": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\sync-startup-probe\\baseline-executed\\baseline-single\\test-results\\product-sync-a-second-clie-9102c-eletion-removes-local-pages\\trace.zip",
+    "metadata": {
+      "version": 9,
+      "type": "context-options",
+      "origin": "library",
+      "browserName": "",
+      "playwrightVersion": "1.63.0",
+      "options": {},
+      "platform": "win32",
+      "wallTime": 1792494458492,
+      "monotonicTime": 4213.724,
+      "sdkLanguage": "javascript",
+      "title": "product-sync.spec.ts:492 \u203a a second client pulls sequential changes and remote deletion removes local pages"
+    }
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "sourceRoot": "C:/Users/31250/Work/Eotion",
+  "sourceSpec": "apps/web/tests/product-sync.spec.ts",
+  "purpose": "First startup failure at unchanged assertion line 494; original case and complete sync file; no retries or timeout changes",
+  "steps": [
+    {
+      "name": "current-single",
+      "grep": "^a second client pulls sequential changes and remote deletion removes local pages$"
+    },
+    {
+      "name": "current-full-sync"
+    },
+    {
+      "name": "baseline-single",
+      "condition": "Only after no current reproduction and baseline server/source identity confirmed"
+    },
+    {
+      "name": "baseline-full-sync",
+      "condition": "Same baseline identity and environment"
+    }
+  ],
+  "browserExecution": "Await root authorization; not started",
+  "sourceSha256": "d5321c6eb95ff2c3bdd1fdb9108fb46179a97be2cb75f6effdbb57659ca701ca",
+  "probeSha256": "f945f2628b32e6bf79d954542bfb8c69393f35bc416b0497504503b654095621"
+}

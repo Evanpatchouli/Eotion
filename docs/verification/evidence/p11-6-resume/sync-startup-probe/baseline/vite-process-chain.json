@@ -1,0 +1,16 @@
+[
+  {
+    "ProcessId": 61892,
+    "ParentProcessId": 62300,
+    "ExecutablePath": "C:\\Users\\31250\\.vite-plus\\bin\\node.exe",
+    "CommandLine": "\"C:\\Users\\31250\\.vite-plus\\bin\\node.exe\" C:/Users/31250/Work/Eotion/apps/web/node_modules/vite/bin/vite.js --host 127.0.0.1 --port 7176 --strictPort",
+    "CreationDate": "2026-10-20T19:07:21.411352+08:00"
+  },
+  {
+    "ProcessId": 51776,
+    "ParentProcessId": 54984,
+    "ExecutablePath": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+    "CommandLine": "\"C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe\" C:/Users/31250/Work/Eotion/apps/web/node_modules/vite/bin/vite.js --host 127.0.0.1 --port 7176 --strictPort",
+    "CreationDate": "2026-10-20T19:07:21.54857+08:00"
+  }
+]

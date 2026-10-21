@@ -1,0 +1,22 @@
+[
+  {
+    "path": "apps/web/src/views/PageView.vue",
+    "errors": []
+  },
+  {
+    "path": "apps/web/src/components/editor/EotionEditor.vue",
+    "errors": []
+  },
+  {
+    "path": "apps/web/src/components/ui/EotionProductOverlay.vue",
+    "errors": []
+  },
+  {
+    "path": "apps/web/src/components/ui/overlayFocus.ts",
+    "errors": []
+  },
+  {
+    "path": "apps/web/tests/product-database.spec.ts",
+    "errors": []
+  }
+]

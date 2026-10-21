@@ -1,0 +1,81 @@
+{
+  "createdAtUtc": "2026-10-20T11:35:34.825394+00:00",
+  "notes": [
+    "Raw failure artifacts copied byte-for-byte; derived trace-selected-actions.json is a read-only parsing convenience. trace.zip remains authoritative.",
+    "R2 Product run was still active when log bytes were captured. *.in-progress-snapshot.log are explicitly partial snapshots and must not be presented as final complete run logs.",
+    "This failure occurs before trial tap/390 viewport loop/native scroll; it is distinct from the previous scrollLeft=8074 failure and provides no evidence of a trial-tap regression.",
+    "stdout and stderr sources were captured separately; no reconstruction or editing of original logs."
+  ],
+  "files": [
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\product\\test-results\\product-database-P11-5-coa-62442-the-native-Timeline-surface\\trace.zip",
+      "destination": "failure\\trace.zip",
+      "bytes": 607486,
+      "sha256": "6e7381eeac08fa6cd1c7e1fbd0c57d914d2dcbc3254efee96d58d46850e4f801",
+      "inProgressLogSnapshot": false
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\product\\test-results\\product-database-P11-5-coa-62442-the-native-Timeline-surface\\test-failed-1.png",
+      "destination": "failure\\test-failed-1.png",
+      "bytes": 53220,
+      "sha256": "d12c1d684fba69506e8866491324f9dedb555900cc431e993c9fa50b64896f61",
+      "inProgressLogSnapshot": false
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\product\\test-results\\product-database-P11-5-coa-62442-the-native-Timeline-surface\\error-context.md",
+      "destination": "failure\\error-context.md",
+      "bytes": 413,
+      "sha256": "fdd09e9d7865c3cd50bdf0b50802921975eeb0e540ed7c6f26986287011dfb64",
+      "inProgressLogSnapshot": false
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\product\\command.json",
+      "destination": "command.json",
+      "bytes": 1123,
+      "sha256": "b2892757f688ef1ebadc6d67f53cf58eb678fc87124257e806b786c3aba01d88",
+      "inProgressLogSnapshot": false
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\product\\stdout.log",
+      "destination": "stdout.in-progress-snapshot.log",
+      "bytes": 56589,
+      "sha256": "db76065ca86237415f2fa365882a2ecf2c018fe45e97227a7a7f52d844eea8b8",
+      "inProgressLogSnapshot": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r2\\product\\stderr.log",
+      "destination": "stderr.in-progress-snapshot.log",
+      "bytes": 492,
+      "sha256": "75b7d715ce75fd1c4f45cc8693cc682e0347d7cb8ced70b0d323105b8c9f47cc",
+      "inProgressLogSnapshot": true
+    },
+    {
+      "source": "derived/local trace-selected-actions.json",
+      "destination": "trace-selected-actions.json",
+      "bytes": 126718,
+      "sha256": "20cc0fa810d41919e6bb5273dd4b9d3b0ce3c653cf13ab1a4a2d62df1e8bb05a",
+      "derived": true
+    },
+    {
+      "source": "derived/local implementation-brief.md",
+      "destination": "implementation-brief.md",
+      "bytes": 2518,
+      "sha256": "92b820e0c76c7e1985c39ba0e25466e578d9e9286a6d6c288987ad33926d162b",
+      "derived": true
+    },
+    {
+      "source": "derived/local proposed-setup.patch",
+      "destination": "proposed-setup.patch",
+      "bytes": 301,
+      "sha256": "24b77f638b1306ca2f7ead917d2f05928ea810b4ed94e3bcd5e38ac454400e4b",
+      "derived": true
+    },
+    {
+      "source": "derived/local parse-and-archive.py",
+      "destination": "parse-and-archive.py",
+      "bytes": 3672,
+      "sha256": "eab74e5eb0610e01aabc1afa2f4f225ed4432e44830d3ea4ccf1d3ee9bf1c4af",
+      "derived": true
+    }
+  ]
+}

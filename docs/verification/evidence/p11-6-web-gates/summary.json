@@ -1,0 +1,6 @@
+{
+  "webTypecheckExit": 0,
+  "webBuildExit": 0,
+  "scope": "Web production build, no desktop/mobile build",
+  "warning": "existing chunk larger than 500 kB"
+}

@@ -1,0 +1,86 @@
+{
+  "status": "S2 decision complete; hand off implementation to S1; repository/browser unchanged",
+  "problem": "Record editor delayed initial autofocus can steal title focus between native fill focus/selection and text insertion. R2 trace persists Edited record titleIdentity body as block.upsert while title remains Identity row. Protect product focus ownership; do not solve with test waits.",
+  "files": [
+    "apps/web/src/views/PageView.vue",
+    "apps/web/src/components/editor/EotionEditor.vue",
+    "apps/web/src/components/ui/EotionProductOverlay.vue",
+    "apps/web/src/components/ui/overlayFocus.ts (new private helper)",
+    "targeted existing editor/database/overlay test files as needed"
+  ],
+  "overlayFocusScope": {
+    "helpers": [
+      "withOverlayInitialFocus(root: HTMLElement, action: () => void): void",
+      "isOverlayInitialFocusTarget(target: EventTarget | null): boolean"
+    ],
+    "implementation": "Maintain a synchronous stack of overlay roots. Push before action; try action(); finally restore prior stack length. Matcher accepts Node targets contained by any active root (including root itself). No asynchronous scope, timer, isTrusted heuristic, persistent target marker, public component prop, or protocol.",
+    "drawer": "Inside existing onDrawerEnter nextTick callback, after identity/open/mode guards, cover node.showModal() (when dialog) AND subsequent focusTarget.focus() within the same synchronous root scope. Nonmodal drawer focus(node) is covered too. Keep existing transition/scroll/guards intact.",
+    "modal": "Inside existing syncSurface after nextTick and open/mode checks, cover dialog.showModal() AND subsequent focusTarget.focus() within the same synchronous dialog root scope. Native showModal focus fires synchronously and must be recognized as internal.",
+    "exclusions": "Do not mark restoreFocus(), general user/programmatic external focus, motion completion, or a whole async nextTick lifetime. Keep close/identity behavior unchanged."
+  },
+  "pageViewIntent": {
+    "field": "initialEditorFocusCancelled: ref(false), reset only on actual workspace/page identity change; not title refresh, snapshotRevision, loadBlocks, or editorRevision",
+    "prop": "Existing autofocus = recordPage && page.title !== unnamed-title && !initialEditorFocusCancelled; no new public API",
+    "events": "Install document capture listeners at PageView mount for pointerdown, keydown, beforeinput, focusin; remove at unmount. While this record initial intent is eligible, interaction cancels it. Ignore focusin only when isOverlayInitialFocusTarget(event.target) is true. A real title focus before editor creation therefore cancels; internal showModal/initial fallback title focus does not. User pointer/key/beforeinput cancel even if title was already programmatically focused and another focusin will not fire.",
+    "ownership": "Any later user claim, including body caret selection, is terminal for that page opening. Do not infer ownership from capturedActive equality at editor onCreate."
+  },
+  "editorExecution": {
+    "fields": "one pending RAF id + invalidation token; reuse existing disposed flag where appropriate",
+    "schedule": "Only onCreate schedules the existing optional autofocus once. Do not schedule again when prop later turns true.",
+    "guards": "At actual RAF execution re-read autofocus prop; reject disposed/destroyed, mismatched current editor instance, mismatched captured view/root, or disconnected root. If view.hasFocus() already true, finish without setting selection or focus, preserving user caret.",
+    "execute": "Use current state.doc and Selection.atStart(currentDoc); dispatch a current transaction with that selection and existing scroll-to-selection intent, then call view.focus() synchronously in this same owned guarded callback. Do not call commands.focus(start), whose internal second RAF escapes ownership checks.",
+    "cleanup": "autofocus false or unmount cancels pending RAF and invalidates token. Old page/editor callbacks cannot focus a new instance. Do not add raw ProseMirror dependencies; use existing @tiptap/pm/state."
+  },
+  "regressionMatrix": [
+    {
+      "mode": "desktop nonmodal drawer",
+      "scenario": "normal named record, no user intervention",
+      "expected": "body receives initial focus; title/body unchanged"
+    },
+    {
+      "mode": "Phone bottom drawer/modal dialog",
+      "scenario": "normal named record, including native showModal initial focus",
+      "expected": "body still receives initial focus; internal title fallback focus does not cancel it"
+    },
+    {
+      "mode": "desktop nonmodal drawer",
+      "scenario": "delay record-body load, focus/click title before Editor creation, then release load",
+      "expected": "initialization does not steal title; fill+Tab saves title; body remains exactly Identity body"
+    },
+    {
+      "mode": "Phone bottom drawer/modal dialog",
+      "scenario": "same user title intervention after internal showModal/fallback focus",
+      "expected": "user claim wins; no title-to-body insertion; title saves"
+    },
+    {
+      "mode": "shared editor",
+      "scenario": "establish body caret before pending callback executes",
+      "expected": "callback does not reset caret to start"
+    },
+    {
+      "mode": "record lifecycle",
+      "scenario": "close/switch/unmount while autofocus pending",
+      "expected": "old callback has no focus effect"
+    },
+    {
+      "mode": "existing behavior",
+      "scenario": "unnamed record title autofocus",
+      "expected": "title remains initial focus target"
+    }
+  ],
+  "tests": "Use controlled body-load/RAF scheduling to expose the race; preserve original P11.3A actions and all identity assertions. Do not add delay/retry/timeout changes. Test business effects: focus owner, saved title, unchanged body, caret position, stale callback rejection. Initial-overlay provenance must be exercised through real showModal, not only explicit target.focus.",
+  "minimumValidation": [
+    "targeted new ownership matrix",
+    "original P11.3A identity regression",
+    "relevant existing record-title and overlay focus/close tests",
+    "web typecheck"
+  ],
+  "invariants": [
+    "No title persistence/sync/Timeline mutation changes",
+    "No Editor/Host rewrite",
+    "No new component public API/schema/MCP/dependency/version/lock changes",
+    "Keep normal named-record body autofocus across desktop and phone modal modes",
+    "Do not cancel solely because a title was the captured active element at onCreate"
+  ],
+  "evidence": "TEMP r2-title-focus-evidence.json plus original R2 trace; original trace does not contain native focusin/activeElement telemetry, so deterministic regression should validate exact cancellation timing"
+}

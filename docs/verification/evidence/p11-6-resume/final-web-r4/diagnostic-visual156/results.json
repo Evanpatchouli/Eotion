@@ -1,0 +1,1167 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156/playwright.config.mjs",
+      "--repeat-each=2",
+      "--workers=1",
+      "--retries=0",
+      "--output",
+      "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156/test-results"
+    ],
+    "configFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\playwright.config.mjs",
+    "rootDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/final-web-r4/diagnostic-visual156",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/final-web-r4/diagnostic-visual156/test-results",
+        "repeatEach": 2,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/AppData/Local/Temp/eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d/final-web-r4/diagnostic-visual156",
+        "testIgnore": [],
+        "testMatch": [
+          "visual-regression.spec.ts",
+          "timeline-visual.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": {
+      "command": "pnpm exec vite --host 127.0.0.1 --port 7173 --strictPort",
+      "url": "http://127.0.0.1:7173",
+      "reuseExistingServer": true,
+      "timeout": 30000,
+      "cwd": "C:/Users/31250/Work/Eotion/apps/web"
+    }
+  },
+  "suites": [
+    {
+      "title": "timeline-visual.spec.ts",
+      "file": "timeline-visual.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Timeline desktop light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3164,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:22.757Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-light\\attachments\\diagnostic-actual-849a704a24210eeb0309c3b1bf8f80e9e4fbde28.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d7e6285af2ff4b80ee8b-c345e35908f3f99ba0a1",
+          "file": "timeline-visual.spec.ts",
+          "line": 30,
+          "column": 5
+        },
+        {
+          "title": "Timeline desktop dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1567,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:26.402Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-dark\\attachments\\diagnostic-actual-5bcea60de42851c30a0038d7462a46a33c0ce586.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d7e6285af2ff4b80ee8b-4598ce46ddd3579550a1",
+          "file": "timeline-visual.spec.ts",
+          "line": 34,
+          "column": 5
+        },
+        {
+          "title": "Timeline tablet light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1604,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:27.981Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-tablet-light\\attachments\\diagnostic-actual-39a75373e972fa5d60e8ebbadb9255f72ae9a9ad.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d7e6285af2ff4b80ee8b-0727df61bf57ed4f4b69",
+          "file": "timeline-visual.spec.ts",
+          "line": 38,
+          "column": 5
+        },
+        {
+          "title": "Timeline all unscheduled",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1520,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:33.017Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-all-unscheduled\\attachments\\diagnostic-actual-a87cde56dc45c10b21b2f7dceee5f30f1e813e2a.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d7e6285af2ff4b80ee8b-74fad30bdc331b138e75",
+          "file": "timeline-visual.spec.ts",
+          "line": 54,
+          "column": 5
+        },
+        {
+          "title": "Timeline desktop light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1871,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:35.357Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-light-repeat1\\attachments\\diagnostic-actual-a6a0dad7de700c3935c5f6fd592dee2981cdb9a1.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d7e6285af2ff4b80ee8b-34f234736811ab715c0e",
+          "file": "timeline-visual.spec.ts",
+          "line": 30,
+          "column": 5
+        },
+        {
+          "title": "Timeline desktop dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1969,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:37.688Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-desktop-dark-repeat1\\attachments\\diagnostic-actual-5d0338cf2e24e7fb1e94ea4717cb8c8bcf81b2c0.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d7e6285af2ff4b80ee8b-144a9a3765c5cd2f9689",
+          "file": "timeline-visual.spec.ts",
+          "line": 34,
+          "column": 5
+        },
+        {
+          "title": "Timeline tablet light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1603,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:39.667Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-tablet-light-repeat1\\attachments\\diagnostic-actual-21eed7d89867de122226b92a1802fd801eed24da.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d7e6285af2ff4b80ee8b-6b1b83478ca1920d9d56",
+          "file": "timeline-visual.spec.ts",
+          "line": 38,
+          "column": 5
+        },
+        {
+          "title": "Timeline all unscheduled",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1621,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:44.268Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-all-unscheduled-repeat1\\attachments\\diagnostic-actual-f690711aa3d8b03153a2158e1c11b84fe638cf6a.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d7e6285af2ff4b80ee8b-7467adefc333e4ace980",
+          "file": "timeline-visual.spec.ts",
+          "line": 54,
+          "column": 5
+        }
+      ],
+      "suites": [
+        {
+          "title": "Timeline mobile touch context",
+          "file": "timeline-visual.spec.ts",
+          "line": 42,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Timeline mobile light",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1980,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-21T04:30:29.595Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "diagnostic-actual",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-b1d5f-ntext-Timeline-mobile-light\\attachments\\diagnostic-actual-86569cc728e1b53c40c27a76cb7ed83de3bcf8b3.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d7e6285af2ff4b80ee8b-7870aca3dff1d5793467",
+              "file": "timeline-visual.spec.ts",
+              "line": 45,
+              "column": 7
+            },
+            {
+              "title": "Timeline mobile dark",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1424,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-21T04:30:31.584Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "diagnostic-actual",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-90683-ontext-Timeline-mobile-dark\\attachments\\diagnostic-actual-9a209564737270f49613ae90411d0ee7d3d98287.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d7e6285af2ff4b80ee8b-bee5fc25ff167d9eb473",
+              "file": "timeline-visual.spec.ts",
+              "line": 49,
+              "column": 7
+            },
+            {
+              "title": "Timeline mobile light",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1528,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-21T04:30:41.279Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "diagnostic-actual",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-b1d5f-ntext-Timeline-mobile-light-repeat1\\attachments\\diagnostic-actual-6cffb07b9cac2fe986d26506fa1129c115fe4a9d.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d7e6285af2ff4b80ee8b-f903a37dbbe790a2b6e3",
+              "file": "timeline-visual.spec.ts",
+              "line": 45,
+              "column": 7
+            },
+            {
+              "title": "Timeline mobile dark",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1441,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-21T04:30:42.818Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "diagnostic-actual",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\timeline-visual-Timeline-m-90683-ontext-Timeline-mobile-dark-repeat1\\attachments\\diagnostic-actual-b7e11c818ec5539e9b5b0f9ea6b702c1193950fd.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d7e6285af2ff4b80ee8b-237ca15098495ef22458",
+              "file": "timeline-visual.spec.ts",
+              "line": 49,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "visual-regression.spec.ts",
+      "file": "visual-regression.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Page desktop light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1405,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:46.735Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-light\\attachments\\diagnostic-actual-cd0192384c94a9c3d4188572b2134ffb83dbf304.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-256e34885571f52b8ce2",
+          "file": "visual-regression.spec.ts",
+          "line": 81,
+          "column": 5
+        },
+        {
+          "title": "Page desktop dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1252,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:48.522Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-dark\\attachments\\diagnostic-actual-3f5dffbd2de6e1687cbcbcead112b520c7969bdb.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-10d268349bce03ce8c4c",
+          "file": "visual-regression.spec.ts",
+          "line": 86,
+          "column": 5
+        },
+        {
+          "title": "Page tablet light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1617,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:49.785Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-tablet-light\\attachments\\diagnostic-actual-222e2565a5adbd5ffe18b5d7cebb94be2d36d1f5.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-61543c61b8fcac4099d2",
+          "file": "visual-regression.spec.ts",
+          "line": 92,
+          "column": 5
+        },
+        {
+          "title": "Settings desktop light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 954,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:52.535Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-desktop-light\\attachments\\diagnostic-actual-bbf46622208419ed06a6710286efdd84665e4a58.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-fde9525cafefc2b663fd",
+          "file": "visual-regression.spec.ts",
+          "line": 110,
+          "column": 5
+        },
+        {
+          "title": "Settings profile detail mobile light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 759,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:53.499Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-profile-detail-mobile-light\\attachments\\diagnostic-actual-fc796c05c62c4048f86e120e75e81a4276190173.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-4e90b7a827e3ce42d4ba",
+          "file": "visual-regression.spec.ts",
+          "line": 115,
+          "column": 5
+        },
+        {
+          "title": "Connectivity backend unavailable desktop",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 803,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:54.268Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Connectivity-backend-unavailable-desktop\\attachments\\diagnostic-actual-e4fd444f787a461623d7784161845ee847c5f260.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-51c5b666ea88b23dc98b",
+          "file": "visual-regression.spec.ts",
+          "line": 128,
+          "column": 5
+        },
+        {
+          "title": "Page desktop light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1400,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:55.926Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-light-repeat1\\attachments\\diagnostic-actual-a114368c699651ac0972443f0802fa17267e573d.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-055eaadd7853f4e988f2",
+          "file": "visual-regression.spec.ts",
+          "line": 81,
+          "column": 5
+        },
+        {
+          "title": "Page desktop dark",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1254,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:57.737Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-desktop-dark-repeat1\\attachments\\diagnostic-actual-d1fbd8f0136acd6ef56c064a028087b25ce7e3f9.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-2c2b445a53d57ac6f3ec",
+          "file": "visual-regression.spec.ts",
+          "line": 86,
+          "column": 5
+        },
+        {
+          "title": "Page tablet light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1284,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:30:59.000Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Page-tablet-light-repeat1\\attachments\\diagnostic-actual-878fe1e04458cc16e9ea370ec03db12bc3eb1cba.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-e54f867ec480cea3a8d6",
+          "file": "visual-regression.spec.ts",
+          "line": 92,
+          "column": 5
+        },
+        {
+          "title": "Settings desktop light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 939,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:31:02.004Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-desktop-light-repeat1\\attachments\\diagnostic-actual-239616d31c7aff41de581c1b20b7cb61f8252de3.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-fc41005818690c4ef843",
+          "file": "visual-regression.spec.ts",
+          "line": 110,
+          "column": 5
+        },
+        {
+          "title": "Settings profile detail mobile light",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 905,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:31:02.954Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Settings-profile-detail-mobile-light-repeat1\\attachments\\diagnostic-actual-db2ec80933b06f7cf8d393b1cacb3862a68169f8.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-cae91f72ef6d690e2460",
+          "file": "visual-regression.spec.ts",
+          "line": 115,
+          "column": 5
+        },
+        {
+          "title": "Connectivity backend unavailable desktop",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 3,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 902,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-21T04:31:03.869Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "diagnostic-actual",
+                      "contentType": "image/png",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-Connectivity-backend-unavailable-desktop-repeat1\\attachments\\diagnostic-actual-ec250c0f0d3e51125cf8b8e0c579fcc926648702.png"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "78e23c5201ba1ea12e76-2f9799ae02f14b9504c6",
+          "file": "visual-regression.spec.ts",
+          "line": 128,
+          "column": 5
+        }
+      ],
+      "suites": [
+        {
+          "title": "mobile touch context",
+          "file": "visual-regression.spec.ts",
+          "line": 98,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Page mobile light",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1113,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-21T04:30:51.412Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "diagnostic-actual",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-mobile-touch-context-Page-mobile-light\\attachments\\diagnostic-actual-5c55d9b5b9e4f2f8246f9e4da8251d608451b5ac.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-2fdbecc87cd023c2b3bd",
+              "file": "visual-regression.spec.ts",
+              "line": 101,
+              "column": 7
+            },
+            {
+              "title": "Page mobile light",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1699,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-21T04:31:00.295Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "diagnostic-actual",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-resume-dfbb4269eb4c4a6794279c34f3d9ba5d\\final-web-r4\\diagnostic-visual156\\test-results\\visual-regression-mobile-touch-context-Page-mobile-light-repeat1\\attachments\\diagnostic-actual-760272d8e6652e9dd540c1e5e8a4bc98f720aa5c.png"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "78e23c5201ba1ea12e76-4e14a5c27c96645e2ddf",
+              "file": "visual-regression.spec.ts",
+              "line": 101,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-21T04:30:22.129Z",
+    "duration": 43063.565,
+    "expected": 26,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

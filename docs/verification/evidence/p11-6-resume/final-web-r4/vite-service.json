@@ -1,0 +1,15 @@
+{
+  "exe": "C:\\Users\\31250\\.vite-plus\\bin\\node.exe",
+  "pid": 33692,
+  "owned": true,
+  "args": [
+    "C:/Users/31250/Work/Eotion/apps/web/node_modules/vite/bin/vite.js",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "7173",
+    "--strictPort"
+  ],
+  "port": 7173,
+  "started": "2026-10-21T04:29:53.6268970Z"
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "archivePath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/apps/web/node_modules",
+    "realPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\apps\\web\\node_modules"
+  },
+  {
+    "archivePath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/apps/web/node_modules/@eotion/contracts",
+    "realPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\packages\\contracts"
+  },
+  {
+    "archivePath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/apps/web/node_modules/@eotion/domain",
+    "realPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\packages\\domain"
+  },
+  {
+    "archivePath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/apps/web/node_modules/@eotion/storage",
+    "realPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\packages\\storage"
+  },
+  {
+    "archivePath": "C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/baseline-overlay/apps/web/node_modules/@eotion/sdk",
+    "realPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p116-c91e3284da1d43a4a12362d3f2d4e690\\baseline-overlay\\packages\\sdk"
+  }
+]

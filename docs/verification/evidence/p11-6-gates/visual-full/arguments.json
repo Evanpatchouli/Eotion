@@ -1,0 +1,10 @@
+[
+  "exec",
+  "playwright",
+  "test",
+  "--config=playwright.visual.config.ts",
+  "--workers=1",
+  "--retries=0",
+  "--reporter=list,json",
+  "--output=C:/Users/31250/AppData/Local/Temp/eotion-p116-c91e3284da1d43a4a12362d3f2d4e690/full-suite/visual-full/output"
+]
