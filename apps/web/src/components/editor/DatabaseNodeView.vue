@@ -2356,7 +2356,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
             <div class="eotion-database-view-create-group" role="group" aria-label="新建数据库视图">
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('table')"><EotionIcon :name="IconName.Plus" :size="16" /> 新建视图</EotionButton>
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create-list" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('list')"><EotionIcon :name="IconName.List" :size="16" /> 新建列表视图</EotionButton>
-              <EotionButton type="button" variant="ghost" class="eotion-database-view-create-board" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('board')"><EotionIcon :name="IconName.Plus" :size="16" /> 新建看板视图</EotionButton>
+              <EotionButton type="button" variant="ghost" class="eotion-database-view-create-board" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('board')"><EotionIcon :name="IconName.Board" :size="16" /> 新建看板视图</EotionButton>
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create-timeline" data-popover-item :disabled="viewBusy || views.length >= 100 && !pendingTimelineCreate" @click.stop="openTimelineDateSettings('create')"><EotionIcon :name="IconName.Appearance" :size="16" /> 新建时间线视图</EotionButton>
             </div>
           </section>
@@ -2605,8 +2605,8 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
 .eotion-database-view-name[contenteditable="true"] { cursor:text; outline:none; text-overflow:clip; }
 .eotion-database-view-action { flex:none; width:32px; padding:6px!important; opacity:0; pointer-events:none; }
 .eotion-database-view-row:hover .eotion-database-view-action,.eotion-database-view-row:focus-within .eotion-database-view-action { opacity:1; pointer-events:auto; }
-.eotion-database-view-create,.eotion-database-view-create-list,.eotion-database-view-create-board { justify-content:flex-start; color:var(--e-color-text-muted); }
-.eotion-database-view-create:hover:not(:disabled),.eotion-database-view-create:focus-visible,.eotion-database-view-create-list:hover:not(:disabled),.eotion-database-view-create-list:focus-visible,.eotion-database-view-create-board:hover:not(:disabled),.eotion-database-view-create-board:focus-visible { color:var(--e-color-text-primary); }
+.eotion-database-view-create-group > button { justify-content:flex-start; color:var(--e-color-text-muted); }
+.eotion-database-view-create-group > button:hover:not(:disabled),.eotion-database-view-create-group > button:focus-visible { color:var(--e-color-text-primary); }
 .eotion-database-view-create-group { display:grid; gap:2px; }
 .eotion-database-view-hint { color:var(--editor-muted); font-size:12px; }
 .eotion-database-view-error { color:var(--danger); }
