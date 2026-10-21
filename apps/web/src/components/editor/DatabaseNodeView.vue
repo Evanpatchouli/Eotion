@@ -2354,7 +2354,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
             </div>
             <p v-if="!views.length && !viewError" class="eotion-database-view-hint">正在加载视图…</p>
             <div class="eotion-database-view-create-group" role="group" aria-label="新建数据库视图">
-              <EotionButton type="button" variant="ghost" class="eotion-database-view-create" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('table')"><EotionIcon :name="IconName.Plus" :size="16" /> 新建视图</EotionButton>
+              <EotionButton type="button" variant="ghost" class="eotion-database-view-create" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('table')"><EotionIcon :name="IconName.Table" :size="16" /> 新建表格视图</EotionButton>
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create-list" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('list')"><EotionIcon :name="IconName.List" :size="16" /> 新建列表视图</EotionButton>
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create-board" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('board')"><EotionIcon :name="IconName.Board" :size="16" /> 新建看板视图</EotionButton>
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create-timeline" data-popover-item :disabled="viewBusy || views.length >= 100 && !pendingTimelineCreate" @click.stop="openTimelineDateSettings('create')"><EotionIcon :name="IconName.Appearance" :size="16" /> 新建时间线视图</EotionButton>

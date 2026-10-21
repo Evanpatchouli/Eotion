@@ -1850,7 +1850,7 @@ test('database UX controls render library icons instead of text glyphs', async (
   await page.keyboard.press('Escape')
   await expect(filters).toHaveCount(0)
   await table.getByRole('button', { name: '切换视图' }).click()
-  await expect(page.getByRole('group', { name: '数据库视图' }).getByRole('button', { name: '新建视图' }).locator('svg')).toHaveCount(1)
+  await expect(page.getByRole('group', { name: '数据库视图' }).getByRole('button', { name: '新建表格视图' }).locator('svg')).toHaveCount(1)
 })
 
 test('basic property type changes convert stored values and repair filters while retaining compatible sorts', async ({ page }) => {
@@ -3137,7 +3137,7 @@ test('database views create, rename, switch, delete and persist the selected ref
   await table.getByRole('button', { name: '切换视图' }).click()
   const viewsMenu = page.locator('.eotion-database-view-menu')
   await expect(viewsMenu.getByRole('button', { name: '表格视图', exact: true })).toBeVisible()
-  await viewsMenu.getByRole('button', { name: '新建视图' }).click()
+  await viewsMenu.getByRole('button', { name: '新建表格视图' }).click()
   await expect(table.getByRole('button', { name: '切换视图' })).toContainText('表格 2')
   expect(api.views).toHaveLength(2)
   expect(api.requests.some(({ method, path, payload }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`) && payload?.expectedDatabaseVersion === 1)).toBe(true)
@@ -3179,7 +3179,7 @@ test('database views create, rename, switch, delete and persist the selected ref
   expect(api.requests.some(({ method, path }) => method === 'DELETE' && path.endsWith('/views/view-root-id'))).toBe(true)
 
   await table.getByRole('button', { name: '切换视图' }).click()
-  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '新建视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '新建表格视图' }).click()
   await expect(table.getByRole('button', { name: '切换视图' })).toContainText('表格 2')
   await table.getByRole('button', { name: '切换视图' }).click()
   await page.locator('.eotion-database-view-menu .eotion-database-view-row.is-selected').hover()
@@ -4042,7 +4042,7 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
     if (transition.renderer === 'timeline') {
       await database.getByRole('button', { name: '切换视图' }).click()
       const viewMenu = page.getByRole('group', { name: '数据库视图', exact: true })
-      await expect(viewMenu.getByRole('group', { name: '新建数据库视图' }).getByRole('button')).toHaveText(['新建视图', '新建列表视图', '新建看板视图', '新建时间线视图'])
+      await expect(viewMenu.getByRole('group', { name: '新建数据库视图' }).getByRole('button')).toHaveText(['新建表格视图', '新建列表视图', '新建看板视图', '新建时间线视图'])
       await expect(viewMenu.getByRole('button', { name: '编辑视图 Timeline D' })).toBeVisible()
       await expect(viewMenu.getByRole('button', { name: '删除视图 Timeline D' })).toBeVisible()
       await page.keyboard.press('Escape')
@@ -6001,7 +6001,7 @@ test('database view selector supports accessible inline rename without switching
   await expect(menu.getByRole('button', { name: '保存名称' })).toHaveCount(0)
   const creationGroup = menu.getByRole('group', { name: '新建数据库视图', exact: true })
   await expect(creationGroup.getByRole('button')).toHaveCount(4)
-  for (const name of ['新建视图', '新建列表视图', '新建看板视图', '新建时间线视图']) {
+  for (const name of ['新建表格视图', '新建列表视图', '新建看板视图', '新建时间线视图']) {
     await expect(creationGroup.getByRole('button', { name, exact: true })).toBeVisible()
   }
   const editCurrent = currentRow.getByRole('button', { name: '编辑视图 表格视图' })
@@ -6231,7 +6231,7 @@ test('linked views keep independent server filters, multi-sort order and column 
   await expect(tables).toHaveCount(2)
   await expect(tables.nth(0).locator('tbody tr')).toHaveCount(5)
   await tables.nth(1).getByRole('button', { name: '切换视图' }).click()
-  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '新建视图' }).click()
+  await page.locator('.eotion-database-view-menu').getByRole('button', { name: '新建表格视图' }).click()
   await expect(tables.nth(1).getByRole('button', { name: '切换视图' })).toContainText('表格 2')
   await expect(tables.nth(0).getByRole('button', { name: '切换视图' })).toContainText('表格视图')
   await expect.poll(() => api.blocks.find(item => item.id === 'linked-view-two')?.props.node?.attrs).not.toEqual({ databaseId: rootDatabase.id, viewId: 'view-root-id' })
