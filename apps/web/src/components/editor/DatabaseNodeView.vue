@@ -111,6 +111,12 @@ const editingViewId = ref('')
 let editingViewElement: HTMLElement | null = null
 const composingViewName = ref(false)
 const displayItemName = (item: DatabaseViewResponse) => item.name === 'Table' ? '表格视图' : item.name
+const viewTypeIcons: Record<DatabaseViewType, IconName> = {
+  table: IconName.Table,
+  list: IconName.List,
+  board: IconName.Board,
+  timeline: IconName.Timeline,
+}
 
 async function startViewRename(item: DatabaseViewResponse, event: MouseEvent): Promise<void> {
   if (viewBusy.value) return
@@ -2348,6 +2354,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
           <section class="eotion-database-view-menu" role="group" aria-label="数据库视图" @click.stop>
             <strong>视图</strong>
             <div v-for="item in views" :key="item.id" class="eotion-database-view-row" :class="{ 'is-selected': item.id === viewId }">
+              <span class="eotion-database-view-type-icon" aria-hidden="true" @click.stop="editingViewId !== item.id && switchView(item.id)"><EotionIcon :name="viewTypeIcons[item.type]" :size="16" /></span>
               <span class="eotion-database-view-name" :role="editingViewId === item.id ? 'textbox' : 'button'" tabindex="0" :aria-label="editingViewId === item.id ? `视图名称 ${displayItemName(item)}` : undefined" :aria-current="item.id === viewId ? 'true' : undefined" :contenteditable="editingViewId === item.id ? 'true' : 'false'" :data-popover-item="editingViewId === item.id ? undefined : ''" @click.stop="editingViewId !== item.id && switchView(item.id)" @keydown="onViewNameKeydown($event, item)" @blur="finishViewRename(item)" @compositionstart="composingViewName = true" @compositionend="composingViewName = false">{{ displayItemName(item) }}</span>
               <EotionButton type="button" variant="ghost" class="eotion-database-view-action" data-popover-item :aria-label="`编辑视图 ${displayItemName(item)}`" :disabled="viewBusy" @click.stop="startViewRename(item, $event)"><EotionIcon :name="IconName.Rename" :size="16" /></EotionButton>
               <EotionButton type="button" variant="danger" class="eotion-database-view-action" data-popover-item :aria-label="`删除视图 ${displayItemName(item)}`" :disabled="viewBusy || views.length < 2" @click.stop="deleteView(item)"><EotionIcon :name="IconName.Trash" :size="16" /></EotionButton>
@@ -2357,7 +2364,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('table')"><EotionIcon :name="IconName.Table" :size="16" /> 新建表格视图</EotionButton>
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create-list" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('list')"><EotionIcon :name="IconName.List" :size="16" /> 新建列表视图</EotionButton>
               <EotionButton type="button" variant="ghost" class="eotion-database-view-create-board" data-popover-item :disabled="viewBusy || views.length >= 100" @click.stop="createView('board')"><EotionIcon :name="IconName.Board" :size="16" /> 新建看板视图</EotionButton>
-              <EotionButton type="button" variant="ghost" class="eotion-database-view-create-timeline" data-popover-item :disabled="viewBusy || views.length >= 100 && !pendingTimelineCreate" @click.stop="openTimelineDateSettings('create')"><EotionIcon :name="IconName.Appearance" :size="16" /> 新建时间线视图</EotionButton>
+              <EotionButton type="button" variant="ghost" class="eotion-database-view-create-timeline" data-popover-item :disabled="viewBusy || views.length >= 100 && !pendingTimelineCreate" @click.stop="openTimelineDateSettings('create')"><EotionIcon :name="IconName.Timeline" :size="16" /> 新建时间线视图</EotionButton>
             </div>
           </section>
         </EotionPopover>
@@ -2601,6 +2608,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
 .eotion-database-view-menu>button { justify-content:flex-start; }
 .eotion-database-view-row { display:flex; align-items:center; min-height:36px; border-radius:var(--e-radius-control); }
 .eotion-database-view-row.is-selected,.eotion-database-view-row:hover { background:var(--surface-editor-hover); }
+.eotion-database-view-type-icon { display:flex; flex:none; align-items:center; padding-left:8px; color:var(--e-color-text-muted); cursor:pointer; }
 .eotion-database-view-name { flex:1; min-width:0; padding:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
 .eotion-database-view-name[contenteditable="true"] { cursor:text; outline:none; text-overflow:clip; }
 .eotion-database-view-action { flex:none; width:32px; padding:6px!important; opacity:0; pointer-events:none; }
