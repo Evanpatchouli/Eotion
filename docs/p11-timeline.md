@@ -675,6 +675,12 @@ interface TimelineViewOptions {
 
 ### 21.2 日期来源
 
+正式 UI 创建流程：数据库视图菜单 → “新建时间线视图” → 选择日期来源 → “创建时间线”。
+确认前不创建 View；没有原生 Date 时可在配置中显式新增日期属性。已有 Timeline 通过
+“数据库设置 → 日期属性”修改来源；保存只替换 dateSource，保留其他 Timeline 设置。
+单日期属性模式支持 range 与单点；独立 Start / End 模式要求选择两个不同的日期属性，
+沿用既有只读交互边界。两种模式均不会自动给记录赋日期。
+
 - 引用稳定 Property ID，必须属于当前 Database 和 Workspace，且 `type === 'date'`。
   只接受可写入原生 Date，不接受 Formula 的 date 结果或 Rollup。
 - `date-property` 使用该 Property 的 normalized start/end；end 省略仍是单点。

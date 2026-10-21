@@ -1,0 +1,7 @@
+{
+  "pid": 1960,
+  "replicaSet": "timeline_entry_ebcd54c8",
+  "uri": "mongodb://127.0.0.1:55489/?replicaSet=timeline_entry_ebcd54c8",
+  "port": 55489,
+  "dbpath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-timeline-entry-ebcd54c8553a437bba4ec297e3fb1475\\mongo-data"
+}

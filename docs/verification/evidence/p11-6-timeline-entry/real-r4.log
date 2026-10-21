@@ -1,0 +1,48 @@
+
+> @eotion/web@0.0.1 test:timeline-real C:\Users\31250\Work\Eotion\apps\web
+> playwright test --config playwright.timeline-real.config.ts "--retries=0" "--output=C:/Users/31250/AppData/Local/Temp/eotion-timeline-entry-ebcd54c8553a437bba4ec297e3fb1475/real-r4"
+
+[WebServer] (node:59352) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] ◇ injected env (6) from .env
+[WebServer] (node:56520) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] responseMode: 'json' drops mid-call notifications. subscriptions/listen streams are always served over SSE regardless; other notifications emitted before a result are dropped.
+[WebServer] (node:43420) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:38796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:58948) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 tests\product-timeline-real.spec.ts:50:1 › creates a Timeline through the product UI and keeps its date source and scheduled record after reload (4.7s)
+
+
+  1) tests\product-timeline-real.spec.ts:50:1 › creates a Timeline through the product UI and keeps its date source and scheduled record after reload 
+
+    Error: page.evaluate: Error: The persisted database block does not reference the active Timeline view.
+        at eval (eval at evaluate (:311:30), <anonymous>:14:46)
+        at async <anonymous>:337:30
+        at eval (eval at evaluate (:311:30), <anonymous>:14:46)
+        at async <anonymous>:337:30
+        at C:\Users\31250\Work\Eotion\apps\web\tests\product-timeline-real.spec.ts:148:32
+
+    Error Context: ..\..\..\..\AppData\Local\Temp\eotion-timeline-entry-ebcd54c8553a437bba4ec297e3fb1475\real-r4\product-timeline-real-crea-de4a4-heduled-record-after-reload\error-context.md
+
+    Error Context: ..\..\..\..\AppData\Local\Temp\eotion-timeline-entry-ebcd54c8553a437bba4ec297e3fb1475\real-r4\product-timeline-real-crea-de4a4-heduled-record-after-reload\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\..\..\..\AppData\Local\Temp\eotion-timeline-entry-ebcd54c8553a437bba4ec297e3fb1475\real-r4\product-timeline-real-crea-de4a4-heduled-record-after-reload\trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace ..\..\..\..\AppData\Local\Temp\eotion-timeline-entry-ebcd54c8553a437bba4ec297e3fb1475\real-r4\product-timeline-real-crea-de4a4-heduled-record-after-reload\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\product-timeline-real.spec.ts:50:1 › creates a Timeline through the product UI and keeps its date source and scheduled record after reload 
+C:\Users\31250\Work\Eotion\apps\web:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @eotion/web@0.0.1 test:timeline-real: `playwright test --config playwright.timeline-real.config.ts "--retries=0" "--output=C:/Users/31250/AppData/Local/Temp/eotion-timeline-entry-ebcd54c8553a437bba4ec297e3fb1475/real-r4"`
+Exit status 1

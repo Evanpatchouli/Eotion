@@ -1,5 +1,15 @@
 # Handoff
 
+## 2026-10-21 Timeline 正式创建与日期配置补齐
+
+用户发现正式视图菜单缺创建入口后授权补齐。当前新增“新建时间线视图”配置 overlay、原生
+Date / Start-End 日期源、无 Date 显式新增、Timeline 设置“日期属性”编辑，复用 CRUD/CAS。
+真实 E2E 揭示新建Database期间 viewBusy 缓存 editor.isEditable=false，现复用既有响应式 observer修复。
+产品定向12/12及旧创建菜单8/8、真实构建Web→API→隔离Mongo 1/1（R5/R6）及类型/构建通过；实现提交03bfd6d。证据和漏项说明在
+docs/verification/p11-6-timeline-final-acceptance.md顶部与evidence/p11-6-timeline-entry/。
+隔离Mongo55489已shutdown、API7157/Web4175已退出；用户原Vite7173保持。无版本升级/发布，
+前次P11.6整体HOLD及P10/启动问题未在本轮解决。以下旧“阶段停止”记录为历史。
+
 ## 最新授权：提交推送并重新组织最终汇报
 
 用户在最终HOLD后明确要求提交并推送改动；该指令覆盖此前不提交门禁，验收HOLD不变。

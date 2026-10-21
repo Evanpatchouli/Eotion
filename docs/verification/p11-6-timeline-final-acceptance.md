@@ -1,5 +1,69 @@
 # P11.6 Timeline Final Acceptance
 
+## 2026-10-21 补验：正式创建入口与日期属性配置漏项
+
+用户在本地正式页面发现视图菜单没有“新建时间线视图”。复核确认旧验收遗漏了产品入口：
+Timeline 浏览器用例直接播种已配置的 View / Property / Record，验证的是已有时间线的行为，
+没有覆盖用户从表格新建 Timeline、选择日期属性并刷新恢复的完整流程。旧测试通过数不能作为
+该流程可用的证据；最终矩阵必须增加“创建与日期配置”，不能只依赖 renderer / mutation 分项。
+
+本次用户授权补齐正式入口及日期源配置，并增加不预置 Timeline 的产品回归和真实
+Web → API → 隔离 Mongo 全链路验证。验证结果在本节补记，原始各批结果与 HOLD 不追改。
+
+验收要求：创建菜单可达；确认前不创建 View；仅可选择本库原生 Date；独立 Start / End
+必须不同；无日期属性时可以显式新增；已有 Timeline 可修改日期源且保留 scale、Frozen、
+dependency 及其他 options；保存复用既有 View CAS 和 identity fence；从正式 UI 创建记录、
+安排日期、使用时间线并刷新后恢复选中的 View、日期源和日期值。取消、离线、冲突及未知
+创建结果不能造成错误切换或重复创建。
+
+真实流程首轮还暴露了前置缺陷：正式 UI 新建 Database 时，编辑器为插入引用临时
+`setEditable(false, false)`；NodeView 的 `viewBusy` 在非响应式 `editor.isEditable`
+处短路缓存，恢复可编辑后未失效。该轮 table GET 已返回 200、`data-view-ready=true`、
+编辑器 DOM `contenteditable=true`，但切换视图仍禁用直至 120 秒超时。修复复用既有
+contenteditable MutationObserver 驱动的响应式 ref，让 viewBusy 随权限恢复重新计算；
+没有通过强制点击、刷新或预置数据库绕过该失败。
+
+### 本轮补验结果：创建与日期配置 Scope PASS
+
+| 验证 | 结果 | 范围与证据 |
+| --- | --- | --- |
+| 产品浏览器回归 | **12/12 PASS** | workers=1、retries=0、skip/flaky=0；新增 5 项覆盖正式创建、无 Date 新增、取消零 View 写入、双列 distinct、options 深保留、409、unknown 同 ID 恢复及 offline / late PATCH；另含旧 View lifecycle、Board settings、A→B→A 和视图切换；[原始 JSON](evidence/p11-6-timeline-entry/mock-results.json) |
+| 旧创建菜单补充回归 | **8/8 PASS** | List / Board 正式创建、phone Board、409 换类型、unknown 同 ID 重试与跨类型保护、菜单重命名和嵌套状态；workers=1/retries=0/skip/flaky=0；[原始 JSON](evidence/p11-6-timeline-entry/legacy-creation-results.json) |
+| 真实 Web → API → Mongo E2E | **1/1 PASS** | R5 和最终 R6 均通过，最终 workers=1/retries=0/skip/flaky=0；无 route mock、无预置 Timeline、无 API 写入代替 UI；[最终 JSON](evidence/p11-6-timeline-entry/real-results.json)、[R6 日志](evidence/p11-6-timeline-entry/real-r6.log) |
+| 构建与类型 | PASS | Web typecheck/build、API build 通过；未改 Domain / Contracts / API / 数据模型 |
+| 视觉复核 | PASS（本轮两图） | 主 Agent 查看[创建配置](evidence/p11-6-timeline-entry/timeline-create-date-source.png)及[刷新后时间线](evidence/p11-6-timeline-entry/timeline-reloaded.png)；不替代原 13 图 visual gate 或用户签字 |
+| 环境与清理 | PASS | 全新 TEMP dbpath、隔离 55489 replica set 与随机测试 DB；专用配置强制显式 Mongo URI，API/Web 为 7157/4175；测试 DB 已 drop、隔离 Mongo 已 shutdown，三端口无监听，用户原 Vite 保留；[清理记录](evidence/p11-6-timeline-entry/service-cleanup.json) |
+
+真实 E2E 从注册、创建工作区和页面开始，通过斜杠菜单创建 Database；在视图菜单新增
+Timeline，并在配置中新增原生 Date 属性、确认日期源。随后切回 Table 新建记录、修改标题、
+通过 Date cell 写入浏览器当前时区当天，切回 Timeline 点击可见 bar 打开记录。只读轮询
+真实 snapshot，等待自动保存的 block.viewId 与 Timeline 一致后，再核对真实 View 的
+dateSource.propertyId、Record 日期和 Page 引用；reload 后仍为同一 View、同一 bar，
+记录可打开，日期配置仍选中原属性。
+
+首轮 R1 的真实产品失败与修复链保留：[日志](evidence/p11-6-timeline-entry/real-r1.log)、
+[trace](evidence/p11-6-timeline-entry/real-r1-trace.zip)。后续 R2 是测试非 exact 定位器误匹配
+“新增日期属性”按钮；R3 的固定未来日期完全离屏，错误地要求可见窗口内有 bar；R4 在引用
+自动保存完成前一次性读取 snapshot。分别修正为 exact 控件与非空 ID 等待、按浏览器显示时区
+当天创建可见 bar、最长 20 秒轮询真实持久引用；保留 bar / 日期 / reload 强断言，没有改产品
+渲染、时间坐标或同步规则来迎合测试。[R2](evidence/p11-6-timeline-entry/real-r2.log)、
+[R3](evidence/p11-6-timeline-entry/real-r3.log)、[R4](evidence/p11-6-timeline-entry/real-r4.log)
+及对应 trace 一并归档；R5/R6 的绿色不抹去这些红记录。
+
+运行入口：先执行 `pnpm --filter @eotion/api build` 与 `pnpm --filter @eotion/web build`，
+再显式设置 `P4_TEST_MONGODB_URI` 为隔离的 replica set URI，运行
+`pnpm --filter @eotion/web test:timeline-real --retries=0`。该配置为每次运行生成随机测试数据库，
+不会默默连接默认 27017。证据文件校验见 [SHA 清单](evidence/p11-6-timeline-entry/sha256-manifest.json)。
+
+**本漏项已补齐并补验；P11.6 总结论仍为 HOLD。** 本轮没有重跑完整 Product / Database /
+Visual 总门禁，不能将旧的 P10 缺失或启动资源错误／未归因白屏改记为通过。下方最终矩阵是
+前次验收的历史结果；“未执行整条 Web→真实 API/Mongo Timeline E2E”这一历史限制，现仅在
+本节所述创建、使用与刷新恢复范围内补上。版本仍为 0.0.1 / build 2，不升级、不发布。
+
+最终独立 reviewer 核对末态 diff、两层测试原始结果、证据 SHA/bytes 与报告边界，
+未发现新的 P1/P2 blocker；认可本漏项 Scope PASS，不据此更改 P11.6 整体 HOLD。
+实现与回归提交为 `03bfd6d`；后续仅文档与证据归档，无额外产品实现。
+
 ## 2026-10-21 最终裁定：P11.6 HOLD
 
 本节为最终权威结果；下方各批历史红绿证据保留。验收起始SHA为

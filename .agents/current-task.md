@@ -1,4 +1,26 @@
-# 当前任务：P11.6 Timeline Final Acceptance — HOLD，阶段停止
+# 当前任务：P11.6 时间线创建与日期配置漏项已补齐（Scope PASS）
+
+## 2026-10-21 用户授权的新工作
+
+补齐正式 Timeline 创建入口与日期属性配置，从正式 UI 验证创建、使用、刷新恢复，补回归并写回 P11.6 报告。P11 Final 既有 HOLD 保留；不升级版本或发布。
+
+Work Units：
+- S0 investigate：定位创建/配置 contract 与可复用 UI（scout）。
+- S0 investigate：定位产品回归和隔离真实 API/Mongo E2E 基础（scout）。
+- S2 decide：主 Agent 冻结最小 UI、日期源配置和 identity/CAS invariant。
+- S1 execute：按 Brief 实现入口与配置、回归测试及报告。
+- S0 verify：定向回归、typecheck/build、正式 UI 全链路。
+- Review：最终一次独立复核；按独立逻辑单元提交。
+
+实施与验证已完成：正式菜单创建、日期源单列/双列配置、显式新增日期、已有 Timeline 日期编辑；
+复用 View CRUD/CAS，保留 options；补 unknown 同 ID 恢复和 offline/late response fence。
+真实 E2E 发现并修复新建 Database 临时只读导致 viewBusy 非响应式缓存，已有 observer ref复用。
+产品定向12/12及旧创建菜单补充8/8、真实构建 Web/API/Mongo E2E 1/1（R5/R6均PASS）、Web typecheck/build、API build通过。
+证据位于 docs/verification/evidence/p11-6-timeline-entry/；隔离Mongo与API/Web已关闭，用户Vite保留。
+正式报告顶部记录漏项、红绿证据、补验边界；原P11.6 HOLD和0.0.1/build2保持。
+最终独立review已完成，无新增P1/P2 blocker；实现提交03bfd6d，文档与证据独立提交，无版本升级/推送/发布。
+
+以下为前次验收历史记录。
 
 ## 最后用户指令：提交并推送已验收成果
 

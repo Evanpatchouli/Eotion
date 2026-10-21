@@ -1,0 +1,10 @@
+{
+  "listeners": [],
+  "testedPorts": [
+    55489,
+    7157,
+    4175
+  ],
+  "userViteRunning": true,
+  "mongoPidRunning": false
+}
