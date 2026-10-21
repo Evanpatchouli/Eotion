@@ -15,6 +15,7 @@
     "test:visual": "playwright test --config playwright.visual.config.ts",
     "test:visual:update": "playwright test --config playwright.visual.config.ts --update-snapshots",
     "test:real-sync": "playwright test --config playwright.real.config.ts",
+    "test:timeline-real": "playwright test --config playwright.timeline-real.config.ts",
     "test:desktop-production-real": "pnpm --filter @eotion/api build && pnpm --filter @eotion/desktop build && playwright test --config playwright.desktop-production.config.ts"
   },
   "dependencies": {

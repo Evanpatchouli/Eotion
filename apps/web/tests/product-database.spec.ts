@@ -3223,6 +3223,270 @@ test('database view selector creates a List view through the existing DatabaseVi
   await expect(database.getByTestId('database-list')).toHaveCount(0)
 })
 
+test('Timeline can be created from a database view selector and keeps its date source and bar after switching and reload', async ({ page }) => {
+  const date = property('timeline-create-date', rootDatabase.id, 'Schedule', 'date')
+  const item = record('timeline-create-record', rootDatabase.id, 'timeline-create-page', {
+    'root-title': 'Timeline create record', [date.id]: { start: '2026-10-13', end: '2026-10-15' },
+  })
+  const api = await installApi(page, [
+    block('timeline-create-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties.filter(item => item.id !== 'root-date'), date], records: [item] })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Timeline create record', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+
+  const database = page.locator('#database-block-timeline-create-block')
+  const selector = database.getByRole('button', { name: '切换视图' })
+  await selector.click()
+  const menu = page.getByRole('group', { name: '数据库视图', exact: true })
+  await menu.getByRole('button', { name: '新建时间线视图' }).click()
+
+  let dialog = page.getByRole('dialog', { name: '新建时间线视图' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '日期来源' })).toHaveAttribute('data-value', 'date-property')
+  await expect(dialog.getByRole('button', { name: '日期属性', exact: true })).toHaveAttribute('data-value', date.id)
+  expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`))).toHaveLength(0)
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`))).toHaveLength(0)
+  await selector.click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '新建时间线视图' }).click()
+  dialog = page.getByRole('dialog', { name: '新建时间线视图' })
+  await page.getByRole('button', { name: '创建时间线' }).click()
+
+  const timeline = database.getByTestId('database-timeline')
+  await expect(timeline).toBeVisible()
+  await expect(timeline.getByTestId('timeline-bar')).toContainText('Timeline create record')
+  const created = api.views.find(item => item.type === 'timeline')!
+  expect(created.config.options?.timeline?.dateSource).toEqual({ mode: 'date-property', propertyId: date.id })
+  const createRequests = api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`))
+  expect(createRequests).toHaveLength(1)
+  expect(createRequests[0]?.payload).toMatchObject({ type: 'timeline', config: { options: { timeline: { dateSource: { mode: 'date-property', propertyId: date.id } } } } })
+
+  await selector.click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '表格视图', exact: true }).click()
+  await expect(database.locator('tbody')).toBeVisible()
+  await expect.poll(() => api.blocks.find(item => item.id === 'timeline-create-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: 'view-root-id' })
+  await selector.click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: created.name, exact: true }).click()
+  await expect(database.getByTestId('timeline-bar')).toContainText('Timeline create record')
+  await expect.poll(() => api.blocks.find(item => item.id === 'timeline-create-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: created.id })
+
+  await page.reload()
+  const reloadedDatabase = page.locator('#database-block-timeline-create-block')
+  await expect(reloadedDatabase.getByRole('button', { name: '切换视图' })).toContainText(created.name)
+  await expect(reloadedDatabase.getByTestId('database-timeline').getByTestId('timeline-bar')).toContainText('Timeline create record')
+  expect(api.views.find(item => item.id === created.id)?.config.options?.timeline?.dateSource).toEqual({ mode: 'date-property', propertyId: date.id })
+})
+
+test('Timeline creation adds a Date property first when the database has no Date properties', async ({ page }) => {
+  const api = await installApi(page, [
+    block('timeline-create-without-date-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [rootProperties[0]!], records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-timeline-create-without-date-block')
+  await database.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '新建时间线视图' }).click()
+
+  const dialog = page.getByRole('dialog', { name: '新建时间线视图' })
+  await expect(dialog).toContainText('当前数据库没有日期属性')
+  await expect(page.getByRole('button', { name: '创建时间线' })).toBeDisabled()
+  await dialog.getByRole('button', { name: '新增日期属性' }).click()
+  await expect.poll(() => api.properties.filter(item => item.type === 'date')).toHaveLength(1)
+  const date = api.properties.find(item => item.type === 'date')!
+  await expect(dialog.getByRole('button', { name: '日期属性', exact: true })).toHaveAttribute('data-value', date.id)
+  await expect(page.getByRole('button', { name: '创建时间线' })).toBeEnabled()
+  expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`))).toHaveLength(0)
+
+  await page.getByRole('button', { name: '创建时间线' }).click()
+  await expect(database.getByTestId('database-timeline')).toBeVisible()
+  const created = api.views.find(item => item.type === 'timeline')!
+  expect(created.config.options?.timeline?.dateSource).toEqual({ mode: 'date-property', propertyId: date.id })
+  expect(api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`)).map(item => item.payload?.type)).toEqual(['timeline'])
+})
+
+test('Timeline create recovers the same pending id when offline closes the dialog during an unknown POST', async ({ page, context }) => {
+  const date = property('timeline-unknown-date', rootDatabase.id, 'Schedule', 'date')
+  const api = await installApi(page, [
+    block('timeline-unknown-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
+  ], { databases: [rootDatabase], views: [view('view-root-id', rootDatabase.id)], properties: [...rootProperties.filter(item => item.id !== 'root-date'), date], records: [] })
+  const createAttempts: Array<{ id: string; type: string }> = []
+  let releaseFirstPost!: () => void
+  let signalFirstPost!: () => void
+  const firstPostStarted = new Promise<void>(resolve => { signalFirstPost = resolve })
+  const firstPostGate = new Promise<void>(resolve => { releaseFirstPost = resolve })
+  await page.route(url => url.pathname.endsWith(`/databases/${rootDatabase.id}/views`), async route => {
+    const request = route.request()
+    if (request.method() === 'POST') {
+      createAttempts.push(request.postDataJSON() as { id: string; type: string })
+      if (createAttempts.length === 2) {
+        await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ statusCode: 409, message: 'View already exists' }) })
+        return
+      }
+      signalFirstPost()
+      await firstPostGate
+    }
+    await route.fallback()
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-timeline-unknown-block')
+  await database.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '新建时间线视图' }).click()
+  const dialog = page.getByRole('dialog', { name: '新建时间线视图' })
+  await page.getByRole('button', { name: '创建时间线' }).click()
+  await firstPostStarted
+  expect(createAttempts).toHaveLength(1)
+  expect(createAttempts[0]?.type).toBe('timeline')
+  await context.setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+  await expect(dialog).toHaveCount(0)
+  await context.setOffline(false)
+  await page.evaluate(() => window.dispatchEvent(new Event('online')))
+  await database.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '新建时间线视图' }).click()
+  const reopenedDialog = page.getByRole('dialog', { name: '新建时间线视图' })
+  await expect(page.getByRole('button', { name: '创建时间线' })).toBeEnabled()
+  releaseFirstPost()
+  await expect.poll(() => api.views.filter(item => item.type === 'timeline')).toHaveLength(1)
+  await expect(reopenedDialog).toBeVisible()
+  await expect(page.getByRole('button', { name: '创建时间线' })).toBeEnabled()
+
+  await page.getByRole('button', { name: '创建时间线' }).click()
+  await expect(database.getByTestId('database-timeline')).toBeVisible()
+  expect(createAttempts).toHaveLength(2)
+  expect(createAttempts[1]?.id).toBe(createAttempts[0]?.id)
+  expect(createAttempts.map(item => item.type)).toEqual(['timeline', 'timeline'])
+  expect(api.views.filter(item => item.type === 'timeline')).toHaveLength(1)
+  expect(api.views.find(item => item.id === createAttempts[0]?.id)?.config.options?.timeline?.dateSource).toEqual({ mode: 'date-property', propertyId: date.id })
+})
+
+test('Timeline date settings cancel without a PATCH, save distinct date columns, and retain other View options', async ({ page }) => {
+  const start = property('timeline-settings-start', rootDatabase.id, 'Start', 'date')
+  const end = property('timeline-settings-end', rootDatabase.id, 'End', 'date')
+  const config: DatabaseViewConfig = {
+    filters: [{ propertyId: 'root-text', operator: 'contains', value: 'keep' }],
+    sorts: [{ propertyId: 'root-number', direction: 'desc' }],
+    visibleProperties: ['root-title', start.id, end.id],
+    propertyOrder: ['root-title', end.id, start.id],
+    options: {
+      futureOption: { keep: true },
+      timeline: { scale: 'week', dateSource: { mode: 'date-property', propertyId: start.id }, frozenTable: { visible: true, visibleProperties: ['root-title', start.id], propertyOrder: ['root-title', start.id] } },
+    },
+  }
+  const timelineView = view('timeline-settings-view', rootDatabase.id, 'Timeline settings', config, 'timeline')
+  const api = await installApi(page, [
+    block('timeline-settings-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
+  ], { databases: [rootDatabase], views: [timelineView], properties: [...rootProperties.filter(item => item.id !== 'root-date'), start, end], records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-timeline-settings-block')
+  await expect(database.getByTestId('database-timeline')).toBeVisible()
+
+  const openDateSettings = async () => {
+    await database.getByRole('button', { name: '数据库设置' }).click()
+    await page.getByRole('menu', { name: '数据库设置' }).getByRole('menuitem', { name: '日期属性', exact: true }).click()
+    return page.getByRole('dialog', { name: '时间线日期属性' })
+  }
+  let dialog = await openDateSettings()
+  await expect(dialog.getByRole('button', { name: '日期来源' })).toHaveAttribute('data-value', 'date-property')
+  await dialog.getByRole('button', { name: '日期来源' }).click()
+  await page.getByRole('menuitem', { name: '开始与结束日期属性' }).click()
+  await expect(dialog.getByRole('button', { name: '开始日期属性', exact: true })).toHaveAttribute('data-value', start.id)
+  await expect(dialog.getByRole('button', { name: '结束日期属性', exact: true })).toHaveAttribute('data-value', end.id)
+  await dialog.getByRole('button', { name: '开始日期属性', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'End', exact: true }).click()
+  await expect(dialog.getByRole('button', { name: '开始日期属性', exact: true })).toHaveAttribute('data-value', end.id)
+  await expect(page.getByRole('button', { name: '保存日期属性' })).toBeDisabled()
+  await dialog.getByRole('button', { name: '结束日期属性', exact: true }).click()
+  await expect(page.getByRole('menuitem', { name: 'End', exact: true })).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/views/${timelineView.id}`))).toHaveLength(0)
+  expect(api.views[0]?.config).toEqual(config)
+
+  dialog = await openDateSettings()
+  await dialog.getByRole('button', { name: '日期来源' }).click()
+  await page.getByRole('menuitem', { name: '开始与结束日期属性' }).click()
+  await dialog.getByRole('button', { name: '结束日期属性', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'End', exact: true }).click()
+  await page.getByRole('button', { name: '保存日期属性' }).click()
+  await expect.poll(() => api.views.find(item => item.id === timelineView.id)?.config.options?.timeline?.dateSource).toEqual({ mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id })
+  expect(api.views.find(item => item.id === timelineView.id)?.config.options).toEqual({
+    futureOption: { keep: true },
+    timeline: { ...config.options?.timeline, dateSource: { mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id } },
+  })
+  expect(api.views.find(item => item.id === timelineView.id)?.config.filters).toEqual(config.filters)
+  expect(api.views.find(item => item.id === timelineView.id)?.config.sorts).toEqual(config.sorts)
+  expect(api.views.find(item => item.id === timelineView.id)?.config.visibleProperties).toEqual(config.visibleProperties)
+  expect(api.views.find(item => item.id === timelineView.id)?.config.propertyOrder).toEqual(config.propertyOrder)
+  const update = api.requests.find(({ method, path }) => method === 'PATCH' && path.endsWith(`/views/${timelineView.id}`))
+  expect(update?.payload).toMatchObject({ config: { options: { futureOption: { keep: true }, timeline: { scale: 'week', frozenTable: config.options?.timeline?.frozenTable, dateSource: { mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id } } } } })
+
+  dialog = await openDateSettings()
+  await dialog.getByRole('button', { name: '日期来源' }).click()
+  await page.getByRole('menuitem', { name: '单个日期属性' }).click()
+  await dialog.getByRole('button', { name: '日期属性', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'End', exact: true }).click()
+  api.databases[0]!.version += 1
+  await page.getByRole('button', { name: '保存日期属性' }).click()
+  await expect(dialog.getByRole('alert')).toContainText('数据库或视图已变化')
+  expect(api.views.find(item => item.id === timelineView.id)?.config.options?.timeline?.dateSource).toEqual({ mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id })
+})
+
+test('Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens', async ({ page, context }) => {
+  const start = property('timeline-offline-start', rootDatabase.id, 'Start', 'date')
+  const end = property('timeline-offline-end', rootDatabase.id, 'End', 'date')
+  const timelineView = view('timeline-offline-view', rootDatabase.id, 'Timeline offline', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { dateSource: { mode: 'date-property', propertyId: start.id } } },
+  }, 'timeline')
+  const api = await installApi(page, [
+    block('timeline-offline-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
+  ], { databases: [rootDatabase], views: [timelineView], properties: [...rootProperties.filter(item => item.id !== 'root-date'), start, end], records: [] })
+  let releaseFirstPatch!: () => void
+  let signalFirstPatch!: () => void
+  let signalFirstPatchReturned!: () => void
+  const firstPatchStarted = new Promise<void>(resolve => { signalFirstPatch = resolve })
+  const firstPatchGate = new Promise<void>(resolve => { releaseFirstPatch = resolve })
+  const firstPatchReturned = new Promise<void>(resolve => { signalFirstPatchReturned = resolve })
+  await page.route(url => url.pathname.endsWith(`/databases/${rootDatabase.id}/views/${timelineView.id}`), async route => {
+    if (route.request().method() !== 'PATCH') return route.fallback()
+    signalFirstPatch()
+    await firstPatchGate
+    await route.fallback()
+    signalFirstPatchReturned()
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const database = page.locator('#database-block-timeline-offline-block')
+  await expect(database.getByTestId('database-timeline')).toBeVisible()
+  const openDateSettings = async () => {
+    await database.getByRole('button', { name: '数据库设置' }).click()
+    await page.getByRole('menu', { name: '数据库设置' }).getByRole('menuitem', { name: '日期属性', exact: true }).click()
+    return page.getByRole('dialog', { name: '时间线日期属性' })
+  }
+  const firstDialog = await openDateSettings()
+  await firstDialog.getByRole('button', { name: '日期来源' }).click()
+  await page.getByRole('menuitem', { name: '开始与结束日期属性' }).click()
+  await firstDialog.getByRole('button', { name: '结束日期属性', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'End', exact: true }).click()
+  await page.getByRole('button', { name: '保存日期属性' }).click()
+  await firstPatchStarted
+
+  await context.setOffline(true)
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')))
+  await expect(firstDialog).toHaveCount(0)
+  await context.setOffline(false)
+  await page.evaluate(() => window.dispatchEvent(new Event('online')))
+  const secondDialog = await openDateSettings()
+  releaseFirstPatch()
+  await firstPatchReturned
+  await expect(secondDialog).toBeVisible()
+  await expect(secondDialog.getByRole('button', { name: '日期来源' })).toHaveAttribute('data-value', 'date-property')
+  await expect(secondDialog.getByRole('button', { name: '日期属性', exact: true })).toHaveAttribute('data-value', start.id)
+  await expect(page.getByRole('button', { name: '保存日期属性' })).toBeEnabled()
+  await expect.poll(() => api.views.find(item => item.id === timelineView.id)?.config.options?.timeline?.dateSource).toEqual({ mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id })
+  expect(api.requests.filter(({ method, path }) => method === 'PATCH' && path.endsWith(`/views/${timelineView.id}`))).toHaveLength(1)
+})
+
 test('database view selector creates a Board view through the existing DatabaseView API', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   const api = await installApi(page, [
@@ -3778,7 +4042,7 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
     if (transition.renderer === 'timeline') {
       await database.getByRole('button', { name: '切换视图' }).click()
       const viewMenu = page.getByRole('group', { name: '数据库视图', exact: true })
-      await expect(viewMenu.getByRole('group', { name: '新建数据库视图' }).getByRole('button')).toHaveText(['新建视图', '新建列表视图', '新建看板视图'])
+      await expect(viewMenu.getByRole('group', { name: '新建数据库视图' }).getByRole('button')).toHaveText(['新建视图', '新建列表视图', '新建看板视图', '新建时间线视图'])
       await expect(viewMenu.getByRole('button', { name: '编辑视图 Timeline D' })).toBeVisible()
       await expect(viewMenu.getByRole('button', { name: '删除视图 Timeline D' })).toBeVisible()
       await page.keyboard.press('Escape')
@@ -3788,6 +4052,7 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
     if (transition.renderer === 'board') await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toBeVisible()
     else await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toHaveCount(0)
     if (transition.renderer === 'timeline') {
+      await expect(settingsMenu.getByRole('menuitem', { name: '日期属性', exact: true })).toBeVisible()
       await expect(settingsMenu.getByRole('menuitem', { name: '筛选', exact: true })).toBeVisible()
       await expect(settingsMenu.getByRole('menuitem', { name: '排序', exact: true })).toBeVisible()
     }
@@ -5735,8 +6000,8 @@ test('database view selector supports accessible inline rename without switching
   await expect(menu.getByRole('textbox', { name: '当前视图名称' })).toHaveCount(0)
   await expect(menu.getByRole('button', { name: '保存名称' })).toHaveCount(0)
   const creationGroup = menu.getByRole('group', { name: '新建数据库视图', exact: true })
-  await expect(creationGroup.getByRole('button')).toHaveCount(3)
-  for (const name of ['新建视图', '新建列表视图', '新建看板视图']) {
+  await expect(creationGroup.getByRole('button')).toHaveCount(4)
+  for (const name of ['新建视图', '新建列表视图', '新建看板视图', '新建时间线视图']) {
     await expect(creationGroup.getByRole('button', { name, exact: true })).toBeVisible()
   }
   const editCurrent = currentRow.getByRole('button', { name: '编辑视图 表格视图' })
