@@ -2,9 +2,11 @@
 
 Eotion API 已实现 User / Cookie Session 认证，以及 Workspace、Page、Block 的 application/domain 与权限入口。MCP 是同一个 NestJS/Fastify API 中的新 interface adapter，复用这些能力，不另建业务服务或直接从 Tool 查询 MongoDB。
 
-## 当前范围
+## 已实现能力与阶段边界
 
-P6 暂时只实施 MCP，主计划与验收见 [P6 MCP](../p6-mcp.md)。P6.1 提供 `eotion_list_workspaces`，P6.2 新增有界页面列表、标题搜索与正文读取；P6.3 增加页面创建与整体正文 reconcile。Resources、Prompts、Agent UI、Chat UI、automation 和完整 Token Settings UI 均不属于当前范围。
+P6 MCP Foundation / Auth、Page 读取与写入已完成，历史范围与验收见 [P6 MCP](../p6-mcp.md)。P6 的六个既有工具保持兼容。
+
+P10.2 在独立阶段中扩展 Database 只读能力，实施进度、工具契约和验收门槛见 [P10 Database MCP](../p10-database-mcp.md)。当前新增范围仅包括数据库列表、Schema、View records 查询、单条 Record 读取与 Relation 候选解析；数据库写入、Property/View 管理、数据库重命名和数据库删除不属于 P10.2。Resources、Prompts、Agent UI、Chat UI 与 automation 仍不在本阶段范围。
 
 ## 接入与身份
 

@@ -3,7 +3,7 @@ import { InjectConnection } from '@nestjs/mongoose'
 import { createHash } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { planDatabaseSchedule, SchedulingError, MAX_SCHEDULE_RECORDS } from '@eotion/domain'
-import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type FormulaExpression, type TimelineViewOptions } from '@eotion/domain'
+import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type DatabaseFilter, type DatabaseSort, type FormulaExpression, type TimelineViewOptions } from '@eotion/domain'
 import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
 import type { DatabaseRecordPageCreateRequest } from '@eotion/contracts'
 import { DatabaseCellBatchMutationRequestSchema } from '@eotion/contracts'
@@ -25,6 +25,7 @@ type ChangePropertyType = import('@eotion/contracts').DatabasePropertyTypeChange
 type CreateRecord = { id: string; pageId: string; properties: DatabaseRecord['properties'] }
 type CreateView = { id: string; name: string; type: DatabaseView['type']; config?: DatabaseViewConfig; expectedDatabaseVersion?: number }
 type WindowInput = { cursor?: string; limit: number }
+type ViewRecordsInput = WindowInput & { filters?: DatabaseFilter[]; sorts?: DatabaseSort[]; propertyIds?: string[] }
 type TableCursor = { w: string; d: string; v: string; dv: number; vv: number; ch: string; r: string; p: string }
 type DatabaseViewPropertyDependency = { viewId: string; propertyId: string; required: 'select' | 'date' | 'self-relation' }
 
@@ -124,7 +125,7 @@ export class DatabaseService {
     return this.getViewRecords(userId, workspaceId, databaseId, viewId, input, session)
   }
 
-  async getViewRecords(userId: string, workspaceId: string, databaseId: string, viewId: string, input: WindowInput, session?: ClientSession): Promise<DatabaseViewRecordsResponse> {
+  async getViewRecords(userId: string, workspaceId: string, databaseId: string, viewId: string, input: ViewRecordsInput, session?: ClientSession): Promise<DatabaseViewRecordsResponse> {
     this.validateTableWindow(input)
     const database = await this.requireDatabase(userId, workspaceId, databaseId, false, session)
     const view = await this.views.findInWorkspace(workspaceId, viewId, session)
@@ -134,8 +135,17 @@ export class DatabaseService {
     if (!session && properties.some(property => property.type === 'rollup' || property.type === 'formula')) {
       return this.transact(readSession => this.getViewRecords(userId, workspaceId, databaseId, viewId, input, readSession))
     }
-    const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
-    if (!validateDatabaseViewConfig(config, properties, view.type)) throw new ConflictException('Database view configuration is invalid; refresh and repair the view before querying it')
+    const savedConfig = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+    if (!validateDatabaseViewConfig(savedConfig, properties, view.type)) throw new ConflictException('Database view configuration is invalid; refresh and repair the view before querying it')
+    const config: DatabaseViewConfig = {
+      ...savedConfig,
+      filters: input.filters ?? savedConfig.filters,
+      sorts: input.sorts ?? savedConfig.sorts,
+    }
+    if ((input.filters !== undefined || input.sorts !== undefined) && !validateDatabaseViewConfig(config, properties, view.type)) {
+      throw new BadRequestException('Invalid database query configuration')
+    }
+    if (input.propertyIds?.some(propertyId => !properties.some(property => property.id === propertyId))) throw new BadRequestException('Invalid database property projection')
     const configHash = this.viewConfigHash(config)
     let anchor: DatabaseTableRecord | undefined
     if (input.cursor !== undefined) {
@@ -227,6 +237,28 @@ export class DatabaseService {
     return projected
   }
 
+  async getRecord(userId: string, workspaceId: string, databaseId: string, recordId: string, session?: ClientSession): Promise<DatabaseTableRecord> {
+    const database = await this.requireDatabase(userId, workspaceId, databaseId, false, session)
+    const record = await this.records.findInDatabase(workspaceId, databaseId, recordId, session)
+    if (!record) throw new NotFoundException('Database record not found')
+    const properties = await this.properties.listLimited(workspaceId, databaseId, DATABASE_MAX_PROPERTIES + 1, session)
+    if (properties.length > DATABASE_MAX_PROPERTIES) throw new ConflictException('Database exceeds the maximum of 100 properties')
+    if (!session && properties.some(property => property.type === 'rollup' || property.type === 'formula')) {
+      return this.transact(readSession => this.getRecord(userId, workspaceId, databaseId, recordId, readSession))
+    }
+    const projected = await this.projectRecords(workspaceId, [record], properties, session)
+    if (projected.length !== 1) throw new ConflictException('Record Page is missing; repair the database before reading the record')
+    const result = (await this.projectDerived(workspaceId, projected, properties, session))[0]!
+    const latestDatabase = await this.databases.findInWorkspace(workspaceId, databaseId, session)
+    const latestRecord = await this.records.findInDatabase(workspaceId, databaseId, recordId, session)
+    const latestPage = await this.pages.findInWorkspace(workspaceId, record.pageId, session)
+    if (!latestDatabase || latestDatabase.version !== database.version || !latestRecord || latestRecord.version !== record.version
+      || !latestPage || latestPage.updatedAt !== result.pageVersion) {
+      throw new ConflictException('Database record changed during read; refresh and retry')
+    }
+    return result
+  }
+
   private async projectRecords(workspaceId: string, records: DatabaseRecord[], properties: DatabaseProperty[], session?: ClientSession): Promise<DatabaseTableRecord[]> {
     const title = properties.find(property => property.type === 'title')
     if (!title) throw new BadRequestException('Database title property is missing')
@@ -312,6 +344,21 @@ export class DatabaseService {
   async listViews(userId: string, workspaceId: string, databaseId: string): Promise<DatabaseView[]> {
     await this.requireDatabase(userId, workspaceId, databaseId, false)
     return this.views.list(workspaceId, databaseId)
+  }
+
+  async getSchema(userId: string, workspaceId: string, databaseId: string): Promise<{ database: Database; properties: DatabaseProperty[]; views: DatabaseView[] }> {
+    const database = await this.requireDatabase(userId, workspaceId, databaseId, false)
+    const properties = await this.properties.listLimited(workspaceId, databaseId, DATABASE_MAX_PROPERTIES + 1)
+    if (properties.length > DATABASE_MAX_PROPERTIES) throw new ConflictException('Database exceeds the maximum of 100 properties')
+    const views = await this.views.listWindow(workspaceId, databaseId, DATABASE_MAX_VIEWS + 1)
+    if (views.length > DATABASE_MAX_VIEWS) throw new ConflictException('Database exceeds the maximum of 100 views')
+    if (properties.filter(property => property.type === 'title').length !== 1
+      || views.some(view => !validateDatabaseViewConfig(view.config ?? DEFAULT_DATABASE_VIEW_CONFIG, properties, view.type))) {
+      throw new ConflictException('Database schema is invalid; refresh and repair the database before reading it')
+    }
+    const latest = await this.databases.findInWorkspace(workspaceId, databaseId)
+    if (!latest || latest.version !== database.version) throw new ConflictException('Database changed during schema read; refresh and retry')
+    return { database, properties, views }
   }
 
   async createProperty(userId: string, workspaceId: string, databaseId: string, input: CreateProperty): Promise<{ database: Database; property: DatabaseProperty }> {

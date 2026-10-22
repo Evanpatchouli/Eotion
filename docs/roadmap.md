@@ -190,7 +190,7 @@ P9.1–P9.6 implementation COMPLETE（2026-10-13）：同一 Database 模型上�
 计划：
 
 - P10.1 Contract + Security Foundation：冻结 MCP Database DTO、工具边界、workspace scope、结果大小、分页、CAS、幂等与 mutation receipt 规则；不暴露 Mongo/Repository。
-- P10.2 Read Tools：覆盖 Database、Properties、Views、Records 的有界读取与查询，复用既有 server-side filter / sort / projection / cursor 语义。
+- P10.2 Read Tools：覆盖 Database、Properties、Views、Records 与 Relation 候选解析的有界读取；支持临时 Filter / Sort（分别整体替换对应保存配置，不写回 View），复用既有 server-side filter / sort / projection / cursor 语义。实现进度与契约见 [P10 Database MCP](p10-database-mcp.md)。
 - P10.3 Write Tools：覆盖必要的 Record / Property / View 创建与更新能力，所有写入继续经过现有领域服务、权限、事务与版本检查；Page.title 仍是 Record title 唯一来源。
 - P10.4 Final Acceptance：真实 MCP Client + HTTP/domain 回归、权限/越权、分页/限额、CAS/幂等、P6 Page MCP 兼容与 Product 回归。
 
@@ -198,7 +198,7 @@ P9.1–P9.6 implementation COMPLETE（2026-10-13）：同一 Database 模型上�
 
 - MCP 面向 `Database / Property / Record / View` 领域，不按 renderer 制造 `move_board_card` 等专用工具。
 - Board 跨列移动仍等价于更新 Select；未来 Timeline / Calendar 的移动也应落到通用属性 mutation。
-- P10 不实现 Timeline / Gallery / Calendar / Chart 专属配置，也不把 Database 数据加入 Page/Block local-first oplog。
+- P10 不新增 Timeline 专属实体或专用 mutation API；MCP 读取与查询覆盖当前已有的 Table / List / Board / Timeline 通用 View 能力。Gallery / Calendar / Chart 尚未支持，不纳入本阶段；Database 数据仍不加入 Page/Block local-first oplog。
 - Database 仍保持当前 online read/write、offline readonly 边界，除非未来单独立项改变。
 - P10 Final Acceptance 通过前不切换 0.0.2。
 

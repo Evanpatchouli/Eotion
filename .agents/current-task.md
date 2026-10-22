@@ -1,4 +1,33 @@
-# 当前任务：P11.6 启动故障专项诊断（取证结束，HOLD不变）
+# 当前任务：P10.2 Database MCP Read Tools（2026-10-22）
+
+P10.1 最终契约已获用户批准。当前在独立分支 `codex/p10.2-database-mcp-read-tools` 实施只读工具；草稿 PR：[P10.2: add database MCP read tools](https://github.com/Evanpatchouli/Eotion/pull/1)。本地 Windows / WSL 工作树未连接到当前执行环境，不能推断用户本地是否存在未提交改动。
+
+## 当前范围
+
+- 新增 `eotion_list_databases`、`eotion_get_database_schema`、`eotion_query_database`、`eotion_get_record`、`eotion_resolve_relation_records`。
+- 复用现有 `DatabaseService.getViewRecords`，临时 Filter / Sort 分别整体替换对应保存配置，不修改 View。
+- 支持 Table / List / Board / Timeline；保持 P6 六工具兼容。
+- 不做 Database / Record / Property / View 写工具，不做数据库删除，不改版本。
+- P11.6 保持 HOLD，不调查；不进入 P12。
+
+## 工作单元
+
+- [x] 只读审计远端 master、领域服务、MCP 契约、测试与相关文档。
+- [x] 增加五个工具的输入/输出契约及读取服务。
+- [x] 增加契约测试与 MCP 集成测试。
+- [x] 更新 Roadmap、P10 契约文档与检索索引。
+- [ ] 在具备项目依赖和 Mongo 测试环境的机器执行 typecheck/build/domain/http/mcp。
+- [ ] 真实 MCP Client 验收与独立 review。
+
+## 验证边界
+
+远端 master 基线为 `c574b4104baeae527d77a500463f779c55845a7b`。本次实现提交位于独立分支与草稿 PR，未合并。当前环境没有项目本地 clone，且无法从 npm registry 下载 pnpm/依赖；未执行任何测试或构建，不能标记 PASS。仓库树中未发现 GitHub Actions workflow，当前实现 commit 没有状态检查。
+
+以下保留前一项 P11.6 任务的历史取证记录，不代表重新启动该任务。
+
+---
+
+# 历史任务：P11.6 启动故障专项诊断（取证结束，HOLD不变）
 
 2026-10-22 最终实验已结束，不再启动测试。R5原目标A三次通过，R1单例通过；B脚本前5为111/111、历史实际前7为363/365（theme启动buffer与菜单定位）、实际前13为496/497（菜单定位）；R1/R5目标通过。C14文件各独立runner全部完成，只有Database252/254（Frozen内容、属性菜单），其余文件通过，所有workers1/retries0；不拼成完整Product。D原前94项一次有限复验94/94、worker0且实际顺序逐项一致，无稳定最小因果前缀。
 
