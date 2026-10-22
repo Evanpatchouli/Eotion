@@ -1,0 +1,812 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "playwright.startup-forensics.config.ts",
+      "tests/forensics--product-settings.spec.ts",
+      "--workers=1",
+      "--retries=0",
+      "--output",
+      "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-14-product-settings\\test-results"
+    ],
+    "configFile": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\playwright.startup-forensics.config.ts",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-startup-forensics-1792638528695/remaining-c-14-product-settings/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "forensics--*.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "C:\\Users\\31250\\Work\\Eotion\\tools\\startup-forensics\\reporter.mjs",
+        {
+          "runDir": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-14-product-settings"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-14-product-settings\\results.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "forensics--product-settings.spec.ts",
+      "file": "forensics--product-settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Settings uses a selected list-detail layout at 1440 and 1024 pixels",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1608,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:45.830Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-587de5ba4075b1565144",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 296,
+          "column": 1
+        },
+        {
+          "title": "390px Settings index returns to the original page",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1423,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:47.841Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-9316cf4103ab7f22d284",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 339,
+          "column": 1
+        },
+        {
+          "title": "390px Settings profile has one back control and preserves navigation state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1654,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:49.283Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-b7cf058ca4c936381f4a",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 358,
+          "column": 3
+        },
+        {
+          "title": "390px Settings appearance has one back control and preserves navigation state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1444,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:50.953Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-6d9115f91586109e5176",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 358,
+          "column": 3
+        },
+        {
+          "title": "390px Settings mcp has one back control and preserves navigation state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1898,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:52.413Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-636fd2275eef5cc725a6",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 358,
+          "column": 3
+        },
+        {
+          "title": "390px Settings workspace/general has one back control and preserves navigation state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1778,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:54.326Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-ffa4da333e5c668eb016",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 358,
+          "column": 3
+        },
+        {
+          "title": "390px Settings about has one back control and preserves navigation state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1857,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:56.118Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-e57268acae16dee6c91f",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 358,
+          "column": 3
+        },
+        {
+          "title": "390px Settings index navigates to detail with a single topbar and no overflow",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1377,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:57.989Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-e01b007a796cb4bb3c48",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 395,
+          "column": 1
+        },
+        {
+          "title": "MCP settings shows the environment endpoint and manages one-time tokens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1431,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:59.383Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-f0cde376dc2e4c6c53d2",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 452,
+          "column": 1
+        },
+        {
+          "title": "profile trims and caches the saved name; invalid and successful password changes follow the session contract",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1917,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:00.830Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-89217eac95d16bb0370d",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 473,
+          "column": 1
+        },
+        {
+          "title": "401 clears the cached identity, while 403 remains an authenticated non-offline error",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 994,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:02.762Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-1501ad243f67bb45f627",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 544,
+          "column": 1
+        },
+        {
+          "title": "cached Settings and local preferences remain usable through HTTP 500",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1210,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:03.772Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-342b6d4b2eef67e7af96",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 574,
+          "column": 3
+        },
+        {
+          "title": "cached Settings and local preferences remain usable through HTTP 502",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1231,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:04.995Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-5d801ff7329a085b5581",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 574,
+          "column": 3
+        },
+        {
+          "title": "cached Settings and local preferences remain usable through HTTP 503",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1196,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:06.242Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-107a7069ba441cc5b614",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 574,
+          "column": 3
+        },
+        {
+          "title": "cached Settings and local preferences remain usable through HTTP 504",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1193,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:07.453Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-e1a7fe650ffcd0750e2f",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 574,
+          "column": 3
+        },
+        {
+          "title": "toolbar defaults off, slash and attachment picker work, and preferences stay scoped by user and workspace",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3622,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:08.661Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-c6466c51413ec6f56e48",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 609,
+          "column": 1
+        },
+        {
+          "title": "unknown workspace has no global toolbar preference; returnTo rejects external paths and preserves valid pages",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1530,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:12.298Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-f00400e44bd491e980b6",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 691,
+          "column": 1
+        },
+        {
+          "title": "theme and toolbar controls support keyboard focus and activation in dark reduced-motion mode",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1053,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:13.843Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-186e8d7ebe32bfab67a0",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 722,
+          "column": 1
+        },
+        {
+          "title": "settings navigation ends with 软件说明 and /settings/about shows exact-version release notes or an explicit empty state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 971,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:14.912Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-8d3afe1575b5728e5c28",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 748,
+          "column": 1
+        },
+        {
+          "title": "/settings/about survives the login redirect allowlist instead of falling back to /app",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 860,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:15.898Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-f7b8fcf9ce63223129c3",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 809,
+          "column": 1
+        },
+        {
+          "title": "检查更新 compares the local build with /api/health and never downloads",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1976,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:31:16.771Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f7713055bdc354c99d1b-c45a997d80efb5fbb3a5",
+          "file": "forensics--product-settings.spec.ts",
+          "line": 821,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-22T03:30:45.158Z",
+    "duration": 34183.571,
+    "expected": 21,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

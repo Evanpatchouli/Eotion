@@ -1,0 +1,33 @@
+{
+  "id": "b-actual-prefix-07",
+  "exe": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+  "args": [
+    "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+    "test",
+    "--config",
+    "playwright.startup-forensics.config.ts",
+    "tests/forensics--product-attachments.spec.ts",
+    "tests/forensics--product-blocks.spec.ts",
+    "tests/forensics--product-content-rules.spec.ts",
+    "tests/forensics--product-database.spec.ts",
+    "tests/forensics--product-editor.spec.ts",
+    "tests/forensics--product-flow.spec.ts",
+    "tests/forensics--product-nested.spec.ts",
+    "--workers=1",
+    "--retries=0",
+    "--output",
+    "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\b-actual-prefix-07\\test-results"
+  ],
+  "cwd": "C:\\Users\\31250\\Work\\Eotion\\apps\\web",
+  "head": "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+  "started": "2026-10-21T11:11:03.626Z",
+  "raw": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\b-actual-prefix-07",
+  "observationConfig": "apps/web/playwright.startup-forensics.config.ts",
+  "trace": "retain-on-failure",
+  "workers": 1,
+  "retries": 0,
+  "runnerPid": 35016,
+  "ended": "2026-10-21T11:31:29.280Z",
+  "code": 1,
+  "signal": null
+}

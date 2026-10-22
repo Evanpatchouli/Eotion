@@ -1,0 +1,886 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "playwright.startup-forensics.config.ts",
+      "tests/forensics--product-attachments.spec.ts",
+      "--workers=1",
+      "--retries=0",
+      "--output",
+      "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-13-product-attachments\\test-results"
+    ],
+    "configFile": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\playwright.startup-forensics.config.ts",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-startup-forensics-1792638528695/remaining-c-13-product-attachments/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "forensics--*.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "C:\\Users\\31250\\Work\\Eotion\\tools\\startup-forensics\\reporter.mjs",
+        {
+          "runDir": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-13-product-attachments"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-13-product-attachments\\results.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "forensics--product-attachments.spec.ts",
+      "file": "forensics--product-attachments.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "slash image command and picker upload become one local block, sync operation and reloadable snapshot",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2629,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:29:51.056Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-233ddacf60c554186337",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 151,
+          "column": 1
+        },
+        {
+          "title": "file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2242,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:29:54.096Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-617dd61997224f434462",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 214,
+          "column": 1
+        },
+        {
+          "title": "cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1747,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:29:56.355Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-21471881f3e75ed2cdc6",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 251,
+          "column": 1
+        },
+        {
+          "title": "a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2076,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:29:58.116Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-ce86eb331d2a155233a3",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 271,
+          "column": 1
+        },
+        {
+          "title": "typing in the original empty paragraph while saving keeps the text after attachment commit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2175,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:00.207Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-931d714d334722efcca7",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 309,
+          "column": 1
+        },
+        {
+          "title": "a later selected file completing first leaves no leftover empty paragraph when the first upload fails",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2137,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:02.396Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-9684ddd01fa80143cfb0",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 360,
+          "column": 1
+        },
+        {
+          "title": "failed save restores user text changed in the provisional attachment block and queues cleanup",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1401,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:04.546Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-e5d0b065a9790987afa9",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 392,
+          "column": 1
+        },
+        {
+          "title": "cancelling the first empty-slot upload while the second saves leaves no empty gap",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2009,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:05.962Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-696551bded7976085134",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 443,
+          "column": 1
+        },
+        {
+          "title": "file picker remains usable when crypto.randomUUID is unavailable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1715,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:07.986Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-7cc8739c733155da0eb5",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 486,
+          "column": 1
+        },
+        {
+          "title": "multiple files that finish out of order stay in their selected document order",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2367,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:09.715Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-f8de34a4d2c6ecd49ebc",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 499,
+          "column": 1
+        },
+        {
+          "title": "a late upload result from the previous page never enters the newly opened page",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1656,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:12.096Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-9c3d030971b223be330d",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 518,
+          "column": 1
+        },
+        {
+          "title": "413 shows a readable upload error and retry control",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1656,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:13.764Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-5f45ad1d938205363809",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 536,
+          "column": 1
+        },
+        {
+          "title": "upload 401 clears authenticated identity and returns to login",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1705,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:15.434Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-779473cda4dcc79ae8ce",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 546,
+          "column": 1
+        },
+        {
+          "title": "an attachment remains durable locally when its normal block sync receives 503",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2734,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:17.155Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-895844698a1d75bd7943",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 556,
+          "column": 1
+        },
+        {
+          "title": "a local attachment block upsert failure compensates the successful upload through the cleanup queue",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1751,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:19.903Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-ce35f5f7cde7eafeb20c",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 569,
+          "column": 1
+        },
+        {
+          "title": "an upload response received during IME composition waits before inserting its attachment block",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2856,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:21.671Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-e180ae79e839e0ec9179",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 596,
+          "column": 1
+        },
+        {
+          "title": "deleting an attachment stays permanent through undo and redo while ordinary text undo still works",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2816,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:24.544Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "editor-state-after-attachment-undo-redo.json",
+                      "contentType": "application/json",
+                      "body": "ewogICJlZGl0b3JUZXh0IjogImtlZXAiLAogICJlZGl0b3JIdG1sIjogIjxzcGFuIGNsYXNzPVwiZW90aW9uLWJsb2NrLWRyYWctYW5jaG9yIFByb3NlTWlycm9yLXdpZGdldFwiIGNvbnRlbnRlZGl0YWJsZT1cImZhbHNlXCIgZGF0YS1lb3Rpb24tYmxvY2stZm9jdXNlZD1cImZhbHNlXCIgc3R5bGU9XCJ0b3A6IDBweDtcIj48YnV0dG9uIHR5cGU9XCJidXR0b25cIiBjbGFzcz1cImVvdGlvbi1ibG9jay1pbnNlcnQtYnV0dG9uXCIgY29udGVudGVkaXRhYmxlPVwiZmFsc2VcIiBhcmlhLWxhYmVsPVwi5Zyo5Yy65Z2X5LiL5pa55o+S5YWl5Yy65Z2XXCIgZGF0YS1lb3Rpb24tYmxvY2staW5zZXJ0PVwidW5kby10ZXh0XCI+PHN2ZyB3aWR0aD1cIjE4XCIgaGVpZ2h0PVwiMThcIiB2aWV3Qm94PVwiMCAwIDI0IDI0XCIgZmlsbD1cIm5vbmVcIiBzdHJva2U9XCJjdXJyZW50Q29sb3JcIiBzdHJva2Utd2lkdGg9XCIyXCIgc3Ryb2tlLWxpbmVjYXA9XCJyb3VuZFwiIHN0cm9rZS1saW5lam9pbj1cInJvdW5kXCIgYXJpYS1oaWRkZW49XCJ0cnVlXCI+PHBhdGggZD1cIk01IDEyaDE0XCI+PC9wYXRoPjxwYXRoIGQ9XCJNMTIgNXYxNFwiPjwvcGF0aD48L3N2Zz48L2J1dHRvbj48YnV0dG9uIHR5cGU9XCJidXR0b25cIiBjbGFzcz1cImVvdGlvbi1ibG9jay1kcmFnLWhhbmRsZVwiIGNvbnRlbnRlZGl0YWJsZT1cImZhbHNlXCIgZHJhZ2dhYmxlPVwidHJ1ZVwiIGFyaWEtbGFiZWw9XCLmi5bliqjljLrlnZdcIiBkYXRhLWVvdGlvbi1kcmFnLWhhbmRsZT1cInVuZG8tdGV4dFwiPjxzdmcgd2lkdGg9XCIxOFwiIGhlaWdodD1cIjE4XCIgdmlld0JveD1cIjAgMCAyNCAyNFwiIGZpbGw9XCJub25lXCIgc3Ryb2tlPVwiY3VycmVudENvbG9yXCIgc3Ryb2tlLXdpZHRoPVwiMlwiIHN0cm9rZS1saW5lY2FwPVwicm91bmRcIiBzdHJva2UtbGluZWpvaW49XCJyb3VuZFwiIGFyaWEtaGlkZGVuPVwidHJ1ZVwiPjxjaXJjbGUgY3g9XCI5XCIgY3k9XCIxMlwiIHI9XCIxXCI+PC9jaXJjbGU+PGNpcmNsZSBjeD1cIjlcIiBjeT1cIjVcIiByPVwiMVwiPjwvY2lyY2xlPjxjaXJjbGUgY3g9XCI5XCIgY3k9XCIxOVwiIHI9XCIxXCI+PC9jaXJjbGU+PGNpcmNsZSBjeD1cIjE1XCIgY3k9XCIxMlwiIHI9XCIxXCI+PC9jaXJjbGU+PGNpcmNsZSBjeD1cIjE1XCIgY3k9XCI1XCIgcj1cIjFcIj48L2NpcmNsZT48Y2lyY2xlIGN4PVwiMTVcIiBjeT1cIjE5XCIgcj1cIjFcIj48L2NpcmNsZT48L3N2Zz48L2J1dHRvbj48L3NwYW4+PHA+a2VlcDwvcD4iLAogICJhY3RpdmVFbGVtZW50IjogewogICAgInRhZ05hbWUiOiAiQk9EWSIsCiAgICAiY2xhc3NOYW1lIjogIiIsCiAgICAibGFiZWwiOiBudWxsLAogICAgInRleHQiOiAiXG4gICAgRW90aW9uYXR0YWNobWVudEBleGFtcGxlLmNvbeW3peS9nOWMuumZhOmZhOS7tuW3peS9nOWMuumhtemdoumZhOS7tumhtemdouiuvue9riDpgIDlh7rnmbvlvZXpmYTku7blt6XkvZzljLogLyDpmYTku7bpobXpnaLlt7LlkIzmraXpmYTku7blt6XkvZzljLrpmYTku7bpobXpnaJrZWVwXG4gICAgXG4gIFxuXG4iCiAgfSwKICAic2VsZWN0aW9uIjogewogICAgImFuY2hvclRleHQiOiBudWxsLAogICAgImFuY2hvck9mZnNldCI6IDAsCiAgICAiZm9jdXNUZXh0IjogbnVsbCwKICAgICJmb2N1c09mZnNldCI6IDAsCiAgICAiY29sbGFwc2VkIjogdHJ1ZQogIH0KfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-580bcc7c5e8e94127cb3",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 612,
+          "column": 1
+        },
+        {
+          "title": "quick cancel and fresh selection stay safe while compensation DELETE is in flight",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1870,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:27.375Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-2fccbf36d3789d6071e7",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 653,
+          "column": 1
+        },
+        {
+          "title": "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3428,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:29.260Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-037cb9ef60e13cbdd4bd",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 687,
+          "column": 1
+        },
+        {
+          "title": "deleting a page queues cleanup for all attachment metadata after block deletion",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1905,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:32.704Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-d37fb4fb10ff5f0e0594",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 711,
+          "column": 1
+        },
+        {
+          "title": "failed image uses fallback and unsafe URL or unknown attachment attrs keep the page read-only",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4686,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:34.623Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-c138ead197ca3c7d76a2",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 735,
+          "column": 1
+        },
+        {
+          "title": "long attachment names fit a 390px viewport and action buttons remain touch sized",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2634,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:39.331Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-8395c03ab7c764221698",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 772,
+          "column": 1
+        },
+        {
+          "title": "file drop and image paste upload files, while text/html paste remains handled by the editor",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1738,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:30:41.981Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-b5112e93a0108d7d4e33",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 791,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-22T03:29:50.449Z",
+    "duration": 54057.032,
+    "expected": 23,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

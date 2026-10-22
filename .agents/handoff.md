@@ -1,5 +1,38 @@
 # Handoff
 
+## 2026-10-22 启动取证全部实验结束（停止测试，HOLD不变）
+
+证据主根p11-6-startup-forensics-20261021已有旧9完整run和用户中断；resume-20261022补12独立spec，prefix94一次有限复验94/94（worker0、实际titlePath逐项一致）。C14独立逐文件完整，除Database252/254（已挂载Frozen内容与菜单strict）外全部通过；R1 fullsync42/42，R5nested17/17。A R5x3与R1x1、B5/7/13结果见正式startup报告，不拼Product门禁。
+
+唯一新buffer错误是旧B7第94的theme.ts，原R5是runtimePreferences；Chrome requestfailed/CDP/console+Vite未进middleware+空#app与白帧均已归档。只能定位启动阶段，未证具体资源来源。原R1无失败trace，本轮未复现，继续独立unknown，无共同根因证据，无生产修复Brief。后续无自动复跑。
+
+所有自有runner/Vite/采样器已退出；final-service-check核1466 PID+birth身份无残留，7179无监听，用户服务未操作（7173最终也无监听）。source-audit确认生产/14原spec/正式config/旧验收报告Git clean对象和起始SHA不变，version check PASS、0.0.1/build2。原始service logs已逐bytes SHA回读校验gzip，原文件保存在各plan.raw/preserved-service-logs；events/raw inventory/目标与失败trace/DOM全部按限制归档。
+
+独立final_forensics_review已闭合两项提交前P2（14副本已SHA清理、Windows长路径已缩短并保留74旧副本唯一SHA映射），无新P1/P2。资源误归属fastctx132次采样已按出生时间排除派生统计，原raw不改；最终1466已证身份无残留。三组SHA核验0差异，正式14文件无诊断env仍为511项。仅诊断提交推送origin/master后停止，交付SHA以Git/最终回复为准，不再启动实验/生产修复/发布。旧“正在执行”PID均为历史，不可据此结束重用PID。
+
+## 2026-10-22 用户明确恢复启动取证
+
+用户先要求立即停止并提交，已停止旧orchestrator及全部已验证自有后代（user-stop*.json），未提交；随后明确“算了，继续工作吧”，故恢复原Diagnosis Only目标。fetch后HEAD/origin仍d71a5bf，无生产/正式spec/config改动，0.0.1/build2版本check通过。旧7179无监听、旧自有PID均不在（resume-process-check.json），用户Vite7173不触碰。
+
+旧批主root及9完整run已summarize：A R5x3、R1x1均PASS；B5 111/111、B真实7为363/365（theme.ts buffer白屏与属性strict）、B真实13为496/497（只属性strict），R1/R5目标均过。B13前94与B7前94 titlePath完全相同且94/94 worker0，非稳定第94触发。C flow10/10、pages25/25；editor C03只有23testEnd全pass、24testBegin，无最终JSON，明确中断（interrupted-runs.json）。主raw的所有events包括中断已gzip，trace/target/failure已归档。旧原始材料不覆盖。
+
+恢复计划用子root resume-20261022 / 新TEMP，自有Vite仍7179，新进程指标+commit/pool完整采样；仅补C03editor整文件到C14，不重跑已完成A/B/C01/02。随后一次prefix94有限截断（子root prefix94）与最终报告/独立review/清理/SHA/提交推送，完成即停止。具体新PID/session/raw见子目录experiment-plan和实时工具结果。以下“正在执行旧PID61816”的记录已成为历史，不能据此终止重用PID。
+
+## 2026-10-21 启动专项取证（正在执行，仅诊断）
+
+任务授权：调查 R5 ERR_NO_BUFFER_SPACE 与 R1 无trace白屏；不改生产代码/原spec断言/timeout/retry/flags/版本/P10，不发布。P11.6 HOLD / 0.0.1 build2 不变。开始 master/HEAD/fetch后origin均d71a5bf，工作树干净。
+
+本轮根：docs/verification/evidence/p11-6-startup-forensics-20261021/；raw TEMP绝对路径见experiment-plan.json（eotion-startup-forensics-1792580664489）。Node orchestrator PID61816、工具session20663正在顺序运行A/B/C；owned Vite7179 PID22304，原用户Vite7173/PID58068不能停止。资源sampler由orchestrator管理，额外system-memory-monitor工具session32018读取同raw/monitor.stop自动结束。
+
+A R5新runner三次PASS，R1新runner一次PASS并有trace；B脚本列前5文件111/111 PASS。
+B真实字母序前7文件365项在跑：第94项product-database.spec.ts:4071首次导航白屏，/src/theme.ts在11:16:25.465Z出现ERR_NO_BUFFER_SPACE，而webRuntimePreferences/main/App/router 200；Vite该次theme请求未进middleware。完整现场first-live-buffer-failure.json及raw events/trace/png保留。不能据此认Windows/Chrome具体资源耗尽，也不能追认R1同因。其后第99项属性/日期属性strict locator独立失败，worker会更换，不能把后续总测试数当同browser累积。
+
+计划在途继续B7→实际原序prefix13（覆盖R1所有前置，排除后置table）→14 spec各独立runner；不跑完整P11.6或完整Product gate。完成后如需最小化，只额外做一次真实原序前94项的有限截断，不无限复跑；若前置失败导致worker更换，标记对照失效。S2只读worker给出：middleware未见theme只定位请求到服务端观测点前，不能断OS/Chrome子层。
+
+tools/startup-forensics/与playwright.startup-forensics.config.ts为诊断harness，14份forensics--副本仅import替换（生成SHA清单），最终应验证原spec零diff并删除自有生成副本，保留generator。原始材料不删。中途观测缺陷/修正全记instrumentation-change.json：早期文件input clone导致独立DOM导出失败但trace完整；B5手工persistent上下文硬编码7173未完整服务端观测，未来worker映射到7179；B7以后累计保留成功trace；未来worker补首次bufferfail后Node/原Chrome/新Chrome同URL只读probe、立即Document observer和多context独立artifact名。原始动作/业务断言/flags不改。
+
+结束运行后：node tools/startup-forensics/summarize.mjs归档原始事件gzip/所有target+failure trace/DOM/PNG、raw inventory SHA、资源统计。摘要和结论不可只凭统计；保留R1未知、R5具体资源来源未知。写docs/verification/p11-6-startup-forensics.md，独立review一次，关闭所有自有服务/runner、核7179无监听（用户7173保留），校SHA/diff/原spec/版本，允许只提交诊断及证据并push origin/master，然后停止。
+
 ## 2026-10-21 Timeline 正式创建与日期配置补齐
 
 用户发现正式视图菜单缺创建入口后授权补齐。当前新增“新建时间线视图”配置 overlay、原生

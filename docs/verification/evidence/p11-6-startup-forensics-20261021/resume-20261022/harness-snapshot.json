@@ -1,0 +1,48 @@
+{
+  "captured": "2026-10-22T03:19:46.516Z",
+  "note": "Snapshot captured while remaining batch runs; runtime config/fixture/service/samplers unchanged since this batch started. Earlier main batch had incremental instrumentation changes recorded separately.",
+  "files": [
+    {
+      "path": "apps/web/playwright.startup-forensics.config.ts",
+      "archived": "harness-sources/apps/web/playwright.startup-forensics.config.ts",
+      "bytes": 1102,
+      "sha256": "9d39015dc25d8df5e553ea2b3ac0de475bddd84298fbdaa86b49edcd94181f9a",
+      "modified": "2026-10-21T11:06:35.105Z"
+    },
+    {
+      "path": "tools/startup-forensics/fixture.ts",
+      "archived": "harness-sources/tools/startup-forensics/fixture.ts",
+      "bytes": 25807,
+      "sha256": "a0df013ebdd6d0e201ed818f73e5ea4091707c7017564a4f90b61b3288374e4f",
+      "modified": "2026-10-21T11:40:41.865Z"
+    },
+    {
+      "path": "tools/startup-forensics/run-experiments.mjs",
+      "archived": "harness-sources/tools/startup-forensics/run-experiments.mjs",
+      "bytes": 17916,
+      "sha256": "7aba99887080322fc8c525dee3e8c9a70c983b623631364fb3a7e2906f8b0c79",
+      "modified": "2026-10-22T03:08:24.596Z"
+    },
+    {
+      "path": "tools/startup-forensics/vite-service.mjs",
+      "archived": "harness-sources/tools/startup-forensics/vite-service.mjs",
+      "bytes": 2003,
+      "sha256": "78f798cb9d07c9c26f07a44854674f8cfc9313ccba2ecaee596e1ad498aa61f1",
+      "modified": "2026-10-21T11:54:48.908Z"
+    },
+    {
+      "path": "tools/startup-forensics/resource-monitor.ps1",
+      "archived": "harness-sources/tools/startup-forensics/resource-monitor.ps1",
+      "bytes": 2795,
+      "sha256": "541592b69bb0bb774e062a65f5d239ac3f678d86bc5fb4b28c6425c062932c72",
+      "modified": "2026-10-21T11:41:26.797Z"
+    },
+    {
+      "path": "tools/startup-forensics/system-memory-monitor.ps1",
+      "archived": "harness-sources/tools/startup-forensics/system-memory-monitor.ps1",
+      "bytes": 847,
+      "sha256": "60e6cc26abb937ed4c41de8fd2c4fb435bd9d4670adb56ea5a59e60e74436ceb",
+      "modified": "2026-10-21T11:20:58.946Z"
+    }
+  ]
+}

@@ -1,0 +1,210 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "playwright.startup-forensics.config.ts",
+      "tests/forensics--product-slash-context.spec.ts",
+      "--workers=1",
+      "--retries=0",
+      "--output",
+      "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-09-product-slash-context\\test-results"
+    ],
+    "configFile": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\playwright.startup-forensics.config.ts",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-startup-forensics-1792638528695/remaining-c-09-product-slash-context/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "forensics--*.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "C:\\Users\\31250\\Work\\Eotion\\tools\\startup-forensics\\reporter.mjs",
+        {
+          "runDir": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-09-product-slash-context"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-09-product-slash-context\\results.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "forensics--product-slash-context.spec.ts",
+      "file": "forensics--product-slash-context.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "slash commands follow root, quote, list item and toggle summary/child contexts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3131,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:27:23.279Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9eb73325a61ba1247da4-9d14b213b4fe82ae2b53",
+          "file": "forensics--product-slash-context.spec.ts",
+          "line": 53,
+          "column": 1
+        },
+        {
+          "title": "slash inside a code block only offers plain text conversions",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1870,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:27:28.578Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9eb73325a61ba1247da4-ea76bd097ddc93627613",
+          "file": "forensics--product-slash-context.spec.ts",
+          "line": 148,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "touch block commands",
+          "file": "forensics--product-slash-context.spec.ts",
+          "line": 127,
+          "column": 6,
+          "specs": [
+            {
+              "title": "touch toolbar cannot create a block the codec rejects inside a list item",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1744,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-22T03:27:26.819Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9eb73325a61ba1247da4-584205c0222ab521c2cb",
+              "file": "forensics--product-slash-context.spec.ts",
+              "line": 130,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-22T03:27:22.660Z",
+    "duration": 8258.964,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

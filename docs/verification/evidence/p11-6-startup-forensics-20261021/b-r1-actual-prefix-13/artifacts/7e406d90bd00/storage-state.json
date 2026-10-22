@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://127.0.0.1:7179/",
+      "localStorage": [
+        {
+          "name": "eotion:workspaces:sync-user",
+          "value": "[redacted]"
+        },
+        {
+          "name": "eotion:last-authenticated-user",
+          "value": "[redacted]"
+        },
+        {
+          "name": "eotion:preferred-workspace:sync-user",
+          "value": "[redacted]"
+        }
+      ]
+    }
+  ]
+}

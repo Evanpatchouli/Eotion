@@ -1,0 +1,48 @@
+
+Running 42 tests using 1 worker
+
+
+
+[1/42] tests\forensics--product-sync.spec.ts:61:1 › hydrates an empty workspace, keeps offline page edits across reload, then pushes before pulling
+[2/42] tests\forensics--product-sync.spec.ts:85:1 › attachment cleanup waits for delete acknowledgement, survives failure and reload, and accepts 404
+[3/42] tests\forensics--product-sync.spec.ts:122:1 › referenced attachment cleanup intent stays hidden while document sync is already complete
+[4/42] tests\forensics--product-sync.spec.ts:143:1 › cleanup only sends freshly authorized workspaces and invalidates the session on 401
+[5/42] tests\forensics--product-sync.spec.ts:163:1 › failed push leaves local content and does not pull a stale snapshot
+[6/42] tests\forensics--product-sync.spec.ts:182:1 › a confirmed 401 clears cached identity instead of restoring offline access
+[7/42] tests\forensics--product-sync.spec.ts:192:49 › HTTP 400 cannot use cached identity as an offline login
+[8/42] tests\forensics--product-sync.spec.ts:192:49 › HTTP 403 cannot use cached identity as an offline login
+[9/42] tests\forensics--product-sync.spec.ts:192:49 › HTTP 404 cannot use cached identity as an offline login
+[10/42] tests\forensics--product-sync.spec.ts:192:49 › HTTP 501 cannot use cached identity as an offline login
+[11/42] tests\forensics--product-sync.spec.ts:192:49 › HTTP 505 cannot use cached identity as an offline login
+[12/42] tests\forensics--product-sync.spec.ts:204:34 › HTTP 401 cannot use cached identity even with a 500 error body
+[13/42] tests\forensics--product-sync.spec.ts:204:34 › HTTP 403 cannot use cached identity even with a 500 error body
+[14/42] tests\forensics--product-sync.spec.ts:221:1 › HTTP 500 uses cached identity offline and restores the authenticated product on recovery
+[15/42] tests\forensics--product-sync.spec.ts:237:1 › a never authenticated offline client cannot enter the product
+[16/42] tests\forensics--product-sync.spec.ts:246:65 › backend network restores the local product and recovers without reload
+[17/42] tests\forensics--product-sync.spec.ts:246:65 › backend 500 restores the local product and recovers without reload
+[18/42] tests\forensics--product-sync.spec.ts:246:65 › backend 502 restores the local product and recovers without reload
+[19/42] tests\forensics--product-sync.spec.ts:246:65 › backend 503 restores the local product and recovers without reload
+[20/42] tests\forensics--product-sync.spec.ts:246:65 › backend 504 restores the local product and recovers without reload
+[21/42] tests\forensics--product-sync.spec.ts:296:44 › workspace list 500 restores only the current account cache
+[22/42] tests\forensics--product-sync.spec.ts:296:44 › workspace list 502 restores only the current account cache
+[23/42] tests\forensics--product-sync.spec.ts:296:44 › workspace list 503 restores only the current account cache
+[24/42] tests\forensics--product-sync.spec.ts:296:44 › workspace list 504 restores only the current account cache
+[25/42] tests\forensics--product-sync.spec.ts:309:44 › workspace list 400 cannot fall back to cached permissions
+[26/42] tests\forensics--product-sync.spec.ts:309:44 › workspace list 403 cannot fall back to cached permissions
+[27/42] tests\forensics--product-sync.spec.ts:309:44 › workspace list 501 cannot fall back to cached permissions
+[28/42] tests\forensics--product-sync.spec.ts:309:44 › workspace list 505 cannot fall back to cached permissions
+[29/42] tests\forensics--product-sync.spec.ts:321:1 › cached identity with no workspace snapshot refuses to invent an empty workspace
+[30/42] tests\forensics--product-sync.spec.ts:338:1 › workspace list unavailable without local cache can recover on attention
+[31/42] tests\forensics--product-sync.spec.ts:349:1 › offline identity without workspace metadata recovers using the workspace retry button
+[32/42] tests\forensics--product-sync.spec.ts:362:67 › HTTP 500 without identity shows accessible responsive connectivity UI (no-preference) and retry restores the product
+[33/42] tests\forensics--product-sync.spec.ts:362:67 › HTTP 500 without identity shows accessible responsive connectivity UI (reduce) and retry restores the product
+[34/42] tests\forensics--product-sync.spec.ts:387:39 › open editor survives backend 500 and keeps local operations
+[35/42] tests\forensics--product-sync.spec.ts:387:39 › open editor survives backend 502 and keeps local operations
+[36/42] tests\forensics--product-sync.spec.ts:387:39 › open editor survives backend 503 and keeps local operations
+[37/42] tests\forensics--product-sync.spec.ts:417:1 › offline editor saves blocks locally and restores text after reload
+[38/42] tests\forensics--product-sync.spec.ts:439:1 › mobile WebView runtime keeps the same IndexedDB product content offline
+[39/42] tests\forensics--product-sync.spec.ts:457:1 › offline page rename, move and delete stay durable after reload
+[40/42] tests\forensics--product-sync.spec.ts:491:1 › a second client pulls sequential changes and remote deletion removes local pages
+[41/42] tests\forensics--product-sync.spec.ts:510:1 › a clean active editor reloads a remote block change on focus
+[42/42] tests\forensics--product-sync.spec.ts:538:1 › switching identity during a push cannot send the next old-account operation
+  42 passed (1.6m)

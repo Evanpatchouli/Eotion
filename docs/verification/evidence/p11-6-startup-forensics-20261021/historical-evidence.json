@@ -1,0 +1,30 @@
+{
+  "baseline": "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+  "reviewedBy": "historical_evidence (read-only scout)",
+  "r5": {
+    "root": "docs/verification/evidence/p11-6-resume/final-web-r5",
+    "manifest": "sha256-manifest.json",
+    "verification": "92/92 files exist and SHA-256 match",
+    "failureArtifacts": "product/test-results/product-nested-universal-c-bf6fe-ot-squeeze-or-cover-content/",
+    "traceExtract": "startup-buffer-evidence/trace-extract.json",
+    "facts": ["506 total; 505 PASS, 1 FAIL; workers=1/retries=0", "webRuntimePreferences.ts status=-1 and console net::ERR_NO_BUFFER_SPACE", "HTML/main/App/router previously HTTP 200", "underlying resource error origin unknown"]
+  },
+  "r1": {
+    "root": "docs/verification/evidence/p11-6-resume/final-web/product",
+    "copiedOriginal": "docs/verification/evidence/p11-6-resume/sync-startup-probe/original-failure",
+    "facts": ["496 total; 495 PASS, 1 FAIL; workers=1/retries=0", "second-client case global ordinal 480; first empty-page assertion at product-sync.spec.ts:494", "original stdout/stderr/results/summary/PNG/error-context exist and hashes match", "original trace does not exist", "first assertion precedes page creation and second client context"],
+    "failureArtifacts": "test-results/product-sync-a-second-clie-9102c-eletion-removes-local-pages/",
+    "probeRoot": "docs/verification/evidence/p11-6-resume/sync-startup-probe",
+    "probeCopiesVerified": "107/107 copied items match copy-manifest; other TEMP-only inventory entries are not claimed archived",
+    "probeTraceHashes": {
+      "executed/current-single": "f8e00f14f9424aa9ac283c2e4d4dd47f2e6e0ae498b0ec7b6c7728ba719afe89",
+      "executed/current-full-sync": "e77272a783a7a4dc86ebfd1008ad58da2522792714966bccd0d7cb4b9f2dcaec",
+      "baseline-executed/baseline-single": "f4706c7d0b471d08bb0ca62f500f0725db14a9394d14246ce7dc6a32e2c6ffad",
+      "baseline-executed/baseline-full-sync": "96bfb563204f5e0acf193357d24f8989dfbcf969055a528a6570a25e3ad59b8d"
+    },
+    "probeConclusion": "current and ff0901c single 1/1 and full-sync 42/42 passed; this does not explain or fix original white screen"
+  },
+  "actualHistoricalSpecOrder": ["product-attachments.spec.ts", "product-blocks.spec.ts", "product-content-rules.spec.ts", "product-database.spec.ts", "product-editor.spec.ts", "product-flow.spec.ts", "product-nested.spec.ts", "product-overlay.spec.ts", "product-p75-acceptance.spec.ts", "product-pages.spec.ts", "product-settings.spec.ts", "product-slash-context.spec.ts", "product-sync.spec.ts", "product-table.spec.ts"],
+  "lifecycleLimit": "one worker is not proof of a single browser lifetime: failed tests can cause worker replacement; historical PID/resource telemetry is absent",
+  "independence": "No original R1 trace links it to R5; keep separate. Timeline-entry real-r1-trace.zip is an unrelated real API test."
+}

@@ -1,0 +1,29 @@
+
+Running 23 tests using 1 worker
+
+
+
+[1/23] tests\forensics--product-attachments.spec.ts:151:1 › slash image command and picker upload become one local block, sync operation and reloadable snapshot
+[2/23] tests\forensics--product-attachments.spec.ts:214:1 › file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block
+[3/23] tests\forensics--product-attachments.spec.ts:251:1 › cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block
+[4/23] tests\forensics--product-attachments.spec.ts:271:1 › a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs
+[5/23] tests\forensics--product-attachments.spec.ts:309:1 › typing in the original empty paragraph while saving keeps the text after attachment commit
+[6/23] tests\forensics--product-attachments.spec.ts:360:1 › a later selected file completing first leaves no leftover empty paragraph when the first upload fails
+[7/23] tests\forensics--product-attachments.spec.ts:392:1 › failed save restores user text changed in the provisional attachment block and queues cleanup
+[8/23] tests\forensics--product-attachments.spec.ts:443:1 › cancelling the first empty-slot upload while the second saves leaves no empty gap
+[9/23] tests\forensics--product-attachments.spec.ts:486:1 › file picker remains usable when crypto.randomUUID is unavailable
+[10/23] tests\forensics--product-attachments.spec.ts:499:1 › multiple files that finish out of order stay in their selected document order
+[11/23] tests\forensics--product-attachments.spec.ts:518:1 › a late upload result from the previous page never enters the newly opened page
+[12/23] tests\forensics--product-attachments.spec.ts:536:1 › 413 shows a readable upload error and retry control
+[13/23] tests\forensics--product-attachments.spec.ts:546:1 › upload 401 clears authenticated identity and returns to login
+[14/23] tests\forensics--product-attachments.spec.ts:556:1 › an attachment remains durable locally when its normal block sync receives 503
+[15/23] tests\forensics--product-attachments.spec.ts:569:1 › a local attachment block upsert failure compensates the successful upload through the cleanup queue
+[16/23] tests\forensics--product-attachments.spec.ts:596:1 › an upload response received during IME composition waits before inserting its attachment block
+[17/23] tests\forensics--product-attachments.spec.ts:612:1 › deleting an attachment stays permanent through undo and redo while ordinary text undo still works
+[18/23] tests\forensics--product-attachments.spec.ts:653:1 › quick cancel and fresh selection stay safe while compensation DELETE is in flight
+[19/23] tests\forensics--product-attachments.spec.ts:687:1 › offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata
+[20/23] tests\forensics--product-attachments.spec.ts:711:1 › deleting a page queues cleanup for all attachment metadata after block deletion
+[21/23] tests\forensics--product-attachments.spec.ts:735:1 › failed image uses fallback and unsafe URL or unknown attachment attrs keep the page read-only
+[22/23] tests\forensics--product-attachments.spec.ts:772:1 › long attachment names fit a 390px viewport and action buttons remain touch sized
+[23/23] tests\forensics--product-attachments.spec.ts:791:1 › file drop and image paste upload files, while text/html paste remains handled by the editor
+  23 passed (54.1s)

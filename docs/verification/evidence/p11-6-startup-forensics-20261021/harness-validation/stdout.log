@@ -1,0 +1,19 @@
+Listing tests:
+  forensics--product-nested.spec.ts:25:1 › universal block chrome reveals on hover and focus and inserts editable root siblings with undo
+  forensics--product-nested.spec.ts:105:1 › universal chrome follows the caret block while the editor is focused
+  forensics--product-nested.spec.ts:120:1 › universal plus keeps nested siblings and inserts after the whole toggle with stable IDs
+  forensics--product-nested.spec.ts:152:1 › universal block chrome stays hidden without layout space at phone width
+  forensics--product-nested.spec.ts:178:3 › universal coarse tablet chrome boundary › ordinary controls remain hidden and do not squeeze or cover content
+  forensics--product-nested.spec.ts:234:1 › Tab and Shift+Tab move an existing block into and out of a toggle with stable identity and undo
+  forensics--product-nested.spec.ts:257:1 › a mid-block Tab does not change nesting
+  forensics--product-nested.spec.ts:268:1 › Tab moves a toggle summary with its child subtree and stable IDs
+  forensics--product-nested.spec.ts:289:1 › touch nested controls › 390px touch toolbar can indent and outdent from the middle of a block
+  forensics--product-nested.spec.ts:307:1 › drag handle nests a block into a toggle and keeps its identity after reload
+  forensics--product-nested.spec.ts:323:1 › drag handle reorders siblings and moves a child back to the root
+  forensics--product-nested.spec.ts:346:1 › drag rejects self, descendant, and excessive nesting depth
+  forensics--product-nested.spec.ts:363:1 › dragging outside the editor clears its target marker without moving a block
+  forensics--product-nested.spec.ts:373:1 › block drop indicators use the semantic accent color in light and dark themes
+  forensics--product-nested.spec.ts:407:1 › Tab after a leaf block and native attachment drag do not create children
+  forensics--product-nested.spec.ts:436:1 › nested blocks render at desktop and phone widths in both themes
+  forensics--product-nested.spec.ts:458:1 › offline nested move survives reload and browser restart, then pushes before snapshot pull
+Total: 17 tests in 1 file

@@ -1,0 +1,63 @@
+{
+  "time": "2026-10-21T11:05:41.352Z",
+  "phase": "b-prefix-05 in progress",
+  "fix": "Detached DOM clone file input value assignment rejected; use setAttribute on clone. Applies at next worker load, no product/assertion/action changes.",
+  "affected": "A and initial B snapshots may lack exported dom.html/png; original Playwright trace screenshots and DOM snapshots preserved; not a product failure",
+  "traceRetentionChange": {
+    "time": "2026-10-21T11:06:36.806Z",
+    "effective": "all future b- cumulative runner configs use trace on regardless of requested retain-on-failure; config.use.trace in results.json is authoritative",
+    "reason": "Keep successful R1/R5 cumulative startup traces; recording activity identical, retention only changes"
+  },
+  "metadataChange": {
+    "time": "2026-10-21T11:10:27.907Z",
+    "changes": [
+      "test-ready records browser.version, worker parent PID, effective trace and baseURL",
+      "CDP request native wallTime retained as cdpWallTime, avoiding overriding ISO recorder wallTime"
+    ],
+    "applies": "next worker load; old raw records preserved"
+  },
+  "persistentContextCoverage": {
+    "time": "2026-10-21T11:11:23.860Z",
+    "reason": "Original nested/table/p75 specs directly launch persistent contexts with hard-coded 7173. Proxy now observes those and maps only their baseURL to owned diagnostic port7179; flags/headless/profile/actions unchanged.",
+    "applies": "future worker loads, B actual prefix07 and13 and C. Initial B prefix05 worker loaded old fixture so its persistent context may use user Vite7173 without server-side observation; do not claim full observation there."
+  },
+  "documentObserverPrecision": {
+    "time": "2026-10-21T11:14:37.978Z",
+    "changes": "Observe Document immediately including parser-created html/#app rather than attaching only at DOMContentLoaded if html absent. Adds html first-seen marker.",
+    "applies": "next worker, prefix13 and C; older markers are first-observed times with DOMContentLoaded granularity, not exact creation instants"
+  },
+  "bufferProbeAddition": {
+    "time": "2026-10-21T11:26:24.962Z",
+    "policy": "Only after first ERR_NO_BUFFER_SPACE per test recorder: parallel Node GET, existing browser/new context navigation, independent original-channel Chrome navigation to identical full URL. Separate actors, 5s total operation deadline each, asynchronous, original action/expect timeout unchanged. Cleanup awaited only at teardown. Adds no Chrome flags.",
+    "applies": "next worker load; initial theme failure had no after-error probes",
+    "fixtureSha256": "c13f4f159182ee023ea6b9abdf8031cdf1e758f270e0f4a293bf77228e155de0"
+  },
+  "multiContextArtifactFix": {
+    "time": "2026-10-21T11:26:24.964Z",
+    "change": "Include contextId in page and storage-state artifact filenames to prevent collision; old files remain untouched."
+  },
+  "requestTimingAddition": {
+    "time": "2026-10-21T11:40:43.404Z",
+    "changes": "requestfailed additionally records Playwright Request.timing/resourceType, read-only synchronous metadata; earlier raw failures retain their original field set.",
+    "applies": "future worker loads only"
+  },
+  "resourceTimeWindow": {
+    "time": "2026-10-21T11:41:28.426Z",
+    "change": "Future sampler processes record sampleStartedAt/processesSampledAt/memorySampledAt in addition to completion time; main running sampler remains original.",
+    "limitation": "Main resources.jsonl time is completed-write time after sequential CIM/process/TCP queries; counters are not atomic and can precede that timestamp by several seconds. Sampling gaps/millisecond peaks cannot exclude transient resource exhaustion."
+  },
+  "lineageCorrection": {
+    "time": "2026-10-22T03:46:28.551Z",
+    "observation": "Resume raw samples included fastctx PID2424 born03:06 before root32316 born03:08 via reused parent PID; this is not proven owned lineage or a product leak.",
+    "correction": "Raw samples untouched. Derived statistics rebuild conservative root/parent birth identity closure; exclude older-than-root or unprovable identities; future sampler also enforces child birth >= parent birth. Final live checks use validated identity list only.",
+    "limit": "Filtered sampled process totals are a lower bound for provable captured lineage; missed short-lived parents/children or sub-sample peaks cannot be ruled out. Original TCP scope is preserved, and no port/socket-exhaustion inference is made."
+  },
+  "archivePathCorrection": {
+    "time": "2026-10-22T03:46:28.553Z",
+    "change": "Long derived artifact copies preserved with original SHA in raw previous-archived-artifacts, short SHA-based portable archive paths replace them. Mapping records source relative path/bytes/SHA/new path; raw original trace and events unchanged."
+  },
+  "controlTraceRetentionCorrection": {
+    "time": "2026-10-22T03:46:28.553Z",
+    "change": "Include Timeline shell test in archived target set so the successful D94 control trace is retained alongside original R1/R5 targets; no tests rerun."
+  }
+}

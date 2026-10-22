@@ -1,0 +1,1105 @@
+{
+  "generatedAtUtc": "2026-10-22T03:44:11.053Z",
+  "evidenceRoot": "docs/verification/evidence/p11-6-startup-forensics-20261021",
+  "baselineHead": "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+  "generatedSourceCount": 14,
+  "originalSources": [
+    {
+      "path": "apps/web/tests/product-flow.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-flow.spec.ts",
+        "git hash-object --path apps/web/tests/product-flow.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-flow.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-flow.spec.ts"
+      ],
+      "diskSha256": "7195c2033beadae1e3f81ea90d84a256dff13ccde91ec9929a1e42d69777e0ad",
+      "baselineSha256": "5c124d620b3b38f854313b0b080cab1b694b5dd3a9709fe7e014d72193077d4a",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "f076b07ab6271acac84c74ffea065d1af96a6540",
+      "baselineObjectId": "f076b07ab6271acac84c74ffea065d1af96a6540",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "7195c2033beadae1e3f81ea90d84a256dff13ccde91ec9929a1e42d69777e0ad",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-pages.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-pages.spec.ts",
+        "git hash-object --path apps/web/tests/product-pages.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-pages.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-pages.spec.ts"
+      ],
+      "diskSha256": "f3837fe1150023f13d4a4cfbac614a0891726e3e3acb9de7c15dda24106ae72f",
+      "baselineSha256": "9458e7288a9a081194c84277312ee0ed9b050540a6ec987f1e1b1d9115f5d347",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "79d5bf2d22de448db82c4f83a0299a43fcdd24d1",
+      "baselineObjectId": "79d5bf2d22de448db82c4f83a0299a43fcdd24d1",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "f3837fe1150023f13d4a4cfbac614a0891726e3e3acb9de7c15dda24106ae72f",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-editor.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-editor.spec.ts",
+        "git hash-object --path apps/web/tests/product-editor.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-editor.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-editor.spec.ts"
+      ],
+      "diskSha256": "7c1415dbc0700ab558887f855d36df6d45ccae44aa7e2576f7374ad7ab29f0a5",
+      "baselineSha256": "7c1415dbc0700ab558887f855d36df6d45ccae44aa7e2576f7374ad7ab29f0a5",
+      "byteEqualToBaseline": true,
+      "gitCleanObjectId": "a73080ffd8df6746500603f5801f3ce3580888b9",
+      "baselineObjectId": "a73080ffd8df6746500603f5801f3ce3580888b9",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "7c1415dbc0700ab558887f855d36df6d45ccae44aa7e2576f7374ad7ab29f0a5",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": true,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-blocks.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-blocks.spec.ts",
+        "git hash-object --path apps/web/tests/product-blocks.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-blocks.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-blocks.spec.ts"
+      ],
+      "diskSha256": "66684f5099a54a4811b6d60f900ca028ef2a1a28ff3e090f68d164cd82953a0a",
+      "baselineSha256": "2da441dbf073af558bd654538a2ef8b4f56b38875087d1cd418abf4b684ac1f4",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "f2618bad049a6ebe10678331f0958e82601b9ad6",
+      "baselineObjectId": "f2618bad049a6ebe10678331f0958e82601b9ad6",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "66684f5099a54a4811b6d60f900ca028ef2a1a28ff3e090f68d164cd82953a0a",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-nested.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-nested.spec.ts",
+        "git hash-object --path apps/web/tests/product-nested.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-nested.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-nested.spec.ts"
+      ],
+      "diskSha256": "e4d0669d7ad14b444e2b8d912bb73225a81b4bfdff88b171060292ad78ba1b1f",
+      "baselineSha256": "81d4989fcef50313f99545a487af4a1890863018617cd813247aed92ec98cd76",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "d3a8fb66b3cdb26b5577d887555301865ff543bf",
+      "baselineObjectId": "d3a8fb66b3cdb26b5577d887555301865ff543bf",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "e4d0669d7ad14b444e2b8d912bb73225a81b4bfdff88b171060292ad78ba1b1f",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-table.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-table.spec.ts",
+        "git hash-object --path apps/web/tests/product-table.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-table.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-table.spec.ts"
+      ],
+      "diskSha256": "a6885e30729467a28b6322c75eeb2dd8a0aed823436c8800cab68f1f5fd102df",
+      "baselineSha256": "a6885e30729467a28b6322c75eeb2dd8a0aed823436c8800cab68f1f5fd102df",
+      "byteEqualToBaseline": true,
+      "gitCleanObjectId": "4e2a963da30f0e7aca969d3fb3babcbc4fba7cf8",
+      "baselineObjectId": "4e2a963da30f0e7aca969d3fb3babcbc4fba7cf8",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "a6885e30729467a28b6322c75eeb2dd8a0aed823436c8800cab68f1f5fd102df",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": true,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-database.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-database.spec.ts",
+        "git hash-object --path apps/web/tests/product-database.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-database.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-database.spec.ts"
+      ],
+      "diskSha256": "6c07296335dad58c7c45d8163ada40905acad418e796986d7e9b4200733c538e",
+      "baselineSha256": "11d741d9df0d178e2d6dc10f04d22e0e7557f486e0fa578e89b19d3ba28b7f82",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "168cfd3e5634f60d9bf281f4919cfae35ec39727",
+      "baselineObjectId": "168cfd3e5634f60d9bf281f4919cfae35ec39727",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "6c07296335dad58c7c45d8163ada40905acad418e796986d7e9b4200733c538e",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-overlay.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-overlay.spec.ts",
+        "git hash-object --path apps/web/tests/product-overlay.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-overlay.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-overlay.spec.ts"
+      ],
+      "diskSha256": "2a3df9d73850df60da9dd291aff553ff1f26edddf6c7607da5ec665098c00953",
+      "baselineSha256": "dd114bc1c54e84c5b984e834e3e5c3426c7dfd1c98a38fa3742f9e718d3748c3",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "9533ff989465399d0856787469a0d3b52a4206e2",
+      "baselineObjectId": "9533ff989465399d0856787469a0d3b52a4206e2",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "2a3df9d73850df60da9dd291aff553ff1f26edddf6c7607da5ec665098c00953",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-slash-context.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-slash-context.spec.ts",
+        "git hash-object --path apps/web/tests/product-slash-context.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-slash-context.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-slash-context.spec.ts"
+      ],
+      "diskSha256": "2d49546688907096bbc1e0b4d331836b6fa34067a7bf43afd3fcb85c125e169d",
+      "baselineSha256": "db2c8cc22b4db49281e80303899bc66fedc585b6aff99181f14cedbcbd15f346",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "ec2df85a79dbcda0d833027ccb827f7442263da9",
+      "baselineObjectId": "ec2df85a79dbcda0d833027ccb827f7442263da9",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "2d49546688907096bbc1e0b4d331836b6fa34067a7bf43afd3fcb85c125e169d",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-content-rules.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-content-rules.spec.ts",
+        "git hash-object --path apps/web/tests/product-content-rules.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-content-rules.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-content-rules.spec.ts"
+      ],
+      "diskSha256": "9c3902ee8f7ee3552492c0287edf3846b095e00efeda6a8b4862ba1e969e9cb5",
+      "baselineSha256": "a55383054789d083b31bbf81591c60c0aaf324ffbbebf6fb1aef5e894086c3db",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "d9b795ddae5349d435d6a75f4d667bf47d92ec4d",
+      "baselineObjectId": "d9b795ddae5349d435d6a75f4d667bf47d92ec4d",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "9c3902ee8f7ee3552492c0287edf3846b095e00efeda6a8b4862ba1e969e9cb5",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-p75-acceptance.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-p75-acceptance.spec.ts",
+        "git hash-object --path apps/web/tests/product-p75-acceptance.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-p75-acceptance.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-p75-acceptance.spec.ts"
+      ],
+      "diskSha256": "ff302437d82cf59550356f885284eec9e983d39529fd6f5d3871559d4d35b2c4",
+      "baselineSha256": "ff302437d82cf59550356f885284eec9e983d39529fd6f5d3871559d4d35b2c4",
+      "byteEqualToBaseline": true,
+      "gitCleanObjectId": "bda29901dd91ad083dd14ab6b90b744f25064b89",
+      "baselineObjectId": "bda29901dd91ad083dd14ab6b90b744f25064b89",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "ff302437d82cf59550356f885284eec9e983d39529fd6f5d3871559d4d35b2c4",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": true,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-sync.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-sync.spec.ts",
+        "git hash-object --path apps/web/tests/product-sync.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-sync.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-sync.spec.ts"
+      ],
+      "diskSha256": "d5321c6eb95ff2c3bdd1fdb9108fb46179a97be2cb75f6effdbb57659ca701ca",
+      "baselineSha256": "8359ed8e53654ca71195639d14778032c0fc7f2cc37c6190b31dea399e2f1094",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "7a1e549b1d732dd626e6b34504c15c5dc0df97be",
+      "baselineObjectId": "7a1e549b1d732dd626e6b34504c15c5dc0df97be",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "d5321c6eb95ff2c3bdd1fdb9108fb46179a97be2cb75f6effdbb57659ca701ca",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-attachments.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-attachments.spec.ts",
+        "git hash-object --path apps/web/tests/product-attachments.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-attachments.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-attachments.spec.ts"
+      ],
+      "diskSha256": "34af9ec6bc93c0757149966a80600ee6a8f84aa4e0342fc9ac6f54e4deb0f469",
+      "baselineSha256": "34af9ec6bc93c0757149966a80600ee6a8f84aa4e0342fc9ac6f54e4deb0f469",
+      "byteEqualToBaseline": true,
+      "gitCleanObjectId": "3423611098281aae2d369ad30eccbdf8178b14c1",
+      "baselineObjectId": "3423611098281aae2d369ad30eccbdf8178b14c1",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "34af9ec6bc93c0757149966a80600ee6a8f84aa4e0342fc9ac6f54e4deb0f469",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": true,
+      "verified": true
+    },
+    {
+      "path": "apps/web/tests/product-settings.spec.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-settings.spec.ts",
+        "git hash-object --path apps/web/tests/product-settings.spec.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/tests/product-settings.spec.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/tests/product-settings.spec.ts"
+      ],
+      "diskSha256": "df51797e0f8ac77173fd26fbd3c57f84343c43e5886a45eb92ece903cfb2c9c4",
+      "baselineSha256": "452ec2993fc0cc1bf161f685867f564abdb6c30cb4f8103eb849cb459b50463f",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "e5bdfe138c1b57386f60ee5a2c42733f3f7357a0",
+      "baselineObjectId": "e5bdfe138c1b57386f60ee5a2c42733f3f7357a0",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null,
+      "manifestSha256": "df51797e0f8ac77173fd26fbd3c57f84343c43e5886a45eb92ece903cfb2c9c4",
+      "currentMatchesManifest": true,
+      "baselineAndDiskEqual": false,
+      "verified": true
+    }
+  ],
+  "generatedSources": [
+    {
+      "path": "apps/web/tests/forensics--product-flow.spec.ts",
+      "manifestSha256": "91dc95eec45294901bd8ff502c5f040a3d75e35e76eb7d980ed315619505de3f",
+      "actualSha256": "91dc95eec45294901bd8ff502c5f040a3d75e35e76eb7d980ed315619505de3f",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-pages.spec.ts",
+      "manifestSha256": "ef977f16cb681be0786bb439dd625512d1b771d14770727f1ec1a66580686a11",
+      "actualSha256": "ef977f16cb681be0786bb439dd625512d1b771d14770727f1ec1a66580686a11",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-editor.spec.ts",
+      "manifestSha256": "062c9fc61facf62a2fa79a9f2ce9301070c4dcdaf3f8f401e210e95e1f5a2403",
+      "actualSha256": "062c9fc61facf62a2fa79a9f2ce9301070c4dcdaf3f8f401e210e95e1f5a2403",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-blocks.spec.ts",
+      "manifestSha256": "49b9615fa63b1f31112cb58497e1dac547e6c70a9ed4f63affd2395bfdff6d38",
+      "actualSha256": "49b9615fa63b1f31112cb58497e1dac547e6c70a9ed4f63affd2395bfdff6d38",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-nested.spec.ts",
+      "manifestSha256": "393ed93a4932a9c7b223cadb6b46952f6f79e95348077988a75226d69a6cf0e6",
+      "actualSha256": "393ed93a4932a9c7b223cadb6b46952f6f79e95348077988a75226d69a6cf0e6",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-table.spec.ts",
+      "manifestSha256": "71ac9fb64ba9ea3d8587105f42780c416f4e5a29d89110457e76f4eed15dc57c",
+      "actualSha256": "71ac9fb64ba9ea3d8587105f42780c416f4e5a29d89110457e76f4eed15dc57c",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-database.spec.ts",
+      "manifestSha256": "982f15f132ad58a8e9b3f5310eff7cf9b8e29259f5af20b461da1d95e1d9db23",
+      "actualSha256": "982f15f132ad58a8e9b3f5310eff7cf9b8e29259f5af20b461da1d95e1d9db23",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-overlay.spec.ts",
+      "manifestSha256": "c00f3059adcb830e1d0b5a6489696dffa9e78e91498f322aa2dbfc6747ba889f",
+      "actualSha256": "c00f3059adcb830e1d0b5a6489696dffa9e78e91498f322aa2dbfc6747ba889f",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-slash-context.spec.ts",
+      "manifestSha256": "f27e7188cde275157bb9b7b2e62facd9c3ad5546f34ce18a67546e4764afb943",
+      "actualSha256": "f27e7188cde275157bb9b7b2e62facd9c3ad5546f34ce18a67546e4764afb943",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-content-rules.spec.ts",
+      "manifestSha256": "69f8fedfcfb8ab190cd1344034d76e3b0666c5d304de3cb603aa0b89f182fd4b",
+      "actualSha256": "69f8fedfcfb8ab190cd1344034d76e3b0666c5d304de3cb603aa0b89f182fd4b",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-p75-acceptance.spec.ts",
+      "manifestSha256": "15a7d2413c2a3f41d5c84495e468f5823361237bc41a699a1962582ff0f0e7b7",
+      "actualSha256": "15a7d2413c2a3f41d5c84495e468f5823361237bc41a699a1962582ff0f0e7b7",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-sync.spec.ts",
+      "manifestSha256": "4a2ddf12db2ccafa4442b9bc41d61ff8e8da138012a270cc02d5bcf115c10679",
+      "actualSha256": "4a2ddf12db2ccafa4442b9bc41d61ff8e8da138012a270cc02d5bcf115c10679",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-attachments.spec.ts",
+      "manifestSha256": "4d475e3c91bf7240a758936cab70068336a80af7524152a1897d1eb07c5b8c45",
+      "actualSha256": "4d475e3c91bf7240a758936cab70068336a80af7524152a1897d1eb07c5b8c45",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    },
+    {
+      "path": "apps/web/tests/forensics--product-settings.spec.ts",
+      "manifestSha256": "f5022c8e4adacd518ea6bec0c3af7cc41de6d987003c8490d0fe68419ba92f73",
+      "actualSha256": "f5022c8e4adacd518ea6bec0c3af7cc41de6d987003c8490d0fe68419ba92f73",
+      "matchesManifest": true,
+      "missing": false,
+      "importReplacements": 1
+    }
+  ],
+  "protectedRuntimeFiles": [
+    {
+      "path": "apps/web/playwright.config.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/playwright.config.ts",
+        "git hash-object --path apps/web/playwright.config.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/playwright.config.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/playwright.config.ts"
+      ],
+      "diskSha256": "c201545e25d1bf4c1da24804c83bb1f28d270435b82ecb6082e2126c01bcde4b",
+      "baselineSha256": "3749c634c9782abe27d41aac86a49725b02e6a3dd30bdfc7cfd10cbb1655d90c",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "875f1c23ab62f7d4316a80111d47da3ef0b49d8f",
+      "baselineObjectId": "875f1c23ab62f7d4316a80111d47da3ef0b49d8f",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null
+    },
+    {
+      "path": "apps/web/vite.config.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/vite.config.ts",
+        "git hash-object --path apps/web/vite.config.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/vite.config.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/vite.config.ts"
+      ],
+      "diskSha256": "ea3a81d6d23f24f51473d5b10e23f3e9f7141343be9a3404484d73b11d6f1b6f",
+      "baselineSha256": "95f100ebdf4654d2ed797712dca3e11cd3a07a4a8003be8d9273bcc44e38052d",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "3bcb0c44d14b423922edf665d5d803fe76841043",
+      "baselineObjectId": "3bcb0c44d14b423922edf665d5d803fe76841043",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null
+    },
+    {
+      "path": "apps/web/src/main.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/src/main.ts",
+        "git hash-object --path apps/web/src/main.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/src/main.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/src/main.ts"
+      ],
+      "diskSha256": "d32a9966fda3e98ac4cb86c44dbed49c6e496c62e5f8e81f6c103257209f7e41",
+      "baselineSha256": "6326aa5367c41e7cc1fa21d66082b31481cfd3c231e43ed2c24ba6c2e19dd220",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "e8c6f45304e89284065b14ffd318f2e8517b282a",
+      "baselineObjectId": "e8c6f45304e89284065b14ffd318f2e8517b282a",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null
+    },
+    {
+      "path": "apps/web/src/webRuntimePreferences.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/src/webRuntimePreferences.ts",
+        "git hash-object --path apps/web/src/webRuntimePreferences.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/src/webRuntimePreferences.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/src/webRuntimePreferences.ts"
+      ],
+      "diskSha256": "34208098cc3f58e02fece5213f5f26816b5b69802baa0f7ba25e6cb1b3ef373c",
+      "baselineSha256": "0578341af504a47fcb4b1d6cd3edf2b1d4762c93aea2777dbc5cc88d73694c49",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "1fd07084eeffee618b925a37a08c39bcd6997f21",
+      "baselineObjectId": "1fd07084eeffee618b925a37a08c39bcd6997f21",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null
+    },
+    {
+      "path": "apps/web/src/theme.ts",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/src/theme.ts",
+        "git hash-object --path apps/web/src/theme.ts --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/src/theme.ts",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/src/theme.ts"
+      ],
+      "diskSha256": "224f40d588ce228edd3b3d6c2132ad0dea73f7bd47a92775485225edccd93fc3",
+      "baselineSha256": "2fadc8af93f3dcdeef8e87197a5b1ca4b79da57d82bf36a1e77efa547a0c7714",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "204879c05e0e135c4678dc8a22da1e70fe4acc64",
+      "baselineObjectId": "204879c05e0e135c4678dc8a22da1e70fe4acc64",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null
+    },
+    {
+      "path": "apps/web/package.json",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/package.json",
+        "git hash-object --path apps/web/package.json --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:apps/web/package.json",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- apps/web/package.json"
+      ],
+      "diskSha256": "73fa82a664c27b6e6767cf3fcd2db6b24e90bdd82065e3532647345381df6cda",
+      "baselineSha256": "01ba1e956c08e9542e2e410e89d1238f4239f57ae57d4800947ea4ec20212826",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "38c7da5dc158beeab2b71a876c7e87967f4cea24",
+      "baselineObjectId": "38c7da5dc158beeab2b71a876c7e87967f4cea24",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null
+    },
+    {
+      "path": "package.json",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:package.json",
+        "git hash-object --path package.json --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:package.json",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- package.json"
+      ],
+      "diskSha256": "2f0495f4003a4432a6db04401f22765c6062b03bae9941d5864d95e24d77a5a3",
+      "baselineSha256": "f213d9a80a8df93b1dc66db6ab1b315b291af4842800f22631154ed066042c85",
+      "byteEqualToBaseline": false,
+      "gitCleanObjectId": "fba16e7ce10dfddf6705dd5ac322aec7531d5975",
+      "baselineObjectId": "fba16e7ce10dfddf6705dd5ac322aec7531d5975",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null
+    },
+    {
+      "path": "docs/verification/p11-6-timeline-final-acceptance.md",
+      "commands": [
+        "git show d71a5bf680061a4ab06e2e38323be840cdccebe2:docs/verification/p11-6-timeline-final-acceptance.md",
+        "git hash-object --path docs/verification/p11-6-timeline-final-acceptance.md --stdin",
+        "git rev-parse d71a5bf680061a4ab06e2e38323be840cdccebe2:docs/verification/p11-6-timeline-final-acceptance.md",
+        "git diff --quiet d71a5bf680061a4ab06e2e38323be840cdccebe2 -- docs/verification/p11-6-timeline-final-acceptance.md"
+      ],
+      "diskSha256": "9471b0227314760086a74cdaea08eb2b52539fa542cba53a7baf3ce36ea5cd23",
+      "baselineSha256": "9471b0227314760086a74cdaea08eb2b52539fa542cba53a7baf3ce36ea5cd23",
+      "byteEqualToBaseline": true,
+      "gitCleanObjectId": "054cfaa2e614c9e45f8022676688e6b4299fef53",
+      "baselineObjectId": "054cfaa2e614c9e45f8022676688e6b4299fef53",
+      "normalizedEqualToBaseline": true,
+      "gitDiffQuiet": {
+        "exitCode": 0,
+        "unchanged": true,
+        "stderr": "",
+        "error": null
+      },
+      "diskReadError": null,
+      "gitShowError": null,
+      "gitCleanError": null,
+      "baselineObjectError": null
+    }
+  ],
+  "businessSourceDiff": {
+    "command": [
+      "git",
+      "diff",
+      "--name-only",
+      "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+      "--",
+      ":(glob)apps/*/src/**",
+      "packages"
+    ],
+    "exitCode": 0,
+    "changedPaths": [],
+    "stderr": ""
+  },
+  "originalSpecDiffs": [
+    {
+      "path": "apps/web/tests/product-flow.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-flow.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-pages.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-pages.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-editor.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-editor.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-blocks.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-blocks.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-nested.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-nested.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-table.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-table.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-database.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-database.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-overlay.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-overlay.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-slash-context.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-slash-context.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-content-rules.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-content-rules.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-p75-acceptance.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-p75-acceptance.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-sync.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-sync.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-attachments.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-attachments.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    },
+    {
+      "path": "apps/web/tests/product-settings.spec.ts",
+      "command": [
+        "git",
+        "diff",
+        "--quiet",
+        "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+        "--",
+        "apps/web/tests/product-settings.spec.ts"
+      ],
+      "exitCode": 0,
+      "unchanged": true,
+      "stderr": ""
+    }
+  ],
+  "noProductionChange": true,
+  "authoredTextEncoding": [
+    {
+      "path": "tools/startup-forensics/audit.mjs",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/cleanup-check.ps1",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/fixture.ts",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/generate.mjs",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/pack-evidence.mjs",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/reporter.mjs",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/resource-monitor.ps1",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/run-experiments.mjs",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/summarize.mjs",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/system-memory-monitor.ps1",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "tools/startup-forensics/vite-service.mjs",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "apps/web/playwright.startup-forensics.config.ts",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "docs/verification/p11-6-startup-forensics.md",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": ".agents/current-task.md",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": ".agents/handoff.md",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "docs/verification/evidence/p11-6-startup-forensics-20261021/experiment-plan.json",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "docs/verification/evidence/p11-6-startup-forensics-20261021/generated-sources.json",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "docs/verification/evidence/p11-6-startup-forensics-20261021/instrumentation-change.json",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    },
+    {
+      "path": "docs/verification/evidence/p11-6-startup-forensics-20261021/historical-evidence.json",
+      "validUtf8": true,
+      "hasBom": false,
+      "compliant": true
+    }
+  ],
+  "allAuthoredTextUtf8NoBom": true,
+  "versionCheck": {
+    "executable": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+    "args": [
+      "scripts/version.mjs",
+      "check"
+    ],
+    "cwd": "C:\\Users\\31250\\Work\\Eotion",
+    "exactCommand": "\"C:\\\\Users\\\\31250\\\\.vite-plus\\\\js_runtime\\\\node\\\\24.22.1\\\\node.exe\" scripts/version.mjs check",
+    "startedUtc": "2026-10-22T03:44:10.955Z",
+    "endedUtc": "2026-10-22T03:44:11.044Z",
+    "exitCode": 0,
+    "spawnError": null,
+    "stdoutFile": "version-check.stdout.log",
+    "stderrFile": "version-check.stderr.log",
+    "rootVersion": "0.0.1",
+    "rootBuildNumber": 2,
+    "webVersion": "0.0.1",
+    "expectedVersion": "0.0.1",
+    "expectedBuildNumber": 2,
+    "expectedIdentityMatches": true
+  },
+  "cleanup": {
+    "requested": true,
+    "performed": true,
+    "removed": [
+      "apps/web/tests/forensics--product-flow.spec.ts",
+      "apps/web/tests/forensics--product-pages.spec.ts",
+      "apps/web/tests/forensics--product-editor.spec.ts",
+      "apps/web/tests/forensics--product-blocks.spec.ts",
+      "apps/web/tests/forensics--product-nested.spec.ts",
+      "apps/web/tests/forensics--product-table.spec.ts",
+      "apps/web/tests/forensics--product-database.spec.ts",
+      "apps/web/tests/forensics--product-overlay.spec.ts",
+      "apps/web/tests/forensics--product-slash-context.spec.ts",
+      "apps/web/tests/forensics--product-content-rules.spec.ts",
+      "apps/web/tests/forensics--product-p75-acceptance.spec.ts",
+      "apps/web/tests/forensics--product-sync.spec.ts",
+      "apps/web/tests/forensics--product-attachments.spec.ts",
+      "apps/web/tests/forensics--product-settings.spec.ts"
+    ],
+    "reason": null
+  },
+  "cleanupSafeToPerform": true,
+  "status": "verified",
+  "note": "Raw disk/git-show SHA and byte equality are retained as facts. Baseline comparisons use Git clean-filter object IDs (git hash-object --path without -w vs git rev-parse) plus git diff --quiet, so pre-existing CRLF/mixed EOL under autocrlf are preserved and not mistaken for edits. The audit does not rewrite EOLs. This audit writes source-audit.json and version-check logs after any previous evidence manifest; recompute the evidence-root SHA-256 manifest afterward."
+}

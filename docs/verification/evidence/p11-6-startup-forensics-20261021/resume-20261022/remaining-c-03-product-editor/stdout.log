@@ -1,0 +1,51 @@
+
+Running 45 tests using 1 worker
+
+
+
+[1/45] tests\forensics--product-editor.spec.ts:142:1 › product page keeps title and editor in one open reading column across themes and mobile
+[2/45] tests\forensics--product-editor.spec.ts:246:1 › product page shows one sync status and keeps local save errors retryable
+[3/45] tests\forensics--product-editor.spec.ts:295:1 › pasting safe links keeps links and strips underline across save and reload
+[4/45] tests\forensics--product-editor.spec.ts:320:1 › empty page loads without mutations, then debounces edits with a stable block identity
+[5/45] tests\forensics--product-editor.spec.ts:344:1 › persists marks, heading and list structure and restores them after reload
+[6/45] tests\forensics--product-editor.spec.ts:380:1 › inserts in the middle, deletes a block and keeps the displayed order
+[7/45] tests\forensics--product-editor.spec.ts:420:1 › flushes edits on page navigation and isolates the next page document
+[8/45] tests\forensics--product-editor.spec.ts:436:1 › reads both page bodies from the workspace snapshot without mixing them on navigation
+[9/45] tests\forensics--product-editor.spec.ts:451:1 › keeps local editor content when sync fails and retries sync
+[10/45] tests\forensics--product-editor.spec.ts:470:1 › keeps mobile editor within 390px and defers persistence during composition
+[11/45] tests\forensics--product-editor.spec.ts:489:1 › touch toolbar and mobile heading stay compact across themes, short viewport and keyboard inset
+[12/45] tests\forensics--product-editor.spec.ts:576:1 › touch caret visibility does not depend on keyboard inset and requires editor focus
+[13/45] tests\forensics--product-editor.spec.ts:661:1 › keeps the P2 fixture, slash command and undo path available
+[14/45] tests\forensics--product-editor.spec.ts:677:1 › slash lists Chinese grouped commands, filters, navigates and respects IME and Escape
+[15/45] tests\forensics--product-editor.spec.ts:717:1 › desktop toolbar and slash stay compact in light, dark and mobile layouts
+[16/45] tests\forensics--product-editor.spec.ts:766:1 › fixed toolbar converts a list item back to a top-level paragraph
+[17/45] tests\forensics--product-editor.spec.ts:793:3 › slash 文本 saves and reloads the supported block
+[18/45] tests\forensics--product-editor.spec.ts:793:3 › slash 一级标题 saves and reloads the supported block
+[19/45] tests\forensics--product-editor.spec.ts:793:3 › slash 二级标题 saves and reloads the supported block
+[20/45] tests\forensics--product-editor.spec.ts:793:3 › slash 项目列表 saves and reloads the supported block
+[21/45] tests\forensics--product-editor.spec.ts:793:3 › slash 编号列表 saves and reloads the supported block
+[22/45] tests\forensics--product-editor.spec.ts:793:3 › slash 待办 saves and reloads the supported block
+[23/45] tests\forensics--product-editor.spec.ts:793:3 › slash 引用 saves and reloads the supported block
+[24/45] tests\forensics--product-editor.spec.ts:793:3 › slash 代码块 saves and reloads the supported block
+[25/45] tests\forensics--product-editor.spec.ts:793:3 › slash 折叠列表 saves and reloads the supported block
+[26/45] tests\forensics--product-editor.spec.ts:793:3 › slash 表格 saves and reloads the supported block
+[27/45] tests\forensics--product-editor.spec.ts:793:3 › slash 分割线 saves and reloads the supported block
+[28/45] tests\forensics--product-editor.spec.ts:820:3 › strike keyboard command saves and reloads its mark
+[29/45] tests\forensics--product-editor.spec.ts:820:3 › code keyboard command saves and reloads its mark
+[30/45] tests\forensics--product-editor.spec.ts:838:1 › selection bubble toggles existing marks, combines marks and reloads saved content
+[31/45] tests\forensics--product-editor.spec.ts:888:1 › selection bubble creates, edits, removes and combines links across save and reload
+[32/45] tests\forensics--product-editor.spec.ts:973:1 › link editor rejects unsafe schemes and invalid snapshots preserve the valid local page
+[33/45] tests\forensics--product-editor.spec.ts:1014:1 › selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark
+[34/45] tests\forensics--product-editor.spec.ts:1092:1 › tablet coarse pointer hides selection bubble and keeps touch toolbar available
+[35/45] tests\forensics--product-editor.spec.ts:1111:1 › mobile selection bubble stays hidden without horizontal overflow and leaves touch toolbar available
+[36/45] tests\forensics--product-editor.spec.ts:1135:1 › non-formatable code block and attachment selection never open the text formatting bubble
+[37/45] tests\forensics--product-editor.spec.ts:1155:1 › edits only the changed block and serializes a newer edit behind an in-flight save
+[38/45] tests\forensics--product-editor.spec.ts:1179:1 › keeps legacy order keys during an ordinary text edit
+[39/45] tests\forensics--product-editor.spec.ts:1192:1 › refuses unsupported persisted blocks without opening a writable blank editor
+[40/45] tests\forensics--product-editor.spec.ts:1206:1 › pasting a block into another page assigns a new server Block ID
+[41/45] tests\forensics--product-editor.spec.ts:1225:1 › keeps a locally committed block after failed sync and retries the same operation
+[42/45] tests\forensics--product-editor.spec.ts:1247:1 › keeps a local block deletion after failed sync and restores shared state after retry
+[43/45] tests\forensics--product-editor.spec.ts:1281:1 › flushes the newest local edit before leaving during an in-flight create
+[44/45] tests\forensics--product-editor.spec.ts:1327:1 › keeps a dirty draft across session expiry and saves it after the same user logs in
+[45/45] tests\forensics--product-editor.spec.ts:1345:1 › preserves a locally saved IME draft when page metadata sync expires the session
+  45 passed (3.0m)

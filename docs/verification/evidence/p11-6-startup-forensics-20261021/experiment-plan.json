@@ -1,0 +1,49 @@
+{
+  "started": "2026-10-21T11:04:24.792Z",
+  "pid": 61816,
+  "raw": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489",
+  "baseline": {
+    "status --porcelain=v1": "M .agents/current-task.md\n?? apps/web/playwright.startup-forensics.config.ts\n?? apps/web/tests/forensics--product-attachments.spec.ts\n?? apps/web/tests/forensics--product-blocks.spec.ts\n?? apps/web/tests/forensics--product-content-rules.spec.ts\n?? apps/web/tests/forensics--product-database.spec.ts\n?? apps/web/tests/forensics--product-editor.spec.ts\n?? apps/web/tests/forensics--product-flow.spec.ts\n?? apps/web/tests/forensics--product-nested.spec.ts\n?? apps/web/tests/forensics--product-overlay.spec.ts\n?? apps/web/tests/forensics--product-p75-acceptance.spec.ts\n?? apps/web/tests/forensics--product-pages.spec.ts\n?? apps/web/tests/forensics--product-settings.spec.ts\n?? apps/web/tests/forensics--product-slash-context.spec.ts\n?? apps/web/tests/forensics--product-sync.spec.ts\n?? apps/web/tests/forensics--product-table.spec.ts\n?? docs/verification/evidence/p11-6-startup-forensics-20261021/\n?? tools/",
+    "rev-parse HEAD": "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+    "rev-parse origin/master": "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+    "log -5 --oneline": "d71a5bf fix(database): 按视图类型展示图标并替换时间线图标\n6f45dfb fix(database): 明确表格视图创建文案与图标\nd28df43 fix(database): 统一视图创建选项样式和看板图标\n0d6fc6b docs(timeline): 记录创建入口漏项与正式全链路补验\n03bfd6d fix(timeline): 补齐正式创建入口与日期属性配置"
+  },
+  "specs": [
+    "tests/product-flow.spec.ts",
+    "tests/product-pages.spec.ts",
+    "tests/product-editor.spec.ts",
+    "tests/product-blocks.spec.ts",
+    "tests/product-nested.spec.ts",
+    "tests/product-table.spec.ts",
+    "tests/product-database.spec.ts",
+    "tests/product-overlay.spec.ts",
+    "tests/product-slash-context.spec.ts",
+    "tests/product-content-rules.spec.ts",
+    "tests/product-p75-acceptance.spec.ts",
+    "tests/product-sync.spec.ts",
+    "tests/product-attachments.spec.ts",
+    "tests/product-settings.spec.ts"
+  ],
+  "environment": {
+    "baseURL": "http://127.0.0.1:7179",
+    "originalBaseURL": "http://127.0.0.1:7173",
+    "existingUserVitePid": 58068,
+    "workers": 1,
+    "retries": 0,
+    "browser": "chromium / channel chrome",
+    "vite": "original config + read-only middleware/transform observer",
+    "instrumentation": "generated spec import substitution only; original assertions/actions/timeouts intact"
+  },
+  "plan": [
+    "A R5 3 new runners, R1 1 new runner, trace on",
+    "B first5 script-listed subset; expand to historical actual prefix7 through R5, then actual prefix13 through R1; all target predecessors preserved; no full Product gate",
+    "C 14 spec files each in own runner; preserve script file list order",
+    "D compare same worker/browser within cumulative runners vs fresh runner; Vite reused within batch"
+  ],
+  "safety": {
+    "minFreePhysicalBytes": 2147483648,
+    "maxOwnedPrivateBytes": 17179869184,
+    "maxRunMs": 2400000,
+    "note": "stop batch on observed threshold, resource sampler error, or excessively long runner; thresholds are guardrails, not exhaustion claims"
+  }
+}

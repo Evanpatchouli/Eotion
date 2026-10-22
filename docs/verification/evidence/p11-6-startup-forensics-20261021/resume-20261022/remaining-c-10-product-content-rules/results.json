@@ -1,0 +1,166 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "playwright.startup-forensics.config.ts",
+      "tests/forensics--product-content-rules.spec.ts",
+      "--workers=1",
+      "--retries=0",
+      "--output",
+      "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-10-product-content-rules\\test-results"
+    ],
+    "configFile": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\playwright.startup-forensics.config.ts",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-startup-forensics-1792638528695/remaining-c-10-product-content-rules/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "forensics--*.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "C:\\Users\\31250\\Work\\Eotion\\tools\\startup-forensics\\reporter.mjs",
+        {
+          "runDir": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-10-product-content-rules"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-10-product-content-rules\\results.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "forensics--product-content-rules.spec.ts",
+      "file": "forensics--product-content-rules.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "pasted list and quote content is repaired to the block registry instead of making the page unsaveable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5374,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:27:32.110Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5f8098d6d6a4b6d145c-355ac84bc0013a48f9d3",
+          "file": "forensics--product-content-rules.spec.ts",
+          "line": 64,
+          "column": 1
+        },
+        {
+          "title": "pasted attributes stay inside the block registry instead of making the page unsaveable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6459,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:27:37.902Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5f8098d6d6a4b6d145c-6a35d157ff1ace560873",
+          "file": "forensics--product-content-rules.spec.ts",
+          "line": 106,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-22T03:27:31.545Z",
+    "duration": 13303.168,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

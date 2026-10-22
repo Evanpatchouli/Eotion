@@ -1,0 +1,29 @@
+{
+  "id": "a-r1-1",
+  "exe": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+  "args": [
+    "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+    "test",
+    "--config",
+    "playwright.startup-forensics.config.ts",
+    "tests/forensics--product-sync.spec.ts",
+    "--workers=1",
+    "--retries=0",
+    "--output",
+    "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\a-r1-1\\test-results",
+    "--grep",
+    "a second client pulls sequential changes and remote deletion removes local pages"
+  ],
+  "cwd": "C:\\Users\\31250\\Work\\Eotion\\apps\\web",
+  "head": "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+  "started": "2026-10-21T11:04:42.954Z",
+  "raw": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\a-r1-1",
+  "observationConfig": "apps/web/playwright.startup-forensics.config.ts",
+  "trace": "on",
+  "workers": 1,
+  "retries": 0,
+  "runnerPid": 39372,
+  "ended": "2026-10-21T11:04:48.036Z",
+  "code": 0,
+  "signal": null
+}

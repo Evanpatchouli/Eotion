@@ -1,4 +1,29 @@
-# 当前任务：P11.6 时间线创建与日期配置漏项已补齐（Scope PASS）
+# 当前任务：P11.6 启动故障专项诊断（取证结束，HOLD不变）
+
+2026-10-22 最终实验已结束，不再启动测试。R5原目标A三次通过，R1单例通过；B脚本前5为111/111、历史实际前7为363/365（theme启动buffer与菜单定位）、实际前13为496/497（菜单定位）；R1/R5目标通过。C14文件各独立runner全部完成，只有Database252/254（Frozen内容、属性菜单），其余文件通过，所有workers1/retries0；不拼成完整Product。D原前94项一次有限复验94/94、worker0且实际顺序逐项一致，无稳定最小因果前缀。
+
+已捕获同类启动错误，但模块为theme.ts、请求未进Vite首middleware，App未挂载；底层资源来源仍未知。R1未复现，缺原失败trace，无共同根因证据；无生产修复Brief。报告：docs/verification/p11-6-startup-forensics.md。自有服务/runner/采样器退出，7179无监听、1466 PID+birth身份无残留；用户服务未终止，最终7173也无监听。源码/原spec/config/旧验收/版本审计通过，0.0.1/build2和P11.6 HOLD不变。
+
+本轮独立review完成，两个提交前P2（生成副本/Windows长路径）均闭合，无新P1/P2。14副本已SHA安全清理；归档缩短路径保留原映射，误归属fastctx132次观测已排除派生统计，原始记录不改。三组SHA核验通过，原14文件无诊断env仍收集511项。按已授权范围仅提交诊断工具/报告/证据并推送origin/master，交付SHA以Git与最终回复为准；此后停止，不新增实验/修复/发布。以下为过程历史。
+
+2026-10-22 用户撤回停止指令并明确“继续工作”：恢复剩余实验。旧批已按用户停止要求终止所有自有进程，未提交/推送；不覆盖旧批。恢复fetch后HEAD/origin仍d71a5bf，源审计14原spec/生产/正式配置无改动，版本检查通过。C前2spec完整通过，C03 editor仅23项完成后中断，不计完整；新子目录resume-20261022从editor整文件重跑至C14。随后至多一次prefix94有限复验和一次最终独立review。原提交/推送授权保留，完成诊断材料后推送并停止，P11.6 HOLD不变。
+
+2026-10-21：用户授权调查 R5 ERR_NO_BUFFER_SPACE 与 R1 历史白屏；不改生产代码、业务断言、timeout/retry/flags、版本或 P10，不重跑完整 P11.6，不发布。P11.6 HOLD / 0.0.1 build 2 不变。
+
+起始 fetch 后 master / HEAD / origin/master 均 d71a5bf680061a4ab06e2e38323be840cdccebe2，工作树干净。
+
+| 单元 | 模式 / 等级 | 验收 |
+| --- | --- | --- |
+| F1 | investigate / S0 scout | 复用历史证据、SHA与实际spec/worker上下文 |
+| F2 | decide / S2 主Agent | 临时非阻塞请求/CDP/DOM/Vite/Windows观测边界 |
+| F3 | execute / S1 fast_worker | 诊断spec副本、fixture/config/reporter，不改原测试 |
+| F4 | verify / S0 主Agent | R5独立/累计前缀/14独立，R1独立与原顺序前缀；每runner独立 |
+| F5 | investigate / S2 主Agent | 只按直接证据归因；未复现不称已修 |
+| F6 | review / reviewer | 一次独立证据审查、SHA/diff/自有进程清理、诊断提交推送后停止 |
+
+证据根：docs/verification/evidence/p11-6-startup-forensics-20261021/。7173原有用户Vite PID58068保留；本轮使用原Vite配置的VITE_PORT=7179及对应baseURL，仅隔离端口，不添加Chromium flags。原始证据不可覆盖。下文为历史任务记录。
+
+# 历史任务：P11.6 时间线创建与日期配置漏项已补齐（Scope PASS）
 
 ## 2026-10-21 用户授权的新工作
 

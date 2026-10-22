@@ -1,0 +1,44 @@
+
+Running 38 tests using 1 worker
+
+
+
+[1/38] tests\forensics--product-overlay.spec.ts:108:1 › opening model has strict device matrix and separate persistent targets
+[2/38] tests\forensics--product-overlay.spec.ts:135:1 › desktop drawer keeps background interactive and restores focus
+[3/38] tests\forensics--product-overlay.spec.ts:161:3 › desktop drawer enters and leaves with the specified transform transition
+[4/38] tests\forensics--product-overlay.spec.ts:161:3 › right drawer enters and leaves with the specified transform transition
+[5/38] tests\forensics--product-overlay.spec.ts:161:3 › bottom drawer enters and leaves with the specified transform transition
+[6/38] tests\forensics--product-overlay.spec.ts:223:3 › right-drawer close button follows the drawer leave flow
+[7/38] tests\forensics--product-overlay.spec.ts:223:3 › bottom-drawer masked backdrop follows the drawer leave flow
+[8/38] tests\forensics--product-overlay.spec.ts:243:1 › drawer dismissible and IME Escape guards do not start a leave transition
+[9/38] tests\forensics--product-overlay.spec.ts:269:3 › drawer dismissible IME Escape does not leave, while normal Escape closes
+[10/38] tests\forensics--product-overlay.spec.ts:269:3 › right-drawer dismissible IME Escape does not leave, while normal Escape closes
+[11/38] tests\forensics--product-overlay.spec.ts:269:3 › bottom-drawer dismissible IME Escape does not leave, while normal Escape closes
+[12/38] tests\forensics--product-overlay.spec.ts:293:3 › drawer reduced motion removes displacement and closes immediately
+[13/38] tests\forensics--product-overlay.spec.ts:293:3 › right-drawer reduced motion removes displacement and closes immediately
+[14/38] tests\forensics--product-overlay.spec.ts:293:3 › bottom-drawer reduced motion removes displacement and closes immediately
+[15/38] tests\forensics--product-overlay.spec.ts:310:1 › a pending controlled close keeps the drawer usable until the parent accepts it
+[16/38] tests\forensics--product-overlay.spec.ts:335:1 › a rejected controlled close keeps the drawer open without starting leave motion
+[17/38] tests\forensics--product-overlay.spec.ts:353:1 › external close preserves slot content until the drawer transition finishes
+[18/38] tests\forensics--product-overlay.spec.ts:372:1 › unmounting during a drawer leave releases its modal and scroll lock
+[19/38] tests\forensics--product-overlay.spec.ts:388:1 › switching from a masked drawer to desktop drawer releases native modal resources
+[20/38] tests\forensics--product-overlay.spec.ts:408:1 › closing a modal while switching to desktop drawer unlocks scroll and restores trigger focus
+[21/38] tests\forensics--product-overlay.spec.ts:429:1 › rapid external close and reopen keeps the latest drawer state
+[22/38] tests\forensics--product-overlay.spec.ts:454:1 › closing before drawer entrance finishes and reopening leaves no stale native state
+[23/38] tests\forensics--product-overlay.spec.ts:487:3 › desktop modal keeps the header and optional footer outside the scrolling body
+[24/38] tests\forensics--product-overlay.spec.ts:487:3 › desktop drawer keeps the header and optional footer outside the scrolling body
+[25/38] tests\forensics--product-overlay.spec.ts:487:3 › phone right drawer keeps the header and optional footer outside the scrolling body
+[26/38] tests\forensics--product-overlay.spec.ts:487:3 › phone bottom drawer keeps the header and optional footer outside the scrolling body
+[27/38] tests\forensics--product-overlay.spec.ts:524:3 › right-drawer keeps an in-overlay popover interactive above the scrolling body
+[28/38] tests\forensics--product-overlay.spec.ts:524:3 › bottom-drawer keeps an in-overlay popover interactive above the scrolling body
+[29/38] tests\forensics--product-overlay.spec.ts:572:1 › product overlay renders a title header without a footer when the footer slot is omitted
+[30/38] tests\forensics--product-overlay.spec.ts:581:1 › title controls the visible heading, label remains the accessible name, and dismissible gates close actions
+[31/38] tests\forensics--product-overlay.spec.ts:595:1 › IME Escape keeps the overlay open until a normal Escape closes it
+[32/38] tests\forensics--product-overlay.spec.ts:614:3 › modal traps focus, locks scroll, closes from Escape and restores focus
+[33/38] tests\forensics--product-overlay.spec.ts:614:3 › right-drawer traps focus, locks scroll, closes from Escape and restores focus
+[34/38] tests\forensics--product-overlay.spec.ts:614:3 › bottom-drawer traps focus, locks scroll, closes from Escape and restores focus
+[35/38] tests\forensics--product-overlay.spec.ts:638:1 › desktop modal uses native modal semantics and blocks the background
+[36/38] tests\forensics--product-overlay.spec.ts:651:1 › phone drawer size, safe area, close button and light/dark surfaces
+[37/38] tests\forensics--product-overlay.spec.ts:681:1 › masked drawer closes from backdrop click
+[38/38] tests\forensics--product-overlay.spec.ts:691:1 › page mode occupies the product page layer, supports Back and does not lock scroll
+  38 passed (39.9s)

@@ -1,0 +1,5 @@
+{
+  "time": "2026-10-21T11:03:42.487Z",
+  "error": "Error: Vite exited 1",
+  "stack": "Error: Vite exited 1\n    at ChildProcess.<anonymous> (file:///C:/Users/31250/Work/Eotion/tools/startup-forensics/run-experiments.mjs:60:268)\n    at ChildProcess.wrapper (node:events:639:12)\n    at ChildProcess.emit (node:events:514:28)\n    at ChildProcess._handle.onexit (node:internal/child_process:324:12)"
+}

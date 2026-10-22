@@ -1,0 +1,8 @@
+
+Running 2 tests using 1 worker
+
+
+
+[1/2] tests\forensics--product-content-rules.spec.ts:64:1 › pasted list and quote content is repaired to the block registry instead of making the page unsaveable
+[2/2] tests\forensics--product-content-rules.spec.ts:106:1 › pasted attributes stay inside the block registry instead of making the page unsaveable
+  2 passed (13.3s)

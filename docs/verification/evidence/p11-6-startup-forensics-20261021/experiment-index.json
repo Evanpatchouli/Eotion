@@ -1,0 +1,588 @@
+{
+  "generatedAt": "2026-10-22T03:53:50.755Z",
+  "completeRunnerCount": 22,
+  "runs": [
+    {
+      "group": "main",
+      "id": "a-r5-1",
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 1
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "on",
+      "command": "a-r5-1/command.json",
+      "summary": "a-r5-1/startup-summary.json"
+    },
+    {
+      "group": "main",
+      "id": "a-r5-2",
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 1
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "on",
+      "command": "a-r5-2/command.json",
+      "summary": "a-r5-2/startup-summary.json"
+    },
+    {
+      "group": "main",
+      "id": "a-r5-3",
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 1
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "on",
+      "command": "a-r5-3/command.json",
+      "summary": "a-r5-3/startup-summary.json"
+    },
+    {
+      "group": "main",
+      "id": "a-r1-1",
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 1
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "on",
+      "command": "a-r1-1/command.json",
+      "summary": "a-r1-1/startup-summary.json"
+    },
+    {
+      "group": "main",
+      "id": "b-prefix-05",
+      "counts": {
+        "expected": 111,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 111
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "b-prefix-05/command.json",
+      "summary": "b-prefix-05/startup-summary.json"
+    },
+    {
+      "group": "main",
+      "id": "b-actual-prefix-07",
+      "counts": {
+        "expected": 363,
+        "unexpected": 2,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 365
+      },
+      "workerIndexes": [
+        0,
+        1,
+        2
+      ],
+      "traceEffective": "on",
+      "command": "b-actual-prefix-07/command.json",
+      "summary": "b-actual-prefix-07/startup-summary.json"
+    },
+    {
+      "group": "main",
+      "id": "b-r1-actual-prefix-13",
+      "counts": {
+        "expected": 496,
+        "unexpected": 1,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 497
+      },
+      "workerIndexes": [
+        0,
+        1
+      ],
+      "traceEffective": "on",
+      "command": "b-r1-actual-prefix-13/command.json",
+      "summary": "b-r1-actual-prefix-13/startup-summary.json"
+    },
+    {
+      "group": "main",
+      "id": "c-01-product-flow",
+      "counts": {
+        "expected": 10,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 10
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "c-01-product-flow/command.json",
+      "summary": "c-01-product-flow/startup-summary.json"
+    },
+    {
+      "group": "main",
+      "id": "c-02-product-pages",
+      "counts": {
+        "expected": 25,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 25
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "c-02-product-pages/command.json",
+      "summary": "c-02-product-pages/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-03-product-editor",
+      "counts": {
+        "expected": 45,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 45
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-03-product-editor/command.json",
+      "summary": "resume-20261022/remaining-c-03-product-editor/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-04-product-blocks",
+      "counts": {
+        "expected": 14,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 14
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-04-product-blocks/command.json",
+      "summary": "resume-20261022/remaining-c-04-product-blocks/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-05-product-nested",
+      "counts": {
+        "expected": 17,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 17
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "on",
+      "command": "resume-20261022/remaining-c-05-product-nested/command.json",
+      "summary": "resume-20261022/remaining-c-05-product-nested/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-06-product-table",
+      "counts": {
+        "expected": 14,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 14
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-06-product-table/command.json",
+      "summary": "resume-20261022/remaining-c-06-product-table/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-07-product-database",
+      "counts": {
+        "expected": 252,
+        "unexpected": 2,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 254
+      },
+      "workerIndexes": [
+        0,
+        1,
+        2
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-07-product-database/command.json",
+      "summary": "resume-20261022/remaining-c-07-product-database/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-08-product-overlay",
+      "counts": {
+        "expected": 38,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 38
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-08-product-overlay/command.json",
+      "summary": "resume-20261022/remaining-c-08-product-overlay/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-09-product-slash-context",
+      "counts": {
+        "expected": 3,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 3
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-09-product-slash-context/command.json",
+      "summary": "resume-20261022/remaining-c-09-product-slash-context/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-10-product-content-rules",
+      "counts": {
+        "expected": 2,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 2
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-10-product-content-rules/command.json",
+      "summary": "resume-20261022/remaining-c-10-product-content-rules/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-11-product-p75-acceptance",
+      "counts": {
+        "expected": 3,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 3
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-11-product-p75-acceptance/command.json",
+      "summary": "resume-20261022/remaining-c-11-product-p75-acceptance/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-12-product-sync",
+      "counts": {
+        "expected": 42,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 42
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "on",
+      "command": "resume-20261022/remaining-c-12-product-sync/command.json",
+      "summary": "resume-20261022/remaining-c-12-product-sync/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-13-product-attachments",
+      "counts": {
+        "expected": 23,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 23
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-13-product-attachments/command.json",
+      "summary": "resume-20261022/remaining-c-13-product-attachments/startup-summary.json"
+    },
+    {
+      "group": "resume-20261022",
+      "id": "remaining-c-14-product-settings",
+      "counts": {
+        "expected": 21,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 21
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "retain-on-failure",
+      "command": "resume-20261022/remaining-c-14-product-settings/command.json",
+      "summary": "resume-20261022/remaining-c-14-product-settings/startup-summary.json"
+    },
+    {
+      "group": "prefix94",
+      "id": "d-prefix-94",
+      "counts": {
+        "expected": 94,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 94
+      },
+      "workerIndexes": [
+        0
+      ],
+      "traceEffective": "on",
+      "command": "prefix94/d-prefix-94/command.json",
+      "summary": "prefix94/d-prefix-94/startup-summary.json"
+    }
+  ],
+  "independentSpecFileCount": 14,
+  "independentSpecMatrix": [
+    {
+      "spec": "product-flow",
+      "counts": {
+        "expected": 10,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 10
+      },
+      "group": "main",
+      "runId": "c-01-product-flow"
+    },
+    {
+      "spec": "product-pages",
+      "counts": {
+        "expected": 25,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 25
+      },
+      "group": "main",
+      "runId": "c-02-product-pages"
+    },
+    {
+      "spec": "product-editor",
+      "counts": {
+        "expected": 45,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 45
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-03-product-editor"
+    },
+    {
+      "spec": "product-blocks",
+      "counts": {
+        "expected": 14,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 14
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-04-product-blocks"
+    },
+    {
+      "spec": "product-nested",
+      "counts": {
+        "expected": 17,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 17
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-05-product-nested"
+    },
+    {
+      "spec": "product-table",
+      "counts": {
+        "expected": 14,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 14
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-06-product-table"
+    },
+    {
+      "spec": "product-database",
+      "counts": {
+        "expected": 252,
+        "unexpected": 2,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 254
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-07-product-database"
+    },
+    {
+      "spec": "product-overlay",
+      "counts": {
+        "expected": 38,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 38
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-08-product-overlay"
+    },
+    {
+      "spec": "product-slash-context",
+      "counts": {
+        "expected": 3,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 3
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-09-product-slash-context"
+    },
+    {
+      "spec": "product-content-rules",
+      "counts": {
+        "expected": 2,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 2
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-10-product-content-rules"
+    },
+    {
+      "spec": "product-p75-acceptance",
+      "counts": {
+        "expected": 3,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 3
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-11-product-p75-acceptance"
+    },
+    {
+      "spec": "product-sync",
+      "counts": {
+        "expected": 42,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 42
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-12-product-sync"
+    },
+    {
+      "spec": "product-attachments",
+      "counts": {
+        "expected": 23,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 23
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-13-product-attachments"
+    },
+    {
+      "spec": "product-settings",
+      "counts": {
+        "expected": 21,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 21
+      },
+      "group": "resume-20261022",
+      "runId": "remaining-c-14-product-settings"
+    }
+  ],
+  "interruptedRunsReference": "interrupted-runs.json",
+  "uniqueBufferOccurrencesByPlaywrightRequestFailed": [
+    {
+      "group": "main",
+      "runId": "b-actual-prefix-07",
+      "event": {
+        "event": "request-failed",
+        "wallTime": "2026-10-21T11:16:25.465Z",
+        "monotonicMs": 320476.467,
+        "pid": 47044,
+        "contextId": "4c00b443bf",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "startMonotonicMs": 320461.8031,
+        "endMonotonicMs": 320476.4403,
+        "failure": "net::ERR_NO_BUFFER_SPACE",
+        "_sourceFile": "d79840488a290a1ff-Timeline-shell-keeps-local-zoom-exposes-the-seven-scales-and-has-no-table-fallback.jsonl"
+      }
+    }
+  ],
+  "diagnosis": {
+    "r5": "startup failure observed for theme.ts before Vite first middleware; original R5 failed webRuntimePreferences.ts; specific underlying resource origin unknown",
+    "r1": "not reproduced; original failed trace missing; not fixed",
+    "commonRootCause": "no direct supporting evidence",
+    "minimalCausalPrefix": "not proven; identical first94 passed in fresh runner and finite replay",
+    "productGate": "not rerun; do not concatenate isolated results; P11.6 HOLD",
+    "version": "0.0.1 / build 2"
+  },
+  "cleanupReference": "final-service-check.json",
+  "sourceAuditReference": "source-audit-cleanup.json",
+  "packing": "Each group archival-packing.json proves gzip originals; raw originals retained outside repository; short artifact mapping source SHA in per-run startup-summary.json"
+}

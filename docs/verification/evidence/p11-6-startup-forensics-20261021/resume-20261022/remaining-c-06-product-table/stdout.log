@@ -1,0 +1,20 @@
+
+Running 14 tests using 1 worker
+
+
+
+[1/14] tests\forensics--product-table.spec.ts:135:1 › slash creates one editable table block with a header row and cell navigation
+[2/14] tests\forensics--product-table.spec.ts:179:1 › last cell Tab adds a row and the table keeps its identity across reload
+[3/14] tests\forensics--product-table.spec.ts:197:1 › table menu adds and removes rows and columns and deletes the whole table
+[4/14] tests\forensics--product-table.spec.ts:233:1 › removing the only block of the page replaces the table with a paragraph
+[5/14] tests\forensics--product-table.spec.ts:248:1 › copy and paste inside cells and plain/TSV paste never produce an unsaveable document
+[6/14] tests\forensics--product-table.spec.ts:293:1 › a table block drags and reorders without losing its grid or identity
+[7/14] tests\forensics--product-table.spec.ts:310:1 › a table nests under a toggle and cell Tab never indents the table block
+[8/14] tests\forensics--product-table.spec.ts:334:1 › a table created in a toggle summary can be deleted without emptying the toggle
+[9/14] tests\forensics--product-table.spec.ts:362:1 › cell inline marks and hard breaks persist through save and reload
+[10/14] tests\forensics--product-table.spec.ts:384:1 › an oversized pasted table is refused instead of making the page unsaveable
+[11/14] tests\forensics--product-table.spec.ts:418:1 › table slash is hidden in quote, list item and cell contexts
+[12/14] tests\forensics--product-table.spec.ts:460:3 › 390px table layout › a wide table scrolls inside its wrapper and keeps the page and cells usable
+[13/14] tests\forensics--product-table.spec.ts:488:1 › a 20x10 table stays editable and saves a single block
+[14/14] tests\forensics--product-table.spec.ts:506:1 › offline table edits survive reload and push before the snapshot pull
+  14 passed (1.1m)

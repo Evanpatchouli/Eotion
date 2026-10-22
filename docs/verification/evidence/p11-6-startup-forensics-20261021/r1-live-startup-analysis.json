@@ -1,0 +1,1213 @@
+{
+  "sourceRun": "b-r1-actual-prefix-13",
+  "sourceFile": "59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages.jsonl",
+  "start": {
+    "event": "test-start",
+    "wallTime": "2026-10-21T11:55:18.721Z",
+    "monotonicMs": 1082495.0529,
+    "pid": 52620,
+    "testId": "73cc0c094cb4dd55ce9b-259f4393dcc4796e03af",
+    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-sync.spec.ts",
+    "title": [
+      "forensics--product-sync.spec.ts",
+      "a second client pulls sequential changes and remote deletion removes local pages"
+    ],
+    "workerIndex": 1,
+    "parallelIndex": 0,
+    "status": "passed",
+    "startedAt": "2026-10-21T11:55:18.721Z"
+  },
+  "end": {
+    "event": "test-end",
+    "wallTime": "2026-10-21T11:55:21.473Z",
+    "monotonicMs": 1085247.6957,
+    "pid": 52620,
+    "status": "passed",
+    "expectedStatus": "passed",
+    "durationMs": 2570
+  },
+  "contexts": [
+    {
+      "event": "context-created",
+      "wallTime": "2026-10-21T11:55:18.730Z",
+      "monotonicMs": 1082504.3827,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "options": {},
+      "workerIndex": 1,
+      "parallelIndex": 0
+    },
+    {
+      "event": "context-created",
+      "wallTime": "2026-10-21T11:55:19.984Z",
+      "monotonicMs": 1083757.8667,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "options": {},
+      "workerIndex": 1,
+      "parallelIndex": 0
+    }
+  ],
+  "moduleEvents": [
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:18.947Z",
+      "monotonicMs": 1082721.2783,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.3",
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "method": "GET",
+      "initiator": {
+        "type": "parser",
+        "url": "http://127.0.0.1:7179/",
+        "lineNumber": 29,
+        "columnNumber": 45
+      },
+      "timestamp": 33574.11175,
+      "cdpWallTime": 1792583718.93637
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:18.952Z",
+      "monotonicMs": 1082726.2354,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:18.964Z",
+      "monotonicMs": 1082738.0052,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.3",
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:18.964Z",
+      "monotonicMs": 1082738.6862,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1082726.215,
+      "endMonotonicMs": 1082738.6736
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:18.964Z",
+      "monotonicMs": 1082738.7563,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "method": "GET",
+      "startMonotonicMs": 1082726.215,
+      "endMonotonicMs": 1082738.7507
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:18.966Z",
+      "monotonicMs": 1082740.3325,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.8",
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "lineNumber": 2,
+        "columnNumber": 16
+      },
+      "timestamp": 33574.14001,
+      "cdpWallTime": 1792583718.964607
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:18.966Z",
+      "monotonicMs": 1082740.3525,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.9",
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "lineNumber": 3,
+        "columnNumber": 23
+      },
+      "timestamp": 33574.140066,
+      "cdpWallTime": 1792583718.964668
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:18.966Z",
+      "monotonicMs": 1082740.5347,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.10",
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "lineNumber": 4,
+        "columnNumber": 43
+      },
+      "timestamp": 33574.14015,
+      "cdpWallTime": 1792583718.964777
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:18.966Z",
+      "monotonicMs": 1082740.5506,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.11",
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "lineNumber": 5,
+        "columnNumber": 32
+      },
+      "timestamp": 33574.140244,
+      "cdpWallTime": 1792583718.964856
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:18.969Z",
+      "monotonicMs": 1082743.3517,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:18.969Z",
+      "monotonicMs": 1082743.4033,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:18.969Z",
+      "monotonicMs": 1082743.4332,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:18.969Z",
+      "monotonicMs": 1082743.4575,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:18.983Z",
+      "monotonicMs": 1082757.2976,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.8",
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:18.984Z",
+      "monotonicMs": 1082757.9799,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1082743.3318,
+      "endMonotonicMs": 1082757.9677
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:18.984Z",
+      "monotonicMs": 1082758.0536,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "method": "GET",
+      "startMonotonicMs": 1082743.3318,
+      "endMonotonicMs": 1082758.0503
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:18.985Z",
+      "monotonicMs": 1082759.1519,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.22",
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "lineNumber": 186,
+        "columnNumber": 7
+      },
+      "timestamp": 33574.159037,
+      "cdpWallTime": 1792583718.983647
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:18.985Z",
+      "monotonicMs": 1082759.7926,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.10",
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:18.986Z",
+      "monotonicMs": 1082759.8706,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1082743.4286,
+      "endMonotonicMs": 1082759.8667
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:18.986Z",
+      "monotonicMs": 1082759.8968,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "method": "GET",
+      "startMonotonicMs": 1082743.4286,
+      "endMonotonicMs": 1082759.8952
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:18.986Z",
+      "monotonicMs": 1082759.9146,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.9",
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:18.986Z",
+      "monotonicMs": 1082759.9987,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1082743.3964,
+      "endMonotonicMs": 1082759.9937
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:18.986Z",
+      "monotonicMs": 1082760.0294,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "method": "GET",
+      "startMonotonicMs": 1082743.3964,
+      "endMonotonicMs": 1082760.0269
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:18.987Z",
+      "monotonicMs": 1082761.3529,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.11",
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:18.987Z",
+      "monotonicMs": 1082761.4214,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1082743.453,
+      "endMonotonicMs": 1082761.4178
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:18.987Z",
+      "monotonicMs": 1082761.4509,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "startMonotonicMs": 1082743.453,
+      "endMonotonicMs": 1082761.4485
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:18.990Z",
+      "monotonicMs": 1082764.1514,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:19.018Z",
+      "monotonicMs": 1082791.9916,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "requestId": "49396.22",
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:19.018Z",
+      "monotonicMs": 1082792.1119,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1082764.1371,
+      "endMonotonicMs": 1082792.1076
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:19.019Z",
+      "monotonicMs": 1082793.7147,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "method": "GET",
+      "startMonotonicMs": 1082764.1371,
+      "endMonotonicMs": 1082793.708
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:20.207Z",
+      "monotonicMs": 1083981.6074,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.3",
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "method": "GET",
+      "initiator": {
+        "type": "parser",
+        "url": "http://127.0.0.1:7179/",
+        "lineNumber": 29,
+        "columnNumber": 45
+      },
+      "timestamp": 33575.374766,
+      "cdpWallTime": 1792583720.19939
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:20.213Z",
+      "monotonicMs": 1083987.6555,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:20.228Z",
+      "monotonicMs": 1084002.1268,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.3",
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:20.228Z",
+      "monotonicMs": 1084002.5483,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1083987.6241,
+      "endMonotonicMs": 1084002.5393
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:20.229Z",
+      "monotonicMs": 1084003.2191,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "method": "GET",
+      "startMonotonicMs": 1083987.6241,
+      "endMonotonicMs": 1084003.2039
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:20.230Z",
+      "monotonicMs": 1084004.098,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.8",
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "lineNumber": 2,
+        "columnNumber": 16
+      },
+      "timestamp": 33575.404276,
+      "cdpWallTime": 1792583720.228891
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:20.230Z",
+      "monotonicMs": 1084004.1082,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.9",
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "lineNumber": 3,
+        "columnNumber": 23
+      },
+      "timestamp": 33575.404411,
+      "cdpWallTime": 1792583720.229026
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:20.230Z",
+      "monotonicMs": 1084004.1183,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.10",
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "lineNumber": 4,
+        "columnNumber": 43
+      },
+      "timestamp": 33575.404533,
+      "cdpWallTime": 1792583720.229154
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:20.230Z",
+      "monotonicMs": 1084004.1274,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.11",
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "lineNumber": 5,
+        "columnNumber": 32
+      },
+      "timestamp": 33575.404667,
+      "cdpWallTime": 1792583720.229292
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:20.232Z",
+      "monotonicMs": 1084006.785,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:20.233Z",
+      "monotonicMs": 1084007.0261,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:20.233Z",
+      "monotonicMs": 1084007.3063,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:20.233Z",
+      "monotonicMs": 1084007.4222,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:20.251Z",
+      "monotonicMs": 1084025.0692,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.8",
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:20.251Z",
+      "monotonicMs": 1084025.2174,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1084006.7618,
+      "endMonotonicMs": 1084025.2116
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:20.253Z",
+      "monotonicMs": 1084027.037,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "method": "GET",
+      "startMonotonicMs": 1084006.7618,
+      "endMonotonicMs": 1084027.0297
+    },
+    {
+      "event": "cdp-request",
+      "wallTime": "2026-10-21T11:55:20.254Z",
+      "monotonicMs": 1084028.011,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.22",
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "method": "GET",
+      "initiator": {
+        "type": "script",
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "lineNumber": 186,
+        "columnNumber": 7
+      },
+      "timestamp": 33575.42892,
+      "cdpWallTime": 1792583720.253545
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:20.254Z",
+      "monotonicMs": 1084028.4264,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.9",
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:20.254Z",
+      "monotonicMs": 1084028.764,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1084006.9802,
+      "endMonotonicMs": 1084028.7598
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:20.255Z",
+      "monotonicMs": 1084029.0582,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "method": "GET",
+      "startMonotonicMs": 1084006.9802,
+      "endMonotonicMs": 1084029.0539
+    },
+    {
+      "event": "request-start",
+      "wallTime": "2026-10-21T11:55:20.271Z",
+      "monotonicMs": 1084045.337,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "method": "GET",
+      "resourceType": "script"
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:20.271Z",
+      "monotonicMs": 1084045.5678,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.10",
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:20.271Z",
+      "monotonicMs": 1084045.7841,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1084007.2977,
+      "endMonotonicMs": 1084045.7797
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:20.272Z",
+      "monotonicMs": 1084045.8254,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "method": "GET",
+      "startMonotonicMs": 1084007.2977,
+      "endMonotonicMs": 1084045.8219
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:20.272Z",
+      "monotonicMs": 1084046.3544,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.11",
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:20.272Z",
+      "monotonicMs": 1084046.5377,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1084007.4144,
+      "endMonotonicMs": 1084046.5308
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:20.274Z",
+      "monotonicMs": 1084048.6722,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "startMonotonicMs": 1084007.4144,
+      "endMonotonicMs": 1084048.6539
+    },
+    {
+      "event": "cdp-response",
+      "wallTime": "2026-10-21T11:55:20.310Z",
+      "monotonicMs": 1084084.6136,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "requestId": "62576.22",
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "fromDiskCache": false,
+      "fromServiceWorker": false
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:20.310Z",
+      "monotonicMs": 1084084.6796,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 1084045.3128,
+      "endMonotonicMs": 1084084.6782
+    },
+    {
+      "event": "request-end",
+      "wallTime": "2026-10-21T11:55:20.310Z",
+      "monotonicMs": 1084084.696,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "method": "GET",
+      "startMonotonicMs": 1084045.3128,
+      "endMonotonicMs": 1084084.6946
+    }
+  ],
+  "markers": [
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:18.947Z",
+      "monotonicMs": 1082721.1354,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "marker": {
+        "name": "document-init",
+        "wallTime": "2026-10-21T11:55:18.938Z",
+        "visibility": "visible"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:18.947Z",
+      "monotonicMs": 1082721.5321,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-21T11:55:18.939Z",
+        "visibility": "visible",
+        "selector": "html",
+        "tagName": "HTML"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:18.948Z",
+      "monotonicMs": 1082722.2013,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-21T11:55:18.941Z",
+        "visibility": "visible",
+        "selector": "#app",
+        "tagName": "DIV"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:19.183Z",
+      "monotonicMs": 1082957.7258,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-21T11:55:19.183Z",
+        "visibility": "visible",
+        "selector": "#app-child",
+        "tagName": "DIV"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:19.191Z",
+      "monotonicMs": 1082965.0557,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-content-loaded",
+        "wallTime": "2026-10-21T11:55:19.188Z",
+        "visibility": "visible"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:19.284Z",
+      "monotonicMs": 1083058.3166,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "marker": {
+        "name": "load",
+        "wallTime": "2026-10-21T11:55:19.243Z",
+        "visibility": "visible"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:19.448Z",
+      "monotonicMs": 1083222.155,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-21T11:55:19.448Z",
+        "visibility": "visible",
+        "selector": ".product-page-placeholder",
+        "tagName": "P"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:19.448Z",
+      "monotonicMs": 1083222.4488,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "marker": {
+        "name": "mutation-observer-disconnected",
+        "wallTime": "2026-10-21T11:55:19.448Z",
+        "visibility": "visible",
+        "reason": "app-child-and-primary-content-seen"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:20.207Z",
+      "monotonicMs": 1083981.2825,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "marker": {
+        "name": "document-init",
+        "wallTime": "2026-10-21T11:55:20.201Z",
+        "visibility": "visible"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:20.207Z",
+      "monotonicMs": 1083981.6755,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-21T11:55:20.202Z",
+        "visibility": "visible",
+        "selector": "html",
+        "tagName": "HTML"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:20.209Z",
+      "monotonicMs": 1083983.28,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-21T11:55:20.204Z",
+        "visibility": "visible",
+        "selector": "#app",
+        "tagName": "DIV"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:20.532Z",
+      "monotonicMs": 1084306.3328,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-21T11:55:20.531Z",
+        "visibility": "visible",
+        "selector": "#app-child",
+        "tagName": "DIV"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:20.542Z",
+      "monotonicMs": 1084316.8131,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-content-loaded",
+        "wallTime": "2026-10-21T11:55:20.539Z",
+        "visibility": "visible"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:20.636Z",
+      "monotonicMs": 1084410.4234,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "marker": {
+        "name": "load",
+        "wallTime": "2026-10-21T11:55:20.596Z",
+        "visibility": "visible"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:21.173Z",
+      "monotonicMs": 1084947.1225,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-21T11:55:21.172Z",
+        "visibility": "visible",
+        "selector": ".product-page-placeholder",
+        "tagName": "P"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:21.173Z",
+      "monotonicMs": 1084947.244,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "marker": {
+        "name": "mutation-observer-disconnected",
+        "wallTime": "2026-10-21T11:55:21.173Z",
+        "visibility": "visible",
+        "reason": "app-child-and-primary-content-seen"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:21.284Z",
+      "monotonicMs": 1085057.8609,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "marker": {
+        "name": "visibility-change",
+        "wallTime": "2026-10-21T11:55:21.281Z",
+        "visibility": "hidden"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-21T11:55:21.466Z",
+      "monotonicMs": 1085240.1385,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "marker": {
+        "name": "visibility-change",
+        "wallTime": "2026-10-21T11:55:21.464Z",
+        "visibility": "hidden"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "event": "console",
+      "wallTime": "2026-10-21T11:55:19.395Z",
+      "monotonicMs": 1083169.4329,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "event": "console",
+      "wallTime": "2026-10-21T11:55:20.763Z",
+      "monotonicMs": 1084537.4392,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ],
+  "diagnosticErrors": [
+    {
+      "event": "diagnostic-error",
+      "wallTime": "2026-10-21T11:55:21.290Z",
+      "monotonicMs": 1085063.9093,
+      "pid": 52620,
+      "phase": "cdp-detach",
+      "error": "Error: cdpSession.detach: Target page, context or browser has been closed"
+    },
+    {
+      "event": "diagnostic-error",
+      "wallTime": "2026-10-21T11:55:21.296Z",
+      "monotonicMs": 1085069.8572,
+      "pid": 52620,
+      "phase": "storage-state",
+      "contextId": "db31ba2660",
+      "error": "Error: browserContext.cookies: Target page, context or browser has been closed"
+    },
+    {
+      "event": "diagnostic-error",
+      "wallTime": "2026-10-21T11:55:21.470Z",
+      "monotonicMs": 1085243.9568,
+      "pid": 52620,
+      "phase": "cdp-detach",
+      "error": "Error: cdpSession.detach: Target page, context or browser has been closed"
+    }
+  ],
+  "httpErrorResponses": [
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:19.395Z",
+      "monotonicMs": 1083169.3772,
+      "pid": 52620,
+      "contextId": "722bcd45f6",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/api/workspaces/sync-workspace/database-navigation?limit=100",
+      "method": "GET",
+      "status": 404,
+      "startMonotonicMs": 1083160.8082,
+      "endMonotonicMs": 1083169.3702
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-21T11:55:20.763Z",
+      "monotonicMs": 1084537.3591,
+      "pid": 52620,
+      "contextId": "db31ba2660",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/api/workspaces/sync-workspace/database-navigation?limit=100",
+      "method": "GET",
+      "status": 404,
+      "startMonotonicMs": 1084527.8901,
+      "endMonotonicMs": 1084537.3527
+    }
+  ],
+  "noBootstrapRequestFailure": true
+}

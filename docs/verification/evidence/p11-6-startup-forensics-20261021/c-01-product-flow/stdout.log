@@ -1,0 +1,16 @@
+
+Running 10 tests using 1 worker
+
+
+
+[1/10] tests\forensics--product-flow.spec.ts:179:1 › protects product routes, reports login failure while pending, then opens the app on success
+[2/10] tests\forensics--product-flow.spec.ts:201:1 › links login and registration pages in both directions
+[3/10] tests\forensics--product-flow.spec.ts:214:1 › requires matching passwords, then registers and returns to login without creating a session
+[4/10] tests\forensics--product-flow.spec.ts:241:1 › disables repeat registration while pending and displays a server error
+[5/10] tests\forensics--product-flow.spec.ts:257:1 › redirects an authenticated visitor from login and registration to the product area
+[6/10] tests\forensics--product-flow.spec.ts:266:1 › delays login until recovery completes and uses cached product state on transient failures
+[7/10] tests\forensics--product-flow.spec.ts:291:1 › creates the first workspace and keeps it available after reload
+[8/10] tests\forensics--product-flow.spec.ts:307:1 › switches workspaces, selects the most recent one, and validates rename with retry and persistence
+[9/10] tests\forensics--product-flow.spec.ts:338:1 › rejects an unknown workspace, handles expired sessions, and prevents back navigation after logout
+[10/10] tests\forensics--product-flow.spec.ts:368:1 › isolates workspace lists between users and closes the mobile drawer after switching
+  10 passed (21.4s)

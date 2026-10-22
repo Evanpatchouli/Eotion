@@ -1,0 +1,449 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "playwright.startup-forensics.config.ts",
+      "tests/forensics--product-nested.spec.ts",
+      "--list"
+    ],
+    "configFile": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\playwright.startup-forensics.config.ts",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/Work/Eotion/apps/web/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "forensics--*.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "C:\\Users\\31250\\Work\\Eotion\\tools\\startup-forensics\\reporter.mjs",
+        {
+          "runDir": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\harness-validation"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\harness-validation\\results.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "forensics--product-nested.spec.ts",
+      "file": "forensics--product-nested.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "universal block chrome reveals on hover and focus and inserts editable root siblings with undo",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-00a9fc5ae83e84e70779",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 25,
+          "column": 1
+        },
+        {
+          "title": "universal chrome follows the caret block while the editor is focused",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-4a1051fa384fcb04f83c",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 105,
+          "column": 1
+        },
+        {
+          "title": "universal plus keeps nested siblings and inserts after the whole toggle with stable IDs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-bac209f0769805c93f6c",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 120,
+          "column": 1
+        },
+        {
+          "title": "universal block chrome stays hidden without layout space at phone width",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-51743fb2fdd817dc4e36",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 152,
+          "column": 1
+        },
+        {
+          "title": "Tab and Shift+Tab move an existing block into and out of a toggle with stable identity and undo",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-bd74a21c12e443ead24e",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 234,
+          "column": 1
+        },
+        {
+          "title": "a mid-block Tab does not change nesting",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-8371f8f2e4f9943d0efa",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 257,
+          "column": 1
+        },
+        {
+          "title": "Tab moves a toggle summary with its child subtree and stable IDs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-274d525b83ed9e74362c",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 268,
+          "column": 1
+        },
+        {
+          "title": "drag handle nests a block into a toggle and keeps its identity after reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-9d4141fd055392bc64ff",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 307,
+          "column": 1
+        },
+        {
+          "title": "drag handle reorders siblings and moves a child back to the root",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-e4319a335326c9a2eb09",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 323,
+          "column": 1
+        },
+        {
+          "title": "drag rejects self, descendant, and excessive nesting depth",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-b30f2da6c0194e6c05e7",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 346,
+          "column": 1
+        },
+        {
+          "title": "dragging outside the editor clears its target marker without moving a block",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-02870bc894971f770e8c",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 363,
+          "column": 1
+        },
+        {
+          "title": "block drop indicators use the semantic accent color in light and dark themes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-08b5a13bf061dd26f643",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 373,
+          "column": 1
+        },
+        {
+          "title": "Tab after a leaf block and native attachment drag do not create children",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-1316e8f2acb4f5df2742",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 407,
+          "column": 1
+        },
+        {
+          "title": "nested blocks render at desktop and phone widths in both themes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-492ed6702eede105e8b9",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 436,
+          "column": 1
+        },
+        {
+          "title": "offline nested move survives reload and browser restart, then pushes before snapshot pull",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "ef8afd2d7bd305cdf9dc-9cebb3ce8c7b2f9f3c9f",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 458,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "universal coarse tablet chrome boundary",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 176,
+          "column": 6,
+          "specs": [
+            {
+              "title": "ordinary controls remain hidden and do not squeeze or cover content",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ef8afd2d7bd305cdf9dc-24df3aeb762801027f08",
+              "file": "forensics--product-nested.spec.ts",
+              "line": 178,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "touch nested controls",
+          "file": "forensics--product-nested.spec.ts",
+          "line": 287,
+          "column": 6,
+          "specs": [
+            {
+              "title": "390px touch toolbar can indent and outdent from the middle of a block",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ef8afd2d7bd305cdf9dc-7324230057c9cf41e02e",
+              "file": "forensics--product-nested.spec.ts",
+              "line": 289,
+              "column": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-21T11:26:41.441Z",
+    "duration": 423.539,
+    "expected": 0,
+    "skipped": 17,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

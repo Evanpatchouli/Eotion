@@ -1,0 +1,31 @@
+
+Running 25 tests using 1 worker
+
+
+
+[1/25] tests\forensics--product-pages.spec.ts:155:1 › shows an empty page tree, then creates a root page and opens it
+[2/25] tests\forensics--product-pages.spec.ts:176:3 › appends a root page after canonical order keys
+[3/25] tests\forensics--product-pages.spec.ts:176:3 › appends a root page after legacy letters order keys
+[4/25] tests\forensics--product-pages.spec.ts:176:3 › appends a root page after unpadded numbers order keys
+[5/25] tests\forensics--product-pages.spec.ts:189:1 › keeps appending after legacy keys across consecutive creates
+[6/25] tests\forensics--product-pages.spec.ts:205:1 › disables root creation until the page list has loaded successfully
+[7/25] tests\forensics--product-pages.spec.ts:217:1 › creates a child page under a page and keeps the hierarchy and sibling order
+[8/25] tests\forensics--product-pages.spec.ts:236:1 › collapses and expands a parent without losing the selected page
+[9/25] tests\forensics--product-pages.spec.ts:252:1 › opens a page from the tree and restores the same page and tree after a reload
+[10/25] tests\forensics--product-pages.spec.ts:270:1 › reports an unavailable page instead of rendering a blank screen
+[11/25] tests\forensics--product-pages.spec.ts:278:1 › renames a page with trimming, validation, pending state, and error recovery
+[12/25] tests\forensics--product-pages.spec.ts:320:1 › rename focuses automatically, submits with Enter, and cancels without writing on Escape or outside click
+[13/25] tests\forensics--product-pages.spec.ts:354:1 › keeps page tree rows steady through rename, move and delete controls and captures desktop states
+[14/25] tests\forensics--product-pages.spec.ts:456:1 › pending rename and move retain their surface and focus on Escape at 1440px
+[15/25] tests\forensics--product-pages.spec.ts:456:1 › pending rename and move retain their surface and focus on Escape at 390px
+[16/25] tests\forensics--product-pages.spec.ts:507:1 › keeps delete confirmation open while editor flush is pending and blocks duplicate flushes
+[17/25] tests\forensics--product-pages.spec.ts:551:1 › moves a page under another page and back to the root
+[18/25] tests\forensics--product-pages.spec.ts:599:1 › never offers the page itself or its descendants and preserves a local move when sync fails
+[19/25] tests\forensics--product-pages.spec.ts:633:1 › keeps page trees isolated per workspace and drops the previous page id
+[20/25] tests\forensics--product-pages.spec.ts:653:1 › deletes a leaf page, rejects a page with children, and recovers the route
+[21/25] tests\forensics--product-pages.spec.ts:692:1 › reports page tree load failures and retries
+[22/25] tests\forensics--product-pages.spec.ts:710:1 › touch page action dialogs › mobile move dialog stays compact with only three destinations
+[23/25] tests\forensics--product-pages.spec.ts:745:1 › touch page action dialogs › mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list
+[24/25] tests\forensics--product-pages.spec.ts:825:1 › page action presentation uses the mobile breakpoint and preserves an open draft across resize
+[25/25] tests\forensics--product-pages.spec.ts:850:1 › closes the mobile sidebar after opening a page from the tree
+  25 passed (1.1m)

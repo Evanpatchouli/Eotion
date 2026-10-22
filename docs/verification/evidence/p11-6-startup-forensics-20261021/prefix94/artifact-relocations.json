@@ -1,0 +1,5 @@
+{
+  "time": "2026-10-22T03:44:44.074Z",
+  "reason": "Preserve existing long-path archive copies before generating Git-portable short paths; raw test evidence remains untouched",
+  "relocations": []
+}

@@ -1,0 +1,13 @@
+{
+  "ended": "2026-10-22T03:37:34.861Z",
+  "stopped": false,
+  "raw": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562",
+  "results": 1,
+  "vitePid": 30656,
+  "viteExitCode": 0,
+  "monitorPid": 27972,
+  "monitorExitCode": 0,
+  "systemMemoryMonitorPid": 34804,
+  "systemMemoryMonitorExitCode": 0,
+  "systemMemoryMonitorError": null
+}

@@ -1,0 +1,150 @@
+{
+  "time": "2026-10-22T03:44:43.905Z",
+  "reason": "Preserve existing long-path archive copies before generating Git-portable short paths; raw test evidence remains untouched",
+  "relocations": [
+    {
+      "runId": "remaining-c-05-product-nested",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022\\remaining-c-05-product-nested\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-05-product-nested\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-context-9040e6529f-storage-state.json",
+          "bytes": 447,
+          "sha256": "dbd19e624ffe61e5940b4cbaeed5d8c557892614a1e55b7a0726c016b6b14849"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-page-9040e6529f-1\\dom.html",
+          "bytes": 177773,
+          "sha256": "27793a040242f99d3a0e20f62fdbbd1c0debc06ed5a3f5926250fbc6e75c7f4c"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-page-9040e6529f-1\\screenshot.png",
+          "bytes": 22186,
+          "sha256": "e1c774c627783ed85908475686dd6ae23ac4e3851b4598e62153b2ff3c1d66ce"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content.jsonl",
+          "bytes": 338007,
+          "sha256": "a5f5fa1d87d6e6ba4250f487e84e157ad71925f0265ec5e5d9b1fa821b28171b"
+        },
+        {
+          "path": "test-results\\forensics--product-nested--87d68-ot-squeeze-or-cover-content\\trace.zip",
+          "bytes": 206749,
+          "sha256": "48185a0c8f95c10fca9176a828ecf6d89f34e6ede879ea9ab0ff7c651c6e3039"
+        }
+      ]
+    },
+    {
+      "runId": "remaining-c-07-product-database",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022\\remaining-c-07-product-database\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-07-product-database\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference-context-cebc466447-storage-state.json",
+          "bytes": 451,
+          "sha256": "e8a7f55cec0f7a7c7698e0b41b5c484d19813c773183a7c0cc32bd3594cfa6be"
+        },
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference-page-cebc466447-1\\dom.html",
+          "bytes": 200063,
+          "sha256": "48433675db05e5ad22f19135b676c84d6ebb4498058476512554d4b63fb5f443"
+        },
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference-page-cebc466447-1\\screenshot.png",
+          "bytes": 45395,
+          "sha256": "b2219e34fd79e043b3b08e27cf2cc6c0b52eb53d404338c7f4dd64fb4f913a98"
+        },
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference.jsonl",
+          "bytes": 351698,
+          "sha256": "846e028db8d5d9a7222cbda9197605f772aa943e128494f7c092d972827dd29d"
+        },
+        {
+          "path": "events\\ozen-Table-resolves-independent-columns-formats-shared-properties-and-opens-the-existing-Record-Host-context-7f6089119e-storage-state.json",
+          "bytes": 451,
+          "sha256": "e8a7f55cec0f7a7c7698e0b41b5c484d19813c773183a7c0cc32bd3594cfa6be"
+        },
+        {
+          "path": "events\\ozen-Table-resolves-independent-columns-formats-shared-properties-and-opens-the-existing-Record-Host-page-7f6089119e-1\\dom.html",
+          "bytes": 195351,
+          "sha256": "508125db94f0416db8fba96a1fb861d629a348c1a783f9859121df5c2f3e6f7b"
+        },
+        {
+          "path": "events\\ozen-Table-resolves-independent-columns-formats-shared-properties-and-opens-the-existing-Record-Host-page-7f6089119e-1\\screenshot.png",
+          "bytes": 42286,
+          "sha256": "e7a8517ecd2f3c5c0b31749a1762ae25335330dbce26b9dc446a69b67c8d9fc9"
+        },
+        {
+          "path": "events\\ozen-Table-resolves-independent-columns-formats-shared-properties-and-opens-the-existing-Record-Host.jsonl",
+          "bytes": 349636,
+          "sha256": "c504fa8ac0699653fa67cb6f35972312e95427f7aac1a99fcb8dc3c48517f41e"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-7d1ef--deleted-property-reference\\error-context.md",
+          "bytes": 20815,
+          "sha256": "08f8503dbcf73b206b505271089370dbf3493adaf80a924f5921da1b80a4c0af"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-7d1ef--deleted-property-reference\\test-failed-1.png",
+          "bytes": 45395,
+          "sha256": "b2219e34fd79e043b3b08e27cf2cc6c0b52eb53d404338c7f4dd64fb4f913a98"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-7d1ef--deleted-property-reference\\trace.zip",
+          "bytes": 700608,
+          "sha256": "1d086b64d75ccceeed7c7ca5c53eeb760731485f43e79a4e24e41c9eeb5a910f"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-8a757-ns-the-existing-Record-Host\\error-context.md",
+          "bytes": 20453,
+          "sha256": "8b031660623ff0e3375ecda036cd3f27c83f96a321bc492b05e63d54161290c2"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-8a757-ns-the-existing-Record-Host\\test-failed-1.png",
+          "bytes": 42286,
+          "sha256": "e7a8517ecd2f3c5c0b31749a1762ae25335330dbce26b9dc446a69b67c8d9fc9"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-8a757-ns-the-existing-Record-Host\\trace.zip",
+          "bytes": 440012,
+          "sha256": "2a1fcbd0f3e7b4723f7c2ab07061362a7fe9b19f403d5d87815bdf1eb794913d"
+        }
+      ]
+    },
+    {
+      "runId": "remaining-c-12-product-sync",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022\\remaining-c-12-product-sync\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\remaining-c-12-product-sync\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages-context-40c317537e-storage-state.json",
+          "bytes": 443,
+          "sha256": "e5a77377c2559a97f311de9655aa90a175c94ce5df1bbba63c1fec59aa80f9ca"
+        },
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages-page-40c317537e-1\\dom.html",
+          "bytes": 169095,
+          "sha256": "c1c7f4d1e394b0b08d474ecec8d954a2a015911bcaab7ba88a9fa31554329cf6"
+        },
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages-page-40c317537e-1\\screenshot.png",
+          "bytes": 19561,
+          "sha256": "d1fc3ffdcf1a83a3f1f8a26a2e8e326d912050d6d1a0030cffffe927e0be755f"
+        },
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages.jsonl",
+          "bytes": 519214,
+          "sha256": "f6eca08b487812b95ffa4b40d489cef99b43d17ecbda66678bce06e824ade51c"
+        },
+        {
+          "path": "test-results\\forensics--product-sync-a--8bab3-eletion-removes-local-pages\\trace.zip",
+          "bytes": 386348,
+          "sha256": "363b4acd56f0aad9f18006bc435ed809976f02949e8b35d9cb4b682460054605"
+        }
+      ]
+    }
+  ]
+}

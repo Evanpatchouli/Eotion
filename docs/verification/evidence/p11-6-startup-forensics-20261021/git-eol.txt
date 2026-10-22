@@ -1,0 +1,4 @@
+i/lf    w/crlf  attr/                 	apps/web/playwright.config.ts
+i/lf    w/crlf  attr/                 	apps/web/src/main.ts
+i/lf    w/mixed attr/                 	apps/web/tests/product-database.spec.ts
+i/lf    w/crlf  attr/                 	package.json

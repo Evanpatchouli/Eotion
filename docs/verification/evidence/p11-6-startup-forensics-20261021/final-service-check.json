@@ -1,0 +1,10 @@
+{
+  "time": "2026-10-22T03:51:26.6259080Z",
+  "knownProcessIdentities": 1466,
+  "ownedProcessesRemaining": [],
+  "diagnosticPort": 7179,
+  "diagnosticListeners": [],
+  "userPort7173Listeners": [],
+  "userServicesTerminated": false,
+  "method": "PID and original-precision CIM birth match against conservatively reconstructed validated descendants only; read-only, no process termination"
+}

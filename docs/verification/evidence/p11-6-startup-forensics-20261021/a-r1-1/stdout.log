@@ -1,0 +1,7 @@
+
+Running 1 test using 1 worker
+
+
+
+[1/1] tests\forensics--product-sync.spec.ts:491:1 › a second client pulls sequential changes and remote deletion removes local pages
+  1 passed (4.4s)

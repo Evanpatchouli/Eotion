@@ -1,0 +1,76 @@
+{
+  "failureTime": "2026-10-21T11:16:25.465Z",
+  "sameTestFailures": [
+    {
+      "event": "request-failed",
+      "wallTime": "2026-10-21T11:16:25.465Z",
+      "monotonicMs": 320476.467,
+      "pid": 47044,
+      "contextId": "4c00b443bf",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "startMonotonicMs": 320461.8031,
+      "endMonotonicMs": 320476.4403,
+      "failure": "net::ERR_NO_BUFFER_SPACE"
+    },
+    {
+      "event": "console",
+      "wallTime": "2026-10-21T11:16:25.465Z",
+      "monotonicMs": 320476.9836,
+      "pid": 47044,
+      "contextId": "4c00b443bf",
+      "pageIndex": 1,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_NO_BUFFER_SPACE"
+    },
+    {
+      "event": "cdp-loading-failed",
+      "wallTime": "2026-10-21T11:16:25.466Z",
+      "monotonicMs": 320477.2191,
+      "pid": 47044,
+      "contextId": "4c00b443bf",
+      "pageIndex": 1,
+      "requestId": "44148.11",
+      "errorText": "net::ERR_NO_BUFFER_SPACE",
+      "canceled": false
+    }
+  ],
+  "themeInitiator": {
+    "event": "cdp-request",
+    "wallTime": "2026-10-21T11:16:25.446Z",
+    "monotonicMs": 320457.7905,
+    "pid": 47044,
+    "contextId": "4c00b443bf",
+    "pageIndex": 1,
+    "requestId": "44148.11",
+    "url": "http://127.0.0.1:7179/src/theme.ts",
+    "method": "GET",
+    "initiator": {
+      "type": "script",
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "lineNumber": 5,
+      "columnNumber": 32
+    },
+    "timestamp": 31240.620167,
+    "cdpWallTime": 1792581385.444775
+  },
+  "precedingThemeViteEvent": {
+    "time": "2026-10-21T11:16:13.754Z",
+    "kind": "finish",
+    "url": "/src/theme.ts",
+    "status": 200,
+    "durationMs": 0.22279999998863786
+  },
+  "nextThemeViteEvent": {
+    "time": "2026-10-21T11:16:35.574Z",
+    "kind": "request",
+    "url": "/src/theme.ts",
+    "method": "GET"
+  },
+  "boundary": "No theme request arrived at first Vite middleware during this failing request; Chromium request failure before this observer. Not a demonstrated Windows/Chrome resource root cause.",
+  "firstFailingOrdinal": 94,
+  "precedingTestsPassed": 93,
+  "workerIndex": 0,
+  "scopeLimit": "Original R5 failed another mandatory module; original R1 has no trace. Similar failure class is not proof of a shared root cause."
+}

@@ -1,0 +1,7 @@
+
+Running 1 test using 1 worker
+
+
+
+[1/1] tests\forensics--product-nested.spec.ts:178:3 › universal coarse tablet chrome boundary › ordinary controls remain hidden and do not squeeze or cover content
+  1 passed (5.7s)

@@ -1,0 +1,237 @@
+{
+  "file": "ozen-Table-resolves-independent-columns-formats-shared-properties-and-opens-the-existing-Record-Host.jsonl",
+  "test": {
+    "event": "test-start",
+    "wallTime": "2026-10-22T03:18:22.847Z",
+    "monotonicMs": 192852.8565,
+    "pid": 32188,
+    "testId": "d0aa95b6c9f7582ca3a8-87dfd1fdf16ade845f50",
+    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-database.spec.ts",
+    "title": [
+      "forensics--product-database.spec.ts",
+      "Timeline Frozen Table resolves independent columns, formats shared properties, and opens the existing Record Host"
+    ],
+    "workerIndex": 0,
+    "parallelIndex": 0,
+    "status": "passed",
+    "startedAt": "2026-10-22T03:18:22.847Z"
+  },
+  "end": {
+    "event": "test-end",
+    "wallTime": "2026-10-22T03:18:29.677Z",
+    "monotonicMs": 199682.6872,
+    "pid": 32188,
+    "status": "failed",
+    "expectedStatus": "passed",
+    "durationMs": 6604
+  },
+  "errors": [],
+  "markers": [
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-22T03:18:23.073Z",
+      "monotonicMs": 193078.4795,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "marker": {
+        "name": "document-init",
+        "wallTime": "2026-10-22T03:18:23.066Z",
+        "visibility": "visible"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-22T03:18:23.073Z",
+      "monotonicMs": 193078.8065,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-22T03:18:23.067Z",
+        "visibility": "visible",
+        "selector": "html",
+        "tagName": "HTML"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-22T03:18:23.074Z",
+      "monotonicMs": 193079.3095,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-22T03:18:23.069Z",
+        "visibility": "visible",
+        "selector": "#app",
+        "tagName": "DIV"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-22T03:18:23.294Z",
+      "monotonicMs": 193299.6887,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-22T03:18:23.294Z",
+        "visibility": "visible",
+        "selector": "#app-child",
+        "tagName": "DIV"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-22T03:18:23.300Z",
+      "monotonicMs": 193306.1447,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-content-loaded",
+        "wallTime": "2026-10-22T03:18:23.299Z",
+        "visibility": "visible"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-22T03:18:23.391Z",
+      "monotonicMs": 193396.7726,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "marker": {
+        "name": "load",
+        "wallTime": "2026-10-22T03:18:23.349Z",
+        "visibility": "visible"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-22T03:18:23.822Z",
+      "monotonicMs": 193827.4219,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "marker": {
+        "name": "dom-first-seen",
+        "wallTime": "2026-10-22T03:18:23.820Z",
+        "visibility": "visible",
+        "selector": ".tiptap",
+        "tagName": "DIV"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-22T03:18:23.822Z",
+      "monotonicMs": 193828.1678,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "marker": {
+        "name": "mutation-observer-disconnected",
+        "wallTime": "2026-10-22T03:18:23.820Z",
+        "visibility": "visible",
+        "reason": "app-child-and-primary-content-seen"
+      }
+    },
+    {
+      "event": "browser-marker",
+      "wallTime": "2026-10-22T03:18:29.671Z",
+      "monotonicMs": 199677.1356,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "marker": {
+        "name": "visibility-change",
+        "wallTime": "2026-10-22T03:18:29.668Z",
+        "visibility": "hidden"
+      }
+    }
+  ],
+  "prefs": [
+    {
+      "event": "response",
+      "wallTime": "2026-10-22T03:18:23.086Z",
+      "monotonicMs": 193091.9703,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 193081.7059,
+      "endMonotonicMs": 193091.9599
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-22T03:18:23.100Z",
+      "monotonicMs": 193106.2667,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 193095.0406,
+      "endMonotonicMs": 193106.261
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-22T03:18:23.104Z",
+      "monotonicMs": 193109.4143,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 193095.2609,
+      "endMonotonicMs": 193109.4086
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-22T03:18:23.104Z",
+      "monotonicMs": 193109.9656,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 193095.2934,
+      "endMonotonicMs": 193109.963
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-22T03:18:23.104Z",
+      "monotonicMs": 193110.0237,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 193095.3165,
+      "endMonotonicMs": 193110.021
+    },
+    {
+      "event": "response",
+      "wallTime": "2026-10-22T03:18:23.133Z",
+      "monotonicMs": 193138.5037,
+      "pid": 32188,
+      "contextId": "7f6089119e",
+      "pageIndex": 1,
+      "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+      "method": "GET",
+      "status": 200,
+      "startMonotonicMs": 193115.8045,
+      "endMonotonicMs": 193138.4788
+    }
+  ]
+}

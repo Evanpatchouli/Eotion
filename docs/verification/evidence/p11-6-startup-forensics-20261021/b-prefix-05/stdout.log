@@ -1,0 +1,117 @@
+
+Running 111 tests using 1 worker
+
+
+
+[1/111] tests\forensics--product-blocks.spec.ts:93:1 › toggle creates, nests, survives reload and folds without becoming block data
+[2/111] tests\forensics--product-blocks.spec.ts:147:1 › editing inside a toggle keeps the existing block identities
+[3/111] tests\forensics--product-blocks.spec.ts:176:1 › local store enforces nested block invariants and records one block.move
+[4/111] tests\forensics--product-blocks.spec.ts:252:1 › block codec round-trips nested toggles and refuses unrepresentable structure
+[5/111] tests\forensics--product-blocks.spec.ts:366:1 › callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting
+[6/111] tests\forensics--product-blocks.spec.ts:422:1 › callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity
+[7/111] tests\forensics--product-blocks.spec.ts:493:1 › Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload
+[8/111] tests\forensics--product-blocks.spec.ts:528:1 › formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload
+[9/111] tests\forensics--product-blocks.spec.ts:558:1 › callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow
+[10/111] tests\forensics--product-blocks.spec.ts:593:1 › callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot
+[11/111] tests\forensics--product-blocks.spec.ts:647:1 › callout codec validates attributes and round-trips as a leaf and toggle child
+[12/111] tests\forensics--product-blocks.spec.ts:693:1 › IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks
+[13/111] tests\forensics--product-blocks.spec.ts:760:1 › code block language survives codec conversion, editing and reload
+[14/111] tests\forensics--product-blocks.spec.ts:791:1 › table codec round-trips one grid block and refuses grids the server would reject
+[15/111] tests\forensics--product-editor.spec.ts:142:1 › product page keeps title and editor in one open reading column across themes and mobile
+[16/111] tests\forensics--product-editor.spec.ts:246:1 › product page shows one sync status and keeps local save errors retryable
+[17/111] tests\forensics--product-editor.spec.ts:295:1 › pasting safe links keeps links and strips underline across save and reload
+[18/111] tests\forensics--product-editor.spec.ts:320:1 › empty page loads without mutations, then debounces edits with a stable block identity
+[19/111] tests\forensics--product-editor.spec.ts:344:1 › persists marks, heading and list structure and restores them after reload
+[20/111] tests\forensics--product-editor.spec.ts:380:1 › inserts in the middle, deletes a block and keeps the displayed order
+[21/111] tests\forensics--product-editor.spec.ts:420:1 › flushes edits on page navigation and isolates the next page document
+[22/111] tests\forensics--product-editor.spec.ts:436:1 › reads both page bodies from the workspace snapshot without mixing them on navigation
+[23/111] tests\forensics--product-editor.spec.ts:451:1 › keeps local editor content when sync fails and retries sync
+[24/111] tests\forensics--product-editor.spec.ts:470:1 › keeps mobile editor within 390px and defers persistence during composition
+[25/111] tests\forensics--product-editor.spec.ts:489:1 › touch toolbar and mobile heading stay compact across themes, short viewport and keyboard inset
+[26/111] tests\forensics--product-editor.spec.ts:576:1 › touch caret visibility does not depend on keyboard inset and requires editor focus
+[27/111] tests\forensics--product-editor.spec.ts:661:1 › keeps the P2 fixture, slash command and undo path available
+[28/111] tests\forensics--product-editor.spec.ts:677:1 › slash lists Chinese grouped commands, filters, navigates and respects IME and Escape
+[29/111] tests\forensics--product-editor.spec.ts:717:1 › desktop toolbar and slash stay compact in light, dark and mobile layouts
+[30/111] tests\forensics--product-editor.spec.ts:766:1 › fixed toolbar converts a list item back to a top-level paragraph
+[31/111] tests\forensics--product-editor.spec.ts:793:3 › slash 文本 saves and reloads the supported block
+[32/111] tests\forensics--product-editor.spec.ts:793:3 › slash 一级标题 saves and reloads the supported block
+[33/111] tests\forensics--product-editor.spec.ts:793:3 › slash 二级标题 saves and reloads the supported block
+[34/111] tests\forensics--product-editor.spec.ts:793:3 › slash 项目列表 saves and reloads the supported block
+[35/111] tests\forensics--product-editor.spec.ts:793:3 › slash 编号列表 saves and reloads the supported block
+[36/111] tests\forensics--product-editor.spec.ts:793:3 › slash 待办 saves and reloads the supported block
+[37/111] tests\forensics--product-editor.spec.ts:793:3 › slash 引用 saves and reloads the supported block
+[38/111] tests\forensics--product-editor.spec.ts:793:3 › slash 代码块 saves and reloads the supported block
+[39/111] tests\forensics--product-editor.spec.ts:793:3 › slash 折叠列表 saves and reloads the supported block
+[40/111] tests\forensics--product-editor.spec.ts:793:3 › slash 表格 saves and reloads the supported block
+[41/111] tests\forensics--product-editor.spec.ts:793:3 › slash 分割线 saves and reloads the supported block
+[42/111] tests\forensics--product-editor.spec.ts:820:3 › strike keyboard command saves and reloads its mark
+[43/111] tests\forensics--product-editor.spec.ts:820:3 › code keyboard command saves and reloads its mark
+[44/111] tests\forensics--product-editor.spec.ts:838:1 › selection bubble toggles existing marks, combines marks and reloads saved content
+[45/111] tests\forensics--product-editor.spec.ts:888:1 › selection bubble creates, edits, removes and combines links across save and reload
+[46/111] tests\forensics--product-editor.spec.ts:973:1 › link editor rejects unsafe schemes and invalid snapshots preserve the valid local page
+[47/111] tests\forensics--product-editor.spec.ts:1014:1 › selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark
+[48/111] tests\forensics--product-editor.spec.ts:1092:1 › tablet coarse pointer hides selection bubble and keeps touch toolbar available
+[49/111] tests\forensics--product-editor.spec.ts:1111:1 › mobile selection bubble stays hidden without horizontal overflow and leaves touch toolbar available
+[50/111] tests\forensics--product-editor.spec.ts:1135:1 › non-formatable code block and attachment selection never open the text formatting bubble
+[51/111] tests\forensics--product-editor.spec.ts:1155:1 › edits only the changed block and serializes a newer edit behind an in-flight save
+[52/111] tests\forensics--product-editor.spec.ts:1179:1 › keeps legacy order keys during an ordinary text edit
+[53/111] tests\forensics--product-editor.spec.ts:1192:1 › refuses unsupported persisted blocks without opening a writable blank editor
+[54/111] tests\forensics--product-editor.spec.ts:1206:1 › pasting a block into another page assigns a new server Block ID
+[55/111] tests\forensics--product-editor.spec.ts:1225:1 › keeps a locally committed block after failed sync and retries the same operation
+[56/111] tests\forensics--product-editor.spec.ts:1247:1 › keeps a local block deletion after failed sync and restores shared state after retry
+[57/111] tests\forensics--product-editor.spec.ts:1281:1 › flushes the newest local edit before leaving during an in-flight create
+[58/111] tests\forensics--product-editor.spec.ts:1327:1 › keeps a dirty draft across session expiry and saves it after the same user logs in
+[59/111] tests\forensics--product-editor.spec.ts:1345:1 › preserves a locally saved IME draft when page metadata sync expires the session
+[60/111] tests\forensics--product-flow.spec.ts:179:1 › protects product routes, reports login failure while pending, then opens the app on success
+[61/111] tests\forensics--product-flow.spec.ts:201:1 › links login and registration pages in both directions
+[62/111] tests\forensics--product-flow.spec.ts:214:1 › requires matching passwords, then registers and returns to login without creating a session
+[63/111] tests\forensics--product-flow.spec.ts:241:1 › disables repeat registration while pending and displays a server error
+[64/111] tests\forensics--product-flow.spec.ts:257:1 › redirects an authenticated visitor from login and registration to the product area
+[65/111] tests\forensics--product-flow.spec.ts:266:1 › delays login until recovery completes and uses cached product state on transient failures
+[66/111] tests\forensics--product-flow.spec.ts:291:1 › creates the first workspace and keeps it available after reload
+[67/111] tests\forensics--product-flow.spec.ts:307:1 › switches workspaces, selects the most recent one, and validates rename with retry and persistence
+[68/111] tests\forensics--product-flow.spec.ts:338:1 › rejects an unknown workspace, handles expired sessions, and prevents back navigation after logout
+[69/111] tests\forensics--product-flow.spec.ts:368:1 › isolates workspace lists between users and closes the mobile drawer after switching
+[70/111] tests\forensics--product-nested.spec.ts:25:1 › universal block chrome reveals on hover and focus and inserts editable root siblings with undo
+[71/111] tests\forensics--product-nested.spec.ts:105:1 › universal chrome follows the caret block while the editor is focused
+[72/111] tests\forensics--product-nested.spec.ts:120:1 › universal plus keeps nested siblings and inserts after the whole toggle with stable IDs
+[73/111] tests\forensics--product-nested.spec.ts:152:1 › universal block chrome stays hidden without layout space at phone width
+[74/111] tests\forensics--product-nested.spec.ts:178:3 › universal coarse tablet chrome boundary › ordinary controls remain hidden and do not squeeze or cover content
+[75/111] tests\forensics--product-nested.spec.ts:234:1 › Tab and Shift+Tab move an existing block into and out of a toggle with stable identity and undo
+[76/111] tests\forensics--product-nested.spec.ts:257:1 › a mid-block Tab does not change nesting
+[77/111] tests\forensics--product-nested.spec.ts:268:1 › Tab moves a toggle summary with its child subtree and stable IDs
+[78/111] tests\forensics--product-nested.spec.ts:289:1 › touch nested controls › 390px touch toolbar can indent and outdent from the middle of a block
+[79/111] tests\forensics--product-nested.spec.ts:307:1 › drag handle nests a block into a toggle and keeps its identity after reload
+[80/111] tests\forensics--product-nested.spec.ts:323:1 › drag handle reorders siblings and moves a child back to the root
+[81/111] tests\forensics--product-nested.spec.ts:346:1 › drag rejects self, descendant, and excessive nesting depth
+[82/111] tests\forensics--product-nested.spec.ts:363:1 › dragging outside the editor clears its target marker without moving a block
+[83/111] tests\forensics--product-nested.spec.ts:373:1 › block drop indicators use the semantic accent color in light and dark themes
+[84/111] tests\forensics--product-nested.spec.ts:407:1 › Tab after a leaf block and native attachment drag do not create children
+[85/111] tests\forensics--product-nested.spec.ts:436:1 › nested blocks render at desktop and phone widths in both themes
+[86/111] tests\forensics--product-nested.spec.ts:458:1 › offline nested move survives reload and browser restart, then pushes before snapshot pull
+[87/111] tests\forensics--product-pages.spec.ts:155:1 › shows an empty page tree, then creates a root page and opens it
+[88/111] tests\forensics--product-pages.spec.ts:176:3 › appends a root page after canonical order keys
+[89/111] tests\forensics--product-pages.spec.ts:176:3 › appends a root page after legacy letters order keys
+[90/111] tests\forensics--product-pages.spec.ts:176:3 › appends a root page after unpadded numbers order keys
+[91/111] tests\forensics--product-pages.spec.ts:189:1 › keeps appending after legacy keys across consecutive creates
+[92/111] tests\forensics--product-pages.spec.ts:205:1 › disables root creation until the page list has loaded successfully
+[93/111] tests\forensics--product-pages.spec.ts:217:1 › creates a child page under a page and keeps the hierarchy and sibling order
+[94/111] tests\forensics--product-pages.spec.ts:236:1 › collapses and expands a parent without losing the selected page
+[95/111] tests\forensics--product-pages.spec.ts:252:1 › opens a page from the tree and restores the same page and tree after a reload
+[96/111] tests\forensics--product-pages.spec.ts:270:1 › reports an unavailable page instead of rendering a blank screen
+[97/111] tests\forensics--product-pages.spec.ts:278:1 › renames a page with trimming, validation, pending state, and error recovery
+[98/111] tests\forensics--product-pages.spec.ts:320:1 › rename focuses automatically, submits with Enter, and cancels without writing on Escape or outside click
+[99/111] tests\forensics--product-pages.spec.ts:354:1 › keeps page tree rows steady through rename, move and delete controls and captures desktop states
+[100/111] tests\forensics--product-pages.spec.ts:456:1 › pending rename and move retain their surface and focus on Escape at 1440px
+[101/111] tests\forensics--product-pages.spec.ts:456:1 › pending rename and move retain their surface and focus on Escape at 390px
+[102/111] tests\forensics--product-pages.spec.ts:507:1 › keeps delete confirmation open while editor flush is pending and blocks duplicate flushes
+[103/111] tests\forensics--product-pages.spec.ts:551:1 › moves a page under another page and back to the root
+[104/111] tests\forensics--product-pages.spec.ts:599:1 › never offers the page itself or its descendants and preserves a local move when sync fails
+[105/111] tests\forensics--product-pages.spec.ts:633:1 › keeps page trees isolated per workspace and drops the previous page id
+[106/111] tests\forensics--product-pages.spec.ts:653:1 › deletes a leaf page, rejects a page with children, and recovers the route
+[107/111] tests\forensics--product-pages.spec.ts:692:1 › reports page tree load failures and retries
+[108/111] tests\forensics--product-pages.spec.ts:710:1 › touch page action dialogs › mobile move dialog stays compact with only three destinations
+[109/111] tests\forensics--product-pages.spec.ts:745:1 › touch page action dialogs › mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list
+[110/111] tests\forensics--product-pages.spec.ts:825:1 › page action presentation uses the mobile breakpoint and preserves an open draft across resize
+[111/111] tests\forensics--product-pages.spec.ts:850:1 › closes the mobile sidebar after opening a page from the tree
+  111 passed (6.2m)

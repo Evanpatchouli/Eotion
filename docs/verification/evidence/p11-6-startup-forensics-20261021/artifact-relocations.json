@@ -1,0 +1,312 @@
+{
+  "time": "2026-10-22T03:44:43.679Z",
+  "reason": "Preserve existing long-path archive copies before generating Git-portable short paths; raw test evidence remains untouched",
+  "relocations": [
+    {
+      "runId": "a-r5-1",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\a-r5-1\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\a-r5-1\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-storage-state.json",
+          "bytes": 447,
+          "sha256": "dbd19e624ffe61e5940b4cbaeed5d8c557892614a1e55b7a0726c016b6b14849"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content.jsonl",
+          "bytes": 328165,
+          "sha256": "e15302425a78e9a084af47ec01b382d5310d29c8d9d8185beb687dd9d4d155a6"
+        },
+        {
+          "path": "test-results\\forensics--product-nested--87d68-ot-squeeze-or-cover-content\\trace.zip",
+          "bytes": 133333,
+          "sha256": "f4d843e778c53cecce3859e97064089f5bed8dc0eabf666e488d7d5f48a9fc1b"
+        }
+      ]
+    },
+    {
+      "runId": "a-r5-2",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\a-r5-2\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\a-r5-2\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-storage-state.json",
+          "bytes": 447,
+          "sha256": "dbd19e624ffe61e5940b4cbaeed5d8c557892614a1e55b7a0726c016b6b14849"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content.jsonl",
+          "bytes": 328097,
+          "sha256": "e485c64a9c1fff91704dc2daf78489553848185dc92f72bb61b99401961c51bc"
+        },
+        {
+          "path": "test-results\\forensics--product-nested--87d68-ot-squeeze-or-cover-content\\trace.zip",
+          "bytes": 140397,
+          "sha256": "b107cfadbec56406488b93b6e8b3a2645b75f1dc774970fc4c47d956329b7a9b"
+        }
+      ]
+    },
+    {
+      "runId": "a-r5-3",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\a-r5-3\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\a-r5-3\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-storage-state.json",
+          "bytes": 447,
+          "sha256": "dbd19e624ffe61e5940b4cbaeed5d8c557892614a1e55b7a0726c016b6b14849"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content.jsonl",
+          "bytes": 328100,
+          "sha256": "5ae32f6427c516fa2f6b8610867681104456c60aaa5a4a9ab4c04e0e9c362b09"
+        },
+        {
+          "path": "test-results\\forensics--product-nested--87d68-ot-squeeze-or-cover-content\\trace.zip",
+          "bytes": 153031,
+          "sha256": "ea58e909f22fe0979ceb4f69e4fd202b058878c3be6e2e3a604ac2c7c2aeb210"
+        }
+      ]
+    },
+    {
+      "runId": "a-r1-1",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\a-r1-1\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\a-r1-1\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages-storage-state.json",
+          "bytes": 443,
+          "sha256": "e5a77377c2559a97f311de9655aa90a175c94ce5df1bbba63c1fec59aa80f9ca"
+        },
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages.jsonl",
+          "bytes": 503431,
+          "sha256": "a28b053381826c13f153d3be4197f9c387fc993827eac59f64bc23a96351746e"
+        },
+        {
+          "path": "test-results\\forensics--product-sync-a--8bab3-eletion-removes-local-pages\\trace.zip",
+          "bytes": 356848,
+          "sha256": "b447439ef93f96d9e26012d61f6bf3a39ba034226517a326844172869720a1d7"
+        }
+      ]
+    },
+    {
+      "runId": "b-prefix-05",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\b-prefix-05\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\b-prefix-05\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-storage-state.json",
+          "bytes": 447,
+          "sha256": "dbd19e624ffe61e5940b4cbaeed5d8c557892614a1e55b7a0726c016b6b14849"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content.jsonl",
+          "bytes": 331691,
+          "sha256": "6a86175126a68b770c3948b4518e626f639b382c305498855df379cfd719b45c"
+        }
+      ]
+    },
+    {
+      "runId": "b-actual-prefix-07",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\b-actual-prefix-07\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\b-actual-prefix-07\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference-page-1\\dom.html",
+          "bytes": 200063,
+          "sha256": "914868d71cf2840b0ce128a73757aa693ed8367cf4d48ededb1181fa2934f4a6"
+        },
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference-page-1\\screenshot.png",
+          "bytes": 45419,
+          "sha256": "966cdc1825842390b79cbb29acbf74f5b144f96affeb2564479abf5fc46ebeec"
+        },
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference-storage-state.json",
+          "bytes": 451,
+          "sha256": "e8a7f55cec0f7a7c7698e0b41b5c484d19813c773183a7c0cc32bd3594cfa6be"
+        },
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference.jsonl",
+          "bytes": 353077,
+          "sha256": "0592145ce279f74de825c9b465029da7561f3d2c4502247fe5c2f3a172fd9b65"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-page-1\\dom.html",
+          "bytes": 177773,
+          "sha256": "27793a040242f99d3a0e20f62fdbbd1c0debc06ed5a3f5926250fbc6e75c7f4c"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-page-1\\screenshot.png",
+          "bytes": 22186,
+          "sha256": "e1c774c627783ed85908475686dd6ae23ac4e3851b4598e62153b2ff3c1d66ce"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-storage-state.json",
+          "bytes": 447,
+          "sha256": "dbd19e624ffe61e5940b4cbaeed5d8c557892614a1e55b7a0726c016b6b14849"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content.jsonl",
+          "bytes": 339784,
+          "sha256": "0e88108091511f5629ed845b62ff189d2ebf4bbc79f8db3fd5dffca7f5159c32"
+        },
+        {
+          "path": "events\\d79840488a290a1ff-Timeline-shell-keeps-local-zoom-exposes-the-seven-scales-and-has-no-table-fallback-page-1\\dom.html",
+          "bytes": 1224,
+          "sha256": "b461a1f0d97af136dc1a0b1eaadb53249887b1b66686bfb712e4c7d2903064cb"
+        },
+        {
+          "path": "events\\d79840488a290a1ff-Timeline-shell-keeps-local-zoom-exposes-the-seven-scales-and-has-no-table-fallback-page-1\\screenshot.png",
+          "bytes": 5851,
+          "sha256": "99db2a93b06fa1bf617f5c495e02dcf6c0b76961108491217e2cf4fed8699d35"
+        },
+        {
+          "path": "events\\d79840488a290a1ff-Timeline-shell-keeps-local-zoom-exposes-the-seven-scales-and-has-no-table-fallback-storage-state.json",
+          "bytes": 37,
+          "sha256": "8fc36561d0bc7ff473395e7a810739c1228ffe8df47449b5a53f1f48fa88a242"
+        },
+        {
+          "path": "events\\d79840488a290a1ff-Timeline-shell-keeps-local-zoom-exposes-the-seven-scales-and-has-no-table-fallback.jsonl",
+          "bytes": 25641,
+          "sha256": "ec02af505fdce66c3e874b1a98addb820b682cb9f6db3a4fbc578042c517b9db"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-7d1ef--deleted-property-reference\\error-context.md",
+          "bytes": 20815,
+          "sha256": "db8bb4eb2b0163d4bd3734568c015535ef26314935e3d2fbdc6e1a2f3b69f99b"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-7d1ef--deleted-property-reference\\test-failed-1.png",
+          "bytes": 45419,
+          "sha256": "966cdc1825842390b79cbb29acbf74f5b144f96affeb2564479abf5fc46ebeec"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-7d1ef--deleted-property-reference\\trace.zip",
+          "bytes": 708661,
+          "sha256": "d47b082a7128c769b18ee750ac7eddc3d692659af49df250f0c117bdd6789b04"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-e0044-s-and-has-no-table-fallback\\error-context.md",
+          "bytes": 18038,
+          "sha256": "afe8faf9fcb90d7c5aed3c6fc537ce76d0c20ab2530297e575988fe7dcd25a0d"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-e0044-s-and-has-no-table-fallback\\test-failed-1.png",
+          "bytes": 5851,
+          "sha256": "99db2a93b06fa1bf617f5c495e02dcf6c0b76961108491217e2cf4fed8699d35"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-e0044-s-and-has-no-table-fallback\\trace.zip",
+          "bytes": 172246,
+          "sha256": "33588c9a0b7e8b28bb63048d1ce43ae79550e149d5bde8d7734d332384d6d12c"
+        },
+        {
+          "path": "test-results\\forensics--product-nested--87d68-ot-squeeze-or-cover-content\\trace.zip",
+          "bytes": 215294,
+          "sha256": "77d01ae52e6fe4ee9368dec8c296622d7f7ad9c73940b3dea6504b3e19ef58e6"
+        }
+      ]
+    },
+    {
+      "runId": "b-r1-actual-prefix-13",
+      "source": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\b-r1-actual-prefix-13\\artifacts",
+      "destination": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\b-r1-actual-prefix-13\\previous-archived-artifacts",
+      "verified": true,
+      "files": [
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference-context-d0477ee162-storage-state.json",
+          "bytes": 451,
+          "sha256": "e8a7f55cec0f7a7c7698e0b41b5c484d19813c773183a7c0cc32bd3594cfa6be"
+        },
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference-page-d0477ee162-1\\dom.html",
+          "bytes": 200063,
+          "sha256": "6935183e06771653d4f3479a823019a58b1741f549bfc391af0d65e65becb90a"
+        },
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference-page-d0477ee162-1\\screenshot.png",
+          "bytes": 45419,
+          "sha256": "966cdc1825842390b79cbb29acbf74f5b144f96affeb2564479abf5fc46ebeec"
+        },
+        {
+          "path": "events\\58b5370c7f66-Timeline-Frozen-columns-disappear-after-the-server-repairs-a-deleted-property-reference.jsonl",
+          "bytes": 355532,
+          "sha256": "466211d573505587788b287957e4ff2319dfe8f41a27d91a270e04096ba4084b"
+        },
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages-context-722bcd45f6-storage-state.json",
+          "bytes": 443,
+          "sha256": "e5a77377c2559a97f311de9655aa90a175c94ce5df1bbba63c1fec59aa80f9ca"
+        },
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages-page-722bcd45f6-1\\dom.html",
+          "bytes": 169095,
+          "sha256": "59f9e2ff422b63e9ab5990a410db251b2d697c4b0f8370077491e714b6ebc238"
+        },
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages-page-722bcd45f6-1\\screenshot.png",
+          "bytes": 19561,
+          "sha256": "d1fc3ffdcf1a83a3f1f8a26a2e8e326d912050d6d1a0030cffffe927e0be755f"
+        },
+        {
+          "path": "events\\59f4393dcc4796e03af-a-second-client-pulls-sequential-changes-and-remote-deletion-removes-local-pages.jsonl",
+          "bytes": 524939,
+          "sha256": "1593bad765856ea0d48efed39ab879755f9b0ceb30dc9fec879b8a96e246e5b4"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-context-4d89c90961-storage-state.json",
+          "bytes": 447,
+          "sha256": "dbd19e624ffe61e5940b4cbaeed5d8c557892614a1e55b7a0726c016b6b14849"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-page-4d89c90961-1\\dom.html",
+          "bytes": 177773,
+          "sha256": "27793a040242f99d3a0e20f62fdbbd1c0debc06ed5a3f5926250fbc6e75c7f4c"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content-page-4d89c90961-1\\screenshot.png",
+          "bytes": 22186,
+          "sha256": "e1c774c627783ed85908475686dd6ae23ac4e3851b4598e62153b2ff3c1d66ce"
+        },
+        {
+          "path": "events\\bd305cdf9dc-24df3aeb762801027f08-ordinary-controls-remain-hidden-and-do-not-squeeze-or-cover-content.jsonl",
+          "bytes": 340413,
+          "sha256": "ed69cde2fef37a57bf749732acee6f5bb05f4f3b118eb25e5fd05309a20321bb"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-7d1ef--deleted-property-reference\\error-context.md",
+          "bytes": 20815,
+          "sha256": "db8bb4eb2b0163d4bd3734568c015535ef26314935e3d2fbdc6e1a2f3b69f99b"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-7d1ef--deleted-property-reference\\test-failed-1.png",
+          "bytes": 45419,
+          "sha256": "966cdc1825842390b79cbb29acbf74f5b144f96affeb2564479abf5fc46ebeec"
+        },
+        {
+          "path": "test-results\\forensics--product-databas-7d1ef--deleted-property-reference\\trace.zip",
+          "bytes": 704827,
+          "sha256": "5019e5b593d91c523a84a9dcb651fbf935d5dcd1c28e2ef0962499583299c4a9"
+        },
+        {
+          "path": "test-results\\forensics--product-nested--87d68-ot-squeeze-or-cover-content\\trace.zip",
+          "bytes": 215435,
+          "sha256": "f1ac44db639ab7ca5cdd651f7ff937432bd066757238bf9bfa377e8e2be81f01"
+        },
+        {
+          "path": "test-results\\forensics--product-sync-a--8bab3-eletion-removes-local-pages\\trace.zip",
+          "bytes": 391445,
+          "sha256": "02fbc59e71ece9aa4bc69aacf0b7e2d12678bc7cdd35d4a0a0c21dcced39cca8"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3518 @@
+{
+  "id": "remaining-c-09-product-slash-context",
+  "started": "2026-10-22T03:27:22.052Z",
+  "ended": "2026-10-22T03:27:30.941Z",
+  "durationMs": 8258.964,
+  "processExitCode": 0,
+  "traceRequested": "retain-on-failure",
+  "traceEffective": "retain-on-failure",
+  "specOrder": [
+    "product-slash-context.spec.ts"
+  ],
+  "actualSpecOrder": [
+    "forensics--product-slash-context.spec.ts"
+  ],
+  "counts": {
+    "expected": 3,
+    "unexpected": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "total": 3
+  },
+  "workerIndexes": [
+    0
+  ],
+  "failedTests": [],
+  "tests": [
+    {
+      "title": "forensics--product-slash-context.spec.ts › slash commands follow root, quote, list item and toggle summary/child contexts",
+      "file": "forensics--product-slash-context.spec.ts",
+      "actualStatus": "passed",
+      "workerIndex": 0,
+      "durationMs": 3131,
+      "target": false
+    },
+    {
+      "title": "forensics--product-slash-context.spec.ts › slash inside a code block only offers plain text conversions",
+      "file": "forensics--product-slash-context.spec.ts",
+      "actualStatus": "passed",
+      "workerIndex": 0,
+      "durationMs": 1870,
+      "target": false
+    },
+    {
+      "title": "forensics--product-slash-context.spec.ts › touch block commands › touch toolbar cannot create a block the codec rejects inside a list item",
+      "file": "forensics--product-slash-context.spec.ts",
+      "actualStatus": "passed",
+      "workerIndex": 0,
+      "durationMs": 1744,
+      "target": false
+    }
+  ],
+  "startup": {
+    "runId": "remaining-c-09-product-slash-context",
+    "observedBrowserVersions": [
+      "156.0.8078.47"
+    ],
+    "bufferProbes": [],
+    "traceRequested": "retain-on-failure",
+    "traceEffective": "retain-on-failure",
+    "testCount": 3,
+    "targetTests": [],
+    "counts": {
+      "requestFailed": 0,
+      "pageError": 0,
+      "consoleError": 3,
+      "diagnosticError": 3,
+      "navigation": 12,
+      "response": 592,
+      "browserMarker": 27
+    },
+    "requestFailures": [],
+    "pageErrors": [],
+    "consoleErrors": [
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.705Z",
+        "monotonicMs": 4900.2017,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:24.660Z",
+        "monotonicMs": 1855.3737,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:29.484Z",
+        "monotonicMs": 6679.2023,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      }
+    ],
+    "rawConsoleEvents": [
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.027Z",
+        "monotonicMs": 4222.624,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"document-init\",\"wallTime\":\"2026-10-22T03:27:27.019Z\",\"visibility\":\"visible\"}",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.028Z",
+        "monotonicMs": 4223.0617,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:27.021Z\",\"visibility\":\"visible\",\"selector\":\"html\",\"tagName\":\"HTML\"}",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.029Z",
+        "monotonicMs": 4223.9951,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:27.022Z\",\"visibility\":\"visible\",\"selector\":\"#app\",\"tagName\":\"DIV\"}",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.072Z",
+        "monotonicMs": 4267.2332,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "[vite] connecting...",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.076Z",
+        "monotonicMs": 4271.2094,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "[vite] connected.",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.256Z",
+        "monotonicMs": 4450.8094,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:27.255Z\",\"visibility\":\"visible\",\"selector\":\"#app-child\",\"tagName\":\"DIV\"}",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.263Z",
+        "monotonicMs": 4458.2751,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-content-loaded\",\"wallTime\":\"2026-10-22T03:27:27.260Z\",\"visibility\":\"visible\"}",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.351Z",
+        "monotonicMs": 4546.2354,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"load\",\"wallTime\":\"2026-10-22T03:27:27.310Z\",\"visibility\":\"visible\"}",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.705Z",
+        "monotonicMs": 4900.2017,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.789Z",
+        "monotonicMs": 4984.5315,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:27.789Z\",\"visibility\":\"visible\",\"selector\":\".tiptap\",\"tagName\":\"DIV\"}",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:27.790Z",
+        "monotonicMs": 4984.7834,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"mutation-observer-disconnected\",\"wallTime\":\"2026-10-22T03:27:27.789Z\",\"visibility\":\"visible\",\"reason\":\"app-child-and-primary-content-seen\"}",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:28.565Z",
+        "monotonicMs": 5760.1212,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"visibility-change\",\"wallTime\":\"2026-10-22T03:27:28.562Z\",\"visibility\":\"hidden\"}",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:23.975Z",
+        "monotonicMs": 1170.4987,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"document-init\",\"wallTime\":\"2026-10-22T03:27:23.967Z\",\"visibility\":\"visible\"}",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:23.976Z",
+        "monotonicMs": 1171.1378,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:23.968Z\",\"visibility\":\"visible\",\"selector\":\"html\",\"tagName\":\"HTML\"}",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:23.978Z",
+        "monotonicMs": 1173.3008,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:23.969Z\",\"visibility\":\"visible\",\"selector\":\"#app\",\"tagName\":\"DIV\"}",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:24.032Z",
+        "monotonicMs": 1227.6059,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "[vite] connecting...",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:24.037Z",
+        "monotonicMs": 1232.1673,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "[vite] connected.",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:24.229Z",
+        "monotonicMs": 1424.112,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:24.228Z\",\"visibility\":\"visible\",\"selector\":\"#app-child\",\"tagName\":\"DIV\"}",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:24.236Z",
+        "monotonicMs": 1431.2997,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-content-loaded\",\"wallTime\":\"2026-10-22T03:27:24.233Z\",\"visibility\":\"visible\"}",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:24.326Z",
+        "monotonicMs": 1521.6638,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"load\",\"wallTime\":\"2026-10-22T03:27:24.284Z\",\"visibility\":\"visible\"}",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:24.660Z",
+        "monotonicMs": 1855.3737,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:24.730Z",
+        "monotonicMs": 1925.2989,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:24.729Z\",\"visibility\":\"visible\",\"selector\":\".tiptap\",\"tagName\":\"DIV\"}",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:24.730Z",
+        "monotonicMs": 1925.3853,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"mutation-observer-disconnected\",\"wallTime\":\"2026-10-22T03:27:24.730Z\",\"visibility\":\"visible\",\"reason\":\"app-child-and-primary-content-seen\"}",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:26.800Z",
+        "monotonicMs": 3995.0693,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"visibility-change\",\"wallTime\":\"2026-10-22T03:27:26.798Z\",\"visibility\":\"hidden\"}",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:28.806Z",
+        "monotonicMs": 6001.5109,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"document-init\",\"wallTime\":\"2026-10-22T03:27:28.798Z\",\"visibility\":\"visible\"}",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:28.807Z",
+        "monotonicMs": 6001.7538,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:28.799Z\",\"visibility\":\"visible\",\"selector\":\"html\",\"tagName\":\"HTML\"}",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:28.807Z",
+        "monotonicMs": 6002.3017,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:28.800Z\",\"visibility\":\"visible\",\"selector\":\"#app\",\"tagName\":\"DIV\"}",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:28.849Z",
+        "monotonicMs": 6043.7929,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "[vite] connecting...",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:28.852Z",
+        "monotonicMs": 6047.2411,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "[vite] connected.",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:29.032Z",
+        "monotonicMs": 6226.9825,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:29.031Z\",\"visibility\":\"visible\",\"selector\":\"#app-child\",\"tagName\":\"DIV\"}",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:29.038Z",
+        "monotonicMs": 6233.1638,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-content-loaded\",\"wallTime\":\"2026-10-22T03:27:29.036Z\",\"visibility\":\"visible\"}",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:29.134Z",
+        "monotonicMs": 6329.2646,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"load\",\"wallTime\":\"2026-10-22T03:27:29.087Z\",\"visibility\":\"visible\"}",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:29.484Z",
+        "monotonicMs": 6679.2023,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "error",
+        "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:29.550Z",
+        "monotonicMs": 6744.8242,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"dom-first-seen\",\"wallTime\":\"2026-10-22T03:27:29.549Z\",\"visibility\":\"visible\",\"selector\":\".tiptap\",\"tagName\":\"DIV\"}",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:29.550Z",
+        "monotonicMs": 6745.0361,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"mutation-observer-disconnected\",\"wallTime\":\"2026-10-22T03:27:29.549Z\",\"visibility\":\"visible\",\"reason\":\"app-child-and-primary-content-seen\"}",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "console",
+        "wallTime": "2026-10-22T03:27:30.449Z",
+        "monotonicMs": 7644.0817,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "type": "debug",
+        "text": "FORENSICS:{\"name\":\"visibility-change\",\"wallTime\":\"2026-10-22T03:27:30.446Z\",\"visibility\":\"hidden\"}",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      }
+    ],
+    "rawNetworkErrorEvents": [
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:27.705Z",
+        "monotonicMs": 4900.1493,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/api/workspaces/ws-slash/database-navigation?limit=100",
+        "method": "GET",
+        "status": 404,
+        "startMonotonicMs": 4893.6774,
+        "endMonotonicMs": 4900.1419,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:27.706Z",
+        "monotonicMs": 4900.8204,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.194",
+        "url": "http://127.0.0.1:7179/api/workspaces/ws-slash/database-navigation?limit=100",
+        "status": 404,
+        "mimeType": "application/json",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:24.660Z",
+        "monotonicMs": 1855.214,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/api/workspaces/ws-slash/database-navigation?limit=100",
+        "method": "GET",
+        "status": 404,
+        "startMonotonicMs": 1845.638,
+        "endMonotonicMs": 1855.2005,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:24.660Z",
+        "monotonicMs": 1855.4723,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.194",
+        "url": "http://127.0.0.1:7179/api/workspaces/ws-slash/database-navigation?limit=100",
+        "status": 404,
+        "mimeType": "application/json",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:29.484Z",
+        "monotonicMs": 6679.1344,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/api/workspaces/ws-slash/database-navigation?limit=100",
+        "method": "GET",
+        "status": 404,
+        "startMonotonicMs": 6670.7472,
+        "endMonotonicMs": 6679.1251,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:29.484Z",
+        "monotonicMs": 6679.5411,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.194",
+        "url": "http://127.0.0.1:7179/api/workspaces/ws-slash/database-navigation?limit=100",
+        "status": 404,
+        "mimeType": "application/json",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      }
+    ],
+    "diagnosticErrors": [
+      {
+        "event": "diagnostic-error",
+        "wallTime": "2026-10-22T03:27:28.569Z",
+        "monotonicMs": 5764.6465,
+        "pid": 9892,
+        "phase": "cdp-detach",
+        "error": "Error: cdpSession.detach: Target page, context or browser has been closed",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "diagnostic-error",
+        "wallTime": "2026-10-22T03:27:26.806Z",
+        "monotonicMs": 4000.8965,
+        "pid": 9892,
+        "phase": "cdp-detach",
+        "error": "Error: cdpSession.detach: Target page, context or browser has been closed",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "diagnostic-error",
+        "wallTime": "2026-10-22T03:27:30.453Z",
+        "monotonicMs": 7647.9845,
+        "pid": 9892,
+        "phase": "cdp-detach",
+        "error": "Error: cdpSession.detach: Target page, context or browser has been closed",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      }
+    ],
+    "browserMarkers": [
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.027Z",
+        "monotonicMs": 4222.568,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "document-init",
+          "wallTime": "2026-10-22T03:27:27.019Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.028Z",
+        "monotonicMs": 4223.0474,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:27.021Z",
+          "visibility": "visible",
+          "selector": "html",
+          "tagName": "HTML"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.029Z",
+        "monotonicMs": 4223.9668,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:27.022Z",
+          "visibility": "visible",
+          "selector": "#app",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.256Z",
+        "monotonicMs": 4450.7912,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:27.255Z",
+          "visibility": "visible",
+          "selector": "#app-child",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.263Z",
+        "monotonicMs": 4458.2609,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-content-loaded",
+          "wallTime": "2026-10-22T03:27:27.260Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.351Z",
+        "monotonicMs": 4546.1989,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "load",
+          "wallTime": "2026-10-22T03:27:27.310Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.789Z",
+        "monotonicMs": 4984.487,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:27.789Z",
+          "visibility": "visible",
+          "selector": ".tiptap",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.790Z",
+        "monotonicMs": 4984.773,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "mutation-observer-disconnected",
+          "wallTime": "2026-10-22T03:27:27.789Z",
+          "visibility": "visible",
+          "reason": "app-child-and-primary-content-seen"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:28.565Z",
+        "monotonicMs": 5760.0759,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "visibility-change",
+          "wallTime": "2026-10-22T03:27:28.562Z",
+          "visibility": "hidden"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:23.975Z",
+        "monotonicMs": 1170.397,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "document-init",
+          "wallTime": "2026-10-22T03:27:23.967Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:23.976Z",
+        "monotonicMs": 1171.1209,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:23.968Z",
+          "visibility": "visible",
+          "selector": "html",
+          "tagName": "HTML"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:23.978Z",
+        "monotonicMs": 1173.2811,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:23.969Z",
+          "visibility": "visible",
+          "selector": "#app",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.229Z",
+        "monotonicMs": 1424.0945,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:24.228Z",
+          "visibility": "visible",
+          "selector": "#app-child",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.236Z",
+        "monotonicMs": 1431.2308,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-content-loaded",
+          "wallTime": "2026-10-22T03:27:24.233Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.326Z",
+        "monotonicMs": 1521.6036,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "load",
+          "wallTime": "2026-10-22T03:27:24.284Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.730Z",
+        "monotonicMs": 1925.2464,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:24.729Z",
+          "visibility": "visible",
+          "selector": ".tiptap",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.730Z",
+        "monotonicMs": 1925.3765,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "mutation-observer-disconnected",
+          "wallTime": "2026-10-22T03:27:24.730Z",
+          "visibility": "visible",
+          "reason": "app-child-and-primary-content-seen"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:26.800Z",
+        "monotonicMs": 3995.0459,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "visibility-change",
+          "wallTime": "2026-10-22T03:27:26.798Z",
+          "visibility": "hidden"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:28.806Z",
+        "monotonicMs": 6001.4704,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "document-init",
+          "wallTime": "2026-10-22T03:27:28.798Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:28.807Z",
+        "monotonicMs": 6001.7456,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:28.799Z",
+          "visibility": "visible",
+          "selector": "html",
+          "tagName": "HTML"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:28.807Z",
+        "monotonicMs": 6002.2743,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:28.800Z",
+          "visibility": "visible",
+          "selector": "#app",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.032Z",
+        "monotonicMs": 6226.9679,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:29.031Z",
+          "visibility": "visible",
+          "selector": "#app-child",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.038Z",
+        "monotonicMs": 6233.1415,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-content-loaded",
+          "wallTime": "2026-10-22T03:27:29.036Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.134Z",
+        "monotonicMs": 6329.2337,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "load",
+          "wallTime": "2026-10-22T03:27:29.087Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.550Z",
+        "monotonicMs": 6744.7845,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:29.549Z",
+          "visibility": "visible",
+          "selector": ".tiptap",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.550Z",
+        "monotonicMs": 6745.0275,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "mutation-observer-disconnected",
+          "wallTime": "2026-10-22T03:27:29.549Z",
+          "visibility": "visible",
+          "reason": "app-child-and-primary-content-seen"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:30.449Z",
+        "monotonicMs": 7644.0507,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "visibility-change",
+          "wallTime": "2026-10-22T03:27:30.446Z",
+          "visibility": "hidden"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      }
+    ],
+    "targetNetworkEvents": [],
+    "targetEvents": [],
+    "runtimeModuleEvents": [
+      {
+        "time": "2026-10-22T03:27:23.979Z",
+        "kind": "request",
+        "url": "/@vite/client",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:23.982Z",
+        "kind": "finish",
+        "url": "/@vite/client",
+        "status": 200,
+        "durationMs": 3.7101000000257045
+      },
+      {
+        "time": "2026-10-22T03:27:23.983Z",
+        "kind": "request",
+        "url": "/src/main.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:23.983Z",
+        "kind": "finish",
+        "url": "/src/main.ts",
+        "status": 200,
+        "durationMs": 0.21870000008493662
+      },
+      {
+        "time": "2026-10-22T03:27:23.995Z",
+        "kind": "request",
+        "url": "/src/App.vue",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:23.995Z",
+        "kind": "finish",
+        "url": "/src/App.vue",
+        "status": 200,
+        "durationMs": 0.6970000001601875
+      },
+      {
+        "time": "2026-10-22T03:27:23.995Z",
+        "kind": "request",
+        "url": "/src/router.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:23.996Z",
+        "kind": "finish",
+        "url": "/src/router.ts",
+        "status": 200,
+        "durationMs": 0.3996000001206994
+      },
+      {
+        "time": "2026-10-22T03:27:23.996Z",
+        "kind": "request",
+        "url": "/src/webRuntimePreferences.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:23.997Z",
+        "kind": "finish",
+        "url": "/src/webRuntimePreferences.ts",
+        "status": 200,
+        "durationMs": 0.6409000002313405
+      },
+      {
+        "time": "2026-10-22T03:27:23.997Z",
+        "kind": "request",
+        "url": "/src/theme.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:23.998Z",
+        "kind": "finish",
+        "url": "/src/theme.ts",
+        "status": 200,
+        "durationMs": 0.5583999999798834
+      },
+      {
+        "time": "2026-10-22T03:27:24.044Z",
+        "kind": "request",
+        "url": "/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:24.044Z",
+        "kind": "finish",
+        "url": "/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "status": 200,
+        "durationMs": 0.16259999992325902
+      },
+      {
+        "time": "2026-10-22T03:27:27.036Z",
+        "kind": "request",
+        "url": "/@vite/client",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:27.041Z",
+        "kind": "finish",
+        "url": "/@vite/client",
+        "status": 200,
+        "durationMs": 4.900199999799952
+      },
+      {
+        "time": "2026-10-22T03:27:27.041Z",
+        "kind": "request",
+        "url": "/src/main.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:27.041Z",
+        "kind": "finish",
+        "url": "/src/main.ts",
+        "status": 200,
+        "durationMs": 0.24129999987781048
+      },
+      {
+        "time": "2026-10-22T03:27:27.054Z",
+        "kind": "request",
+        "url": "/src/App.vue",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:27.054Z",
+        "kind": "finish",
+        "url": "/src/App.vue",
+        "status": 200,
+        "durationMs": 0.2971000000834465
+      },
+      {
+        "time": "2026-10-22T03:27:27.056Z",
+        "kind": "request",
+        "url": "/src/router.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:27.056Z",
+        "kind": "finish",
+        "url": "/src/router.ts",
+        "status": 200,
+        "durationMs": 0.3204999999143183
+      },
+      {
+        "time": "2026-10-22T03:27:27.056Z",
+        "kind": "request",
+        "url": "/src/webRuntimePreferences.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:27.056Z",
+        "kind": "finish",
+        "url": "/src/webRuntimePreferences.ts",
+        "status": 200,
+        "durationMs": 0.13620000006631017
+      },
+      {
+        "time": "2026-10-22T03:27:27.056Z",
+        "kind": "request",
+        "url": "/src/theme.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:27.056Z",
+        "kind": "finish",
+        "url": "/src/theme.ts",
+        "status": 200,
+        "durationMs": 0.15940000000409782
+      },
+      {
+        "time": "2026-10-22T03:27:27.090Z",
+        "kind": "request",
+        "url": "/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:27.090Z",
+        "kind": "finish",
+        "url": "/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "status": 200,
+        "durationMs": 0.21510000014677644
+      },
+      {
+        "time": "2026-10-22T03:27:28.814Z",
+        "kind": "request",
+        "url": "/@vite/client",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:28.819Z",
+        "kind": "finish",
+        "url": "/@vite/client",
+        "status": 200,
+        "durationMs": 4.20990000013262
+      },
+      {
+        "time": "2026-10-22T03:27:28.819Z",
+        "kind": "request",
+        "url": "/src/main.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:28.819Z",
+        "kind": "finish",
+        "url": "/src/main.ts",
+        "status": 200,
+        "durationMs": 0.2217999999411404
+      },
+      {
+        "time": "2026-10-22T03:27:28.831Z",
+        "kind": "request",
+        "url": "/src/App.vue",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:28.831Z",
+        "kind": "finish",
+        "url": "/src/App.vue",
+        "status": 200,
+        "durationMs": 0.2858999997843057
+      },
+      {
+        "time": "2026-10-22T03:27:28.832Z",
+        "kind": "request",
+        "url": "/src/router.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:28.832Z",
+        "kind": "finish",
+        "url": "/src/router.ts",
+        "status": 200,
+        "durationMs": 0.312900000018999
+      },
+      {
+        "time": "2026-10-22T03:27:28.832Z",
+        "kind": "request",
+        "url": "/src/webRuntimePreferences.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:28.832Z",
+        "kind": "finish",
+        "url": "/src/webRuntimePreferences.ts",
+        "status": 200,
+        "durationMs": 0.1766999999526888
+      },
+      {
+        "time": "2026-10-22T03:27:28.834Z",
+        "kind": "request",
+        "url": "/src/theme.ts",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:28.834Z",
+        "kind": "finish",
+        "url": "/src/theme.ts",
+        "status": 200,
+        "durationMs": 0.24689999991096556
+      },
+      {
+        "time": "2026-10-22T03:27:28.860Z",
+        "kind": "request",
+        "url": "/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET"
+      },
+      {
+        "time": "2026-10-22T03:27:28.860Z",
+        "kind": "finish",
+        "url": "/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "status": 200,
+        "durationMs": 0.3797999999951571
+      }
+    ],
+    "appUrlAndNavigationEvents": [
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:27.019Z",
+        "monotonicMs": 4213.8174,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.027Z",
+        "monotonicMs": 4222.568,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "document-init",
+          "wallTime": "2026-10-22T03:27:27.019Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:27.028Z",
+        "monotonicMs": 4222.8141,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.2",
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "initiator": {
+          "type": "parser",
+          "url": "http://127.0.0.1:7179/",
+          "lineNumber": 3,
+          "columnNumber": 46
+        },
+        "timestamp": 2718.785305,
+        "cdpWallTime": 1792639647.020774,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:27.028Z",
+        "monotonicMs": 4222.8361,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.3",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "parser",
+          "url": "http://127.0.0.1:7179/",
+          "lineNumber": 29,
+          "columnNumber": 45
+        },
+        "timestamp": 2718.785605,
+        "cdpWallTime": 1792639647.021044,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.028Z",
+        "monotonicMs": 4223.0474,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:27.021Z",
+          "visibility": "visible",
+          "selector": "html",
+          "tagName": "HTML"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.029Z",
+        "monotonicMs": 4223.9668,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:27.022Z",
+          "visibility": "visible",
+          "selector": "#app",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:27.032Z",
+        "monotonicMs": 4226.9029,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:27.036Z",
+        "monotonicMs": 4230.7859,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:27.046Z",
+        "monotonicMs": 4241.2499,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.3",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:27.046Z",
+        "monotonicMs": 4241.512,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 4230.7666,
+        "endMonotonicMs": 4241.5061,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:27.047Z",
+        "monotonicMs": 4241.8786,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "startMonotonicMs": 4230.7666,
+        "endMonotonicMs": 4241.8712,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:27.047Z",
+        "monotonicMs": 4242.1282,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.8",
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 2,
+          "columnNumber": 16
+        },
+        "timestamp": 2718.811036,
+        "cdpWallTime": 1792639647.046473,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:27.047Z",
+        "monotonicMs": 4242.1437,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.9",
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 3,
+          "columnNumber": 23
+        },
+        "timestamp": 2718.811095,
+        "cdpWallTime": 1792639647.046524,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:27.047Z",
+        "monotonicMs": 4242.1687,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.10",
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 4,
+          "columnNumber": 43
+        },
+        "timestamp": 2718.811136,
+        "cdpWallTime": 1792639647.046569,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:27.047Z",
+        "monotonicMs": 4242.3172,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.11",
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 5,
+          "columnNumber": 32
+        },
+        "timestamp": 2718.81119,
+        "cdpWallTime": 1792639647.046623,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:27.050Z",
+        "monotonicMs": 4244.812,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.2",
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:27.050Z",
+        "monotonicMs": 4244.9378,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 4226.8911,
+        "endMonotonicMs": 4244.9331,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:27.050Z",
+        "monotonicMs": 4244.9751,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "startMonotonicMs": 4226.8911,
+        "endMonotonicMs": 4244.9716,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:27.051Z",
+        "monotonicMs": 4245.9578,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:27.051Z",
+        "monotonicMs": 4246.0071,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:27.052Z",
+        "monotonicMs": 4246.9942,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:27.052Z",
+        "monotonicMs": 4247.0382,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:27.065Z",
+        "monotonicMs": 4259.988,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.10",
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:27.065Z",
+        "monotonicMs": 4260.121,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 4246.9824,
+        "endMonotonicMs": 4260.1146,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:27.065Z",
+        "monotonicMs": 4260.1649,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "startMonotonicMs": 4246.9824,
+        "endMonotonicMs": 4260.162,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:27.065Z",
+        "monotonicMs": 4260.1883,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.9",
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:27.065Z",
+        "monotonicMs": 4260.2611,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 4245.9974,
+        "endMonotonicMs": 4260.2581,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:27.065Z",
+        "monotonicMs": 4260.283,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "startMonotonicMs": 4245.9974,
+        "endMonotonicMs": 4260.281,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:27.067Z",
+        "monotonicMs": 4262.1227,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.8",
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:27.067Z",
+        "monotonicMs": 4262.2116,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 4245.9477,
+        "endMonotonicMs": 4262.208,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:27.067Z",
+        "monotonicMs": 4262.2995,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "startMonotonicMs": 4245.9477,
+        "endMonotonicMs": 4262.2971,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:27.067Z",
+        "monotonicMs": 4262.4188,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.11",
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:27.067Z",
+        "monotonicMs": 4262.4837,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 4247.032,
+        "endMonotonicMs": 4262.4806,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:27.067Z",
+        "monotonicMs": 4262.5152,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "startMonotonicMs": 4247.032,
+        "endMonotonicMs": 4262.5127,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:27.070Z",
+        "monotonicMs": 4265.0919,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.25",
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/App.vue",
+          "lineNumber": 186,
+          "columnNumber": 7
+        },
+        "timestamp": 2718.829383,
+        "cdpWallTime": 1792639647.064811,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:27.070Z",
+        "monotonicMs": 4265.4762,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:27.100Z",
+        "monotonicMs": 4295.3654,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "requestId": "26304.25",
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:27.100Z",
+        "monotonicMs": 4295.455,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 4265.467,
+        "endMonotonicMs": 4295.4516,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:27.117Z",
+        "monotonicMs": 4312.0737,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "startMonotonicMs": 4265.467,
+        "endMonotonicMs": 4312.0588,
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:27.255Z",
+        "monotonicMs": 4450.5967,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.256Z",
+        "monotonicMs": 4450.7912,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:27.255Z",
+          "visibility": "visible",
+          "selector": "#app-child",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.263Z",
+        "monotonicMs": 4458.2609,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-content-loaded",
+          "wallTime": "2026-10-22T03:27:27.260Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "dom-content-loaded",
+        "wallTime": "2026-10-22T03:27:27.263Z",
+        "monotonicMs": 4458.3151,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.351Z",
+        "monotonicMs": 4546.1989,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "load",
+          "wallTime": "2026-10-22T03:27:27.310Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "load",
+        "wallTime": "2026-10-22T03:27:27.351Z",
+        "monotonicMs": 4546.2986,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:27.672Z",
+        "monotonicMs": 4866.8397,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.789Z",
+        "monotonicMs": 4984.487,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:27.789Z",
+          "visibility": "visible",
+          "selector": ".tiptap",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:27.790Z",
+        "monotonicMs": 4984.773,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "marker": {
+          "name": "mutation-observer-disconnected",
+          "wallTime": "2026-10-22T03:27:27.789Z",
+          "visibility": "visible",
+          "reason": "app-child-and-primary-content-seen"
+        },
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:28.564Z",
+        "monotonicMs": 5759.2046,
+        "pid": 9892,
+        "contextId": "59cfb49bf0",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "247da4-584205c0222ab521c2cb-touch-toolbar-cannot-create-a-block-the-codec-rejects-inside-a-list-item.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:23.964Z",
+        "monotonicMs": 1159.663,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:23.975Z",
+        "monotonicMs": 1170.397,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "document-init",
+          "wallTime": "2026-10-22T03:27:23.967Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:23.975Z",
+        "monotonicMs": 1170.6596,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.2",
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "initiator": {
+          "type": "parser",
+          "url": "http://127.0.0.1:7179/",
+          "lineNumber": 3,
+          "columnNumber": 46
+        },
+        "timestamp": 2715.729307,
+        "cdpWallTime": 1792639643.964795,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:23.976Z",
+        "monotonicMs": 1170.7325,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.3",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "parser",
+          "url": "http://127.0.0.1:7179/",
+          "lineNumber": 29,
+          "columnNumber": 45
+        },
+        "timestamp": 2715.729641,
+        "cdpWallTime": 1792639643.965081,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:23.976Z",
+        "monotonicMs": 1171.1209,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:23.968Z",
+          "visibility": "visible",
+          "selector": "html",
+          "tagName": "HTML"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:23.978Z",
+        "monotonicMs": 1173.2811,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:23.969Z",
+          "visibility": "visible",
+          "selector": "#app",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:23.978Z",
+        "monotonicMs": 1173.6959,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:23.979Z",
+        "monotonicMs": 1173.7794,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:23.986Z",
+        "monotonicMs": 1181.2322,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.3",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:23.988Z",
+        "monotonicMs": 1182.7487,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 1173.7637,
+        "endMonotonicMs": 1182.7352,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:23.988Z",
+        "monotonicMs": 1182.8758,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "startMonotonicMs": 1173.7637,
+        "endMonotonicMs": 1182.87,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:23.990Z",
+        "monotonicMs": 1185.244,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.8",
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 2,
+          "columnNumber": 16
+        },
+        "timestamp": 2715.751055,
+        "cdpWallTime": 1792639643.986495,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:23.990Z",
+        "monotonicMs": 1185.2938,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.9",
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 3,
+          "columnNumber": 23
+        },
+        "timestamp": 2715.751148,
+        "cdpWallTime": 1792639643.98661,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:23.990Z",
+        "monotonicMs": 1185.3459,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.10",
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 4,
+          "columnNumber": 43
+        },
+        "timestamp": 2715.751248,
+        "cdpWallTime": 1792639643.986694,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:23.990Z",
+        "monotonicMs": 1185.3797,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.11",
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 5,
+          "columnNumber": 32
+        },
+        "timestamp": 2715.751373,
+        "cdpWallTime": 1792639643.986817,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:23.991Z",
+        "monotonicMs": 1185.8322,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:23.991Z",
+        "monotonicMs": 1185.9185,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:23.991Z",
+        "monotonicMs": 1185.9925,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:23.991Z",
+        "monotonicMs": 1186.0578,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:23.994Z",
+        "monotonicMs": 1188.8283,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.2",
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:23.994Z",
+        "monotonicMs": 1189.4128,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 1173.6678,
+        "endMonotonicMs": 1189.406,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:23.994Z",
+        "monotonicMs": 1189.5051,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "startMonotonicMs": 1173.6678,
+        "endMonotonicMs": 1189.4985,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:24.012Z",
+        "monotonicMs": 1207.355,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.8",
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:24.012Z",
+        "monotonicMs": 1207.6099,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 1185.814,
+        "endMonotonicMs": 1207.605,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:24.019Z",
+        "monotonicMs": 1214.7145,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "startMonotonicMs": 1185.814,
+        "endMonotonicMs": 1214.6879,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:24.020Z",
+        "monotonicMs": 1215.3865,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.22",
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/App.vue",
+          "lineNumber": 186,
+          "columnNumber": 7
+        },
+        "timestamp": 2715.772356,
+        "cdpWallTime": 1792639644.007803,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:24.020Z",
+        "monotonicMs": 1215.6899,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.9",
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:24.021Z",
+        "monotonicMs": 1216.5245,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 1185.9053,
+        "endMonotonicMs": 1216.4942,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:24.021Z",
+        "monotonicMs": 1216.6164,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "startMonotonicMs": 1185.9053,
+        "endMonotonicMs": 1216.6121,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:24.022Z",
+        "monotonicMs": 1216.9279,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.10",
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:24.022Z",
+        "monotonicMs": 1217.3065,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 1185.9778,
+        "endMonotonicMs": 1217.2985,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:24.031Z",
+        "monotonicMs": 1225.9069,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "startMonotonicMs": 1185.9778,
+        "endMonotonicMs": 1225.9025,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:24.031Z",
+        "monotonicMs": 1226.6798,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.11",
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:24.032Z",
+        "monotonicMs": 1226.8029,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 1186.0456,
+        "endMonotonicMs": 1226.8003,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:24.032Z",
+        "monotonicMs": 1226.8512,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "startMonotonicMs": 1186.0456,
+        "endMonotonicMs": 1226.849,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:24.032Z",
+        "monotonicMs": 1227.2912,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:24.071Z",
+        "monotonicMs": 1266.6406,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "requestId": "33736.22",
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:24.072Z",
+        "monotonicMs": 1266.7432,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 1227.2747,
+        "endMonotonicMs": 1266.74,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:24.072Z",
+        "monotonicMs": 1266.768,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "startMonotonicMs": 1227.2747,
+        "endMonotonicMs": 1266.7663,
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:24.229Z",
+        "monotonicMs": 1423.9546,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.229Z",
+        "monotonicMs": 1424.0945,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:24.228Z",
+          "visibility": "visible",
+          "selector": "#app-child",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.236Z",
+        "monotonicMs": 1431.2308,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-content-loaded",
+          "wallTime": "2026-10-22T03:27:24.233Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "dom-content-loaded",
+        "wallTime": "2026-10-22T03:27:24.238Z",
+        "monotonicMs": 1433.2117,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.326Z",
+        "monotonicMs": 1521.6036,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "load",
+          "wallTime": "2026-10-22T03:27:24.284Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "load",
+        "wallTime": "2026-10-22T03:27:24.327Z",
+        "monotonicMs": 1521.9176,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:24.632Z",
+        "monotonicMs": 1827.4663,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.730Z",
+        "monotonicMs": 1925.2464,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:24.729Z",
+          "visibility": "visible",
+          "selector": ".tiptap",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:24.730Z",
+        "monotonicMs": 1925.3765,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "marker": {
+          "name": "mutation-observer-disconnected",
+          "wallTime": "2026-10-22T03:27:24.730Z",
+          "visibility": "visible",
+          "reason": "app-child-and-primary-content-seen"
+        },
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:26.799Z",
+        "monotonicMs": 3994.564,
+        "pid": 9892,
+        "contextId": "fdc3b55a7b",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "a4-9d14b213b4fe82ae2b53-slash-commands-follow-root-quote-list-item-and-toggle-summary-child-contexts.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:28.797Z",
+        "monotonicMs": 5992.3487,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:28.806Z",
+        "monotonicMs": 6001.4704,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "document-init",
+          "wallTime": "2026-10-22T03:27:28.798Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:28.806Z",
+        "monotonicMs": 6001.5556,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.2",
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "initiator": {
+          "type": "parser",
+          "url": "http://127.0.0.1:7179/",
+          "lineNumber": 3,
+          "columnNumber": 46
+        },
+        "timestamp": 2720.561137,
+        "cdpWallTime": 1792639648.796602,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:28.806Z",
+        "monotonicMs": 6001.5714,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.3",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "parser",
+          "url": "http://127.0.0.1:7179/",
+          "lineNumber": 29,
+          "columnNumber": 45
+        },
+        "timestamp": 2720.561346,
+        "cdpWallTime": 1792639648.79678,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:28.807Z",
+        "monotonicMs": 6001.7456,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:28.799Z",
+          "visibility": "visible",
+          "selector": "html",
+          "tagName": "HTML"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:28.807Z",
+        "monotonicMs": 6002.2743,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:28.800Z",
+          "visibility": "visible",
+          "selector": "#app",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:28.811Z",
+        "monotonicMs": 6006.244,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:28.812Z",
+        "monotonicMs": 6007.0327,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:28.823Z",
+        "monotonicMs": 6018.4475,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 6007.0125,
+        "endMonotonicMs": 6018.4296,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:28.824Z",
+        "monotonicMs": 6019.094,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "method": "GET",
+        "startMonotonicMs": 6007.0125,
+        "endMonotonicMs": 6019.0835,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:28.824Z",
+        "monotonicMs": 6019.1724,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.3",
+        "url": "http://127.0.0.1:7179/src/main.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:28.825Z",
+        "monotonicMs": 6020.5155,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6022.7693,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.8",
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 2,
+          "columnNumber": 16
+        },
+        "timestamp": 2720.588062,
+        "cdpWallTime": 1792639648.823498,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6022.7859,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.9",
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 3,
+          "columnNumber": 23
+        },
+        "timestamp": 2720.588148,
+        "cdpWallTime": 1792639648.823583,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6022.8033,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.10",
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 4,
+          "columnNumber": 43
+        },
+        "timestamp": 2720.588205,
+        "cdpWallTime": 1792639648.823643,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6022.8162,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.11",
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/main.ts",
+          "lineNumber": 5,
+          "columnNumber": 32
+        },
+        "timestamp": 2720.588306,
+        "cdpWallTime": 1792639648.823762,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6022.9208,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6023.0038,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6023.1395,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 6006.2169,
+        "endMonotonicMs": 6023.1357,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6023.1951,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "method": "GET",
+        "startMonotonicMs": 6006.2169,
+        "endMonotonicMs": 6023.1914,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6023.23,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.2",
+        "url": "http://127.0.0.1:7179/@vite/client",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:28.828Z",
+        "monotonicMs": 6023.4012,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:28.838Z",
+        "monotonicMs": 6033.3334,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 6022.9095,
+        "endMonotonicMs": 6033.3188,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:28.839Z",
+        "monotonicMs": 6033.8817,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.9",
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:28.839Z",
+        "monotonicMs": 6034.1218,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 6020.5031,
+        "endMonotonicMs": 6034.1189,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:28.839Z",
+        "monotonicMs": 6034.1426,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.8",
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:28.840Z",
+        "monotonicMs": 6034.7763,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/router.ts",
+        "method": "GET",
+        "startMonotonicMs": 6022.9095,
+        "endMonotonicMs": 6034.7702,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:28.841Z",
+        "monotonicMs": 6035.7319,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue",
+        "method": "GET",
+        "startMonotonicMs": 6020.5031,
+        "endMonotonicMs": 6035.7286,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:28.844Z",
+        "monotonicMs": 6038.9484,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 6022.9897,
+        "endMonotonicMs": 6038.9356,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:28.844Z",
+        "monotonicMs": 6039.0122,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "method": "GET",
+        "startMonotonicMs": 6022.9897,
+        "endMonotonicMs": 6039.0076,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:28.844Z",
+        "monotonicMs": 6039.0489,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.10",
+        "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:28.844Z",
+        "monotonicMs": 6039.4503,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 6023.3884,
+        "endMonotonicMs": 6039.4479,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:28.844Z",
+        "monotonicMs": 6039.5001,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "method": "GET",
+        "startMonotonicMs": 6023.3884,
+        "endMonotonicMs": 6039.4972,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:28.844Z",
+        "monotonicMs": 6039.527,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.11",
+        "url": "http://127.0.0.1:7179/src/theme.ts",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-request",
+        "wallTime": "2026-10-22T03:27:28.848Z",
+        "monotonicMs": 6042.983,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.24",
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "initiator": {
+          "type": "script",
+          "url": "http://127.0.0.1:7179/src/App.vue",
+          "lineNumber": 186,
+          "columnNumber": 7
+        },
+        "timestamp": 2720.605544,
+        "cdpWallTime": 1792639648.840972,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-start",
+        "wallTime": "2026-10-22T03:27:28.848Z",
+        "monotonicMs": 6043.6875,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "resourceType": "script",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "response",
+        "wallTime": "2026-10-22T03:27:28.884Z",
+        "monotonicMs": 6078.9197,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "status": 200,
+        "startMonotonicMs": 6043.6722,
+        "endMonotonicMs": 6078.9168,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "request-end",
+        "wallTime": "2026-10-22T03:27:28.884Z",
+        "monotonicMs": 6078.96,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "method": "GET",
+        "startMonotonicMs": 6043.6722,
+        "endMonotonicMs": 6078.9573,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "cdp-response",
+        "wallTime": "2026-10-22T03:27:28.884Z",
+        "monotonicMs": 6078.9867,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "requestId": "17536.24",
+        "url": "http://127.0.0.1:7179/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css",
+        "status": 200,
+        "mimeType": "text/javascript",
+        "fromDiskCache": false,
+        "fromServiceWorker": false,
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:29.031Z",
+        "monotonicMs": 6226.6962,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.032Z",
+        "monotonicMs": 6226.9679,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:29.031Z",
+          "visibility": "visible",
+          "selector": "#app-child",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.038Z",
+        "monotonicMs": 6233.1415,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-content-loaded",
+          "wallTime": "2026-10-22T03:27:29.036Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "dom-content-loaded",
+        "wallTime": "2026-10-22T03:27:29.039Z",
+        "monotonicMs": 6234.0933,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.134Z",
+        "monotonicMs": 6329.2337,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "load",
+          "wallTime": "2026-10-22T03:27:29.087Z",
+          "visibility": "visible"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "load",
+        "wallTime": "2026-10-22T03:27:29.134Z",
+        "monotonicMs": 6329.3333,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:29.458Z",
+        "monotonicMs": 6653.298,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.550Z",
+        "monotonicMs": 6744.7845,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "dom-first-seen",
+          "wallTime": "2026-10-22T03:27:29.549Z",
+          "visibility": "visible",
+          "selector": ".tiptap",
+          "tagName": "DIV"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "browser-marker",
+        "wallTime": "2026-10-22T03:27:29.550Z",
+        "monotonicMs": 6745.0275,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "marker": {
+          "name": "mutation-observer-disconnected",
+          "wallTime": "2026-10-22T03:27:29.549Z",
+          "visibility": "visible",
+          "reason": "app-child-and-primary-content-seen"
+        },
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      },
+      {
+        "event": "navigation",
+        "wallTime": "2026-10-22T03:27:30.448Z",
+        "monotonicMs": 7643.5603,
+        "pid": 9892,
+        "contextId": "f6e823b2dc",
+        "pageIndex": 1,
+        "url": "http://127.0.0.1:7179/#/app/ws-slash/page/page-slash",
+        "_sourceFile": "b73325a61ba1247da4-ea76bd097ddc93627613-slash-inside-a-code-block-only-offers-plain-text-conversions.jsonl"
+      }
+    ]
+  },
+  "archivedArtifacts": [],
+  "testOrderEvents": [
+    {
+      "event": "testBegin",
+      "wallTime": "2026-10-22T03:27:23.280Z",
+      "monotonicMs": 1150.6122,
+      "pid": 32764,
+      "workerIndex": 0,
+      "parallelIndex": 0,
+      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-slash-context.spec.ts",
+      "title": [
+        "",
+        "",
+        "forensics--product-slash-context.spec.ts",
+        "slash commands follow root, quote, list item and toggle summary/child contexts"
+      ],
+      "retry": 0
+    },
+    {
+      "event": "testEnd",
+      "wallTime": "2026-10-22T03:27:26.819Z",
+      "monotonicMs": 4689.9039,
+      "pid": 32764,
+      "workerIndex": 0,
+      "parallelIndex": 0,
+      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-slash-context.spec.ts",
+      "title": [
+        "",
+        "",
+        "forensics--product-slash-context.spec.ts",
+        "slash commands follow root, quote, list item and toggle summary/child contexts"
+      ],
+      "status": "passed",
+      "expectedStatus": "passed",
+      "durationMs": 3131,
+      "retry": 0
+    },
+    {
+      "event": "testBegin",
+      "wallTime": "2026-10-22T03:27:26.820Z",
+      "monotonicMs": 4690.4501,
+      "pid": 32764,
+      "workerIndex": 0,
+      "parallelIndex": 0,
+      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-slash-context.spec.ts",
+      "title": [
+        "",
+        "",
+        "forensics--product-slash-context.spec.ts",
+        "touch block commands",
+        "touch toolbar cannot create a block the codec rejects inside a list item"
+      ],
+      "retry": 0
+    },
+    {
+      "event": "testEnd",
+      "wallTime": "2026-10-22T03:27:28.579Z",
+      "monotonicMs": 6448.9801,
+      "pid": 32764,
+      "workerIndex": 0,
+      "parallelIndex": 0,
+      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-slash-context.spec.ts",
+      "title": [
+        "",
+        "",
+        "forensics--product-slash-context.spec.ts",
+        "touch block commands",
+        "touch toolbar cannot create a block the codec rejects inside a list item"
+      ],
+      "status": "passed",
+      "expectedStatus": "passed",
+      "durationMs": 1744,
+      "retry": 0
+    },
+    {
+      "event": "testBegin",
+      "wallTime": "2026-10-22T03:27:28.579Z",
+      "monotonicMs": 6449.2543,
+      "pid": 32764,
+      "workerIndex": 0,
+      "parallelIndex": 0,
+      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-slash-context.spec.ts",
+      "title": [
+        "",
+        "",
+        "forensics--product-slash-context.spec.ts",
+        "slash inside a code block only offers plain text conversions"
+      ],
+      "retry": 0
+    },
+    {
+      "event": "testEnd",
+      "wallTime": "2026-10-22T03:27:30.463Z",
+      "monotonicMs": 8333.3063,
+      "pid": 32764,
+      "workerIndex": 0,
+      "parallelIndex": 0,
+      "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-slash-context.spec.ts",
+      "title": [
+        "",
+        "",
+        "forensics--product-slash-context.spec.ts",
+        "slash inside a code block only offers plain text conversions"
+      ],
+      "status": "passed",
+      "expectedStatus": "passed",
+      "durationMs": 1870,
+      "retry": 0
+    }
+  ]
+}

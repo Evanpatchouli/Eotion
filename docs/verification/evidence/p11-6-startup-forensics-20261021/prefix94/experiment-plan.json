@@ -1,0 +1,1847 @@
+{
+  "started": "2026-10-22T03:32:12.867Z",
+  "pid": 33928,
+  "raw": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562",
+  "baseline": {
+    "status --porcelain=v1": "M .agents/current-task.md\n M .agents/handoff.md\n?? apps/web/playwright.startup-forensics.config.ts\n?? apps/web/tests/forensics--product-attachments.spec.ts\n?? apps/web/tests/forensics--product-blocks.spec.ts\n?? apps/web/tests/forensics--product-content-rules.spec.ts\n?? apps/web/tests/forensics--product-database.spec.ts\n?? apps/web/tests/forensics--product-editor.spec.ts\n?? apps/web/tests/forensics--product-flow.spec.ts\n?? apps/web/tests/forensics--product-nested.spec.ts\n?? apps/web/tests/forensics--product-overlay.spec.ts\n?? apps/web/tests/forensics--product-p75-acceptance.spec.ts\n?? apps/web/tests/forensics--product-pages.spec.ts\n?? apps/web/tests/forensics--product-settings.spec.ts\n?? apps/web/tests/forensics--product-slash-context.spec.ts\n?? apps/web/tests/forensics--product-sync.spec.ts\n?? apps/web/tests/forensics--product-table.spec.ts\n?? docs/verification/evidence/p11-6-startup-forensics-20261021/\n?? docs/verification/p11-6-startup-forensics.md\n?? tools/",
+    "rev-parse HEAD": "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+    "rev-parse origin/master": "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+    "log -5 --oneline": "d71a5bf fix(database): 按视图类型展示图标并替换时间线图标\n6f45dfb fix(database): 明确表格视图创建文案与图标\nd28df43 fix(database): 统一视图创建选项样式和看板图标\n0d6fc6b docs(timeline): 记录创建入口漏项与正式全链路补验\n03bfd6d fix(timeline): 补齐正式创建入口与日期属性配置"
+  },
+  "specs": [
+    "tests/product-flow.spec.ts",
+    "tests/product-pages.spec.ts",
+    "tests/product-editor.spec.ts",
+    "tests/product-blocks.spec.ts",
+    "tests/product-nested.spec.ts",
+    "tests/product-table.spec.ts",
+    "tests/product-database.spec.ts",
+    "tests/product-overlay.spec.ts",
+    "tests/product-slash-context.spec.ts",
+    "tests/product-content-rules.spec.ts",
+    "tests/product-p75-acceptance.spec.ts",
+    "tests/product-sync.spec.ts",
+    "tests/product-attachments.spec.ts",
+    "tests/product-settings.spec.ts"
+  ],
+  "group": "prefix94",
+  "mode": "prefix94",
+  "sourceRun": "b-actual-prefix-07",
+  "selectedOrdinal": [
+    {
+      "selectedOrdinal": 1,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "slash image command and picker upload become one local block, sync operation and reloadable snapshot"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "slash image command and picker upload become one local block, sync operation and reloadable snapshot"
+      ],
+      "title": "slash image command and picker upload become one local block, sync operation and reloadable snapshot",
+      "line": 151,
+      "filter": "tests/forensics--product-attachments.spec.ts:151"
+    },
+    {
+      "selectedOrdinal": 2,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block"
+      ],
+      "title": "file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block",
+      "line": 214,
+      "filter": "tests/forensics--product-attachments.spec.ts:214"
+    },
+    {
+      "selectedOrdinal": 3,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block"
+      ],
+      "title": "cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block",
+      "line": 251,
+      "filter": "tests/forensics--product-attachments.spec.ts:251"
+    },
+    {
+      "selectedOrdinal": 4,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs"
+      ],
+      "title": "a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs",
+      "line": 271,
+      "filter": "tests/forensics--product-attachments.spec.ts:271"
+    },
+    {
+      "selectedOrdinal": 5,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "typing in the original empty paragraph while saving keeps the text after attachment commit"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "typing in the original empty paragraph while saving keeps the text after attachment commit"
+      ],
+      "title": "typing in the original empty paragraph while saving keeps the text after attachment commit",
+      "line": 309,
+      "filter": "tests/forensics--product-attachments.spec.ts:309"
+    },
+    {
+      "selectedOrdinal": 6,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "a later selected file completing first leaves no leftover empty paragraph when the first upload fails"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "a later selected file completing first leaves no leftover empty paragraph when the first upload fails"
+      ],
+      "title": "a later selected file completing first leaves no leftover empty paragraph when the first upload fails",
+      "line": 360,
+      "filter": "tests/forensics--product-attachments.spec.ts:360"
+    },
+    {
+      "selectedOrdinal": 7,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "failed save restores user text changed in the provisional attachment block and queues cleanup"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "failed save restores user text changed in the provisional attachment block and queues cleanup"
+      ],
+      "title": "failed save restores user text changed in the provisional attachment block and queues cleanup",
+      "line": 392,
+      "filter": "tests/forensics--product-attachments.spec.ts:392"
+    },
+    {
+      "selectedOrdinal": 8,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "cancelling the first empty-slot upload while the second saves leaves no empty gap"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "cancelling the first empty-slot upload while the second saves leaves no empty gap"
+      ],
+      "title": "cancelling the first empty-slot upload while the second saves leaves no empty gap",
+      "line": 443,
+      "filter": "tests/forensics--product-attachments.spec.ts:443"
+    },
+    {
+      "selectedOrdinal": 9,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "file picker remains usable when crypto.randomUUID is unavailable"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "file picker remains usable when crypto.randomUUID is unavailable"
+      ],
+      "title": "file picker remains usable when crypto.randomUUID is unavailable",
+      "line": 486,
+      "filter": "tests/forensics--product-attachments.spec.ts:486"
+    },
+    {
+      "selectedOrdinal": 10,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "multiple files that finish out of order stay in their selected document order"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "multiple files that finish out of order stay in their selected document order"
+      ],
+      "title": "multiple files that finish out of order stay in their selected document order",
+      "line": 499,
+      "filter": "tests/forensics--product-attachments.spec.ts:499"
+    },
+    {
+      "selectedOrdinal": 11,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "a late upload result from the previous page never enters the newly opened page"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "a late upload result from the previous page never enters the newly opened page"
+      ],
+      "title": "a late upload result from the previous page never enters the newly opened page",
+      "line": 518,
+      "filter": "tests/forensics--product-attachments.spec.ts:518"
+    },
+    {
+      "selectedOrdinal": 12,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "413 shows a readable upload error and retry control"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "413 shows a readable upload error and retry control"
+      ],
+      "title": "413 shows a readable upload error and retry control",
+      "line": 536,
+      "filter": "tests/forensics--product-attachments.spec.ts:536"
+    },
+    {
+      "selectedOrdinal": 13,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "upload 401 clears authenticated identity and returns to login"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "upload 401 clears authenticated identity and returns to login"
+      ],
+      "title": "upload 401 clears authenticated identity and returns to login",
+      "line": 546,
+      "filter": "tests/forensics--product-attachments.spec.ts:546"
+    },
+    {
+      "selectedOrdinal": 14,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "an attachment remains durable locally when its normal block sync receives 503"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "an attachment remains durable locally when its normal block sync receives 503"
+      ],
+      "title": "an attachment remains durable locally when its normal block sync receives 503",
+      "line": 556,
+      "filter": "tests/forensics--product-attachments.spec.ts:556"
+    },
+    {
+      "selectedOrdinal": 15,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "a local attachment block upsert failure compensates the successful upload through the cleanup queue"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "a local attachment block upsert failure compensates the successful upload through the cleanup queue"
+      ],
+      "title": "a local attachment block upsert failure compensates the successful upload through the cleanup queue",
+      "line": 569,
+      "filter": "tests/forensics--product-attachments.spec.ts:569"
+    },
+    {
+      "selectedOrdinal": 16,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "an upload response received during IME composition waits before inserting its attachment block"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "an upload response received during IME composition waits before inserting its attachment block"
+      ],
+      "title": "an upload response received during IME composition waits before inserting its attachment block",
+      "line": 596,
+      "filter": "tests/forensics--product-attachments.spec.ts:596"
+    },
+    {
+      "selectedOrdinal": 17,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "deleting an attachment stays permanent through undo and redo while ordinary text undo still works"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "deleting an attachment stays permanent through undo and redo while ordinary text undo still works"
+      ],
+      "title": "deleting an attachment stays permanent through undo and redo while ordinary text undo still works",
+      "line": 612,
+      "filter": "tests/forensics--product-attachments.spec.ts:612"
+    },
+    {
+      "selectedOrdinal": 18,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "quick cancel and fresh selection stay safe while compensation DELETE is in flight"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "quick cancel and fresh selection stay safe while compensation DELETE is in flight"
+      ],
+      "title": "quick cancel and fresh selection stay safe while compensation DELETE is in flight",
+      "line": 653,
+      "filter": "tests/forensics--product-attachments.spec.ts:653"
+    },
+    {
+      "selectedOrdinal": 19,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata"
+      ],
+      "title": "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata",
+      "line": 687,
+      "filter": "tests/forensics--product-attachments.spec.ts:687"
+    },
+    {
+      "selectedOrdinal": 20,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "deleting a page queues cleanup for all attachment metadata after block deletion"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "deleting a page queues cleanup for all attachment metadata after block deletion"
+      ],
+      "title": "deleting a page queues cleanup for all attachment metadata after block deletion",
+      "line": 711,
+      "filter": "tests/forensics--product-attachments.spec.ts:711"
+    },
+    {
+      "selectedOrdinal": 21,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "failed image uses fallback and unsafe URL or unknown attachment attrs keep the page read-only"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "failed image uses fallback and unsafe URL or unknown attachment attrs keep the page read-only"
+      ],
+      "title": "failed image uses fallback and unsafe URL or unknown attachment attrs keep the page read-only",
+      "line": 735,
+      "filter": "tests/forensics--product-attachments.spec.ts:735"
+    },
+    {
+      "selectedOrdinal": 22,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "long attachment names fit a 390px viewport and action buttons remain touch sized"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "long attachment names fit a 390px viewport and action buttons remain touch sized"
+      ],
+      "title": "long attachment names fit a 390px viewport and action buttons remain touch sized",
+      "line": 772,
+      "filter": "tests/forensics--product-attachments.spec.ts:772"
+    },
+    {
+      "selectedOrdinal": 23,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-attachments.spec.ts",
+        "file drop and image paste upload files, while text/html paste remains handled by the editor"
+      ],
+      "sourceFile": "tests/product-attachments.spec.ts",
+      "generatedFile": "tests/forensics--product-attachments.spec.ts",
+      "titlePath": [
+        "product-attachments.spec.ts",
+        "file drop and image paste upload files, while text/html paste remains handled by the editor"
+      ],
+      "title": "file drop and image paste upload files, while text/html paste remains handled by the editor",
+      "line": 791,
+      "filter": "tests/forensics--product-attachments.spec.ts:791"
+    },
+    {
+      "selectedOrdinal": 24,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "toggle creates, nests, survives reload and folds without becoming block data"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "toggle creates, nests, survives reload and folds without becoming block data"
+      ],
+      "title": "toggle creates, nests, survives reload and folds without becoming block data",
+      "line": 93,
+      "filter": "tests/forensics--product-blocks.spec.ts:93"
+    },
+    {
+      "selectedOrdinal": 25,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "editing inside a toggle keeps the existing block identities"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "editing inside a toggle keeps the existing block identities"
+      ],
+      "title": "editing inside a toggle keeps the existing block identities",
+      "line": 147,
+      "filter": "tests/forensics--product-blocks.spec.ts:147"
+    },
+    {
+      "selectedOrdinal": 26,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "local store enforces nested block invariants and records one block.move"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "local store enforces nested block invariants and records one block.move"
+      ],
+      "title": "local store enforces nested block invariants and records one block.move",
+      "line": 176,
+      "filter": "tests/forensics--product-blocks.spec.ts:176"
+    },
+    {
+      "selectedOrdinal": 27,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "block codec round-trips nested toggles and refuses unrepresentable structure"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "block codec round-trips nested toggles and refuses unrepresentable structure"
+      ],
+      "title": "block codec round-trips nested toggles and refuses unrepresentable structure",
+      "line": 252,
+      "filter": "tests/forensics--product-blocks.spec.ts:252"
+    },
+    {
+      "selectedOrdinal": 28,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting"
+      ],
+      "title": "callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting",
+      "line": 366,
+      "filter": "tests/forensics--product-blocks.spec.ts:366"
+    },
+    {
+      "selectedOrdinal": 29,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity"
+      ],
+      "title": "callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity",
+      "line": 422,
+      "filter": "tests/forensics--product-blocks.spec.ts:422"
+    },
+    {
+      "selectedOrdinal": 30,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload"
+      ],
+      "title": "Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload",
+      "line": 493,
+      "filter": "tests/forensics--product-blocks.spec.ts:493"
+    },
+    {
+      "selectedOrdinal": 31,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload"
+      ],
+      "title": "formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload",
+      "line": 528,
+      "filter": "tests/forensics--product-blocks.spec.ts:528"
+    },
+    {
+      "selectedOrdinal": 32,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow"
+      ],
+      "title": "callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow",
+      "line": 558,
+      "filter": "tests/forensics--product-blocks.spec.ts:558"
+    },
+    {
+      "selectedOrdinal": 33,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot"
+      ],
+      "title": "callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot",
+      "line": 593,
+      "filter": "tests/forensics--product-blocks.spec.ts:593"
+    },
+    {
+      "selectedOrdinal": 34,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "callout codec validates attributes and round-trips as a leaf and toggle child"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "callout codec validates attributes and round-trips as a leaf and toggle child"
+      ],
+      "title": "callout codec validates attributes and round-trips as a leaf and toggle child",
+      "line": 647,
+      "filter": "tests/forensics--product-blocks.spec.ts:647"
+    },
+    {
+      "selectedOrdinal": 35,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks"
+      ],
+      "title": "IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks",
+      "line": 693,
+      "filter": "tests/forensics--product-blocks.spec.ts:693"
+    },
+    {
+      "selectedOrdinal": 36,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "code block language survives codec conversion, editing and reload"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "code block language survives codec conversion, editing and reload"
+      ],
+      "title": "code block language survives codec conversion, editing and reload",
+      "line": 760,
+      "filter": "tests/forensics--product-blocks.spec.ts:760"
+    },
+    {
+      "selectedOrdinal": 37,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-blocks.spec.ts",
+        "table codec round-trips one grid block and refuses grids the server would reject"
+      ],
+      "sourceFile": "tests/product-blocks.spec.ts",
+      "generatedFile": "tests/forensics--product-blocks.spec.ts",
+      "titlePath": [
+        "product-blocks.spec.ts",
+        "table codec round-trips one grid block and refuses grids the server would reject"
+      ],
+      "title": "table codec round-trips one grid block and refuses grids the server would reject",
+      "line": 791,
+      "filter": "tests/forensics--product-blocks.spec.ts:791"
+    },
+    {
+      "selectedOrdinal": 38,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-content-rules.spec.ts",
+        "pasted list and quote content is repaired to the block registry instead of making the page unsaveable"
+      ],
+      "sourceFile": "tests/product-content-rules.spec.ts",
+      "generatedFile": "tests/forensics--product-content-rules.spec.ts",
+      "titlePath": [
+        "product-content-rules.spec.ts",
+        "pasted list and quote content is repaired to the block registry instead of making the page unsaveable"
+      ],
+      "title": "pasted list and quote content is repaired to the block registry instead of making the page unsaveable",
+      "line": 64,
+      "filter": "tests/forensics--product-content-rules.spec.ts:64"
+    },
+    {
+      "selectedOrdinal": 39,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-content-rules.spec.ts",
+        "pasted attributes stay inside the block registry instead of making the page unsaveable"
+      ],
+      "sourceFile": "tests/product-content-rules.spec.ts",
+      "generatedFile": "tests/forensics--product-content-rules.spec.ts",
+      "titlePath": [
+        "product-content-rules.spec.ts",
+        "pasted attributes stay inside the block registry instead of making the page unsaveable"
+      ],
+      "title": "pasted attributes stay inside the block registry instead of making the page unsaveable",
+      "line": 106,
+      "filter": "tests/forensics--product-content-rules.spec.ts:106"
+    },
+    {
+      "selectedOrdinal": 40,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "P11.3B date-only resize changes one endpoint, keeps inclusive end dates, and promotes legacy points to ranges"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "P11.3B date-only resize changes one endpoint, keeps inclusive end dates, and promotes legacy points to ranges"
+      ],
+      "title": "P11.3B date-only resize changes one endpoint, keeps inclusive end dates, and promotes legacy points to ranges",
+      "line": 153,
+      "filter": "tests/forensics--product-database.spec.ts:153"
+    },
+    {
+      "selectedOrdinal": 41,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database block controls reveal on hover or focus and insert a sibling paragraph below"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database block controls reveal on hover or focus and insert a sibling paragraph below"
+      ],
+      "title": "database block controls reveal on hover or focus and insert a sibling paragraph below",
+      "line": 1230,
+      "filter": "tests/forensics--product-database.spec.ts:1230"
+    },
+    {
+      "selectedOrdinal": 42,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "touch database block controls",
+        "hides database block controls on phone without reserving header space"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "touch database block controls",
+        "hides database block controls on phone without reserving header space"
+      ],
+      "title": "touch database block controls › hides database block controls on phone without reserving header space",
+      "line": 1264,
+      "filter": "tests/forensics--product-database.spec.ts:1264"
+    },
+    {
+      "selectedOrdinal": 43,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "touch database block controls",
+        "phone header uses two rows for long names, stays within the viewport, and creates a record"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "touch database block controls",
+        "phone header uses two rows for long names, stays within the viewport, and creates a record"
+      ],
+      "title": "touch database block controls › phone header uses two rows for long names, stays within the viewport, and creates a record",
+      "line": 1295,
+      "filter": "tests/forensics--product-database.spec.ts:1295"
+    },
+    {
+      "selectedOrdinal": 44,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database header keeps desktop and tablet controls on one row"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database header keeps desktop and tablet controls on one row"
+      ],
+      "title": "database header keeps desktop and tablet controls on one row",
+      "line": 1375,
+      "filter": "tests/forensics--product-database.spec.ts:1375"
+    },
+    {
+      "selectedOrdinal": 45,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "tablet coarse database block controls",
+        "preserves the existing tablet layout and visible controls"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "tablet coarse database block controls",
+        "preserves the existing tablet layout and visible controls"
+      ],
+      "title": "tablet coarse database block controls › preserves the existing tablet layout and visible controls",
+      "line": 1410,
+      "filter": "tests/forensics--product-database.spec.ts:1410"
+    },
+    {
+      "selectedOrdinal": 46,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database command separates back from cancel and keeps create and link choices on one row"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database command separates back from cancel and keeps create and link choices on one row"
+      ],
+      "title": "database command separates back from cancel and keeps create and link choices on one row",
+      "line": 1430,
+      "filter": "tests/forensics--product-database.spec.ts:1430"
+    },
+    {
+      "selectedOrdinal": 47,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database view popover uses shared controls and closes from outside clicks at 1440px"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database view popover uses shared controls and closes from outside clicks at 1440px"
+      ],
+      "title": "database view popover uses shared controls and closes from outside clicks at 1440px",
+      "line": 1479,
+      "filter": "tests/forensics--product-database.spec.ts:1479"
+    },
+    {
+      "selectedOrdinal": 48,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database view popover uses shared controls and closes from outside clicks at 390px"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database view popover uses shared controls and closes from outside clicks at 390px"
+      ],
+      "title": "database view popover uses shared controls and closes from outside clicks at 390px",
+      "line": 1479,
+      "filter": "tests/forensics--product-database.spec.ts:1479"
+    },
+    {
+      "selectedOrdinal": 49,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database creation cards and placeholder stay coordinated in light and dark at 1440px"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database creation cards and placeholder stay coordinated in light and dark at 1440px"
+      ],
+      "title": "database creation cards and placeholder stay coordinated in light and dark at 1440px",
+      "line": 1570,
+      "filter": "tests/forensics--product-database.spec.ts:1570"
+    },
+    {
+      "selectedOrdinal": 50,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database creation cards and placeholder stay coordinated in light and dark at 390px"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database creation cards and placeholder stay coordinated in light and dark at 390px"
+      ],
+      "title": "database creation cards and placeholder stay coordinated in light and dark at 390px",
+      "line": 1570,
+      "filter": "tests/forensics--product-database.spec.ts:1570"
+    },
+    {
+      "selectedOrdinal": 51,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database settings exposes five entries and record and property opening modes drive real surfaces"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database settings exposes five entries and record and property opening modes drive real surfaces"
+      ],
+      "title": "database settings exposes five entries and record and property opening modes drive real surfaces",
+      "line": 1603,
+      "filter": "tests/forensics--product-database.spec.ts:1603"
+    },
+    {
+      "selectedOrdinal": 52,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "opening settings show the current device by default and expand or collapse the other layouts"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "opening settings show the current device by default and expand or collapse the other layouts"
+      ],
+      "title": "opening settings show the current device by default and expand or collapse the other layouts",
+      "line": 1677,
+      "filter": "tests/forensics--product-database.spec.ts:1677"
+    },
+    {
+      "selectedOrdinal": 53,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database UX controls render library icons instead of text glyphs"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database UX controls render library icons instead of text glyphs"
+      ],
+      "title": "database UX controls render library icons instead of text glyphs",
+      "line": 1714,
+      "filter": "tests/forensics--product-database.spec.ts:1714"
+    },
+    {
+      "selectedOrdinal": 54,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "basic property type changes convert stored values and repair filters while retaining compatible sorts"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "basic property type changes convert stored values and repair filters while retaining compatible sorts"
+      ],
+      "title": "basic property type changes convert stored values and repair filters while retaining compatible sorts",
+      "line": 1856,
+      "filter": "tests/forensics--product-database.spec.ts:1856"
+    },
+    {
+      "selectedOrdinal": 55,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "advanced type changes configure before confirmation and preserve property identity"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "advanced type changes configure before confirmation and preserve property identity"
+      ],
+      "title": "advanced type changes configure before confirmation and preserve property identity",
+      "line": 1967,
+      "filter": "tests/forensics--product-database.spec.ts:1967"
+    },
+    {
+      "selectedOrdinal": 56,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "advanced type conversion cancels after a 409 refresh when the source type changed"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "advanced type conversion cancels after a 409 refresh when the source type changed"
+      ],
+      "title": "advanced type conversion cancels after a 409 refresh when the source type changed",
+      "line": 2058,
+      "filter": "tests/forensics--product-database.spec.ts:2058"
+    },
+    {
+      "selectedOrdinal": 57,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "advanced type conversion cancels after a 409 refresh when the source property was deleted"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "advanced type conversion cancels after a 409 refresh when the source property was deleted"
+      ],
+      "title": "advanced type conversion cancels after a 409 refresh when the source property was deleted",
+      "line": 2088,
+      "filter": "tests/forensics--product-database.spec.ts:2088"
+    },
+    {
+      "selectedOrdinal": 58,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "advanced type conversion keeps confirmation after a server dependency 409 and can retry with refreshed versions"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "advanced type conversion keeps confirmation after a server dependency 409 and can retry with refreshed versions"
+      ],
+      "title": "advanced type conversion keeps confirmation after a server dependency 409 and can retry with refreshed versions",
+      "line": 2114,
+      "filter": "tests/forensics--product-database.spec.ts:2114"
+    },
+    {
+      "selectedOrdinal": 59,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "advanced type conversion retains its configured draft and refreshed versions after a same-source 409"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "advanced type conversion retains its configured draft and refreshed versions after a same-source 409"
+      ],
+      "title": "advanced type conversion retains its configured draft and refreshed versions after a same-source 409",
+      "line": 2149,
+      "filter": "tests/forensics--product-database.spec.ts:2149"
+    },
+    {
+      "selectedOrdinal": 60,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "existing advanced property editors still use property PATCH instead of type mutation"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "existing advanced property editors still use property PATCH instead of type mutation"
+      ],
+      "title": "existing advanced property editors still use property PATCH instead of type mutation",
+      "line": 2182,
+      "filter": "tests/forensics--product-database.spec.ts:2182"
+    },
+    {
+      "selectedOrdinal": 61,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "property type change failures keep the confirmation available and report conflicts without optimistic type changes"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "property type change failures keep the confirmation available and report conflicts without optimistic type changes"
+      ],
+      "title": "property type change failures keep the confirmation available and report conflicts without optimistic type changes",
+      "line": 2217,
+      "filter": "tests/forensics--product-database.spec.ts:2217"
+    },
+    {
+      "selectedOrdinal": 62,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "property schema mutations refresh inside the open panel and preserve unsaved view drafts"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "property schema mutations refresh inside the open panel and preserve unsaved view drafts"
+      ],
+      "title": "property schema mutations refresh inside the open panel and preserve unsaved view drafts",
+      "line": 2251,
+      "filter": "tests/forensics--product-database.spec.ts:2251"
+    },
+    {
+      "selectedOrdinal": 63,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "property menu keeps its focus, type choices and database-local dismissal behavior"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "property menu keeps its focus, type choices and database-local dismissal behavior"
+      ],
+      "title": "property menu keeps its focus, type choices and database-local dismissal behavior",
+      "line": 2295,
+      "filter": "tests/forensics--product-database.spec.ts:2295"
+    },
+    {
+      "selectedOrdinal": 64,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "inline property rename edits the existing header and settings spans and saves trimmed names with a stable ID"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "inline property rename edits the existing header and settings spans and saves trimmed names with a stable ID"
+      ],
+      "title": "inline property rename edits the existing header and settings spans and saves trimmed names with a stable ID",
+      "line": 2465,
+      "filter": "tests/forensics--product-database.spec.ts:2465"
+    },
+    {
+      "selectedOrdinal": 65,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "property deletion requires modal confirmation and preserves the property on cancellation or failure"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "property deletion requires modal confirmation and preserves the property on cancellation or failure"
+      ],
+      "title": "property deletion requires modal confirmation and preserves the property on cancellation or failure",
+      "line": 2567,
+      "filter": "tests/forensics--product-database.spec.ts:2567"
+    },
+    {
+      "selectedOrdinal": 66,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "phone record settings offer right and bottom drawers and apply both modes"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "phone record settings offer right and bottom drawers and apply both modes"
+      ],
+      "title": "phone record settings offer right and bottom drawers and apply both modes",
+      "line": 2621,
+      "filter": "tests/forensics--product-database.spec.ts:2621"
+    },
+    {
+      "selectedOrdinal": 67,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "property settings remain usable in a 320px phone right drawer"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "property settings remain usable in a 320px phone right drawer"
+      ],
+      "title": "property settings remain usable in a 320px phone right drawer",
+      "line": 2653,
+      "filter": "tests/forensics--product-database.spec.ts:2653"
+    },
+    {
+      "selectedOrdinal": 68,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "desktop 记录 third-row opening popover remains interactive in the modal"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "desktop 记录 third-row opening popover remains interactive in the modal"
+      ],
+      "title": "desktop 记录 third-row opening popover remains interactive in the modal",
+      "line": 2704,
+      "filter": "tests/forensics--product-database.spec.ts:2704"
+    },
+    {
+      "selectedOrdinal": 69,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "desktop 属性 third-row opening popover remains interactive in the modal"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "desktop 属性 third-row opening popover remains interactive in the modal"
+      ],
+      "title": "desktop 属性 third-row opening popover remains interactive in the modal",
+      "line": 2704,
+      "filter": "tests/forensics--product-database.spec.ts:2704"
+    },
+    {
+      "selectedOrdinal": 70,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "opening choices persist independently across layouts and targets, including legacy saved keys"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "opening choices persist independently across layouts and targets, including legacy saved keys"
+      ],
+      "title": "opening choices persist independently across layouts and targets, including legacy saved keys",
+      "line": 2776,
+      "filter": "tests/forensics--product-database.spec.ts:2776"
+    },
+    {
+      "selectedOrdinal": 71,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "switching records from an interactive desktop drawer flushes the current record first"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "switching records from an interactive desktop drawer flushes the current record first"
+      ],
+      "title": "switching records from an interactive desktop drawer flushes the current record first",
+      "line": 2817,
+      "filter": "tests/forensics--product-database.spec.ts:2817"
+    },
+    {
+      "selectedOrdinal": 72,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "closing a record programmatically flushes its focused title draft first"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "closing a record programmatically flushes its focused title draft first"
+      ],
+      "title": "closing a record programmatically flushes its focused title draft first",
+      "line": 2843,
+      "filter": "tests/forensics--product-database.spec.ts:2843"
+    },
+    {
+      "selectedOrdinal": 73,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "rapid title saves across records queue refreshes for both originating databases"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "rapid title saves across records queue refreshes for both originating databases"
+      ],
+      "title": "rapid title saves across records queue refreshes for both originating databases",
+      "line": 2872,
+      "filter": "tests/forensics--product-database.spec.ts:2872"
+    },
+    {
+      "selectedOrdinal": 74,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "page tree shows databases under their host page, excludes records, and keeps both routes reachable"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "page tree shows databases under their host page, excludes records, and keeps both routes reachable"
+      ],
+      "title": "page tree shows databases under their host page, excludes records, and keeps both routes reachable",
+      "line": 2937,
+      "filter": "tests/forensics--product-database.spec.ts:2937"
+    },
+    {
+      "selectedOrdinal": 75,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "standalone database route keeps editor, NodeView, and record drafts across delayed Table/List/Board/Timeline A-B-A switches"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "standalone database route keeps editor, NodeView, and record drafts across delayed Table/List/Board/Timeline A-B-A switches"
+      ],
+      "title": "standalone database route keeps editor, NodeView, and record drafts across delayed Table/List/Board/Timeline A-B-A switches",
+      "line": 2958,
+      "filter": "tests/forensics--product-database.spec.ts:2958"
+    },
+    {
+      "selectedOrdinal": 76,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "first pointer focus beside a trailing Database block keeps ProseMirror selection current"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "first pointer focus beside a trailing Database block keeps ProseMirror selection current"
+      ],
+      "title": "first pointer focus beside a trailing Database block keeps ProseMirror selection current",
+      "line": 3109,
+      "filter": "tests/forensics--product-database.spec.ts:3109"
+    },
+    {
+      "selectedOrdinal": 77,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database views create, rename, switch, delete and persist the selected reference"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database views create, rename, switch, delete and persist the selected reference"
+      ],
+      "title": "database views create, rename, switch, delete and persist the selected reference",
+      "line": 3126,
+      "filter": "tests/forensics--product-database.spec.ts:3126"
+    },
+    {
+      "selectedOrdinal": 78,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database view selector creates a List view through the existing DatabaseView API"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database view selector creates a List view through the existing DatabaseView API"
+      ],
+      "title": "database view selector creates a List view through the existing DatabaseView API",
+      "line": 3198,
+      "filter": "tests/forensics--product-database.spec.ts:3198"
+    },
+    {
+      "selectedOrdinal": 79,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Timeline can be created from a database view selector and keeps its date source and bar after switching and reload"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Timeline can be created from a database view selector and keeps its date source and bar after switching and reload"
+      ],
+      "title": "Timeline can be created from a database view selector and keeps its date source and bar after switching and reload",
+      "line": 3226,
+      "filter": "tests/forensics--product-database.spec.ts:3226"
+    },
+    {
+      "selectedOrdinal": 80,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Timeline creation adds a Date property first when the database has no Date properties"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Timeline creation adds a Date property first when the database has no Date properties"
+      ],
+      "title": "Timeline creation adds a Date property first when the database has no Date properties",
+      "line": 3281,
+      "filter": "tests/forensics--product-database.spec.ts:3281"
+    },
+    {
+      "selectedOrdinal": 81,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Timeline create recovers the same pending id when offline closes the dialog during an unknown POST"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Timeline create recovers the same pending id when offline closes the dialog during an unknown POST"
+      ],
+      "title": "Timeline create recovers the same pending id when offline closes the dialog during an unknown POST",
+      "line": 3307,
+      "filter": "tests/forensics--product-database.spec.ts:3307"
+    },
+    {
+      "selectedOrdinal": 82,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Timeline date settings cancel without a PATCH, save distinct date columns, and retain other View options"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Timeline date settings cancel without a PATCH, save distinct date columns, and retain other View options"
+      ],
+      "title": "Timeline date settings cancel without a PATCH, save distinct date columns, and retain other View options",
+      "line": 3362,
+      "filter": "tests/forensics--product-database.spec.ts:3362"
+    },
+    {
+      "selectedOrdinal": 83,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens"
+      ],
+      "title": "Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens",
+      "line": 3435,
+      "filter": "tests/forensics--product-database.spec.ts:3435"
+    },
+    {
+      "selectedOrdinal": 84,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "database view selector creates a Board view through the existing DatabaseView API"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "database view selector creates a Board view through the existing DatabaseView API"
+      ],
+      "title": "database view selector creates a Board view through the existing DatabaseView API",
+      "line": 3490,
+      "filter": "tests/forensics--product-database.spec.ts:3490"
+    },
+    {
+      "selectedOrdinal": 85,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Board view settings select only local Select properties, preserve config, and share View updates"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Board view settings select only local Select properties, preserve config, and share View updates"
+      ],
+      "title": "Board view settings select only local Select properties, preserve config, and share View updates",
+      "line": 3585,
+      "filter": "tests/forensics--product-database.spec.ts:3585"
+    },
+    {
+      "selectedOrdinal": 86,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Board grouping settings remain available without Select properties and read-only offline on phone"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Board grouping settings remain available without Select properties and read-only offline on phone"
+      ],
+      "title": "Board grouping settings remain available without Select properties and read-only offline on phone",
+      "line": 3672,
+      "filter": "tests/forensics--product-database.spec.ts:3672"
+    },
+    {
+      "selectedOrdinal": 87,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Board grouping settings stay hidden while switching to a table View"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Board grouping settings stay hidden while switching to a table View"
+      ],
+      "title": "Board grouping settings stay hidden while switching to a table View",
+      "line": 3709,
+      "filter": "tests/forensics--product-database.spec.ts:3709"
+    },
+    {
+      "selectedOrdinal": 88,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Board grouping settings stay hidden while switching to a list View"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Board grouping settings stay hidden while switching to a list View"
+      ],
+      "title": "Board grouping settings stay hidden while switching to a list View",
+      "line": 3709,
+      "filter": "tests/forensics--product-database.spec.ts:3709"
+    },
+    {
+      "selectedOrdinal": 89,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Board grouping settings keep the existing View conflict behavior"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Board grouping settings keep the existing View conflict behavior"
+      ],
+      "title": "Board grouping settings keep the existing View conflict behavior",
+      "line": 3742,
+      "filter": "tests/forensics--product-database.spec.ts:3742"
+    },
+    {
+      "selectedOrdinal": 90,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "delayed Board View settings PATCH success cannot overwrite a List View after external snapshot switch"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "delayed Board View settings PATCH success cannot overwrite a List View after external snapshot switch"
+      ],
+      "title": "delayed Board View settings PATCH success cannot overwrite a List View after external snapshot switch",
+      "line": 3764,
+      "filter": "tests/forensics--product-database.spec.ts:3764"
+    },
+    {
+      "selectedOrdinal": 91,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "delayed Board View settings PATCH conflict cannot overwrite a List View after external snapshot switch"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "delayed Board View settings PATCH conflict cannot overwrite a List View after external snapshot switch"
+      ],
+      "title": "delayed Board View settings PATCH conflict cannot overwrite a List View after external snapshot switch",
+      "line": 3764,
+      "filter": "tests/forensics--product-database.spec.ts:3764"
+    },
+    {
+      "selectedOrdinal": 92,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "A to B to A editor-attribute switching does not let an old View PATCH refresh reloaded A"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "A to B to A editor-attribute switching does not let an old View PATCH refresh reloaded A"
+      ],
+      "title": "A to B to A editor-attribute switching does not let an old View PATCH refresh reloaded A",
+      "line": 3871,
+      "filter": "tests/forensics--product-database.spec.ts:3871"
+    },
+    {
+      "selectedOrdinal": 93,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Table List Board switch matrix keeps the database reference, renderer settings, and editor identity"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Table List Board switch matrix keeps the database reference, renderer settings, and editor identity"
+      ],
+      "title": "Table List Board switch matrix keeps the database reference, renderer settings, and editor identity",
+      "line": 3969,
+      "filter": "tests/forensics--product-database.spec.ts:3969"
+    },
+    {
+      "selectedOrdinal": 94,
+      "sourceTestBegin": [
+        "",
+        "",
+        "forensics--product-database.spec.ts",
+        "Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback"
+      ],
+      "sourceFile": "tests/product-database.spec.ts",
+      "generatedFile": "tests/forensics--product-database.spec.ts",
+      "titlePath": [
+        "product-database.spec.ts",
+        "Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback"
+      ],
+      "title": "Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback",
+      "line": 4071,
+      "filter": "tests/forensics--product-database.spec.ts:4071"
+    }
+  ],
+  "filters": [
+    "tests/forensics--product-attachments.spec.ts:151",
+    "tests/forensics--product-attachments.spec.ts:214",
+    "tests/forensics--product-attachments.spec.ts:251",
+    "tests/forensics--product-attachments.spec.ts:271",
+    "tests/forensics--product-attachments.spec.ts:309",
+    "tests/forensics--product-attachments.spec.ts:360",
+    "tests/forensics--product-attachments.spec.ts:392",
+    "tests/forensics--product-attachments.spec.ts:443",
+    "tests/forensics--product-attachments.spec.ts:486",
+    "tests/forensics--product-attachments.spec.ts:499",
+    "tests/forensics--product-attachments.spec.ts:518",
+    "tests/forensics--product-attachments.spec.ts:536",
+    "tests/forensics--product-attachments.spec.ts:546",
+    "tests/forensics--product-attachments.spec.ts:556",
+    "tests/forensics--product-attachments.spec.ts:569",
+    "tests/forensics--product-attachments.spec.ts:596",
+    "tests/forensics--product-attachments.spec.ts:612",
+    "tests/forensics--product-attachments.spec.ts:653",
+    "tests/forensics--product-attachments.spec.ts:687",
+    "tests/forensics--product-attachments.spec.ts:711",
+    "tests/forensics--product-attachments.spec.ts:735",
+    "tests/forensics--product-attachments.spec.ts:772",
+    "tests/forensics--product-attachments.spec.ts:791",
+    "tests/forensics--product-blocks.spec.ts:93",
+    "tests/forensics--product-blocks.spec.ts:147",
+    "tests/forensics--product-blocks.spec.ts:176",
+    "tests/forensics--product-blocks.spec.ts:252",
+    "tests/forensics--product-blocks.spec.ts:366",
+    "tests/forensics--product-blocks.spec.ts:422",
+    "tests/forensics--product-blocks.spec.ts:493",
+    "tests/forensics--product-blocks.spec.ts:528",
+    "tests/forensics--product-blocks.spec.ts:558",
+    "tests/forensics--product-blocks.spec.ts:593",
+    "tests/forensics--product-blocks.spec.ts:647",
+    "tests/forensics--product-blocks.spec.ts:693",
+    "tests/forensics--product-blocks.spec.ts:760",
+    "tests/forensics--product-blocks.spec.ts:791",
+    "tests/forensics--product-content-rules.spec.ts:64",
+    "tests/forensics--product-content-rules.spec.ts:106",
+    "tests/forensics--product-database.spec.ts:153",
+    "tests/forensics--product-database.spec.ts:1230",
+    "tests/forensics--product-database.spec.ts:1264",
+    "tests/forensics--product-database.spec.ts:1295",
+    "tests/forensics--product-database.spec.ts:1375",
+    "tests/forensics--product-database.spec.ts:1410",
+    "tests/forensics--product-database.spec.ts:1430",
+    "tests/forensics--product-database.spec.ts:1479",
+    "tests/forensics--product-database.spec.ts:1570",
+    "tests/forensics--product-database.spec.ts:1603",
+    "tests/forensics--product-database.spec.ts:1677",
+    "tests/forensics--product-database.spec.ts:1714",
+    "tests/forensics--product-database.spec.ts:1856",
+    "tests/forensics--product-database.spec.ts:1967",
+    "tests/forensics--product-database.spec.ts:2058",
+    "tests/forensics--product-database.spec.ts:2088",
+    "tests/forensics--product-database.spec.ts:2114",
+    "tests/forensics--product-database.spec.ts:2149",
+    "tests/forensics--product-database.spec.ts:2182",
+    "tests/forensics--product-database.spec.ts:2217",
+    "tests/forensics--product-database.spec.ts:2251",
+    "tests/forensics--product-database.spec.ts:2295",
+    "tests/forensics--product-database.spec.ts:2465",
+    "tests/forensics--product-database.spec.ts:2567",
+    "tests/forensics--product-database.spec.ts:2621",
+    "tests/forensics--product-database.spec.ts:2653",
+    "tests/forensics--product-database.spec.ts:2704",
+    "tests/forensics--product-database.spec.ts:2776",
+    "tests/forensics--product-database.spec.ts:2817",
+    "tests/forensics--product-database.spec.ts:2843",
+    "tests/forensics--product-database.spec.ts:2872",
+    "tests/forensics--product-database.spec.ts:2937",
+    "tests/forensics--product-database.spec.ts:2958",
+    "tests/forensics--product-database.spec.ts:3109",
+    "tests/forensics--product-database.spec.ts:3126",
+    "tests/forensics--product-database.spec.ts:3198",
+    "tests/forensics--product-database.spec.ts:3226",
+    "tests/forensics--product-database.spec.ts:3281",
+    "tests/forensics--product-database.spec.ts:3307",
+    "tests/forensics--product-database.spec.ts:3362",
+    "tests/forensics--product-database.spec.ts:3435",
+    "tests/forensics--product-database.spec.ts:3490",
+    "tests/forensics--product-database.spec.ts:3585",
+    "tests/forensics--product-database.spec.ts:3672",
+    "tests/forensics--product-database.spec.ts:3709",
+    "tests/forensics--product-database.spec.ts:3742",
+    "tests/forensics--product-database.spec.ts:3764",
+    "tests/forensics--product-database.spec.ts:3871",
+    "tests/forensics--product-database.spec.ts:3969",
+    "tests/forensics--product-database.spec.ts:4071"
+  ],
+  "environment": {
+    "baseURL": "http://127.0.0.1:7179",
+    "originalBaseURL": "http://127.0.0.1:7173",
+    "existingUserVitePid": 58068,
+    "workers": 1,
+    "retries": 0,
+    "browser": "chromium / channel chrome",
+    "vite": "original config + read-only middleware/transform observer",
+    "instrumentation": "generated spec import substitution only; original assertions/actions/timeouts intact"
+  },
+  "plan": [
+    "prefix94: one R5-following actual collection prefix, selected from first 94 testBegin records of b-actual-prefix-07; verify diagnostic --list exactly matches before one runner"
+  ],
+  "safety": {
+    "minFreePhysicalBytes": 2147483648,
+    "maxOwnedPrivateBytes": 17179869184,
+    "maxRunMs": 2400000,
+    "note": "stop batch on observed threshold, resource sampler error, or excessively long runner; thresholds are guardrails, not exhaustion claims"
+  },
+  "prefix94Preflight": {
+    "status": "confirmed",
+    "listDir": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\prefix94-preflight-list",
+    "expectedCount": 94,
+    "listedCount": 94,
+    "totalSummary": 94
+  }
+}

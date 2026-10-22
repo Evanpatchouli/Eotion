@@ -1,0 +1,25 @@
+{
+  "time": "2026-10-21T11:58:40.7880358Z",
+  "reason": "用户明确要求立刻停止工作，提交推送并汇报",
+  "rootPid": 61816,
+  "processesStopped": [
+    61816,
+    29120,
+    3960,
+    22304,
+    47680,
+    48016,
+    29004,
+    46328,
+    64988,
+    43980,
+    39612,
+    66240,
+    62364,
+    60412,
+    58148,
+    64492
+  ],
+  "raw": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489",
+  "remainingExperiments": "中断；不继续B/C或prefix94，不计完整Product门禁"
+}

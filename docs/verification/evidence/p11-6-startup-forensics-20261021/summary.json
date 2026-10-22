@@ -1,0 +1,301 @@
+{
+  "generatedAt": "2026-10-22T03:50:12.299Z",
+  "rawRoot": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489",
+  "runCount": 9,
+  "interruptedRuns": [
+    {
+      "id": "c-03-product-editor",
+      "exe": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+      "args": [
+        "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+        "test",
+        "--config",
+        "playwright.startup-forensics.config.ts",
+        "tests/forensics--product-editor.spec.ts",
+        "--workers=1",
+        "--retries=0",
+        "--output",
+        "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\c-03-product-editor\\test-results"
+      ],
+      "cwd": "C:\\Users\\31250\\Work\\Eotion\\apps\\web",
+      "head": "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+      "started": "2026-10-21T11:57:06.585Z",
+      "raw": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792580664489\\c-03-product-editor",
+      "observationConfig": "apps/web/playwright.startup-forensics.config.ts",
+      "trace": "retain-on-failure",
+      "workers": 1,
+      "retries": 0,
+      "ended": "2026-10-21T11:58:40.7880358Z",
+      "status": "interrupted-by-user",
+      "code": null,
+      "signal": "user-stop",
+      "observedTestBegins": 24,
+      "observedTestEnds": 23,
+      "observedEndStatuses": {
+        "passed": 23
+      }
+    }
+  ],
+  "runs": [
+    {
+      "id": "a-r5-1",
+      "started": "2026-10-21T11:04:27.963Z",
+      "ended": "2026-10-21T11:04:34.593Z",
+      "durationMs": 5716.4800000000005,
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 1
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "on",
+      "traceEffective": "on",
+      "specOrder": [
+        "product-nested.spec.ts"
+      ]
+    },
+    {
+      "id": "a-r5-2",
+      "started": "2026-10-21T11:04:34.597Z",
+      "ended": "2026-10-21T11:04:38.356Z",
+      "durationMs": 3077.383,
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 1
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "on",
+      "traceEffective": "on",
+      "specOrder": [
+        "product-nested.spec.ts"
+      ]
+    },
+    {
+      "id": "a-r5-3",
+      "started": "2026-10-21T11:04:38.360Z",
+      "ended": "2026-10-21T11:04:42.949Z",
+      "durationMs": 3759.643,
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 1
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "on",
+      "traceEffective": "on",
+      "specOrder": [
+        "product-nested.spec.ts"
+      ]
+    },
+    {
+      "id": "a-r1-1",
+      "started": "2026-10-21T11:04:42.954Z",
+      "ended": "2026-10-21T11:04:48.036Z",
+      "durationMs": 4387.378000000001,
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 1
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "on",
+      "traceEffective": "on",
+      "specOrder": [
+        "product-sync.spec.ts"
+      ]
+    },
+    {
+      "id": "b-prefix-05",
+      "started": "2026-10-21T11:04:48.040Z",
+      "ended": "2026-10-21T11:11:03.624Z",
+      "durationMs": 374858.00700000004,
+      "counts": {
+        "expected": 111,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 111
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-flow.spec.ts",
+        "product-pages.spec.ts",
+        "product-editor.spec.ts",
+        "product-blocks.spec.ts",
+        "product-nested.spec.ts"
+      ]
+    },
+    {
+      "id": "b-actual-prefix-07",
+      "started": "2026-10-21T11:11:03.626Z",
+      "ended": "2026-10-21T11:31:29.280Z",
+      "durationMs": 1224820.964,
+      "counts": {
+        "expected": 363,
+        "unexpected": 2,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 365
+      },
+      "failedTests": [
+        {
+          "title": "forensics--product-database.spec.ts › Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback",
+          "file": "forensics--product-database.spec.ts",
+          "actualStatus": "failed",
+          "expectedStatus": "passed",
+          "workerIndex": 0,
+          "parallelIndex": 0,
+          "durationMs": 5534,
+          "retry": 0
+        },
+        {
+          "title": "forensics--product-database.spec.ts › Timeline Frozen columns disappear after the server repairs a deleted property reference",
+          "file": "forensics--product-database.spec.ts",
+          "actualStatus": "failed",
+          "expectedStatus": "passed",
+          "workerIndex": 1,
+          "parallelIndex": 0,
+          "durationMs": 8945,
+          "retry": 0
+        }
+      ],
+      "workerIndexes": [
+        0,
+        1,
+        2
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "on",
+      "specOrder": [
+        "product-attachments.spec.ts",
+        "product-blocks.spec.ts",
+        "product-content-rules.spec.ts",
+        "product-database.spec.ts",
+        "product-editor.spec.ts",
+        "product-flow.spec.ts",
+        "product-nested.spec.ts"
+      ]
+    },
+    {
+      "id": "b-r1-actual-prefix-13",
+      "started": "2026-10-21T11:31:29.284Z",
+      "ended": "2026-10-21T11:55:37.179Z",
+      "durationMs": 1447221.471,
+      "counts": {
+        "expected": 496,
+        "unexpected": 1,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 497
+      },
+      "failedTests": [
+        {
+          "title": "forensics--product-database.spec.ts › Timeline Frozen columns disappear after the server repairs a deleted property reference",
+          "file": "forensics--product-database.spec.ts",
+          "actualStatus": "failed",
+          "expectedStatus": "passed",
+          "workerIndex": 0,
+          "parallelIndex": 0,
+          "durationMs": 8907,
+          "retry": 0
+        }
+      ],
+      "workerIndexes": [
+        0,
+        1
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "on",
+      "specOrder": [
+        "product-attachments.spec.ts",
+        "product-blocks.spec.ts",
+        "product-content-rules.spec.ts",
+        "product-database.spec.ts",
+        "product-editor.spec.ts",
+        "product-flow.spec.ts",
+        "product-nested.spec.ts",
+        "product-overlay.spec.ts",
+        "product-p75-acceptance.spec.ts",
+        "product-pages.spec.ts",
+        "product-settings.spec.ts",
+        "product-slash-context.spec.ts",
+        "product-sync.spec.ts"
+      ]
+    },
+    {
+      "id": "c-01-product-flow",
+      "started": "2026-10-21T11:55:37.184Z",
+      "ended": "2026-10-21T11:55:59.213Z",
+      "durationMs": 21386.385000000002,
+      "counts": {
+        "expected": 10,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 10
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-flow.spec.ts"
+      ]
+    },
+    {
+      "id": "c-02-product-pages",
+      "started": "2026-10-21T11:55:59.218Z",
+      "ended": "2026-10-21T11:57:06.581Z",
+      "durationMs": 66518.938,
+      "counts": {
+        "expected": 25,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 25
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-pages.spec.ts"
+      ]
+    }
+  ],
+  "resourceSummary": "resource-summary.json",
+  "orphanCountPeak": 0,
+  "orphanCountEnd": 0,
+  "rawInventory": "raw-inventory.json",
+  "mergedEvents": "events.jsonl.gz"
+}

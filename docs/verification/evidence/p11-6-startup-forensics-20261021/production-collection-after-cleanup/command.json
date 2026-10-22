@@ -1,0 +1,31 @@
+{
+  "time": "2026-10-22T03:48:10.647Z",
+  "exe": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+  "args": [
+    "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+    "test",
+    "--config",
+    "playwright.config.ts",
+    "tests/product-flow.spec.ts",
+    "tests/product-pages.spec.ts",
+    "tests/product-editor.spec.ts",
+    "tests/product-blocks.spec.ts",
+    "tests/product-nested.spec.ts",
+    "tests/product-table.spec.ts",
+    "tests/product-database.spec.ts",
+    "tests/product-overlay.spec.ts",
+    "tests/product-slash-context.spec.ts",
+    "tests/product-content-rules.spec.ts",
+    "tests/product-p75-acceptance.spec.ts",
+    "tests/product-sync.spec.ts",
+    "tests/product-attachments.spec.ts",
+    "tests/product-settings.spec.ts",
+    "--workers=1",
+    "--retries=0",
+    "--list"
+  ],
+  "cwd": "C:\\Users\\31250\\Work\\Eotion\\apps\\web",
+  "exitCode": 0,
+  "browserStarted": false,
+  "forensicsRunDirUnset": true
+}

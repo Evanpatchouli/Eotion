@@ -1,0 +1,3993 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.1\\node.exe",
+      "C:\\Users\\31250\\Work\\Eotion\\node_modules\\.pnpm\\@playwright+test@1.63.0\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config",
+      "playwright.startup-forensics.config.ts",
+      "tests/forensics--product-attachments.spec.ts:151",
+      "tests/forensics--product-attachments.spec.ts:214",
+      "tests/forensics--product-attachments.spec.ts:251",
+      "tests/forensics--product-attachments.spec.ts:271",
+      "tests/forensics--product-attachments.spec.ts:309",
+      "tests/forensics--product-attachments.spec.ts:360",
+      "tests/forensics--product-attachments.spec.ts:392",
+      "tests/forensics--product-attachments.spec.ts:443",
+      "tests/forensics--product-attachments.spec.ts:486",
+      "tests/forensics--product-attachments.spec.ts:499",
+      "tests/forensics--product-attachments.spec.ts:518",
+      "tests/forensics--product-attachments.spec.ts:536",
+      "tests/forensics--product-attachments.spec.ts:546",
+      "tests/forensics--product-attachments.spec.ts:556",
+      "tests/forensics--product-attachments.spec.ts:569",
+      "tests/forensics--product-attachments.spec.ts:596",
+      "tests/forensics--product-attachments.spec.ts:612",
+      "tests/forensics--product-attachments.spec.ts:653",
+      "tests/forensics--product-attachments.spec.ts:687",
+      "tests/forensics--product-attachments.spec.ts:711",
+      "tests/forensics--product-attachments.spec.ts:735",
+      "tests/forensics--product-attachments.spec.ts:772",
+      "tests/forensics--product-attachments.spec.ts:791",
+      "tests/forensics--product-blocks.spec.ts:93",
+      "tests/forensics--product-blocks.spec.ts:147",
+      "tests/forensics--product-blocks.spec.ts:176",
+      "tests/forensics--product-blocks.spec.ts:252",
+      "tests/forensics--product-blocks.spec.ts:366",
+      "tests/forensics--product-blocks.spec.ts:422",
+      "tests/forensics--product-blocks.spec.ts:493",
+      "tests/forensics--product-blocks.spec.ts:528",
+      "tests/forensics--product-blocks.spec.ts:558",
+      "tests/forensics--product-blocks.spec.ts:593",
+      "tests/forensics--product-blocks.spec.ts:647",
+      "tests/forensics--product-blocks.spec.ts:693",
+      "tests/forensics--product-blocks.spec.ts:760",
+      "tests/forensics--product-blocks.spec.ts:791",
+      "tests/forensics--product-content-rules.spec.ts:64",
+      "tests/forensics--product-content-rules.spec.ts:106",
+      "tests/forensics--product-database.spec.ts:153",
+      "tests/forensics--product-database.spec.ts:1230",
+      "tests/forensics--product-database.spec.ts:1264",
+      "tests/forensics--product-database.spec.ts:1295",
+      "tests/forensics--product-database.spec.ts:1375",
+      "tests/forensics--product-database.spec.ts:1410",
+      "tests/forensics--product-database.spec.ts:1430",
+      "tests/forensics--product-database.spec.ts:1479",
+      "tests/forensics--product-database.spec.ts:1570",
+      "tests/forensics--product-database.spec.ts:1603",
+      "tests/forensics--product-database.spec.ts:1677",
+      "tests/forensics--product-database.spec.ts:1714",
+      "tests/forensics--product-database.spec.ts:1856",
+      "tests/forensics--product-database.spec.ts:1967",
+      "tests/forensics--product-database.spec.ts:2058",
+      "tests/forensics--product-database.spec.ts:2088",
+      "tests/forensics--product-database.spec.ts:2114",
+      "tests/forensics--product-database.spec.ts:2149",
+      "tests/forensics--product-database.spec.ts:2182",
+      "tests/forensics--product-database.spec.ts:2217",
+      "tests/forensics--product-database.spec.ts:2251",
+      "tests/forensics--product-database.spec.ts:2295",
+      "tests/forensics--product-database.spec.ts:2465",
+      "tests/forensics--product-database.spec.ts:2567",
+      "tests/forensics--product-database.spec.ts:2621",
+      "tests/forensics--product-database.spec.ts:2653",
+      "tests/forensics--product-database.spec.ts:2704",
+      "tests/forensics--product-database.spec.ts:2776",
+      "tests/forensics--product-database.spec.ts:2817",
+      "tests/forensics--product-database.spec.ts:2843",
+      "tests/forensics--product-database.spec.ts:2872",
+      "tests/forensics--product-database.spec.ts:2937",
+      "tests/forensics--product-database.spec.ts:2958",
+      "tests/forensics--product-database.spec.ts:3109",
+      "tests/forensics--product-database.spec.ts:3126",
+      "tests/forensics--product-database.spec.ts:3198",
+      "tests/forensics--product-database.spec.ts:3226",
+      "tests/forensics--product-database.spec.ts:3281",
+      "tests/forensics--product-database.spec.ts:3307",
+      "tests/forensics--product-database.spec.ts:3362",
+      "tests/forensics--product-database.spec.ts:3435",
+      "tests/forensics--product-database.spec.ts:3490",
+      "tests/forensics--product-database.spec.ts:3585",
+      "tests/forensics--product-database.spec.ts:3672",
+      "tests/forensics--product-database.spec.ts:3709",
+      "tests/forensics--product-database.spec.ts:3742",
+      "tests/forensics--product-database.spec.ts:3764",
+      "tests/forensics--product-database.spec.ts:3871",
+      "tests/forensics--product-database.spec.ts:3969",
+      "tests/forensics--product-database.spec.ts:4071",
+      "--workers=1",
+      "--retries=0",
+      "--output",
+      "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results"
+    ],
+    "configFile": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\playwright.startup-forensics.config.ts",
+    "rootDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/31250/AppData/Local/Temp/eotion-startup-forensics-1792639932562/d-prefix-94/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "C:/Users/31250/Work/Eotion/apps/web/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "forensics--*.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "C:\\Users\\31250\\Work\\Eotion\\tools\\startup-forensics\\reporter.mjs",
+        {
+          "runDir": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\results.json"
+        }
+      ],
+      [
+        "line",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "forensics--product-attachments.spec.ts",
+      "file": "forensics--product-attachments.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "slash image command and picker upload become one local block, sync operation and reloadable snapshot",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5112,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:16.187Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-db54e-ion-and-reloadable-snapshot\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-233ddacf60c554186337",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 151,
+          "column": 1
+        },
+        {
+          "title": "file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2285,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:21.836Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-6a092-der-and-ends-with-one-block\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-617dd61997224f434462",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 214,
+          "column": 1
+        },
+        {
+          "title": "cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1686,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:24.178Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-d43c7-s-no-final-attachment-block\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-21471881f3e75ed2cdc6",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 251,
+          "column": 1
+        },
+        {
+          "title": "a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2157,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:25.912Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-dfe9f-serves-non-empty-paragraphs\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-ce86eb331d2a155233a3",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 271,
+          "column": 1
+        },
+        {
+          "title": "typing in the original empty paragraph while saving keeps the text after attachment commit",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2772,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:28.131Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-b2e74-ext-after-attachment-commit\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-931d714d334722efcca7",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 309,
+          "column": 1
+        },
+        {
+          "title": "a later selected file completing first leaves no leftover empty paragraph when the first upload fails",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2150,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:30.989Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-7ff0d-when-the-first-upload-fails\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-9684ddd01fa80143cfb0",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 360,
+          "column": 1
+        },
+        {
+          "title": "failed save restores user text changed in the provisional attachment block and queues cleanup",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1859,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:33.209Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-0fcf6-nt-block-and-queues-cleanup\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-e5d0b065a9790987afa9",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 392,
+          "column": 1
+        },
+        {
+          "title": "cancelling the first empty-slot upload while the second saves leaves no empty gap",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1556,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:35.123Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-4effe-d-saves-leaves-no-empty-gap\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-696551bded7976085134",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 443,
+          "column": 1
+        },
+        {
+          "title": "file picker remains usable when crypto.randomUUID is unavailable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1565,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:36.746Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-c913a-o-randomUUID-is-unavailable\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-7cc8739c733155da0eb5",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 486,
+          "column": 1
+        },
+        {
+          "title": "multiple files that finish out of order stay in their selected document order",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2409,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:38.355Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-11502-eir-selected-document-order\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-f8de34a4d2c6ecd49ebc",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 499,
+          "column": 1
+        },
+        {
+          "title": "a late upload result from the previous page never enters the newly opened page",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1698,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:40.845Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-3d961-nters-the-newly-opened-page\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-9c3d030971b223be330d",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 518,
+          "column": 1
+        },
+        {
+          "title": "413 shows a readable upload error and retry control",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1594,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:42.592Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-d6fee-oad-error-and-retry-control\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-5f45ad1d938205363809",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 536,
+          "column": 1
+        },
+        {
+          "title": "upload 401 clears authenticated identity and returns to login",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1684,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:44.236Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-5028b-entity-and-returns-to-login\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-779473cda4dcc79ae8ce",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 546,
+          "column": 1
+        },
+        {
+          "title": "an attachment remains durable locally when its normal block sync receives 503",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2789,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:45.967Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-a21f2-mal-block-sync-receives-503\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-895844698a1d75bd7943",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 556,
+          "column": 1
+        },
+        {
+          "title": "a local attachment block upsert failure compensates the successful upload through the cleanup queue",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1389,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:48.828Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-f1f86-d-through-the-cleanup-queue\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-ce35f5f7cde7eafeb20c",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 569,
+          "column": 1
+        },
+        {
+          "title": "an upload response received during IME composition waits before inserting its attachment block",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2793,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:50.280Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-b3a9e-erting-its-attachment-block\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-e180ae79e839e0ec9179",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 596,
+          "column": 1
+        },
+        {
+          "title": "deleting an attachment stays permanent through undo and redo while ordinary text undo still works",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2738,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:53.149Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "editor-state-after-attachment-undo-redo.json",
+                      "contentType": "application/json",
+                      "body": "ewogICJlZGl0b3JUZXh0IjogImtlZXAiLAogICJlZGl0b3JIdG1sIjogIjxzcGFuIGNsYXNzPVwiZW90aW9uLWJsb2NrLWRyYWctYW5jaG9yIFByb3NlTWlycm9yLXdpZGdldFwiIGNvbnRlbnRlZGl0YWJsZT1cImZhbHNlXCIgZGF0YS1lb3Rpb24tYmxvY2stZm9jdXNlZD1cImZhbHNlXCIgc3R5bGU9XCJ0b3A6IDBweDtcIj48YnV0dG9uIHR5cGU9XCJidXR0b25cIiBjbGFzcz1cImVvdGlvbi1ibG9jay1pbnNlcnQtYnV0dG9uXCIgY29udGVudGVkaXRhYmxlPVwiZmFsc2VcIiBhcmlhLWxhYmVsPVwi5Zyo5Yy65Z2X5LiL5pa55o+S5YWl5Yy65Z2XXCIgZGF0YS1lb3Rpb24tYmxvY2staW5zZXJ0PVwidW5kby10ZXh0XCI+PHN2ZyB3aWR0aD1cIjE4XCIgaGVpZ2h0PVwiMThcIiB2aWV3Qm94PVwiMCAwIDI0IDI0XCIgZmlsbD1cIm5vbmVcIiBzdHJva2U9XCJjdXJyZW50Q29sb3JcIiBzdHJva2Utd2lkdGg9XCIyXCIgc3Ryb2tlLWxpbmVjYXA9XCJyb3VuZFwiIHN0cm9rZS1saW5lam9pbj1cInJvdW5kXCIgYXJpYS1oaWRkZW49XCJ0cnVlXCI+PHBhdGggZD1cIk01IDEyaDE0XCI+PC9wYXRoPjxwYXRoIGQ9XCJNMTIgNXYxNFwiPjwvcGF0aD48L3N2Zz48L2J1dHRvbj48YnV0dG9uIHR5cGU9XCJidXR0b25cIiBjbGFzcz1cImVvdGlvbi1ibG9jay1kcmFnLWhhbmRsZVwiIGNvbnRlbnRlZGl0YWJsZT1cImZhbHNlXCIgZHJhZ2dhYmxlPVwidHJ1ZVwiIGFyaWEtbGFiZWw9XCLmi5bliqjljLrlnZdcIiBkYXRhLWVvdGlvbi1kcmFnLWhhbmRsZT1cInVuZG8tdGV4dFwiPjxzdmcgd2lkdGg9XCIxOFwiIGhlaWdodD1cIjE4XCIgdmlld0JveD1cIjAgMCAyNCAyNFwiIGZpbGw9XCJub25lXCIgc3Ryb2tlPVwiY3VycmVudENvbG9yXCIgc3Ryb2tlLXdpZHRoPVwiMlwiIHN0cm9rZS1saW5lY2FwPVwicm91bmRcIiBzdHJva2UtbGluZWpvaW49XCJyb3VuZFwiIGFyaWEtaGlkZGVuPVwidHJ1ZVwiPjxjaXJjbGUgY3g9XCI5XCIgY3k9XCIxMlwiIHI9XCIxXCI+PC9jaXJjbGU+PGNpcmNsZSBjeD1cIjlcIiBjeT1cIjVcIiByPVwiMVwiPjwvY2lyY2xlPjxjaXJjbGUgY3g9XCI5XCIgY3k9XCIxOVwiIHI9XCIxXCI+PC9jaXJjbGU+PGNpcmNsZSBjeD1cIjE1XCIgY3k9XCIxMlwiIHI9XCIxXCI+PC9jaXJjbGU+PGNpcmNsZSBjeD1cIjE1XCIgY3k9XCI1XCIgcj1cIjFcIj48L2NpcmNsZT48Y2lyY2xlIGN4PVwiMTVcIiBjeT1cIjE5XCIgcj1cIjFcIj48L2NpcmNsZT48L3N2Zz48L2J1dHRvbj48L3NwYW4+PHA+a2VlcDwvcD4iLAogICJhY3RpdmVFbGVtZW50IjogewogICAgInRhZ05hbWUiOiAiQk9EWSIsCiAgICAiY2xhc3NOYW1lIjogIiIsCiAgICAibGFiZWwiOiBudWxsLAogICAgInRleHQiOiAiXG4gICAgRW90aW9uYXR0YWNobWVudEBleGFtcGxlLmNvbeW3peS9nOWMuumZhOmZhOS7tuW3peS9nOWMuumhtemdoumZhOS7tumhtemdouiuvue9riDpgIDlh7rnmbvlvZXpmYTku7blt6XkvZzljLogLyDpmYTku7bpobXpnaLlt7LlkIzmraXpmYTku7blt6XkvZzljLrpmYTku7bpobXpnaJrZWVwXG4gICAgXG4gIFxuXG4iCiAgfSwKICAic2VsZWN0aW9uIjogewogICAgImFuY2hvclRleHQiOiBudWxsLAogICAgImFuY2hvck9mZnNldCI6IDAsCiAgICAiZm9jdXNUZXh0IjogbnVsbCwKICAgICJmb2N1c09mZnNldCI6IDAsCiAgICAiY29sbGFwc2VkIjogdHJ1ZQogIH0KfQ=="
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-1a9d4-inary-text-undo-still-works\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-580bcc7c5e8e94127cb3",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 612,
+          "column": 1
+        },
+        {
+          "title": "quick cancel and fresh selection stay safe while compensation DELETE is in flight",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1865,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:55.942Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-4c50b-nsation-DELETE-is-in-flight\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-2fccbf36d3789d6071e7",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 653,
+          "column": 1
+        },
+        {
+          "title": "offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3476,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:32:57.861Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-64328-reloads-attachment-metadata\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-037cb9ef60e13cbdd4bd",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 687,
+          "column": 1
+        },
+        {
+          "title": "deleting a page queues cleanup for all attachment metadata after block deletion",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1916,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:01.404Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-66713-tadata-after-block-deletion\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-d37fb4fb10ff5f0e0594",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 711,
+          "column": 1
+        },
+        {
+          "title": "failed image uses fallback and unsafe URL or unknown attachment attrs keep the page read-only",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4298,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:03.394Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-d78f7-trs-keep-the-page-read-only\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-c138ead197ca3c7d76a2",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 735,
+          "column": 1
+        },
+        {
+          "title": "long attachment names fit a 390px viewport and action buttons remain touch sized",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2598,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:07.771Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-52fd6--buttons-remain-touch-sized\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-8395c03ab7c764221698",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 772,
+          "column": 1
+        },
+        {
+          "title": "file drop and image paste upload files, while text/html paste remains handled by the editor",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1759,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:10.417Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-attachm-a8b0b-mains-handled-by-the-editor\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "8adb8913a1ce3ce5510f-b5112e93a0108d7d4e33",
+          "file": "forensics--product-attachments.spec.ts",
+          "line": 791,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "forensics--product-blocks.spec.ts",
+      "file": "forensics--product-blocks.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "toggle creates, nests, survives reload and folds without becoming block data",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6329,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:12.260Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--8b166-without-becoming-block-data\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-c718cc2fd3b609afd9e8",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 93,
+          "column": 1
+        },
+        {
+          "title": "editing inside a toggle keeps the existing block identities",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4395,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:18.682Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--54674-e-existing-block-identities\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-feae9730332ead0db67d",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 147,
+          "column": 1
+        },
+        {
+          "title": "local store enforces nested block invariants and records one block.move",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 907,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:23.154Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--ca4e6--and-records-one-block-move\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-11b6a24e2ce5d48b787a",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 176,
+          "column": 1
+        },
+        {
+          "title": "block codec round-trips nested toggles and refuses unrepresentable structure",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 887,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:24.106Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--b3a36-s-unrepresentable-structure\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-67386829e5b0620cda1e",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 252,
+          "column": 1
+        },
+        {
+          "title": "callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5872,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:25.032Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--953e1-esktop-selection-formatting\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-02ac0b702f7574d9d12c",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 366,
+          "column": 1
+        },
+        {
+          "title": "callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8633,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:30.977Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--ab650-d-text-with-stable-identity\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-f997985702f2625cbdd7",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 422,
+          "column": 1
+        },
+        {
+          "title": "Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6012,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:39.719Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--0ef09-letes-cleanly-across-reload\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-7d4de0d9e6d831120218",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 493,
+          "column": 1
+        },
+        {
+          "title": "formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3634,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:45.816Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--231c1-k-through-domain-and-reload\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-ef440db69829195e2570",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 528,
+          "column": 1
+        },
+        {
+          "title": "callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2425,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:49.516Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--fb421-s-selection-bubble-overflow\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-b26b7502ae051684cc73",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 558,
+          "column": 1
+        },
+        {
+          "title": "callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6202,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:51.995Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--52a4d-e-and-reloads-from-snapshot\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-088ad82b62b7c0ff6e95",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 593,
+          "column": 1
+        },
+        {
+          "title": "callout codec validates attributes and round-trips as a leaf and toggle child",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 860,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:58.292Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--091f6--as-a-leaf-and-toggle-child\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-473569331c23274e9f6e",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 647,
+          "column": 1
+        },
+        {
+          "title": "IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 758,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:59.192Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--9d71f-s-and-nested-callout-blocks\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-8b2dc34ca3bc8629b865",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 693,
+          "column": 1
+        },
+        {
+          "title": "code block language survives codec conversion, editing and reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3018,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:33:59.992Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--642e6-nversion-editing-and-reload\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-421009f9220289efd455",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 760,
+          "column": 1
+        },
+        {
+          "title": "table codec round-trips one grid block and refuses grids the server would reject",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 811,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:03.068Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-blocks--38c20-ids-the-server-would-reject\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "9e9594047dcd1b07bb39-3e36cd34fdbbd842f623",
+          "file": "forensics--product-blocks.spec.ts",
+          "line": 791,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "forensics--product-content-rules.spec.ts",
+      "file": "forensics--product-content-rules.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "pasted list and quote content is repaired to the block registry instead of making the page unsaveable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5164,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:03.930Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-content-fae24--making-the-page-unsaveable\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5f8098d6d6a4b6d145c-355ac84bc0013a48f9d3",
+          "file": "forensics--product-content-rules.spec.ts",
+          "line": 64,
+          "column": 1
+        },
+        {
+          "title": "pasted attributes stay inside the block registry instead of making the page unsaveable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6927,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:09.188Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-content-2dbcf--making-the-page-unsaveable\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5f8098d6d6a4b6d145c-6a35d157ff1ace560873",
+          "file": "forensics--product-content-rules.spec.ts",
+          "line": 106,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "forensics--product-database.spec.ts",
+      "file": "forensics--product-database.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "P11.3B date-only resize changes one endpoint, keeps inclusive end dates, and promotes legacy points to ranges",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8050,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:16.494Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-bc336-tes-legacy-points-to-ranges\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-4c52ec36f6b946a9114e",
+          "file": "forensics--product-database.spec.ts",
+          "line": 153,
+          "column": 1
+        },
+        {
+          "title": "database block controls reveal on hover or focus and insert a sibling paragraph below",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3107,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:24.762Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-dc2d8-t-a-sibling-paragraph-below\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-35488a85b2970a981364",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1230,
+          "column": 1
+        },
+        {
+          "title": "database header keeps desktop and tablet controls on one row",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1380,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:32.134Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-85d6e--tablet-controls-on-one-row\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-12be651e0f99a0f738b2",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1375,
+          "column": 1
+        },
+        {
+          "title": "database command separates back from cancel and keeps create and link choices on one row",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2338,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:36.269Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-e6d96-and-link-choices-on-one-row\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-a66205e3220f625f3084",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1430,
+          "column": 1
+        },
+        {
+          "title": "database view popover uses shared controls and closes from outside clicks at 1440px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4818,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:38.715Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-d7377-om-outside-clicks-at-1440px\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-7c07399c344302c193da",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1479,
+          "column": 3
+        },
+        {
+          "title": "database view popover uses shared controls and closes from outside clicks at 390px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4751,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:43.698Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-d31b5-rom-outside-clicks-at-390px\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-0a21948421ae1db34d02",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1479,
+          "column": 3
+        },
+        {
+          "title": "database creation cards and placeholder stay coordinated in light and dark at 1440px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2392,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:48.577Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-156fa-in-light-and-dark-at-1440px\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-fd1e4d2968476e4129f0",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1570,
+          "column": 1
+        },
+        {
+          "title": "database creation cards and placeholder stay coordinated in light and dark at 390px",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2483,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:51.068Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-eb602--in-light-and-dark-at-390px\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-68737d36639c8e001729",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1570,
+          "column": 1
+        },
+        {
+          "title": "database settings exposes five entries and record and property opening modes drive real surfaces",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5223,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:53.645Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-e1410-g-modes-drive-real-surfaces\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-e674757f4c1f41e6f0a0",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1603,
+          "column": 1
+        },
+        {
+          "title": "opening settings show the current device by default and expand or collapse the other layouts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5306,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:34:59.181Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-72038--collapse-the-other-layouts\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-1f8d6a1c295294e17273",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1677,
+          "column": 1
+        },
+        {
+          "title": "database UX controls render library icons instead of text glyphs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7561,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:04.718Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-240a0-cons-instead-of-text-glyphs\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-18dd479f5e0039e9dcf4",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1714,
+          "column": 1
+        },
+        {
+          "title": "basic property type changes convert stored values and repair filters while retaining compatible sorts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4168,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:12.621Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-0bc0d--retaining-compatible-sorts\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-dce0ff26b2520914e90c",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1856,
+          "column": 1
+        },
+        {
+          "title": "advanced type changes configure before confirmation and preserve property identity",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4201,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:17.066Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-47d42--preserve-property-identity\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-cf2e307072f4ffce7b06",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1967,
+          "column": 1
+        },
+        {
+          "title": "advanced type conversion cancels after a 409 refresh when the source type changed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2282,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:21.545Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-1ef69-hen-the-source-type-changed\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-e28427098855e16a98f9",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2058,
+          "column": 1
+        },
+        {
+          "title": "advanced type conversion cancels after a 409 refresh when the source property was deleted",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2205,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:23.952Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-bcf41-source-property-was-deleted\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-f418880243ef6f12bea0",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2088,
+          "column": 1
+        },
+        {
+          "title": "advanced type conversion keeps confirmation after a server dependency 409 and can retry with refreshed versions",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2338,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:26.267Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-76f42-try-with-refreshed-versions\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-80587fe66908f6b0e7d3",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2114,
+          "column": 1
+        },
+        {
+          "title": "advanced type conversion retains its configured draft and refreshed versions after a same-source 409",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2392,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:28.723Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-4f95d-ons-after-a-same-source-409\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-f5f0e45a785b372bf01f",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2149,
+          "column": 1
+        },
+        {
+          "title": "existing advanced property editors still use property PATCH instead of type mutation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4473,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:31.239Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-25f60-CH-instead-of-type-mutation\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-4a6b623460744a360029",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2182,
+          "column": 1
+        },
+        {
+          "title": "property type change failures keep the confirmation available and report conflicts without optimistic type changes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2227,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:35.952Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-9f67d-out-optimistic-type-changes\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-b104059aba021fbdfa87",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2217,
+          "column": 1
+        },
+        {
+          "title": "property schema mutations refresh inside the open panel and preserve unsaved view drafts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2909,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:38.293Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-a0e8e-reserve-unsaved-view-drafts\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-6d1f09b7e1e71ee1a8be",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2251,
+          "column": 1
+        },
+        {
+          "title": "property menu keeps its focus, type choices and database-local dismissal behavior",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7463,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:41.390Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-a5556-se-local-dismissal-behavior\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-2be596c77fb858356d88",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2295,
+          "column": 1
+        },
+        {
+          "title": "inline property rename edits the existing header and settings spans and saves trimmed names with a stable ID",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4974,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:49.050Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-0a0a0-mmed-names-with-a-stable-ID\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-b779209de569870a48f7",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2465,
+          "column": 1
+        },
+        {
+          "title": "property deletion requires modal confirmation and preserves the property on cancellation or failure",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2337,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:54.206Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-8acf3--on-cancellation-or-failure\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-0e2efddf3a33e0908e75",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2567,
+          "column": 1
+        },
+        {
+          "title": "phone record settings offer right and bottom drawers and apply both modes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4915,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:35:56.656Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-74d1b-rawers-and-apply-both-modes\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-35ae61ba14aa2824155c",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2621,
+          "column": 1
+        },
+        {
+          "title": "property settings remain usable in a 320px phone right drawer",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4139,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:01.737Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-39d9c--a-320px-phone-right-drawer\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-de951d4dc617b8b5c368",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2653,
+          "column": 1
+        },
+        {
+          "title": "desktop 记录 third-row opening popover remains interactive in the modal",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1908,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:06.024Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-54180-ns-interactive-in-the-modal\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-f9deeb8eb4450434aa63",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2704,
+          "column": 3
+        },
+        {
+          "title": "desktop 属性 third-row opening popover remains interactive in the modal",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1870,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:08.036Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-bcc82-ns-interactive-in-the-modal\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-60c71dfc02a4e6f2b110",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2704,
+          "column": 3
+        },
+        {
+          "title": "opening choices persist independently across layouts and targets, including legacy saved keys",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4141,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:10.008Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-c0624-including-legacy-saved-keys\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-46289da323e89f11ffbb",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2776,
+          "column": 1
+        },
+        {
+          "title": "switching records from an interactive desktop drawer flushes the current record first",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1865,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:14.352Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-90f39-es-the-current-record-first\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-b6622f9881553e26119e",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2817,
+          "column": 1
+        },
+        {
+          "title": "closing a record programmatically flushes its focused title draft first",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2139,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:16.310Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-3cabb-s-focused-title-draft-first\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-4c5b4b4e169a54666e92",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2843,
+          "column": 1
+        },
+        {
+          "title": "rapid title saves across records queue refreshes for both originating databases",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2298,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:18.548Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-0cce3--both-originating-databases\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-696ad881cf5607527f6c",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2872,
+          "column": 1
+        },
+        {
+          "title": "page tree shows databases under their host page, excludes records, and keeps both routes reachable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1889,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:20.946Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-50334-keeps-both-routes-reachable\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-4568882cd46639a24acb",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2937,
+          "column": 1
+        },
+        {
+          "title": "standalone database route keeps editor, NodeView, and record drafts across delayed Table/List/Board/Timeline A-B-A switches",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2666,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:22.931Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-f2712-ard-Timeline-A-B-A-switches\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-140cf25e786d54af367f",
+          "file": "forensics--product-database.spec.ts",
+          "line": 2958,
+          "column": 1
+        },
+        {
+          "title": "first pointer focus beside a trailing Database block keeps ProseMirror selection current",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1749,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:25.708Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-861bc-oseMirror-selection-current\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-8d429d990ec2d8878d12",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3109,
+          "column": 1
+        },
+        {
+          "title": "database views create, rename, switch, delete and persist the selected reference",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4492,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:27.538Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-17ff9-sist-the-selected-reference\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-530e02f88af5519d9c68",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3126,
+          "column": 1
+        },
+        {
+          "title": "database view selector creates a List view through the existing DatabaseView API",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2898,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:32.241Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-26b7d-e-existing-DatabaseView-API\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-c66ae3eb68583ccbeacf",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3198,
+          "column": 1
+        },
+        {
+          "title": "Timeline can be created from a database view selector and keeps its date source and bar after switching and reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4256,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:35.250Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-8989a--after-switching-and-reload\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-c86cff0a40835bbcecec",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3226,
+          "column": 1
+        },
+        {
+          "title": "Timeline creation adds a Date property first when the database has no Date properties",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2275,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:39.639Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-3f073-base-has-no-Date-properties\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-abd44ce6672c2a476282",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3281,
+          "column": 1
+        },
+        {
+          "title": "Timeline create recovers the same pending id when offline closes the dialog during an unknown POST",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2430,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:42.036Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-24f42-alog-during-an-unknown-POST\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-73eac1e85c0c2bff2781",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3307,
+          "column": 1
+        },
+        {
+          "title": "Timeline date settings cancel without a PATCH, save distinct date columns, and retain other View options",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3045,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:44.576Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-c38a7-d-retain-other-View-options\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-b50ed1609b5dd3504dea",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3362,
+          "column": 1
+        },
+        {
+          "title": "Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2529,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:47.766Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-0b35b-ses-and-the-overlay-reopens\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-135dceb19f7738f40336",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3435,
+          "column": 1
+        },
+        {
+          "title": "database view selector creates a Board view through the existing DatabaseView API",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3102,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:50.418Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-5a88f-e-existing-DatabaseView-API\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-0d72f319cc9ed9427ce5",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3490,
+          "column": 1
+        },
+        {
+          "title": "Board view settings select only local Select properties, preserve config, and share View updates",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2764,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:53.624Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-903ef-nfig-and-share-View-updates\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-f26229ee7a3c2742818c",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3585,
+          "column": 1
+        },
+        {
+          "title": "Board grouping settings remain available without Select properties and read-only offline on phone",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3551,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:36:56.539Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-cfc4c--read-only-offline-on-phone\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-d9725efa9075dbcb406a",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3672,
+          "column": 1
+        },
+        {
+          "title": "Board grouping settings stay hidden while switching to a table View",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2264,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:37:00.193Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-dac26-e-switching-to-a-table-View\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-46875eead5c25ce5fc8f",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3709,
+          "column": 3
+        },
+        {
+          "title": "Board grouping settings stay hidden while switching to a list View",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2196,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:37:02.544Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-b0462-le-switching-to-a-list-View\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-6d5717d24908be597945",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3709,
+          "column": 3
+        },
+        {
+          "title": "Board grouping settings keep the existing View conflict behavior",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1710,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:37:04.829Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-4aa7d-ting-View-conflict-behavior\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-d0631dce4dc8c4dff3a2",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3742,
+          "column": 1
+        },
+        {
+          "title": "delayed Board View settings PATCH success cannot overwrite a List View after external snapshot switch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2522,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:37:06.633Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-26935-er-external-snapshot-switch\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-e7e0f81dddc382906cd7",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3764,
+          "column": 3
+        },
+        {
+          "title": "delayed Board View settings PATCH conflict cannot overwrite a List View after external snapshot switch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2611,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:37:09.246Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-3d983-er-external-snapshot-switch\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-bf395f63a4e971557850",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3764,
+          "column": 3
+        },
+        {
+          "title": "A to B to A editor-attribute switching does not let an old View PATCH refresh reloaded A",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3405,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:37:11.952Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-1bc56-ew-PATCH-refresh-reloaded-A\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-c2c4c330bbe3f0d237fc",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3871,
+          "column": 1
+        },
+        {
+          "title": "Table List Board switch matrix keeps the database reference, renderer settings, and editor identity",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 11121,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:37:15.449Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-8fff4-ettings-and-editor-identity\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-fbe0b6f24114dec46d2e",
+          "file": "forensics--product-database.spec.ts",
+          "line": 3969,
+          "column": 1
+        },
+        {
+          "title": "Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3874,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-22T03:37:26.767Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-e0044-s-and-has-no-table-fallback\\trace.zip"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "d0aa95b6c9f7582ca3a8-237d79840488a290a1ff",
+          "file": "forensics--product-database.spec.ts",
+          "line": 4071,
+          "column": 1
+        }
+      ],
+      "suites": [
+        {
+          "title": "touch database block controls",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1261,
+          "column": 6,
+          "specs": [
+            {
+              "title": "hides database block controls on phone without reserving header space",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1727,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-22T03:34:27.974Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-6996a-hout-reserving-header-space\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d0aa95b6c9f7582ca3a8-9af01a32a16ac5257be8",
+              "file": "forensics--product-database.spec.ts",
+              "line": 1264,
+              "column": 3
+            },
+            {
+              "title": "phone header uses two rows for long names, stays within the viewport, and creates a record",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2258,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-22T03:34:29.778Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-4f354-ewport-and-creates-a-record\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d0aa95b6c9f7582ca3a8-2c62bd2bc6b53a3ec879",
+              "file": "forensics--product-database.spec.ts",
+              "line": 1295,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "tablet coarse database block controls",
+          "file": "forensics--product-database.spec.ts",
+          "line": 1407,
+          "column": 6,
+          "specs": [
+            {
+              "title": "preserves the existing tablet layout and visible controls",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "",
+                  "projectName": "",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2592,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-22T03:34:33.590Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792639932562\\d-prefix-94\\test-results\\forensics--product-databas-a0f8e-layout-and-visible-controls\\trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "d0aa95b6c9f7582ca3a8-defe6f2a390ffa07f034",
+              "file": "forensics--product-database.spec.ts",
+              "line": 1410,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-22T03:32:15.243Z",
+    "duration": 318324.71499999997,
+    "expected": 94,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

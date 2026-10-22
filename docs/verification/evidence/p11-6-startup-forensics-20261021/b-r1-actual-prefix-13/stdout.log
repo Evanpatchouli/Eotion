@@ -1,0 +1,589 @@
+
+Running 497 tests using 1 worker
+
+
+
+[1/497] tests\forensics--product-attachments.spec.ts:151:1 › slash image command and picker upload become one local block, sync operation and reloadable snapshot
+[2/497] tests\forensics--product-attachments.spec.ts:214:1 › file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block
+[3/497] tests\forensics--product-attachments.spec.ts:251:1 › cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block
+[4/497] tests\forensics--product-attachments.spec.ts:271:1 › a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs
+[5/497] tests\forensics--product-attachments.spec.ts:309:1 › typing in the original empty paragraph while saving keeps the text after attachment commit
+[6/497] tests\forensics--product-attachments.spec.ts:360:1 › a later selected file completing first leaves no leftover empty paragraph when the first upload fails
+[7/497] tests\forensics--product-attachments.spec.ts:392:1 › failed save restores user text changed in the provisional attachment block and queues cleanup
+[8/497] tests\forensics--product-attachments.spec.ts:443:1 › cancelling the first empty-slot upload while the second saves leaves no empty gap
+[9/497] tests\forensics--product-attachments.spec.ts:486:1 › file picker remains usable when crypto.randomUUID is unavailable
+[10/497] tests\forensics--product-attachments.spec.ts:499:1 › multiple files that finish out of order stay in their selected document order
+[11/497] tests\forensics--product-attachments.spec.ts:518:1 › a late upload result from the previous page never enters the newly opened page
+[12/497] tests\forensics--product-attachments.spec.ts:536:1 › 413 shows a readable upload error and retry control
+[13/497] tests\forensics--product-attachments.spec.ts:546:1 › upload 401 clears authenticated identity and returns to login
+[14/497] tests\forensics--product-attachments.spec.ts:556:1 › an attachment remains durable locally when its normal block sync receives 503
+[15/497] tests\forensics--product-attachments.spec.ts:569:1 › a local attachment block upsert failure compensates the successful upload through the cleanup queue
+[16/497] tests\forensics--product-attachments.spec.ts:596:1 › an upload response received during IME composition waits before inserting its attachment block
+[17/497] tests\forensics--product-attachments.spec.ts:612:1 › deleting an attachment stays permanent through undo and redo while ordinary text undo still works
+[18/497] tests\forensics--product-attachments.spec.ts:653:1 › quick cancel and fresh selection stay safe while compensation DELETE is in flight
+[19/497] tests\forensics--product-attachments.spec.ts:687:1 › offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata
+[20/497] tests\forensics--product-attachments.spec.ts:711:1 › deleting a page queues cleanup for all attachment metadata after block deletion
+[21/497] tests\forensics--product-attachments.spec.ts:735:1 › failed image uses fallback and unsafe URL or unknown attachment attrs keep the page read-only
+[22/497] tests\forensics--product-attachments.spec.ts:772:1 › long attachment names fit a 390px viewport and action buttons remain touch sized
+[23/497] tests\forensics--product-attachments.spec.ts:791:1 › file drop and image paste upload files, while text/html paste remains handled by the editor
+[24/497] tests\forensics--product-blocks.spec.ts:93:1 › toggle creates, nests, survives reload and folds without becoming block data
+[25/497] tests\forensics--product-blocks.spec.ts:147:1 › editing inside a toggle keeps the existing block identities
+[26/497] tests\forensics--product-blocks.spec.ts:176:1 › local store enforces nested block invariants and records one block.move
+[27/497] tests\forensics--product-blocks.spec.ts:252:1 › block codec round-trips nested toggles and refuses unrepresentable structure
+[28/497] tests\forensics--product-blocks.spec.ts:366:1 › callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting
+[29/497] tests\forensics--product-blocks.spec.ts:422:1 › callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity
+[30/497] tests\forensics--product-blocks.spec.ts:493:1 › Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload
+[31/497] tests\forensics--product-blocks.spec.ts:528:1 › formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload
+[32/497] tests\forensics--product-blocks.spec.ts:558:1 › callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow
+[33/497] tests\forensics--product-blocks.spec.ts:593:1 › callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot
+[34/497] tests\forensics--product-blocks.spec.ts:647:1 › callout codec validates attributes and round-trips as a leaf and toggle child
+[35/497] tests\forensics--product-blocks.spec.ts:693:1 › IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks
+[36/497] tests\forensics--product-blocks.spec.ts:760:1 › code block language survives codec conversion, editing and reload
+[37/497] tests\forensics--product-blocks.spec.ts:791:1 › table codec round-trips one grid block and refuses grids the server would reject
+[38/497] tests\forensics--product-content-rules.spec.ts:64:1 › pasted list and quote content is repaired to the block registry instead of making the page unsaveable
+[39/497] tests\forensics--product-content-rules.spec.ts:106:1 › pasted attributes stay inside the block registry instead of making the page unsaveable
+[40/497] tests\forensics--product-database.spec.ts:153:1 › P11.3B date-only resize changes one endpoint, keeps inclusive end dates, and promotes legacy points to ranges
+[41/497] tests\forensics--product-database.spec.ts:1230:1 › database block controls reveal on hover or focus and insert a sibling paragraph below
+[42/497] tests\forensics--product-database.spec.ts:1264:3 › touch database block controls › hides database block controls on phone without reserving header space
+[43/497] tests\forensics--product-database.spec.ts:1295:3 › touch database block controls › phone header uses two rows for long names, stays within the viewport, and creates a record
+[44/497] tests\forensics--product-database.spec.ts:1375:1 › database header keeps desktop and tablet controls on one row
+[45/497] tests\forensics--product-database.spec.ts:1410:3 › tablet coarse database block controls › preserves the existing tablet layout and visible controls
+[46/497] tests\forensics--product-database.spec.ts:1430:1 › database command separates back from cancel and keeps create and link choices on one row
+[47/497] tests\forensics--product-database.spec.ts:1479:3 › database view popover uses shared controls and closes from outside clicks at 1440px
+[48/497] tests\forensics--product-database.spec.ts:1479:3 › database view popover uses shared controls and closes from outside clicks at 390px
+[49/497] tests\forensics--product-database.spec.ts:1570:1 › database creation cards and placeholder stay coordinated in light and dark at 1440px
+[50/497] tests\forensics--product-database.spec.ts:1570:1 › database creation cards and placeholder stay coordinated in light and dark at 390px
+[51/497] tests\forensics--product-database.spec.ts:1603:1 › database settings exposes five entries and record and property opening modes drive real surfaces
+[52/497] tests\forensics--product-database.spec.ts:1677:1 › opening settings show the current device by default and expand or collapse the other layouts
+[53/497] tests\forensics--product-database.spec.ts:1714:1 › database UX controls render library icons instead of text glyphs
+[54/497] tests\forensics--product-database.spec.ts:1856:1 › basic property type changes convert stored values and repair filters while retaining compatible sorts
+[55/497] tests\forensics--product-database.spec.ts:1967:1 › advanced type changes configure before confirmation and preserve property identity
+[56/497] tests\forensics--product-database.spec.ts:2058:1 › advanced type conversion cancels after a 409 refresh when the source type changed
+[57/497] tests\forensics--product-database.spec.ts:2088:1 › advanced type conversion cancels after a 409 refresh when the source property was deleted
+[58/497] tests\forensics--product-database.spec.ts:2114:1 › advanced type conversion keeps confirmation after a server dependency 409 and can retry with refreshed versions
+[59/497] tests\forensics--product-database.spec.ts:2149:1 › advanced type conversion retains its configured draft and refreshed versions after a same-source 409
+[60/497] tests\forensics--product-database.spec.ts:2182:1 › existing advanced property editors still use property PATCH instead of type mutation
+[61/497] tests\forensics--product-database.spec.ts:2217:1 › property type change failures keep the confirmation available and report conflicts without optimistic type changes
+[62/497] tests\forensics--product-database.spec.ts:2251:1 › property schema mutations refresh inside the open panel and preserve unsaved view drafts
+[63/497] tests\forensics--product-database.spec.ts:2295:1 › property menu keeps its focus, type choices and database-local dismissal behavior
+[64/497] tests\forensics--product-database.spec.ts:2465:1 › inline property rename edits the existing header and settings spans and saves trimmed names with a stable ID
+[65/497] tests\forensics--product-database.spec.ts:2567:1 › property deletion requires modal confirmation and preserves the property on cancellation or failure
+[66/497] tests\forensics--product-database.spec.ts:2621:1 › phone record settings offer right and bottom drawers and apply both modes
+[67/497] tests\forensics--product-database.spec.ts:2653:1 › property settings remain usable in a 320px phone right drawer
+[68/497] tests\forensics--product-database.spec.ts:2704:3 › desktop 记录 third-row opening popover remains interactive in the modal
+[69/497] tests\forensics--product-database.spec.ts:2704:3 › desktop 属性 third-row opening popover remains interactive in the modal
+[70/497] tests\forensics--product-database.spec.ts:2776:1 › opening choices persist independently across layouts and targets, including legacy saved keys
+[71/497] tests\forensics--product-database.spec.ts:2817:1 › switching records from an interactive desktop drawer flushes the current record first
+[72/497] tests\forensics--product-database.spec.ts:2843:1 › closing a record programmatically flushes its focused title draft first
+[73/497] tests\forensics--product-database.spec.ts:2872:1 › rapid title saves across records queue refreshes for both originating databases
+[74/497] tests\forensics--product-database.spec.ts:2937:1 › page tree shows databases under their host page, excludes records, and keeps both routes reachable
+[75/497] tests\forensics--product-database.spec.ts:2958:1 › standalone database route keeps editor, NodeView, and record drafts across delayed Table/List/Board/Timeline A-B-A switches
+[76/497] tests\forensics--product-database.spec.ts:3109:1 › first pointer focus beside a trailing Database block keeps ProseMirror selection current
+[77/497] tests\forensics--product-database.spec.ts:3126:1 › database views create, rename, switch, delete and persist the selected reference
+[78/497] tests\forensics--product-database.spec.ts:3198:1 › database view selector creates a List view through the existing DatabaseView API
+[79/497] tests\forensics--product-database.spec.ts:3226:1 › Timeline can be created from a database view selector and keeps its date source and bar after switching and reload
+[80/497] tests\forensics--product-database.spec.ts:3281:1 › Timeline creation adds a Date property first when the database has no Date properties
+[81/497] tests\forensics--product-database.spec.ts:3307:1 › Timeline create recovers the same pending id when offline closes the dialog during an unknown POST
+[82/497] tests\forensics--product-database.spec.ts:3362:1 › Timeline date settings cancel without a PATCH, save distinct date columns, and retain other View options
+[83/497] tests\forensics--product-database.spec.ts:3435:1 › Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens
+[84/497] tests\forensics--product-database.spec.ts:3490:1 › database view selector creates a Board view through the existing DatabaseView API
+[85/497] tests\forensics--product-database.spec.ts:3585:1 › Board view settings select only local Select properties, preserve config, and share View updates
+[86/497] tests\forensics--product-database.spec.ts:3672:1 › Board grouping settings remain available without Select properties and read-only offline on phone
+[87/497] tests\forensics--product-database.spec.ts:3709:3 › Board grouping settings stay hidden while switching to a table View
+[88/497] tests\forensics--product-database.spec.ts:3709:3 › Board grouping settings stay hidden while switching to a list View
+[89/497] tests\forensics--product-database.spec.ts:3742:1 › Board grouping settings keep the existing View conflict behavior
+[90/497] tests\forensics--product-database.spec.ts:3764:3 › delayed Board View settings PATCH success cannot overwrite a List View after external snapshot switch
+[91/497] tests\forensics--product-database.spec.ts:3764:3 › delayed Board View settings PATCH conflict cannot overwrite a List View after external snapshot switch
+[92/497] tests\forensics--product-database.spec.ts:3871:1 › A to B to A editor-attribute switching does not let an old View PATCH refresh reloaded A
+[93/497] tests\forensics--product-database.spec.ts:3969:1 › Table List Board switch matrix keeps the database reference, renderer settings, and editor identity
+[94/497] tests\forensics--product-database.spec.ts:4071:1 › Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback
+[95/497] tests\forensics--product-database.spec.ts:4190:3 › P11.2D Timeline acceptance › validates scales, coordinates, cached projections, network silence, and empty screenshots
+[96/497] tests\forensics--product-database.spec.ts:4474:1 › Timeline generic records project date sources, retain unscheduled order, and open the selected record read-only
+[97/497] tests\forensics--product-database.spec.ts:4667:1 › Timeline Frozen Table resolves independent columns, formats shared properties, and opens the existing Record Host
+[98/497] tests\forensics--product-database.spec.ts:4831:1 › Timeline Frozen rows share row geometry, hover, selection, and page-host scroll with the time canvas
+[99/497] tests\forensics--product-database.spec.ts:4930:1 › Timeline Frozen columns disappear after the server repairs a deleted property reference
+  1) tests\forensics--product-database.spec.ts:4930:1 › Timeline Frozen columns disappear after the server repairs a deleted property reference 
+
+    Error: locator.click: Error: strict mode violation: getByRole('menu', { name: '数据库设置' }).getByRole('menuitem', { name: '属性' }) resolved to 2 elements:
+        1) <button type="button" role="menuitem" data-v-749fbba4="" data-popover-item="" class="eotion-context-menu__item">…</button> aka getByRole('menuitem', { name: '属性', exact: true })
+        2) <button type="button" role="menuitem" data-v-749fbba4="" data-popover-item="" class="eotion-context-menu__item">…</button> aka getByRole('menuitem', { name: '日期属性' })
+
+    Call log:
+      - waiting for getByRole('menu', { name: '数据库设置' }).getByRole('menuitem', { name: '属性' })
+
+
+    Call Log:
+    - Timeout 8000ms exceeded while waiting on the predicate
+
+      1031 |     await menu.getByRole('menuitem', { name }).click({ timeout: 1_000 })
+      1032 |     await expect(menu).toHaveCount(0, { timeout: 1_000 })
+    > 1033 |   }).toPass({ timeout: 8_000 })
+           |      ^
+      1034 | }
+      1035 |
+      1036 | async function closeDatabaseSetting(page: Page, label: '属性管理' | '分组属性' | '记录打开方式') {
+        at openDatabaseSetting (C:\Users\31250\Work\Eotion\apps\web\tests\forensics--product-database.spec.ts:1033:6)
+        at C:\Users\31250\Work\Eotion\apps\web\tests\forensics--product-database.spec.ts:4950:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\..\..\AppData\Local\Temp\eotion-startup-forensics-1792580664489\b-r1-actual-prefix-13\test-results\forensics--product-databas-7d1ef--deleted-property-reference\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\..\..\AppData\Local\Temp\eotion-startup-forensics-1792580664489\b-r1-actual-prefix-13\test-results\forensics--product-databas-7d1ef--deleted-property-reference\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\..\..\..\AppData\Local\Temp\eotion-startup-forensics-1792580664489\b-r1-actual-prefix-13\test-results\forensics--product-databas-7d1ef--deleted-property-reference\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\..\..\..\AppData\Local\Temp\eotion-startup-forensics-1792580664489\b-r1-actual-prefix-13\test-results\forensics--product-databas-7d1ef--deleted-property-reference\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+
+
+[100/497] tests\forensics--product-database.spec.ts:4969:3 › Timeline loads all 100 generic records in 25-record pages and virtualizes without reprojecting
+[101/497] tests\forensics--product-database.spec.ts:4969:3 › Timeline loads all 500 generic records in 25-record pages and virtualizes without reprojecting
+[102/497] tests\forensics--product-database.spec.ts:5328:3 › P11.4C bar drag sends one root-only atomic batch on release
+[103/497] tests\forensics--product-database.spec.ts:5328:3 › P11.4C left resize sends one root-only atomic batch on release
+[104/497] tests\forensics--product-database.spec.ts:5328:3 › P11.4C right resize sends one root-only atomic batch on release
+[105/497] tests\forensics--product-database.spec.ts:5328:3 › P11.4C point to range sends one root-only atomic batch on release
+[106/497] tests\forensics--product-database.spec.ts:5368:1 › P11.4C dependency create batches Relation and its canonical date plan
+[107/497] tests\forensics--product-database.spec.ts:5394:1 › P11.4C dependency delete under an active shift policy changes no dates
+[108/497] tests\forensics--product-database.spec.ts:5408:1 › P11.4C filtered downstream records are planned from canonical records while refresh stays in the current window
+[109/497] tests\forensics--product-database.spec.ts:5432:1 › P11.4C scheduled cycle rejection leaves relation, dates, record versions, and Database version unchanged
+[110/497] tests\forensics--product-database.spec.ts:5450:1 › P11.4C a 409 refreshes once and never retries the mutation
+[111/497] tests\forensics--product-database.spec.ts:5470:3 › P11.4C lost batch response reconciles committed without retry
+[112/497] tests\forensics--product-database.spec.ts:5470:3 › P11.4C lost batch response reconciles not_committed without retry
+[113/497] tests\forensics--product-database.spec.ts:5470:3 › P11.4C lost batch response reconciles uncertain without retry
+[114/497] tests\forensics--product-database.spec.ts:5470:3 › P11.4C lost batch response reconciles receipt-read-failure without retry
+[115/497] tests\forensics--product-database.spec.ts:5504:5 › P11.4D active Date reports committed receipt without retry or guessed root
+[116/497] tests\forensics--product-database.spec.ts:5504:5 › P11.4D active Date reports not_committed receipt without retry or guessed root
+[117/497] tests\forensics--product-database.spec.ts:5504:5 › P11.4D active Date reports uncertain receipt without retry or guessed root
+[118/497] tests\forensics--product-database.spec.ts:5504:5 › P11.4D active Date reports receipt-read-failure receipt without retry or guessed root
+[119/497] tests\forensics--product-database.spec.ts:5504:5 › P11.4D Dependency create reports committed receipt without retry or guessed root
+[120/497] tests\forensics--product-database.spec.ts:5504:5 › P11.4D Dependency create reports not_committed receipt without retry or guessed root
+[121/497] tests\forensics--product-database.spec.ts:5504:5 › P11.4D Dependency create reports uncertain receipt without retry or guessed root
+[122/497] tests\forensics--product-database.spec.ts:5504:5 › P11.4D Dependency create reports receipt-read-failure receipt without retry or guessed root
+[123/497] tests\forensics--product-database.spec.ts:5553:3 › P11.4D active Date keeps the confirmed non-commit message when canonical refresh fails
+[124/497] tests\forensics--product-database.spec.ts:5553:3 › P11.4D Dependency create keeps the confirmed non-commit message when canonical refresh fails
+[125/497] tests\forensics--product-database.spec.ts:5584:1 › P11.4D active Date confirmed non-commit cannot report into a changed view scope
+[126/497] tests\forensics--product-database.spec.ts:5584:1 › P11.4D Dependency create confirmed non-commit cannot report into a changed view scope
+[127/497] tests\forensics--product-database.spec.ts:5627:1 › P11.4C offline and changed view config reject a prepared gesture before sending a batch
+[128/497] tests\forensics--product-database.spec.ts:5657:1 › P11.3B resize handles remain hittable at the native Timeline viewport edges
+[129/497] tests\forensics--product-database.spec.ts:5721:1 › Timeline keeps the viewport centered across navigation, rebase, resize, locale, and local-day updates
+[130/497] tests\forensics--product-database.spec.ts:5859:1 › phone creates a Board view without a Select property and keeps the two-row header in the viewport
+[131/497] tests\forensics--product-database.spec.ts:5915:1 › a 409 while creating a List view clears the pending type before creating a Board view
+[132/497] tests\forensics--product-database.spec.ts:5939:1 › an unconfirmed List creation blocks a cross-type Board retry without another POST
+[133/497] tests\forensics--product-database.spec.ts:5981:1 › database view selector supports accessible inline rename without switching on rename or delete
+[134/497] tests\forensics--product-database.spec.ts:6135:1 › database view selector lists Table and List, switches only viewId, and preserves nested editor state
+[135/497] tests\forensics--product-database.spec.ts:6181:1 › phone view selector keeps the existing two-row header while switching to List
+[136/497] tests\forensics--product-database.spec.ts:6216:1 › linked views keep independent server filters, multi-sort order and column layout
+[137/497] tests\forensics--product-database.spec.ts:6352:3 › snapshot convergence preserves phone 筛选 draft without detaching editor
+[138/497] tests\forensics--product-database.spec.ts:6352:3 › snapshot convergence preserves phone 排序 draft without detaching editor
+[139/497] tests\forensics--product-database.spec.ts:6435:1 › snapshot convergence reloads the editor when paragraph content changes
+[140/497] tests\forensics--product-database.spec.ts:6456:1 › snapshot convergence PagePersistence matches equivalent blocks independent of object key order
+[141/497] tests\forensics--product-database.spec.ts:6523:1 › phone filter and sort panels save through their footers and restore saved drafts
+[142/497] tests\forensics--product-database.spec.ts:6573:1 › filter and sort setting menus are keyboard operable and disable unsupported properties
+[143/497] tests\forensics--product-database.spec.ts:6607:1 › board renderer groups generic records by option IDs with projected titles and configured properties
+[144/497] tests\forensics--product-database.spec.ts:6677:1 › board renderer switches with Table and List without replacing editor or record drawer drafts
+[145/497] tests\forensics--product-database.spec.ts:6745:1 › board renderer handles missing grouping and empty select options without table fallback
+[146/497] tests\forensics--product-database.spec.ts:6759:1 › Board drag preserves the current column while the cell update is pending
+[147/497] tests\forensics--product-database.spec.ts:6827:1 › Board drag to the ungrouped column stores null and a same-column drop does nothing
+[148/497] tests\forensics--product-database.spec.ts:6857:1 › Board grouping picker clears a value on a 390px viewport
+[149/497] tests\forensics--product-database.spec.ts:6880:1 › board grouping mutation updates the record, keeps linked Table and List in sync, and preserves Table editing
+[150/497] tests\forensics--product-database.spec.ts:6979:1 › failed Board drag keeps the card and selected option unchanged
+[151/497] tests\forensics--product-database.spec.ts:7009:1 › Board drag conflict stays stale until refresh, then retries with fresh record versions
+[152/497] tests\forensics--product-database.spec.ts:7054:1 › unconfigured Board stays read-only and exposes no grouping mutation control
+[153/497] tests\forensics--product-database.spec.ts:7067:1 › Board with a non-select grouping property remains read-only
+[154/497] tests\forensics--product-database.spec.ts:7096:1 › list view renders projected titles and ordered visible properties at desktop and phone widths
+[155/497] tests\forensics--product-database.spec.ts:7129:1 › List empty projected title keeps its visible and accessible name consistent
+[156/497] tests\forensics--product-database.spec.ts:7139:1 › database tables render and references round-trip at root and under a toggle
+[157/497] tests\forensics--product-database.spec.ts:7218:1 › slash creates a database table and preserves the reference ID after reload
+[158/497] tests\forensics--product-database.spec.ts:7245:1 › committed inline database creation is recovered by its fixed block ID after a lost response
+[159/497] tests\forensics--product-database.spec.ts:7259:1 › unconfirmed inline database creation fences further create or link attempts until page refresh
+[160/497] tests\forensics--product-database.spec.ts:7288:1 › committed inline database creation fences its original user when auth switches before the response
+[161/497] tests\forensics--product-database.spec.ts:7330:1 › mobile slash database dialog stays within the viewport
+[162/497] tests\forensics--product-database.spec.ts:7388:1 › slash creates a nested database under an existing toggle child
+[163/497] tests\forensics--product-database.spec.ts:7415:1 › linking a shared database adds only a reference and new records create pages
+[164/497] tests\forensics--product-database.spec.ts:7450:1 › record title refreshes a missing page before opening its editable drawer
+[165/497] tests\forensics--product-database.spec.ts:7470:1 › two references share record refresh and removing one keeps the other reference and data
+[166/497] tests\forensics--product-database.spec.ts:7514:1 › record creation remains successful when the following snapshot refresh fails
+[167/497] tests\forensics--product-database.spec.ts:7530:1 › edits versioned cells and manages property options without losing stable IDs
+[168/497] tests\forensics--product-database.spec.ts:7691:1 › keeps failed text drafts for retry and Escape cancels without a write
+[169/497] tests\forensics--product-database.spec.ts:7723:1 › title cells edit in place while the first-column detail button stays independent across layouts
+[170/497] tests\forensics--product-database.spec.ts:7803:1 › 409 refreshes the latest record version while retaining the cell draft for retry
+[171/497] tests\forensics--product-database.spec.ts:7822:1 › new record creates immediately with the default Page title and no header title form
+[172/497] tests\forensics--product-database.spec.ts:7845:3 › new record opens through the shared desktop modal pipeline
+[173/497] tests\forensics--product-database.spec.ts:7845:3 › new record opens through the shared desktop page pipeline
+[174/497] tests\forensics--product-database.spec.ts:7845:3 › new record opens through the shared phone right drawer pipeline
+[175/497] tests\forensics--product-database.spec.ts:7845:3 › new record opens through the shared phone bottom drawer pipeline
+[176/497] tests\forensics--product-database.spec.ts:7845:3 › new record opens through the shared phone modal pipeline
+[177/497] tests\forensics--product-database.spec.ts:7875:1 › missing constructor-like property IDs render as empty values
+[178/497] tests\forensics--product-database.spec.ts:7889:1 › uncertain record creation fences all references until page refresh
+[179/497] tests\forensics--product-database.spec.ts:7908:1 › record POST success during auth switch fences the original user and database
+[180/497] tests\forensics--product-database.spec.ts:7940:1 › record POST success during workspace switch fences the original workspace
+[181/497] tests\forensics--product-database.spec.ts:7963:1 › table shows loading state while its request is delayed
+[182/497] tests\forensics--product-database.spec.ts:7980:1 › table loads the next 25-record window without duplicating rows
+[183/497] tests\forensics--product-database.spec.ts:8009:1 › failed load more keeps existing rows and retries the same cursor
+[184/497] tests\forensics--product-database.spec.ts:8036:1 › linked mutation refresh during a pending page append leaves pagination usable
+[185/497] tests\forensics--product-database.spec.ts:8067:1 › failed database creation leaves no partial reference and can be retried
+[186/497] tests\forensics--product-database.spec.ts:8089:1 › database loading error retries and offline state preserves the page body
+[187/497] tests\forensics--product-database.spec.ts:8121:1 › database table scrolls horizontally on mobile without document overflow
+[188/497] tests\forensics--product-database.spec.ts:8197:1 › advanced properties configure relation and formula, keep linked views in sync, and retry picker reads
+[189/497] tests\forensics--product-database.spec.ts:8267:1 › mobile relation picker searches paged results and stays read-only offline
+[190/497] tests\forensics--product-database.spec.ts:8308:1 › linked target edits refresh source rollup and formula, and self relation titles follow page rename
+[191/497] tests\forensics--product-database.spec.ts:8342:1 › existing cross-database rollup allows a new formula and a second target rollup
+[192/497] tests\forensics--product-database.spec.ts:8376:1 › P11.1B formats, edits, validates, and reloads date values without losing range data
+[193/497] tests\forensics--product-database.spec.ts:8518:1 › P11.3A Timeline date-property drag previews locally and commits one CAS update without changing date wire shape
+[194/497] tests\forensics--product-database.spec.ts:8640:1 › P11.3A Timeline datetime drag preserves timezone, milliseconds, and range duration; start-end bars stay read-only
+[195/497] tests\forensics--product-database.spec.ts:8699:1 › P11.3A Timeline rolls back failed and conflicted drags without retrying, and cancellation/no-op/offline stays write-free
+[196/497] tests\forensics--product-database.spec.ts:8854:1 › P11.3A drag preserves the open record editor draft and Page/Editor/NodeView identity without opening a second drawer
+[197/497] tests\forensics--product-database.spec.ts:8992:1 › P11.3A drag preview does not rebuild 100-row Timeline projections or mutate unrelated bars
+tests\forensics--product-database.spec.ts:8992:1 › P11.3A drag preview does not rebuild 100-row Timeline projections or mutate unrelated bars
+P11.3D 100 drag preview evidence: {"projectedItems":true,"temporalMap":true,"rowGeometry":true,"frozenDisplayMap":true,"unrelatedBarMutations":0,"unrelatedBarUpdatedHooks":0,"unrelatedBarComponentsSame":true,"activeBarMutations":9,"activeBarUpdatedHooks":4,"rulerTicksSame":true,"frozenRowsSame":true,"rulerAndFrozenMutations":0}
+
+[198/497] tests\forensics--product-database.spec.ts:8992:1 › P11.3A drag preview does not rebuild 500-row Timeline projections or mutate unrelated bars
+tests\forensics--product-database.spec.ts:8992:1 › P11.3A drag preview does not rebuild 500-row Timeline projections or mutate unrelated bars
+P11.3D 500 drag preview evidence: {"projectedItems":true,"temporalMap":true,"rowGeometry":true,"frozenDisplayMap":true,"unrelatedBarMutations":0,"unrelatedBarUpdatedHooks":0,"unrelatedBarComponentsSame":true,"activeBarMutations":9,"activeBarUpdatedHooks":4,"rulerTicksSame":true,"frozenRowsSame":true,"rulerAndFrozenMutations":0}
+
+[199/497] tests\forensics--product-database.spec.ts:9113:1 › P11.3B datetime resize snaps from the dragged endpoint on every scale and preserves timezone and milliseconds
+[200/497] tests\forensics--product-database.spec.ts:9203:1 › P11.3B 409, 400, and 500 resize failures restore canonical endpoints with one request and no retry
+[201/497] tests\forensics--product-database.spec.ts:9241:1 › P11.3B resizing preserves the open Record Host, Drawer, Page Editor, and NodeView identities and drafts
+[202/497] tests\forensics--product-database.spec.ts:9336:3 › P11.3B resize preview preserves 100-row projections and leaves unrelated bars untouched
+tests\forensics--product-database.spec.ts:9336:3 › P11.3B resize preview preserves 100-row projections and leaves unrelated bars untouched
+P11.3D 100 resize preview evidence: {"projectedItems":true,"temporalMap":true,"rowGeometry":true,"frozenDisplayMap":true,"unrelatedBarMutations":0,"unrelatedBarUpdatedHooks":0,"unrelatedBarComponentsSame":true,"activeBarMutations":12,"activeBarUpdatedHooks":4,"rulerTicksSame":true,"frozenRowsSame":true,"rulerAndFrozenMutations":0}
+
+[203/497] tests\forensics--product-database.spec.ts:9336:3 › P11.3B resize preview preserves 500-row projections and leaves unrelated bars untouched
+tests\forensics--product-database.spec.ts:9336:3 › P11.3B resize preview preserves 500-row projections and leaves unrelated bars untouched
+P11.3D 500 resize preview evidence: {"projectedItems":true,"temporalMap":true,"rowGeometry":true,"frozenDisplayMap":true,"unrelatedBarMutations":0,"unrelatedBarUpdatedHooks":0,"unrelatedBarComponentsSame":true,"activeBarMutations":12,"activeBarUpdatedHooks":4,"rulerTicksSame":true,"frozenRowsSame":true,"rulerAndFrozenMutations":0}
+
+[204/497] tests\forensics--product-database.spec.ts:9446:1 › P11.3C Timeline no-op round trips suppress release clicks while ordinary clicks open Records
+[205/497] tests\forensics--product-database.spec.ts:9592:1 › P11.3C Escape and pointercancel cancel previews with zero PATCH and keep focus in the Timeline
+[206/497] tests\forensics--product-database.spec.ts:9743:1 › P11.3C pending mutation shows a quiet saving state, blocks the same record, and leaves other records interactive
+[207/497] tests\forensics--product-database.spec.ts:9876:3 › P11.3D Escape during pending keeps the submitted mutation and releases busy after completion
+[208/497] tests\forensics--product-database.spec.ts:9876:3 › P11.3D offline during pending keeps the submitted mutation and releases busy after completion
+[209/497] tests\forensics--product-database.spec.ts:9942:1 › P11.3C drag completion preserves focus on another Timeline bar
+[210/497] tests\forensics--product-database.spec.ts:9976:1 › P11.3C resize completion restores focus to the current same-record handle after pending removes handles
+[211/497] tests\forensics--product-database.spec.ts:10038:1 › P11.3C conflict and network failures reconcile to canonical dates without retry or stale optimism
+[212/497] tests\forensics--product-database.spec.ts:10118:3 › P11.3C unknown refresh failure keeps result uncertain until retry (after server commit)
+[213/497] tests\forensics--product-database.spec.ts:10118:3 › P11.3C unknown refresh failure keeps result uncertain until retry (without server commit)
+[214/497] tests\forensics--product-database.spec.ts:10168:1 › P11.3C view switch during preview or pending keeps identity fences, drafts, and canonical records
+[215/497] tests\forensics--product-database.spec.ts:10305:1 › P11.3C offline fails closed before preview and cancels an active preview without a request
+[216/497] tests\forensics--product-database.spec.ts:10372:3 › P11.4A depends-on draws read-only directed dependencies from loaded, scheduled self Relation targets
+[217/497] tests\forensics--product-database.spec.ts:10372:3 › P11.4A blocks draws read-only directed dependencies from loaded, scheduled self Relation targets
+[218/497] tests\forensics--product-database.spec.ts:10446:1 › P11.4A Timeline without dependency config keeps an empty line layer and ordinary bars interactive
+[219/497] tests\forensics--product-database.spec.ts:10475:1 › P11.4A dependency paths follow bar preview, scroll, scale and navigation without intercepting the bar
+tests\forensics--product-database.spec.ts:10475:1 › P11.4A dependency paths follow bar preview, scroll, scale and navigation without intercepting the bar
+P11.4A screenshot evidence: C:\Users\31250\AppData\Local\Temp\eotion-p114a-web-1792582981804-52620
+
+[220/497] tests\forensics--product-database.spec.ts:10636:5 › P11.4A 100 loaded rows keep sparse dependency projection bounded across pagination and row windows
+tests\forensics--product-database.spec.ts:10636:5 › P11.4A 100 loaded rows keep sparse dependency projection bounded across pagination and row windows
+P11.4A 100 sparse dependency evidence: {"rows":100,"windowEdges":11,"paths":11,"edges":11,"geometry":100,"preview":{"projectedItemsSame":true,"temporalMapSame":true,"dependencyEdgesSame":true,"dependencyGeometrySame":true,"windowEdgesSame":true,"unrelatedPathSame":true,"unrelatedMutations":0}}
+
+[221/497] tests\forensics--product-database.spec.ts:10636:5 › P11.4A 100 loaded rows keep medium dependency projection bounded across pagination and row windows
+tests\forensics--product-database.spec.ts:10636:5 › P11.4A 100 loaded rows keep medium dependency projection bounded across pagination and row windows
+P11.4A 100 medium dependency evidence: {"rows":100,"windowEdges":197,"paths":197,"edges":197,"geometry":100,"preview":{"projectedItemsSame":true,"temporalMapSame":true,"dependencyEdgesSame":true,"dependencyGeometrySame":true,"windowEdgesSame":true,"unrelatedPathSame":true,"unrelatedMutations":0}}
+
+[222/497] tests\forensics--product-database.spec.ts:10636:5 › P11.4A 500 loaded rows keep sparse dependency projection bounded across pagination and row windows
+tests\forensics--product-database.spec.ts:10636:5 › P11.4A 500 loaded rows keep sparse dependency projection bounded across pagination and row windows
+P11.4A 500 sparse dependency evidence: {"rows":28,"windowEdges":3,"paths":3,"edges":51,"geometry":500,"preview":{"projectedItemsSame":true,"temporalMapSame":true,"dependencyEdgesSame":true,"dependencyGeometrySame":true,"windowEdgesSame":true,"unrelatedPathSame":true,"unrelatedMutations":0}}
+
+[223/497] tests\forensics--product-database.spec.ts:10636:5 › P11.4A 500 loaded rows keep medium dependency projection bounded across pagination and row windows
+tests\forensics--product-database.spec.ts:10636:5 › P11.4A 500 loaded rows keep medium dependency projection bounded across pagination and row windows
+P11.4A 500 medium dependency evidence: {"rows":28,"windowEdges":59,"paths":59,"edges":997,"geometry":500,"preview":{"projectedItemsSame":true,"temporalMapSame":true,"dependencyEdgesSame":true,"dependencyGeometrySame":true,"windowEdgesSame":true,"unrelatedPathSame":true,"unrelatedMutations":0}}
+
+[224/497] tests\forensics--product-database.spec.ts:10854:3 › P11.4B depends-on create and delete use one ordered Relation Cell CAS
+[225/497] tests\forensics--product-database.spec.ts:10854:3 › P11.4B blocks create and delete use one ordered Relation Cell CAS
+[226/497] tests\forensics--product-database.spec.ts:10874:1 › P11.4B appends only the new Relation ID, preserving other IDs, order, and Date wire values
+[227/497] tests\forensics--product-database.spec.ts:10905:1 › P11.4B self and duplicate links do not write; a longer cycle remains a valid Relation edge
+[228/497] tests\forensics--product-database.spec.ts:10931:3 › P11.4B cancels connection on Escape without PATCH
+[229/497] tests\forensics--product-database.spec.ts:10931:3 › P11.4B cancels connection on pointercancel without PATCH
+[230/497] tests\forensics--product-database.spec.ts:10931:3 › P11.4B cancels connection on lostpointercapture without PATCH
+[231/497] tests\forensics--product-database.spec.ts:10931:3 › P11.4B cancels connection on blur without PATCH
+[232/497] tests\forensics--product-database.spec.ts:10931:3 › P11.4B cancels connection on hidden without PATCH
+[233/497] tests\forensics--product-database.spec.ts:10931:3 › P11.4B cancels connection on offline without PATCH
+[234/497] tests\forensics--product-database.spec.ts:10931:3 › P11.4B cancels connection on scope-change without PATCH
+[235/497] tests\forensics--product-database.spec.ts:10959:5 › P11.4B create 409 reconciles canonical Relation without retry
+[236/497] tests\forensics--product-database.spec.ts:10959:5 › P11.4B create 4xx reconciles canonical Relation without retry
+[237/497] tests\forensics--product-database.spec.ts:10959:5 › P11.4B create unknown-committed reconciles canonical Relation without retry
+[238/497] tests\forensics--product-database.spec.ts:10959:5 › P11.4B create unknown-uncommitted reconciles canonical Relation without retry
+[239/497] tests\forensics--product-database.spec.ts:10959:5 › P11.4B delete 409 reconciles canonical Relation without retry
+[240/497] tests\forensics--product-database.spec.ts:10959:5 › P11.4B delete 4xx reconciles canonical Relation without retry
+[241/497] tests\forensics--product-database.spec.ts:10959:5 › P11.4B delete unknown-committed reconciles canonical Relation without retry
+[242/497] tests\forensics--product-database.spec.ts:10959:5 › P11.4B delete unknown-uncommitted reconciles canonical Relation without retry
+[243/497] tests\forensics--product-database.spec.ts:10989:1 › P11.4B refresh failure after unknown commit locks the stale dependency view read-only
+[244/497] tests\forensics--product-database.spec.ts:11015:1 › P11.4B pending relation write locks other Database mutations and releases once settled
+[245/497] tests\forensics--product-database.spec.ts:11048:1 › P11.4B dependency control selects edges by keyboard and pointer gestures do not start Bar or resize mutations
+[246/497] tests\forensics--product-database.spec.ts:11104:1 › P11.4B first dependency-control click selects without deleting
+[247/497] tests\forensics--product-database.spec.ts:11127:1 › P11.4B Desktop and 390px dependency UI screenshots stay usable in Light and Dark
+tests\forensics--product-database.spec.ts:11127:1 › P11.4B Desktop and 390px dependency UI screenshots stay usable in Light and Dark
+P11.4B visual evidence: C:\Users\31250\AppData\Local\Temp\eotion-p114b-web-1792583049362-52620-ade6dc7cce853
+
+[248/497] tests\forensics--product-database.spec.ts:11167:1 › P11.4B 390px coarse touch creates and deletes a dependency with touch input
+tests\forensics--product-database.spec.ts:11167:1 › P11.4B 390px coarse touch creates and deletes a dependency with touch input
+P11.4B coarse touch hit geometry: {"bar":{"x":269,"y":520,"width":44,"height":44,"kind":"point"},"barCenterPoint":{"x":291,"y":542},"barCenter":{"tag":"BUTTON","testId":"timeline-bar","className":"eotion-timeline-bar eotion-timeline-bar--marker is-draggable","recordId":"p114b-c","closestBarId":"p114b-c"},"resizeCenter":{"tag":"SPAN","testId":null,"className":"","closestResizeId":"timeline-resize-end"},"bodyPoint":{"x":280,"y":542}}
+
+P11.4B coarse touch Bar-plus-connector hit: {"overlap":{"x":300,"y":552},"overlapHit":{"testId":null,"connectorRecordId":"p114b-c"}}
+
+[249/497] tests\forensics--product-database.spec.ts:11262:3 › P11.4B 100 rows keep pointer preview local with no relation N+1
+tests\forensics--product-database.spec.ts:11262:3 › P11.4B 100 rows keep pointer preview local with no relation N+1
+P11.4B 100 pointer evidence: {"projectedRecords":100,"projectedEdges":10,"loadedTableReads":4,"extraRecordRequests":0,"projectionStable":true,"geometryStable":true,"unrelatedPathStable":true,"unrelatedMutations":0,"unrelatedVueUpdates":0,"incidentLayerVueUpdates":4,"unrelatedBarsStable":true}
+
+[250/497] tests\forensics--product-database.spec.ts:11262:3 › P11.4B 500 rows keep pointer preview local with no relation N+1
+tests\forensics--product-database.spec.ts:11262:3 › P11.4B 500 rows keep pointer preview local with no relation N+1
+P11.4B 500 pointer evidence: {"projectedRecords":500,"projectedEdges":50,"loadedTableReads":20,"extraRecordRequests":0,"projectionStable":true,"geometryStable":true,"unrelatedPathStable":true,"unrelatedMutations":0,"unrelatedVueUpdates":0,"incidentLayerVueUpdates":4,"unrelatedBarsStable":true}
+
+[251/497] tests\forensics--product-database.spec.ts:11361:3 › P11.4D keyboard depends-on creates source → target once with cell mutation
+[252/497] tests\forensics--product-database.spec.ts:11361:3 › P11.4D keyboard blocks creates source → target once with batch mutation
+[253/497] tests\forensics--product-database.spec.ts:11405:1 › P11.4D keyboard target cycling excludes self, duplicate, unscheduled, and filtered records
+[254/497] tests\forensics--product-database.spec.ts:11441:3 › P11.4D keyboard Escape cancels without mutation and preserves normal focus behavior
+[255/497] tests\forensics--product-database.spec.ts:11441:3 › P11.4D keyboard Tab cancels without mutation and preserves normal focus behavior
+[256/497] tests\forensics--product-database.spec.ts:11459:1 › P11.4D keyboard creation with no legal targets announces and never submits
+[257/497] tests\forensics--product-database.spec.ts:11474:3 › P11.4D keyboard preview cancels on offline lifecycle change without writing
+[258/497] tests\forensics--product-database.spec.ts:11474:3 › P11.4D keyboard preview cancels on readonly lifecycle change without writing
+[259/497] tests\forensics--product-database.spec.ts:11474:3 › P11.4D keyboard preview cancels on config lifecycle change without writing
+[260/497] tests\forensics--product-database.spec.ts:11474:3 › P11.4D keyboard preview cancels on scope lifecycle change without writing
+[261/497] tests\forensics--product-database.spec.ts:11538:1 › P11.4D disappearing keyboard target clears selection and blocks confirmation
+[262/497] tests\forensics--product-database.spec.ts:11561:1 › P11.4D pending keyboard activation cannot submit twice and restores focus after success
+[263/497] tests\forensics--product-database.spec.ts:11585:1 › P11.4D keyboard 4xx failure restores a lost source focus and leaves preview cleared
+[264/497] tests\forensics--product-database.spec.ts:11608:1 › P11.4D stale keyboard completion cannot restore focus or report into an A-B-A view epoch
+[265/497] tests\forensics--product-database.spec.ts:11640:1 › P11.4D keyboard picker stays visible across Desktop, Tablet, and Phone in Light and Dark
+tests\forensics--product-database.spec.ts:11640:1 › P11.4D keyboard picker stays visible across Desktop, Tablet, and Phone in Light and Dark
+P11.4D keyboard visual evidence: C:\Users\31250\AppData\Local\Temp\eotion-p114d-keyboard-1792583089489-52620-4d8ae96372c728
+
+[266/497] tests\forensics--product-database.spec.ts:11694:1 › P11.5 Timeline stays contained, aligned, and theme-neutral at supported viewport widths
+[267/497] tests\forensics--product-database.spec.ts:11803:1 › P11.5 refresh keeps the rendered Timeline during pending work and recovers from refresh failure
+[268/497] tests\forensics--product-database.spec.ts:11842:1 › P11.5 generic Timeline loading, retry, empty, unscheduled, mixed, offline, and reconnect states preserve behavior
+[269/497] tests\forensics--product-database.spec.ts:11900:1 › P11.6 offscreen Timeline controls reveal the projected endpoint without loading or mutating records
+[270/497] tests\forensics--product-database.spec.ts:11968:1 › P11.6 offscreen navigation preserves a 500-row Frozen window and rejects a stale control scope
+[271/497] tests\forensics--product-database.spec.ts:12068:1 › P11.6 coarse clipped-right arrow and dependency handle have separate touch targets at 390 and 360
+[272/497] tests\forensics--product-database.spec.ts:12189:1 › P11.5 coarse touch keeps controls reachable and scrolls the native Timeline surface
+[273/497] tests\forensics--product-database.spec.ts:12284:1 › P11.5 coarse touch previews, cancels, moves, and resizes range and point dates once
+[274/497] tests\forensics--product-database.spec.ts:12368:1 › P11.6 arrange explicit date has no default and cancel has zero writes
+[275/497] tests\forensics--product-database.spec.ts:12386:1 › P11.6 arrange persists one native Date CAS and reloads canonical point
+[276/497] tests\forensics--product-database.spec.ts:12419:1 › P11.6 arrange active policy uses one atomic batch and canonical downstream dates
+[277/497] tests\forensics--product-database.spec.ts:12434:3 › P11.6 arrange conflict never retries or claims batch success
+[278/497] tests\forensics--product-database.spec.ts:12434:3 › P11.6 arrange uncertain never retries or claims batch success
+[279/497] tests\forensics--product-database.spec.ts:12434:3 › P11.6 arrange refresh-failure never retries or claims batch success
+[280/497] tests\forensics--product-database.spec.ts:12450:1 › P11.6 arrange rejects stale record capture and offline submit, excludes invalid cells
+[281/497] tests\forensics--product-database.spec.ts:12469:3 › P11.6 arrange 390px coarse context › P11.6 arrange 390px touch form stays inside viewport
+[282/497] tests\forensics--product-database.spec.ts:12469:3 › P11.6 arrange 360px coarse context › P11.6 arrange 360px touch form stays inside viewport
+[283/497] tests\forensics--product-database.spec.ts:12489:1 › P11.6 arrange configuration and view scope invalidate the captured form; Separate remains read only
+[284/497] tests\forensics--product-database.spec.ts:12542:7 › R2 record autofocus ownership desktop › named record body receives initial focus after overlay opening
+[285/497] tests\forensics--product-database.spec.ts:12542:7 › R2 record autofocus ownership desktop › title focus before body load wins and saves without body pollution
+[286/497] tests\forensics--product-database.spec.ts:12542:7 › R2 record autofocus ownership phone › named record body receives initial focus after overlay opening
+[287/497] tests\forensics--product-database.spec.ts:12542:7 › R2 record autofocus ownership phone › title focus before body load wins and saves without body pollution
+[288/497] tests\forensics--product-database.spec.ts:12615:1 › R2 pending initial body focus preserves a user caret
+[289/497] tests\forensics--product-database.spec.ts:12637:1 › R2 closing a record cancels the pending initial body focus callback
+[290/497] tests\forensics--product-database.spec.ts:12654:1 › R2 renaming an unnamed record before body load retains the user focus and keeps body unchanged
+[291/497] tests\forensics--product-database.spec.ts:12683:3 › R4 record title reconciliation dirty refresh
+[292/497] tests\forensics--product-database.spec.ts:12683:3 › R4 record title reconciliation clean canonical refresh
+[293/497] tests\forensics--product-database.spec.ts:12683:3 › R4 record title reconciliation actual identity switch
+[294/497] tests\forensics--product-editor.spec.ts:142:1 › product page keeps title and editor in one open reading column across themes and mobile
+[295/497] tests\forensics--product-editor.spec.ts:246:1 › product page shows one sync status and keeps local save errors retryable
+[296/497] tests\forensics--product-editor.spec.ts:295:1 › pasting safe links keeps links and strips underline across save and reload
+[297/497] tests\forensics--product-editor.spec.ts:320:1 › empty page loads without mutations, then debounces edits with a stable block identity
+[298/497] tests\forensics--product-editor.spec.ts:344:1 › persists marks, heading and list structure and restores them after reload
+[299/497] tests\forensics--product-editor.spec.ts:380:1 › inserts in the middle, deletes a block and keeps the displayed order
+[300/497] tests\forensics--product-editor.spec.ts:420:1 › flushes edits on page navigation and isolates the next page document
+[301/497] tests\forensics--product-editor.spec.ts:436:1 › reads both page bodies from the workspace snapshot without mixing them on navigation
+[302/497] tests\forensics--product-editor.spec.ts:451:1 › keeps local editor content when sync fails and retries sync
+[303/497] tests\forensics--product-editor.spec.ts:470:1 › keeps mobile editor within 390px and defers persistence during composition
+[304/497] tests\forensics--product-editor.spec.ts:489:1 › touch toolbar and mobile heading stay compact across themes, short viewport and keyboard inset
+[305/497] tests\forensics--product-editor.spec.ts:576:1 › touch caret visibility does not depend on keyboard inset and requires editor focus
+[306/497] tests\forensics--product-editor.spec.ts:661:1 › keeps the P2 fixture, slash command and undo path available
+[307/497] tests\forensics--product-editor.spec.ts:677:1 › slash lists Chinese grouped commands, filters, navigates and respects IME and Escape
+[308/497] tests\forensics--product-editor.spec.ts:717:1 › desktop toolbar and slash stay compact in light, dark and mobile layouts
+[309/497] tests\forensics--product-editor.spec.ts:766:1 › fixed toolbar converts a list item back to a top-level paragraph
+[310/497] tests\forensics--product-editor.spec.ts:793:3 › slash 文本 saves and reloads the supported block
+[311/497] tests\forensics--product-editor.spec.ts:793:3 › slash 一级标题 saves and reloads the supported block
+[312/497] tests\forensics--product-editor.spec.ts:793:3 › slash 二级标题 saves and reloads the supported block
+[313/497] tests\forensics--product-editor.spec.ts:793:3 › slash 项目列表 saves and reloads the supported block
+[314/497] tests\forensics--product-editor.spec.ts:793:3 › slash 编号列表 saves and reloads the supported block
+[315/497] tests\forensics--product-editor.spec.ts:793:3 › slash 待办 saves and reloads the supported block
+[316/497] tests\forensics--product-editor.spec.ts:793:3 › slash 引用 saves and reloads the supported block
+[317/497] tests\forensics--product-editor.spec.ts:793:3 › slash 代码块 saves and reloads the supported block
+[318/497] tests\forensics--product-editor.spec.ts:793:3 › slash 折叠列表 saves and reloads the supported block
+[319/497] tests\forensics--product-editor.spec.ts:793:3 › slash 表格 saves and reloads the supported block
+[320/497] tests\forensics--product-editor.spec.ts:793:3 › slash 分割线 saves and reloads the supported block
+[321/497] tests\forensics--product-editor.spec.ts:820:3 › strike keyboard command saves and reloads its mark
+[322/497] tests\forensics--product-editor.spec.ts:820:3 › code keyboard command saves and reloads its mark
+[323/497] tests\forensics--product-editor.spec.ts:838:1 › selection bubble toggles existing marks, combines marks and reloads saved content
+[324/497] tests\forensics--product-editor.spec.ts:888:1 › selection bubble creates, edits, removes and combines links across save and reload
+[325/497] tests\forensics--product-editor.spec.ts:973:1 › link editor rejects unsafe schemes and invalid snapshots preserve the valid local page
+[326/497] tests\forensics--product-editor.spec.ts:1014:1 › selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark
+[327/497] tests\forensics--product-editor.spec.ts:1092:1 › tablet coarse pointer hides selection bubble and keeps touch toolbar available
+[328/497] tests\forensics--product-editor.spec.ts:1111:1 › mobile selection bubble stays hidden without horizontal overflow and leaves touch toolbar available
+[329/497] tests\forensics--product-editor.spec.ts:1135:1 › non-formatable code block and attachment selection never open the text formatting bubble
+[330/497] tests\forensics--product-editor.spec.ts:1155:1 › edits only the changed block and serializes a newer edit behind an in-flight save
+[331/497] tests\forensics--product-editor.spec.ts:1179:1 › keeps legacy order keys during an ordinary text edit
+[332/497] tests\forensics--product-editor.spec.ts:1192:1 › refuses unsupported persisted blocks without opening a writable blank editor
+[333/497] tests\forensics--product-editor.spec.ts:1206:1 › pasting a block into another page assigns a new server Block ID
+[334/497] tests\forensics--product-editor.spec.ts:1225:1 › keeps a locally committed block after failed sync and retries the same operation
+[335/497] tests\forensics--product-editor.spec.ts:1247:1 › keeps a local block deletion after failed sync and restores shared state after retry
+[336/497] tests\forensics--product-editor.spec.ts:1281:1 › flushes the newest local edit before leaving during an in-flight create
+[337/497] tests\forensics--product-editor.spec.ts:1327:1 › keeps a dirty draft across session expiry and saves it after the same user logs in
+[338/497] tests\forensics--product-editor.spec.ts:1345:1 › preserves a locally saved IME draft when page metadata sync expires the session
+[339/497] tests\forensics--product-flow.spec.ts:179:1 › protects product routes, reports login failure while pending, then opens the app on success
+[340/497] tests\forensics--product-flow.spec.ts:201:1 › links login and registration pages in both directions
+[341/497] tests\forensics--product-flow.spec.ts:214:1 › requires matching passwords, then registers and returns to login without creating a session
+[342/497] tests\forensics--product-flow.spec.ts:241:1 › disables repeat registration while pending and displays a server error
+[343/497] tests\forensics--product-flow.spec.ts:257:1 › redirects an authenticated visitor from login and registration to the product area
+[344/497] tests\forensics--product-flow.spec.ts:266:1 › delays login until recovery completes and uses cached product state on transient failures
+[345/497] tests\forensics--product-flow.spec.ts:291:1 › creates the first workspace and keeps it available after reload
+[346/497] tests\forensics--product-flow.spec.ts:307:1 › switches workspaces, selects the most recent one, and validates rename with retry and persistence
+[347/497] tests\forensics--product-flow.spec.ts:338:1 › rejects an unknown workspace, handles expired sessions, and prevents back navigation after logout
+[348/497] tests\forensics--product-flow.spec.ts:368:1 › isolates workspace lists between users and closes the mobile drawer after switching
+[349/497] tests\forensics--product-nested.spec.ts:25:1 › universal block chrome reveals on hover and focus and inserts editable root siblings with undo
+[350/497] tests\forensics--product-nested.spec.ts:105:1 › universal chrome follows the caret block while the editor is focused
+[351/497] tests\forensics--product-nested.spec.ts:120:1 › universal plus keeps nested siblings and inserts after the whole toggle with stable IDs
+[352/497] tests\forensics--product-nested.spec.ts:152:1 › universal block chrome stays hidden without layout space at phone width
+[353/497] tests\forensics--product-nested.spec.ts:178:3 › universal coarse tablet chrome boundary › ordinary controls remain hidden and do not squeeze or cover content
+[354/497] tests\forensics--product-nested.spec.ts:234:1 › Tab and Shift+Tab move an existing block into and out of a toggle with stable identity and undo
+[355/497] tests\forensics--product-nested.spec.ts:257:1 › a mid-block Tab does not change nesting
+[356/497] tests\forensics--product-nested.spec.ts:268:1 › Tab moves a toggle summary with its child subtree and stable IDs
+[357/497] tests\forensics--product-nested.spec.ts:289:1 › touch nested controls › 390px touch toolbar can indent and outdent from the middle of a block
+[358/497] tests\forensics--product-nested.spec.ts:307:1 › drag handle nests a block into a toggle and keeps its identity after reload
+[359/497] tests\forensics--product-nested.spec.ts:323:1 › drag handle reorders siblings and moves a child back to the root
+[360/497] tests\forensics--product-nested.spec.ts:346:1 › drag rejects self, descendant, and excessive nesting depth
+[361/497] tests\forensics--product-nested.spec.ts:363:1 › dragging outside the editor clears its target marker without moving a block
+[362/497] tests\forensics--product-nested.spec.ts:373:1 › block drop indicators use the semantic accent color in light and dark themes
+[363/497] tests\forensics--product-nested.spec.ts:407:1 › Tab after a leaf block and native attachment drag do not create children
+[364/497] tests\forensics--product-nested.spec.ts:436:1 › nested blocks render at desktop and phone widths in both themes
+[365/497] tests\forensics--product-nested.spec.ts:458:1 › offline nested move survives reload and browser restart, then pushes before snapshot pull
+[366/497] tests\forensics--product-overlay.spec.ts:108:1 › opening model has strict device matrix and separate persistent targets
+[367/497] tests\forensics--product-overlay.spec.ts:135:1 › desktop drawer keeps background interactive and restores focus
+[368/497] tests\forensics--product-overlay.spec.ts:161:3 › desktop drawer enters and leaves with the specified transform transition
+[369/497] tests\forensics--product-overlay.spec.ts:161:3 › right drawer enters and leaves with the specified transform transition
+[370/497] tests\forensics--product-overlay.spec.ts:161:3 › bottom drawer enters and leaves with the specified transform transition
+[371/497] tests\forensics--product-overlay.spec.ts:223:3 › right-drawer close button follows the drawer leave flow
+[372/497] tests\forensics--product-overlay.spec.ts:223:3 › bottom-drawer masked backdrop follows the drawer leave flow
+[373/497] tests\forensics--product-overlay.spec.ts:243:1 › drawer dismissible and IME Escape guards do not start a leave transition
+[374/497] tests\forensics--product-overlay.spec.ts:269:3 › drawer dismissible IME Escape does not leave, while normal Escape closes
+[375/497] tests\forensics--product-overlay.spec.ts:269:3 › right-drawer dismissible IME Escape does not leave, while normal Escape closes
+[376/497] tests\forensics--product-overlay.spec.ts:269:3 › bottom-drawer dismissible IME Escape does not leave, while normal Escape closes
+[377/497] tests\forensics--product-overlay.spec.ts:293:3 › drawer reduced motion removes displacement and closes immediately
+[378/497] tests\forensics--product-overlay.spec.ts:293:3 › right-drawer reduced motion removes displacement and closes immediately
+[379/497] tests\forensics--product-overlay.spec.ts:293:3 › bottom-drawer reduced motion removes displacement and closes immediately
+[380/497] tests\forensics--product-overlay.spec.ts:310:1 › a pending controlled close keeps the drawer usable until the parent accepts it
+[381/497] tests\forensics--product-overlay.spec.ts:335:1 › a rejected controlled close keeps the drawer open without starting leave motion
+[382/497] tests\forensics--product-overlay.spec.ts:353:1 › external close preserves slot content until the drawer transition finishes
+[383/497] tests\forensics--product-overlay.spec.ts:372:1 › unmounting during a drawer leave releases its modal and scroll lock
+[384/497] tests\forensics--product-overlay.spec.ts:388:1 › switching from a masked drawer to desktop drawer releases native modal resources
+[385/497] tests\forensics--product-overlay.spec.ts:408:1 › closing a modal while switching to desktop drawer unlocks scroll and restores trigger focus
+[386/497] tests\forensics--product-overlay.spec.ts:429:1 › rapid external close and reopen keeps the latest drawer state
+[387/497] tests\forensics--product-overlay.spec.ts:454:1 › closing before drawer entrance finishes and reopening leaves no stale native state
+[388/497] tests\forensics--product-overlay.spec.ts:487:3 › desktop modal keeps the header and optional footer outside the scrolling body
+[389/497] tests\forensics--product-overlay.spec.ts:487:3 › desktop drawer keeps the header and optional footer outside the scrolling body
+[390/497] tests\forensics--product-overlay.spec.ts:487:3 › phone right drawer keeps the header and optional footer outside the scrolling body
+[391/497] tests\forensics--product-overlay.spec.ts:487:3 › phone bottom drawer keeps the header and optional footer outside the scrolling body
+[392/497] tests\forensics--product-overlay.spec.ts:524:3 › right-drawer keeps an in-overlay popover interactive above the scrolling body
+[393/497] tests\forensics--product-overlay.spec.ts:524:3 › bottom-drawer keeps an in-overlay popover interactive above the scrolling body
+[394/497] tests\forensics--product-overlay.spec.ts:572:1 › product overlay renders a title header without a footer when the footer slot is omitted
+[395/497] tests\forensics--product-overlay.spec.ts:581:1 › title controls the visible heading, label remains the accessible name, and dismissible gates close actions
+[396/497] tests\forensics--product-overlay.spec.ts:595:1 › IME Escape keeps the overlay open until a normal Escape closes it
+[397/497] tests\forensics--product-overlay.spec.ts:614:3 › modal traps focus, locks scroll, closes from Escape and restores focus
+[398/497] tests\forensics--product-overlay.spec.ts:614:3 › right-drawer traps focus, locks scroll, closes from Escape and restores focus
+[399/497] tests\forensics--product-overlay.spec.ts:614:3 › bottom-drawer traps focus, locks scroll, closes from Escape and restores focus
+[400/497] tests\forensics--product-overlay.spec.ts:638:1 › desktop modal uses native modal semantics and blocks the background
+[401/497] tests\forensics--product-overlay.spec.ts:651:1 › phone drawer size, safe area, close button and light/dark surfaces
+[402/497] tests\forensics--product-overlay.spec.ts:681:1 › masked drawer closes from backdrop click
+[403/497] tests\forensics--product-overlay.spec.ts:691:1 › page mode occupies the product page layer, supports Back and does not lock scroll
+[404/497] tests\forensics--product-p75-acceptance.spec.ts:245:1 › a mixed advanced-block page is created in the editor and survives reload, reorder, indent and browser restart
+[405/497] tests\forensics--product-p75-acceptance.spec.ts:428:1 › seeded mixed document keeps local-first identity, nesting, callout attrs and table grid across offline restart and reconnect
+[406/497] tests\forensics--product-p75-acceptance.spec.ts:551:1 › a legacy P5/P6 page still opens, edits, saves and syncs without a migration
+[407/497] tests\forensics--product-pages.spec.ts:155:1 › shows an empty page tree, then creates a root page and opens it
+[408/497] tests\forensics--product-pages.spec.ts:176:3 › appends a root page after canonical order keys
+[409/497] tests\forensics--product-pages.spec.ts:176:3 › appends a root page after legacy letters order keys
+[410/497] tests\forensics--product-pages.spec.ts:176:3 › appends a root page after unpadded numbers order keys
+[411/497] tests\forensics--product-pages.spec.ts:189:1 › keeps appending after legacy keys across consecutive creates
+[412/497] tests\forensics--product-pages.spec.ts:205:1 › disables root creation until the page list has loaded successfully
+[413/497] tests\forensics--product-pages.spec.ts:217:1 › creates a child page under a page and keeps the hierarchy and sibling order
+[414/497] tests\forensics--product-pages.spec.ts:236:1 › collapses and expands a parent without losing the selected page
+[415/497] tests\forensics--product-pages.spec.ts:252:1 › opens a page from the tree and restores the same page and tree after a reload
+[416/497] tests\forensics--product-pages.spec.ts:270:1 › reports an unavailable page instead of rendering a blank screen
+[417/497] tests\forensics--product-pages.spec.ts:278:1 › renames a page with trimming, validation, pending state, and error recovery
+[418/497] tests\forensics--product-pages.spec.ts:320:1 › rename focuses automatically, submits with Enter, and cancels without writing on Escape or outside click
+[419/497] tests\forensics--product-pages.spec.ts:354:1 › keeps page tree rows steady through rename, move and delete controls and captures desktop states
+[420/497] tests\forensics--product-pages.spec.ts:456:1 › pending rename and move retain their surface and focus on Escape at 1440px
+[421/497] tests\forensics--product-pages.spec.ts:456:1 › pending rename and move retain their surface and focus on Escape at 390px
+[422/497] tests\forensics--product-pages.spec.ts:507:1 › keeps delete confirmation open while editor flush is pending and blocks duplicate flushes
+[423/497] tests\forensics--product-pages.spec.ts:551:1 › moves a page under another page and back to the root
+[424/497] tests\forensics--product-pages.spec.ts:599:1 › never offers the page itself or its descendants and preserves a local move when sync fails
+[425/497] tests\forensics--product-pages.spec.ts:633:1 › keeps page trees isolated per workspace and drops the previous page id
+[426/497] tests\forensics--product-pages.spec.ts:653:1 › deletes a leaf page, rejects a page with children, and recovers the route
+[427/497] tests\forensics--product-pages.spec.ts:692:1 › reports page tree load failures and retries
+[428/497] tests\forensics--product-pages.spec.ts:710:1 › touch page action dialogs › mobile move dialog stays compact with only three destinations
+[429/497] tests\forensics--product-pages.spec.ts:745:1 › touch page action dialogs › mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list
+[430/497] tests\forensics--product-pages.spec.ts:825:1 › page action presentation uses the mobile breakpoint and preserves an open draft across resize
+[431/497] tests\forensics--product-pages.spec.ts:850:1 › closes the mobile sidebar after opening a page from the tree
+[432/497] tests\forensics--product-settings.spec.ts:296:1 › Settings uses a selected list-detail layout at 1440 and 1024 pixels
+[433/497] tests\forensics--product-settings.spec.ts:339:1 › 390px Settings index returns to the original page
+[434/497] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings profile has one back control and preserves navigation state
+[435/497] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings appearance has one back control and preserves navigation state
+[436/497] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings mcp has one back control and preserves navigation state
+[437/497] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings workspace/general has one back control and preserves navigation state
+[438/497] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings about has one back control and preserves navigation state
+[439/497] tests\forensics--product-settings.spec.ts:395:1 › 390px Settings index navigates to detail with a single topbar and no overflow
+[440/497] tests\forensics--product-settings.spec.ts:452:1 › MCP settings shows the environment endpoint and manages one-time tokens
+[441/497] tests\forensics--product-settings.spec.ts:473:1 › profile trims and caches the saved name; invalid and successful password changes follow the session contract
+[442/497] tests\forensics--product-settings.spec.ts:544:1 › 401 clears the cached identity, while 403 remains an authenticated non-offline error
+[443/497] tests\forensics--product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 500
+[444/497] tests\forensics--product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 502
+[445/497] tests\forensics--product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 503
+[446/497] tests\forensics--product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 504
+[447/497] tests\forensics--product-settings.spec.ts:609:1 › toolbar defaults off, slash and attachment picker work, and preferences stay scoped by user and workspace
+[448/497] tests\forensics--product-settings.spec.ts:691:1 › unknown workspace has no global toolbar preference; returnTo rejects external paths and preserves valid pages
+[449/497] tests\forensics--product-settings.spec.ts:722:1 › theme and toolbar controls support keyboard focus and activation in dark reduced-motion mode
+[450/497] tests\forensics--product-settings.spec.ts:748:1 › settings navigation ends with 软件说明 and /settings/about shows exact-version release notes or an explicit empty state
+[451/497] tests\forensics--product-settings.spec.ts:809:1 › /settings/about survives the login redirect allowlist instead of falling back to /app
+[452/497] tests\forensics--product-settings.spec.ts:821:1 › 检查更新 compares the local build with /api/health and never downloads
+[453/497] tests\forensics--product-slash-context.spec.ts:53:1 › slash commands follow root, quote, list item and toggle summary/child contexts
+[454/497] tests\forensics--product-slash-context.spec.ts:130:3 › touch block commands › touch toolbar cannot create a block the codec rejects inside a list item
+[455/497] tests\forensics--product-slash-context.spec.ts:148:1 › slash inside a code block only offers plain text conversions
+[456/497] tests\forensics--product-sync.spec.ts:61:1 › hydrates an empty workspace, keeps offline page edits across reload, then pushes before pulling
+[457/497] tests\forensics--product-sync.spec.ts:85:1 › attachment cleanup waits for delete acknowledgement, survives failure and reload, and accepts 404
+[458/497] tests\forensics--product-sync.spec.ts:122:1 › referenced attachment cleanup intent stays hidden while document sync is already complete
+[459/497] tests\forensics--product-sync.spec.ts:143:1 › cleanup only sends freshly authorized workspaces and invalidates the session on 401
+[460/497] tests\forensics--product-sync.spec.ts:163:1 › failed push leaves local content and does not pull a stale snapshot
+[461/497] tests\forensics--product-sync.spec.ts:182:1 › a confirmed 401 clears cached identity instead of restoring offline access
+[462/497] tests\forensics--product-sync.spec.ts:192:49 › HTTP 400 cannot use cached identity as an offline login
+[463/497] tests\forensics--product-sync.spec.ts:192:49 › HTTP 403 cannot use cached identity as an offline login
+[464/497] tests\forensics--product-sync.spec.ts:192:49 › HTTP 404 cannot use cached identity as an offline login
+[465/497] tests\forensics--product-sync.spec.ts:192:49 › HTTP 501 cannot use cached identity as an offline login
+[466/497] tests\forensics--product-sync.spec.ts:192:49 › HTTP 505 cannot use cached identity as an offline login
+[467/497] tests\forensics--product-sync.spec.ts:204:34 › HTTP 401 cannot use cached identity even with a 500 error body
+[468/497] tests\forensics--product-sync.spec.ts:204:34 › HTTP 403 cannot use cached identity even with a 500 error body
+[469/497] tests\forensics--product-sync.spec.ts:221:1 › HTTP 500 uses cached identity offline and restores the authenticated product on recovery
+[470/497] tests\forensics--product-sync.spec.ts:237:1 › a never authenticated offline client cannot enter the product
+[471/497] tests\forensics--product-sync.spec.ts:246:65 › backend network restores the local product and recovers without reload
+[472/497] tests\forensics--product-sync.spec.ts:246:65 › backend 500 restores the local product and recovers without reload
+[473/497] tests\forensics--product-sync.spec.ts:246:65 › backend 502 restores the local product and recovers without reload
+[474/497] tests\forensics--product-sync.spec.ts:246:65 › backend 503 restores the local product and recovers without reload
+[475/497] tests\forensics--product-sync.spec.ts:246:65 › backend 504 restores the local product and recovers without reload
+[476/497] tests\forensics--product-sync.spec.ts:296:44 › workspace list 500 restores only the current account cache
+[477/497] tests\forensics--product-sync.spec.ts:296:44 › workspace list 502 restores only the current account cache
+[478/497] tests\forensics--product-sync.spec.ts:296:44 › workspace list 503 restores only the current account cache
+[479/497] tests\forensics--product-sync.spec.ts:296:44 › workspace list 504 restores only the current account cache
+[480/497] tests\forensics--product-sync.spec.ts:309:44 › workspace list 400 cannot fall back to cached permissions
+[481/497] tests\forensics--product-sync.spec.ts:309:44 › workspace list 403 cannot fall back to cached permissions
+[482/497] tests\forensics--product-sync.spec.ts:309:44 › workspace list 501 cannot fall back to cached permissions
+[483/497] tests\forensics--product-sync.spec.ts:309:44 › workspace list 505 cannot fall back to cached permissions
+[484/497] tests\forensics--product-sync.spec.ts:321:1 › cached identity with no workspace snapshot refuses to invent an empty workspace
+[485/497] tests\forensics--product-sync.spec.ts:338:1 › workspace list unavailable without local cache can recover on attention
+[486/497] tests\forensics--product-sync.spec.ts:349:1 › offline identity without workspace metadata recovers using the workspace retry button
+[487/497] tests\forensics--product-sync.spec.ts:362:67 › HTTP 500 without identity shows accessible responsive connectivity UI (no-preference) and retry restores the product
+[488/497] tests\forensics--product-sync.spec.ts:362:67 › HTTP 500 without identity shows accessible responsive connectivity UI (reduce) and retry restores the product
+[489/497] tests\forensics--product-sync.spec.ts:387:39 › open editor survives backend 500 and keeps local operations
+[490/497] tests\forensics--product-sync.spec.ts:387:39 › open editor survives backend 502 and keeps local operations
+[491/497] tests\forensics--product-sync.spec.ts:387:39 › open editor survives backend 503 and keeps local operations
+[492/497] tests\forensics--product-sync.spec.ts:417:1 › offline editor saves blocks locally and restores text after reload
+[493/497] tests\forensics--product-sync.spec.ts:439:1 › mobile WebView runtime keeps the same IndexedDB product content offline
+[494/497] tests\forensics--product-sync.spec.ts:457:1 › offline page rename, move and delete stay durable after reload
+[495/497] tests\forensics--product-sync.spec.ts:491:1 › a second client pulls sequential changes and remote deletion removes local pages
+[496/497] tests\forensics--product-sync.spec.ts:510:1 › a clean active editor reloads a remote block change on focus
+[497/497] tests\forensics--product-sync.spec.ts:538:1 › switching identity during a push cannot send the next old-account operation
+  1 failed
+    tests\forensics--product-database.spec.ts:4930:1 › Timeline Frozen columns disappear after the server repairs a deleted property reference 
+  496 passed (24.1m)

@@ -1,0 +1,124 @@
+{
+  "time": "2026-10-22T03:56:49.480Z",
+  "authoredFiles": [
+    {
+      "file": ".agents/current-task.md",
+      "sha256": "9e662d1d4e8adc4f17259c317417a9aaf0f0284fb91b783b80b94c3b7da1dd48",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": ".agents/handoff.md",
+      "sha256": "ef1095e68c7578908ebb57c54dc84c850475d0b6508dbe56951dd093a84a1ff8",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "docs/verification/p11-6-startup-forensics.md",
+      "sha256": "d275454c9a16f78b881b66d601d24ed56ed87373edb08f26f34786d4f17424b7",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "apps/web/playwright.startup-forensics.config.ts",
+      "sha256": "9d39015dc25d8df5e553ea2b3ac0de475bddd84298fbdaa86b49edcd94181f9a",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/audit.mjs",
+      "sha256": "44247395b7ab6ec19d5958cb15207f308745f3bca2c7d36fe54004f7de4acefd",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/cleanup-check.ps1",
+      "sha256": "3e9972bd07843e9cce92dcee8b68f9243204fd46a26dcbb1db060a925d5ce9ff",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/fixture.ts",
+      "sha256": "a0df013ebdd6d0e201ed818f73e5ea4091707c7017564a4f90b61b3288374e4f",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/generate.mjs",
+      "sha256": "7da35e633c48b3a74c7630df62b8e6431d357544e7773c7f3a76ef16f6b8b979",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/pack-evidence.mjs",
+      "sha256": "2cb9acad22f6f51b176ebe575389d0ee30854f53a59425a1ba46ce57524fcc4b",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/preserve-previous-artifacts.mjs",
+      "sha256": "22ae5cc09cbfe3a72b8035b64246dbe19f8e769b163d74a19fb8f87132d6c944",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/reporter.mjs",
+      "sha256": "06ca3a022bba205005811723cd6b838afb693d4726a89a9e814095d6d76f8b25",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/resource-monitor.ps1",
+      "sha256": "317e64c9638da50547c346f2caa54297e37e34e726efb01659a34762c949c934",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/run-experiments.mjs",
+      "sha256": "b0599538acf7acd6a9c56397d9d5bd1696012c43ee4be1f178cc4c11dee0da5c",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/summarize.mjs",
+      "sha256": "80f7a836fbafc7907237e27d0571b4aabf7f53b9b2e8e00af8c751b0216fb528",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/system-memory-monitor.ps1",
+      "sha256": "60e6cc26abb937ed4c41de8fd2c4fb435bd9d4670adb56ea5a59e60e74436ceb",
+      "utf8": true,
+      "bom": false
+    },
+    {
+      "file": "tools/startup-forensics/vite-service.mjs",
+      "sha256": "78f798cb9d07c9c26f07a44854674f8cfc9313ccba2ecaee596e1ad498aa61f1",
+      "utf8": true,
+      "bom": false
+    }
+  ],
+  "utf8NoBom": true,
+  "productionAndOriginalTestsDiff": {
+    "args": [
+      "diff",
+      "--name-only",
+      "d71a5bf680061a4ab06e2e38323be840cdccebe2",
+      "--",
+      ":(glob)apps/*/src/**",
+      "packages",
+      "apps/web/playwright.config.ts",
+      "apps/web/vite.config.ts",
+      ":(glob)apps/web/tests/product-*.spec.ts",
+      ":(glob)**/package.json",
+      "pnpm-lock.yaml",
+      "docs/verification/p11-6-timeline-final-acceptance.md"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "generatedCopiesRemaining": [],
+  "version": "0.0.1",
+  "build": 2
+}

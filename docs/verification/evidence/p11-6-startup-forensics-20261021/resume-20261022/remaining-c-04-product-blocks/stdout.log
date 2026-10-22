@@ -1,0 +1,20 @@
+
+Running 14 tests using 1 worker
+
+
+
+[1/14] tests\forensics--product-blocks.spec.ts:93:1 › toggle creates, nests, survives reload and folds without becoming block data
+[2/14] tests\forensics--product-blocks.spec.ts:147:1 › editing inside a toggle keeps the existing block identities
+[3/14] tests\forensics--product-blocks.spec.ts:176:1 › local store enforces nested block invariants and records one block.move
+[4/14] tests\forensics--product-blocks.spec.ts:252:1 › block codec round-trips nested toggles and refuses unrepresentable structure
+[5/14] tests\forensics--product-blocks.spec.ts:366:1 › callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting
+[6/14] tests\forensics--product-blocks.spec.ts:422:1 › callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity
+[7/14] tests\forensics--product-blocks.spec.ts:493:1 › Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload
+[8/14] tests\forensics--product-blocks.spec.ts:528:1 › formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload
+[9/14] tests\forensics--product-blocks.spec.ts:558:1 › callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow
+[10/14] tests\forensics--product-blocks.spec.ts:593:1 › callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot
+[11/14] tests\forensics--product-blocks.spec.ts:647:1 › callout codec validates attributes and round-trips as a leaf and toggle child
+[12/14] tests\forensics--product-blocks.spec.ts:693:1 › IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks
+[13/14] tests\forensics--product-blocks.spec.ts:760:1 › code block language survives codec conversion, editing and reload
+[14/14] tests\forensics--product-blocks.spec.ts:791:1 › table codec round-trips one grid block and refuses grids the server would reject
+  14 passed (51.0s)

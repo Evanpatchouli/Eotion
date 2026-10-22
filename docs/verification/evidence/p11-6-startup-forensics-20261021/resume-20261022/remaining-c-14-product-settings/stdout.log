@@ -1,0 +1,27 @@
+
+Running 21 tests using 1 worker
+
+
+
+[1/21] tests\forensics--product-settings.spec.ts:296:1 › Settings uses a selected list-detail layout at 1440 and 1024 pixels
+[2/21] tests\forensics--product-settings.spec.ts:339:1 › 390px Settings index returns to the original page
+[3/21] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings profile has one back control and preserves navigation state
+[4/21] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings appearance has one back control and preserves navigation state
+[5/21] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings mcp has one back control and preserves navigation state
+[6/21] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings workspace/general has one back control and preserves navigation state
+[7/21] tests\forensics--product-settings.spec.ts:358:3 › 390px Settings about has one back control and preserves navigation state
+[8/21] tests\forensics--product-settings.spec.ts:395:1 › 390px Settings index navigates to detail with a single topbar and no overflow
+[9/21] tests\forensics--product-settings.spec.ts:452:1 › MCP settings shows the environment endpoint and manages one-time tokens
+[10/21] tests\forensics--product-settings.spec.ts:473:1 › profile trims and caches the saved name; invalid and successful password changes follow the session contract
+[11/21] tests\forensics--product-settings.spec.ts:544:1 › 401 clears the cached identity, while 403 remains an authenticated non-offline error
+[12/21] tests\forensics--product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 500
+[13/21] tests\forensics--product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 502
+[14/21] tests\forensics--product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 503
+[15/21] tests\forensics--product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 504
+[16/21] tests\forensics--product-settings.spec.ts:609:1 › toolbar defaults off, slash and attachment picker work, and preferences stay scoped by user and workspace
+[17/21] tests\forensics--product-settings.spec.ts:691:1 › unknown workspace has no global toolbar preference; returnTo rejects external paths and preserves valid pages
+[18/21] tests\forensics--product-settings.spec.ts:722:1 › theme and toolbar controls support keyboard focus and activation in dark reduced-motion mode
+[19/21] tests\forensics--product-settings.spec.ts:748:1 › settings navigation ends with 软件说明 and /settings/about shows exact-version release notes or an explicit empty state
+[20/21] tests\forensics--product-settings.spec.ts:809:1 › /settings/about survives the login redirect allowlist instead of falling back to /app
+[21/21] tests\forensics--product-settings.spec.ts:821:1 › 检查更新 compares the local build with /api/health and never downloads
+  21 passed (34.2s)

@@ -1,0 +1,117 @@
+{
+  "generatedAt": "2026-10-21T11:03:41.527Z",
+  "files": [
+    {
+      "source": "apps/web/tests/product-flow.spec.ts",
+      "generated": "apps/web/tests/forensics--product-flow.spec.ts",
+      "sourceSha256": "7195c2033beadae1e3f81ea90d84a256dff13ccde91ec9929a1e42d69777e0ad",
+      "generatedSha256": "91dc95eec45294901bd8ff502c5f040a3d75e35e76eb7d980ed315619505de3f",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-pages.spec.ts",
+      "generated": "apps/web/tests/forensics--product-pages.spec.ts",
+      "sourceSha256": "f3837fe1150023f13d4a4cfbac614a0891726e3e3acb9de7c15dda24106ae72f",
+      "generatedSha256": "ef977f16cb681be0786bb439dd625512d1b771d14770727f1ec1a66580686a11",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-editor.spec.ts",
+      "generated": "apps/web/tests/forensics--product-editor.spec.ts",
+      "sourceSha256": "7c1415dbc0700ab558887f855d36df6d45ccae44aa7e2576f7374ad7ab29f0a5",
+      "generatedSha256": "062c9fc61facf62a2fa79a9f2ce9301070c4dcdaf3f8f401e210e95e1f5a2403",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-blocks.spec.ts",
+      "generated": "apps/web/tests/forensics--product-blocks.spec.ts",
+      "sourceSha256": "66684f5099a54a4811b6d60f900ca028ef2a1a28ff3e090f68d164cd82953a0a",
+      "generatedSha256": "49b9615fa63b1f31112cb58497e1dac547e6c70a9ed4f63affd2395bfdff6d38",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-nested.spec.ts",
+      "generated": "apps/web/tests/forensics--product-nested.spec.ts",
+      "sourceSha256": "e4d0669d7ad14b444e2b8d912bb73225a81b4bfdff88b171060292ad78ba1b1f",
+      "generatedSha256": "393ed93a4932a9c7b223cadb6b46952f6f79e95348077988a75226d69a6cf0e6",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-table.spec.ts",
+      "generated": "apps/web/tests/forensics--product-table.spec.ts",
+      "sourceSha256": "a6885e30729467a28b6322c75eeb2dd8a0aed823436c8800cab68f1f5fd102df",
+      "generatedSha256": "71ac9fb64ba9ea3d8587105f42780c416f4e5a29d89110457e76f4eed15dc57c",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-database.spec.ts",
+      "generated": "apps/web/tests/forensics--product-database.spec.ts",
+      "sourceSha256": "6c07296335dad58c7c45d8163ada40905acad418e796986d7e9b4200733c538e",
+      "generatedSha256": "982f15f132ad58a8e9b3f5310eff7cf9b8e29259f5af20b461da1d95e1d9db23",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-overlay.spec.ts",
+      "generated": "apps/web/tests/forensics--product-overlay.spec.ts",
+      "sourceSha256": "2a3df9d73850df60da9dd291aff553ff1f26edddf6c7607da5ec665098c00953",
+      "generatedSha256": "c00f3059adcb830e1d0b5a6489696dffa9e78e91498f322aa2dbfc6747ba889f",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-slash-context.spec.ts",
+      "generated": "apps/web/tests/forensics--product-slash-context.spec.ts",
+      "sourceSha256": "2d49546688907096bbc1e0b4d331836b6fa34067a7bf43afd3fcb85c125e169d",
+      "generatedSha256": "f27e7188cde275157bb9b7b2e62facd9c3ad5546f34ce18a67546e4764afb943",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-content-rules.spec.ts",
+      "generated": "apps/web/tests/forensics--product-content-rules.spec.ts",
+      "sourceSha256": "9c3902ee8f7ee3552492c0287edf3846b095e00efeda6a8b4862ba1e969e9cb5",
+      "generatedSha256": "69f8fedfcfb8ab190cd1344034d76e3b0666c5d304de3cb603aa0b89f182fd4b",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-p75-acceptance.spec.ts",
+      "generated": "apps/web/tests/forensics--product-p75-acceptance.spec.ts",
+      "sourceSha256": "ff302437d82cf59550356f885284eec9e983d39529fd6f5d3871559d4d35b2c4",
+      "generatedSha256": "15a7d2413c2a3f41d5c84495e468f5823361237bc41a699a1962582ff0f0e7b7",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-sync.spec.ts",
+      "generated": "apps/web/tests/forensics--product-sync.spec.ts",
+      "sourceSha256": "d5321c6eb95ff2c3bdd1fdb9108fb46179a97be2cb75f6effdbb57659ca701ca",
+      "generatedSha256": "4a2ddf12db2ccafa4442b9bc41d61ff8e8da138012a270cc02d5bcf115c10679",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-attachments.spec.ts",
+      "generated": "apps/web/tests/forensics--product-attachments.spec.ts",
+      "sourceSha256": "34af9ec6bc93c0757149966a80600ee6a8f84aa4e0342fc9ac6f54e4deb0f469",
+      "generatedSha256": "4d475e3c91bf7240a758936cab70068336a80af7524152a1897d1eb07c5b8c45",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    },
+    {
+      "source": "apps/web/tests/product-settings.spec.ts",
+      "generated": "apps/web/tests/forensics--product-settings.spec.ts",
+      "sourceSha256": "df51797e0f8ac77173fd26fbd3c57f84343c43e5886a45eb92ece903cfb2c9c4",
+      "generatedSha256": "f5022c8e4adacd518ea6bec0c3af7cc41de6d987003c8490d0fe68419ba92f73",
+      "importReplacements": 1,
+      "patchDescription": "Replaced 1 @playwright/test import source(s) with ../../../tools/startup-forensics/fixture; all remaining source text is byte-for-byte equivalent after UTF-8 decoding."
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "observedAt": "2026-10-21T11:38:00.201Z",
+  "sourceRun": "b-actual-prefix-07",
+  "replayRun": "b-r1-actual-prefix-13",
+  "first94TitlePathsExactlyMatch": true,
+  "first94EndCount": 94,
+  "statusCounts": {
+    "passed": 94
+  },
+  "workerIndexes": [
+    0
+  ],
+  "original94": {
+    "event": "testEnd",
+    "wallTime": "2026-10-21T11:16:31.101Z",
+    "monotonicMs": 327382.4032,
+    "pid": 35016,
+    "workerIndex": 0,
+    "parallelIndex": 0,
+    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-database.spec.ts",
+    "title": [
+      "",
+      "",
+      "forensics--product-database.spec.ts",
+      "Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback"
+    ],
+    "status": "failed",
+    "expectedStatus": "passed",
+    "durationMs": 5534,
+    "retry": 0
+  },
+  "replay94": {
+    "event": "testEnd",
+    "wallTime": "2026-10-21T11:36:49.813Z",
+    "monotonicMs": 320407.8903,
+    "pid": 53932,
+    "workerIndex": 0,
+    "parallelIndex": 0,
+    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-database.spec.ts",
+    "title": [
+      "",
+      "",
+      "forensics--product-database.spec.ts",
+      "Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback"
+    ],
+    "status": "passed",
+    "expectedStatus": "passed",
+    "durationMs": 3980,
+    "retry": 0
+  },
+  "conclusion": "An identical first94 sequence did not fail deterministically in the next fresh runner; this is not proof that cumulative execution is irrelevant."
+}

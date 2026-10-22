@@ -1,0 +1,36 @@
+{
+  "time": "2026-10-22T03:38:50.798Z",
+  "sourceRun": "b-actual-prefix-07",
+  "replayRun": "prefix94/d-prefix-94",
+  "sourceCount": 94,
+  "replayCount": 94,
+  "actualTitlePathsExactlyMatch": true,
+  "testEndStatuses": {
+    "passed": 94
+  },
+  "workerIndexes": [
+    0
+  ],
+  "started": "2026-10-22T03:32:14.604Z",
+  "ended": "2026-10-22T03:37:33.593Z",
+  "finalTarget": {
+    "event": "testEnd",
+    "wallTime": "2026-10-22T03:37:30.797Z",
+    "monotonicMs": 316110.5803,
+    "pid": 15744,
+    "workerIndex": 0,
+    "parallelIndex": 0,
+    "file": "C:\\Users\\31250\\Work\\Eotion\\apps\\web\\tests\\forensics--product-database.spec.ts",
+    "title": [
+      "",
+      "",
+      "forensics--product-database.spec.ts",
+      "Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback"
+    ],
+    "status": "passed",
+    "expectedStatus": "passed",
+    "durationMs": 3874,
+    "retry": 0
+  },
+  "limit": "All94 pass in one worker; not a stable triggering prefix, no minimal causal prefix proven; fresh runner and fresh Vite vs first failure warm service, plus different-day system load."
+}

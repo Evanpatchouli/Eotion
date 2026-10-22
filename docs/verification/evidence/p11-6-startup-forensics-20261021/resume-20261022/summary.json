@@ -1,0 +1,300 @@
+{
+  "generatedAt": "2026-10-22T03:50:49.881Z",
+  "rawRoot": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695",
+  "runCount": 12,
+  "interruptedRuns": [],
+  "runs": [
+    {
+      "id": "remaining-c-03-product-editor",
+      "started": "2026-10-22T03:08:49.873Z",
+      "ended": "2026-10-22T03:11:47.852Z",
+      "durationMs": 177243.05299999999,
+      "counts": {
+        "expected": 45,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 45
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-editor.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-04-product-blocks",
+      "started": "2026-10-22T03:11:47.857Z",
+      "ended": "2026-10-22T03:12:39.504Z",
+      "durationMs": 51030.685,
+      "counts": {
+        "expected": 14,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 14
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-blocks.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-05-product-nested",
+      "started": "2026-10-22T03:12:39.508Z",
+      "ended": "2026-10-22T03:14:04.844Z",
+      "durationMs": 84731.16600000001,
+      "counts": {
+        "expected": 17,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 17
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "on",
+      "traceEffective": "on",
+      "specOrder": [
+        "product-nested.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-06-product-table",
+      "started": "2026-10-22T03:14:04.848Z",
+      "ended": "2026-10-22T03:15:08.935Z",
+      "durationMs": 63468.655,
+      "counts": {
+        "expected": 14,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 14
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-table.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-07-product-database",
+      "started": "2026-10-22T03:15:08.939Z",
+      "ended": "2026-10-22T03:26:41.514Z",
+      "durationMs": 691908.8790000001,
+      "counts": {
+        "expected": 252,
+        "unexpected": 2,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 254
+      },
+      "failedTests": [
+        {
+          "title": "forensics--product-database.spec.ts › Timeline Frozen Table resolves independent columns, formats shared properties, and opens the existing Record Host",
+          "file": "forensics--product-database.spec.ts",
+          "actualStatus": "failed",
+          "expectedStatus": "passed",
+          "workerIndex": 0,
+          "parallelIndex": 0,
+          "durationMs": 6828,
+          "retry": 0
+        },
+        {
+          "title": "forensics--product-database.spec.ts › Timeline Frozen columns disappear after the server repairs a deleted property reference",
+          "file": "forensics--product-database.spec.ts",
+          "actualStatus": "failed",
+          "expectedStatus": "passed",
+          "workerIndex": 1,
+          "parallelIndex": 0,
+          "durationMs": 8673,
+          "retry": 0
+        }
+      ],
+      "workerIndexes": [
+        0,
+        1,
+        2
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-database.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-08-product-overlay",
+      "started": "2026-10-22T03:26:41.518Z",
+      "ended": "2026-10-22T03:27:22.049Z",
+      "durationMs": 39873.706,
+      "counts": {
+        "expected": 38,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 38
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-overlay.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-09-product-slash-context",
+      "started": "2026-10-22T03:27:22.052Z",
+      "ended": "2026-10-22T03:27:30.941Z",
+      "durationMs": 8258.964,
+      "counts": {
+        "expected": 3,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 3
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-slash-context.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-10-product-content-rules",
+      "started": "2026-10-22T03:27:30.945Z",
+      "ended": "2026-10-22T03:27:44.869Z",
+      "durationMs": 13303.168,
+      "counts": {
+        "expected": 2,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 2
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-content-rules.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-11-product-p75-acceptance",
+      "started": "2026-10-22T03:27:44.873Z",
+      "ended": "2026-10-22T03:28:13.207Z",
+      "durationMs": 27702.912,
+      "counts": {
+        "expected": 3,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 3
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-p75-acceptance.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-12-product-sync",
+      "started": "2026-10-22T03:28:13.211Z",
+      "ended": "2026-10-22T03:29:49.824Z",
+      "durationMs": 96003.348,
+      "counts": {
+        "expected": 42,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 42
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "on",
+      "traceEffective": "on",
+      "specOrder": [
+        "product-sync.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-13-product-attachments",
+      "started": "2026-10-22T03:29:49.828Z",
+      "ended": "2026-10-22T03:30:44.528Z",
+      "durationMs": 54057.032,
+      "counts": {
+        "expected": 23,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 23
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-attachments.spec.ts"
+      ]
+    },
+    {
+      "id": "remaining-c-14-product-settings",
+      "started": "2026-10-22T03:30:44.532Z",
+      "ended": "2026-10-22T03:31:19.363Z",
+      "durationMs": 34183.571,
+      "counts": {
+        "expected": 21,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "total": 21
+      },
+      "failedTests": [],
+      "workerIndexes": [
+        0
+      ],
+      "traceRequested": "retain-on-failure",
+      "traceEffective": "retain-on-failure",
+      "specOrder": [
+        "product-settings.spec.ts"
+      ]
+    }
+  ],
+  "resourceSummary": "resource-summary.json",
+  "orphanCountPeak": 0,
+  "orphanCountEnd": 0,
+  "rawInventory": "raw-inventory.json",
+  "mergedEvents": "events.jsonl.gz"
+}

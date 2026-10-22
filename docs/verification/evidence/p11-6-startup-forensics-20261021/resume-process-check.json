@@ -1,0 +1,6 @@
+{
+  "time": "2026-10-22T03:07:49.3995860Z",
+  "stoppedPidNumbersNowPresent": [],
+  "diagnosticPortListeners": [],
+  "note": "Any reused PID must be compared with creation timestamp before ownership/cleanup. No unknown process terminated."
+}

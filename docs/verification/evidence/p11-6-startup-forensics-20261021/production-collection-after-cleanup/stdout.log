@@ -1,0 +1,513 @@
+Listing tests:
+  product-attachments.spec.ts:151:1 › slash image command and picker upload become one local block, sync operation and reloadable snapshot
+  product-attachments.spec.ts:214:1 › file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block
+  product-attachments.spec.ts:251:1 › cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block
+  product-attachments.spec.ts:271:1 › a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs
+  product-attachments.spec.ts:309:1 › typing in the original empty paragraph while saving keeps the text after attachment commit
+  product-attachments.spec.ts:360:1 › a later selected file completing first leaves no leftover empty paragraph when the first upload fails
+  product-attachments.spec.ts:392:1 › failed save restores user text changed in the provisional attachment block and queues cleanup
+  product-attachments.spec.ts:443:1 › cancelling the first empty-slot upload while the second saves leaves no empty gap
+  product-attachments.spec.ts:486:1 › file picker remains usable when crypto.randomUUID is unavailable
+  product-attachments.spec.ts:499:1 › multiple files that finish out of order stay in their selected document order
+  product-attachments.spec.ts:518:1 › a late upload result from the previous page never enters the newly opened page
+  product-attachments.spec.ts:536:1 › 413 shows a readable upload error and retry control
+  product-attachments.spec.ts:546:1 › upload 401 clears authenticated identity and returns to login
+  product-attachments.spec.ts:556:1 › an attachment remains durable locally when its normal block sync receives 503
+  product-attachments.spec.ts:569:1 › a local attachment block upsert failure compensates the successful upload through the cleanup queue
+  product-attachments.spec.ts:596:1 › an upload response received during IME composition waits before inserting its attachment block
+  product-attachments.spec.ts:612:1 › deleting an attachment stays permanent through undo and redo while ordinary text undo still works
+  product-attachments.spec.ts:653:1 › quick cancel and fresh selection stay safe while compensation DELETE is in flight
+  product-attachments.spec.ts:687:1 › offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata
+  product-attachments.spec.ts:711:1 › deleting a page queues cleanup for all attachment metadata after block deletion
+  product-attachments.spec.ts:735:1 › failed image uses fallback and unsafe URL or unknown attachment attrs keep the page read-only
+  product-attachments.spec.ts:772:1 › long attachment names fit a 390px viewport and action buttons remain touch sized
+  product-attachments.spec.ts:791:1 › file drop and image paste upload files, while text/html paste remains handled by the editor
+  product-blocks.spec.ts:93:1 › toggle creates, nests, survives reload and folds without becoming block data
+  product-blocks.spec.ts:147:1 › editing inside a toggle keeps the existing block identities
+  product-blocks.spec.ts:176:1 › local store enforces nested block invariants and records one block.move
+  product-blocks.spec.ts:252:1 › block codec round-trips nested toggles and refuses unrepresentable structure
+  product-blocks.spec.ts:366:1 › callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting
+  product-blocks.spec.ts:422:1 › callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity
+  product-blocks.spec.ts:493:1 › Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload
+  product-blocks.spec.ts:528:1 › formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload
+  product-blocks.spec.ts:558:1 › callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow
+  product-blocks.spec.ts:593:1 › callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot
+  product-blocks.spec.ts:647:1 › callout codec validates attributes and round-trips as a leaf and toggle child
+  product-blocks.spec.ts:693:1 › IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks
+  product-blocks.spec.ts:760:1 › code block language survives codec conversion, editing and reload
+  product-blocks.spec.ts:791:1 › table codec round-trips one grid block and refuses grids the server would reject
+  product-content-rules.spec.ts:64:1 › pasted list and quote content is repaired to the block registry instead of making the page unsaveable
+  product-content-rules.spec.ts:106:1 › pasted attributes stay inside the block registry instead of making the page unsaveable
+  product-database.spec.ts:153:1 › P11.3B date-only resize changes one endpoint, keeps inclusive end dates, and promotes legacy points to ranges
+  product-database.spec.ts:1230:1 › database block controls reveal on hover or focus and insert a sibling paragraph below
+  product-database.spec.ts:1264:3 › touch database block controls › hides database block controls on phone without reserving header space
+  product-database.spec.ts:1295:3 › touch database block controls › phone header uses two rows for long names, stays within the viewport, and creates a record
+  product-database.spec.ts:1375:1 › database header keeps desktop and tablet controls on one row
+  product-database.spec.ts:1410:3 › tablet coarse database block controls › preserves the existing tablet layout and visible controls
+  product-database.spec.ts:1430:1 › database command separates back from cancel and keeps create and link choices on one row
+  product-database.spec.ts:1479:3 › database view popover uses shared controls and closes from outside clicks at 1440px
+  product-database.spec.ts:1479:3 › database view popover uses shared controls and closes from outside clicks at 390px
+  product-database.spec.ts:1570:1 › database creation cards and placeholder stay coordinated in light and dark at 1440px
+  product-database.spec.ts:1570:1 › database creation cards and placeholder stay coordinated in light and dark at 390px
+  product-database.spec.ts:1603:1 › database settings exposes five entries and record and property opening modes drive real surfaces
+  product-database.spec.ts:1677:1 › opening settings show the current device by default and expand or collapse the other layouts
+  product-database.spec.ts:1714:1 › database UX controls render library icons instead of text glyphs
+  product-database.spec.ts:1856:1 › basic property type changes convert stored values and repair filters while retaining compatible sorts
+  product-database.spec.ts:1967:1 › advanced type changes configure before confirmation and preserve property identity
+  product-database.spec.ts:2058:1 › advanced type conversion cancels after a 409 refresh when the source type changed
+  product-database.spec.ts:2088:1 › advanced type conversion cancels after a 409 refresh when the source property was deleted
+  product-database.spec.ts:2114:1 › advanced type conversion keeps confirmation after a server dependency 409 and can retry with refreshed versions
+  product-database.spec.ts:2149:1 › advanced type conversion retains its configured draft and refreshed versions after a same-source 409
+  product-database.spec.ts:2182:1 › existing advanced property editors still use property PATCH instead of type mutation
+  product-database.spec.ts:2217:1 › property type change failures keep the confirmation available and report conflicts without optimistic type changes
+  product-database.spec.ts:2251:1 › property schema mutations refresh inside the open panel and preserve unsaved view drafts
+  product-database.spec.ts:2295:1 › property menu keeps its focus, type choices and database-local dismissal behavior
+  product-database.spec.ts:2465:1 › inline property rename edits the existing header and settings spans and saves trimmed names with a stable ID
+  product-database.spec.ts:2567:1 › property deletion requires modal confirmation and preserves the property on cancellation or failure
+  product-database.spec.ts:2621:1 › phone record settings offer right and bottom drawers and apply both modes
+  product-database.spec.ts:2653:1 › property settings remain usable in a 320px phone right drawer
+  product-database.spec.ts:2704:3 › desktop 记录 third-row opening popover remains interactive in the modal
+  product-database.spec.ts:2704:3 › desktop 属性 third-row opening popover remains interactive in the modal
+  product-database.spec.ts:2776:1 › opening choices persist independently across layouts and targets, including legacy saved keys
+  product-database.spec.ts:2817:1 › switching records from an interactive desktop drawer flushes the current record first
+  product-database.spec.ts:2843:1 › closing a record programmatically flushes its focused title draft first
+  product-database.spec.ts:2872:1 › rapid title saves across records queue refreshes for both originating databases
+  product-database.spec.ts:2937:1 › page tree shows databases under their host page, excludes records, and keeps both routes reachable
+  product-database.spec.ts:2958:1 › standalone database route keeps editor, NodeView, and record drafts across delayed Table/List/Board/Timeline A-B-A switches
+  product-database.spec.ts:3109:1 › first pointer focus beside a trailing Database block keeps ProseMirror selection current
+  product-database.spec.ts:3126:1 › database views create, rename, switch, delete and persist the selected reference
+  product-database.spec.ts:3198:1 › database view selector creates a List view through the existing DatabaseView API
+  product-database.spec.ts:3226:1 › Timeline can be created from a database view selector and keeps its date source and bar after switching and reload
+  product-database.spec.ts:3281:1 › Timeline creation adds a Date property first when the database has no Date properties
+  product-database.spec.ts:3307:1 › Timeline create recovers the same pending id when offline closes the dialog during an unknown POST
+  product-database.spec.ts:3362:1 › Timeline date settings cancel without a PATCH, save distinct date columns, and retain other View options
+  product-database.spec.ts:3435:1 › Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens
+  product-database.spec.ts:3490:1 › database view selector creates a Board view through the existing DatabaseView API
+  product-database.spec.ts:3585:1 › Board view settings select only local Select properties, preserve config, and share View updates
+  product-database.spec.ts:3672:1 › Board grouping settings remain available without Select properties and read-only offline on phone
+  product-database.spec.ts:3709:3 › Board grouping settings stay hidden while switching to a table View
+  product-database.spec.ts:3709:3 › Board grouping settings stay hidden while switching to a list View
+  product-database.spec.ts:3742:1 › Board grouping settings keep the existing View conflict behavior
+  product-database.spec.ts:3764:3 › delayed Board View settings PATCH success cannot overwrite a List View after external snapshot switch
+  product-database.spec.ts:3764:3 › delayed Board View settings PATCH conflict cannot overwrite a List View after external snapshot switch
+  product-database.spec.ts:3871:1 › A to B to A editor-attribute switching does not let an old View PATCH refresh reloaded A
+  product-database.spec.ts:3969:1 › Table List Board switch matrix keeps the database reference, renderer settings, and editor identity
+  product-database.spec.ts:4071:1 › Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback
+  product-database.spec.ts:4190:3 › P11.2D Timeline acceptance › validates scales, coordinates, cached projections, network silence, and empty screenshots
+  product-database.spec.ts:4474:1 › Timeline generic records project date sources, retain unscheduled order, and open the selected record read-only
+  product-database.spec.ts:4667:1 › Timeline Frozen Table resolves independent columns, formats shared properties, and opens the existing Record Host
+  product-database.spec.ts:4831:1 › Timeline Frozen rows share row geometry, hover, selection, and page-host scroll with the time canvas
+  product-database.spec.ts:4930:1 › Timeline Frozen columns disappear after the server repairs a deleted property reference
+  product-database.spec.ts:4969:3 › Timeline loads all 100 generic records in 25-record pages and virtualizes without reprojecting
+  product-database.spec.ts:4969:3 › Timeline loads all 500 generic records in 25-record pages and virtualizes without reprojecting
+  product-database.spec.ts:5328:3 › P11.4C bar drag sends one root-only atomic batch on release
+  product-database.spec.ts:5328:3 › P11.4C left resize sends one root-only atomic batch on release
+  product-database.spec.ts:5328:3 › P11.4C right resize sends one root-only atomic batch on release
+  product-database.spec.ts:5328:3 › P11.4C point to range sends one root-only atomic batch on release
+  product-database.spec.ts:5368:1 › P11.4C dependency create batches Relation and its canonical date plan
+  product-database.spec.ts:5394:1 › P11.4C dependency delete under an active shift policy changes no dates
+  product-database.spec.ts:5408:1 › P11.4C filtered downstream records are planned from canonical records while refresh stays in the current window
+  product-database.spec.ts:5432:1 › P11.4C scheduled cycle rejection leaves relation, dates, record versions, and Database version unchanged
+  product-database.spec.ts:5450:1 › P11.4C a 409 refreshes once and never retries the mutation
+  product-database.spec.ts:5470:3 › P11.4C lost batch response reconciles committed without retry
+  product-database.spec.ts:5470:3 › P11.4C lost batch response reconciles not_committed without retry
+  product-database.spec.ts:5470:3 › P11.4C lost batch response reconciles uncertain without retry
+  product-database.spec.ts:5470:3 › P11.4C lost batch response reconciles receipt-read-failure without retry
+  product-database.spec.ts:5504:5 › P11.4D active Date reports committed receipt without retry or guessed root
+  product-database.spec.ts:5504:5 › P11.4D active Date reports not_committed receipt without retry or guessed root
+  product-database.spec.ts:5504:5 › P11.4D active Date reports uncertain receipt without retry or guessed root
+  product-database.spec.ts:5504:5 › P11.4D active Date reports receipt-read-failure receipt without retry or guessed root
+  product-database.spec.ts:5504:5 › P11.4D Dependency create reports committed receipt without retry or guessed root
+  product-database.spec.ts:5504:5 › P11.4D Dependency create reports not_committed receipt without retry or guessed root
+  product-database.spec.ts:5504:5 › P11.4D Dependency create reports uncertain receipt without retry or guessed root
+  product-database.spec.ts:5504:5 › P11.4D Dependency create reports receipt-read-failure receipt without retry or guessed root
+  product-database.spec.ts:5553:3 › P11.4D active Date keeps the confirmed non-commit message when canonical refresh fails
+  product-database.spec.ts:5553:3 › P11.4D Dependency create keeps the confirmed non-commit message when canonical refresh fails
+  product-database.spec.ts:5584:1 › P11.4D active Date confirmed non-commit cannot report into a changed view scope
+  product-database.spec.ts:5584:1 › P11.4D Dependency create confirmed non-commit cannot report into a changed view scope
+  product-database.spec.ts:5627:1 › P11.4C offline and changed view config reject a prepared gesture before sending a batch
+  product-database.spec.ts:5657:1 › P11.3B resize handles remain hittable at the native Timeline viewport edges
+  product-database.spec.ts:5721:1 › Timeline keeps the viewport centered across navigation, rebase, resize, locale, and local-day updates
+  product-database.spec.ts:5859:1 › phone creates a Board view without a Select property and keeps the two-row header in the viewport
+  product-database.spec.ts:5915:1 › a 409 while creating a List view clears the pending type before creating a Board view
+  product-database.spec.ts:5939:1 › an unconfirmed List creation blocks a cross-type Board retry without another POST
+  product-database.spec.ts:5981:1 › database view selector supports accessible inline rename without switching on rename or delete
+  product-database.spec.ts:6135:1 › database view selector lists Table and List, switches only viewId, and preserves nested editor state
+  product-database.spec.ts:6181:1 › phone view selector keeps the existing two-row header while switching to List
+  product-database.spec.ts:6216:1 › linked views keep independent server filters, multi-sort order and column layout
+  product-database.spec.ts:6352:3 › snapshot convergence preserves phone 筛选 draft without detaching editor
+  product-database.spec.ts:6352:3 › snapshot convergence preserves phone 排序 draft without detaching editor
+  product-database.spec.ts:6435:1 › snapshot convergence reloads the editor when paragraph content changes
+  product-database.spec.ts:6456:1 › snapshot convergence PagePersistence matches equivalent blocks independent of object key order
+  product-database.spec.ts:6523:1 › phone filter and sort panels save through their footers and restore saved drafts
+  product-database.spec.ts:6573:1 › filter and sort setting menus are keyboard operable and disable unsupported properties
+  product-database.spec.ts:6607:1 › board renderer groups generic records by option IDs with projected titles and configured properties
+  product-database.spec.ts:6677:1 › board renderer switches with Table and List without replacing editor or record drawer drafts
+  product-database.spec.ts:6745:1 › board renderer handles missing grouping and empty select options without table fallback
+  product-database.spec.ts:6759:1 › Board drag preserves the current column while the cell update is pending
+  product-database.spec.ts:6827:1 › Board drag to the ungrouped column stores null and a same-column drop does nothing
+  product-database.spec.ts:6857:1 › Board grouping picker clears a value on a 390px viewport
+  product-database.spec.ts:6880:1 › board grouping mutation updates the record, keeps linked Table and List in sync, and preserves Table editing
+  product-database.spec.ts:6979:1 › failed Board drag keeps the card and selected option unchanged
+  product-database.spec.ts:7009:1 › Board drag conflict stays stale until refresh, then retries with fresh record versions
+  product-database.spec.ts:7054:1 › unconfigured Board stays read-only and exposes no grouping mutation control
+  product-database.spec.ts:7067:1 › Board with a non-select grouping property remains read-only
+  product-database.spec.ts:7096:1 › list view renders projected titles and ordered visible properties at desktop and phone widths
+  product-database.spec.ts:7129:1 › List empty projected title keeps its visible and accessible name consistent
+  product-database.spec.ts:7139:1 › database tables render and references round-trip at root and under a toggle
+  product-database.spec.ts:7218:1 › slash creates a database table and preserves the reference ID after reload
+  product-database.spec.ts:7245:1 › committed inline database creation is recovered by its fixed block ID after a lost response
+  product-database.spec.ts:7259:1 › unconfirmed inline database creation fences further create or link attempts until page refresh
+  product-database.spec.ts:7288:1 › committed inline database creation fences its original user when auth switches before the response
+  product-database.spec.ts:7330:1 › mobile slash database dialog stays within the viewport
+  product-database.spec.ts:7388:1 › slash creates a nested database under an existing toggle child
+  product-database.spec.ts:7415:1 › linking a shared database adds only a reference and new records create pages
+  product-database.spec.ts:7450:1 › record title refreshes a missing page before opening its editable drawer
+  product-database.spec.ts:7470:1 › two references share record refresh and removing one keeps the other reference and data
+  product-database.spec.ts:7514:1 › record creation remains successful when the following snapshot refresh fails
+  product-database.spec.ts:7530:1 › edits versioned cells and manages property options without losing stable IDs
+  product-database.spec.ts:7691:1 › keeps failed text drafts for retry and Escape cancels without a write
+  product-database.spec.ts:7723:1 › title cells edit in place while the first-column detail button stays independent across layouts
+  product-database.spec.ts:7803:1 › 409 refreshes the latest record version while retaining the cell draft for retry
+  product-database.spec.ts:7822:1 › new record creates immediately with the default Page title and no header title form
+  product-database.spec.ts:7845:3 › new record opens through the shared desktop modal pipeline
+  product-database.spec.ts:7845:3 › new record opens through the shared desktop page pipeline
+  product-database.spec.ts:7845:3 › new record opens through the shared phone right drawer pipeline
+  product-database.spec.ts:7845:3 › new record opens through the shared phone bottom drawer pipeline
+  product-database.spec.ts:7845:3 › new record opens through the shared phone modal pipeline
+  product-database.spec.ts:7875:1 › missing constructor-like property IDs render as empty values
+  product-database.spec.ts:7889:1 › uncertain record creation fences all references until page refresh
+  product-database.spec.ts:7908:1 › record POST success during auth switch fences the original user and database
+  product-database.spec.ts:7940:1 › record POST success during workspace switch fences the original workspace
+  product-database.spec.ts:7963:1 › table shows loading state while its request is delayed
+  product-database.spec.ts:7980:1 › table loads the next 25-record window without duplicating rows
+  product-database.spec.ts:8009:1 › failed load more keeps existing rows and retries the same cursor
+  product-database.spec.ts:8036:1 › linked mutation refresh during a pending page append leaves pagination usable
+  product-database.spec.ts:8067:1 › failed database creation leaves no partial reference and can be retried
+  product-database.spec.ts:8089:1 › database loading error retries and offline state preserves the page body
+  product-database.spec.ts:8121:1 › database table scrolls horizontally on mobile without document overflow
+  product-database.spec.ts:8197:1 › advanced properties configure relation and formula, keep linked views in sync, and retry picker reads
+  product-database.spec.ts:8267:1 › mobile relation picker searches paged results and stays read-only offline
+  product-database.spec.ts:8308:1 › linked target edits refresh source rollup and formula, and self relation titles follow page rename
+  product-database.spec.ts:8342:1 › existing cross-database rollup allows a new formula and a second target rollup
+  product-database.spec.ts:8376:1 › P11.1B formats, edits, validates, and reloads date values without losing range data
+  product-database.spec.ts:8518:1 › P11.3A Timeline date-property drag previews locally and commits one CAS update without changing date wire shape
+  product-database.spec.ts:8640:1 › P11.3A Timeline datetime drag preserves timezone, milliseconds, and range duration; start-end bars stay read-only
+  product-database.spec.ts:8699:1 › P11.3A Timeline rolls back failed and conflicted drags without retrying, and cancellation/no-op/offline stays write-free
+  product-database.spec.ts:8854:1 › P11.3A drag preserves the open record editor draft and Page/Editor/NodeView identity without opening a second drawer
+  product-database.spec.ts:8992:1 › P11.3A drag preview does not rebuild 100-row Timeline projections or mutate unrelated bars
+  product-database.spec.ts:8992:1 › P11.3A drag preview does not rebuild 500-row Timeline projections or mutate unrelated bars
+  product-database.spec.ts:9113:1 › P11.3B datetime resize snaps from the dragged endpoint on every scale and preserves timezone and milliseconds
+  product-database.spec.ts:9203:1 › P11.3B 409, 400, and 500 resize failures restore canonical endpoints with one request and no retry
+  product-database.spec.ts:9241:1 › P11.3B resizing preserves the open Record Host, Drawer, Page Editor, and NodeView identities and drafts
+  product-database.spec.ts:9336:3 › P11.3B resize preview preserves 100-row projections and leaves unrelated bars untouched
+  product-database.spec.ts:9336:3 › P11.3B resize preview preserves 500-row projections and leaves unrelated bars untouched
+  product-database.spec.ts:9446:1 › P11.3C Timeline no-op round trips suppress release clicks while ordinary clicks open Records
+  product-database.spec.ts:9592:1 › P11.3C Escape and pointercancel cancel previews with zero PATCH and keep focus in the Timeline
+  product-database.spec.ts:9743:1 › P11.3C pending mutation shows a quiet saving state, blocks the same record, and leaves other records interactive
+  product-database.spec.ts:9876:3 › P11.3D Escape during pending keeps the submitted mutation and releases busy after completion
+  product-database.spec.ts:9876:3 › P11.3D offline during pending keeps the submitted mutation and releases busy after completion
+  product-database.spec.ts:9942:1 › P11.3C drag completion preserves focus on another Timeline bar
+  product-database.spec.ts:9976:1 › P11.3C resize completion restores focus to the current same-record handle after pending removes handles
+  product-database.spec.ts:10038:1 › P11.3C conflict and network failures reconcile to canonical dates without retry or stale optimism
+  product-database.spec.ts:10118:3 › P11.3C unknown refresh failure keeps result uncertain until retry (after server commit)
+  product-database.spec.ts:10118:3 › P11.3C unknown refresh failure keeps result uncertain until retry (without server commit)
+  product-database.spec.ts:10168:1 › P11.3C view switch during preview or pending keeps identity fences, drafts, and canonical records
+  product-database.spec.ts:10305:1 › P11.3C offline fails closed before preview and cancels an active preview without a request
+  product-database.spec.ts:10372:3 › P11.4A depends-on draws read-only directed dependencies from loaded, scheduled self Relation targets
+  product-database.spec.ts:10372:3 › P11.4A blocks draws read-only directed dependencies from loaded, scheduled self Relation targets
+  product-database.spec.ts:10446:1 › P11.4A Timeline without dependency config keeps an empty line layer and ordinary bars interactive
+  product-database.spec.ts:10475:1 › P11.4A dependency paths follow bar preview, scroll, scale and navigation without intercepting the bar
+  product-database.spec.ts:10636:5 › P11.4A 100 loaded rows keep sparse dependency projection bounded across pagination and row windows
+  product-database.spec.ts:10636:5 › P11.4A 100 loaded rows keep medium dependency projection bounded across pagination and row windows
+  product-database.spec.ts:10636:5 › P11.4A 500 loaded rows keep sparse dependency projection bounded across pagination and row windows
+  product-database.spec.ts:10636:5 › P11.4A 500 loaded rows keep medium dependency projection bounded across pagination and row windows
+  product-database.spec.ts:10854:3 › P11.4B depends-on create and delete use one ordered Relation Cell CAS
+  product-database.spec.ts:10854:3 › P11.4B blocks create and delete use one ordered Relation Cell CAS
+  product-database.spec.ts:10874:1 › P11.4B appends only the new Relation ID, preserving other IDs, order, and Date wire values
+  product-database.spec.ts:10905:1 › P11.4B self and duplicate links do not write; a longer cycle remains a valid Relation edge
+  product-database.spec.ts:10931:3 › P11.4B cancels connection on Escape without PATCH
+  product-database.spec.ts:10931:3 › P11.4B cancels connection on pointercancel without PATCH
+  product-database.spec.ts:10931:3 › P11.4B cancels connection on lostpointercapture without PATCH
+  product-database.spec.ts:10931:3 › P11.4B cancels connection on blur without PATCH
+  product-database.spec.ts:10931:3 › P11.4B cancels connection on hidden without PATCH
+  product-database.spec.ts:10931:3 › P11.4B cancels connection on offline without PATCH
+  product-database.spec.ts:10931:3 › P11.4B cancels connection on scope-change without PATCH
+  product-database.spec.ts:10959:5 › P11.4B create 409 reconciles canonical Relation without retry
+  product-database.spec.ts:10959:5 › P11.4B create 4xx reconciles canonical Relation without retry
+  product-database.spec.ts:10959:5 › P11.4B create unknown-committed reconciles canonical Relation without retry
+  product-database.spec.ts:10959:5 › P11.4B create unknown-uncommitted reconciles canonical Relation without retry
+  product-database.spec.ts:10959:5 › P11.4B delete 409 reconciles canonical Relation without retry
+  product-database.spec.ts:10959:5 › P11.4B delete 4xx reconciles canonical Relation without retry
+  product-database.spec.ts:10959:5 › P11.4B delete unknown-committed reconciles canonical Relation without retry
+  product-database.spec.ts:10959:5 › P11.4B delete unknown-uncommitted reconciles canonical Relation without retry
+  product-database.spec.ts:10989:1 › P11.4B refresh failure after unknown commit locks the stale dependency view read-only
+  product-database.spec.ts:11015:1 › P11.4B pending relation write locks other Database mutations and releases once settled
+  product-database.spec.ts:11048:1 › P11.4B dependency control selects edges by keyboard and pointer gestures do not start Bar or resize mutations
+  product-database.spec.ts:11104:1 › P11.4B first dependency-control click selects without deleting
+  product-database.spec.ts:11127:1 › P11.4B Desktop and 390px dependency UI screenshots stay usable in Light and Dark
+  product-database.spec.ts:11167:1 › P11.4B 390px coarse touch creates and deletes a dependency with touch input
+  product-database.spec.ts:11262:3 › P11.4B 100 rows keep pointer preview local with no relation N+1
+  product-database.spec.ts:11262:3 › P11.4B 500 rows keep pointer preview local with no relation N+1
+  product-database.spec.ts:11361:3 › P11.4D keyboard depends-on creates source → target once with cell mutation
+  product-database.spec.ts:11361:3 › P11.4D keyboard blocks creates source → target once with batch mutation
+  product-database.spec.ts:11405:1 › P11.4D keyboard target cycling excludes self, duplicate, unscheduled, and filtered records
+  product-database.spec.ts:11441:3 › P11.4D keyboard Escape cancels without mutation and preserves normal focus behavior
+  product-database.spec.ts:11441:3 › P11.4D keyboard Tab cancels without mutation and preserves normal focus behavior
+  product-database.spec.ts:11459:1 › P11.4D keyboard creation with no legal targets announces and never submits
+  product-database.spec.ts:11474:3 › P11.4D keyboard preview cancels on offline lifecycle change without writing
+  product-database.spec.ts:11474:3 › P11.4D keyboard preview cancels on readonly lifecycle change without writing
+  product-database.spec.ts:11474:3 › P11.4D keyboard preview cancels on config lifecycle change without writing
+  product-database.spec.ts:11474:3 › P11.4D keyboard preview cancels on scope lifecycle change without writing
+  product-database.spec.ts:11538:1 › P11.4D disappearing keyboard target clears selection and blocks confirmation
+  product-database.spec.ts:11561:1 › P11.4D pending keyboard activation cannot submit twice and restores focus after success
+  product-database.spec.ts:11585:1 › P11.4D keyboard 4xx failure restores a lost source focus and leaves preview cleared
+  product-database.spec.ts:11608:1 › P11.4D stale keyboard completion cannot restore focus or report into an A-B-A view epoch
+  product-database.spec.ts:11640:1 › P11.4D keyboard picker stays visible across Desktop, Tablet, and Phone in Light and Dark
+  product-database.spec.ts:11694:1 › P11.5 Timeline stays contained, aligned, and theme-neutral at supported viewport widths
+  product-database.spec.ts:11803:1 › P11.5 refresh keeps the rendered Timeline during pending work and recovers from refresh failure
+  product-database.spec.ts:11842:1 › P11.5 generic Timeline loading, retry, empty, unscheduled, mixed, offline, and reconnect states preserve behavior
+  product-database.spec.ts:11900:1 › P11.6 offscreen Timeline controls reveal the projected endpoint without loading or mutating records
+  product-database.spec.ts:11968:1 › P11.6 offscreen navigation preserves a 500-row Frozen window and rejects a stale control scope
+  product-database.spec.ts:12068:1 › P11.6 coarse clipped-right arrow and dependency handle have separate touch targets at 390 and 360
+  product-database.spec.ts:12189:1 › P11.5 coarse touch keeps controls reachable and scrolls the native Timeline surface
+  product-database.spec.ts:12284:1 › P11.5 coarse touch previews, cancels, moves, and resizes range and point dates once
+  product-database.spec.ts:12368:1 › P11.6 arrange explicit date has no default and cancel has zero writes
+  product-database.spec.ts:12386:1 › P11.6 arrange persists one native Date CAS and reloads canonical point
+  product-database.spec.ts:12419:1 › P11.6 arrange active policy uses one atomic batch and canonical downstream dates
+  product-database.spec.ts:12434:3 › P11.6 arrange conflict never retries or claims batch success
+  product-database.spec.ts:12434:3 › P11.6 arrange uncertain never retries or claims batch success
+  product-database.spec.ts:12434:3 › P11.6 arrange refresh-failure never retries or claims batch success
+  product-database.spec.ts:12450:1 › P11.6 arrange rejects stale record capture and offline submit, excludes invalid cells
+  product-database.spec.ts:12469:3 › P11.6 arrange 390px coarse context › P11.6 arrange 390px touch form stays inside viewport
+  product-database.spec.ts:12469:3 › P11.6 arrange 360px coarse context › P11.6 arrange 360px touch form stays inside viewport
+  product-database.spec.ts:12489:1 › P11.6 arrange configuration and view scope invalidate the captured form; Separate remains read only
+  product-database.spec.ts:12542:7 › R2 record autofocus ownership desktop › named record body receives initial focus after overlay opening
+  product-database.spec.ts:12542:7 › R2 record autofocus ownership desktop › title focus before body load wins and saves without body pollution
+  product-database.spec.ts:12542:7 › R2 record autofocus ownership phone › named record body receives initial focus after overlay opening
+  product-database.spec.ts:12542:7 › R2 record autofocus ownership phone › title focus before body load wins and saves without body pollution
+  product-database.spec.ts:12615:1 › R2 pending initial body focus preserves a user caret
+  product-database.spec.ts:12637:1 › R2 closing a record cancels the pending initial body focus callback
+  product-database.spec.ts:12654:1 › R2 renaming an unnamed record before body load retains the user focus and keeps body unchanged
+  product-database.spec.ts:12683:3 › R4 record title reconciliation dirty refresh
+  product-database.spec.ts:12683:3 › R4 record title reconciliation clean canonical refresh
+  product-database.spec.ts:12683:3 › R4 record title reconciliation actual identity switch
+  product-editor.spec.ts:142:1 › product page keeps title and editor in one open reading column across themes and mobile
+  product-editor.spec.ts:246:1 › product page shows one sync status and keeps local save errors retryable
+  product-editor.spec.ts:295:1 › pasting safe links keeps links and strips underline across save and reload
+  product-editor.spec.ts:320:1 › empty page loads without mutations, then debounces edits with a stable block identity
+  product-editor.spec.ts:344:1 › persists marks, heading and list structure and restores them after reload
+  product-editor.spec.ts:380:1 › inserts in the middle, deletes a block and keeps the displayed order
+  product-editor.spec.ts:420:1 › flushes edits on page navigation and isolates the next page document
+  product-editor.spec.ts:436:1 › reads both page bodies from the workspace snapshot without mixing them on navigation
+  product-editor.spec.ts:451:1 › keeps local editor content when sync fails and retries sync
+  product-editor.spec.ts:470:1 › keeps mobile editor within 390px and defers persistence during composition
+  product-editor.spec.ts:489:1 › touch toolbar and mobile heading stay compact across themes, short viewport and keyboard inset
+  product-editor.spec.ts:576:1 › touch caret visibility does not depend on keyboard inset and requires editor focus
+  product-editor.spec.ts:661:1 › keeps the P2 fixture, slash command and undo path available
+  product-editor.spec.ts:677:1 › slash lists Chinese grouped commands, filters, navigates and respects IME and Escape
+  product-editor.spec.ts:717:1 › desktop toolbar and slash stay compact in light, dark and mobile layouts
+  product-editor.spec.ts:766:1 › fixed toolbar converts a list item back to a top-level paragraph
+  product-editor.spec.ts:793:3 › slash 文本 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 一级标题 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 二级标题 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 项目列表 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 编号列表 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 待办 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 引用 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 代码块 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 折叠列表 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 表格 saves and reloads the supported block
+  product-editor.spec.ts:793:3 › slash 分割线 saves and reloads the supported block
+  product-editor.spec.ts:820:3 › strike keyboard command saves and reloads its mark
+  product-editor.spec.ts:820:3 › code keyboard command saves and reloads its mark
+  product-editor.spec.ts:838:1 › selection bubble toggles existing marks, combines marks and reloads saved content
+  product-editor.spec.ts:888:1 › selection bubble creates, edits, removes and combines links across save and reload
+  product-editor.spec.ts:973:1 › link editor rejects unsafe schemes and invalid snapshots preserve the valid local page
+  product-editor.spec.ts:1014:1 › selection bubble hides on collapse, blur, Escape and IME; stays in viewport in light and dark
+  product-editor.spec.ts:1092:1 › tablet coarse pointer hides selection bubble and keeps touch toolbar available
+  product-editor.spec.ts:1111:1 › mobile selection bubble stays hidden without horizontal overflow and leaves touch toolbar available
+  product-editor.spec.ts:1135:1 › non-formatable code block and attachment selection never open the text formatting bubble
+  product-editor.spec.ts:1155:1 › edits only the changed block and serializes a newer edit behind an in-flight save
+  product-editor.spec.ts:1179:1 › keeps legacy order keys during an ordinary text edit
+  product-editor.spec.ts:1192:1 › refuses unsupported persisted blocks without opening a writable blank editor
+  product-editor.spec.ts:1206:1 › pasting a block into another page assigns a new server Block ID
+  product-editor.spec.ts:1225:1 › keeps a locally committed block after failed sync and retries the same operation
+  product-editor.spec.ts:1247:1 › keeps a local block deletion after failed sync and restores shared state after retry
+  product-editor.spec.ts:1281:1 › flushes the newest local edit before leaving during an in-flight create
+  product-editor.spec.ts:1327:1 › keeps a dirty draft across session expiry and saves it after the same user logs in
+  product-editor.spec.ts:1345:1 › preserves a locally saved IME draft when page metadata sync expires the session
+  product-flow.spec.ts:179:1 › protects product routes, reports login failure while pending, then opens the app on success
+  product-flow.spec.ts:201:1 › links login and registration pages in both directions
+  product-flow.spec.ts:214:1 › requires matching passwords, then registers and returns to login without creating a session
+  product-flow.spec.ts:241:1 › disables repeat registration while pending and displays a server error
+  product-flow.spec.ts:257:1 › redirects an authenticated visitor from login and registration to the product area
+  product-flow.spec.ts:266:1 › delays login until recovery completes and uses cached product state on transient failures
+  product-flow.spec.ts:291:1 › creates the first workspace and keeps it available after reload
+  product-flow.spec.ts:307:1 › switches workspaces, selects the most recent one, and validates rename with retry and persistence
+  product-flow.spec.ts:338:1 › rejects an unknown workspace, handles expired sessions, and prevents back navigation after logout
+  product-flow.spec.ts:368:1 › isolates workspace lists between users and closes the mobile drawer after switching
+  product-nested.spec.ts:25:1 › universal block chrome reveals on hover and focus and inserts editable root siblings with undo
+  product-nested.spec.ts:105:1 › universal chrome follows the caret block while the editor is focused
+  product-nested.spec.ts:120:1 › universal plus keeps nested siblings and inserts after the whole toggle with stable IDs
+  product-nested.spec.ts:152:1 › universal block chrome stays hidden without layout space at phone width
+  product-nested.spec.ts:178:3 › universal coarse tablet chrome boundary › ordinary controls remain hidden and do not squeeze or cover content
+  product-nested.spec.ts:234:1 › Tab and Shift+Tab move an existing block into and out of a toggle with stable identity and undo
+  product-nested.spec.ts:257:1 › a mid-block Tab does not change nesting
+  product-nested.spec.ts:268:1 › Tab moves a toggle summary with its child subtree and stable IDs
+  product-nested.spec.ts:289:1 › touch nested controls › 390px touch toolbar can indent and outdent from the middle of a block
+  product-nested.spec.ts:307:1 › drag handle nests a block into a toggle and keeps its identity after reload
+  product-nested.spec.ts:323:1 › drag handle reorders siblings and moves a child back to the root
+  product-nested.spec.ts:346:1 › drag rejects self, descendant, and excessive nesting depth
+  product-nested.spec.ts:363:1 › dragging outside the editor clears its target marker without moving a block
+  product-nested.spec.ts:373:1 › block drop indicators use the semantic accent color in light and dark themes
+  product-nested.spec.ts:407:1 › Tab after a leaf block and native attachment drag do not create children
+  product-nested.spec.ts:436:1 › nested blocks render at desktop and phone widths in both themes
+  product-nested.spec.ts:458:1 › offline nested move survives reload and browser restart, then pushes before snapshot pull
+  product-overlay.spec.ts:108:1 › opening model has strict device matrix and separate persistent targets
+  product-overlay.spec.ts:135:1 › desktop drawer keeps background interactive and restores focus
+  product-overlay.spec.ts:161:3 › desktop drawer enters and leaves with the specified transform transition
+  product-overlay.spec.ts:161:3 › right drawer enters and leaves with the specified transform transition
+  product-overlay.spec.ts:161:3 › bottom drawer enters and leaves with the specified transform transition
+  product-overlay.spec.ts:223:3 › right-drawer close button follows the drawer leave flow
+  product-overlay.spec.ts:223:3 › bottom-drawer masked backdrop follows the drawer leave flow
+  product-overlay.spec.ts:243:1 › drawer dismissible and IME Escape guards do not start a leave transition
+  product-overlay.spec.ts:269:3 › drawer dismissible IME Escape does not leave, while normal Escape closes
+  product-overlay.spec.ts:269:3 › right-drawer dismissible IME Escape does not leave, while normal Escape closes
+  product-overlay.spec.ts:269:3 › bottom-drawer dismissible IME Escape does not leave, while normal Escape closes
+  product-overlay.spec.ts:293:3 › drawer reduced motion removes displacement and closes immediately
+  product-overlay.spec.ts:293:3 › right-drawer reduced motion removes displacement and closes immediately
+  product-overlay.spec.ts:293:3 › bottom-drawer reduced motion removes displacement and closes immediately
+  product-overlay.spec.ts:310:1 › a pending controlled close keeps the drawer usable until the parent accepts it
+  product-overlay.spec.ts:335:1 › a rejected controlled close keeps the drawer open without starting leave motion
+  product-overlay.spec.ts:353:1 › external close preserves slot content until the drawer transition finishes
+  product-overlay.spec.ts:372:1 › unmounting during a drawer leave releases its modal and scroll lock
+  product-overlay.spec.ts:388:1 › switching from a masked drawer to desktop drawer releases native modal resources
+  product-overlay.spec.ts:408:1 › closing a modal while switching to desktop drawer unlocks scroll and restores trigger focus
+  product-overlay.spec.ts:429:1 › rapid external close and reopen keeps the latest drawer state
+  product-overlay.spec.ts:454:1 › closing before drawer entrance finishes and reopening leaves no stale native state
+  product-overlay.spec.ts:487:3 › desktop modal keeps the header and optional footer outside the scrolling body
+  product-overlay.spec.ts:487:3 › desktop drawer keeps the header and optional footer outside the scrolling body
+  product-overlay.spec.ts:487:3 › phone right drawer keeps the header and optional footer outside the scrolling body
+  product-overlay.spec.ts:487:3 › phone bottom drawer keeps the header and optional footer outside the scrolling body
+  product-overlay.spec.ts:524:3 › right-drawer keeps an in-overlay popover interactive above the scrolling body
+  product-overlay.spec.ts:524:3 › bottom-drawer keeps an in-overlay popover interactive above the scrolling body
+  product-overlay.spec.ts:572:1 › product overlay renders a title header without a footer when the footer slot is omitted
+  product-overlay.spec.ts:581:1 › title controls the visible heading, label remains the accessible name, and dismissible gates close actions
+  product-overlay.spec.ts:595:1 › IME Escape keeps the overlay open until a normal Escape closes it
+  product-overlay.spec.ts:614:3 › modal traps focus, locks scroll, closes from Escape and restores focus
+  product-overlay.spec.ts:614:3 › right-drawer traps focus, locks scroll, closes from Escape and restores focus
+  product-overlay.spec.ts:614:3 › bottom-drawer traps focus, locks scroll, closes from Escape and restores focus
+  product-overlay.spec.ts:638:1 › desktop modal uses native modal semantics and blocks the background
+  product-overlay.spec.ts:651:1 › phone drawer size, safe area, close button and light/dark surfaces
+  product-overlay.spec.ts:681:1 › masked drawer closes from backdrop click
+  product-overlay.spec.ts:691:1 › page mode occupies the product page layer, supports Back and does not lock scroll
+  product-p75-acceptance.spec.ts:245:1 › a mixed advanced-block page is created in the editor and survives reload, reorder, indent and browser restart
+  product-p75-acceptance.spec.ts:428:1 › seeded mixed document keeps local-first identity, nesting, callout attrs and table grid across offline restart and reconnect
+  product-p75-acceptance.spec.ts:551:1 › a legacy P5/P6 page still opens, edits, saves and syncs without a migration
+  product-pages.spec.ts:155:1 › shows an empty page tree, then creates a root page and opens it
+  product-pages.spec.ts:176:3 › appends a root page after canonical order keys
+  product-pages.spec.ts:176:3 › appends a root page after legacy letters order keys
+  product-pages.spec.ts:176:3 › appends a root page after unpadded numbers order keys
+  product-pages.spec.ts:189:1 › keeps appending after legacy keys across consecutive creates
+  product-pages.spec.ts:205:1 › disables root creation until the page list has loaded successfully
+  product-pages.spec.ts:217:1 › creates a child page under a page and keeps the hierarchy and sibling order
+  product-pages.spec.ts:236:1 › collapses and expands a parent without losing the selected page
+  product-pages.spec.ts:252:1 › opens a page from the tree and restores the same page and tree after a reload
+  product-pages.spec.ts:270:1 › reports an unavailable page instead of rendering a blank screen
+  product-pages.spec.ts:278:1 › renames a page with trimming, validation, pending state, and error recovery
+  product-pages.spec.ts:320:1 › rename focuses automatically, submits with Enter, and cancels without writing on Escape or outside click
+  product-pages.spec.ts:354:1 › keeps page tree rows steady through rename, move and delete controls and captures desktop states
+  product-pages.spec.ts:456:1 › pending rename and move retain their surface and focus on Escape at 1440px
+  product-pages.spec.ts:456:1 › pending rename and move retain their surface and focus on Escape at 390px
+  product-pages.spec.ts:507:1 › keeps delete confirmation open while editor flush is pending and blocks duplicate flushes
+  product-pages.spec.ts:551:1 › moves a page under another page and back to the root
+  product-pages.spec.ts:599:1 › never offers the page itself or its descendants and preserves a local move when sync fails
+  product-pages.spec.ts:633:1 › keeps page trees isolated per workspace and drops the previous page id
+  product-pages.spec.ts:653:1 › deletes a leaf page, rejects a page with children, and recovers the route
+  product-pages.spec.ts:692:1 › reports page tree load failures and retries
+  product-pages.spec.ts:710:1 › touch page action dialogs › mobile move dialog stays compact with only three destinations
+  product-pages.spec.ts:745:1 › touch page action dialogs › mobile page actions use modal dialogs with focus, stable tree and a scrollable destination list
+  product-pages.spec.ts:825:1 › page action presentation uses the mobile breakpoint and preserves an open draft across resize
+  product-pages.spec.ts:850:1 › closes the mobile sidebar after opening a page from the tree
+  product-settings.spec.ts:296:1 › Settings uses a selected list-detail layout at 1440 and 1024 pixels
+  product-settings.spec.ts:339:1 › 390px Settings index returns to the original page
+  product-settings.spec.ts:358:3 › 390px Settings profile has one back control and preserves navigation state
+  product-settings.spec.ts:358:3 › 390px Settings appearance has one back control and preserves navigation state
+  product-settings.spec.ts:358:3 › 390px Settings mcp has one back control and preserves navigation state
+  product-settings.spec.ts:358:3 › 390px Settings workspace/general has one back control and preserves navigation state
+  product-settings.spec.ts:358:3 › 390px Settings about has one back control and preserves navigation state
+  product-settings.spec.ts:395:1 › 390px Settings index navigates to detail with a single topbar and no overflow
+  product-settings.spec.ts:452:1 › MCP settings shows the environment endpoint and manages one-time tokens
+  product-settings.spec.ts:473:1 › profile trims and caches the saved name; invalid and successful password changes follow the session contract
+  product-settings.spec.ts:544:1 › 401 clears the cached identity, while 403 remains an authenticated non-offline error
+  product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 500
+  product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 502
+  product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 503
+  product-settings.spec.ts:574:3 › cached Settings and local preferences remain usable through HTTP 504
+  product-settings.spec.ts:609:1 › toolbar defaults off, slash and attachment picker work, and preferences stay scoped by user and workspace
+  product-settings.spec.ts:691:1 › unknown workspace has no global toolbar preference; returnTo rejects external paths and preserves valid pages
+  product-settings.spec.ts:722:1 › theme and toolbar controls support keyboard focus and activation in dark reduced-motion mode
+  product-settings.spec.ts:748:1 › settings navigation ends with 软件说明 and /settings/about shows exact-version release notes or an explicit empty state
+  product-settings.spec.ts:809:1 › /settings/about survives the login redirect allowlist instead of falling back to /app
+  product-settings.spec.ts:821:1 › 检查更新 compares the local build with /api/health and never downloads
+  product-slash-context.spec.ts:53:1 › slash commands follow root, quote, list item and toggle summary/child contexts
+  product-slash-context.spec.ts:130:3 › touch block commands › touch toolbar cannot create a block the codec rejects inside a list item
+  product-slash-context.spec.ts:148:1 › slash inside a code block only offers plain text conversions
+  product-sync.spec.ts:61:1 › hydrates an empty workspace, keeps offline page edits across reload, then pushes before pulling
+  product-sync.spec.ts:85:1 › attachment cleanup waits for delete acknowledgement, survives failure and reload, and accepts 404
+  product-sync.spec.ts:122:1 › referenced attachment cleanup intent stays hidden while document sync is already complete
+  product-sync.spec.ts:143:1 › cleanup only sends freshly authorized workspaces and invalidates the session on 401
+  product-sync.spec.ts:163:1 › failed push leaves local content and does not pull a stale snapshot
+  product-sync.spec.ts:182:1 › a confirmed 401 clears cached identity instead of restoring offline access
+  product-sync.spec.ts:192:49 › HTTP 400 cannot use cached identity as an offline login
+  product-sync.spec.ts:192:49 › HTTP 403 cannot use cached identity as an offline login
+  product-sync.spec.ts:192:49 › HTTP 404 cannot use cached identity as an offline login
+  product-sync.spec.ts:192:49 › HTTP 501 cannot use cached identity as an offline login
+  product-sync.spec.ts:192:49 › HTTP 505 cannot use cached identity as an offline login
+  product-sync.spec.ts:204:34 › HTTP 401 cannot use cached identity even with a 500 error body
+  product-sync.spec.ts:204:34 › HTTP 403 cannot use cached identity even with a 500 error body
+  product-sync.spec.ts:221:1 › HTTP 500 uses cached identity offline and restores the authenticated product on recovery
+  product-sync.spec.ts:237:1 › a never authenticated offline client cannot enter the product
+  product-sync.spec.ts:246:65 › backend network restores the local product and recovers without reload
+  product-sync.spec.ts:246:65 › backend 500 restores the local product and recovers without reload
+  product-sync.spec.ts:246:65 › backend 502 restores the local product and recovers without reload
+  product-sync.spec.ts:246:65 › backend 503 restores the local product and recovers without reload
+  product-sync.spec.ts:246:65 › backend 504 restores the local product and recovers without reload
+  product-sync.spec.ts:296:44 › workspace list 500 restores only the current account cache
+  product-sync.spec.ts:296:44 › workspace list 502 restores only the current account cache
+  product-sync.spec.ts:296:44 › workspace list 503 restores only the current account cache
+  product-sync.spec.ts:296:44 › workspace list 504 restores only the current account cache
+  product-sync.spec.ts:309:44 › workspace list 400 cannot fall back to cached permissions
+  product-sync.spec.ts:309:44 › workspace list 403 cannot fall back to cached permissions
+  product-sync.spec.ts:309:44 › workspace list 501 cannot fall back to cached permissions
+  product-sync.spec.ts:309:44 › workspace list 505 cannot fall back to cached permissions
+  product-sync.spec.ts:321:1 › cached identity with no workspace snapshot refuses to invent an empty workspace
+  product-sync.spec.ts:338:1 › workspace list unavailable without local cache can recover on attention
+  product-sync.spec.ts:349:1 › offline identity without workspace metadata recovers using the workspace retry button
+  product-sync.spec.ts:362:67 › HTTP 500 without identity shows accessible responsive connectivity UI (no-preference) and retry restores the product
+  product-sync.spec.ts:362:67 › HTTP 500 without identity shows accessible responsive connectivity UI (reduce) and retry restores the product
+  product-sync.spec.ts:387:39 › open editor survives backend 500 and keeps local operations
+  product-sync.spec.ts:387:39 › open editor survives backend 502 and keeps local operations
+  product-sync.spec.ts:387:39 › open editor survives backend 503 and keeps local operations
+  product-sync.spec.ts:417:1 › offline editor saves blocks locally and restores text after reload
+  product-sync.spec.ts:439:1 › mobile WebView runtime keeps the same IndexedDB product content offline
+  product-sync.spec.ts:457:1 › offline page rename, move and delete stay durable after reload
+  product-sync.spec.ts:491:1 › a second client pulls sequential changes and remote deletion removes local pages
+  product-sync.spec.ts:510:1 › a clean active editor reloads a remote block change on focus
+  product-sync.spec.ts:538:1 › switching identity during a push cannot send the next old-account operation
+  product-table.spec.ts:135:1 › slash creates one editable table block with a header row and cell navigation
+  product-table.spec.ts:179:1 › last cell Tab adds a row and the table keeps its identity across reload
+  product-table.spec.ts:197:1 › table menu adds and removes rows and columns and deletes the whole table
+  product-table.spec.ts:233:1 › removing the only block of the page replaces the table with a paragraph
+  product-table.spec.ts:248:1 › copy and paste inside cells and plain/TSV paste never produce an unsaveable document
+  product-table.spec.ts:293:1 › a table block drags and reorders without losing its grid or identity
+  product-table.spec.ts:310:1 › a table nests under a toggle and cell Tab never indents the table block
+  product-table.spec.ts:334:1 › a table created in a toggle summary can be deleted without emptying the toggle
+  product-table.spec.ts:362:1 › cell inline marks and hard breaks persist through save and reload
+  product-table.spec.ts:384:1 › an oversized pasted table is refused instead of making the page unsaveable
+  product-table.spec.ts:418:1 › table slash is hidden in quote, list item and cell contexts
+  product-table.spec.ts:460:3 › 390px table layout › a wide table scrolls inside its wrapper and keeps the page and cells usable
+  product-table.spec.ts:488:1 › a 20x10 table stays editable and saves a single block
+  product-table.spec.ts:506:1 › offline table edits survive reload and push before the snapshot pull
+Total: 511 tests in 14 files

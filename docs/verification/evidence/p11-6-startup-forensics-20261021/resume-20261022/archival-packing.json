@@ -1,0 +1,62 @@
+{
+  "generatedAtUtc": "2026-10-22T03:38:01.728Z",
+  "evidenceRoot": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022",
+  "rawRoot": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695",
+  "completionMarker": "orchestration-end.json",
+  "allowedSources": [
+    "vite-events.jsonl",
+    "resources.jsonl",
+    "system-memory.jsonl"
+  ],
+  "originalsDeleted": false,
+  "sources": [
+    {
+      "name": "vite-events.jsonl",
+      "sourcePath": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022\\vite-events.jsonl",
+      "compressedPath": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022\\vite-events.jsonl.gz",
+      "rawArchivePath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\preserved-service-logs\\vite-events.jsonl",
+      "status": "packed-and-verified",
+      "gunzipVerified": true,
+      "gunzipSha256": "aa9416f815f82472f00d79e477c752db239db25ddd6b1144427ae31c6b6a1978",
+      "gunzipBytes": 29742547,
+      "originalBytes": 29742547,
+      "originalSha256": "aa9416f815f82472f00d79e477c752db239db25ddd6b1144427ae31c6b6a1978",
+      "compressedBytes": 3071703,
+      "compressedSha256": "f3435eb23f07648cbf63c78c8200493244451a8499433cad8f362c06978ce5b8",
+      "gzipRoundTripVerified": true,
+      "originalRename": "renamed-after-gzip-verification"
+    },
+    {
+      "name": "resources.jsonl",
+      "sourcePath": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022\\resources.jsonl",
+      "compressedPath": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022\\resources.jsonl.gz",
+      "rawArchivePath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\preserved-service-logs\\resources.jsonl",
+      "status": "packed-and-verified",
+      "gunzipVerified": true,
+      "gunzipSha256": "c2c268a7edc7e68b8dcf4aa085197da540594b927dacbaf044e6666207ddff29",
+      "gunzipBytes": 9795832,
+      "originalBytes": 9795832,
+      "originalSha256": "c2c268a7edc7e68b8dcf4aa085197da540594b927dacbaf044e6666207ddff29",
+      "compressedBytes": 819994,
+      "compressedSha256": "9e2ebc0a16ef17227266bd3bd3e0bef1efdb6c4f93c0dec1c5c9557cc516f6d8",
+      "gzipRoundTripVerified": true,
+      "originalRename": "renamed-after-gzip-verification"
+    },
+    {
+      "name": "system-memory.jsonl",
+      "sourcePath": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022\\system-memory.jsonl",
+      "compressedPath": "C:\\Users\\31250\\Work\\Eotion\\docs\\verification\\evidence\\p11-6-startup-forensics-20261021\\resume-20261022\\system-memory.jsonl.gz",
+      "rawArchivePath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-startup-forensics-1792638528695\\preserved-service-logs\\system-memory.jsonl",
+      "status": "packed-and-verified",
+      "gunzipVerified": true,
+      "gunzipSha256": "934d3c86733a7b761fdb09bfe4b9bed4378a1c79be689f619106dea160572540",
+      "gunzipBytes": 21472,
+      "originalBytes": 21472,
+      "originalSha256": "934d3c86733a7b761fdb09bfe4b9bed4378a1c79be689f619106dea160572540",
+      "compressedBytes": 3480,
+      "compressedSha256": "83eb88ea0173d12703e18c7fe306de72fc5dfc8fa876a503660fbdb40eaf39a2",
+      "gzipRoundTripVerified": true,
+      "originalRename": "renamed-after-gzip-verification"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "time": "2026-10-22T03:38:33.3971981Z",
+  "knownProcessIdentities": 1467,
+  "ownedProcessesRemaining": [],
+  "diagnosticPort": 7179,
+  "diagnosticListeners": [],
+  "userPort7173Listeners": [],
+  "userServicesTerminated": false,
+  "method": "PID and creation timestamp exact match against sampled owned descendants; read-only, no process termination"
+}

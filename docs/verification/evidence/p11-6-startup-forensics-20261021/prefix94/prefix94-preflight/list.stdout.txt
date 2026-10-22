@@ -1,0 +1,96 @@
+Listing tests:
+  forensics--product-attachments.spec.ts:151:1 › slash image command and picker upload become one local block, sync operation and reloadable snapshot
+  forensics--product-attachments.spec.ts:214:1 › file toolbar opens the file picker and a 503 retry reuses one placeholder and ends with one block
+  forensics--product-attachments.spec.ts:251:1 › cancel aborts an in-flight upload, removes its preview URL, and creates no final attachment block
+  forensics--product-attachments.spec.ts:271:1 › a picker keeps its captured paragraph after selection changes and preserves non-empty paragraphs
+  forensics--product-attachments.spec.ts:309:1 › typing in the original empty paragraph while saving keeps the text after attachment commit
+  forensics--product-attachments.spec.ts:360:1 › a later selected file completing first leaves no leftover empty paragraph when the first upload fails
+  forensics--product-attachments.spec.ts:392:1 › failed save restores user text changed in the provisional attachment block and queues cleanup
+  forensics--product-attachments.spec.ts:443:1 › cancelling the first empty-slot upload while the second saves leaves no empty gap
+  forensics--product-attachments.spec.ts:486:1 › file picker remains usable when crypto.randomUUID is unavailable
+  forensics--product-attachments.spec.ts:499:1 › multiple files that finish out of order stay in their selected document order
+  forensics--product-attachments.spec.ts:518:1 › a late upload result from the previous page never enters the newly opened page
+  forensics--product-attachments.spec.ts:536:1 › 413 shows a readable upload error and retry control
+  forensics--product-attachments.spec.ts:546:1 › upload 401 clears authenticated identity and returns to login
+  forensics--product-attachments.spec.ts:556:1 › an attachment remains durable locally when its normal block sync receives 503
+  forensics--product-attachments.spec.ts:569:1 › a local attachment block upsert failure compensates the successful upload through the cleanup queue
+  forensics--product-attachments.spec.ts:596:1 › an upload response received during IME composition waits before inserting its attachment block
+  forensics--product-attachments.spec.ts:612:1 › deleting an attachment stays permanent through undo and redo while ordinary text undo still works
+  forensics--product-attachments.spec.ts:653:1 › quick cancel and fresh selection stay safe while compensation DELETE is in flight
+  forensics--product-attachments.spec.ts:687:1 › offline file selection stays local, does not call upload, keeps text editable and reloads attachment metadata
+  forensics--product-attachments.spec.ts:711:1 › deleting a page queues cleanup for all attachment metadata after block deletion
+  forensics--product-attachments.spec.ts:735:1 › failed image uses fallback and unsafe URL or unknown attachment attrs keep the page read-only
+  forensics--product-attachments.spec.ts:772:1 › long attachment names fit a 390px viewport and action buttons remain touch sized
+  forensics--product-attachments.spec.ts:791:1 › file drop and image paste upload files, while text/html paste remains handled by the editor
+  forensics--product-blocks.spec.ts:93:1 › toggle creates, nests, survives reload and folds without becoming block data
+  forensics--product-blocks.spec.ts:147:1 › editing inside a toggle keeps the existing block identities
+  forensics--product-blocks.spec.ts:176:1 › local store enforces nested block invariants and records one block.move
+  forensics--product-blocks.spec.ts:252:1 › block codec round-trips nested toggles and refuses unrepresentable structure
+  forensics--product-blocks.spec.ts:366:1 › callout slash creation edits icon and tone, keeps identity, and supports desktop selection formatting
+  forensics--product-blocks.spec.ts:422:1 › callout Enter converts empty blocks, exits at the end, and splits mid-text with stable identity
+  forensics--product-blocks.spec.ts:493:1 › Shift+Enter stays inside callout and select-all Backspace deletes cleanly across reload
+  forensics--product-blocks.spec.ts:528:1 › formatting a callout selection across Shift+Enter preserves marked hardBreak through domain and reload
+  forensics--product-blocks.spec.ts:558:1 › callout touch editing keeps the mobile toolbar available and avoids selection bubble overflow
+  forensics--product-blocks.spec.ts:593:1 › callout block saves locally offline, reloads from IndexedDB, syncs online and reloads from snapshot
+  forensics--product-blocks.spec.ts:647:1 › callout codec validates attributes and round-trips as a leaf and toggle child
+  forensics--product-blocks.spec.ts:693:1 › IndexedDB workspace snapshot round-trips callout attrs and nested callout blocks
+  forensics--product-blocks.spec.ts:760:1 › code block language survives codec conversion, editing and reload
+  forensics--product-blocks.spec.ts:791:1 › table codec round-trips one grid block and refuses grids the server would reject
+  forensics--product-content-rules.spec.ts:64:1 › pasted list and quote content is repaired to the block registry instead of making the page unsaveable
+  forensics--product-content-rules.spec.ts:106:1 › pasted attributes stay inside the block registry instead of making the page unsaveable
+  forensics--product-database.spec.ts:153:1 › P11.3B date-only resize changes one endpoint, keeps inclusive end dates, and promotes legacy points to ranges
+  forensics--product-database.spec.ts:1230:1 › database block controls reveal on hover or focus and insert a sibling paragraph below
+  forensics--product-database.spec.ts:1264:3 › touch database block controls › hides database block controls on phone without reserving header space
+  forensics--product-database.spec.ts:1295:3 › touch database block controls › phone header uses two rows for long names, stays within the viewport, and creates a record
+  forensics--product-database.spec.ts:1375:1 › database header keeps desktop and tablet controls on one row
+  forensics--product-database.spec.ts:1410:3 › tablet coarse database block controls › preserves the existing tablet layout and visible controls
+  forensics--product-database.spec.ts:1430:1 › database command separates back from cancel and keeps create and link choices on one row
+  forensics--product-database.spec.ts:1479:3 › database view popover uses shared controls and closes from outside clicks at 1440px
+  forensics--product-database.spec.ts:1479:3 › database view popover uses shared controls and closes from outside clicks at 390px
+  forensics--product-database.spec.ts:1570:1 › database creation cards and placeholder stay coordinated in light and dark at 1440px
+  forensics--product-database.spec.ts:1570:1 › database creation cards and placeholder stay coordinated in light and dark at 390px
+  forensics--product-database.spec.ts:1603:1 › database settings exposes five entries and record and property opening modes drive real surfaces
+  forensics--product-database.spec.ts:1677:1 › opening settings show the current device by default and expand or collapse the other layouts
+  forensics--product-database.spec.ts:1714:1 › database UX controls render library icons instead of text glyphs
+  forensics--product-database.spec.ts:1856:1 › basic property type changes convert stored values and repair filters while retaining compatible sorts
+  forensics--product-database.spec.ts:1967:1 › advanced type changes configure before confirmation and preserve property identity
+  forensics--product-database.spec.ts:2058:1 › advanced type conversion cancels after a 409 refresh when the source type changed
+  forensics--product-database.spec.ts:2088:1 › advanced type conversion cancels after a 409 refresh when the source property was deleted
+  forensics--product-database.spec.ts:2114:1 › advanced type conversion keeps confirmation after a server dependency 409 and can retry with refreshed versions
+  forensics--product-database.spec.ts:2149:1 › advanced type conversion retains its configured draft and refreshed versions after a same-source 409
+  forensics--product-database.spec.ts:2182:1 › existing advanced property editors still use property PATCH instead of type mutation
+  forensics--product-database.spec.ts:2217:1 › property type change failures keep the confirmation available and report conflicts without optimistic type changes
+  forensics--product-database.spec.ts:2251:1 › property schema mutations refresh inside the open panel and preserve unsaved view drafts
+  forensics--product-database.spec.ts:2295:1 › property menu keeps its focus, type choices and database-local dismissal behavior
+  forensics--product-database.spec.ts:2465:1 › inline property rename edits the existing header and settings spans and saves trimmed names with a stable ID
+  forensics--product-database.spec.ts:2567:1 › property deletion requires modal confirmation and preserves the property on cancellation or failure
+  forensics--product-database.spec.ts:2621:1 › phone record settings offer right and bottom drawers and apply both modes
+  forensics--product-database.spec.ts:2653:1 › property settings remain usable in a 320px phone right drawer
+  forensics--product-database.spec.ts:2704:3 › desktop 记录 third-row opening popover remains interactive in the modal
+  forensics--product-database.spec.ts:2704:3 › desktop 属性 third-row opening popover remains interactive in the modal
+  forensics--product-database.spec.ts:2776:1 › opening choices persist independently across layouts and targets, including legacy saved keys
+  forensics--product-database.spec.ts:2817:1 › switching records from an interactive desktop drawer flushes the current record first
+  forensics--product-database.spec.ts:2843:1 › closing a record programmatically flushes its focused title draft first
+  forensics--product-database.spec.ts:2872:1 › rapid title saves across records queue refreshes for both originating databases
+  forensics--product-database.spec.ts:2937:1 › page tree shows databases under their host page, excludes records, and keeps both routes reachable
+  forensics--product-database.spec.ts:2958:1 › standalone database route keeps editor, NodeView, and record drafts across delayed Table/List/Board/Timeline A-B-A switches
+  forensics--product-database.spec.ts:3109:1 › first pointer focus beside a trailing Database block keeps ProseMirror selection current
+  forensics--product-database.spec.ts:3126:1 › database views create, rename, switch, delete and persist the selected reference
+  forensics--product-database.spec.ts:3198:1 › database view selector creates a List view through the existing DatabaseView API
+  forensics--product-database.spec.ts:3226:1 › Timeline can be created from a database view selector and keeps its date source and bar after switching and reload
+  forensics--product-database.spec.ts:3281:1 › Timeline creation adds a Date property first when the database has no Date properties
+  forensics--product-database.spec.ts:3307:1 › Timeline create recovers the same pending id when offline closes the dialog during an unknown POST
+  forensics--product-database.spec.ts:3362:1 › Timeline date settings cancel without a PATCH, save distinct date columns, and retain other View options
+  forensics--product-database.spec.ts:3435:1 › Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens
+  forensics--product-database.spec.ts:3490:1 › database view selector creates a Board view through the existing DatabaseView API
+  forensics--product-database.spec.ts:3585:1 › Board view settings select only local Select properties, preserve config, and share View updates
+  forensics--product-database.spec.ts:3672:1 › Board grouping settings remain available without Select properties and read-only offline on phone
+  forensics--product-database.spec.ts:3709:3 › Board grouping settings stay hidden while switching to a table View
+  forensics--product-database.spec.ts:3709:3 › Board grouping settings stay hidden while switching to a list View
+  forensics--product-database.spec.ts:3742:1 › Board grouping settings keep the existing View conflict behavior
+  forensics--product-database.spec.ts:3764:3 › delayed Board View settings PATCH success cannot overwrite a List View after external snapshot switch
+  forensics--product-database.spec.ts:3764:3 › delayed Board View settings PATCH conflict cannot overwrite a List View after external snapshot switch
+  forensics--product-database.spec.ts:3871:1 › A to B to A editor-attribute switching does not let an old View PATCH refresh reloaded A
+  forensics--product-database.spec.ts:3969:1 › Table List Board switch matrix keeps the database reference, renderer settings, and editor identity
+  forensics--product-database.spec.ts:4071:1 › Timeline shell keeps local zoom, exposes the seven scales, and has no table fallback
+Total: 94 tests in 4 files

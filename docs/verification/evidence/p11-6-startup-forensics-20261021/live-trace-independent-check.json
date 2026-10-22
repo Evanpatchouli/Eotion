@@ -1,0 +1,85 @@
+{
+  "checkedBy": "historical_evidence read-only scout",
+  "method": "Python ZipFile full entry reads and CRC check; no extraction or source mutation",
+  "archive": "b-actual-prefix-07/artifacts/d004a752d584/trace.zip",
+  "sha256": "33588c9a0b7e8b28bb63048d1ce43ae79550e149d5bde8d7734d332384d6d12c",
+  "integrity": {
+    "entryCount": 18,
+    "declaredUncompressedBytes": 1029553,
+    "bytesRead": 1029553,
+    "badEntries": [],
+    "zipTestzip": null
+  },
+  "network": [
+    {
+      "at": "2026-10-21T11:16:25.420Z",
+      "url": "http://127.0.0.1:7179/@vite/client",
+      "status": 200,
+      "durationMs": 20.301
+    },
+    {
+      "at": "2026-10-21T11:16:25.421Z",
+      "url": "http://127.0.0.1:7179/src/main.ts",
+      "status": 200,
+      "durationMs": 22.926,
+      "contentLength": 3433
+    },
+    {
+      "at": "2026-10-21T11:16:25.444Z",
+      "url": "http://127.0.0.1:7179/src/theme.ts",
+      "status": -1,
+      "durationMs": 15.319
+    },
+    {
+      "at": "2026-10-21T11:16:25.444Z",
+      "url": "http://127.0.0.1:7179/src/webRuntimePreferences.ts",
+      "status": 200,
+      "durationMs": 22.008,
+      "contentLength": 2709
+    },
+    {
+      "at": "2026-10-21T11:16:25.444Z",
+      "url": "http://127.0.0.1:7179/src/router.ts",
+      "status": 200,
+      "durationMs": 21.207,
+      "contentLength": 13920
+    },
+    {
+      "at": "2026-10-21T11:16:25.444Z",
+      "url": "http://127.0.0.1:7179/src/App.vue",
+      "status": 200,
+      "durationMs": 17.065,
+      "contentLength": 22286
+    }
+  ],
+  "console": {
+    "timeMonotonicMs": 321746.14,
+    "text": "Failed to load resource: net::ERR_NO_BUFFER_SPACE",
+    "url": "http://127.0.0.1:7179/src/theme.ts"
+  },
+  "dom": {
+    "afterNavigate": "2026-10-21T11:16:25.481Z",
+    "after5sAssertion": "2026-10-21T11:16:30.493Z",
+    "route": "http://127.0.0.1:7179/#/app/database-workspace/page/database-page",
+    "bodyContains": "<div id=\"app\"></div>",
+    "appChild": false
+  },
+  "screencast": {
+    "entries": 4,
+    "dimensions": "720x450 each",
+    "allPixelsPureWhite": true,
+    "filenameSuffixes": [
+      "1792581385416.jpeg",
+      "1792581385454.jpeg",
+      "1792581390560.jpeg",
+      "1792581390620.jpeg"
+    ]
+  },
+  "test": {
+    "failure": "product-database.spec.ts:4104 visibility expect for [data-testid=database-timeline] timed out at 5s",
+    "traceFrames": "1440x900"
+  },
+  "limit": "Independent trace corroboration of this startup failure only; no inference of OS/Chromium resource origin or original R1 causation.",
+  "previousArchive": "b-actual-prefix-07/artifacts/test-results/forensics--product-databas-e0044-s-and-has-no-table-fallback/trace.zip",
+  "archiveRelocation": "Byte-identical trace preserved; see artifact-relocations.json and startup-summary.archivedArtifacts SHA mapping"
+}
