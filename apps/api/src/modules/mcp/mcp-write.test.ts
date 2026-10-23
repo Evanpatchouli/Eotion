@@ -179,8 +179,9 @@ test("MCP write tools persist bounded page mutations atomically and enforce docu
     const clientB = await openClient(baseUrl, tokenB.body.token);
     const tools = (await clientA.listTools()).tools;
     assert.deepEqual(tools.map(({ name }) => name), [
-      "eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_get_page",
-      "eotion_create_page", "eotion_update_page",
+      "eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_list_databases",
+      "eotion_get_database_schema", "eotion_query_database", "eotion_get_record", "eotion_resolve_relation_records",
+      "eotion_get_page", "eotion_create_page", "eotion_update_page",
     ]);
     const annotations = new Map(tools.map(({ name, annotations }) => [name, annotations]));
     assert.deepEqual(annotations.get("eotion_create_page"), {

@@ -177,6 +177,7 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
           const result = {
             workspaces: listed.map(({ id, name }) => ({ id, name })),
           }
+          assertMcpResultSize(result)
           return {
             structuredContent: result,
             content: [{ type: 'text', text: JSON.stringify(result) }],

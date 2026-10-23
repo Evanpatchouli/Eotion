@@ -52,6 +52,7 @@ P10.2 不实现任何数据库写工具。Record / Property / View 写入、持�
 - 空数组表示本次查询明确不使用对应条件。
 - 临时配置只影响当前查询，不更新保存的 View。
 - Filter / Sort 必须通过现有领域层的属性类型与操作符校验。
+- 保存的 View 配置非法时先返回冲突，临时条件不能掩盖坏配置。只有旧 View 缺少 `config` 字段时使用默认配置；显式 `null` 不属于缺省兼容。
 - 默认页大小 25，最大 100；Filter 最多 20 条，Sort 最多 10 条，Properties 投影最多 100 个 ID。
 - 若指定 `propertyIds`，输出只包含所选属性，并自动包含 Title Property；查询内部仍使用完整属性集合完成过滤、排序与派生值计算。
 - 查询游标绑定 Workspace、Database、View、Database/View 版本、有效 Filter / Sort 配置和锚点 Page 版本。下一页请求必须重复相同的临时 Filter / Sort；更换条件后复用旧游标会返回冲突。Property 投影不改变排序或分页，因此不参与游标哈希。
@@ -77,7 +78,8 @@ P10.2 不实现任何数据库写工具。Record / Property / View 写入、持�
 - 每次调用都校验 Workspace 权限、Database / View / Record 归属。
 - 缺失对象与无权访问统一为不泄露对象存在性的 `NOT_FOUND`。
 - 读取工具将领域异常映射为 `INVALID_ARGUMENT`、`NOT_FOUND`、`CONFLICT`、`UNAVAILABLE`、`LIMIT_EXCEEDED` 或 `INTERNAL`。
-- 所有工具输出上限为 1 MiB；过大响应拒绝返回。
+- 所有工具成功结果 DTO 在实际序列化为 UTF-8 JSON 后上限为 1 MiB；过大响应拒绝返回。协议同时携带结构化结果与文本 JSON，完整 HTTP 响应包含两份 DTO 和封装开销，沿用 P6 的大小定义。
+- Record 文本和 Select options 沿用现有领域契约，不额外缩小合法值范围；实际输出仍受上述字节上限约束。新读取工具超限返回 `LIMIT_EXCEEDED`，P6 工具保留既有通用错误语义。
 - MCP 工具注解不替代服务端权限检查。
 
 ## P10.2 验收门槛

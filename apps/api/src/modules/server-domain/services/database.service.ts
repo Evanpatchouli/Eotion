@@ -135,7 +135,7 @@ export class DatabaseService {
     if (!session && properties.some(property => property.type === 'rollup' || property.type === 'formula')) {
       return this.transact(readSession => this.getViewRecords(userId, workspaceId, databaseId, viewId, input, readSession))
     }
-    const savedConfig = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+    const savedConfig = view.config === undefined ? DEFAULT_DATABASE_VIEW_CONFIG : view.config
     if (!validateDatabaseViewConfig(savedConfig, properties, view.type)) throw new ConflictException('Database view configuration is invalid; refresh and repair the view before querying it')
     const config: DatabaseViewConfig = {
       ...savedConfig,
@@ -353,7 +353,7 @@ export class DatabaseService {
     const views = await this.views.listWindow(workspaceId, databaseId, DATABASE_MAX_VIEWS + 1)
     if (views.length > DATABASE_MAX_VIEWS) throw new ConflictException('Database exceeds the maximum of 100 views')
     if (properties.filter(property => property.type === 'title').length !== 1
-      || views.some(view => !validateDatabaseViewConfig(view.config ?? DEFAULT_DATABASE_VIEW_CONFIG, properties, view.type))) {
+      || views.some(view => !validateDatabaseViewConfig(view.config === undefined ? DEFAULT_DATABASE_VIEW_CONFIG : view.config, properties, view.type))) {
       throw new ConflictException('Database schema is invalid; refresh and repair the database before reading it')
     }
     const latest = await this.databases.findInWorkspace(workspaceId, databaseId)

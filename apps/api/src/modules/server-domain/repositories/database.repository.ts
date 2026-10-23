@@ -325,6 +325,6 @@ export class DatabaseViewRepository {
     return this.update(workspaceId, databaseId, view.id, view.version, { config }, session)
   }
   private toRecord(doc: DatabaseViewDocument): DatabaseView {
-    return { id: doc.id, workspaceId: doc.workspaceId, databaseId: doc.databaseId, name: doc.name, type: doc.type, config: doc.config ?? DEFAULT_DATABASE_VIEW_CONFIG, version: doc.version, ...dates(doc) }
+    return { id: doc.id, workspaceId: doc.workspaceId, databaseId: doc.databaseId, name: doc.name, type: doc.type, config: doc.config === undefined ? DEFAULT_DATABASE_VIEW_CONFIG : doc.config, version: doc.version, ...dates(doc) }
   }
 }

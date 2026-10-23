@@ -33,7 +33,7 @@ const propertySchema = z.strictObject({
   version: z.number().int().positive(),
   createdAt: timestampSchema,
   updatedAt: timestampSchema,
-  options: z.array(selectOptionSchema).max(100).optional(),
+  options: z.array(selectOptionSchema).optional(),
   config: z.record(z.string(), z.unknown()).optional(),
 })
 
@@ -94,7 +94,7 @@ const dateRangeValueSchema = z.strictObject({
   timeZone: z.string().min(1).max(128).optional(),
 })
 const recordValueSchema = z.union([
-  z.string().max(20_000),
+  z.string(),
   z.number().finite(),
   z.boolean(),
   z.null(),

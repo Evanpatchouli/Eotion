@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
   McpGetDatabaseSchemaOutputSchema,
+  McpGetRecordOutputSchema,
   McpListDatabasesInputSchema,
   McpListDatabasesOutputSchema,
   McpQueryDatabaseInputSchema,
@@ -79,4 +80,21 @@ test('MCP database schema output rejects malformed or internal-only fields', () 
   assert.equal(McpGetDatabaseSchemaOutputSchema.safeParse({
     ...valid, capabilities: { viewTypes: ['gallery'], supportsTemporaryFiltersAndSorts: true },
   }).success, false)
+
+  const select = {
+    id: 'status', databaseId: database.id, workspaceId: database.workspaceId, name: 'Status', type: 'select',
+    version: 1, createdAt: database.createdAt, updatedAt: database.updatedAt,
+    options: Array.from({ length: 101 }, (_, index) => ({ id: `option-${index}`, name: `Option ${index}` })),
+  }
+  assert.equal(McpGetDatabaseSchemaOutputSchema.safeParse({ ...valid, properties: [title, select] }).success, true)
+})
+
+test('MCP record output accepts a legal text value over 20,000 characters', () => {
+  const createdAt = '2026-10-22T00:00:00.000Z'
+  const longText = 'x'.repeat(20_001)
+  assert.equal(McpGetRecordOutputSchema.safeParse({
+    id: 'record-1', databaseId: 'database-1', workspaceId: 'workspace-1', pageId: 'page-1',
+    properties: { title: 'Boundary record', notes: longText }, version: 1,
+    createdAt, updatedAt: createdAt, pageVersion: createdAt,
+  }).success, true)
 })
