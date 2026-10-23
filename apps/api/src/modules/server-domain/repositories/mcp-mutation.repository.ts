@@ -5,6 +5,8 @@ import type { ClientSession, Model } from 'mongoose'
 import { McpMutationReceiptDocument, McpMutationReceiptEntity } from '../schemas/mcp-mutation.schema'
 
 export type McpMutationTool = 'eotion_create_page' | 'eotion_update_page'
+  | 'eotion_create_record' | 'eotion_update_record_cell' | 'eotion_create_property'
+  | 'eotion_update_property' | 'eotion_create_view' | 'eotion_update_view' | 'eotion_rename_database'
 
 export interface McpMutationReceiptRecord<T = unknown> {
   id: string

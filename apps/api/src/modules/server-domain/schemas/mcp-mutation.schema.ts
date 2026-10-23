@@ -10,8 +10,8 @@ export class McpMutationReceiptEntity {
   @Prop({ type: String, required: true })
   userId!: string
 
-  @Prop({ type: String, required: true, enum: ['eotion_create_page', 'eotion_update_page'] })
-  tool!: 'eotion_create_page' | 'eotion_update_page'
+  @Prop({ type: String, required: true, enum: ['eotion_create_page', 'eotion_update_page', 'eotion_create_record', 'eotion_update_record_cell', 'eotion_create_property', 'eotion_update_property', 'eotion_create_view', 'eotion_update_view', 'eotion_rename_database'] })
+  tool!: import('../repositories/mcp-mutation.repository').McpMutationTool
 
   @Prop({ type: String, required: true })
   idempotencyKey!: string

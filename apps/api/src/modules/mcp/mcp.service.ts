@@ -428,7 +428,9 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       content: [{ type: 'text' as const, text: error instanceof ConflictException
         ? error.message
         : error instanceof ServiceUnavailableException
-          ? 'Page writes require MongoDB replica set transactions.'
+          ? /unconfirmed/i.test(error.message)
+            ? 'Page write commit result is unconfirmed. Retry only with the original idempotencyKey and identical payload, or read the page state.'
+            : 'Page writes require MongoDB replica set transactions.'
           : 'Unable to write page.' }],
     })
 
