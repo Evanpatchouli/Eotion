@@ -1,0 +1,152 @@
+[
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\01-typecheck.exit",
+    "archive": "gate-final-01-typecheck.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\01-typecheck.stderr.log",
+    "archive": "gate-final-01-typecheck.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\01-typecheck.stdout.log",
+    "archive": "gate-final-01-typecheck.stdout.log.gz",
+    "bytes": 452,
+    "sha256": "d086ae7c259bafe9edf973c420057f425f55db2a63c26dfb00c38ac2e98663cc"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\02-build-api.exit",
+    "archive": "gate-final-02-build-api.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\02-build-api.stderr.log",
+    "archive": "gate-final-02-build-api.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\02-build-api.stdout.log",
+    "archive": "gate-final-02-build-api.stdout.log.gz",
+    "bytes": 546,
+    "sha256": "225dd486dc0e0b32180c326f2ba3e850cada81a3d71cb0cc56426c3267c2469b"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\03-test-domain.exit",
+    "archive": "gate-final-03-test-domain.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\03-test-domain.stderr.log",
+    "archive": "gate-final-03-test-domain.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\03-test-domain.stdout.log",
+    "archive": "gate-final-03-test-domain.stdout.log.gz",
+    "bytes": 2472,
+    "sha256": "4aeba282cbd942a3c993dbbe0d398f1aac1276d9de27ab107aad1f8142119a26"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\04-test-http.exit",
+    "archive": "gate-final-04-test-http.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\04-test-http.stderr.log",
+    "archive": "gate-final-04-test-http.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\04-test-http.stdout.log",
+    "archive": "gate-final-04-test-http.stdout.log.gz",
+    "bytes": 6276,
+    "sha256": "9aa0d4454caf01e9eaca585f84b89da0abeaf307c1d88416c0ffdf3fc5a13f8a"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\05-test-mcp.exit",
+    "archive": "gate-final-05-test-mcp.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\05-test-mcp.stderr.log",
+    "archive": "gate-final-05-test-mcp.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\05-test-mcp.stdout.log",
+    "archive": "gate-final-05-test-mcp.stdout.log.gz",
+    "bytes": 6604,
+    "sha256": "391b2c17a74116e4ca5ea88bdde9e240c8aaad4f5b3c4085c5bbb84a7ddcef97"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\06-version-check.exit",
+    "archive": "gate-final-06-version-check.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\06-version-check.stderr.log",
+    "archive": "gate-final-06-version-check.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\06-version-check.stdout.log",
+    "archive": "gate-final-06-version-check.stdout.log.gz",
+    "bytes": 167,
+    "sha256": "1bcd92f1aa6e5d148609d24b4fd213213c52868927da5f2a078c360e625e3558"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\07-diff-check.exit",
+    "archive": "gate-final-07-diff-check.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\07-diff-check.stderr.log",
+    "archive": "gate-final-07-diff-check.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\07-diff-check.stdout.log",
+    "archive": "gate-final-07-diff-check.stdout.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\cleanup.json",
+    "archive": "gate-final-cleanup.json.gz",
+    "bytes": 1056,
+    "sha256": "ec6b8c382c1631e5839d431292c1dcdf5593503819d8a7025a436cd80a8cd1e4"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\source-sha256.json",
+    "archive": "gate-final-source-sha256.json.gz",
+    "bytes": 3253,
+    "sha256": "174879a951ee562e9146ab6ded73ad6baddfb68c2503cd8856bf04a3f0e0fa60"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-r2-final-20261023\\summary.json",
+    "archive": "gate-final-summary.json.gz",
+    "bytes": 6593,
+    "sha256": "0451cf7cc7175aa135a73055ecfcbb741f25bf76250de3bb263ef9c00cd9346d"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-client-up3AMo\\transcript.json",
+    "archive": "client-final-transcript.json.gz",
+    "bytes": 860214,
+    "sha256": "d80566a26d50b45464ac910b9a279cc3bb15ce19523aead926495d8790e93a7b"
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-23",
+  "review": "one independent final read-only review, with targeted closure of its finding",
+  "reviewer": "/root/final_review",
+  "result": "no remaining executable blocker; supports P10.3 Scope PASS",
+  "finding": {
+    "path": "apps/api/src/modules/mcp/mcp.service.ts",
+    "summary": "P6 mapped the shared runner's unconfirmed commit outcome to a replica-set-required error",
+    "fix": "Distinguish unconfirmed commit from standalone; require original idempotencyKey and identical payload for replay",
+    "status": "closed",
+    "regression": "Real transaction and committed receipt followed by injected UnknownTransactionCommitResult, covering create_page, update_page and create_record; original-key replay preserves DTO, entity counts and versions",
+    "red": "old compiled handler: 1 test, 0 pass, 1 fail",
+    "green": "fixed compiled handler: 1 test, 1 pass, 0 fail/skip/cancel"
+  },
+  "reviewedEvidence": {
+    "gates": "final-gates-summary.json",
+    "source": "final-source-sha256.json",
+    "client": "final-client-summary.json",
+    "cleanup": "final-gate-cleanup.json"
+  },
+  "scope": "P10.3 only; P10.4 not started; P10 not COMPLETE; P11.6 HOLD; 0.0.1/build 2 unchanged"
+}

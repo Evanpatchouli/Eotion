@@ -1,0 +1,73 @@
+{
+  "outcome": "PASS",
+  "checks": 42,
+  "evidence": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-client-up3AMo",
+  "databaseName": "eotion_p103_client_9c1a72206e5b4d32a37cc0fde21b23a5",
+  "mongoPort": 62218,
+  "owned": [
+    {
+      "name": "mongo-replica",
+      "pid": 50628,
+      "command": "C:/Program Files/MongoDB/Server/8.2/bin/mongod.exe",
+      "args": [
+        "--dbpath",
+        "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-client-up3AMo\\mongo-data",
+        "--bind_ip",
+        "127.0.0.1",
+        "--port",
+        "62218",
+        "--replSet",
+        "p103_0c65f517"
+      ],
+      "startedAt": "2026-10-23T06:48:19.363Z"
+    },
+    {
+      "name": "api-replica",
+      "pid": 27840,
+      "command": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "args": [
+        "dist/main.js"
+      ],
+      "startedAt": "2026-10-23T06:48:20.772Z"
+    },
+    {
+      "name": "api-restart",
+      "pid": 41752,
+      "command": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "args": [
+        "dist/main.js"
+      ],
+      "startedAt": "2026-10-23T06:48:23.575Z"
+    },
+    {
+      "name": "mongo-standalone",
+      "pid": 47376,
+      "command": "C:/Program Files/MongoDB/Server/8.2/bin/mongod.exe",
+      "args": [
+        "--dbpath",
+        "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-client-up3AMo\\mongo-data",
+        "--bind_ip",
+        "127.0.0.1",
+        "--port",
+        "62218"
+      ],
+      "startedAt": "2026-10-23T06:48:25.474Z"
+    },
+    {
+      "name": "api-standalone",
+      "pid": 30284,
+      "command": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "args": [
+        "dist/main.js"
+      ],
+      "startedAt": "2026-10-23T06:48:26.561Z"
+    }
+  ],
+  "processesExited": true,
+  "cleanup": {
+    "databaseDropped": true,
+    "credentialsLogged": false
+  },
+  "version": "0.0.1",
+  "buildNumber": 2
+}

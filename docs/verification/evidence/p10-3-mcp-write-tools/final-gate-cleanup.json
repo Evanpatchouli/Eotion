@@ -1,0 +1,31 @@
+{
+  "instanceIdentityPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-mongo-f54932a09398491ab17533c327537e25\\instance.json",
+  "processId": 49968,
+  "processStartUtc": "2026-10-23T06:22:50.64863Z",
+  "executable": "C:\\Program Files\\MongoDB\\Server\\8.2\\bin\\mongod.exe",
+  "dbPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-mongo-f54932a09398491ab17533c327537e25\\db",
+  "logPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-mongo-f54932a09398491ab17533c327537e25\\mongod.log",
+  "port": 51059,
+  "replicaSetName": "eotionp103f54932a0",
+  "uri": "mongodb://127.0.0.1:51059/?replicaSet=eotionp103f54932a0",
+  "databaseListBeforeProbeCleanup": [
+    "admin",
+    "config",
+    "eotion_p103_probe_1792736588660",
+    "local"
+  ],
+  "removedOnlyKnownProbeDatabase": "eotion_p103_probe_1792736588660",
+  "databaseListAfterProbeCleanup": [
+    "admin",
+    "config",
+    "local"
+  ],
+  "sourceHashesMatch": true,
+  "cleanupDecision": "normal shutdown permitted: only MongoDB system databases remain",
+  "shutdown": {
+    "method": "MongoDB admin shutdown command",
+    "processExited": true,
+    "portListeningAfterShutdown": false,
+    "verifiedAtUtc": "2026-10-23T06:49:49.9933724Z"
+  }
+}

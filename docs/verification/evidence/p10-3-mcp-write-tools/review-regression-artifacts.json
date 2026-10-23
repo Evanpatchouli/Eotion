@@ -1,0 +1,170 @@
+[
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\01-typecheck.exit",
+    "archive": "gate-r1-partial-01-typecheck.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\01-typecheck.stderr.log",
+    "archive": "gate-r1-partial-01-typecheck.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\01-typecheck.stdout.log",
+    "archive": "gate-r1-partial-01-typecheck.stdout.log.gz",
+    "bytes": 452,
+    "sha256": "d086ae7c259bafe9edf973c420057f425f55db2a63c26dfb00c38ac2e98663cc"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\02-build-api.exit",
+    "archive": "gate-r1-partial-02-build-api.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\02-build-api.stderr.log",
+    "archive": "gate-r1-partial-02-build-api.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\02-build-api.stdout.log",
+    "archive": "gate-r1-partial-02-build-api.stdout.log.gz",
+    "bytes": 546,
+    "sha256": "225dd486dc0e0b32180c326f2ba3e850cada81a3d71cb0cc56426c3267c2469b"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\03-test-domain.exit",
+    "archive": "gate-r1-partial-03-test-domain.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\03-test-domain.stderr.log",
+    "archive": "gate-r1-partial-03-test-domain.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\03-test-domain.stdout.log",
+    "archive": "gate-r1-partial-03-test-domain.stdout.log.gz",
+    "bytes": 2474,
+    "sha256": "ae2d730ccab7be95d47104e012b859b685c71dd28a0a26062875720ad8bdfdd2"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\04-test-http.exit",
+    "archive": "gate-r1-partial-04-test-http.exit.gz",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\04-test-http.stderr.log",
+    "archive": "gate-r1-partial-04-test-http.stderr.log.gz",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\04-test-http.stdout.log",
+    "archive": "gate-r1-partial-04-test-http.stdout.log.gz",
+    "bytes": 6292,
+    "sha256": "c638e236aeba3d2f17e8f968966264dbcfc33ff0e6fa06e0e4604dc7f1bab08a"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-full-gate-20261023\\source-sha256.json",
+    "archive": "gate-r1-partial-source-sha256.json.gz",
+    "bytes": 3096,
+    "sha256": "79c98d1440fec49bf9724714029e99f2a275bf328f0ba88a9679671e4c41d34f"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\build-fixed-r2.log",
+    "archive": "unknown-commit-build-fixed-r2.log.gz",
+    "bytes": 470,
+    "sha256": "b810ff8e0fb68dab7a7fbac8195d2915a1d0f9b7ab47737bf864158f9e2bfcb1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\build-fixed.log",
+    "archive": "unknown-commit-build-fixed.log.gz",
+    "bytes": 2174,
+    "sha256": "aa1df96bf6b087d44abe9068535395d76ea7fb75b6c89406c5dbcbe612c60276"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\build-unknown-commit-r3.log",
+    "archive": "unknown-commit-build-unknown-commit-r3.log.gz",
+    "bytes": 470,
+    "sha256": "b810ff8e0fb68dab7a7fbac8195d2915a1d0f9b7ab47737bf864158f9e2bfcb1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\mcp.service.after-red-r3.sha256.txt",
+    "archive": "unknown-commit-mcp.service.after-red-r3.sha256.txt.gz",
+    "bytes": 183,
+    "sha256": "3e4747a8150613d6a348613358388a3f8caaabf458d1202351b6c82af815e891"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\mcp.service.after-red.sha256.txt",
+    "archive": "unknown-commit-mcp.service.after-red.sha256.txt.gz",
+    "bytes": 183,
+    "sha256": "3e4747a8150613d6a348613358388a3f8caaabf458d1202351b6c82af815e891"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\mcp.service.fixed-r3.js",
+    "archive": "unknown-commit-mcp.service.fixed-r3.js.gz",
+    "bytes": 40027,
+    "sha256": "33408ba569fe6a9ac0a3a6f3ef2b16ff475776a2ee1e384ed78493f6ac2c5938"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\mcp.service.fixed-r3.sha256.txt",
+    "archive": "unknown-commit-mcp.service.fixed-r3.sha256.txt.gz",
+    "bytes": 183,
+    "sha256": "3e4747a8150613d6a348613358388a3f8caaabf458d1202351b6c82af815e891"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\mcp.service.fixed.js",
+    "archive": "unknown-commit-mcp.service.fixed.js.gz",
+    "bytes": 40027,
+    "sha256": "33408ba569fe6a9ac0a3a6f3ef2b16ff475776a2ee1e384ed78493f6ac2c5938"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\mcp.service.fixed.sha256.txt",
+    "archive": "unknown-commit-mcp.service.fixed.sha256.txt.gz",
+    "bytes": 183,
+    "sha256": "3e4747a8150613d6a348613358388a3f8caaabf458d1202351b6c82af815e891"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\mcp.service.red-baseline.js",
+    "archive": "unknown-commit-mcp.service.red-baseline.js.gz",
+    "bytes": 39790,
+    "sha256": "f28b90510b93bf9e927dd636d54b2087d88dc80d63a314119ced798588d53686"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\mcp.service.red-baseline.sha256.txt",
+    "archive": "unknown-commit-mcp.service.red-baseline.sha256.txt.gz",
+    "bytes": 183,
+    "sha256": "586b3935ee6b1467b352c307ef56efae855f1b8b296ba47b31e9c1a972463522"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\unknown-commit-green-r3.log",
+    "archive": "unknown-commit-unknown-commit-green-r3.log.gz",
+    "bytes": 610,
+    "sha256": "5358e42fde6c6265210a63c48a625734b1b23e12ede6f36ad7b71c1c9b62ffad"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\unknown-commit-green.log",
+    "archive": "unknown-commit-unknown-commit-green.log.gz",
+    "bytes": 1388,
+    "sha256": "418411853e91ea9170749e4a474c46799a0d031eb1781d601dcf92f371034d7f"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\unknown-commit-red-r3.log",
+    "archive": "unknown-commit-unknown-commit-red-r3.log.gz",
+    "bytes": 1366,
+    "sha256": "ebe31b970188c64626927f967417db1786d87f6b6932bd66dbb7e5ef8e88523c"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-unknown-commit-20261023\\unknown-commit-red.log",
+    "archive": "unknown-commit-unknown-commit-red.log.gz",
+    "bytes": 1366,
+    "sha256": "17bc511c032eb6fd8f24d6208e1d7441b646713fb54c06d0e6c2265f07920b38"
+  }
+]

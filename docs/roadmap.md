@@ -190,8 +190,8 @@ P9.1–P9.6 implementation COMPLETE（2026-10-13）：同一 Database 模型上�
 计划：
 
 - P10.1 Contract + Security Foundation：冻结 MCP Database DTO、工具边界、workspace scope、结果大小、分页、CAS、幂等与 mutation receipt 规则；不暴露 Mongo/Repository。
-- P10.2 Read Tools：覆盖 Database、Properties、Views、Records 与 Relation 候选解析的有界读取；支持临时 Filter / Sort（分别整体替换对应保存配置，不写回 View），复用既有 server-side filter / sort / projection / cursor 语义。实现进度与契约见 [P10 Database MCP](p10-database-mcp.md)。
-- P10.3 Write Tools：覆盖必要的 Record / Property / View 创建与更新能力，所有写入继续经过现有领域服务、权限、事务与版本检查；Page.title 仍是 Record title 唯一来源。
+- P10.2 Read Tools：已通过 `2aad764` 合入 master。覆盖 Database、Properties、Views、Records 与 Relation 候选解析的有界读取；支持临时 Filter / Sort（分别整体替换对应保存配置，不写回 View），复用既有 server-side filter / sort / projection / cursor 语义。实现进度与契约见 [P10 Database MCP](p10-database-mcp.md)。
+- P10.3 Write Tools：**完成 / Scope PASS（2026-10-23）**。七工具覆盖 Record 原子创建、单 Cell 更新、Property/View 创建与同类型更新、Database 重命名；权限/scope、客户端 CAS、提交前成功 DTO 校验和持久成功回执同一 snapshot/majority transaction，Page.title 唯一来源不变。最终 Domain16/HTTP43/MCP50、完整typecheck/build/version/diff、构建API真实Client42条与独立review通过。完整契约与证据见 [P10 Database MCP](p10-database-mcp.md)。完成后停止；P10.4待指令，P10未COMPLETE，P11.6 HOLD与0.0.1/build2不变。
 - P10.4 Final Acceptance：真实 MCP Client + HTTP/domain 回归、权限/越权、分页/限额、CAS/幂等、P6 Page MCP 兼容与 Product 回归。
 
 长期约束：

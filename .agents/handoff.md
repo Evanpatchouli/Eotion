@@ -1,5 +1,19 @@
 # Handoff
 
+## 2026-10-23 P10.3 Database MCP Write Tools（完成 / Scope PASS）
+
+用户本轮明确要求实施七个写工具、真实客户端验证、一次独立review和提交；仅本地commit，不push/merge/tag/Release/发布。起始master/2aad764，工作树干净；现工作分支 `codex/p10.3-database-mcp-write-tools`。P10.2已经合入，以下旧“未合并/实施中”仅历史，不能重复实施。版本0.0.1/build2、P11.6 HOLD保留，不启动专项诊断，不进入P10.4/P12/P15。
+
+七工具与严格输入/输出、空值和版本契约已写入 `docs/p10-database-mcp.md`；Implementation Brief与W1–W6见 `.agents/current-task.md`。领域层新增活动session复用和最小rename CAS；共用McpMutationService提取P6算法并使用snapshot/majority，把业务写、关联Page/Record/Property/View、版本、提交前DTO/大小检查和成功receipt放在一个transaction。原receipt collection/unique身份/hash/P6 DTO兼容，无TTL/pending；MCP adapter不直接访问Repository，不新建HTTP/SDK/模型或同步协议。
+
+最终单一冻结源码门槛在 `C:/Users/31250/AppData/Local/Temp/Eotion-P10.3-full-gate-r2-final-20261023`：typecheck/build:api/version:check/diff --check均exit0，Domain16/16、HTTP43/43、MCP50/50，fail/skip/cancel0；17个代码/配置/脚本SHA前后一致。新增集成定向R6为1/1，此后加入unknown回归并在最终完整MCP中通过；R1–R5夹具/期望错误原日志保留，不拼接测试结果。
+
+构建API的真实官方SDK Client最终第三轮独立PASS42条验收记录，含Record/Page/Cell/Title/Property/四View/rename、读回、replay/stale、实际网络响应丢失与服务重启；同一自有数据目录正常shutdown后以无replSet参数重启，hello证明真实standalone，七个Database和两个P6写工具均拒绝且全业务实体/版本/receipt快照不变。证据 `C:/Users/31250/AppData/Local/Temp/eotion-p103-client-up3AMo`；自有Mongo/API已退出、随机库已删除。首轮JatyF1错误夹具/清理误判、第二轮NEYZZv40条中间结果均保留。
+
+本轮唯一一次独立review已闭合，无剩余blocker。发现并修复的唯一生产问题为P6 unknown commit误报replica set，真实transaction成功提交后注入UnknownTransactionCommitResult，覆盖P6 create/update_page和Database create_record：旧compiled handler红1/0/1、修复绿1/1/0；原key replay持久DTO、实体数与版本不重复。早期green夹具提前推进主DB版本的失败单独留档，最终独立fixtureDB；dist恢复修复版并在最终门槛正常重建。
+
+正式证据及原字节SHA压缩归档在 `docs/verification/evidence/p10-3-mcp-write-tools/`，入口为p10契约验收结果。门槛自有replset51059/PID49968已按instance.json核验birth与路径后admin shutdown，端口/进程退出；清理掉唯一已知自建probe库后只剩系统库，cleanup证据已存，原27017从未连接/操作。**P10.3 Scope PASS**；本地领域提交 `3faadd2`、MCP/回归提交 `4fc4aee`，本文档/证据独立提交SHA及最终工作树见Git/交付消息。完成后停止等待P10.4，不等于P10 COMPLETE，不解除P11.6 HOLD，0.0.1/build2不变。
+
 ## 2026-10-23 P10.2 已验证补丁获授权提交推送
 
 用户最新指令为“提交并推送”，覆盖下方 2026-10-22 对本批补丁的未提交等待状态及禁止自动提交/推送约束。只交付已验证的十三个文件到 `codex/p10.2-database-mcp-read-tools`，不合并 PR、不修改 master、不解除 draft、不升级版本或发布；P11.6 HOLD 不变，交付后停止。提交前 HEAD/远端仍为 `890f478b90ed4906e908a92f11f05724efed60ad`，代码/测试七文件与冻结 SHA256 全部一致；本轮仅更新授权记录并执行 Git 交付，复用下方实际完成的验证结果。最终交付 commit、远端一致性和工作树状态以 Git 及最终回复为准。

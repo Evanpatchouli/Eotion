@@ -1,0 +1,13 @@
+{
+  "sourceHashesMatch": true,
+  "sourceFiles": 17,
+  "verifiedArchives": 70,
+  "utf8NoBomTextFiles": 31,
+  "finalClientCredentialScan": "no token-shaped values found",
+  "cleanupVerified": {
+    "method": "MongoDB admin shutdown command",
+    "processExited": true,
+    "portListeningAfterShutdown": false,
+    "verifiedAtUtc": "2026-10-23T06:49:49.9933724Z"
+  }
+}

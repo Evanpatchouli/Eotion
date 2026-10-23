@@ -1,0 +1,186 @@
+{
+  "run": "P10.3 full gates r2-final",
+  "started": "2026-10-23",
+  "sourceSha256File": "source-sha256.json",
+  "sourceFiles": 17,
+  "sourceHashesMatch": true,
+  "commands": [
+    {
+      "command": "pnpm typecheck",
+      "exit": 0,
+      "tests": null,
+      "suites": null,
+      "pass": null,
+      "fail": null,
+      "skip": null,
+      "cancelled": null
+    },
+    {
+      "command": "pnpm build:api",
+      "exit": 0,
+      "tests": null,
+      "suites": null,
+      "pass": null,
+      "fail": null,
+      "skip": null,
+      "cancelled": null
+    },
+    {
+      "command": "pnpm --filter @eotion/api test:domain",
+      "exit": 0,
+      "tests": 16,
+      "suites": 0,
+      "pass": 16,
+      "fail": 0,
+      "skip": 0,
+      "cancelled": 0
+    },
+    {
+      "command": "pnpm --filter @eotion/api test:http",
+      "exit": 0,
+      "tests": 43,
+      "suites": 0,
+      "pass": 43,
+      "fail": 0,
+      "skip": 0,
+      "cancelled": 0,
+      "breakdown": "18+1+24"
+    },
+    {
+      "command": "pnpm --filter @eotion/api test:mcp",
+      "exit": 0,
+      "tests": 50,
+      "suites": 0,
+      "pass": 50,
+      "fail": 0,
+      "skip": 0,
+      "cancelled": 0
+    },
+    {
+      "command": "pnpm version:check",
+      "exit": 0,
+      "tests": null,
+      "suites": null,
+      "pass": null,
+      "fail": null,
+      "skip": null,
+      "cancelled": null
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0,
+      "tests": null,
+      "suites": null,
+      "pass": null,
+      "fail": null,
+      "skip": null,
+      "cancelled": null
+    }
+  ],
+  "testMongoUri": "mongodb://127.0.0.1:51059/?replicaSet=eotionp103f54932a0",
+  "mongoReplicaSet": "eotionp103f54932a0",
+  "sourceCheck": [
+    {
+      "path": "apps/api/package.json",
+      "expected": "CAF1A73D47AFFD82E7A91D5E0CD159C743DAAFCB654B132590E3514CF8B651F9",
+      "actual": "CAF1A73D47AFFD82E7A91D5E0CD159C743DAAFCB654B132590E3514CF8B651F9",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/mcp/mcp-database-read.contract.ts",
+      "expected": "90C8438435400DA971C863CAAAC3BB4A8569364E96A498EFCFE6F49AC3A47624",
+      "actual": "90C8438435400DA971C863CAAAC3BB4A8569364E96A498EFCFE6F49AC3A47624",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/mcp/mcp-database-write.contract.test.ts",
+      "expected": "440AAABE7AF2420CFCC98D06C8E0F4FC4D84413491614CBF317A742A921D4193",
+      "actual": "440AAABE7AF2420CFCC98D06C8E0F4FC4D84413491614CBF317A742A921D4193",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/mcp/mcp-database-write.contract.ts",
+      "expected": "66360E89BF839BA9CE31E7C7382AFEC1232FA080E49423923A34042BFF12F308",
+      "actual": "66360E89BF839BA9CE31E7C7382AFEC1232FA080E49423923A34042BFF12F308",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/mcp/mcp-database-write.test.ts",
+      "expected": "9CFCE4C9488C179175A2DFD1ACA8379F6AA9F7326ED74EF6B7D1391F8CA4D0D4",
+      "actual": "9CFCE4C9488C179175A2DFD1ACA8379F6AA9F7326ED74EF6B7D1391F8CA4D0D4",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/mcp/mcp-write.test.ts",
+      "expected": "5F7D95BFF22EBEF8AD0C66684E4D3A64095B26D7F71E71F3C911EBD8FA8F94EE",
+      "actual": "5F7D95BFF22EBEF8AD0C66684E4D3A64095B26D7F71E71F3C911EBD8FA8F94EE",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/mcp/mcp.service.ts",
+      "expected": "7E2728457716C48A61496A3A6276BF03A21A3895E1C995A16CC9E775AA58536C",
+      "actual": "7E2728457716C48A61496A3A6276BF03A21A3895E1C995A16CC9E775AA58536C",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/mcp/mcp.test.ts",
+      "expected": "EB489FF38B0C59E9697528BBE504A73FD207FC3D77E9E83C52E079AEC2C98AD0",
+      "actual": "EB489FF38B0C59E9697528BBE504A73FD207FC3D77E9E83C52E079AEC2C98AD0",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/server-domain/repositories/database.repository.ts",
+      "expected": "DD3D52926997629BE425FA63F17C5B401D7D9D9E2183DFCBA9AE25EA5A219A73",
+      "actual": "DD3D52926997629BE425FA63F17C5B401D7D9D9E2183DFCBA9AE25EA5A219A73",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/server-domain/repositories/mcp-mutation.repository.ts",
+      "expected": "FED5171E34EAC5DC194E9EBCD33E992CC50109A657F5D1AEC1E71A641598D393",
+      "actual": "FED5171E34EAC5DC194E9EBCD33E992CC50109A657F5D1AEC1E71A641598D393",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/server-domain/schemas/mcp-mutation.schema.ts",
+      "expected": "D1E645D0BE5F4CFB293470CE34457992DDFAC0A844D34BC694D6B7E611D33E2D",
+      "actual": "D1E645D0BE5F4CFB293470CE34457992DDFAC0A844D34BC694D6B7E611D33E2D",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/server-domain/server-domain.module.ts",
+      "expected": "E71BE9D45E408979FE338B31E5B791737435693E1157BD55F2775AE2E62DE11F",
+      "actual": "E71BE9D45E408979FE338B31E5B791737435693E1157BD55F2775AE2E62DE11F",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/server-domain/services/database-mcp-mutation.service.ts",
+      "expected": "CAFBD51CA5B51611C4C9F7E39CBA0414057FFFBE1A473FF40C4D98F613BA18A6",
+      "actual": "CAFBD51CA5B51611C4C9F7E39CBA0414057FFFBE1A473FF40C4D98F613BA18A6",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/server-domain/services/database.service.ts",
+      "expected": "CEF9C000B306CF8E3B6480CD58DA70FDD0D8848E7AAEC687FA4DB6F877CC6E6F",
+      "actual": "CEF9C000B306CF8E3B6480CD58DA70FDD0D8848E7AAEC687FA4DB6F877CC6E6F",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/server-domain/services/document-mutation.service.ts",
+      "expected": "BDE0C36B8419D2F08EEEB9166D3952EF08225363DD3D5214A09BA2BA26DC7890",
+      "actual": "BDE0C36B8419D2F08EEEB9166D3952EF08225363DD3D5214A09BA2BA26DC7890",
+      "match": true
+    },
+    {
+      "path": "apps/api/src/modules/server-domain/services/mcp-mutation.service.ts",
+      "expected": "8DD226C6F227B34EFB2889ADD063D0B9EC4DF01374E36F8EEB63B0564ACC640F",
+      "actual": "8DD226C6F227B34EFB2889ADD063D0B9EC4DF01374E36F8EEB63B0564ACC640F",
+      "match": true
+    },
+    {
+      "path": "scripts/verify-p103-mcp.mjs",
+      "expected": "838BF1142B6497A92504BFF740CB479A19C44FB498F5BCA9960CB3E861040144",
+      "actual": "838BF1142B6497A92504BFF740CB479A19C44FB498F5BCA9960CB3E861040144",
+      "match": true
+    }
+  ]
+}

@@ -6,7 +6,7 @@ Eotion API 已实现 User / Cookie Session 认证，以及 Workspace、Page、Bl
 
 P6 MCP Foundation / Auth、Page 读取与写入已完成，历史范围与验收见 [P6 MCP](../p6-mcp.md)。P6 的六个既有工具保持兼容。
 
-P10.2 在独立阶段中扩展 Database 只读能力，实施进度、工具契约和验收门槛见 [P10 Database MCP](../p10-database-mcp.md)。当前新增范围仅包括数据库列表、Schema、View records 查询、单条 Record 读取与 Relation 候选解析；数据库写入、Property/View 管理、数据库重命名和数据库删除不属于 P10.2。Resources、Prompts、Agent UI、Chat UI 与 automation 仍不在本阶段范围。
+P10.2 的五个 Database 读取工具及验证修复已由 `2aad764` 合入 master。P10.3 在此基础上新增 `eotion_create_record`、`eotion_update_record_cell`、`eotion_create_property`、`eotion_update_property`、`eotion_create_view`、`eotion_update_view`、`eotion_rename_database`；总共十八工具。完整 Schema、空值/CAS/幂等契约与独立验收结果见 [P10 Database MCP](../p10-database-mcp.md)。没有 Database 创建/删除、各实体删除、类型转换、批量 Cell 或 View context 调度工具；Resources、Prompts、Agent UI、Chat UI 与 automation 仍不在本阶段范围。P10.4 尚未启动，P11.6 保持 HOLD，版本仍为 0.0.1 / build 2。
 
 ## 接入与身份
 
@@ -26,3 +26,7 @@ P10.2 在独立阶段中扩展 Database 只读能力，实施进度、工具契�
 Host / Origin 检查保护本地入口，凭证与工具结果禁用 HTTP 缓存。读写工具调用相同 application 权限入口，内容视为不可信数据。
 
 P6.3 的 `DocumentMutationService` 组合 PageService/BlockService，在同一 Mongo transaction 内执行 Page CAS、正文 reconcile、结果大小验证和持久化成功 receipt。普通 HTTP/Sync 的 Page/Block mutation 同样推进严格单调的页面版本时间；排序算法在 framework-light domain 中共享。MCP 不建立第二套 oplog，也不改变 Sync operation 协议；既有 workspace snapshot 读取服务器最终状态。MCP compound write 要求 replica set 或 mongos，standalone 明确拒绝，不继承旧 CRUD 的非事务 fallback。
+
+P10.3 把 P6 的 canonical hash、事务与成功回执编排提取到共用 `McpMutationService`，`DocumentMutationService` 保持原接口与成功 DTO。`DatabaseMcpMutationService` 只组合应用服务，DatabaseService 的内部 session-aware 通道复用同一个活动 snapshot transaction，不嵌套事务；既有 HTTP 调用仍自行开启原事务。Record/Page 原子创建，Page.title 是标题唯一来源；所有数据库写入显式校验 Database CAS，并按操作校验 Record/Property/View/Page 版本。数据库 rename 仅更新该数据库名称与版本。
+
+写权限、Workspace/Database/目标实体真实归属检查在 replay 前进行；业务 CAS 在其后。领域写入、关联清理/引用 fence、版本推进、严格 DTO 投影与1 MiB UTF-8 JSON 检查、成功 receipt 同事务以 majority write concern 提交。复用原 `(userId,tool,idempotencyKey)` 唯一键及无 TTL 的 committed-only 回执，同 key 同 payload 返回首次 DTO，不同 payload 冲突。未知 commit 结果保持未确认并要求原 key/原 payload 重试，不记成回滚；与 P11 batch 的 pending/uncertain 回执保持独立。Database 继续 online read/write，不进入 LocalStore/oplog。
