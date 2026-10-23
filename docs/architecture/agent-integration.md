@@ -2,9 +2,11 @@
 
 Eotion API 已实现 User / Cookie Session 认证，以及 Workspace、Page、Block 的 application/domain 与权限入口。MCP 是同一个 NestJS/Fastify API 中的新 interface adapter，复用这些能力，不另建业务服务或直接从 Tool 查询 MongoDB。
 
-## 当前范围
+## 已实现能力与阶段边界
 
-P6 暂时只实施 MCP，主计划与验收见 [P6 MCP](../p6-mcp.md)。P6.1 提供 `eotion_list_workspaces`，P6.2 新增有界页面列表、标题搜索与正文读取；P6.3 增加页面创建与整体正文 reconcile。Resources、Prompts、Agent UI、Chat UI、automation 和完整 Token Settings UI 均不属于当前范围。
+P6 MCP Foundation / Auth、Page 读取与写入已完成，历史范围与验收见 [P6 MCP](../p6-mcp.md)。P6 的六个既有工具保持兼容。
+
+P10.2 在独立阶段中扩展 Database 只读能力，实施进度、工具契约和验收门槛见 [P10 Database MCP](../p10-database-mcp.md)。当前新增范围仅包括数据库列表、Schema、View records 查询、单条 Record 读取与 Relation 候选解析；数据库写入、Property/View 管理、数据库重命名和数据库删除不属于 P10.2。Resources、Prompts、Agent UI、Chat UI 与 automation 仍不在本阶段范围。
 
 ## 接入与身份
 
@@ -19,7 +21,7 @@ P6 暂时只实施 MCP，主计划与验收见 [P6 MCP](../p6-mcp.md)。P6.1 提
 
 保持 `MCP transport → adapter → application service → domain → persistence`。传输/schema 留在 `apps/api`；共享领域模型不依赖 Agent 提供商。
 
-缺失/格式错误/无效/撤销/用户不存在的凭证统一返回 HTTP 401，不区分真实存在状态；内部故障只返回通用错误。已认证的工具业务故障用标准 MCP `isError` 表达，结果不含 stack、用户资料、session 或凭证。成功结果只包含稳定 Workspace/Page/Block DTO。
+缺失/格式错误/无效/撤销/用户不存在的凭证统一返回 HTTP 401，不区分真实存在状态；内部故障只返回通用错误。已认证的工具业务故障用标准 MCP `isError` 表达，结果不含 stack、用户资料、session 或凭证。成功结果只包含各工具声明的稳定业务 DTO。
 
 Host / Origin 检查保护本地入口，凭证与工具结果禁用 HTTP 缓存。读写工具调用相同 application 权限入口，内容视为不可信数据。
 

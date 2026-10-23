@@ -1,5 +1,21 @@
 # Handoff
 
+## 2026-10-23 P10.2 已验证补丁获授权提交推送
+
+用户最新指令为“提交并推送”，覆盖下方 2026-10-22 对本批补丁的未提交等待状态及禁止自动提交/推送约束。只交付已验证的十三个文件到 `codex/p10.2-database-mcp-read-tools`，不合并 PR、不修改 master、不解除 draft、不升级版本或发布；P11.6 HOLD 不变，交付后停止。提交前 HEAD/远端仍为 `890f478b90ed4906e908a92f11f05724efed60ad`，代码/测试七文件与冻结 SHA256 全部一致；本轮仅更新授权记录并执行 Git 交付，复用下方实际完成的验证结果。最终交付 commit、远端一致性和工作树状态以 Git 及最终回复为准。
+
+## 2026-10-22 P10.2 独立验证结束（补丁未提交，等待用户决定）
+
+起始工作树干净，分支 `codex/p10.2-database-mcp-read-tools`，HEAD/远端为 `890f478b90ed4906e908a92f11f05724efed60ad`；master 未动，仍 `c574b4104baeae527d77a500463f779c55845a7b`。PR #1 仍 open/draft/unmerged。本轮用户明确禁止自动 commit/push/merge/发布，该限制不能被下方历史任务授权覆盖。
+
+原提交验收 **FAIL**：MCP 32/34，两处旧六工具清单断言失败；另确认合法 20,001 字符 Text / 101 Select options 被输出 Schema 拒绝、Workspace 漏 1 MiB 检查、保存 View.config:null 被静默当作缺省。已按批准契约做最小本地修复（六行生产代码）和真实回归，全部保留未提交；没有新功能/版本/依赖变更。
+
+最终修复工作树：typecheck/build exit0；API Domain16/16、HTTP43/43、MCP43/43，skip/cancel0；真实 Inspector2.12.0 最终一次42/42、真实 standalone 负向3/3。后者确认基础 get_record 成功、两个 Formula 派生读实际 UNAVAILABLE。独立复核无未解决 blocker，代码/测试7文件冻结哈希复核一致，diff check通过。不要把本地修复后的通过结果归属原提交。
+
+完整取证根：`C:/Users/31250/AppData/Local/Temp/Eotion-P10.2-890f478b-verify-20261022`；`summary.json` 为原提交，`06-test-mcp-regression-red.log` 和 `13-null-config-red.log` 保留两组红证据；真正终态为 `final-after-null.summary.json` / `inspector-final-r2/summary.json` / `standalone-negative/summary.json`，另有逐项原始日志/客户端响应及 `final-source-sha256.json`。08–12 的早期 passing summary 是 null 修复前中间状态。
+
+自有 replica-set55882/PID21064 与 standalone57170/PID42600 均正常 shutdown，API/Token/随机 fixture DB 均清理；原用户 Mongo27017/PID4948 未连接或触碰。测试动态 SQLite module 已自动清理，所有原始证据保留。下一步仅由用户决定是否提交这批补丁；P11.6 HOLD，不进入 P10.3/P12，不重启任何历史取证任务。详细工作单元、问题证据和命令见 `.agents/current-task.md`。
+
 ## 2026-10-22 启动取证全部实验结束（停止测试，HOLD不变）
 
 证据主根p11-6-startup-forensics-20261021已有旧9完整run和用户中断；resume-20261022补12独立spec，prefix94一次有限复验94/94（worker0、实际titlePath逐项一致）。C14独立逐文件完整，除Database252/254（已挂载Frozen内容与菜单strict）外全部通过；R1 fullsync42/42，R5nested17/17。A R5x3与R1x1、B5/7/13结果见正式startup报告，不拼Product门禁。

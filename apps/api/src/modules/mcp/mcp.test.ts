@@ -8,6 +8,7 @@ import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { getConnectionToken, getModelToken } from "@nestjs/mongoose";
 import type { Connection, Model } from "mongoose";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import { DatabaseViewEntity } from "../server-domain/schemas/database-view.schema";
 import { McpCredentialEntity } from "../server-domain/schemas/mcp-credential.schema";
 import { UserEntity } from "../server-domain/schemas/user.schema";
 import { McpTokenService } from "../server-domain/services/mcp-token.service";
@@ -125,7 +126,7 @@ function assertGenericError(text: string): void {
   assert.doesNotMatch(text, /stack|userId|tokenHash|database|mongodb|exception/i);
 }
 
-test("MCP HTTP tools require bearer credentials and scope workspace access to the credential owner", async () => {
+test("MCP HTTP tools require bearer credentials and scope workspace access to the credential owner", async (t) => {
   const previousMongoUri = process.env.MONGODB_URI;
   const previousNodeEnv = process.env.NODE_ENV;
   const previousWebOrigin = process.env.WEB_ORIGIN;
@@ -152,6 +153,7 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     connection = app.get<Connection>(getConnectionToken());
     const userModel = app.get<Model<unknown>>(getModelToken(UserEntity.name));
     const credentialModel = app.get<Model<unknown>>(getModelToken(McpCredentialEntity.name));
+    const viewModel = app.get<Model<unknown>>(getModelToken(DatabaseViewEntity.name));
     const tokens = app.get(McpTokenService);
     const workspaces = app.get(WorkspaceService);
     const pages = app.get(PageService);
@@ -383,6 +385,11 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
         "eotion_list_workspaces",
         "eotion_list_pages",
         "eotion_search_pages",
+        "eotion_list_databases",
+        "eotion_get_database_schema",
+        "eotion_query_database",
+        "eotion_get_record",
+        "eotion_resolve_relation_records",
         "eotion_get_page",
         "eotion_create_page",
         "eotion_update_page",
@@ -394,6 +401,14 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
       assert.equal(toolAnnotations.get("eotion_update_page")?.readOnlyHint, false);
       assert.equal(toolAnnotations.get("eotion_update_page")?.destructiveHint, true);
       assert.equal(toolAnnotations.get("eotion_update_page")?.idempotentHint, true);
+      for (const name of [
+        "eotion_list_databases", "eotion_get_database_schema", "eotion_query_database",
+        "eotion_get_record", "eotion_resolve_relation_records",
+      ]) {
+        assert.equal(toolAnnotations.get(name)?.readOnlyHint, true);
+        assert.equal(toolAnnotations.get(name)?.destructiveHint, false);
+      }
+
       const listedA = await clientA.callTool({ name: "eotion_list_workspaces", arguments: {} });
       assert.equal(listedA.isError, undefined);
       assert.deepEqual(listedA.structuredContent, {
@@ -475,6 +490,224 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
       });
       assert.deepEqual((literalSearch.structuredContent as any).items.map(({ id }: { id: string }) => id), ["mcp-page-z"]);
       assert.equal((literalSearch.structuredContent as any).nextCursor, null);
+
+      await databases.createInPage(userA.id, "mcp-a-1", "mcp-page-b", {
+        id: "database-2", name: "Secondary MCP database", titlePropertyId: "database-2-title",
+        viewId: "database-2-view", blockId: "mcp-db2-block", orderKey: "0001", parentBlockId: null,
+      });
+      let databaseFixture = (await databases.find(userA.id, "mcp-a-1", "database-1"))!;
+      const noteProperty = await databases.createProperty(userA.id, "mcp-a-1", "database-1", {
+        id: "database-note-property", name: "Notes", type: "text", expectedDatabaseVersion: databaseFixture.version,
+      });
+      databaseFixture = noteProperty.database;
+      const recordFixtures = [
+        { id: "record-alpha", pageId: "mcp-record-page-alpha", title: "Alpha project", orderKey: "0001", properties: { "database-note-property": "alpha notes" } },
+        { id: "record-beta", pageId: "mcp-record-page-beta", title: "Beta project", orderKey: "0002", properties: { "database-note-property": "beta notes" } },
+        { id: "record-gamma", pageId: "mcp-record-page-gamma", title: "Gamma project", orderKey: "0003", properties: { "database-note-property": "gamma notes" } },
+      ] as const;
+      for (const record of recordFixtures) {
+        await databases.createRecordPage(userA.id, "mcp-a-1", "database-1", record);
+      }
+      databaseFixture = (await databases.find(userA.id, "mcp-a-1", "database-1"))!;
+      for (const view of [
+        { id: "view-list", name: "List", type: "list" },
+        { id: "view-board", name: "Board", type: "board" },
+        { id: "view-timeline", name: "Timeline", type: "timeline" },
+      ] as const) {
+        const createdView = await databases.createView(userA.id, "mcp-a-1", "database-1", {
+          ...view, expectedDatabaseVersion: databaseFixture.version,
+        });
+        databaseFixture = createdView.database;
+      }
+      const savedTableView = (await databases.listViews(userA.id, "mcp-a-1", "database-1")).find(view => view.id === "view-1")!;
+      await databases.updateView(userA.id, "mcp-a-1", "database-1", "view-1", {
+        config: {
+          filters: [{ propertyId: "database-title-property", operator: "contains", value: "Beta" }],
+          sorts: [{ propertyId: "database-title-property", direction: "desc" }],
+          visibleProperties: null, propertyOrder: null,
+        },
+        expectedDatabaseVersion: databaseFixture.version,
+        expectedViewVersion: savedTableView.version,
+      });
+
+      const databaseList = await clientA.callTool({
+        name: "eotion_list_databases", arguments: { workspaceId: "mcp-a-1", limit: 25 },
+      });
+      assert.equal(databaseList.isError, undefined);
+      assert.deepEqual((databaseList.structuredContent as any).items.map(({ id }: { id: string }) => id), ["database-1", "database-2"]);
+      assert.equal((databaseList.structuredContent as any).nextCursor, null);
+      assert.doesNotMatch(JSON.stringify(databaseList.structuredContent), /orderKey|repository|mongo/i);
+      const firstDatabaseWindow = await clientA.callTool({
+        name: "eotion_list_databases", arguments: { workspaceId: "mcp-a-1", limit: 1 },
+      });
+      const firstDatabasePayload = firstDatabaseWindow.structuredContent as any;
+      assert.deepEqual(firstDatabasePayload.items.map(({ id }: { id: string }) => id), ["database-1"]);
+      assert.equal(firstDatabasePayload.nextCursor, "database-1");
+      const secondDatabaseWindow = await clientA.callTool({
+        name: "eotion_list_databases", arguments: { workspaceId: "mcp-a-1", limit: 1, cursor: firstDatabasePayload.nextCursor },
+      });
+      assert.deepEqual((secondDatabaseWindow.structuredContent as any).items.map(({ id }: { id: string }) => id), ["database-2"]);
+      assert.equal((secondDatabaseWindow.structuredContent as any).nextCursor, null);
+
+      const databaseSchema = await clientA.callTool({
+        name: "eotion_get_database_schema", arguments: { workspaceId: "mcp-a-1", databaseId: "database-1" },
+      });
+      assert.equal(databaseSchema.isError, undefined);
+      const schemaPayload = databaseSchema.structuredContent as any;
+      assert.equal(schemaPayload.properties.find(({ id }: { id: string }) => id === "database-title-property")?.type, "title");
+      assert.deepEqual(new Set(schemaPayload.views.map(({ type }: { type: string }) => type)), new Set(["table", "list", "board", "timeline"]));
+      assert.equal(schemaPayload.capabilities.supportsTemporaryFiltersAndSorts, true);
+      assert.doesNotMatch(JSON.stringify(schemaPayload), /orderKey|repository|mongo/i);
+
+      const temporaryQuery = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: {
+          workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-1",
+          filters: [{ propertyId: "database-title-property", operator: "contains", value: "Alpha" }],
+          sorts: [{ propertyId: "database-title-property", direction: "asc" }],
+          propertyIds: [], limit: 25,
+        },
+      });
+      assert.equal(temporaryQuery.isError, undefined);
+      const temporaryPayload = temporaryQuery.structuredContent as any;
+      assert.deepEqual(temporaryPayload.records.map(({ id }: { id: string }) => id), ["record-alpha"]);
+      assert.deepEqual(temporaryPayload.properties.map(({ id }: { id: string }) => id), ["database-title-property"]);
+      assert.equal(temporaryPayload.effectiveQuery.filters[0].value, "Alpha");
+
+      const savedViewQuery = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: { workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-1" },
+      });
+      assert.equal(savedViewQuery.isError, undefined);
+      assert.deepEqual((savedViewQuery.structuredContent as any).records.map(({ id }: { id: string }) => id), ["record-beta"]);
+      const filtersOnlyQuery = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: {
+          workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-1",
+          filters: [{ propertyId: "database-title-property", operator: "contains", value: "project" }],
+        },
+      });
+      assert.equal(filtersOnlyQuery.isError, undefined);
+      assert.deepEqual((filtersOnlyQuery.structuredContent as any).records.map(({ id }: { id: string }) => id), ["record-gamma", "record-beta", "record-alpha"]);
+      assert.deepEqual((filtersOnlyQuery.structuredContent as any).effectiveQuery.sorts, [
+        { propertyId: "database-title-property", direction: "desc" },
+      ], "filters-only override must retain the saved sort");
+
+      const sortsOnlyQuery = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: {
+          workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-1",
+          sorts: [{ propertyId: "database-title-property", direction: "asc" }],
+        },
+      });
+      assert.equal(sortsOnlyQuery.isError, undefined);
+      assert.deepEqual((sortsOnlyQuery.structuredContent as any).records.map(({ id }: { id: string }) => id), ["record-beta"]);
+      assert.deepEqual((sortsOnlyQuery.structuredContent as any).effectiveQuery.filters, [
+        { propertyId: "database-title-property", operator: "contains", value: "Beta" },
+      ], "sorts-only override must retain the saved filter");
+
+      const clearedConditionsQuery = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: { workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-1", filters: [], sorts: [] },
+      });
+      assert.equal(clearedConditionsQuery.isError, undefined);
+      assert.deepEqual((clearedConditionsQuery.structuredContent as any).records.map(({ id }: { id: string }) => id), ["record-alpha", "record-beta", "record-gamma"]);
+      assert.deepEqual((clearedConditionsQuery.structuredContent as any).effectiveQuery.filters, []);
+      assert.deepEqual((clearedConditionsQuery.structuredContent as any).effectiveQuery.sorts, []);
+
+      const schemaAfterTemporaryQuery = await clientA.callTool({
+        name: "eotion_get_database_schema", arguments: { workspaceId: "mcp-a-1", databaseId: "database-1" },
+      });
+      assert.deepEqual((schemaAfterTemporaryQuery.structuredContent as any).views.find(({ id }: { id: string }) => id === "view-1").config.filters, [
+        { propertyId: "database-title-property", operator: "contains", value: "Beta" },
+      ], "temporary query must not mutate saved View configuration");
+      assert.deepEqual((schemaAfterTemporaryQuery.structuredContent as any).views.find(({ id }: { id: string }) => id === "view-1").config.sorts, [
+        { propertyId: "database-title-property", direction: "desc" },
+      ], "temporary query must not mutate saved View sort configuration");
+
+      for (const viewId of ["view-list", "view-board", "view-timeline"]) {
+        const viewQuery = await clientA.callTool({
+          name: "eotion_query_database",
+          arguments: { workspaceId: "mcp-a-1", databaseId: "database-1", viewId },
+        });
+        assert.equal(viewQuery.isError, undefined, `querying ${viewId} should succeed`);
+        assert.equal((viewQuery.structuredContent as any).records.length, 3);
+      }
+
+      const firstQueryPage = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: {
+          workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-list", limit: 1,
+          sorts: [{ propertyId: "database-title-property", direction: "asc" }], propertyIds: ["database-note-property"],
+        },
+      });
+      assert.equal(firstQueryPage.isError, undefined);
+      const firstQueryPayload = firstQueryPage.structuredContent as any;
+      assert.equal(firstQueryPayload.records[0].id, "record-alpha");
+      assert.equal(firstQueryPayload.records[0].properties["database-note-property"], "alpha notes");
+      assert.ok(firstQueryPayload.nextCursor);
+      const secondQueryPage = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: {
+          workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-list", limit: 1,
+          cursor: firstQueryPayload.nextCursor,
+          sorts: [{ propertyId: "database-title-property", direction: "asc" }], propertyIds: ["database-title-property"],
+        },
+      });
+      assert.equal(secondQueryPage.isError, undefined);
+      const secondQueryPayload = secondQueryPage.structuredContent as any;
+      assert.equal(secondQueryPayload.records[0].id, "record-beta");
+      assert.deepEqual(secondQueryPayload.properties.map(({ id }: { id: string }) => id), ["database-title-property"]);
+      assert.equal(Object.hasOwn(secondQueryPayload.records[0].properties, "database-note-property"), false);
+      const changedQueryCursor = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: {
+          workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-list", limit: 1,
+          cursor: firstQueryPayload.nextCursor,
+          sorts: [{ propertyId: "database-title-property", direction: "desc" }],
+        },
+      });
+      assert.equal(changedQueryCursor.isError, true);
+      assert.match(changedQueryCursor.content.flatMap(item => item.type === "text" ? [item.text] : []).join("\n"), /^CONFLICT:/);
+
+      const singleRecord = await clientA.callTool({
+        name: "eotion_get_record",
+        arguments: { workspaceId: "mcp-a-1", databaseId: "database-1", recordId: "record-alpha" },
+      });
+      assert.equal(singleRecord.isError, undefined);
+      assert.equal((singleRecord.structuredContent as any).properties["database-title-property"], "Alpha project");
+      const relationSearch = await clientA.callTool({
+        name: "eotion_resolve_relation_records",
+        arguments: { mode: "search", workspaceId: "mcp-a-1", databaseId: "database-1", search: "Alpha" },
+      });
+      assert.equal(relationSearch.isError, undefined);
+      assert.deepEqual((relationSearch.structuredContent as any).items.map(({ recordId }: { recordId: string }) => recordId), ["record-alpha"]);
+      const relationResolve = await clientA.callTool({
+        name: "eotion_resolve_relation_records",
+        arguments: { mode: "resolve", workspaceId: "mcp-a-1", databaseId: "database-1", recordIds: ["record-alpha"] },
+      });
+      assert.equal(relationResolve.isError, undefined);
+      assert.deepEqual((relationResolve.structuredContent as any).items, [
+        { recordId: "record-alpha", pageId: "mcp-record-page-alpha", title: "Alpha project" },
+      ]);
+
+      const privateDatabaseList = await clientA.callTool({
+        name: "eotion_list_databases", arguments: { workspaceId: "mcp-b-1" },
+      });
+      assert.equal(privateDatabaseList.isError, true);
+      const privateDatabaseError = privateDatabaseList.content.flatMap(item => item.type === "text" ? [item.text] : []).join("\n");
+      assert.match(privateDatabaseError, /^NOT_FOUND:/);
+      assert.doesNotMatch(privateDatabaseError, /mcp-b-1|userId|ownerId/i);
+
+      const invalidDatabaseQuery = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: {
+          workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-1",
+          filters: [{ propertyId: "database-title-property", operator: "contains" }],
+        },
+      });
+      assert.equal(invalidDatabaseQuery.isError, true);
+      assert.equal(invalidDatabaseQuery.structuredContent, undefined);
 
       const pageResult = await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: "mcp-page-a" } });
       assert.equal(pageResult.isError, undefined);
@@ -656,6 +889,169 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
       assertGenericError(failedTool.content.flatMap((item) => item.type === "text" ? [item.text] : []).join("\n"));
       restoreWorkspaceSpy();
       restoreWorkspaceSpy = undefined;
+
+      await t.test("MCP P10 rejects oversized workspace output with the generic P6 error", async () => {
+        const originalListByOwner = workspaces.listByOwner.bind(workspaces);
+        const createdAt = new Date().toISOString();
+        workspaces.listByOwner = async () => Array.from({ length: 6_000 }, (_, index) => ({
+          id: `oversized-workspace-${index}`, name: `Workspace ${String(index).padStart(4, "0")} ${"n".repeat(180)}`,
+          ownerId: userA.id, createdAt, updatedAt: createdAt,
+        })) as any;
+        try {
+          const oversizedWorkspace = await clientA.callTool({ name: "eotion_list_workspaces", arguments: {} });
+          assert.equal(oversizedWorkspace.isError, true);
+          assert.equal(oversizedWorkspace.structuredContent, undefined);
+          assertGenericError(oversizedWorkspace.content.flatMap(item => item.type === "text" ? [item.text] : []).join("\n"));
+        } finally {
+          workspaces.listByOwner = originalListByOwner;
+        }
+      });
+
+      const boundaryWorkspaceId = `mcp-boundary-${randomUUID()}`;
+      await workspaces.create(userA.id, { id: boundaryWorkspaceId, name: "MCP boundary fixtures" });
+      const boundaryHomeId = `${boundaryWorkspaceId}-home`;
+      await pages.create(userA.id, boundaryWorkspaceId, {
+        id: boundaryHomeId, parentPageId: null, title: "Boundary fixtures", orderKey: "0001",
+      });
+      let boundaryDatabase = (await databases.createInPage(userA.id, boundaryWorkspaceId, boundaryHomeId, {
+        id: `${boundaryWorkspaceId}-db`, name: "Boundary data", titlePropertyId: `${boundaryWorkspaceId}-title`,
+        viewId: `${boundaryWorkspaceId}-view`, blockId: `${boundaryWorkspaceId}-block`, orderKey: "0001", parentBlockId: null,
+      })).database;
+      const longText = "x".repeat(20_001);
+      const boundaryTextProperty = await databases.createProperty(userA.id, boundaryWorkspaceId, boundaryDatabase.id, {
+        id: `${boundaryWorkspaceId}-text`, name: "Long text", type: "text", expectedDatabaseVersion: boundaryDatabase.version,
+      });
+      boundaryDatabase = boundaryTextProperty.database;
+      const selectOptions = Array.from({ length: 101 }, (_, index) => ({ id: `option-${index}`, name: `Option ${index}` }));
+      const boundarySelectProperty = await databases.createProperty(userA.id, boundaryWorkspaceId, boundaryDatabase.id, {
+        id: `${boundaryWorkspaceId}-select`, name: "Status", type: "select", options: selectOptions,
+        expectedDatabaseVersion: boundaryDatabase.version,
+      });
+      const boundaryRecord = await databases.createRecordPage(userA.id, boundaryWorkspaceId, boundaryDatabase.id, {
+        id: `${boundaryWorkspaceId}-row`, pageId: `${boundaryWorkspaceId}-record-page`, title: "Boundary row", orderKey: "0001",
+        properties: { [boundaryTextProperty.property.id]: longText, [boundarySelectProperty.property.id]: "option-100" },
+      });
+
+      await t.test("MCP schema output accepts 101 Service-created Select options", async () => {
+        const result = await clientA.callTool({
+          name: "eotion_get_database_schema", arguments: { workspaceId: boundaryWorkspaceId, databaseId: boundaryDatabase.id },
+        });
+        assert.equal(result.isError, undefined);
+        assert.equal((result.structuredContent as any).properties.find(({ id }: { id: string }) => id === boundarySelectProperty.property.id).options.length, 101);
+      });
+      await t.test("MCP get_record accepts a Service-created 20,001-character Text value", async () => {
+        const result = await clientA.callTool({
+          name: "eotion_get_record", arguments: { workspaceId: boundaryWorkspaceId, databaseId: boundaryDatabase.id, recordId: boundaryRecord.record.id },
+        });
+        assert.equal(result.isError, undefined);
+        assert.equal((result.structuredContent as any).properties[boundaryTextProperty.property.id], longText);
+        assert.equal((result.structuredContent as any).properties[boundarySelectProperty.property.id], "option-100");
+      });
+      await t.test("MCP query_database accepts a Service-created 20,001-character Text value", async () => {
+        const result = await clientA.callTool({
+          name: "eotion_query_database",
+          arguments: {
+            workspaceId: boundaryWorkspaceId, databaseId: boundaryDatabase.id, viewId: `${boundaryWorkspaceId}-view`,
+            filters: [{ propertyId: `${boundaryWorkspaceId}-title`, operator: "contains", value: "Boundary" }],
+          },
+        });
+        assert.equal(result.isError, undefined);
+        assert.equal((result.structuredContent as any).records[0].properties[boundaryTextProperty.property.id], longText);
+      });
+
+      const boundaryViewId = `${boundaryWorkspaceId}-view`;
+      await t.test("MCP schema and query reject a stored null View configuration", async () => {
+        const storedView = await viewModel.findOne({ id: boundaryViewId }).lean() as { config?: unknown } | null;
+        assert.ok(storedView && Object.hasOwn(storedView, "config"));
+        const originalConfig = storedView.config;
+        await viewModel.collection.updateOne({ id: boundaryViewId }, { $set: { config: null } });
+        try {
+          const [schema, query] = await Promise.all([
+            clientA.callTool({
+              name: "eotion_get_database_schema", arguments: { workspaceId: boundaryWorkspaceId, databaseId: boundaryDatabase.id },
+            }),
+            clientA.callTool({
+              name: "eotion_query_database",
+              arguments: { workspaceId: boundaryWorkspaceId, databaseId: boundaryDatabase.id, viewId: boundaryViewId, filters: [], sorts: [] },
+            }),
+          ]);
+          assert.deepEqual([
+            schema.isError, schema.structuredContent,
+            schema.content.flatMap(item => item.type === "text" ? [item.text] : []).join("\n").slice(0, 9),
+            query.isError, query.structuredContent,
+            query.content.flatMap(item => item.type === "text" ? [item.text] : []).join("\n").slice(0, 9),
+          ], [true, undefined, "CONFLICT:", true, undefined, "CONFLICT:"]);
+        } finally {
+          await viewModel.collection.updateOne({ id: boundaryViewId }, { $set: { config: originalConfig } });
+        }
+      });
+      await t.test("MCP schema and query accept a legacy View with missing configuration", async () => {
+        const storedView = await viewModel.findOne({ id: boundaryViewId }).lean() as { config?: unknown } | null;
+        assert.ok(storedView && Object.hasOwn(storedView, "config"));
+        const originalConfig = storedView.config;
+        await viewModel.collection.updateOne({ id: boundaryViewId }, { $unset: { config: "" } });
+        try {
+          const [schema, query] = await Promise.all([
+            clientA.callTool({
+              name: "eotion_get_database_schema", arguments: { workspaceId: boundaryWorkspaceId, databaseId: boundaryDatabase.id },
+            }),
+            clientA.callTool({
+              name: "eotion_query_database",
+              arguments: { workspaceId: boundaryWorkspaceId, databaseId: boundaryDatabase.id, viewId: boundaryViewId, filters: [], sorts: [] },
+            }),
+          ]);
+          assert.deepEqual({
+            schemaError: schema.isError,
+            schemaConfig: (schema.structuredContent as any)?.views?.find(({ id }: { id: string }) => id === boundaryViewId)?.config,
+            queryError: query.isError,
+            queryRecords: (query.structuredContent as any)?.records?.map(({ id }: { id: string }) => id),
+          }, {
+            schemaError: undefined,
+            schemaConfig: { filters: [], sorts: [], visibleProperties: null, propertyOrder: null },
+            queryError: undefined,
+            queryRecords: [boundaryRecord.record.id],
+          });
+        } finally {
+          await viewModel.collection.updateOne({ id: boundaryViewId }, { $set: { config: originalConfig } });
+        }
+      });
+
+      const oversizedWorkspaceId = `${boundaryWorkspaceId}-large`;
+      await workspaces.create(userA.id, { id: oversizedWorkspaceId, name: "Large serialized record" });
+      const oversizedHomeId = `${oversizedWorkspaceId}-home`;
+      await pages.create(userA.id, oversizedWorkspaceId, {
+        id: oversizedHomeId, parentPageId: null, title: "Large output fixture", orderKey: "0001",
+      });
+      const oversizedDatabase = (await databases.createInPage(userA.id, oversizedWorkspaceId, oversizedHomeId, {
+        id: `${oversizedWorkspaceId}-db`, name: "Large record", titlePropertyId: `${oversizedWorkspaceId}-title`,
+        viewId: `${oversizedWorkspaceId}-view`, blockId: `${oversizedWorkspaceId}-block`, orderKey: "0001", parentBlockId: null,
+      })).database;
+      const oversizedTextProperty = await databases.createProperty(userA.id, oversizedWorkspaceId, oversizedDatabase.id, {
+        id: `${oversizedWorkspaceId}-text`, name: "Large text", type: "text", expectedDatabaseVersion: oversizedDatabase.version,
+      });
+      const oversizedText = `${"a\t\\\n".repeat(180_000)}${"界".repeat(120_000)}`;
+      assert.ok(Buffer.byteLength(JSON.stringify(oversizedText)) > 1_048_576, "fixture must exceed 1 MiB after JSON escaping and UTF-8 encoding");
+      const oversizedRecord = await databases.createRecordPage(userA.id, oversizedWorkspaceId, oversizedDatabase.id, {
+        id: `${oversizedWorkspaceId}-row`, pageId: `${oversizedWorkspaceId}-record-page`, title: "Oversized record", orderKey: "0001",
+        properties: { [oversizedTextProperty.property.id]: oversizedText },
+      });
+      await t.test("MCP get_record rejects a record over 1 MiB after serialization", async () => {
+        const result = await clientA.callTool({
+          name: "eotion_get_record", arguments: { workspaceId: oversizedWorkspaceId, databaseId: oversizedDatabase.id, recordId: oversizedRecord.record.id },
+        });
+        assert.equal(result.isError, true);
+        assert.equal(result.structuredContent, undefined);
+        assert.match(result.content.flatMap(item => item.type === "text" ? [item.text] : []).join("\n"), /^LIMIT_EXCEEDED:/);
+      });
+      await t.test("MCP query_database rejects a record over 1 MiB after serialization", async () => {
+        const result = await clientA.callTool({
+          name: "eotion_query_database",
+          arguments: { workspaceId: oversizedWorkspaceId, databaseId: oversizedDatabase.id, viewId: `${oversizedWorkspaceId}-view` },
+        });
+        assert.equal(result.isError, true);
+        assert.equal(result.structuredContent, undefined);
+        assert.match(result.content.flatMap(item => item.type === "text" ? [item.text] : []).join("\n"), /^LIMIT_EXCEEDED:/);
+      });
     } finally {
       await clientA.close();
     }
@@ -707,7 +1103,9 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     assert.ok(await tokens.resolve(revokedCredential.token), "another user cannot revoke A's credential");
     const revocationClient = await openClient(revokedCredential.token);
     assert.deepEqual((await revocationClient.listTools()).tools.map(({ name }) => name), [
-      "eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_get_page", "eotion_create_page", "eotion_update_page",
+      "eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_list_databases",
+      "eotion_get_database_schema", "eotion_query_database", "eotion_get_record", "eotion_resolve_relation_records",
+      "eotion_get_page", "eotion_create_page", "eotion_update_page",
     ]);
     await tokens.revoke(userA.id, revokedCredential.credential.id);
     assert.equal(await tokens.resolve(revokedCredential.token), null);

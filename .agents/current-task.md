@@ -1,4 +1,86 @@
-# 当前任务：P11.6 启动故障专项诊断（取证结束，HOLD不变）
+# 当前任务：P10.2 独立验证与代码审查（2026-10-22）
+
+## 2026-10-23 提交与推送授权
+
+用户在验证报告后明确要求“提交并推送”，授权将下述已验证的十三个文件作为同一修复单元提交并推送到 `codex/p10.2-database-mcp-read-tools`。该指令覆盖此前仅针对本批补丁的“不自动提交/推送、等待用户决定”；不授权合并 PR、修改 master、解除 draft、升级版本或发布。提交前复核工作树范围、HEAD/远端与七个代码/测试文件冻结哈希，均与验证结果一致，无新增用户改动；只更新交付授权文档，不重复运行未变化源码的完整测试。交付 SHA、推送状态与最终工作树以 Git 及最终回复为准；P11.6 继续 HOLD，交付后停止。
+
+验证目标：`codex/p10.2-database-mcp-read-tools` / `890f478b90ed4906e908a92f11f05724efed60ad`。
+起始工作树干净；本地 HEAD 与 `git ls-remote` 返回的目标远端 HEAD 一致，master 为 `c574b4104baeae527d77a500463f779c55845a7b`。
+
+| 单元 | 模式 / 角色 | 验收 / 状态 |
+| --- | --- | --- |
+| V1 | investigate / 主 Agent | 工作区、分支、远端、PR 与规则核对完成 |
+| V2 | review / reviewer | 原实现及末态最小修复已独立复核，当前补丁无未解决 blocker |
+| V3 | review / 主 Agent | 领域/游标/权限审查及最终源码 Inspector 42/42、真实 standalone 负向 3/3 完成 |
+| V4 | investigate → verify / S0 scout | 原提交基线、两组红绿与最终五项完整门槛均已执行，终态全部通过、0 skip/cancel |
+| V5 | decide → execute / 主 Agent + S1 fast_worker | 六行生产修复、完整工具清单和回归已验证；2026-10-23 用户授权本批提交推送，原提交验收 FAIL |
+
+2026-10-22 验证阶段不自动 commit / push / merge / 发布；其后的提交推送授权见上文，仍不得修改 master。修复前先记录问题与证据，修复后重跑受影响验证。P11.6 保持 HOLD，不进入 P10.3 / P12。
+
+## 修复前审查证据
+
+- P1 测试阻断：`apps/api/src/modules/mcp/mcp.test.ts:893-895` 与 `mcp-write.test.ts:181-184` 的工具清单仍期待六工具，而服务实际注册十一工具；首次完整 MCP 运行已复现这两项失败（32/34，exit 1），仅更新完整清单，不删断言。
+- P2 输出不兼容：`mcp-database-read.contract.ts:36,97` 给 Select options / Record string 新增 100 / 20,000 限制，但 `packages/contracts/src/index.ts:265-284` 和 `packages/domain/src/database.ts` 允许更大合法值；导致未达 1 MiB 的合法读取在输出 parse 时误报 INTERNAL。最小修复为去掉这两个额外限制，继续检查真实序列化 DTO 字节，并补真实 MCP 回归。
+- P2 资源限制遗漏：`mcp.service.ts:176-183` 的 `eotion_list_workspaces` 是唯一未调用 `assertMcpResultSize` 的成功结果路径，与 P10 所有工具 1 MiB 上限不符。最小修复仅补同一 DTO 大小检查，保留 P6 schema 与原通用错误语义，不截断结果。
+- 文档：`docs/runbooks/testing.md` 的 MCP 段仍只描述 P6，收口时补 P10 读取覆盖；复核确认原段未列四文件清单，不将此前协作摘要中的“漏文件清单”当作缺陷。
+- 验收缺口：原新增用例未运行覆盖新工具大小错误、合法长值、派生读取和读取中版本冲突；需实际补验证，不从 happy path 推断通过。
+
+首次验证环境：Node 24.22.0 / pnpm 10.34.2；独立 TEMP MongoDB 8.2.3 replica set（55882，`eotion_p102_890f478b`），已确认 PRIMARY 与事务 probe。原用户 Mongo 27017 不触碰。原始日志根：`C:/Users/31250/AppData/Local/Temp/Eotion-P10.2-890f478b-verify-20261022`。
+
+首次结果：typecheck / build:api exit 0；Domain 16/16、HTTP 43/43、MCP 32/34（两处旧六工具清单断言），测试 skip 0。真实 Inspector 2.12.0（Streamable HTTP）已发现十一工具，并用真实领域服务创建的 101 选项 Select 复现 Schema 工具返回 INTERNAL（`inspector-baseline-r4/03-schema.stdout.json`，客户端 exit 5）。临时验收脚本前两次 fixture/CLI 输出读取错误已纠正，保留各次独立日志，不将其计为产品缺陷。
+
+新增回归在未修复生产代码上实际运行：41 项，32 通过 / 9 失败 / 0 skip（`06-test-mcp-regression-red.log`，exit 1）；八项具体边界失败加父集成用例聚合失败。包含超大 Workspace 未拒绝、101 options / 20,001 字文本被拒，以及 >1 MiB Record 实际 INTERNAL 而非 LIMIT_EXCEEDED。随后仅对生产代码做三行修复：移除两处额外 max，补 Workspace DTO guard。测试保留完整十一工具清单及 P6 原行为，未删断言或跳过测试。正在执行修复后的定向与完整验证。
+
+后续明确失败（修复前记录）：真实 Inspector 将保存的 View.config 设为 null，query 带 filters:[]/sorts:[] 仍成功，违反非法保存配置不得静默忽略；证据 `inspector-null-config-probe/null-saved-config.stdout.json`（实际客户端 exit 0，预期冲突 exit 5）。`DatabaseView` / domain validator 只允许 config 缺省为 undefined，P8 文档仅承诺旧 View 缺少字段的默认兼容；repository `database.repository.ts:328` 的 `?? DEFAULT` 先掩盖 null，`DatabaseService:138,356` 又有同类回退。拟最小修复只对 undefined 使用默认值，保留并拒绝 null；补缺省兼容/null拒绝回归，重新验证。此前三行修复的 MCP 41/41 与 Inspector 38/38 仅为中间结果，不据此宣称最终 PASS。
+
+## 最终验证结果（本地未提交修复工作树）
+
+- `pnpm typecheck`：exit 0（`15-typecheck-final.log`）。
+- `pnpm build:api`：exit 0（`16-build-api-final.log`）。
+- API `test:domain`：16/16，exit 0（`17-domain-final.log`）。
+- API `test:http`：18 + 1 + 24 = 43/43，exit 0（`18-http-final.log`）。
+- API `test:mcp`：43/43，exit 0（`19-mcp-final.log`）。最终所有测试 skip/cancel 0；汇总 `final-after-null.summary.json`，不以先前 08–12 的中间结果替代终态。
+- Null 配置回归：旧代码 43 项 41 通过 / 2 失败（null 子例和父聚合失败）；缺少配置及大小子例实际均已执行通过。三处仅 undefined 默认的修复后，43/43 通过（`13-null-config-red.log` / `14-null-config-fixed.log`）。
+- 真实 MCP Inspector 2.12.0（进程外 CLI / Streamable HTTP）最终一次 42/42，harness exit 0；预期工具错误的 CLI exit 5 也按实际响应断言，原始结果见 `inspector-final-r2/summary.json` 与逐项 stdout/stderr。包含四 View 保存 Filter/Sort、临时查询/投影、Formula/Rollup/Timeline Date+Dependency、权限等价、游标作用域与版本、读间真实 mutation 冲突、损坏/null 配置和缺省兼容、实际序列化大小错误；Token/fixture DB/API 已清理。
+- 真实独立 standalone Mongo 负向：3/3，launcher/Node exit 0；基础 get_record 成功，Formula get_record/query 均 UNAVAILABLE 且脱敏；未 mock 事务能力，hello 确认非 replica set。首次 launcher 启动退出未启动 API，修正 TEMP 启动参数并记录 stderr 后完整通过，不归因为产品缺陷。证据 `standalone-negative/summary.json`；自有 57170/PID42600、Token/fixture DB/API 已清理。
+- 最终独立复核未发现新的 blocker；`git diff --check` 通过；七个代码/测试文件与冻结的 `final-source-sha256.json` 均一致。生产改动仅六行，未更改模型、工具范围或已批准查询语义。
+- 最终远端复核：PR #1 仍 open/draft/unmerged；目标远端/HEAD 仍 `890f478b90ed4906e908a92f11f05724efed60ad`；master 仍 `c574b4104baeae527d77a500463f779c55845a7b`。**指定提交验收 FAIL**，本地修复验证通过不能归属原提交。没有 commit/push/merge/发布，等用户决定是否提交补丁；P11.6 HOLD 不变。
+- 清理：55882/PID21064 按已核对的 birth 身份正常 admin shutdown，进程和监听均消失，关闭前仅 admin/config/local 系统库；`cleanup.json` 为直接证据。原 27017/PID4948 保持监听且未连接/触碰。两轮自有 API、临时 Token/数据库及 sync 生成的 SQLite 测试文件均已清理；未删除原始证据。
+
+以下为实现阶段与更早任务的原始记录，验证结论另行记录，不继承其正确性假设。
+
+---
+
+# 历史任务：P10.2 Database MCP Read Tools（2026-10-22）
+
+P10.1 最终契约已获用户批准。当前在独立分支 `codex/p10.2-database-mcp-read-tools` 实施只读工具；草稿 PR：[P10.2: add database MCP read tools](https://github.com/Evanpatchouli/Eotion/pull/1)。本地 Windows / WSL 工作树未连接到当前执行环境，不能推断用户本地是否存在未提交改动。
+
+## 当前范围
+
+- 新增 `eotion_list_databases`、`eotion_get_database_schema`、`eotion_query_database`、`eotion_get_record`、`eotion_resolve_relation_records`。
+- 复用现有 `DatabaseService.getViewRecords`，临时 Filter / Sort 分别整体替换对应保存配置，不修改 View。
+- 支持 Table / List / Board / Timeline；保持 P6 六工具兼容。
+- 不做 Database / Record / Property / View 写工具，不做数据库删除，不改版本。
+- P11.6 保持 HOLD，不调查；不进入 P12。
+
+## 工作单元
+
+- [x] 只读审计远端 master、领域服务、MCP 契约、测试与相关文档。
+- [x] 增加五个工具的输入/输出契约及读取服务。
+- [x] 增加契约测试与 MCP 集成测试。
+- [x] 更新 Roadmap、P10 契约文档与检索索引。
+- [ ] 在具备项目依赖和 Mongo 测试环境的机器执行 typecheck/build/domain/http/mcp。
+- [ ] 真实 MCP Client 验收与独立 review。
+
+## 验证边界
+
+远端 master 基线为 `c574b4104baeae527d77a500463f779c55845a7b`。本次实现提交位于独立分支与草稿 PR，未合并。当前环境没有项目本地 clone，且无法从 npm registry 下载 pnpm/依赖；未执行任何测试或构建，不能标记 PASS。仓库树中未发现 GitHub Actions workflow，当前实现 commit 没有状态检查。
+
+以下保留前一项 P11.6 任务的历史取证记录，不代表重新启动该任务。
+
+---
+
+# 历史任务：P11.6 启动故障专项诊断（取证结束，HOLD不变）
 
 2026-10-22 最终实验已结束，不再启动测试。R5原目标A三次通过，R1单例通过；B脚本前5为111/111、历史实际前7为363/365（theme启动buffer与菜单定位）、实际前13为496/497（菜单定位）；R1/R5目标通过。C14文件各独立runner全部完成，只有Database252/254（Frozen内容、属性菜单），其余文件通过，所有workers1/retries0；不拼成完整Product。D原前94项一次有限复验94/94、worker0且实际顺序逐项一致，无稳定最小因果前缀。
 

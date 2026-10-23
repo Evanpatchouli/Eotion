@@ -61,6 +61,8 @@ P5.4 增加 `pnpm --filter @eotion/web test:offline-shell`：构建生产 Web �
 
 `pnpm --filter @eotion/api test:mcp` 使用同一个 `P4_TEST_MONGODB_URI` 配置，并创建、清理随机隔离数据库。真实 Nest/Fastify `/mcp` + 官方 SDK Client 覆盖独立 Bearer 认证、Token provisioning/hash/撤销、跨用户 Workspace 隔离、协议兼容与通用错误；不需要真实 OSS。Codex 配置与阶段验收见 [P6 MCP](../p6-mcp.md)。
 
+P10.2 扩展同一命令的 Database 读取契约与集成回归，覆盖五个读取工具、四种 View、临时 Filter / Sort、投影分页和序列化结果大小边界，仍运行 P6 读写回归。完整 Domain / HTTP / MCP 门槛应使用 Mongo replica set，并显式设置隔离环境的 `P4_TEST_MONGODB_URI`；不能以 standalone 下的事务分支早退替代验证。真实 Inspector / Codex 验收另行执行，见 [P10 Database MCP](../p10-database-mcp.md)。
+
 P5.6 Settings 产品测试包含在 `test:product`；主题补测使用 `pnpm --filter @eotion/web exec playwright test tests/theme.spec.ts`，生产入口早期主题检查使用 `pnpm --filter @eotion/web exec playwright test --config playwright.theme-production.config.ts`。`test:real-sync` 同时验证跨客户端昵称与修改密码后的会话撤销。端口被现有服务占用时，可设置 `EOTION_REAL_API_PORT` 和 `EOTION_REAL_WEB_PORT`（默认 7137/4173）使用隔离端口；它同步配置 API Origin 与 preview proxy，不需要停用已有服务。Docker replica set 对外暴露本机端口而广告容器内部地址时，测试 URI 增加 `directConnection=true`；使用隔离测试库，不改动现有数据库。
 
 ## Desktop production real integration
