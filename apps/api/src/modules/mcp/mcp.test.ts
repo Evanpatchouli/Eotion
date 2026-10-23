@@ -381,18 +381,12 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     const clientA = await openClient(issuedA.body.token);
     try {
       const initialization = await clientA.listTools();
-      assert.deepEqual(initialization.tools.map(({ name }) => name), [
-        "eotion_list_workspaces",
-        "eotion_list_pages",
-        "eotion_search_pages",
-        "eotion_list_databases",
-        "eotion_get_database_schema",
-        "eotion_query_database",
-        "eotion_get_record",
-        "eotion_resolve_relation_records",
-        "eotion_get_page",
-        "eotion_create_page",
-        "eotion_update_page",
+      assert.deepEqual(initialization.tools.map(({ name }) => name).sort(), [
+        "eotion_create_page", "eotion_create_property", "eotion_create_record", "eotion_create_view",
+        "eotion_get_database_schema", "eotion_get_page", "eotion_get_record", "eotion_list_databases",
+        "eotion_list_pages", "eotion_list_workspaces", "eotion_query_database", "eotion_rename_database",
+        "eotion_resolve_relation_records", "eotion_search_pages", "eotion_update_page", "eotion_update_property",
+        "eotion_update_record_cell", "eotion_update_view",
       ]);
       const toolAnnotations = new Map(initialization.tools.map(({ name, annotations }) => [name, annotations]));
       assert.equal(toolAnnotations.get("eotion_create_page")?.readOnlyHint, false);
@@ -1102,10 +1096,12 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
     await tokens.revoke(userB.id, revokedCredential.credential.id);
     assert.ok(await tokens.resolve(revokedCredential.token), "another user cannot revoke A's credential");
     const revocationClient = await openClient(revokedCredential.token);
-    assert.deepEqual((await revocationClient.listTools()).tools.map(({ name }) => name), [
-      "eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_list_databases",
-      "eotion_get_database_schema", "eotion_query_database", "eotion_get_record", "eotion_resolve_relation_records",
-      "eotion_get_page", "eotion_create_page", "eotion_update_page",
+    assert.deepEqual((await revocationClient.listTools()).tools.map(({ name }) => name).sort(), [
+      "eotion_create_page", "eotion_create_property", "eotion_create_record", "eotion_create_view",
+      "eotion_get_database_schema", "eotion_get_page", "eotion_get_record", "eotion_list_databases",
+      "eotion_list_pages", "eotion_list_workspaces", "eotion_query_database", "eotion_rename_database",
+      "eotion_resolve_relation_records", "eotion_search_pages", "eotion_update_page", "eotion_update_property",
+      "eotion_update_record_cell", "eotion_update_view",
     ]);
     await tokens.revoke(userA.id, revokedCredential.credential.id);
     assert.equal(await tokens.resolve(revokedCredential.token), null);

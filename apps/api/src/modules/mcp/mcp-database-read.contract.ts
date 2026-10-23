@@ -13,7 +13,7 @@ const cursorSchema = z.string().min(1).max(16_384).refine(value => value.trim() 
 const databaseCursorSchema = z.string().min(1).max(256).refine(value => value.trim() === value)
 const timestampSchema = z.string().min(1).max(64)
 
-const databaseSummarySchema = z.strictObject({
+export const databaseSummarySchema = z.strictObject({
   id: idSchema,
   workspaceId: idSchema,
   name: z.string().min(1).max(200),
@@ -24,7 +24,7 @@ const databaseSummarySchema = z.strictObject({
 
 const selectOptionSchema = z.strictObject({ id: idSchema, name: z.string().min(1).max(200) })
 const propertyTypeSchema = z.enum(['title', 'text', 'number', 'checkbox', 'select', 'date', 'relation', 'rollup', 'formula'])
-const propertySchema = z.strictObject({
+export const propertySchema = z.strictObject({
   id: idSchema,
   databaseId: idSchema,
   workspaceId: idSchema,
@@ -76,7 +76,7 @@ const viewConfigSchema = z.strictObject({
   propertyOrder: z.array(idSchema).max(DATABASE_MAX_PROPERTIES).nullable(),
   options: z.record(z.string(), z.unknown()).optional(),
 })
-const viewSchema = z.strictObject({
+export const viewSchema = z.strictObject({
   id: idSchema,
   databaseId: idSchema,
   workspaceId: idSchema,
@@ -101,7 +101,7 @@ const recordValueSchema = z.union([
   z.array(z.string().max(256)).max(DATABASE_RELATION_MAX_LINKS),
   dateRangeValueSchema,
 ])
-const recordSchema = z.strictObject({
+export const recordSchema = z.strictObject({
   id: idSchema,
   databaseId: idSchema,
   workspaceId: idSchema,
