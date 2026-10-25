@@ -76,3 +76,18 @@ curl -I http://127.0.0.1:8002/changelog
 
 
 下载域名的 DNS、Let's Encrypt 证书和 302 规则由 `Evanpatchouli/nginx-config` 的 `conf.d/download.conf` 与 `deploy-download.sh` 维护。底层对象存储当前为 `https://evan-oss-download.oss-cn-hangzhou.aliyuncs.com`；未来替换存储/CDN 时，不应改动公开下载 URL，只调整下载网关的 302 目标。
+
+
+## 当前 Windows 0.0.1 下载配置
+
+以下链接已于 2026-10-26 对照 OSS 实际对象验证，下载网关按原路径 302 到 OSS。三个 Windows 渠道使用 0.0.1；Android APK 与 HarmonyOS HAP 暂不配置。
+
+```dotenv
+EOTION_DOWNLOAD_WINDOWS_INSTALLER_URL=https://download.evanpatchouli.space/eotion/release/0.0.1/Eotion-Setup-0.0.1.exe
+EOTION_DOWNLOAD_WINDOWS_PORTABLE_URL=https://download.evanpatchouli.space/eotion/release/0.0.1/Eotion-0.0.1-portable.exe
+EOTION_DOWNLOAD_WINDOWS_ZIP_URL=https://download.evanpatchouli.space/eotion/release/0.0.1/Eotion-0.0.1-win-x64.zip
+EOTION_DOWNLOAD_ANDROID_APK_URL=
+EOTION_DOWNLOAD_HARMONY_HAP_URL=
+```
+
+这些变量写入服务器根 `.env` 并由 `deploy-site.sh` 在构建时注入；只重启容器不会更新官网按钮。匿名 HEAD、重定向目标、文件大小与 Range 文件头已验证，未执行安装包。
