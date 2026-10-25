@@ -10,7 +10,7 @@ Internet
 https://eotion.evanpatchouli.space
   ↓
 nginx container :443
-  ↓ eotion-app
+  ↓ public-web
 eotion-web:80
   ├─ static web
   ├─ /api/* → eotion-api:7137
@@ -19,7 +19,7 @@ eotion-web:80
                    └─ ali-oss network → ali-oss-server:9512
 ```
 
-公网只需要开放 80/443。Eotion API 不映射宿主机端口；Web 的 `127.0.0.1:8001` 仅保留给宿主机诊断，生产 Nginx 通过固定 Docker 网络 `eotion-app` 直接访问 `eotion-web:80`。
+公网只需要开放 80/443。Eotion API 不映射宿主机端口；Web 的 `127.0.0.1:8001` 仅保留给宿主机诊断。`eotion-web` 同时加入内部 `eotion-app`（访问 API）和边缘 `public-web`（供生产 Nginx 访问）；Nginx 继续保留 `nginx_web` 与 `public-web` 网络，不加入 `eotion-app`。
 
 ## Prerequisites
 
@@ -30,18 +30,21 @@ eotion-web:80
 - MongoDB 已启用 replica set；当前正式环境使用单节点 `rs0`，member 为 `mongodb:27017`，状态为 `PRIMARY`。
 - MongoDB 已创建 Eotion 专用用户，并具有 `eotion` 数据库的 `readWrite` 权限。
 - 外部 Docker network `ali-oss` 已存在，且 `ali-oss-server` 容器已加入。
+- 外部 Docker network `public-web` 已存在，且 `eotion-web` 容器已加入。
 - ali-oss-server 已创建供 Eotion 使用的 client id / client secret。
 - `eotion.evanpatchouli.space` 的 DNS 已指向服务器。
-- `nginx-config` 仓库已部署，并可将 nginx 容器加入 external network `eotion-app`。
+- `nginx-config` 仓库已部署，Nginx 容器已加入 external network `public-web`。
 
 检查外部网络：
 
 ```bash
 docker network inspect mongo >/dev/null && echo "mongo network OK"
 docker network inspect ali-oss >/dev/null && echo "ali-oss network OK"
+docker network inspect public-web >/dev/null && echo "public-web network OK"
 ```
 
 MongoDB 与 ali-oss-server 应分别出现在对应 network 的 Containers 中。
+部署 Eotion Web 后，也应确认 `eotion-web` 出现在 `public-web` 的 Containers 中。
 
 ## Environment
 
@@ -127,13 +130,13 @@ curl http://127.0.0.1:8001/api/health
 
 ## Edge Nginx
 
-线上 Nginx 配置由独立仓库 `Evanpatchouli/nginx-config` 维护。Eotion Compose 将内部 `app` 网络固定命名为 `eotion-app`，Nginx 容器加入该 external network 后直接代理到 `eotion-web:80`。
+线上 Nginx 配置由独立仓库 `Evanpatchouli/nginx-config` 维护。Eotion Compose 将内部 `app` 网络固定命名为 `eotion-app`，供 `eotion-web` 与 `eotion-api` 通信；`eotion-web` 同时加入 external `public-web`，Nginx 通过该边缘网络代理到 `eotion-web:80`。Nginx 保持连接现有 `nginx_web` 和 `public-web` 网络，不加入 `eotion-app`。
 
 先确认网络和 Eotion Web：
 
 ```bash
-docker network inspect eotion-app
-docker ps --filter name=eotion-web
+docker network inspect public-web
+docker inspect eotion-web --format '{{json .NetworkSettings.Networks}}'
 ```
 
 然后部署 Nginx：

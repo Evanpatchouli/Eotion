@@ -43,7 +43,7 @@ Build 会先执行 VitePress 的 Markdown 链接检查，再检查静态 HTML �
 
 ## 容器与入口
 
-`docker-compose.yml` 的 `eotion-site` 服务使用 `apps/site/Dockerfile` 多阶段构建静态文件，由独立 Nginx 容器提供。它不加入产品 `eotion-app` 网络，而只加入独立的边缘网络 `public-web`，并仅映射宿主机 `127.0.0.1:8002:80` 供诊断；产品 `eotion-web` 继续使用 `eotion-app` 与 `127.0.0.1:8001:80`。官网容器没有 API 或数据库依赖。
+`docker-compose.yml` 的 `eotion-site` 服务使用 `apps/site/Dockerfile` 多阶段构建静态文件，由独立 Nginx 容器提供。它不加入产品 `eotion-app` 网络，而只加入独立的边缘网络 `public-web`，并仅映射宿主机 `127.0.0.1:8002:80` 供诊断；产品 `eotion-web` 同时加入 `eotion-app` 与 `public-web`，并映射宿主机 `127.0.0.1:8001:80` 供诊断。官网容器没有 API 或数据库依赖。
 
 先检查展开后的构建参数，再单独部署官网：
 
