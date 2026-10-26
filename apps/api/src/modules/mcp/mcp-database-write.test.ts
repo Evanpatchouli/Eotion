@@ -317,6 +317,29 @@ test("Database MCP write tools enforce scope, CAS, replay and transactional proj
     assert.deepEqual(success(await invoke("eotion_create_view", viewCreateInput)), createdView);
     failure(await invoke("eotion_create_view", { ...viewCreateInput, name: "Changed Board" }), /idempot|key|conflict/i);
 
+    const canonicalViewInput = {
+      ...scope, expectedDatabaseVersion: dbVersion, name: "Canonical JSON view", type: "table",
+      config: {
+        filters: [], sorts: [], visibleProperties: null, propertyOrder: null,
+        options: { nested: { alpha: 1, omega: 2 }, extensionFlag: true },
+      },
+      idempotencyKey: key("canonical-view"),
+    };
+    const canonicalView = success(await invoke("eotion_create_view", canonicalViewInput));
+    dbVersion++;
+    const versionAfterCanonicalCreate = (await getDatabase()).version;
+    const canonicalViewReplay = success(await invoke("eotion_create_view", {
+      idempotencyKey: canonicalViewInput.idempotencyKey,
+      config: {
+        options: { extensionFlag: true, nested: { omega: 2, alpha: 1 } },
+        propertyOrder: null, visibleProperties: null, sorts: [], filters: [],
+      },
+      type: "table", name: "Canonical JSON view", expectedDatabaseVersion: canonicalViewInput.expectedDatabaseVersion,
+      databaseId: scope.databaseId, workspaceId: scope.workspaceId,
+    }));
+    assert.deepEqual(canonicalViewReplay, canonicalView, "nested extension object key order must not change the canonical receipt hash");
+    assert.equal((await getDatabase()).version, versionAfterCanonicalCreate, "canonical replay must not bump the database version");
+
     const viewUpdateInput = { ...scope, expectedDatabaseVersion: dbVersion, viewId, expectedViewVersion: 1, name: "Renamed Board", idempotencyKey: key("view-update") };
     const updatedView = success(await invoke("eotion_update_view", viewUpdateInput));
     dbVersion++;
@@ -630,6 +653,9 @@ test("Database MCP write tools enforce scope, CAS, replay and transactional proj
 
     // Inject an oversized actual transaction result with a small valid request, so Fastify's request-body cap is not involved.
     const oversized = createRecord("Large projection", key("large-projection"), (await getDatabase()).version);
+    const oversizedUnicode = "界".repeat(350_000);
+    assert.ok(oversizedUnicode.length < 1_048_576, "the payload text stays below the character limit");
+    assert.ok(Buffer.byteLength(oversizedUnicode, "utf8") > 1_048_576, "UTF-8 bytes exceed the 1 MiB output limit");
     const beforeOversized = await getDatabase();
     const beforeOversizedPageCount = await connection.db!.collection("pages").countDocuments({ workspaceId: scope.workspaceId });
     const beforeOversizedRecordCount = await databases.listRecords(owner.user.id, scope.workspaceId, scope.databaseId).then(items => items.length);
@@ -638,7 +664,7 @@ test("Database MCP write tools enforce scope, CAS, replay and transactional proj
       const result = await originalCreateRecordPage(...args);
       return {
         ...result,
-        record: { ...result.record, properties: { ...result.record.properties, injectedLargeProjection: "x".repeat(1_048_500) } },
+        record: { ...result.record, properties: { ...result.record.properties, injectedLargeProjection: oversizedUnicode } },
       };
     };
     try { failure(await invoke("eotion_create_record", oversized), /^LIMIT_EXCEEDED:/); }

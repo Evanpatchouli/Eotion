@@ -16,6 +16,7 @@ import { PageService } from "../server-domain/services/page.service";
 import { BlockService } from "../server-domain/services/block.service";
 import { WorkspaceService } from "../server-domain/services/workspace.service";
 import { DatabaseService } from "../server-domain/services/database.service";
+import { MCP_TOOL_CONTRACT_SNAPSHOT } from "./fixtures/mcp-tools.snapshot";
 
 type JsonResponse = {
   status: number;
@@ -388,6 +389,20 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
         "eotion_resolve_relation_records", "eotion_search_pages", "eotion_update_page", "eotion_update_property",
         "eotion_update_record_cell", "eotion_update_view",
       ]);
+      assert.deepEqual(
+        initialization.tools
+          .map(({ name, inputSchema, outputSchema, annotations }) => ({ name, inputSchema, outputSchema, annotations }))
+          .sort((left, right) => left.name.localeCompare(right.name)),
+        MCP_TOOL_CONTRACT_SNAPSHOT,
+        "all 18 public MCP tools must preserve their published input/output schemas and annotations",
+      );
+      const expectedAnnotations = new Map(MCP_TOOL_CONTRACT_SNAPSHOT.map(({ name, annotations }) => [name, annotations]));
+      for (const { name, annotations } of initialization.tools) {
+        const expected = expectedAnnotations.get(name);
+        assert.deepEqual([
+          annotations?.readOnlyHint, annotations?.destructiveHint, annotations?.idempotentHint, annotations?.openWorldHint,
+        ], [expected?.readOnlyHint, expected?.destructiveHint, expected?.idempotentHint, expected?.openWorldHint], `${name} annotation contract`);
+      }
       const toolAnnotations = new Map(initialization.tools.map(({ name, annotations }) => [name, annotations]));
       assert.equal(toolAnnotations.get("eotion_create_page")?.readOnlyHint, false);
       assert.equal(toolAnnotations.get("eotion_create_page")?.destructiveHint, false);
@@ -663,6 +678,25 @@ test("MCP HTTP tools require bearer credentials and scope workspace access to th
       });
       assert.equal(changedQueryCursor.isError, true);
       assert.match(changedQueryCursor.content.flatMap(item => item.type === "text" ? [item.text] : []).join("\n"), /^CONFLICT:/);
+      const cursorFenceDatabase = (await databases.find(userA.id, "mcp-a-1", "database-1"))!;
+      const cursorFenceWrite = await clientA.callTool({
+        name: "eotion_rename_database",
+        arguments: {
+          workspaceId: "mcp-a-1", databaseId: "database-1", expectedDatabaseVersion: cursorFenceDatabase.version,
+          name: "MCP cursor fence database", idempotencyKey: `cursor-fence-${randomUUID()}`,
+        },
+      });
+      assert.equal(cursorFenceWrite.isError, undefined);
+      const staleDatabaseCursor = await clientA.callTool({
+        name: "eotion_query_database",
+        arguments: {
+          workspaceId: "mcp-a-1", databaseId: "database-1", viewId: "view-list", limit: 1,
+          cursor: firstQueryPayload.nextCursor,
+          sorts: [{ propertyId: "database-title-property", direction: "asc" }], propertyIds: ["database-note-property"],
+        },
+      });
+      assert.equal(staleDatabaseCursor.isError, true);
+      assert.match(staleDatabaseCursor.content.flatMap(item => item.type === "text" ? [item.text] : []).join("\n"), /^CONFLICT:/);
 
       const singleRecord = await clientA.callTool({
         name: "eotion_get_record",
