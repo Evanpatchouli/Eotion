@@ -1,4 +1,23 @@
-# 当前任务：P10.3 Database MCP Write Tools（Scope PASS，2026-10-23）
+# 当前任务：P10.4 Database MCP Final Acceptance（进行中，2026-10-26）
+
+起始工作树干净，HEAD `1950ec233bb9563395d4cbbe81fdf9538d9c7acf`（含 P10.3 三提交），从此创建 `codex/p10.4-database-mcp-final-acceptance`。本地 master/origin/master 为 `bdd6748ace0bb6880981257b9b64bcbdb16c517c`，共同祖先 `2aad764`；候选领先三个 P10.3 提交，master 另有两个部署提交，互不包含，不自动合并。版本固定 0.0.1 / build 2，P11.6 HOLD 不变，不恢复启动专项，不进入 P12/P15，不 push/merge/tag/Release/发布。
+
+| 单元 | 模式 / 评级 / 执行者 | 验收 |
+| --- | --- | --- |
+| A1 | investigate / S0 scout | 复用 P10.3 Evidence Pack，映射 A–E 到实际测试/Client/Product，列出最少缺口 |
+| A2 | decide / S2 主 Agent（只在必要时） | 未定契约或真实失败根因，形成紧凑 Brief 后降级 |
+| A3 | execute / S1 fast_worker | 按 Brief 补必要回归、验收 harness、范围内最小修复；不新增产品/API/模型 |
+| A4 | verify / S0 scout | 同一冻结源码的全部强制命令、真实隔离 Mongo / Client / Web 组合链路、环境预检和清理 |
+| A5 | review / 独立 reviewer | 唯一一次最终独立 review：权限/CAS/session/旧 receipt/replay/unknown/P6/P10.2/证据 |
+| A6 | execute / 主 Agent | 正式报告、文档/任务/交接同步、证据 SHA、最终 diff 和本地逻辑单元提交 |
+
+所有数据库验证显式使用本轮自有隔离 Mongo；记录端口、PID+出生身份、数据库名和清理，不连接用户原数据库。Token 不写仓库或原始日志。完整 Product 保持原集合/正式配置，一次命令；Visual 先正式环境预检，环境不符记录阻断，不修改黄金环境/flags/阈值/快照。历史/中间失败独立保留，不拼接不同源码状态。只有全部强制门槛通过且无 blocker 才标 FINAL PASS，否则 HOLD。
+
+当前：已完成仓库/分支核对，A1 进行中；正式报告入口为 `docs/verification/p10-final-acceptance.md`（待建立）。
+
+---
+
+# 历史任务：P10.3 Database MCP Write Tools（Scope PASS，2026-10-23）
 
 起始 `master/2aad764`，工作树干净；在 `codex/p10.3-database-mcp-write-tools` 实施。P10.2 已随 2aad764 合入，以下旧“未合并/实施中”记录仅为历史。版本固定 0.0.1 / build 2；P11.6 HOLD，不重启启动诊断；不进入 P10.4 / P12 / P15，不 push/merge/发布。
 
