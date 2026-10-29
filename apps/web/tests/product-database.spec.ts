@@ -4666,6 +4666,7 @@ test('Timeline generic records project date sources, retain unscheduled order, a
 
 test('Timeline Frozen Table resolves independent columns, formats shared properties, and opens the existing Record Host', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
   const relationDatabase = database('frozen-relation-database', 'Related records')
   const relationProperty = { ...property('frozen-relation', rootDatabase.id, 'Related', 'relation'), config: { targetDatabaseId: relationDatabase.id } } as TestProperty
   const formulaProperty = { ...property('frozen-formula', rootDatabase.id, 'Estimate', 'formula'), config: { expression: { kind: 'literal', value: 1 }, resultType: 'number' } } as TestProperty
