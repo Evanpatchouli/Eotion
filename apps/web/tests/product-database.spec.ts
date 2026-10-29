@@ -4948,7 +4948,11 @@ test('Timeline Frozen columns disappear after the server repairs a deleted prope
   await expect(frozen.getByTestId('timeline-frozen-header').locator('[data-property-id="root-text"]')).toBeAttached()
   await expect(frozen.locator('[data-property-id="deleted-frozen-property"]')).toHaveCount(0)
 
-  await openDatabaseSetting(page, databaseBlock, '属性')
+  const settingsMenu = page.getByRole('menu', { name: '数据库设置' })
+  await databaseBlock.getByRole('button', { name: '数据库设置' }).click()
+  await expect(settingsMenu).toBeVisible()
+  await settingsMenu.getByRole('menuitem', { name: '属性', exact: true }).click()
+  await expect(settingsMenu).toHaveCount(0)
   const settings = page.getByRole('group', { name: '属性管理' })
   await settings.getByRole('button', { name: '属性设置 Notes' }).click()
   await page.getByRole('menu', { name: '属性设置: Notes' }).getByRole('menuitem', { name: '删除' }).click()
