@@ -12370,6 +12370,25 @@ async function p116OpenSchedule(timeline: Locator) {
   return timeline.getByTestId('timeline-schedule-form')
 }
 
+async function p116ArrangeBothRecords(timeline: Locator, api: DatabaseApi) {
+  let form = await p116OpenSchedule(timeline)
+  await form.getByLabel('安排日期').fill('2032-06-01')
+  await form.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(form).toHaveCount(0)
+  await expect.poll(() => p114bRelationPatch(api, 'root-date').length).toBe(1)
+  await expect.poll(() => api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBe('2032-06-01')
+
+  const details = timeline.locator('details')
+  if (!(await details.evaluate(element => (element as HTMLDetailsElement).open))) await details.locator('summary').click()
+  await details.getByRole('button', { name: '安排：Second unplanned', exact: true }).click()
+  form = timeline.getByTestId('timeline-schedule-form')
+  await form.getByLabel('安排日期').fill('2032-06-02')
+  await form.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(form).toHaveCount(0)
+  await expect.poll(() => p114bRelationPatch(api, 'root-date').length).toBe(2)
+  await expect.poll(() => api.records.find(item => item.id === 'p116-second')?.properties['root-date']).toBe('2032-06-02')
+}
+
 test('P11.6 arrange explicit date has no default and cancel has zero writes', async ({ page }) => {
   const { timeline, api } = await p116ScheduleFixture(page)
   const form = await p116OpenSchedule(timeline)
@@ -12388,37 +12407,148 @@ test('P11.6 arrange explicit date has no default and cancel has zero writes', as
   expect(api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBeNull()
 })
 
-test('P11.6 arrange persists one native Date CAS and reloads canonical point', async ({ page }) => {
-  const { timeline, api } = await p116ScheduleFixture(page)
-  const form = await p116OpenSchedule(timeline)
-  await form.getByLabel('安排日期').fill('2032-06-01')
-  await form.getByRole('button', { name: '保存', exact: true }).click()
-  await expect(form).toHaveCount(0)
-  const bar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p116-empty"]')
-  await expect(bar).toBeVisible()
-  await expect(bar).toBeFocused()
-  expect(p114bRelationPatch(api, 'root-date')).toHaveLength(1)
+test('P11.6 arrange persists Timeline view and reloads canonical points', async ({ page }) => {
+  const { timeline, timelineView, api } = await p116ScheduleFixture(page)
+  const databaseBlockId = 'p114b-depends-on-block'
+  const databaseBlock = page.locator(`#database-block-${databaseBlockId}`)
+  const readServerNodeAttrs = () => (api.blocks.find(item => item.id === databaseBlockId)?.props as { node?: { attrs?: { databaseId?: string; viewId?: string } } } | undefined)?.node?.attrs
+  const readLocalNodeAttrs = async () => {
+    const blocks = JSON.parse(await readLocalBlocks(page, pageRecord.id)) as BlockResponse[]
+    return (blocks.find(item => item.id === databaseBlockId)?.props as { node?: { attrs?: { databaseId?: string; viewId?: string } } } | undefined)?.node?.attrs
+  }
+  await installLocalBlockReader(page)
+  await expect(timeline).toBeVisible()
+  await expect(databaseBlock).toHaveAttribute('data-view-id', timelineView.id)
+  await expect(databaseBlock).toHaveAttribute('data-view-ready', 'true')
+  await expect.poll(async () => (await readLocalNodeAttrs())?.viewId).toBe(timelineView.id)
+  expect(readServerNodeAttrs()).toMatchObject({ databaseId: rootDatabase.id, viewId: timelineView.id })
+
+  const firstBar = timeline.locator('[data-testid="timeline-bar"][data-record-id="p116-empty"]')
+  const firstForm = await p116OpenSchedule(timeline)
+  await firstForm.getByLabel('安排日期').fill('2032-06-01')
+  await firstForm.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(firstForm).toHaveCount(0)
+  await expect(firstBar).toBeVisible()
+  await expect(firstBar).toBeFocused()
+  await expect.poll(() => p114bRelationPatch(api, 'root-date').length).toBe(1)
   expect(p114bRelationPatch(api, 'root-date')[0]?.payload).toMatchObject({ value: '2032-06-01', expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
   expect(p114cBatchPosts(api)).toHaveLength(0)
-  expect(api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBe('2032-06-01')
+
   const details = timeline.locator('details')
   if (!(await details.evaluate(element => (element as HTMLDetailsElement).open))) await details.locator('summary').click()
   const second = details.getByRole('button', { name: '安排：Second unplanned', exact: true })
   await expect(second).toBeEnabled()
   await second.click()
-  await form.getByLabel('安排日期').fill('2032-06-02')
-  await form.getByRole('button', { name: '保存', exact: true }).click()
+  const secondForm = timeline.getByTestId('timeline-schedule-form')
+  await secondForm.getByLabel('安排日期').fill('2032-06-02')
+  await secondForm.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(secondForm).toHaveCount(0)
   await expect.poll(() => p114bRelationPatch(api, 'root-date').length).toBe(2)
-  await expect(form).toHaveCount(0)
-  const databaseBlock = page.locator('#database-block-p114b-depends-on-block')
-  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
-  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Fallback table', exact: true }).click()
-  await expect(databaseBlock.locator('tr').filter({ has: page.getByRole('button', { name: '编辑名称：Unplanned', exact: true }) })).toContainText('2032-06-01')
+  expect(p114bRelationPatch(api, 'root-date').map(request => request.payload?.value)).toEqual(['2032-06-01', '2032-06-02'])
+  await expect.poll(() => api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBe('2032-06-01')
+  await expect.poll(() => api.records.find(item => item.id === 'p116-second')?.properties['root-date']).toBe('2032-06-02')
+  await expect(databaseBlock).toHaveAttribute('data-view-id', timelineView.id)
+  await expect(databaseBlock).toHaveAttribute('data-view-ready', 'true')
+  await expect.poll(() => readServerNodeAttrs()?.viewId).toBe(timelineView.id)
+  expect(readServerNodeAttrs()).toMatchObject({ databaseId: rootDatabase.id, viewId: timelineView.id })
+  await expect.poll(async () => (await readLocalNodeAttrs())?.viewId).toBe(timelineView.id)
+
+  const beforeReloadIdentity = { pageId: pageRecord.id, blockId: databaseBlockId, databaseId: readServerNodeAttrs()?.databaseId, viewId: readServerNodeAttrs()?.viewId }
+  await expect(page).toHaveURL(/database-page/u)
+  const reloadResponses: import('@playwright/test').Response[] = []
+  const captureTimelineResponse = (response: import('@playwright/test').Response) => {
+    if (response.request().method() === 'GET' && new URL(response.url()).pathname.endsWith(`/views/${timelineView.id}/table`)) reloadResponses.push(response)
+  }
+  const timelineReadsBeforeReload = api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/views/${timelineView.id}/table`)).length
+  page.on('response', captureTimelineResponse)
   await page.reload()
   await expect(timeline).toBeVisible()
+  await expect(databaseBlock).toHaveAttribute('data-view-ready', 'true')
+  await expect.poll(() => api.requests.filter(request => request.method === 'GET' && request.path.endsWith(`/views/${timelineView.id}/table`)).length).toBeGreaterThan(timelineReadsBeforeReload)
+  await expect.poll(() => reloadResponses.length).toBeGreaterThan(0)
+  page.off('response', captureTimelineResponse)
+  const timelineRecordsResponse = reloadResponses.at(-1)!
+  expect(timelineRecordsResponse.ok()).toBe(true)
+  const timelineResponse = await timelineRecordsResponse.json() as { database: TestDatabase; view: TestView; records: TestRecord[] }
+  expect(timelineResponse.database.id).toBe(rootDatabase.id)
+  expect(timelineResponse.view).toMatchObject({ id: timelineView.id, type: 'timeline', config: timelineView.config })
+  expect(timelineResponse.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBe('2032-06-01')
+  expect(timelineResponse.records.find(item => item.id === 'p116-second')?.properties['root-date']).toBe('2032-06-02')
+
+  await expect(timeline).toBeVisible()
+  await expect(databaseBlock).toHaveAttribute('data-view-id', timelineView.id)
+  await expect(databaseBlock).toHaveAttribute('data-view-ready', 'true')
+  await expect(page).toHaveURL(/database-page/u)
+  await expect(timeline.locator('[data-testid="timeline-offscreen-right"][data-record-id="p116-empty"]')).toBeVisible()
+  await timeline.locator('[data-testid="timeline-offscreen-right"][data-record-id="p116-empty"]').click()
+  await expect(timeline.locator('[data-testid="timeline-bar"][data-record-id="p116-empty"]')).toBeVisible()
+  await expect(timeline.locator('[data-testid="timeline-bar"][data-record-id="p116-second"]')).toBeVisible()
+  await installLocalBlockReader(page)
+  const afterReloadLocalAttrs = await readLocalNodeAttrs()
+  expect(afterReloadLocalAttrs).toMatchObject({ databaseId: rootDatabase.id, viewId: timelineView.id })
+  await expect.poll(() => readServerNodeAttrs()?.viewId).toBe(timelineView.id)
+  expect(readServerNodeAttrs()).toMatchObject({ databaseId: rootDatabase.id, viewId: timelineView.id })
+  const afterReloadIdentity = { pageId: pageRecord.id, blockId: databaseBlockId, databaseId: afterReloadLocalAttrs?.databaseId, viewId: afterReloadLocalAttrs?.viewId }
+  expect(afterReloadIdentity).toEqual(beforeReloadIdentity)
+
   await databaseBlock.getByRole('button', { name: '切换视图' }).click()
   await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Fallback table', exact: true }).click()
-  await expect(databaseBlock.locator('tr').filter({ has: page.getByRole('button', { name: '编辑名称：Unplanned', exact: true }) })).toContainText('2032-06-01')
+  const rows = databaseBlock.locator('tbody tr')
+  await expect(rows.filter({ has: page.getByRole('button', { name: '编辑名称：Unplanned', exact: true }) })).toContainText('2032-06-01')
+  await expect(rows.filter({ has: page.getByRole('button', { name: '编辑名称：Second unplanned', exact: true }) })).toContainText('2032-06-02')
+})
+
+test('P11.6 arrange persists Fallback table view after reload', async ({ page }) => {
+  const { timeline, api } = await p116ScheduleFixture(page)
+  await p116ArrangeBothRecords(timeline, api)
+  const databaseBlockId = 'p114b-depends-on-block'
+  const databaseBlock = page.locator(`#database-block-${databaseBlockId}`)
+  const readServerNodeAttrs = () => (api.blocks.find(item => item.id === databaseBlockId)?.props as { node?: { attrs?: { databaseId?: string; viewId?: string } } } | undefined)?.node?.attrs
+  const readLocalNodeAttrs = async () => {
+    const blocks = JSON.parse(await readLocalBlocks(page, pageRecord.id)) as BlockResponse[]
+    return (blocks.find(item => item.id === databaseBlockId)?.props as { node?: { attrs?: { databaseId?: string; viewId?: string } } } | undefined)?.node?.attrs
+  }
+  await installLocalBlockReader(page)
+  expect(p114bRelationPatch(api, 'root-date').map(request => request.payload?.value)).toEqual(['2032-06-01', '2032-06-02'])
+  await databaseBlock.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Fallback table', exact: true }).click()
+  await expect(databaseBlock).toHaveAttribute('data-view-id', 'p114b-depends-on-table-view')
+  await expect(databaseBlock).toHaveAttribute('data-view-ready', 'true')
+  const rows = databaseBlock.locator('tbody tr')
+  await expect(rows.filter({ has: page.getByRole('button', { name: '编辑名称：Unplanned', exact: true }) })).toContainText('2032-06-01')
+  await expect(rows.filter({ has: page.getByRole('button', { name: '编辑名称：Second unplanned', exact: true }) })).toContainText('2032-06-02')
+  await expect.poll(async () => (await readLocalNodeAttrs())?.viewId).toBe('p114b-depends-on-table-view')
+  await expect.poll(() => readServerNodeAttrs()?.viewId).toBe('p114b-depends-on-table-view')
+  expect(readServerNodeAttrs()).toMatchObject({ databaseId: rootDatabase.id, viewId: 'p114b-depends-on-table-view' })
+
+  const reloadResponses: import('@playwright/test').Response[] = []
+  const captureTableResponse = (response: import('@playwright/test').Response) => {
+    if (response.request().method() === 'GET' && new URL(response.url()).pathname.endsWith('/views/p114b-depends-on-table-view/table')) reloadResponses.push(response)
+  }
+  const tableReadsBeforeReload = api.requests.filter(request => request.method === 'GET' && request.path.endsWith('/views/p114b-depends-on-table-view/table')).length
+  page.on('response', captureTableResponse)
+  await page.reload()
+  await expect(databaseBlock.locator('table')).toBeVisible()
+  await expect(databaseBlock).toHaveAttribute('data-view-ready', 'true')
+  await expect.poll(() => api.requests.filter(request => request.method === 'GET' && request.path.endsWith('/views/p114b-depends-on-table-view/table')).length).toBeGreaterThan(tableReadsBeforeReload)
+  await expect.poll(() => reloadResponses.length).toBeGreaterThan(0)
+  page.off('response', captureTableResponse)
+  const tableRecordsResponse = reloadResponses.at(-1)!
+  expect(tableRecordsResponse.ok()).toBe(true)
+  const tableResponse = await tableRecordsResponse.json() as { database: TestDatabase; view: TestView; records: TestRecord[] }
+  expect(tableResponse.database.id).toBe(rootDatabase.id)
+  expect(tableResponse.view).toMatchObject({ id: 'p114b-depends-on-table-view', type: 'table' })
+  expect(tableResponse.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBe('2032-06-01')
+  expect(tableResponse.records.find(item => item.id === 'p116-second')?.properties['root-date']).toBe('2032-06-02')
+
+  await expect(databaseBlock.locator('table')).toBeVisible()
+  await expect(databaseBlock).toHaveAttribute('data-view-id', 'p114b-depends-on-table-view')
+  await expect(databaseBlock).toHaveAttribute('data-view-ready', 'true')
+  await expect(databaseBlock.locator('tbody tr').filter({ has: page.getByRole('button', { name: '编辑名称：Unplanned', exact: true }) })).toContainText('2032-06-01')
+  await expect(databaseBlock.locator('tbody tr').filter({ has: page.getByRole('button', { name: '编辑名称：Second unplanned', exact: true }) })).toContainText('2032-06-02')
+  await installLocalBlockReader(page)
+  expect(await readLocalNodeAttrs()).toMatchObject({ databaseId: rootDatabase.id, viewId: 'p114b-depends-on-table-view' })
+  expect(readServerNodeAttrs()).toMatchObject({ databaseId: rootDatabase.id, viewId: 'p114b-depends-on-table-view' })
 })
 
 test('P11.6 arrange active policy uses one atomic batch and canonical downstream dates', async ({ page }) => {
