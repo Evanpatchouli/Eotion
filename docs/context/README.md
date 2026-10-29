@@ -35,7 +35,7 @@ P5.6 Settings 已完成：`apps/web/src/layouts/SettingsLayout.vue`、`views/set
 
 ## Eotion 特有的检索约束
 
-2026-10-23 P10 当前入口：P10.2 与验证修复已经 `2aad764` 合入 master，不能按下方历史“P10 尚未实施”重复实施。**P10.3 七写工具完成 / Scope PASS**，读取和写入共十八工具；最终Domain16/HTTP43/MCP50、完整门槛、构建API真实Client42条及独立review通过。核心检索 `DatabaseMcpMutationService`、`McpMutationService.execute`、`assertWriteScope`、`runInSession`、`expectedDatabaseVersion`、`mcp-database-write.contract.ts`、`mcp-database-write.test.ts`，真实构建 API 的官方 SDK Client/standalone 入口 `scripts/verify-p103-mcp.mjs`。完整新增契约与结果见 [P10 Database MCP](../p10-database-mcp.md)。已停止，P10.4未启动，P10未COMPLETE，P11.6 HOLD、0.0.1/build2 不变。
+2026-10-26 P10 当前入口：P10.2 已`2aad764`合入，P10.3七写工具历史Scope PASS保持；十八工具无需重复实施。**P10.4 FINAL HOLD，P10未COMPLETE**：候选`217f627`未集成master`bdd6748`，本轮API Domain16/HTTP43/MCP50/Performance1、包测试、真实Client74条、真实Web50条、Visual13/13通过；完整Product508/511、独立Database252/254失败。完整矩阵与日志见 [最终验收](../verification/p10-final-acceptance.md)，契约仍见 [P10 Database MCP](../p10-database-mcp.md)。检索 `McpMutationService.execute`、`assertWriteScope`、`runInSession`、`expectedDatabaseVersion`、`fixtures/mcp-tools.snapshot.ts`、`p6-mutation-receipts.fixture.ts`、`scripts/generate-p104-legacy-fixture.mjs`；最终真实入口 `scripts/verify-p104-mcp.mjs` / `verify-p104-web-mcp.mjs`，P103脚本保留历史。已执行验收并停止，P11.6 HOLD与历史启动失败结论、0.0.1/build2不变，不进入P12/P15或发布。
 
 P5.7.5.3 共享交互入口：`components/ui/EotionNavItem.vue`、`components/product/SyncStatus.vue`、`components/ui/EotionCommandOverlay.vue`；契约与验证见 `docs/design/interaction-foundation-implementation.md`，Playwright 入口 `tests/interaction-foundation.spec.ts`。Command 本阶段只提供容器，后续 Search / Command 消费。
 

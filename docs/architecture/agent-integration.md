@@ -6,7 +6,7 @@ Eotion API 已实现 User / Cookie Session 认证，以及 Workspace、Page、Bl
 
 P6 MCP Foundation / Auth、Page 读取与写入已完成，历史范围与验收见 [P6 MCP](../p6-mcp.md)。P6 的六个既有工具保持兼容。
 
-P10.2 的五个 Database 读取工具及验证修复已由 `2aad764` 合入 master。P10.3 在此基础上新增 `eotion_create_record`、`eotion_update_record_cell`、`eotion_create_property`、`eotion_update_property`、`eotion_create_view`、`eotion_update_view`、`eotion_rename_database`；总共十八工具。完整 Schema、空值/CAS/幂等契约与独立验收结果见 [P10 Database MCP](../p10-database-mcp.md)。没有 Database 创建/删除、各实体删除、类型转换、批量 Cell 或 View context 调度工具；Resources、Prompts、Agent UI、Chat UI 与 automation 仍不在本阶段范围。P10.4 尚未启动，P11.6 保持 HOLD，版本仍为 0.0.1 / build 2。
+P10.2 的五个 Database 读取工具及验证修复已由 `2aad764` 合入 master。P10.3 在此基础上新增 `eotion_create_record`、`eotion_update_record_cell`、`eotion_create_property`、`eotion_update_property`、`eotion_create_view`、`eotion_update_view`、`eotion_rename_database`；总共十八工具。完整 Schema、空值/CAS/幂等契约与独立验收结果见 [P10 Database MCP](../p10-database-mcp.md)。没有 Database 创建/删除、各实体删除、类型转换、批量 Cell 或 View context 调度工具；Resources、Prompts、Agent UI、Chat UI 与 automation 仍不在本阶段范围。P10.4 已执行最终验收、结论 HOLD（候选217f627未集成master），见 [最终报告](../verification/p10-final-acceptance.md)；P11.6 保持 HOLD，版本仍为 0.0.1 / build 2。
 
 ## 接入与身份
 

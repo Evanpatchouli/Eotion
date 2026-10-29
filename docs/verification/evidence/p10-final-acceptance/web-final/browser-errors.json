@@ -1,0 +1,29 @@
+{
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+  ],
+  "pageErrors": [],
+  "browserLoginResponses": [
+    {
+      "path": "/api/auth/login",
+      "status": 201
+    }
+  ],
+  "expectedUnauthenticatedSession401s": [
+    {
+      "path": "/api/auth/me",
+      "status": 401
+    }
+  ],
+  "authenticatedSession200s": [
+    {
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/me",
+      "status": 200
+    }
+  ],
+  "unexpectedConsoleErrors": []
+}

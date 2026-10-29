@@ -1,4 +1,4 @@
-# 当前任务：P10.4 Database MCP Final Acceptance（进行中，2026-10-26）
+# 当前任务：P10.4 Database MCP Final Acceptance（已收口 / FINAL HOLD，2026-10-29）
 
 起始工作树干净，HEAD `1950ec233bb9563395d4cbbe81fdf9538d9c7acf`（含 P10.3 三提交），从此创建 `codex/p10.4-database-mcp-final-acceptance`。本地 master/origin/master 为 `bdd6748ace0bb6880981257b9b64bcbdb16c517c`，共同祖先 `2aad764`；候选领先三个 P10.3 提交，master 另有两个部署提交，互不包含，不自动合并。版本固定 0.0.1 / build 2，P11.6 HOLD 不变，不恢复启动专项，不进入 P12/P15，不 push/merge/tag/Release/发布。
 
@@ -13,7 +13,13 @@
 
 所有数据库验证显式使用本轮自有隔离 Mongo；记录端口、PID+出生身份、数据库名和清理，不连接用户原数据库。Token 不写仓库或原始日志。完整 Product 保持原集合/正式配置，一次命令；Visual 先正式环境预检，环境不符记录阻断，不修改黄金环境/flags/阈值/快照。历史/中间失败独立保留，不拼接不同源码状态。只有全部强制门槛通过且无 blocker 才标 FINAL PASS，否则 HOLD。
 
-当前：已完成仓库/分支核对，A1 进行中；正式报告入口为 `docs/verification/p10-final-acceptance.md`（待建立）。
+当前：A1–A6已完成，唯一最终独立review未发现新的P10范围产品缺陷或证据阻断，支持FINAL HOLD。候选代码`217f6273fae46a554f910fe2f4b4146338d9e68c`，生产/正式配置相对1950ec2无改动；本地测试提交`d42b122`、真实验收harness提交`217f627`。正式报告 `docs/verification/p10-final-acceptance.md`。10月29日恢复仅完成原始证据换行/长路径无损打包、478文件冻结校验与Git收口，没有重跑测试或恢复P11.6专项。
+
+- 全部强制命令已真实执行：typecheck/API-Web build、Domain92/Contracts29/SDK24/Storage7、API Domain16/HTTP43/MCP50/Performance1、version/diff通过；API final-r2同一hash、Web215原文件前后不变。
+- 真实构建API Client+Inspector最终74条PASS（5轮中4轮harness失败均保留），真实无mock Web/API/Mongo/MCP最终50条PASS（2轮harness失败/1轮中间PASS/1轮最终PASS），九写真实standalone拒绝且八集合快照不变；旧P6 runner真实产生的receipt fixture已重放验证。
+- 完整Product一次原14集合508PASS/3FAIL，独立Database252PASS/2FAIL，均exit1；后两项是前者子集。Visual正式环境匹配13/13，未改快照/阈值/flags。P10.4 FINAL HOLD、P10未COMPLETE；不为取得通过修改Timeline或恢复启动专项。
+- 自有后端Mongo63687、Client52092、Web56863及API/Web进程均退出，随机库删除；10月29日自有端口仍无监听。验收时已有27017/PID4796早于本轮，未连接/修改/停止。314个原件映射、Git归档blob与解压SHA一致；中间打包失败、历史测试失败和原TEMP证据均保留。
+- 当前 master仍bdd6748，与候选分叉，未merge/push/发布；0.0.1/build2、P11.6 HOLD不变。最终文档证据提交SHA以Git交付为准，完成后停止，不自动接续修复或下一Phase。
 
 ---
 

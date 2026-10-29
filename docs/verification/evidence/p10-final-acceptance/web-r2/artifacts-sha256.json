@@ -1,0 +1,46 @@
+[
+  {
+    "file": "api.log",
+    "sha256": "0e3282958c6434164c151b5468382dcce394e19ffc492c1126cd63fb5d2f47f4"
+  },
+  {
+    "file": "browser-errors.json",
+    "sha256": "4df7de09ca31aacd97f580e0287ae77a0238753f930096a49b05628ddacd0e7e"
+  },
+  {
+    "file": "failure.png",
+    "sha256": "f4f3e51fffc666ed0e50b02826d9be6689f23afa7faed18d104a0834180a410d"
+  },
+  {
+    "file": "mongo.log",
+    "sha256": "a8c6b1009e3dc68dc94ab24a6c1f320547d953c142345ad47883438921bbe4a3"
+  },
+  {
+    "file": "trace-failure.zip",
+    "sha256": "1d47a7160bca4f2522675af2ffd6aa826a6c6811a3d26668784aed428910cbda"
+  },
+  {
+    "file": "transcript.json",
+    "sha256": "b32a1ac7865035efb4c1dceb1e330d3081f23fc35f4acf2f15322c77545744ae"
+  },
+  {
+    "file": "web-after-mcp-writes.png",
+    "sha256": "dc0786abdc598b28a3054cf05e0d1a5ad615daccb63e98b7bcd85b49d3dc006f"
+  },
+  {
+    "file": "web-final-refresh.png",
+    "sha256": "8786c62c879ce834c9ababadc46447d1e0551905d1ea24a6ec8a4839eccf1493"
+  },
+  {
+    "file": "web-title-edited.png",
+    "sha256": "8f150d9eb54d3539d76a24113017fa25c608a6a0257f0965900e7e386d5f00e9"
+  },
+  {
+    "file": "web.log",
+    "sha256": "f512c7e65e3de3a79a65da643765a52ed30ce75d1d107ebad117c55bf0a3ddee"
+  },
+  {
+    "file": "scripts/verify-p104-web-mcp.mjs",
+    "sha256": "d7774611d59728edffb997b8cc786cea463b6b7500176e64a4e59ea72347a8bb"
+  }
+]

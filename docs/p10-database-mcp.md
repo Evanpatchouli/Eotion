@@ -1,6 +1,6 @@
 # P10 Database MCP Extension
 
-状态：P10.1 契约已批准；P10.2 Read Tools 及验证修复已通过 `2aad764` 合入 master。**P10.3 七个 Write Tools 完成 / Scope PASS（2026-10-23）**，已通过同一代码状态下完整门槛、构建 API 真实客户端与独立 review；P10.4 尚未启动。版本保持 0.0.1 / build 2，P11.6 继续 HOLD。
+状态：P10.1 契约已批准；P10.2 Read Tools 及验证修复已通过 `2aad764` 合入 master；P10.3 七写工具 Scope PASS 的历史交付保持。**P10.4 FINAL HOLD（2026-10-26），P10 未 COMPLETE**：本轮完整 Product508/511、独立Database252/254失败；API/包测试、真实Client74条、真实Web50条、Visual13/13通过。候选 `217f627` 未集成 master，完整证据与阻断见 [最终验收](verification/p10-final-acceptance.md)。版本保持 0.0.1 / build 2，P11.6 继续 HOLD。
 
 ## 范围
 
@@ -241,3 +241,13 @@ type RecordDto = {
 已知边界继续遵守上述工具范围：owner-only 工作区权限，写入要求 replica set/mongos，Database online read/write，无批量/删除/类型转换/正文或附件工具，无View context自动调度承诺。未重跑完整 P11.6 或启动专项诊断，未进入 P10.4/P12/P15，未修改版本或发布。
 
 本地代码提交：`3faadd2`（领域/session/成功receipt/rename与P6错误兼容）、`4fc4aee`（七工具、契约/回归和真实Client脚本）。文档与上述证据作为独立逻辑单元提交；最终文档SHA见Git。工作分支 `codex/p10.3-database-mcp-write-tools`，不自动push、merge、tag/Release或发布。
+
+## P10.4 最终验收（2026-10-26，HOLD）
+
+本轮从包含 P10.3 的 `1950ec2` 创建 `codex/p10.4-database-mcp-final-acceptance`，重新验证最终代码候选 `217f6273fae46a554f910fe2f4b4146338d9e68c`。master为`bdd6748`，有两个独立部署提交，双方未相互集成；未自动merge或修改master。候选只新增回归、真实验收harness与文档证据，产品/API/模型/协议/依赖/正式Web配置均未改变。
+
+补齐十八工具完整Schema/annotations快照、真实旧P6 runner产生的回执重放、多字节UTF-8成功DTO失败回滚、嵌套JSON键序幂等及写后query cursor拒绝。正式本轮typecheck、API/Web构建、Domain92/Contracts29/SDK24/Storage7、API Domain16/HTTP43/MCP50/Performance1、version/diff均通过。独立构建API官方Client+Inspector74条通过，包含两协议、九写真实standalone快照不变、响应丢失/真重启重放；无route mock的构建Web/API/Mongo/MCP50条通过，覆盖标题同源、四View、Web外部写后CAS/cursor拒绝与刷新持久性。
+
+完整Product一次原集合执行508 PASS/3 FAIL（511），独立Database252 PASS/2 FAIL（254），均exit1；后者失败为前者子集。两项Timeline Frozen用例分别为projection缺失/窗口线索和菜单locator歧义；完整Product另有P11.6 arrange reload后Fallback table而无Timeline，根因未知，独立spec通过不豁免完整门槛。Visual正式环境预检匹配、13/13通过，未修改快照/阈值/flags。
+
+完整矩阵、每轮中间失败、原始日志SHA、真实链路范围、服务端口/PID出生身份与清理、独立review和交付状态均见 [P10.4 Final Acceptance](verification/p10-final-acceptance.md)。所有自有Mongo/API/Web已退出，测试库删除；原数据库未触碰。**P10.4 FINAL HOLD，不标P10 COMPLETE**；P11.6 HOLD不变，不恢复历史专项，不切0.0.2，不发布，交付后停止。

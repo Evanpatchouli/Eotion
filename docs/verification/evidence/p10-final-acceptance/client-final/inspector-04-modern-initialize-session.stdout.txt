@@ -1,0 +1,1 @@
+{"result":{"serverInfo":{"name":"eotion","version":"0.0.1"},"protocolVersion":"2026-07-28","capabilities":{"tools":{"listChanged":true}}}}

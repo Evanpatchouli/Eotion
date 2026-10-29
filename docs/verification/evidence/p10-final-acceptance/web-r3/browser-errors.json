@@ -1,0 +1,13 @@
+{
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+  ],
+  "pageErrors": [],
+  "expectedUnauthenticatedSession401s": [
+    {
+      "path": "/api/auth/me",
+      "status": 401
+    }
+  ],
+  "unexpectedConsoleErrors": []
+}

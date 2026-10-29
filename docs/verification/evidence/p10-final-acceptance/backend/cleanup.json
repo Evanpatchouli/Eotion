@@ -1,0 +1,23 @@
+{
+  "completedUtc": "2026-10-26T03:27:14.0183035Z",
+  "instanceJson": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo-instance.json",
+  "preCleanupList": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo-list-before.stdout.log",
+  "preCleanupIdentity": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo-list-before.json",
+  "cleanupStdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo-cleanup.stdout.log",
+  "cleanupStderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo-cleanup.stderr.log",
+  "mongoPid": 40268,
+  "mongoStartedAtUtc": "2026-10-26T02:56:44.9869424Z",
+  "exe": "C:\\Program Files\\MongoDB\\Server\\8.2\\bin\\mongod.exe",
+  "dbPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo\\7296bf9668c24dc5957db69d5c31ec88",
+  "port": 63687,
+  "replSet": "p104_74a8b5b969",
+  "verifiedDatabaseDropped": "eotion_p104_backend_fb396d8119bf45f5944cd4515bff3d09",
+  "systemDatabasesPreserved": [
+    "admin",
+    "config",
+    "local"
+  ],
+  "processExited": true,
+  "listenerCountAfterShutdown": 0,
+  "shutdownCommandExit": 0
+}

@@ -1,5 +1,17 @@
 # Handoff
 
+## 2026-10-26 P10.4 Database MCP Final Acceptance（FINAL HOLD）
+
+2026-10-29恢复收口：未重复已完成测试或唯一独立review，478个冻结文件与候选217f627仍一致；处理了证据入库的原始CRLF/EOF空行与Windows长路径，原字节通过gzip及manifest保留，Git暂存blob/解压SHA均核对。314原件映射到287唯一目标，三个backend JSON可读副本明确标记为派生；无原数据库操作，自有端口无监听。独立review已完成，支持HOLD，未发现新的P10范围产品缺陷或证据阻断；原Product强制失败保持。文档证据提交后停止，最终SHA见Git。
+
+本轮验收已执行，收口报告：`docs/verification/p10-final-acceptance.md`。候选代码 `217f6273fae46a554f910fe2f4b4146338d9e68c`，分支 `codex/p10.4-database-mcp-final-acceptance`，从含P10.3的1950ec2创建；本地master仍bdd6748，共祖2aad764，部署两提交不在候选内，候选未合入master。本轮仅本地commit：a0e27f1计划、d42b122回归/历史receipt、217f627真实MCP/Web harness；最终文档证据提交见Git。不push/merge/tag/Release/发布，版本0.0.1/build2。
+
+十八工具完整Schema/annotations、由2aad历史DocumentMutationService真实tools/call产生的旧P6成功receipt重放、多字节UTF8输出回滚、View.options嵌套canonical键序和MCP写后cursor补验完成；产品/API/模型/协议/依赖/正式Web测试集合与配置未改变。指定命令全部执行：typecheck/build、Domain92/Contracts29/SDK24/Storage7、API Domain16/HTTP43/MCP50/Performance1、version/diff通过。独立构建API官方Client+Inspector74条PASS，双协议发现/读及代表写、响应丢失/真实重启、双用户和九写真实standalone快照；构建Web/API/Mongo+MCP50条PASS，无route mock，UI Title改写后CAS/cursor拒绝、四View、rename/刷新/正文引用与Title唯一来源。
+
+**强制门槛阻断：完整Product508/511（3FAIL）、独立Database252/254（2FAIL），后者是前者子集，不能拼接或豁免。** Frozen projection缺timeline-bar（offscreen/固定日期线索，根因未证实）；Frozen property repair菜单locator『属性/日期属性』歧义；完整Product独有P11.6 arrange reload后Fallback table而无Timeline，trace无已捕获HTTP>=400/页面异常，根因未知，独立Database中该例通过。Visual正式环境匹配13/13，未改快照/flags/阈值。
+
+P10.4 FINAL HOLD、P10未COMPLETE；P11.6 HOLD和历史启动失败结论不改，不恢复专项、不进入P12/P15、不切0.0.2。原始失败、中间typecheck测试夹具问题、MCP/Web harness修正各轮均留档，原字节与归档SHA见evidence/p10-final-acceptance/artifacts.json。自有Mongo/API/Web全部退出、随机库已删除，验收时原27017/PID4796早于本轮、未触碰。唯一最终review已完成，交付后停止；后续修复必须按新指令确定范围，不能自动继承旧发布/推送授权。
+
 ## 2026-10-23 P10.3 Database MCP Write Tools（完成 / Scope PASS）
 
 用户本轮明确要求实施七个写工具、真实客户端验证、一次独立review和提交；仅本地commit，不push/merge/tag/Release/发布。起始master/2aad764，工作树干净；现工作分支 `codex/p10.3-database-mcp-write-tools`。P10.2已经合入，以下旧“未合并/实施中”仅历史，不能重复实施。版本0.0.1/build2、P11.6 HOLD保留，不启动专项诊断，不进入P10.4/P12/P15。

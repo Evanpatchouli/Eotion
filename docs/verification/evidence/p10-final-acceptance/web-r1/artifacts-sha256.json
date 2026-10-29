@@ -1,0 +1,38 @@
+[
+  {
+    "file": "api.log",
+    "sha256": "3d1a077557b2c0a735919ee470dbd27071d9a32025d4198bc6f7fb44d7c1a183"
+  },
+  {
+    "file": "browser-errors.json",
+    "sha256": "4df7de09ca31aacd97f580e0287ae77a0238753f930096a49b05628ddacd0e7e"
+  },
+  {
+    "file": "failure.png",
+    "sha256": "45b65326000d741b26eb8320d66853735d396dc1eae1c170bfe7a866088a2c83"
+  },
+  {
+    "file": "mongo.log",
+    "sha256": "cbae39c91dccefd9c46b00c1b76b5a7f90a73479d937f50c69ed7f903bdd629f"
+  },
+  {
+    "file": "trace-failure.zip",
+    "sha256": "5243abeece7e8bb4b5797d2ff7604943f16c676f85dc9a11ff45c2bf059dad17"
+  },
+  {
+    "file": "transcript.json",
+    "sha256": "a1363138db73b63e93247a7dc304cdc2e2757f65db3462e42382cc44de70b46f"
+  },
+  {
+    "file": "web-after-mcp-writes.png",
+    "sha256": "611976538c36e23091e19cead2fbfcd4a852d03efab4eb8c634177c731b7e93e"
+  },
+  {
+    "file": "web.log",
+    "sha256": "c961431d2d0e15dd106932189c505a48e4c2db2fa6ddc039f285065d37a216e3"
+  },
+  {
+    "file": "scripts/verify-p104-web-mcp.mjs",
+    "sha256": "508509a86fe69e20175a1d7b89a48430647af8a063fd84474a2b4aba111454fc"
+  }
+]

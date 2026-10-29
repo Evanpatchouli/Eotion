@@ -1,0 +1,557 @@
+{
+  "acceptance": "P10.4 backend gates and private Mongo lifecycle",
+  "generatedUtc": "2026-10-26T03:28:25.5468368Z",
+  "candidateBaseline": "1950ec233bb9563395d4cbbe81fdf9538d9c7acf",
+  "runtime": {
+    "node": "v24.22.0",
+    "pnpm": "10.34.2"
+  },
+  "mongo": {
+    "startedAtUtc": "2026-10-26T02:56:44.9869424Z",
+    "hello": "PRIMARY",
+    "uri": "mongodb://127.0.0.1:63687/eotion_p104_backend_fb396d8119bf45f5944cd4515bff3d09?directConnection=true&replicaSet=p104_74a8b5b969",
+    "port": 63687,
+    "p4TestMongoUri": "mongodb://127.0.0.1:63687/eotion_p104_backend_fb396d8119bf45f5944cd4515bff3d09?directConnection=true&replicaSet=p104_74a8b5b969",
+    "pid": 40268,
+    "replSet": "p104_74a8b5b969",
+    "version": "8.2.3",
+    "exe": "C:\\Program Files\\MongoDB\\Server\\8.2\\bin\\mongod.exe",
+    "transactionProbe": "PASS",
+    "preCleanupList": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo-list-before.stdout.log",
+    "instanceJson": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo-instance.json",
+    "cleanupJson": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\cleanup.json",
+    "state": "cleaned; process exited; no listener; system databases preserved",
+    "dbPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo\\7296bf9668c24dc5957db69d5c31ec88"
+  },
+  "commandCount": 14,
+  "commands": [
+    {
+      "phase": "independent",
+      "unit": "web",
+      "command": "pnpm build:web",
+      "startedUtc": "2026-10-26T03:00:24.4771913Z",
+      "endedUtc": "2026-10-26T03:00:40.0282736Z",
+      "elapsedSeconds": 15.551,
+      "exitCode": 0,
+      "testSummary": {},
+      "testSummaryByInvocation": {},
+      "sourceSha256Before": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceSha256After": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\web\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\web\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\web\\result.json",
+      "databaseNote": "No API/Mongo-backed integration is part of this command; initial unused env URI was malformed, no DB evidence."
+    },
+    {
+      "phase": "independent",
+      "unit": "domain",
+      "command": "pnpm --filter @eotion/domain test",
+      "startedUtc": "2026-10-26T03:00:56.8432104Z",
+      "endedUtc": "2026-10-26T03:00:59.6280148Z",
+      "elapsedSeconds": 2.785,
+      "exitCode": 0,
+      "testSummary": {
+        "tests": 92,
+        "cancelled": 0,
+        "suites": 0,
+        "fail": 0,
+        "skipped": 0,
+        "pass": 92,
+        "todo": 0
+      },
+      "testSummaryByInvocation": {
+        "tests": [
+          92
+        ],
+        "cancelled": [
+          0
+        ],
+        "suites": [
+          0
+        ],
+        "fail": [
+          0
+        ],
+        "skipped": [
+          0
+        ],
+        "pass": [
+          92
+        ],
+        "todo": [
+          0
+        ]
+      },
+      "sourceSha256Before": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceSha256After": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\domain\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\domain\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\domain\\result.json",
+      "databaseNote": "No API/Mongo-backed integration is part of this command; initial unused env URI was malformed, no DB evidence."
+    },
+    {
+      "phase": "independent",
+      "unit": "contracts",
+      "command": "pnpm --filter @eotion/contracts test",
+      "startedUtc": "2026-10-26T03:01:11.017114Z",
+      "endedUtc": "2026-10-26T03:01:15.6453872Z",
+      "elapsedSeconds": 4.628,
+      "exitCode": 0,
+      "testSummary": {
+        "tests": 29,
+        "cancelled": 0,
+        "suites": 0,
+        "fail": 0,
+        "skipped": 0,
+        "pass": 29,
+        "todo": 0
+      },
+      "testSummaryByInvocation": {
+        "tests": [
+          29
+        ],
+        "cancelled": [
+          0
+        ],
+        "suites": [
+          0
+        ],
+        "fail": [
+          0
+        ],
+        "skipped": [
+          0
+        ],
+        "pass": [
+          29
+        ],
+        "todo": [
+          0
+        ]
+      },
+      "sourceSha256Before": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceSha256After": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\contracts\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\contracts\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\contracts\\result.json",
+      "databaseNote": "No API/Mongo-backed integration is part of this command; initial unused env URI was malformed, no DB evidence."
+    },
+    {
+      "phase": "independent",
+      "unit": "sdk",
+      "command": "pnpm --filter @eotion/sdk test",
+      "startedUtc": "2026-10-26T03:01:33.0257991Z",
+      "endedUtc": "2026-10-26T03:01:38.0817314Z",
+      "elapsedSeconds": 5.056,
+      "exitCode": 0,
+      "testSummary": {
+        "tests": 24,
+        "cancelled": 0,
+        "suites": 0,
+        "fail": 0,
+        "skipped": 0,
+        "pass": 24,
+        "todo": 0
+      },
+      "testSummaryByInvocation": {
+        "tests": [
+          24
+        ],
+        "cancelled": [
+          0
+        ],
+        "suites": [
+          0
+        ],
+        "fail": [
+          0
+        ],
+        "skipped": [
+          0
+        ],
+        "pass": [
+          24
+        ],
+        "todo": [
+          0
+        ]
+      },
+      "sourceSha256Before": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceSha256After": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\sdk\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\sdk\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\sdk\\result.json",
+      "databaseNote": "No API/Mongo-backed integration is part of this command; initial unused env URI was malformed, no DB evidence."
+    },
+    {
+      "phase": "independent",
+      "unit": "storage",
+      "command": "pnpm --filter @eotion/storage test",
+      "startedUtc": "2026-10-26T03:02:01.6423177Z",
+      "endedUtc": "2026-10-26T03:02:05.8540846Z",
+      "elapsedSeconds": 4.212,
+      "exitCode": 0,
+      "testSummary": {
+        "tests": 7,
+        "cancelled": 0,
+        "suites": 0,
+        "fail": 0,
+        "skipped": 0,
+        "pass": 7,
+        "todo": 0
+      },
+      "testSummaryByInvocation": {
+        "tests": [
+          7
+        ],
+        "cancelled": [
+          0
+        ],
+        "suites": [
+          0
+        ],
+        "fail": [
+          0
+        ],
+        "skipped": [
+          0
+        ],
+        "pass": [
+          7
+        ],
+        "todo": [
+          0
+        ]
+      },
+      "sourceSha256Before": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceSha256After": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\storage\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\storage\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\storage\\result.json",
+      "databaseNote": "No API/Mongo-backed integration is part of this command; initial unused env URI was malformed, no DB evidence."
+    },
+    {
+      "phase": "api-intermediate-red",
+      "unit": "typecheck-r1",
+      "command": "pnpm typecheck",
+      "startedUtc": "2026-10-26T03:08:12.044412Z",
+      "endedUtc": "2026-10-26T03:08:37.9273734Z",
+      "elapsedSeconds": 25.883,
+      "exitCode": 2,
+      "testSummary": {},
+      "testSummaryByInvocation": {},
+      "sourceSha256Before": "f7883a382d8697d726b5267f537f4ad3a1e3453ac66e1bfd9e0f8d46b85a915f",
+      "sourceSha256After": "f7883a382d8697d726b5267f537f4ad3a1e3453ac66e1bfd9e0f8d46b85a915f",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-typecheck\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-typecheck\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-typecheck\\result.json",
+      "databaseNote": "Preserved exit 2; superseded by final-r2; no database used."
+    },
+    {
+      "phase": "api-final-r2",
+      "unit": "typecheck",
+      "command": "pnpm typecheck",
+      "startedUtc": "2026-10-26T03:15:10.2698819Z",
+      "endedUtc": "2026-10-26T03:15:36.574525Z",
+      "elapsedSeconds": 26.305,
+      "exitCode": 0,
+      "testSummary": {},
+      "testSummaryByInvocation": {},
+      "sourceSha256Before": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceSha256After": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\typecheck\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\typecheck\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\typecheck\\result.json",
+      "databaseNote": "Private replica-set environment is recorded in result.json for database-backed gates."
+    },
+    {
+      "phase": "api-final-r2",
+      "unit": "build",
+      "command": "pnpm build:api",
+      "startedUtc": "2026-10-26T03:15:52.3930279Z",
+      "endedUtc": "2026-10-26T03:16:10.50183Z",
+      "elapsedSeconds": 18.109,
+      "exitCode": 0,
+      "testSummary": {},
+      "testSummaryByInvocation": {},
+      "sourceSha256Before": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceSha256After": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\build\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\build\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\build\\result.json",
+      "databaseNote": "Private replica-set environment is recorded in result.json for database-backed gates."
+    },
+    {
+      "phase": "api-final-r2",
+      "unit": "domain",
+      "command": "pnpm --filter @eotion/api test:domain",
+      "startedUtc": "2026-10-26T03:17:00.2842493Z",
+      "endedUtc": "2026-10-26T03:17:41.1199872Z",
+      "elapsedSeconds": 40.836,
+      "exitCode": 0,
+      "testSummary": {
+        "tests": 16,
+        "cancelled": 0,
+        "suites": 0,
+        "fail": 0,
+        "skipped": 0,
+        "pass": 16,
+        "todo": 0
+      },
+      "testSummaryByInvocation": {
+        "tests": [
+          16
+        ],
+        "cancelled": [
+          0
+        ],
+        "suites": [
+          0
+        ],
+        "fail": [
+          0
+        ],
+        "skipped": [
+          0
+        ],
+        "pass": [
+          16
+        ],
+        "todo": [
+          0
+        ]
+      },
+      "sourceSha256Before": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceSha256After": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\domain\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\domain\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\domain\\result.json",
+      "databaseNote": "Private replica-set environment is recorded in result.json for database-backed gates."
+    },
+    {
+      "phase": "api-final-r2",
+      "unit": "http",
+      "command": "pnpm --filter @eotion/api test:http",
+      "startedUtc": "2026-10-26T03:17:55.3268853Z",
+      "endedUtc": "2026-10-26T03:19:56.950739Z",
+      "elapsedSeconds": 121.624,
+      "exitCode": 0,
+      "testSummary": {
+        "tests": 43,
+        "cancelled": 0,
+        "suites": 0,
+        "fail": 0,
+        "skipped": 0,
+        "pass": 43,
+        "todo": 0
+      },
+      "testSummaryByInvocation": {
+        "tests": [
+          18,
+          1,
+          24
+        ],
+        "cancelled": [
+          0,
+          0,
+          0
+        ],
+        "suites": [
+          0,
+          0,
+          0
+        ],
+        "fail": [
+          0,
+          0,
+          0
+        ],
+        "skipped": [
+          0,
+          0,
+          0
+        ],
+        "pass": [
+          18,
+          1,
+          24
+        ],
+        "todo": [
+          0,
+          0,
+          0
+        ]
+      },
+      "sourceSha256Before": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceSha256After": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\http\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\http\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\http\\result.json",
+      "databaseNote": "Private replica-set environment is recorded in result.json for database-backed gates."
+    },
+    {
+      "phase": "api-final-r2",
+      "unit": "mcp",
+      "command": "pnpm --filter @eotion/api test:mcp",
+      "startedUtc": "2026-10-26T03:20:54.2383081Z",
+      "endedUtc": "2026-10-26T03:21:24.1166423Z",
+      "elapsedSeconds": 29.878,
+      "exitCode": 0,
+      "testSummary": {
+        "tests": 50,
+        "cancelled": 0,
+        "suites": 0,
+        "fail": 0,
+        "skipped": 0,
+        "pass": 50,
+        "todo": 0
+      },
+      "testSummaryByInvocation": {
+        "tests": [
+          50
+        ],
+        "cancelled": [
+          0
+        ],
+        "suites": [
+          0
+        ],
+        "fail": [
+          0
+        ],
+        "skipped": [
+          0
+        ],
+        "pass": [
+          50
+        ],
+        "todo": [
+          0
+        ]
+      },
+      "sourceSha256Before": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceSha256After": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\mcp\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\mcp\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\mcp\\result.json",
+      "databaseNote": "Private replica-set environment is recorded in result.json for database-backed gates."
+    },
+    {
+      "phase": "api-final-r2",
+      "unit": "performance",
+      "command": "pnpm --filter @eotion/api test:database:performance",
+      "startedUtc": "2026-10-26T03:22:05.9854851Z",
+      "endedUtc": "2026-10-26T03:22:48.9712074Z",
+      "elapsedSeconds": 42.986,
+      "exitCode": 0,
+      "testSummary": {
+        "tests": 1,
+        "cancelled": 0,
+        "suites": 0,
+        "fail": 0,
+        "skipped": 0,
+        "pass": 1,
+        "todo": 0
+      },
+      "testSummaryByInvocation": {
+        "tests": [
+          1
+        ],
+        "cancelled": [
+          0
+        ],
+        "suites": [
+          0
+        ],
+        "fail": [
+          0
+        ],
+        "skipped": [
+          0
+        ],
+        "pass": [
+          1
+        ],
+        "todo": [
+          0
+        ]
+      },
+      "sourceSha256Before": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceSha256After": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\performance\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\performance\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\performance\\result.json",
+      "databaseNote": "Private replica-set environment is recorded in result.json for database-backed gates."
+    },
+    {
+      "phase": "api-final-r2",
+      "unit": "version",
+      "command": "pnpm version:check",
+      "startedUtc": "2026-10-26T03:23:01.5819368Z",
+      "endedUtc": "2026-10-26T03:23:02.4052506Z",
+      "elapsedSeconds": 0.823,
+      "exitCode": 0,
+      "testSummary": {},
+      "testSummaryByInvocation": {},
+      "sourceSha256Before": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceSha256After": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\version\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\version\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\version\\result.json",
+      "databaseNote": "Private replica-set environment is recorded in result.json for database-backed gates."
+    },
+    {
+      "phase": "api-final-r2",
+      "unit": "diff",
+      "command": "git diff --check",
+      "startedUtc": "2026-10-26T03:23:15.3608321Z",
+      "endedUtc": "2026-10-26T03:23:15.5119953Z",
+      "elapsedSeconds": 0.151,
+      "exitCode": 0,
+      "testSummary": {},
+      "testSummaryByInvocation": {},
+      "sourceSha256Before": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceSha256After": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e",
+      "sourceHashesMatch": true,
+      "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\diff\\stdout.log",
+      "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\diff\\stderr.log",
+      "result": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\api-final-r2\\diff\\result.json",
+      "databaseNote": "Private replica-set environment is recorded in result.json for database-backed gates."
+    }
+  ],
+  "sourceHashGroups": {
+    "independent": "8604650a6ee178c06aa6ac049bcca52633411c8b82cfd66b62b137de30df5a43",
+    "apiFinalR2": "f7652aeecb3f32ccf869be2af1d85b52f965ec1e1060a21fe7f38bdd2367865e"
+  },
+  "cleanup": {
+    "processExited": true,
+    "remaining": [
+      "admin",
+      "config",
+      "local"
+    ],
+    "cleanupRecord": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\cleanup.json",
+    "dropped": "eotion_p104_backend_fb396d8119bf45f5944cd4515bff3d09",
+    "listenerCount": 0,
+    "beforeDatabaseList": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo-list-before.stdout.log"
+  },
+  "notes": [
+    "HTTP test:http count aggregates three TAP invocations: 18+1+24=43.",
+    "API final-r2 eight commands share one frozen apps/api/src+package/tsconfig source hash.",
+    "Previous api-typecheck exit 2 is preserved and superseded by final-r2 PASS.",
+    "Independent non-API commands do not exercise Mongo; initial runner env URI issue is disclosed per command."
+  ]
+}

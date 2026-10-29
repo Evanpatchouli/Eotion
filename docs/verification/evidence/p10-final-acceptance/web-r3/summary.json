@@ -1,0 +1,69 @@
+{
+  "outcome": "PASS",
+  "checks": 50,
+  "evidence": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-TVzhaJ",
+  "webUrl": "http://127.0.0.1:55929",
+  "apiUrl": "http://127.0.0.1:55122",
+  "mongoPort": 55930,
+  "databaseName": "eotion_p104_9e8bac440f0a4d53",
+  "owned": [
+    {
+      "name": "mongo",
+      "pid": 37652,
+      "command": "C:/Program Files/MongoDB/Server/8.2/bin/mongod.exe",
+      "args": [
+        "--dbpath",
+        "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-TVzhaJ\\mongo-data",
+        "--bind_ip",
+        "127.0.0.1",
+        "--port",
+        "55930",
+        "--replSet",
+        "p104_9e8bac440f0a4d53"
+      ],
+      "startedAt": "2026-10-26T03:29:08.834Z",
+      "osStartedAt": "2026-10-26T03:29:08.7943883Z",
+      "exitCode": 0,
+      "signal": null,
+      "exitedAt": "2026-10-26T03:29:20.297Z"
+    },
+    {
+      "name": "api",
+      "pid": 44008,
+      "command": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "args": [
+        "dist/main.js"
+      ],
+      "startedAt": "2026-10-26T03:29:10.337Z",
+      "osStartedAt": "2026-10-26T03:29:10.3004574Z",
+      "exitCode": null,
+      "signal": "SIGTERM",
+      "exitedAt": "2026-10-26T03:29:20.143Z"
+    },
+    {
+      "name": "web",
+      "pid": 42232,
+      "command": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "args": [
+        "node_modules/vite/bin/vite.js",
+        "preview",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "55929",
+        "--strictPort"
+      ],
+      "startedAt": "2026-10-26T03:29:12.605Z",
+      "osStartedAt": "2026-10-26T03:29:12.5573590Z",
+      "exitCode": null,
+      "signal": "SIGTERM",
+      "exitedAt": "2026-10-26T03:29:20.125Z"
+    }
+  ],
+  "processesExited": true,
+  "cleanup": {
+    "databaseDropped": true,
+    "credentialsLogged": false,
+    "tokenStoredInMemoryOnly": true
+  }
+}
