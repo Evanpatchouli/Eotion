@@ -1,4 +1,25 @@
-# 当前任务：P10.4 Database MCP Final Acceptance（已收口 / FINAL HOLD，2026-10-29）
+# 当前任务：P10.4 阻断修复与最终复验（FINAL HOLD，2026-10-29）
+
+起点工作树干净，交付 HEAD `75f5f1026bb96626ff70e84d53b908c5738b834e`；已从该状态创建 `codex/p10.4-acceptance-blockers`。冻结候选 `217f627` 与 master `bdd6748` 分叉，未集成。保留原 HOLD 历史和 314 原件映射；版本 0.0.1/build2、P11.6 HOLD 不变，不 push/merge/tag/发布。
+
+| 单元 | 模式 / 评级 | 验收 |
+| --- | --- | --- |
+| E1 | investigate / S0 scout | 复用原始失败证据，调查投影与 reload 调用链和身份 |
+| E2 | execute / S1 fast_worker | 精确作用域定位属性菜单并保持修复断言 |
+| E3 | decide / S2 主 Agent | 两项未知根因按证据判断，冻结最小 Brief |
+| E4 | execute / S1 fast_worker | 按 Brief 串行修复及回归 |
+| E5 | verify / S0 scout | 定向及冻结源码后的完整强制门槛、隔离真实 Web 链路与清理 |
+| E6 | review / 独立 reviewer | 一次末态独立复核断言、身份、持久化和证据 |
+
+仅解决三个授权阻断；失败与中间轮独立留证。完整 Product 使用原 14 spec 和正式配置，Visual 使用正式预检；任何未满足强制门槛均保留 HOLD。
+
+- A 日期夹具漂移、B 属性菜单歧义、C 测试在保存 Table 引用后错误期待 Timeline，均已按原证据修复并通过定向及两轮正式 suite 中的对应测试。代码提交 `ccc835f`、`03e7be4`、`b1f2cad`；没有产品代码/API/模型/协议变更。
+- 冻结候选 `b1f2cada460298006d658bfaa2b76d643d763140`：typecheck、Web/API build、version check 和 diff check 通过；完整 Product 511/512、独立 Database 254/255，唯一失败为另一条固定日期 Timeline create 测试落到离屏，未擅自扩范围修复。Visual 预检 spi.contrast 1000 与基准 1200 不符，未运行截图测试。正式报告与本轮证据见 `docs/verification/p10-final-acceptance.md`。
+- 真实 Web/MCP 50 条通过，自有随机库已删、Mongo/API/preview 已退出，7173 与三随机端口无监听；128 个后端/共享包/P104 脚本文件 hash 与旧清单一致。原 314 项证据映射及历史 HOLD 保留。独立最终 review 完成，无新增确定代码 blocker，认可 HOLD；结论仍为 P10.4 FINAL HOLD，P10 未 COMPLETE，P11.6 HOLD 不变。
+
+---
+
+# 历史任务：P10.4 Database MCP Final Acceptance（已收口 / FINAL HOLD，2026-10-29）
 
 起始工作树干净，HEAD `1950ec233bb9563395d4cbbe81fdf9538d9c7acf`（含 P10.3 三提交），从此创建 `codex/p10.4-database-mcp-final-acceptance`。本地 master/origin/master 为 `bdd6748ace0bb6880981257b9b64bcbdb16c517c`，共同祖先 `2aad764`；候选领先三个 P10.3 提交，master 另有两个部署提交，互不包含，不自动合并。版本固定 0.0.1 / build 2，P11.6 HOLD 不变，不恢复启动专项，不进入 P12/P15，不 push/merge/tag/Release/发布。
 

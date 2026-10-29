@@ -1,5 +1,13 @@
 # Handoff
 
+## 2026-10-29 P10.4 阻断修复与复验（FINAL HOLD）
+
+从干净交付 HEAD `75f5f10` 创建 `codex/p10.4-acceptance-blockers`；代码候选 `b1f2cada460298006d658bfaa2b76d643d763140`，master `bdd6748` 仍分叉未集成，版本 0.0.1/build2 不变。三个指定问题均为测试缺陷：Frozen 日期夹具与窗口漂移、属性菜单非精确定位、刷新测试先选并持久化 Table 却期待 Timeline。提交 `ccc835f`、`03e7be4`、`b1f2cad` 分别修复；无生产/API/模型/协议修改。原失败、314 项映射和旧 HOLD 原样保留。
+
+目标用例在完整 Product 和独立 Database 中通过；最终冻结门槛完整 Product 511/512、Database 254/255，唯一共同失败是另一条固定 10/13–15 日期的 Timeline create 测试在当日视窗外，未扩范围修复。正式 Visual 在预检因系统 SPI contrast 1000、基准 1200 不匹配而停止，未执行截图比较。typecheck、Web/API build、version 和 diff 检查通过；真实 Web/MCP 50 条通过。随机 Mongo/API/preview 进程退出、随机库删除；7173 及三个自有端口无监听。128 项后端/共享/P104 脚本 hash 匹配旧清单，原后端和真实 Client 证据仅按原范围复用。
+
+报告与证据入口 `docs/verification/p10-final-acceptance.md`、`docs/verification/evidence/p10-4-blocker-repair/`。最终仍 **P10.4 FINAL HOLD、P10 未 COMPLETE**，P11.6 HOLD 和历史启动结论不改；不 push/merge/tag/Release/发布，不进入 P12/P15。独立 review 和最终交付状态以本节更新及 Git 为准。
+
 ## 2026-10-26 P10.4 Database MCP Final Acceptance（FINAL HOLD）
 
 2026-10-29恢复收口：未重复已完成测试或唯一独立review，478个冻结文件与候选217f627仍一致；处理了证据入库的原始CRLF/EOF空行与Windows长路径，原字节通过gzip及manifest保留，Git暂存blob/解压SHA均核对。314原件映射到287唯一目标，三个backend JSON可读副本明确标记为派生；无原数据库操作，自有端口无监听。独立review已完成，支持HOLD，未发现新的P10范围产品缺陷或证据阻断；原Product强制失败保持。文档证据提交后停止，最终SHA见Git。

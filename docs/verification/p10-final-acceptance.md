@@ -1,5 +1,25 @@
 # P10.4 Database MCP Final Acceptance
 
+## 阻断修复与复验（2026-10-29，FINAL HOLD）
+
+本轮从交付 HEAD `75f5f1026bb96626ff70e84d53b908c5738b834e` 创建分支 `codex/p10.4-acceptance-blockers`，修复代码候选 `b1f2cad`；master 仍为 `bdd6748`，两者未集成。原验收的 HOLD、原始失败及 314 项证据映射保留在下文，不能由定向结果取代完整门槛。P11.6 HOLD、历史启动问题结论和版本 0.0.1/build2 不变。
+
+1. **Frozen Table 投影：测试时间夹具漂移。** 原 Product trace 中 records 响应和 Frozen 行包含 `Shared notes A` 与 10 月 13–14 日日期；月视图当前日期为 10 月 26 日，1440×900 截图刻度约 19–31 日，A/B 是左侧离屏跳转控件。日期已投影，但不在当前可视范围；离屏语义符合 renderer。trace 未直接记录 scrollLeft、clientWidth 或显示时区，不能据截图声称精确偏移；today 日界与 +08 相符，但时区值本身未采集。测试固定时间至 10 月 13 日，`setFixedTime` 不冻结计时器；原 Frozen 属性与 bar 内容断言保持，定向三次通过。既有 offscreen 回归保留。
+2. **Frozen 属性修复：测试定位歧义。** 原错误及修复前定向运行均证明非 exact 的“属性”同时匹配“属性”和“日期属性”。改为数据库设置菜单内精确匹配，保留属性删除、配置修复和实际渲染断言；红测复现 strict violation，修后单项通过。
+3. **安排后刷新：测试时序及视图身份预期错误。** 原完整 Product trace 中测试先选择 Fallback table，随后 sequence 3 `block.upsert` 将该 table viewId 写入模拟服务端，reload snapshot 和 View 响应均返回 table，日期仍为 2032-06-01/02；渲染表格与持久引用一致。对照通过 trace 中该次 viewId 更新尚未进入模拟服务端，snapshot 返回旧 Timeline，因此通过不能证明切换已保存。单例及同一 worker 的邻接前置/目标重放均通过，不能替代原完整失败。修复后在原 Timeline 身份下直接 reload，核对本地和模拟服务端 block、View type/config、records 和渲染，再读取 Table；另独立覆盖已保存 Table 的刷新前后日期与身份。两场景各三次定向通过。此处是 mock API 测试证据，真实服务链单独复验，不将其称为真实服务端持久化证明。
+
+本轮定向原始日志及通过 trace 的独立归档和逐项 SHA 见 [证据清单](evidence/p10-4-blocker-repair/initial-evidence-manifest.json)；原失败 trace 与原 314 项映射不变。
+
+对原 478 文件冻结清单中 API、MCP、共享 domain/contracts/sdk/storage 和 P10.4 脚本相关的 128 项进行了候选 `b1f2cad` 逐文件复核，[SHA 对照](evidence/p10-4-blocker-repair/reused-source-hashes.json) 128/128 一致。旧后端 Domain/HTTP/MCP 和真实 Client 结果只在原报告的相应范围内复用；完整 Product、Database、Visual 和真实 Web 组合链路按本轮要求单独复验。
+
+冻结候选 `b1f2cada460298006d658bfaa2b76d643d763140` 的正式门槛：`pnpm typecheck`、`pnpm build:web`、`pnpm build:api`、`pnpm version:check` 和 `git diff --check` 通过；完整 Product 原 14 spec 一次运行 **511 PASS / 1 FAIL / 512**，独立 Database **254 PASS / 1 FAIL / 255**，均单 worker、零重试、无 skip/flaky。原三个阻断测试在两轮中均通过；两轮的唯一失败是同一条新增阻断，不能计作两个缺陷。正式 Visual 的 globalSetup 预检发现系统 `spi.contrast=1000`，基准要求 `1200`，因此未进入截图测试；未修改环境、快照、阈值或 flags。
+
+构建 API 后 `node scripts/verify-p104-web-mcp.mjs` **PASS，50 条验收记录，exit 0**。脚本自建随机 Mongo 端口 58583/PID 15656、API 58597/PID 44788、Web preview 58582/PID 22092，summary 记录随机库已删除、进程已退出；独立复查上述 PID 和端口及 Playwright 7173 均无残留。未连接或停止用户数据库。九项命令各自 359 个代码、测试和正式配置文件的前后 hash 均无变化；[本轮门槛证据](evidence/p10-4-blocker-repair/final-gates-b1f2cad-20261029/) 包含日志、失败 trace、Visual 预检、真实链路和逐文件 hash，66 个原件均经 gzip 解压 SHA 校验，清单 SHA256 `b297fc7327972ce4cdc6c489f9cd46ca6b2fc1694f68f8c73bb2e85f7b773439`；原 TEMP 文件保留。收口时发现五个空日志被打包为零字节而非有效 gzip，已补有效空 gzip 并更新归档 hash；原清单字节另以 gzip 保留（原 SHA256 `fe1c902392eb685afed54f57f631d93c71162baea9f17e71670a11b393a359ac`），未改变任何原始日志。
+
+新增阻断为 `Timeline can be created from a database view selector and keeps its date source and bar after switching and reload`：失败发生在切换/reload 之前，records 响应包含 `2026-10-13` 至 `2026-10-15`，View 为 Timeline 且日期来源正确，现场显示左侧离屏跳转箭头；该测试未固定时钟。证据支持另一条独立测试的日期夹具漂移，不支持将其归为产品缺陷或本轮更改引入。它不在本轮三个指定阻断的修改范围内，未擅自修改。完整 Product 和 Database 失败、Visual 预检阻断均为强制门槛未满足，因此 **P10.4 FINAL HOLD，P10 未 COMPLETE**。P11.6 HOLD 与历史启动故障结论不变，不自动集成 master 或发布。
+
+一次最终独立 review 核对了原始 trace、三项修复与断言、mock 和真实链路边界、两份 SHA 清单及门槛结果，未发现本轮 diff 新增的确定代码 blocker，认可上述 HOLD；新增日期用例和 Visual 环境仍是未通过的强制门槛。记录见 [独立复核](evidence/p10-4-blocker-repair/final-review.json)。
+
 验收运行：2026-10-26；中断恢复后的收口校验：2026-10-29。**P10.4 FINAL HOLD；P10 Database MCP 未 COMPLETE。** 本轮全部指定命令已执行；完整 Product 和独立 Database 两项强制门槛失败，不能用 MCP 局部门槛豁免。P11.6 HOLD、历史启动失败结论及 0.0.1 / build 2 保持。恢复后未重复测试；478个冻结文件仍逐字节匹配，最终只复核证据打包与Git状态。
 
 ## 1. 候选与集成边界

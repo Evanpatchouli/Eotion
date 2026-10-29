@@ -1,0 +1,609 @@
+{
+  "createdAtUtc": "2026-10-29T05:56:05.9181121Z",
+  "candidateHead": "b1f2cada460298006d658bfaa2b76d643d763140",
+  "branch": "codex/p10.4-acceptance-blockers",
+  "runnerEvidenceRoot": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8",
+  "webMcpEvidenceRoot": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP",
+  "gateCount": 9,
+  "archiveFileCount": 66,
+  "compressedFiles": [
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\runner-summary.json",
+      "archive": "runner-summary.json.gz",
+      "sourceBytes": 12942,
+      "sourceSha256": "50d26a97a079dec71a958bde78896313e291cf86008d36dcb13a03ec00e4f76a",
+      "archiveBytes": 1294,
+      "archiveSha256": "3618dc44ce854101483b0ba8fdfb9f3ed36da3b84a30511d58f9d14e8abd72aa",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\01-typecheck\\stdout.log",
+      "archive": "gates/01-typecheck/stdout.log.gz",
+      "sourceBytes": 452,
+      "sourceSha256": "d086ae7c259bafe9edf973c420057f425f55db2a63c26dfb00c38ac2e98663cc",
+      "archiveBytes": 183,
+      "archiveSha256": "d19466c8acc12323bb4ecbee1c845490aa50f5707477b8c167b6d5d68d188b22",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\01-typecheck\\stderr.log",
+      "archive": "gates/01-typecheck/stderr.log.gz",
+      "sourceBytes": 0,
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\01-typecheck\\result.json",
+      "archive": "gates/01-typecheck/result.json.gz",
+      "sourceBytes": 1110,
+      "sourceSha256": "0036edd77bf87c67cac33b8a137f287614d43674e88c4fca1b93596cea4489fc",
+      "archiveBytes": 473,
+      "archiveSha256": "047a124b46154ade391664f5722b73f4132d7666c35c9c37c0fdc3dba47ee72c",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\01-typecheck\\source-before.json",
+      "archive": "gates/01-typecheck/source-before.json.gz",
+      "sourceBytes": 59284,
+      "sourceSha256": "986a0579d7fe3b5fabbe8e380776e3d1b8358873130fa7868c6a7076b351c7a1",
+      "archiveBytes": 17489,
+      "archiveSha256": "77c0c5f1ffc28c1c3cf00c51435b14537208fee61c317ecac4ec79f572b4eab0",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\01-typecheck\\source-after.json",
+      "archive": "gates/01-typecheck/source-after.json.gz",
+      "sourceBytes": 59283,
+      "sourceSha256": "416abd088c18700c2f641fc00001e1436c4f867bd4ba96b66cc30c05b3f346ea",
+      "archiveBytes": 17489,
+      "archiveSha256": "eb5ab4544b5991e03d218692925cb53a22d8eca070b756560644f71f0ec7d973",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\02-build-web\\stdout.log",
+      "archive": "gates/02-build-web/stdout.log.gz",
+      "sourceBytes": 2800,
+      "sourceSha256": "c3d90b6f2dfe78869b28e4fbf561ab6b9129a4ea00c7abe145737852afd14566",
+      "archiveBytes": 998,
+      "archiveSha256": "b887993b52553d83812610bee8eed667469a6c1727c2bcc94fdc5958d69f344f",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\02-build-web\\stderr.log",
+      "archive": "gates/02-build-web/stderr.log.gz",
+      "sourceBytes": 360,
+      "sourceSha256": "351b524197fb492920789369e7f1a271420c757633fbb553b280a181ac4c31a4",
+      "archiveBytes": 251,
+      "archiveSha256": "5aa075ff62993f9d319d76f214f1012576e62cd90e651c73e1a45dc90eb213be",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\02-build-web\\result.json",
+      "archive": "gates/02-build-web/result.json.gz",
+      "sourceBytes": 1110,
+      "sourceSha256": "48cf68bfad13ac00682941e40a2fadc8b40b41d3c3742dcf0c5917464b941aab",
+      "archiveBytes": 475,
+      "archiveSha256": "4369dc21fb1fa952bfe31c80c95deeffba7643cb509b45f673755c3f4cf94c30",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\02-build-web\\source-before.json",
+      "archive": "gates/02-build-web/source-before.json.gz",
+      "sourceBytes": 59284,
+      "sourceSha256": "6d4fe1e0e64f079704a2361728c90d652757743797881edc83499ac3ea046d6b",
+      "archiveBytes": 17488,
+      "archiveSha256": "0a7574cf0880a1e38e1d0afdda5b6076563057a8457d74440e5d57b674a21158",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\02-build-web\\source-after.json",
+      "archive": "gates/02-build-web/source-after.json.gz",
+      "sourceBytes": 59283,
+      "sourceSha256": "04630952eceb0e2783e2eb8e4d71700a196ce4b81a3193c4af5a848df1b70af0",
+      "archiveBytes": 17488,
+      "archiveSha256": "4b25cddec2e926f84f6ef257784e9df3bc9f9222e83a6bb033deab1aff64d140",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\03-product-full\\stdout.log",
+      "archive": "gates/03-product-full/stdout.log.gz",
+      "sourceBytes": 78599,
+      "sourceSha256": "ceb7a4ba4d67288af4a639f2677d1fd33274f3e21b8d127c6f013d8e5bc28935",
+      "archiveBytes": 19541,
+      "archiveSha256": "f48cb52e25a6f481b9b64371135af6ffacd0cd0819b909e5fc0dedba4c1fd531",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\03-product-full\\stderr.log",
+      "archive": "gates/03-product-full/stderr.log.gz",
+      "sourceBytes": 8510,
+      "sourceSha256": "408e5c951671f9140a854590f6ade3691ec5bb84b43dc709c0568c938f994a82",
+      "archiveBytes": 543,
+      "archiveSha256": "534425e7896669e4f68f94187ce1828b1cf73b1f596fc74785324cb2b9a873bb",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\03-product-full\\result.json",
+      "archive": "gates/03-product-full/result.json.gz",
+      "sourceBytes": 1626,
+      "sourceSha256": "030cf43530d062059ec5505343ac07e582dae031e96bbb6e4cb45480e190e44f",
+      "archiveBytes": 576,
+      "archiveSha256": "c3a18b92fea93dc83bfa49ee9dd4d485ef5916ab7fa3ba8bdd7b194684a533c9",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\03-product-full\\source-before.json",
+      "archive": "gates/03-product-full/source-before.json.gz",
+      "sourceBytes": 59287,
+      "sourceSha256": "f5fd83789a5348cbb543c16d1925fae70ccc0b9268f01939ea4d53cf5a1ff803",
+      "archiveBytes": 17492,
+      "archiveSha256": "a1d0d865d5dcbb4a4f298e11736ac464ac864537afb3dcf29dc14ee249272c31",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\03-product-full\\source-after.json",
+      "archive": "gates/03-product-full/source-after.json.gz",
+      "sourceBytes": 59286,
+      "sourceSha256": "b0e59eaee6cfecd4a9879d51b1377b1da00d69df600c5c059770c7f1673e59e7",
+      "archiveBytes": 17492,
+      "archiveSha256": "87cfe3e43cc5fdfe69013fafdb325637c5ae5c668bda7c5428093cbe915e00b8",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\03-product-full\\playwright-results.json",
+      "archive": "gates/03-product-full/playwright-results.json.gz",
+      "sourceBytes": 574619,
+      "sourceSha256": "73a3bb517f219679bac3e33690a794136a1afdc66f87a71834ef150f420f530b",
+      "archiveBytes": 40765,
+      "archiveSha256": "96c560c4c1933b5b38b58e00ad0739f71fe5f3e40868c2eacd43b8a3c00cbcaa",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\03-product-full\\test-results\\product-database-Timeline--4aaac--after-switching-and-reload\\error-context.md",
+      "archive": "gates/03-product-full/test-results/product-database-Timeline--4aaac--after-switching-and-reload/error-context.md.gz",
+      "sourceBytes": 20116,
+      "sourceSha256": "d44459d465b8c5f08b4dd8b2a0c184433fedf63db52a3368c852da590584e7e8",
+      "archiveBytes": 4338,
+      "archiveSha256": "9640ab2ceac0b2dc04ae3daf4bc865d716d72cfce27c24a01ac8d60acf16c208",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\03-product-full\\test-results\\product-database-Timeline--4aaac--after-switching-and-reload\\trace.zip",
+      "archive": "gates/03-product-full/test-results/product-database-Timeline--4aaac--after-switching-and-reload/trace.zip.gz",
+      "sourceBytes": 837741,
+      "sourceSha256": "6c80bb3d263ac8c1c750d22dffa95bb16dace17b4587c31227d55dae270e6e86",
+      "archiveBytes": 725553,
+      "archiveSha256": "17bcd6782c9e9b4e4f06949652df2dd8c3a6dd069fd139c388463ac3597111f7",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\04-database-full\\stdout.log",
+      "archive": "gates/04-database-full/stdout.log.gz",
+      "sourceBytes": 43502,
+      "sourceSha256": "b5e1bdaade9687e2ff1e2f2f62f0b2ad51b3cdc363d2359558ee67d64c8d474f",
+      "archiveBytes": 10517,
+      "archiveSha256": "996da80ab13f0c51ca7222028b277da8c21062472a0af8db509dacbd1dea1980",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\04-database-full\\stderr.log",
+      "archive": "gates/04-database-full/stderr.log.gz",
+      "sourceBytes": 900,
+      "sourceSha256": "dfb6545fc263428b5b552dd8e83131ca7fbe25270d03660b11d8c3330eb17c4c",
+      "archiveBytes": 302,
+      "archiveSha256": "dc8d7dbecba3311b5840e84c2876c4bbccf31d8473a02115792562a88a5b4bce",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\04-database-full\\result.json",
+      "archive": "gates/04-database-full/result.json.gz",
+      "sourceBytes": 1671,
+      "sourceSha256": "9d1638420bbb59285e8a4f311ea68c19f039d24f6281998f6af045c3708c2232",
+      "archiveBytes": 595,
+      "archiveSha256": "c450242a26f4d31a70d7a16a7389cf708a147b8515eba7dd8291d5437f5beac2",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\04-database-full\\source-before.json",
+      "archive": "gates/04-database-full/source-before.json.gz",
+      "sourceBytes": 59288,
+      "sourceSha256": "05108940fde7d738f23fae00d3726d4ad608d94b0c3272ada4ab02262de0e683",
+      "archiveBytes": 17490,
+      "archiveSha256": "e88f0692be7e4c328d7b584d79e29cabbc39e14bfd59f3e5795752ad06e190aa",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\04-database-full\\source-after.json",
+      "archive": "gates/04-database-full/source-after.json.gz",
+      "sourceBytes": 59287,
+      "sourceSha256": "266786a69d3c3ba231a1780c1fac9992abfc6b823855d991210edcaaa3f0d430",
+      "archiveBytes": 17489,
+      "archiveSha256": "38ad3c9cc04ba463c8965ad4271f925819328b38149a1fa5d62bc5f35a3089ec",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\04-database-full\\playwright-results.json",
+      "archive": "gates/04-database-full/playwright-results.json.gz",
+      "sourceBytes": 293439,
+      "sourceSha256": "9e402a8ee6e0313abf82d3ab5ae7c5bf8d64343c9d8c4cf92c7bec18eb2c42ee",
+      "archiveBytes": 20919,
+      "archiveSha256": "2f161cda40aa9e0b8169813d4679281fa60e6e195b7d96282d72859af9cf00e6",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\04-database-full\\test-results\\product-database-Timeline--4aaac--after-switching-and-reload\\error-context.md",
+      "archive": "gates/04-database-full/test-results/product-database-Timeline--4aaac--after-switching-and-reload/error-context.md.gz",
+      "sourceBytes": 20116,
+      "sourceSha256": "d44459d465b8c5f08b4dd8b2a0c184433fedf63db52a3368c852da590584e7e8",
+      "archiveBytes": 4338,
+      "archiveSha256": "9640ab2ceac0b2dc04ae3daf4bc865d716d72cfce27c24a01ac8d60acf16c208",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\04-database-full\\test-results\\product-database-Timeline--4aaac--after-switching-and-reload\\trace.zip",
+      "archive": "gates/04-database-full/test-results/product-database-Timeline--4aaac--after-switching-and-reload/trace.zip.gz",
+      "sourceBytes": 849559,
+      "sourceSha256": "c96314f5a47e18fc7c91b9adf3b4c7fee1e840d0cc60d193641057ebb24d82fc",
+      "archiveBytes": 754402,
+      "archiveSha256": "e36b6426cd5337156f2134f715c928bb0903ce7e788865e7f16e5434761e2efc",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\05-visual-formal\\stdout.log",
+      "archive": "gates/05-visual-formal/stdout.log.gz",
+      "sourceBytes": 1871,
+      "sourceSha256": "347af9c89a104c2b3d407eb989bbdb1e8791f7c41d4ea077e616156a77431639",
+      "archiveBytes": 738,
+      "archiveSha256": "bdb531501467f5164f79344895417321cfcdc6e2475abb49ff25ac2026568f57",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\05-visual-formal\\stderr.log",
+      "archive": "gates/05-visual-formal/stderr.log.gz",
+      "sourceBytes": 376,
+      "sourceSha256": "56a6196904f138ea1fc35f9d2fd16299c34402f4fa59ab800a84921e729b3d1f",
+      "archiveBytes": 169,
+      "archiveSha256": "a1f440c6f8172aef9242d647520357ccb9e00d200a2760ecaa8f60af6b5d5d2c",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\05-visual-formal\\result.json",
+      "archive": "gates/05-visual-formal/result.json.gz",
+      "sourceBytes": 1630,
+      "sourceSha256": "60d508b8cac6147c7fefa01c3567860c664906a3d91ec8678718e0597d69add3",
+      "archiveBytes": 574,
+      "archiveSha256": "1f207b72414510532ea0e70398eb4bfef72e0e24efa8ab0b56ec1e75a86a9cea",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\05-visual-formal\\source-before.json",
+      "archive": "gates/05-visual-formal/source-before.json.gz",
+      "sourceBytes": 59288,
+      "sourceSha256": "1d5ce35bd6e882862c4e074d59ae1276daa57be7ead75005ede848a6023194fb",
+      "archiveBytes": 17489,
+      "archiveSha256": "36a3a817677c1c3fc5340774618289990c6b277814f1e690f9adc09467c5b8b5",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\05-visual-formal\\source-after.json",
+      "archive": "gates/05-visual-formal/source-after.json.gz",
+      "sourceBytes": 59287,
+      "sourceSha256": "2bc31a7a167f5126be42df9f1099cbbdc49a6b612404b4fb329cb86a6fbadb05",
+      "archiveBytes": 17491,
+      "archiveSha256": "34291c0d43b2165bf78746582941d6ff1fc150408139c6b9a43e38d060d6e6bd",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\05-visual-formal\\playwright-results.json",
+      "archive": "gates/05-visual-formal/playwright-results.json.gz",
+      "sourceBytes": 6202,
+      "sourceSha256": "fa191ac40957ddfc9260419e4533917d336f509098aec3eee09639d866a7dcef",
+      "archiveBytes": 1906,
+      "archiveSha256": "1a2969592de4d17f285327d2d60c44f45e19dff5ef65992a553144ad268d687f",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\05-visual-formal\\test-results\\visual-environment.json",
+      "archive": "gates/05-visual-formal/test-results/visual-environment.json.gz",
+      "sourceBytes": 795,
+      "sourceSha256": "b4312f625d7e17433d6904b201bf2ed36a1e0a6cdbd45416d038bb4b2c7d85a5",
+      "archiveBytes": 466,
+      "archiveSha256": "2789619f342adae749704cf10903822ef799a0a20538b672fec888fd75323455",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\06-version-check\\stdout.log",
+      "archive": "gates/06-version-check/stdout.log.gz",
+      "sourceBytes": 167,
+      "sourceSha256": "1bcd92f1aa6e5d148609d24b4fd213213c52868927da5f2a078c360e625e3558",
+      "archiveBytes": 150,
+      "archiveSha256": "5c7b976304b754838094170abcf7a5bc052276006f2be408b02eb38c64450b5b",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\06-version-check\\stderr.log",
+      "archive": "gates/06-version-check/stderr.log.gz",
+      "sourceBytes": 0,
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\06-version-check\\result.json",
+      "archive": "gates/06-version-check/result.json.gz",
+      "sourceBytes": 1128,
+      "sourceSha256": "99c76015dae813840a33cbbb70f4cfbb97dad3893e886cefade24f350f9792b1",
+      "archiveBytes": 476,
+      "archiveSha256": "170056163f420faf0c122f03bbdf3c7df130c206276301315d4c1e4fba2aae6e",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\06-version-check\\source-before.json",
+      "archive": "gates/06-version-check/source-before.json.gz",
+      "sourceBytes": 59288,
+      "sourceSha256": "56f06b60b68596994382e412501f7f94170c1b40857e84a7a01479d9c199a8bc",
+      "archiveBytes": 17491,
+      "archiveSha256": "13fbd1e727aad2da4ecaf48882041f0b3d5e1e37b99b71922b2e597eaffa985c",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\06-version-check\\source-after.json",
+      "archive": "gates/06-version-check/source-after.json.gz",
+      "sourceBytes": 59287,
+      "sourceSha256": "59403e6b0ffb5cf090120666fceaeba87485d8aebcaf50bd174618ef49a33a3a",
+      "archiveBytes": 17491,
+      "archiveSha256": "09471e621d0e97e2b9e86c56e6c4f7b3aaf0fd2914bf3e5ad7621c6ad53f75d6",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\07-diff-check\\stdout.log",
+      "archive": "gates/07-diff-check/stdout.log.gz",
+      "sourceBytes": 0,
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\07-diff-check\\stderr.log",
+      "archive": "gates/07-diff-check/stderr.log.gz",
+      "sourceBytes": 134,
+      "sourceSha256": "620e727aed99fa851e2a2e97203eddbddc8c3443f55a0efbcdde840b165bd94a",
+      "archiveBytes": 134,
+      "archiveSha256": "876a3b37b1776d8e0d2fb18fd0fb8d8522eca6c71de7955c365e94f43ea9c6d7",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\07-diff-check\\result.json",
+      "archive": "gates/07-diff-check/result.json.gz",
+      "sourceBytes": 1115,
+      "sourceSha256": "ef76e6051a8188b7fa39f6067eb5fb4c3644bf15d8c1b5b05bb74c0f87398b28",
+      "archiveBytes": 475,
+      "archiveSha256": "9b73ec908b1e6c5ec9af377e0f4a6a30303b02c0de1f520f31c882bf10949cd2",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\07-diff-check\\source-before.json",
+      "archive": "gates/07-diff-check/source-before.json.gz",
+      "sourceBytes": 59285,
+      "sourceSha256": "7b07b6ad4c22b315043524bf5537552cea3fff8cd535f12952a6c09685fa1f13",
+      "archiveBytes": 17490,
+      "archiveSha256": "a8ee83f9234bbd15dd37e76bb4bd416d59efbdba867128aed3c7e469648b5043",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\07-diff-check\\source-after.json",
+      "archive": "gates/07-diff-check/source-after.json.gz",
+      "sourceBytes": 59284,
+      "sourceSha256": "35bb1c6cc5d837d12011ecc57bf0218d416e637333d284ea4d450ea53bc31d3b",
+      "archiveBytes": 17490,
+      "archiveSha256": "ee0146a35ead928d86ff6b0ce72d72fa533af5c48572fd57609f691cf43f4f4d",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\08-build-api\\stdout.log",
+      "archive": "gates/08-build-api/stdout.log.gz",
+      "sourceBytes": 546,
+      "sourceSha256": "225dd486dc0e0b32180c326f2ba3e850cada81a3d71cb0cc56426c3267c2469b",
+      "archiveBytes": 264,
+      "archiveSha256": "037659feb0415cc0af751b0a6aa244166ea87839bceee9e51d6dbe2baf4ca55f",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\08-build-api\\stderr.log",
+      "archive": "gates/08-build-api/stderr.log.gz",
+      "sourceBytes": 0,
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\08-build-api\\result.json",
+      "archive": "gates/08-build-api/result.json.gz",
+      "sourceBytes": 1110,
+      "sourceSha256": "c58758a41bb68d06e2b5a089aebbc88fb295baaa4106d111bd9138715f1913c5",
+      "archiveBytes": 476,
+      "archiveSha256": "9cb8e94da41e24cd7525886d3428b8655f77ef3e04d8bcca92c1d28927b03f0b",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\08-build-api\\source-before.json",
+      "archive": "gates/08-build-api/source-before.json.gz",
+      "sourceBytes": 59284,
+      "sourceSha256": "5d724cd000ea64c0382e8d33936c581a7a9a924d49c74ac705c378340aa843ce",
+      "archiveBytes": 17489,
+      "archiveSha256": "beac140c6305c80edbe97ca25b9826584042b7328caab6de3c7bc698ecea46d4",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\08-build-api\\source-after.json",
+      "archive": "gates/08-build-api/source-after.json.gz",
+      "sourceBytes": 59283,
+      "sourceSha256": "856e8f47ea7b704e509d62ce2b62028eb7756c0e90caa8388e54bdd14bc4dbac",
+      "archiveBytes": 17490,
+      "archiveSha256": "a2e2c1c7e5fe24a0325e3b8f335746fe83cf16a3705eb00d9c7787d227aa9bba",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\09-real-web-mcp\\stdout.log",
+      "archive": "gates/09-real-web-mcp/stdout.log.gz",
+      "sourceBytes": 1915,
+      "sourceSha256": "e2f26de4fa7d3fee87e7c3a3b814deff72a882a674ceb6a7749989a8e7c603a6",
+      "archiveBytes": 680,
+      "archiveSha256": "79051edbadbcacf1e32949eed28f4e9024aac2ec18b74a995c6757796e5a8578",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\09-real-web-mcp\\stderr.log",
+      "archive": "gates/09-real-web-mcp/stderr.log.gz",
+      "sourceBytes": 0,
+      "sourceSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\09-real-web-mcp\\result.json",
+      "archive": "gates/09-real-web-mcp/result.json.gz",
+      "sourceBytes": 1144,
+      "sourceSha256": "6a5b46caed751fee16a81cc36931ab230a11f64cb00f2e35270cefe90c9d7247",
+      "archiveBytes": 491,
+      "archiveSha256": "8bfd3e5a608d534b2a5fc3426c1b57a8be48ba6655feea89123a363323cfd819",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\09-real-web-mcp\\source-before.json",
+      "archive": "gates/09-real-web-mcp/source-before.json.gz",
+      "sourceBytes": 59287,
+      "sourceSha256": "3dd683d2b30f4ed5e188638fe09306b1ae7154286ec36c68939e5de67c1b8014",
+      "archiveBytes": 17489,
+      "archiveSha256": "39c214f62b0b73f7cdcd2e4fea34d256ac7001f8d4884d46056de4f18a991082",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\09-real-web-mcp\\source-after.json",
+      "archive": "gates/09-real-web-mcp/source-after.json.gz",
+      "sourceBytes": 59286,
+      "sourceSha256": "4f5aa9a63df5b0cf11a4eae2421827d20b240fc0a0b49f29b09231ab0fd2920d",
+      "archiveBytes": 17489,
+      "archiveSha256": "f979405456fe15ed2065965f3daaf3daf3e4ef6aba7d80fd6ed994ee12be9c18",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-blockers-final-833d4c6bd44c4757bf0fbb845f4ce8f8\\09-real-web-mcp\\owned-service-cleanup-check.json",
+      "archive": "gates/09-real-web-mcp/owned-service-cleanup-check.json.gz",
+      "sourceBytes": 2196,
+      "sourceSha256": "b95a3599a182f75e72577cd4c3f8efb29d43038b18bebe167cfca437d819587b",
+      "archiveBytes": 730,
+      "archiveSha256": "345b6cf9d7a76f9a3f0d76467a64ca2a405f72bcb74031ec5e3d55280622a474",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\api.log",
+      "archive": "web-mcp/api.log.gz",
+      "sourceBytes": 44986,
+      "sourceSha256": "e8972221aa67f316d64a08ce5f38bc106838d4bda859a2f5084e4342c9b6dd92",
+      "archiveBytes": 3875,
+      "archiveSha256": "d82830ffcc96d0f6232c8d1bd113d1c355fca1a5132cda72fd2ea93e4840e36b",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\artifacts-sha256.json",
+      "archive": "web-mcp/artifacts-sha256.json.gz",
+      "sourceBytes": 1224,
+      "sourceSha256": "dbe3142721755b7cfea35184297ef2b9a57404084eee23ddb2ff5837ee04cd6f",
+      "archiveBytes": 581,
+      "archiveSha256": "1e4e9bdc929eb4437f7ab10cf4b8f12662b9aa786ddd256c9a8b196897a0b414",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\browser-errors.json",
+      "archive": "web-mcp/browser-errors.json.gz",
+      "sourceBytes": 539,
+      "sourceSha256": "b5b9e96ab7bfd133064b91770993113bc8d23c063a04b0207218f296cb635872",
+      "archiveBytes": 243,
+      "archiveSha256": "58c4dbfd50f9e78768e2b9b93ffaa53922b99ac2a3aff11485e83b47fb695147",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\mongo.log",
+      "archive": "web-mcp/mongo.log.gz",
+      "sourceBytes": 275481,
+      "sourceSha256": "843a699dbb6866aca2a70d35b5c97ddf92453d1b35a00149b1fc2b8d8ec74ece",
+      "archiveBytes": 29486,
+      "archiveSha256": "a78fb3fe303aaf373df14e8db6167f5537a2a2e309158f634aa79ec3398aec83",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\summary.json",
+      "archive": "web-mcp/summary.json.gz",
+      "sourceBytes": 1914,
+      "sourceSha256": "422cdabd4b354958607de0ec49973301fd65c46b51b122b8ba94d1a26968103c",
+      "archiveBytes": 680,
+      "archiveSha256": "3ad0fd87381e84dcb769753a49e3c707a20fae6d748af74aff48eb9eaa60d286",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\trace.zip",
+      "archive": "web-mcp/trace.zip.gz",
+      "sourceBytes": 2385959,
+      "sourceSha256": "ed60b57dd780a592f23ca7aa6e82fff8bc0ebad279ef40be0666a9b679621b59",
+      "archiveBytes": 2131747,
+      "archiveSha256": "aa1e4906cfe593327e9c979f39809d625b944033d23c85afa2f5c981c20e04fa",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\transcript.json",
+      "archive": "web-mcp/transcript.json.gz",
+      "sourceBytes": 51675,
+      "sourceSha256": "1eb0b9a48ad401daf49d929437b530d14c8889cff6f30e705b398d0ca3a5c7a6",
+      "archiveBytes": 4867,
+      "archiveSha256": "d2419a5ffddcbd456a66d3beeabdad592dbdf068f521298b061bd095e04fc1a0",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\web-after-mcp-writes.png",
+      "archive": "web-mcp/web-after-mcp-writes.png.gz",
+      "sourceBytes": 46336,
+      "sourceSha256": "10dc3e4094933130d4684358662172a100b7f81dfee88603d2815c160f53d5e7",
+      "archiveBytes": 40904,
+      "archiveSha256": "2179953b8f01590f8f7710b78c2441f955196f9f17fa34d6b4cfb24972a95edb",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\web-final-refresh.png",
+      "archive": "web-mcp/web-final-refresh.png.gz",
+      "sourceBytes": 46412,
+      "sourceSha256": "a92081551928af00bd6edebf2449ac4cca111728a6f4b54d5b27eb664704f050",
+      "archiveBytes": 40977,
+      "archiveSha256": "ed6a103e66c5add8151ee18e6cebb6e8b309ecbd83c56bf4dedb7b8068e7b63e",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\web-title-edited.png",
+      "archive": "web-mcp/web-title-edited.png.gz",
+      "sourceBytes": 46881,
+      "sourceSha256": "d48f5c0e6fa0ed017570b25c420720185aac5ae4e0635e2454912281015314fc",
+      "archiveBytes": 41510,
+      "archiveSha256": "6d89dad61727b27990145f748ad39d7f74894fbc210b175548efef4cc6dda32e",
+      "roundTripVerified": true
+    },
+    {
+      "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-web-mcp-9WicgP\\web.log",
+      "archive": "web-mcp/web.log.gz",
+      "sourceBytes": 40,
+      "sourceSha256": "235f1187c33611f0512e7b0f9e1fc9c6a37e12720f45869884fd483e204063a5",
+      "archiveBytes": 60,
+      "archiveSha256": "f898431c6175f81026b308183eb1a6d7ca809f622662773135d74e2b8ffb0650",
+      "roundTripVerified": true
+    }
+  ],
+  "sourceHashManifest": "final-code-test-config-hashes.json",
+  "sourceHashManifestSha256": "5ab1c4d36a9e2ba9a450703badd985190c58fcbbc08b8be278af17a8c3b5f578",
+  "archiveShaScope": "Each compressed artifact SHA256 plus source SHA256 and verified decompressed-byte SHA256",
+  "roundTripFailures": []
+}

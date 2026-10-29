@@ -1,0 +1,8 @@
+{
+  "candidate": "b1f2cada460298006d658bfaa2b76d643d763140",
+  "review": "one independent final review",
+  "result": "FINAL HOLD supported; no new confirmed blocker in repair diff",
+  "checked": ["original failure traces", "Frozen projection and repair assertions", "Timeline and Table reload identity, local and mock server state, response and rendering", "mock versus real Web evidence", "128 historical source hashes", "66 archived gate artifacts and 359 source hashes"],
+  "remainingMandatoryGaps": ["Product and Database: separate Timeline creation test uses drifting fixed dates and fails on an offscreen bar", "Visual: formal preflight SPI contrast 1000 differs from baseline 1200; screenshot tests not run"],
+  "limits": "No P10 FINAL PASS or COMPLETE; P11.6 HOLD and historical startup conclusion unchanged."
+}
