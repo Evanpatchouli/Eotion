@@ -8,8 +8,8 @@ const positionedTicks = computed(() => props.ticks.map(tick => ({
   style: { left: `${tick.x}px`, width: `${tick.width}px` },
   labelStyle: {
     left: `${tick.labelOffsetX}px`,
-    ...(tick.unit === 'day' && tick.level === 'minor'
-      ? { maxWidth: `${Math.max(0, tick.width - tick.labelOffsetX)}px`, boxSizing: 'border-box' as const }
+    ...(tick.level === 'major' || tick.unit === 'day'
+      ? { maxWidth: `min(260px, 80vw, ${Math.max(0, tick.width - tick.labelOffsetX)}px)`, boxSizing: 'border-box' as const }
       : {}),
   },
 })))

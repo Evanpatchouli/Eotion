@@ -200,6 +200,22 @@ test('creates a Timeline through the product UI and keeps its date source and sc
   const reloadedBar = reloadedDatabase.getByTestId('database-timeline').locator('[data-testid="timeline-bar"]')
   await expect(reloadedBar).toContainText('验收里程碑')
   await page.screenshot({ path: testInfo.outputPath('timeline-reloaded.png'), fullPage: true, animations: 'disabled' })
+  // Leave a sliver of the first month visible and check that its pinned label
+  // cannot cover the next month, including when Frozen Table narrows the ruler.
+  const ruler = reloadedDatabase.getByTestId('timeline-ruler')
+  const scroller = reloadedDatabase.getByTestId('timeline-scroll')
+  const initialScroll = await scroller.evaluate(element => element.scrollLeft)
+  const toBoundary = await ruler.locator('.eotion-timeline-ruler-tick--major').first().evaluate(tick =>
+    tick.getBoundingClientRect().right - tick.parentElement!.getBoundingClientRect().left)
+  await scroller.evaluate((element, distance) => { element.scrollLeft += distance - 30 }, toBoundary)
+  const months = ruler.locator('.eotion-timeline-ruler-label--major')
+  await expect.poll(() => months.evaluateAll(labels => {
+    if (labels.length < 2) return false
+    const current = labels[0]!.getBoundingClientRect()
+    const next = labels[1]!.getBoundingClientRect()
+    return current.width <= 32 && current.right <= next.left + 1
+  })).toBe(true)
+  await scroller.evaluate((element, value) => { element.scrollLeft = value }, initialScroll)
   await reloadedBar.click()
   const reloadedRecord = page.locator('[data-overlay-mode="drawer"]')
   await expect(reloadedRecord).toBeVisible()
