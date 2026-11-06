@@ -3224,6 +3224,7 @@ test('database view selector creates a List view through the existing DatabaseVi
 })
 
 test('Timeline can be created from a database view selector and keeps its date source and bar after switching and reload', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-14T12:00:00.000Z'))
   const date = property('timeline-create-date', rootDatabase.id, 'Schedule', 'date')
   const item = record('timeline-create-record', rootDatabase.id, 'timeline-create-page', {
     'root-title': 'Timeline create record', [date.id]: { start: '2026-10-13', end: '2026-10-15' },
