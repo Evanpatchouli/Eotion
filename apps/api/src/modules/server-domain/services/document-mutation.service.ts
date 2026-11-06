@@ -1,13 +1,11 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
-import { InjectConnection } from '@nestjs/mongoose'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { assignBlockOrder, nextOrderKey } from '@eotion/domain'
-import { createHash, randomUUID } from 'node:crypto'
-import type { ClientSession, Connection } from 'mongoose'
+import { randomUUID } from 'node:crypto'
+import type { ClientSession } from 'mongoose'
 
 import type { PageRecord, ServerBlockRecord } from '../types'
-import { McpMutationRepository, type McpMutationReceiptRecord, type McpMutationTool } from '../repositories/mcp-mutation.repository'
 import { BlockService } from './block.service'
-import { supportsTransactions } from './mongo-transactions'
+import { McpMutationService } from './mcp-mutation.service'
 import { PageService } from './page.service'
 import { WorkspacePermissionService } from './workspace-permission.service'
 
@@ -35,53 +33,18 @@ export interface UpdateDocumentInput {
 
 export type DocumentResultProject<T> = (page: PageRecord, blocks: ServerBlockRecord[]) => T
 
-type MutationReceiptKey = Pick<McpMutationReceiptRecord, 'userId' | 'tool' | 'idempotencyKey'>
-
-function canonical(value: unknown): string {
-  if (value === null) return 'null'
-  if (typeof value === 'string' || typeof value === 'boolean') return JSON.stringify(value)
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) throw new BadRequestException('Mutation request is not JSON serializable')
-    return JSON.stringify(value)
-  }
-  if (Array.isArray(value)) return `[${value.map((item) => item === undefined ? 'null' : canonical(item)).join(',')}]`
-  if (typeof value === 'object') {
-    const entries = Object.entries(value).filter(([, item]) => item !== undefined).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
-    return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`).join(',')}}`
-  }
-  throw new BadRequestException('Mutation request is not JSON serializable')
-}
-
-function requestHash(tool: McpMutationTool, payload: unknown): string {
-  return createHash('sha256').update(canonical({ tool, payload })).digest('hex')
-}
-
-function isDuplicateKey(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 11000
-}
-
-function isTransactionUnsupported(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false
-  if ('message' in error && typeof error.message === 'string' && error.message.includes('Transaction numbers are only allowed')) return true
-  if ('originalError' in error && isTransactionUnsupported(error.originalError)) return true
-  return 'errorResponse' in error && isTransactionUnsupported(error.errorResponse)
-}
-
 @Injectable()
 export class DocumentMutationService {
   constructor(
-    @InjectConnection() private readonly connection: Connection,
-    private readonly receipts: McpMutationRepository,
+    private readonly mutations: McpMutationService,
     private readonly pages: PageService,
     private readonly blocks: BlockService,
     private readonly permissions: WorkspacePermissionService,
   ) {}
 
   async create<T>(userId: string, input: CreateDocumentInput, project: DocumentResultProject<T>, requestPayload?: unknown): Promise<T> {
-    const tool: McpMutationTool = 'eotion_create_page'
-    const hash = requestHash(tool, requestPayload === undefined ? input : requestPayload)
-    const key: MutationReceiptKey = { userId, tool, idempotencyKey: input.idempotencyKey }
-    return this.run(key, hash, async (session) => {
+    return this.mutations.execute(userId, 'eotion_create_page', input.idempotencyKey, requestPayload === undefined ? input : requestPayload,
+      async () => this.permissions.assertCanWrite(userId, input.workspaceId), async (session) => {
       const siblings = (await this.pages.list(userId, input.workspaceId, session))
         .filter((page) => page.parentPageId === (input.parentPageId ?? null))
       const page = await this.pages.create(userId, input.workspaceId, {
@@ -106,82 +69,30 @@ export class DocumentMutationService {
         }, session)
       }
 
-      return this.saveProjectedResult(userId, page, project, key, hash, session)
-    }, async () => this.permissions.assertCanWrite(userId, input.workspaceId))
+      return this.projectResult(userId, page, project, session)
+    })
   }
 
   async update<T>(userId: string, input: UpdateDocumentInput, project: DocumentResultProject<T>, requestPayload?: unknown): Promise<T> {
-    const tool: McpMutationTool = 'eotion_update_page'
-    const hash = requestHash(tool, requestPayload === undefined ? input : requestPayload)
-    const key: MutationReceiptKey = { userId, tool, idempotencyKey: input.idempotencyKey }
-    return this.run(key, hash, async (session) => {
+    return this.mutations.execute(userId, 'eotion_update_page', input.idempotencyKey, requestPayload === undefined ? input : requestPayload,
+      async (session) => {
+      const page = await this.pages.findAccessible(userId, input.pageId, session)
+      await this.permissions.assertCanWrite(userId, page.workspaceId)
+    }, async (session) => {
       const page = await this.pages.findAccessible(userId, input.pageId, session)
       await this.pages.updateDocumentVersion(userId, page.workspaceId, page.id, input.expectedUpdatedAt, input.title, session)
       if (input.blocks !== undefined) await this.replaceBlocks(userId, page, input.blocks, session)
       const current = await this.pages.find(userId, page.workspaceId, page.id, session)
       if (!current) throw new NotFoundException('Page not found')
-      return this.saveProjectedResult(userId, current, project, key, hash, session)
-    }, async (session) => {
-      const page = await this.pages.findAccessible(userId, input.pageId, session)
-      await this.permissions.assertCanWrite(userId, page.workspaceId)
+      return this.projectResult(userId, current, project, session)
     })
   }
 
-  private async run<T>(key: MutationReceiptKey, hash: string, operation: (session: ClientSession) => Promise<T>, assertResourceAccess: (session?: ClientSession) => Promise<void>): Promise<T> {
-    await this.receipts.ensureReady()
-    if (!(await supportsTransactions(this.connection))) {
-      throw new ServiceUnavailableException('Document mutations require MongoDB replica set transactions')
-    }
-
-    const session = await this.connection.startSession()
-    try {
-      try {
-        let result!: T
-        await session.withTransaction(async () => {
-          // Mongo may retry this callback after transient transaction errors.
-          // Re-read the receipt and re-check permission on every attempt.
-          await assertResourceAccess(session)
-          const replay = await this.readReplay<T>(key, hash, session)
-          if (replay.found) {
-            result = replay.result
-            return
-          }
-          result = await operation(session)
-        })
-        return result
-      } catch (error) {
-        if (isTransactionUnsupported(error)) throw new ServiceUnavailableException('Document mutations require MongoDB replica set transactions')
-        if (!isDuplicateKey(error)) throw error
-        await assertResourceAccess()
-        const receipt = await this.receipts.find(key)
-        if (!receipt) throw error
-        if (receipt.requestHash !== hash) throw new ConflictException('Idempotency key already used with different content')
-        return receipt.result as T
-      }
-    } finally {
-      await session.endSession()
-    }
-  }
-
-  private async readReplay<T>(key: MutationReceiptKey, hash: string, session: ClientSession): Promise<{ found: false } | { found: true; result: T }> {
-    const receipt = await this.receipts.find(key, session)
-    if (!receipt) return { found: false }
-    if (receipt.requestHash !== hash) throw new ConflictException('Idempotency key already used with different content')
-    return { found: true, result: receipt.result as T }
-  }
-
-  private async saveProjectedResult<T>(userId: string, page: PageRecord, project: DocumentResultProject<T>, key: MutationReceiptKey, hash: string, session: ClientSession): Promise<T> {
+  private async projectResult<T>(userId: string, page: PageRecord, project: DocumentResultProject<T>, session: ClientSession): Promise<T> {
     const current = await this.pages.find(userId, page.workspaceId, page.id, session)
     if (!current) throw new NotFoundException('Page not found')
     const documentBlocks = await this.blocks.listBounded(userId, current.workspaceId, current.id, 1000, session)
     const result = project(current, documentBlocks)
-    await this.receipts.create({
-      id: randomUUID(),
-      ...key,
-      requestHash: hash,
-      status: 'committed',
-      result,
-    }, session)
     return result
   }
 

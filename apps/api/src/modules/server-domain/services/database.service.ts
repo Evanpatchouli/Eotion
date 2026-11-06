@@ -56,9 +56,41 @@ export class DatabaseService {
     })
   }
 
-  async find(userId: string, workspaceId: string, id: string): Promise<Database | null> {
+  async find(userId: string, workspaceId: string, id: string, session?: ClientSession): Promise<Database | null> {
     await this.permissions.assertCanRead(userId, workspaceId)
-    return this.databases.findInWorkspace(workspaceId, id)
+    return this.databases.findInWorkspace(workspaceId, id, session)
+  }
+
+  async assertWriteScope(userId: string, workspaceId: string, databaseId: string,
+    target?: { kind: 'property' | 'view' | 'record'; id: string } | { kind: 'property' | 'view' | 'record'; id: string }[], session?: ClientSession): Promise<Database> {
+    await this.permissions.assertCanWrite(userId, workspaceId)
+    const database = await this.databases.findInWorkspace(workspaceId, databaseId, session)
+    if (!database) throw new NotFoundException('Database not found in workspace')
+    if (!target) return database
+    for (const item of Array.isArray(target) ? target : [target]) {
+      if (item.kind === 'property') {
+        if (!await this.properties.findInDatabase(workspaceId, databaseId, item.id, session)) throw new NotFoundException('Database property not found')
+      } else if (item.kind === 'view') {
+        const view = await this.views.findInWorkspace(workspaceId, item.id, session)
+        if (!view || view.databaseId !== databaseId) throw new NotFoundException('Database view not found')
+      } else {
+        const record = await this.records.findInDatabase(workspaceId, databaseId, item.id, session)
+        if (!record || !await this.pages.findInWorkspace(workspaceId, record.pageId, session)) throw new NotFoundException('Database record not found')
+      }
+    }
+    return database
+  }
+
+  async renameDatabase(userId: string, workspaceId: string, databaseId: string, name: string,
+    expectedDatabaseVersion: number, session?: ClientSession): Promise<{ database: Database }> {
+    await this.assertWriteScope(userId, workspaceId, databaseId, undefined, session)
+    if (typeof name !== 'string' || !name.trim() || name.trim().length > 200 || name !== name.trim()) throw new BadRequestException('Invalid database name')
+    if (!Number.isSafeInteger(expectedDatabaseVersion) || expectedDatabaseVersion < 1) throw new BadRequestException('Invalid database version')
+    return this.runInSession(session, async txSession => {
+      const database = await this.databases.rename(workspaceId, databaseId, expectedDatabaseVersion, name, txSession)
+      if (!database) throw new ConflictException('Database version is stale')
+      return { database }
+    })
   }
 
   async listWindow(userId: string, workspaceId: string, input: WindowInput): Promise<{ items: Database[]; nextCursor: string | null }> {
@@ -194,11 +226,13 @@ export class DatabaseService {
     })
   }
 
-  async createRecordPage(userId: string, workspaceId: string, databaseId: string, input: DatabaseRecordPageCreateRequest): Promise<{ record: DatabaseTableRecord; page: Awaited<ReturnType<PageRepository['create']>> }> {
-    await this.requireDatabase(userId, workspaceId, databaseId, true)
+  async createRecordPage(userId: string, workspaceId: string, databaseId: string, input: DatabaseRecordPageCreateRequest, activeSession?: ClientSession, expectedDatabaseVersion?: number): Promise<{ record: DatabaseTableRecord; page: Awaited<ReturnType<PageRepository['create']>> }> {
+    if (expectedDatabaseVersion !== undefined && (!Number.isSafeInteger(expectedDatabaseVersion) || expectedDatabaseVersion < 1)) throw new BadRequestException('Invalid database version')
+    await this.requireDatabase(userId, workspaceId, databaseId, true, activeSession)
     this.parse(DatabaseRecordPageCreateRequestSchema, input)
-    return this.transact(async session => {
+    return this.runInSession(activeSession, async session => {
       const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
+      if (expectedDatabaseVersion !== undefined && database.version !== expectedDatabaseVersion) throw new ConflictException('Database version is stale')
       await this.bumpDatabaseVersion(database, session)
       await this.touchAdvanced(workspaceId, [databaseId], session)
       const properties = await this.properties.list(workspaceId, databaseId, session)
@@ -361,10 +395,10 @@ export class DatabaseService {
     return { database, properties, views }
   }
 
-  async createProperty(userId: string, workspaceId: string, databaseId: string, input: CreateProperty): Promise<{ database: Database; property: DatabaseProperty }> {
-    await this.requireDatabase(userId, workspaceId, databaseId, true)
+  async createProperty(userId: string, workspaceId: string, databaseId: string, input: CreateProperty, activeSession?: ClientSession): Promise<{ database: Database; property: DatabaseProperty }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true, activeSession)
     this.parse(DatabasePropertyCreateRequestSchema, input)
-    return this.transact(async session => {
+    return this.runInSession(activeSession, async session => {
       const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
       if (!database) throw new ConflictException('Database version is stale')
       await this.touchAdvanced(workspaceId, [databaseId], session)
@@ -378,10 +412,10 @@ export class DatabaseService {
     })
   }
 
-  async updateProperty(userId: string, workspaceId: string, databaseId: string, propertyId: string, input: { name?: string; options?: DatabaseProperty['options']; config?: DatabaseProperty['config']; expectedDatabaseVersion: number; expectedPropertyVersion: number }): Promise<{ database: Database; property: DatabaseProperty }> {
-    await this.requireDatabase(userId, workspaceId, databaseId, true)
+  async updateProperty(userId: string, workspaceId: string, databaseId: string, propertyId: string, input: { name?: string; options?: DatabaseProperty['options']; config?: DatabaseProperty['config']; expectedDatabaseVersion: number; expectedPropertyVersion: number }, activeSession?: ClientSession): Promise<{ database: Database; property: DatabaseProperty }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true, activeSession)
     this.parse(DatabasePropertyUpdateRequestSchema, input)
-    return this.transact(async session => {
+    return this.runInSession(activeSession, async session => {
       const currentDatabase = await this.databases.findInWorkspace(workspaceId, databaseId, session)
       if (!currentDatabase) throw new NotFoundException('Database not found in workspace')
       const existing = await this.properties.findInDatabase(workspaceId, databaseId, propertyId, session)
@@ -612,10 +646,10 @@ export class DatabaseService {
     })
   }
 
-  async updateRecordCell(userId: string, workspaceId: string, databaseId: string, recordId: string, propertyId: string, input: { value: DatabasePropertyValue; expectedDatabaseVersion: number; expectedRecordVersion: number; expectedPageUpdatedAt?: string }): Promise<{ database: Database; record: DatabaseTableRecord; page?: NonNullable<Awaited<ReturnType<PageRepository['findInWorkspace']>>> }> {
-    await this.requireDatabase(userId, workspaceId, databaseId, true)
+  async updateRecordCell(userId: string, workspaceId: string, databaseId: string, recordId: string, propertyId: string, input: { value: DatabasePropertyValue; expectedDatabaseVersion: number; expectedRecordVersion: number; expectedPageUpdatedAt?: string }, activeSession?: ClientSession): Promise<{ database: Database; record: DatabaseTableRecord; page?: NonNullable<Awaited<ReturnType<PageRepository['findInWorkspace']>>> }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true, activeSession)
     this.parse(DatabaseRecordCellUpdateRequestSchema, input)
-    return this.transact(async session => {
+    return this.runInSession(activeSession, async session => {
       const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
       if (!database) throw new ConflictException('Database version is stale')
       const record = await this.records.findInDatabase(workspaceId, databaseId, recordId, session)
@@ -898,10 +932,10 @@ export class DatabaseService {
     if ((await this.records.findManyInDatabase(workspaceId, targetDatabaseId, value, session)).length !== value.length) throw new BadRequestException('Relation targets must be existing records in the target database')
   }
 
-  async createView(userId: string, workspaceId: string, databaseId: string, input: CreateView): Promise<{ database: Database; view: DatabaseView }> {
-    await this.requireDatabase(userId, workspaceId, databaseId, true)
+  async createView(userId: string, workspaceId: string, databaseId: string, input: CreateView, activeSession?: ClientSession): Promise<{ database: Database; view: DatabaseView }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true, activeSession)
     this.parse(DatabaseViewCreateRequestSchema, input)
-    return this.transact(async session => {
+    return this.runInSession(activeSession, async session => {
       const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
       const expectedVersion = input.expectedDatabaseVersion ?? database.version
       const bumped = await this.databases.compareAndBump(workspaceId, databaseId, expectedVersion, session)
@@ -915,10 +949,10 @@ export class DatabaseService {
     })
   }
 
-  async updateView(userId: string, workspaceId: string, databaseId: string, viewId: string, input: { name?: string; config?: DatabaseViewConfig; expectedDatabaseVersion: number; expectedViewVersion: number }): Promise<{ database: Database; view: DatabaseView }> {
-    await this.requireDatabase(userId, workspaceId, databaseId, true)
+  async updateView(userId: string, workspaceId: string, databaseId: string, viewId: string, input: { name?: string; config?: DatabaseViewConfig; expectedDatabaseVersion: number; expectedViewVersion: number }, activeSession?: ClientSession): Promise<{ database: Database; view: DatabaseView }> {
+    await this.requireDatabase(userId, workspaceId, databaseId, true, activeSession)
     this.parse(DatabaseViewUpdateRequestSchema, input)
-    return this.transact(async session => {
+    return this.runInSession(activeSession, async session => {
       const database = await this.databases.compareAndBump(workspaceId, databaseId, input.expectedDatabaseVersion, session)
       if (!database) throw new ConflictException('Database version is stale')
       const existing = await this.views.findInWorkspace(workspaceId, viewId, session)
@@ -1101,5 +1135,13 @@ export class DatabaseService {
     } finally {
       await session.endSession()
     }
+  }
+
+  private async runInSession<T>(session: ClientSession | undefined, operation: (session: ClientSession) => Promise<T>): Promise<T> {
+    if (session) {
+      if (!session.inTransaction()) throw new ServiceUnavailableException('An active MongoDB transaction is required')
+      return operation(session)
+    }
+    return this.transact(operation)
   }
 }

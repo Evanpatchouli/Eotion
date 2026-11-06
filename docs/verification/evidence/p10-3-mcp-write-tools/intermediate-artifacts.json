@@ -1,0 +1,104 @@
+[
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\build-final.log",
+    "archive": "targeted-build-final.log.gz",
+    "bytes": 470,
+    "sha256": "b810ff8e0fb68dab7a7fbac8195d2915a1d0f9b7ab47737bf864158f9e2bfcb1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\build-r2.log",
+    "archive": "targeted-build-r2.log.gz",
+    "bytes": 470,
+    "sha256": "b810ff8e0fb68dab7a7fbac8195d2915a1d0f9b7ab47737bf864158f9e2bfcb1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\build-r3.log",
+    "archive": "targeted-build-r3.log.gz",
+    "bytes": 470,
+    "sha256": "b810ff8e0fb68dab7a7fbac8195d2915a1d0f9b7ab47737bf864158f9e2bfcb1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\build-r4.log",
+    "archive": "targeted-build-r4.log.gz",
+    "bytes": 470,
+    "sha256": "b810ff8e0fb68dab7a7fbac8195d2915a1d0f9b7ab47737bf864158f9e2bfcb1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\build-r5.log",
+    "archive": "targeted-build-r5.log.gz",
+    "bytes": 470,
+    "sha256": "b810ff8e0fb68dab7a7fbac8195d2915a1d0f9b7ab47737bf864158f9e2bfcb1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\build-r6.log",
+    "archive": "targeted-build-r6.log.gz",
+    "bytes": 470,
+    "sha256": "b810ff8e0fb68dab7a7fbac8195d2915a1d0f9b7ab47737bf864158f9e2bfcb1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\build.log",
+    "archive": "targeted-build.log.gz",
+    "bytes": 470,
+    "sha256": "b810ff8e0fb68dab7a7fbac8195d2915a1d0f9b7ab47737bf864158f9e2bfcb1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\mcp-database-write-r2.log",
+    "archive": "targeted-mcp-database-write-r2.log.gz",
+    "bytes": 1637,
+    "sha256": "ba542d55341db8f41bbac4a0822c5857e2542eac6c128c7eb8d4e7b8fc61ad91"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\mcp-database-write-r3.log",
+    "archive": "targeted-mcp-database-write-r3.log.gz",
+    "bytes": 1634,
+    "sha256": "34313f466648960d54da92acaea32a39e0ef24e12081f4be224a2fa30fffd825"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\mcp-database-write-r4.log",
+    "archive": "targeted-mcp-database-write-r4.log.gz",
+    "bytes": 1520,
+    "sha256": "04f7dd9fb624959e48c4623c28a544716adf6026ea2bab1bff526903c41c8727"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\mcp-database-write-r5.log",
+    "archive": "targeted-mcp-database-write-r5.log.gz",
+    "bytes": 1464,
+    "sha256": "62dc89172f454a4c8d6127e45fcf79a47861a89b814f8c57d98b1d9d3cdaa246"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\mcp-database-write-r6.log",
+    "archive": "targeted-mcp-database-write-r6.log.gz",
+    "bytes": 609,
+    "sha256": "271e7ad03a567f58d244e82de19a91b9bb3aafcd6911fad7b2ca1c13f444a01c"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.3-mcp-database-write-20261023\\mcp-database-write.log",
+    "archive": "targeted-mcp-database-write.log.gz",
+    "bytes": 1252,
+    "sha256": "5e060649bcafd0a731aa00356ab515a53c2261dffb1d7d604c116da3f2eeeb43"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-client-JatyF1\\summary.json",
+    "archive": "client-r1-summary.json.gz",
+    "bytes": 1062,
+    "sha256": "08a0f6c9313dc81bd5f7bafd21131bf405e29a00ec6060eda40de81a90a389a1"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-client-JatyF1\\transcript.json",
+    "archive": "client-r1-transcript.json.gz",
+    "bytes": 38548,
+    "sha256": "b423d8734569053800f95ec33eca0f81cc81338692df717637a69bcbfe74c33b"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-client-NEYZZv\\summary.json",
+    "archive": "client-r2-summary.json.gz",
+    "bytes": 1943,
+    "sha256": "704417a581872c7459f3964277969cce1c8a3207076a3b704c067c4856cff930"
+  },
+  {
+    "source": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p103-client-NEYZZv\\transcript.json",
+    "archive": "client-r2-transcript.json.gz",
+    "bytes": 859178,
+    "sha256": "ccc7152ed6da862ea83f29b4a54e08ce5e7cfad2dfc3183bde9e3decbe50362f"
+  }
+]

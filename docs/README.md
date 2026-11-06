@@ -12,8 +12,10 @@ Eotion 的长期项目知识以 `docs/` 为 source of truth。Agent 开始非平
 | `p8-database.md` | P8 Database：独立数据域、Inline Table、属性编辑、多 View/Filter/Sort/列配置、Page 标题来源与权限/事务/同步边界 |
 | `p9-multi-view.md` | P9 Multi-View：Table/List/Board、通用 records、分组配置/修改、CAS 与生命周期边界 |
 | `p9-final-acceptance.md` | P9 独立最终验收：完整 Product、真实 API/MCP、三设备视觉与 lifecycle 证据 |
-| `p10-database-mcp.md` | P10.1 已批准契约与 P10.2 Database MCP 读取工具、临时查询、权限及验收门槛 |
+| `p10-database-mcp.md` | P10 Database MCP 读取与七个写工具、临时查询、CAS、单事务成功回执及范围验收 |
+| `verification/p10-final-acceptance.md` | P10 FINAL PASS：十八工具组合验收、真实 Client/Web、完整 Product/Database 与历史失败证据 |
 | `p11-timeline.md` | P11 Timeline 产品标准：Notion parity 结构、日期范围、时间标尺、Today 红线、横向滚动、Frozen Table、Dependency 与验收矩阵 |
+| `verification/p11-6-timeline-final-acceptance.md` | P11 FINAL PASS：正式设置入口、跨月标题、真实建库与刷新、完整 Web 与历史验收记录 |
 | `architecture/timeline-renderer.md` | P11.2 Renderer 架构、A/B/C实施与D核心Read Acceptance入口 |
 | `verification/p11-1c-timeline-view-config.md` | P11.1C 配置基础验收：实际 options.timeline、真实 CRUD/CAS/cursor、Web 占位与 P11.1D 接续边界 |
 | `verification/p11-1d-property-lifecycle-fence.md` | P11.1D 生命周期保护：统一硬引用、Frozen Table 软修复、真实 Mongo/HTTP/CAS/回滚与并发 |

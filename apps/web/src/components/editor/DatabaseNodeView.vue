@@ -21,6 +21,7 @@ import DatabasePropertyMenu from './DatabasePropertyMenu.vue'
 import DatabaseListView from './DatabaseListView.vue'
 import DatabaseBoardView from './DatabaseBoardView.vue'
 import DatabaseTimelineView from './DatabaseTimelineView.vue'
+import DatabaseTimelineSettingsForm from './DatabaseTimelineSettingsForm.vue'
 import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTitleColumn } from './timeline/frozenTable'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import { beginTimelineDateMutation, endTimelineDateMutation } from './timeline/interaction'
@@ -67,7 +68,7 @@ const viewConfig = ref<DatabaseViewConfig>({ ...DEFAULT_DATABASE_VIEW_CONFIG })
 const loadedViewIdentity = ref('')
 const views = ref<DatabaseViewResponse[]>([])
 const viewMenuOpen = ref(false)
-const viewControlsOpen = ref<'filters' | 'sorts' | 'columns' | 'grouping' | 'record-opening' | 'timeline-date-source' | ''>('')
+const viewControlsOpen = ref<'filters' | 'sorts' | 'columns' | 'grouping' | 'record-opening' | 'timeline-date-source' | 'timeline-settings' | ''>('')
 const settingsMenuOpen = ref(false)
 const viewSubmitting = ref(false)
 const timelineEditorEditable = ref(props.editor.isEditable)
@@ -184,12 +185,17 @@ watch(viewMenuOpen, (open) => {
   if (item) finishViewRename(item)
 })
 const viewError = ref('')
-const visibleViewError = computed(() => viewError.value || (scopedViewDeleteState.value?.status === 'failed' && scopedViewDeleteState.value.replacementViewId === viewId.value ? scopedViewDeleteState.value.error : ''))
+const visibleViewError = computed(() => viewControlsOpen.value === 'timeline-settings' ? '' : viewError.value || (scopedViewDeleteState.value?.status === 'failed' && scopedViewDeleteState.value.replacementViewId === viewId.value ? scopedViewDeleteState.value.error : ''))
 const pendingCreateView = ref<DatabaseViewCreateRequest | null>(null)
 const timelineDateMode = ref<'create' | 'edit'>('create')
 const timelineDateDraft = ref<TimelineDateSource>({ mode: 'date-property', propertyId: '' })
 const timelineDateError = ref('')
 const timelineDateBusy = ref(false)
+type TimelineOverlayKind = 'timeline-date-source' | 'timeline-settings'
+type TimelineOverlayCapture = { kind: TimelineOverlayKind; epoch: number; identityEpoch: number; scope: string; user: string; workspace: string; database: string; view: string; block: string }
+const timelineOverlayEpoch = ref(0)
+const activeTimelineOverlayCapture = ref<TimelineOverlayCapture | null>(null)
+const timelineSettingsForm = ref<ComponentPublicInstance & { save: () => void; isDirty: boolean } | null>(null)
 const timelineDateAddBusy = ref(false)
 const pendingTimelineStartPropertyId = ref('')
 const pendingTimelineEndPropertyId = ref('')
@@ -326,7 +332,6 @@ const cellInput = ref<HTMLInputElement | null>(null)
 const cellDraft = computed({ get: () => cellEdit.value?.value ?? '', set: value => { if (cellEdit.value) cellEdit.value.value = value } })
 let requestEpoch = 0
 let viewIdentityEpoch = 0
-let timelineDateEpoch = 0
 let externalRefreshPending = false
 
 function selectBlock(): void {
@@ -1136,6 +1141,7 @@ const settingsMenuItems = computed(() => [
   { label: '排序', icon: IconName.Sort, shortcut: sortViewCount.value ? String(sortViewCount.value) : undefined, action: () => openSettings('sorts') },
   { label: '属性', icon: IconName.Text, action: () => openSettings('columns') },
   ...(viewReady.value && viewType.value === 'board' ? [{ label: '分组属性', icon: IconName.List, action: () => openSettings('grouping') }] : []),
+  ...(viewReady.value && viewType.value === 'timeline' ? [{ label: '时间线设置', icon: IconName.Settings, action: () => openTimelineSettings() }] : []),
   ...(viewReady.value && viewType.value === 'timeline' ? [{ label: '日期属性', icon: IconName.Appearance, action: () => openTimelineDateSettings() }] : []),
   { label: '记录打开方式', icon: IconName.Settings, action: () => openSettings('record-opening') },
   { label: '自动化', icon: IconName.Agent, disabled: true, action: () => {} },
@@ -1154,6 +1160,50 @@ function openSettings(kind: 'filters' | 'sorts' | 'columns' | 'grouping' | 'reco
   }
   viewControlsOpen.value = kind
 }
+function openTimelineSettings(): void {
+  if (!viewReady.value || viewType.value !== 'timeline' || viewBusy.value) return
+  settingsMenuOpen.value = false
+  viewMenuOpen.value = false
+  viewError.value = ''
+  openTimelineOverlay('timeline-settings')
+}
+function saveTimelineSettings(config: DatabaseViewConfig): void {
+  const capture = activeTimelineOverlayCapture.value
+  if (!timelineSettingsForm.value?.isDirty || !capture || !isCurrentTimelineOverlay(capture, 'timeline-settings') || !writable.value) return
+  void saveViewConfig(config, capture)
+}
+function captureTimelineOverlay(kind: TimelineOverlayKind): TimelineOverlayCapture {
+  return { kind, epoch: timelineOverlayEpoch.value, identityEpoch: viewIdentityEpoch, scope: timelineScope.value, user: userId.value, workspace: workspaceId.value, database: databaseId.value, view: viewId.value, block: blockId.value }
+}
+function isSameTimelineOverlayIdentity(capture: TimelineOverlayCapture): boolean {
+  return activeTimelineOverlayCapture.value === capture && capture.epoch === timelineOverlayEpoch.value
+    && capture.identityEpoch === viewIdentityEpoch && capture.scope === timelineScope.value
+    && capture.user === userId.value && capture.workspace === workspaceId.value
+    && capture.database === databaseId.value && capture.view === viewId.value && capture.block === blockId.value
+}
+function isCurrentTimelineOverlay(capture: TimelineOverlayCapture, kind: TimelineOverlayKind = capture.kind): boolean {
+  return capture.kind === kind && isSameTimelineOverlayIdentity(capture) && viewControlsOpen.value === kind
+    && viewReady.value && online.value && (kind === 'timeline-settings' ? viewType.value === 'timeline'
+      : timelineDateMode.value === 'create' || viewType.value === 'timeline')
+}
+function openTimelineOverlay(kind: TimelineOverlayKind): TimelineOverlayCapture {
+  invalidateTimelineOverlay()
+  timelineOverlayEpoch.value += 1
+  const capture = captureTimelineOverlay(kind)
+  activeTimelineOverlayCapture.value = capture
+  viewControlsOpen.value = kind
+  return capture
+}
+function invalidateTimelineOverlay(expected?: TimelineOverlayCapture): void {
+  if (expected && !isSameTimelineOverlayIdentity(expected)) return
+  if (!activeTimelineOverlayCapture.value && viewControlsOpen.value !== 'timeline-date-source' && viewControlsOpen.value !== 'timeline-settings') return
+  const ownsViewSubmission = timelineDateBusy.value || viewSubmitting.value
+  activeTimelineOverlayCapture.value = null
+  timelineOverlayEpoch.value += 1
+  timelineDateBusy.value = false
+  timelineDateAddBusy.value = false
+  if (ownsViewSubmission) viewSubmitting.value = false
+}
 function openTimelineDateSettings(mode: 'create' | 'edit' = 'edit'): void {
   if (!viewReady.value || (mode === 'edit' && viewType.value !== 'timeline')) return
   const source = ((viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline?.dateSource)
@@ -1168,10 +1218,9 @@ function openTimelineDateSettings(mode: 'create' | 'edit' = 'edit'): void {
       : { mode: 'date-property', propertyId: first }
   if (timelineDateDraft.value.mode === 'start-end' && !timelineDateDraft.value.endPropertyId) timelineDateDraft.value.endPropertyId = second
   timelineDateError.value = ''
-  timelineDateEpoch += 1
   settingsMenuOpen.value = false
   viewMenuOpen.value = false
-  viewControlsOpen.value = 'timeline-date-source'
+  openTimelineOverlay('timeline-date-source')
 }
 function setTimelineDateMode(mode: string): void {
   if (pendingTimelineCreate.value) return
@@ -1188,26 +1237,15 @@ function setTimelineStartProperty(propertyId: string): void {
 function setTimelineEndProperty(propertyId: string): void {
   if (timelineDateDraft.value.mode === 'start-end') timelineDateDraft.value = { ...timelineDateDraft.value, endPropertyId: propertyId }
 }
-function timelineDateCapture() {
-  return { epoch: timelineDateEpoch, identityEpoch: viewIdentityEpoch, scope: timelineScope.value, user: userId.value, workspace: workspaceId.value, database: databaseId.value, view: viewId.value, block: blockId.value }
-}
-function isCurrentTimelineDate(capture: ReturnType<typeof timelineDateCapture>): boolean {
-  return capture.epoch === timelineDateEpoch && capture.identityEpoch === viewIdentityEpoch
-    && capture.scope === timelineScope.value && capture.user === userId.value && capture.workspace === workspaceId.value
-    && capture.database === databaseId.value && capture.view === viewId.value && capture.block === blockId.value
-    && viewControlsOpen.value === 'timeline-date-source' && viewReady.value
-    && (timelineDateMode.value === 'create' || viewType.value === 'timeline')
-}
-function isSameTimelineDateIdentity(capture: ReturnType<typeof timelineDateCapture>): boolean {
-  return capture.epoch === timelineDateEpoch && capture.identityEpoch === viewIdentityEpoch
-    && capture.scope === timelineScope.value && capture.user === userId.value && capture.workspace === workspaceId.value
-    && capture.database === databaseId.value && capture.view === viewId.value && capture.block === blockId.value
+function timelineDateCapture(): TimelineOverlayCapture {
+  const capture = activeTimelineOverlayCapture.value
+  return capture?.kind === 'timeline-date-source' ? capture : captureTimelineOverlay('timeline-date-source')
 }
 async function addTimelineDateProperty(role: 'start' | 'end' = 'start'): Promise<void> {
   const target = role === 'start' ? pendingTimelineStartPropertyId : pendingTimelineEndPropertyId
   const pendingName = role === 'start' ? pendingTimelineStartPropertyName : pendingTimelineEndPropertyName
-  if (!writable.value || timelineDateAddBusy.value || !online.value || !viewReady.value) return
   const capture = timelineDateCapture()
+  if (!writable.value || timelineDateAddBusy.value || !online.value || !isCurrentTimelineOverlay(capture, 'timeline-date-source')) return
   const id = target.value || createLocalId()
   const name = target.value ? pendingName.value || '日期'
     : timelineDateDraft.value.mode === 'start-end' ? role === 'start' ? '开始日期' : '结束日期' : '日期'
@@ -1219,9 +1257,9 @@ async function addTimelineDateProperty(role: 'start' | 'end' = 'start'): Promise
     await createProductDatabaseProperty(capture.workspace, capture.database, {
       id, name, type: 'date', expectedDatabaseVersion: databaseVersion.value,
     })
-    if (!isCurrentTimelineDate(capture)) return
+    if (!isCurrentTimelineOverlay(capture, 'timeline-date-source')) return
     await refreshSchemaMutation()
-    if (!isCurrentTimelineDate(capture)) return
+    if (!isCurrentTimelineOverlay(capture, 'timeline-date-source')) return
     if (!timelineDateProperties.value.some(property => property.id === id)) {
       timelineDateError.value = staleReadonly.value ? '日期属性已创建，但结构刷新未完成；请重试加载。' : '日期属性已创建，尚未出现在列表中，请重试刷新。'
       return
@@ -1233,10 +1271,10 @@ async function addTimelineDateProperty(role: 'start' | 'end' = 'start'): Promise
     target.value = ''
     pendingName.value = ''
   } catch (cause) {
-    if (!isCurrentTimelineDate(capture)) return
+    if (!isCurrentTimelineOverlay(capture, 'timeline-date-source')) return
     if (cause instanceof ApiError && cause.statusCode === 409) {
       await refreshSchemaMutation()
-      if (!isCurrentTimelineDate(capture)) return
+      if (!isCurrentTimelineOverlay(capture, 'timeline-date-source')) return
       if (timelineDateProperties.value.some(property => property.id === id)) {
         if (timelineDateDraft.value.mode === 'start-end') {
           if (role === 'start') timelineDateDraft.value.startPropertyId = id
@@ -1247,7 +1285,7 @@ async function addTimelineDateProperty(role: 'start' | 'end' = 'start'): Promise
       } else timelineDateError.value = `数据库结构已变化，已刷新版本。${errorMessage(cause, '日期属性未创建，请重试。')}`
     } else if (!(cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500)) {
       await refreshSchemaMutation()
-      if (!isCurrentTimelineDate(capture)) return
+      if (!isCurrentTimelineOverlay(capture, 'timeline-date-source')) return
       if (timelineDateProperties.value.some(property => property.id === id)) {
         if (timelineDateDraft.value.mode === 'start-end') {
           if (role === 'start') timelineDateDraft.value.startPropertyId = id
@@ -1257,16 +1295,14 @@ async function addTimelineDateProperty(role: 'start' | 'end' = 'start'): Promise
         pendingName.value = ''
       } else timelineDateError.value = `${errorMessage(cause, '日期属性创建结果暂未确认。')} 请重试；系统会核对原请求 ID。`
     } else timelineDateError.value = errorMessage(cause, '日期属性未创建，请重试。')
-  } finally { if (isCurrentTimelineDate(capture)) timelineDateAddBusy.value = false }
+  } finally { if (isCurrentTimelineOverlay(capture, 'timeline-date-source')) timelineDateAddBusy.value = false }
 }
 function setOpening(target: 'record' | 'property', layout: ProductLayoutMode, mode: ProductOverlayMode): void {
   preferences.setDatabaseOpening(userId.value, workspaceId.value, databaseId.value, target, layout, mode)
 }
 function onSettingsOverlayChange(open: boolean): void {
   if (open) return
-  if (viewControlsOpen.value === 'timeline-date-source') {
-    if (!timelineDateBusy.value && !timelineDateAddBusy.value) timelineDateEpoch += 1
-  }
+  invalidateTimelineOverlay()
   viewControlsOpen.value = ''
   runDeferredRefresh()
   void nextTick(() => returnFocusTo.value?.isConnected && returnFocusTo.value.focus({ preventScroll: true }))
@@ -1287,6 +1323,7 @@ function switchView(targetId: string, force = false): void {
   const onViewChange = props.extension.options.onViewChange as ((viewId: string) => void) | undefined
   if (onViewChange) {
     viewMenuOpen.value = false
+    invalidateTimelineOverlay()
     viewControlsOpen.value = ''
     onViewChange(targetId)
     return
@@ -1296,12 +1333,13 @@ function switchView(targetId: string, force = false): void {
   loadError.value = ''
   refreshError.value = ''
   properties.value = []
+  invalidateTimelineOverlay()
   viewMenuOpen.value = false
   viewControlsOpen.value = ''
   props.updateAttributes({ viewId: targetId })
 }
-async function createView(type: DatabaseViewType = 'table', config?: DatabaseViewConfig, customName?: string, timelineCapture?: ReturnType<typeof timelineDateCapture>): Promise<void> {
-  if ((timelineCapture && !isCurrentTimelineDate(timelineCapture)) || viewBusy.value) return
+async function createView(type: DatabaseViewType = 'table', config?: DatabaseViewConfig, customName?: string, timelineCapture?: TimelineOverlayCapture): Promise<void> {
+  if ((timelineCapture && !isCurrentTimelineOverlay(timelineCapture, 'timeline-date-source')) || viewBusy.value) return
   const workspace = workspaceId.value
   const database = databaseId.value
   const userId = auth.user?.id
@@ -1322,7 +1360,7 @@ async function createView(type: DatabaseViewType = 'table', config?: DatabaseVie
   if (timelineCapture) timelineDateBusy.value = true
   viewError.value = ''
   if (timelineCapture) timelineDateError.value = ''
-  const isCurrent = () => timelineCapture ? isCurrentTimelineDate(timelineCapture)
+  const isCurrent = () => timelineCapture ? isCurrentTimelineOverlay(timelineCapture, 'timeline-date-source')
     : auth.user?.id === userId && workspaceId.value === workspace && databaseId.value === database
   try {
     let created = views.value.find(item => item.id === request.id)
@@ -1364,11 +1402,13 @@ async function createView(type: DatabaseViewType = 'table', config?: DatabaseVie
         await refreshLoadedWindow()
         await refreshViewList()
         if (!isCurrent()) return
-        timelineDateError.value = `数据库或视图已变化，已刷新版本。${errorMessage(cause, '请重试。')}`
+        timelineDateError.value = staleReadonly.value || refreshError.value
+          ? `刷新失败，请关闭设置后重新加载。${errorMessage(cause, '请重试。')}`
+          : `数据库或视图已变化，已刷新版本。${errorMessage(cause, '请重试。')}`
       } else timelineDateError.value = errorMessage(cause, '视图未创建，请重试。')
     } else await handleViewMutationError(cause, '视图未创建，请重试。')
   } finally {
-    if (!timelineCapture || isSameTimelineDateIdentity(timelineCapture)) {
+    if (!timelineCapture || (timelineCapture.kind === 'timeline-date-source' && isSameTimelineOverlayIdentity(timelineCapture))) {
       viewSubmitting.value = false
       if (timelineCapture) timelineDateBusy.value = false
     }
@@ -1383,7 +1423,7 @@ async function submitTimelineDateSource(): Promise<void> {
     const currentTimeline = (nextOptions as DatabaseTimelineViewOptions).timeline
     ;(nextOptions as DatabaseTimelineViewOptions).timeline = { ...(currentTimeline ?? {}), dateSource: JSON.parse(JSON.stringify(source)) as TimelineDateSource }
     await saveViewConfig({ ...viewConfig.value, options: nextOptions }, capture)
-    if (isCurrentTimelineDate(capture)) timelineDateError.value = viewError.value
+    if (isCurrentTimelineOverlay(capture, 'timeline-date-source')) timelineDateError.value = viewError.value
     return
   }
   if (pendingTimelineCreate.value) {
@@ -1399,12 +1439,19 @@ async function submitTimelineDateSource(): Promise<void> {
   const capture = timelineDateCapture()
   await createView('timeline', config, undefined, capture)
 }
-async function handleViewMutationError(cause: unknown, fallback: string): Promise<void> {
+async function handleViewMutationError(cause: unknown, fallback: string, isCurrent: () => boolean = () => true): Promise<void> {
   if (cause instanceof ApiError && cause.statusCode === 409) {
     await refreshLoadedWindow()
     await refreshViewList()
-    viewError.value = `数据库或视图已变化，已刷新版本。${errorMessage(cause, '请重试。')}`
-  } else viewError.value = errorMessage(cause, fallback)
+    if (!isCurrent()) return
+    const refreshFailed = staleReadonly.value || Boolean(refreshError.value)
+    const settingsOverlay = activeTimelineOverlayCapture.value?.kind === 'timeline-settings'
+    viewError.value = refreshFailed
+      ? `刷新失败，请关闭设置后重新加载。${errorMessage(cause, '请重试。')}`
+      : settingsOverlay
+        ? `数据库或视图已变化，已载入最新设置，请重新选择后保存。${errorMessage(cause, '请重试。')}`
+        : `数据库或视图已变化，已刷新版本。${errorMessage(cause, '请重试。')}`
+  } else if (isCurrent()) viewError.value = errorMessage(cause, fallback)
 }
 async function renameView(view: DatabaseViewResponse): Promise<void> {
   const name = renameViewDraft.value.trim()
@@ -1533,8 +1580,8 @@ function moveSort(index: number, delta: number): void {
   next.splice(target, 0, item!)
   sortDrafts.value = next
 }
-async function saveViewConfig(next: DatabaseViewConfig, timelineCapture?: ReturnType<typeof timelineDateCapture>): Promise<void> {
-  if (viewBusy.value) return
+async function saveViewConfig(next: DatabaseViewConfig, overlayCapture?: TimelineOverlayCapture): Promise<void> {
+  if (!writable.value || viewBusy.value || (overlayCapture && !isCurrentTimelineOverlay(overlayCapture))) return
   const identity = loadedViewIdentity.value
   const capturedViewId = viewId.value
   const capturedViewReady = viewReady.value
@@ -1552,7 +1599,7 @@ async function saveViewConfig(next: DatabaseViewConfig, timelineCapture?: Return
     const currentViewReady = currentRoot?.getAttribute('data-view-ready') === 'true'
     return capturedViewReady && capturedViewIdentityEpoch === viewIdentityEpoch && currentRoot !== null && currentViewId === capturedViewId && currentViewReady &&
       identity === loadedViewIdentity.value && identity === [workspaceId.value, databaseId.value, currentEditorViewId(), auth.user?.id ?? ''].join('\u0000')
-      && (!timelineCapture || isCurrentTimelineDate(timelineCapture))
+      && (!overlayCapture || isCurrentTimelineOverlay(overlayCapture))
   }
   for (const filter of next.filters) {
     const property = properties.value.find(item => item.id === filter.propertyId)
@@ -1569,7 +1616,7 @@ async function saveViewConfig(next: DatabaseViewConfig, timelineCapture?: Return
     viewError.value = '筛选或列设置与属性类型不匹配，请检查后重试。'
     return
   }
-  if (timelineCapture) timelineDateBusy.value = true
+  if (overlayCapture?.kind === 'timeline-date-source') timelineDateBusy.value = true
   viewSubmitting.value = true
   viewError.value = ''
   try {
@@ -1578,13 +1625,17 @@ async function saveViewConfig(next: DatabaseViewConfig, timelineCapture?: Return
     databaseVersion.value = result.database.version
     viewVersion.value = result.view.version
     viewConfig.value = result.view.config ?? next
+    if (overlayCapture) invalidateTimelineOverlay(overlayCapture)
     viewControlsOpen.value = ''
     runDeferredRefresh()
-  } catch (cause) { if (isCurrent()) await handleViewMutationError(cause, '视图设置未保存，请重试。') }
+  } catch (cause) {
+    if (!isCurrent()) return
+    await handleViewMutationError(cause, '视图设置未保存，请重试。', isCurrent)
+  }
   finally {
-    if (!timelineCapture || isSameTimelineDateIdentity(timelineCapture)) {
+    if (!overlayCapture || isSameTimelineOverlayIdentity(overlayCapture)) {
       viewSubmitting.value = false
-      if (timelineCapture) timelineDateBusy.value = false
+      if (overlayCapture?.kind === 'timeline-date-source') timelineDateBusy.value = false
     }
   }
 }
@@ -2189,19 +2240,11 @@ function togglePropertyCreator(event: MouseEvent): void {
   propertyCreatorOpen.value = true
 }
 function onRecordCreated(event: Event): void { onDatabaseChanged(event) }
-function invalidateTimelineDateOverlay(): void {
-  if (viewControlsOpen.value !== 'timeline-date-source') return
-  const ownsViewSubmission = timelineDateBusy.value
-  timelineDateEpoch += 1
-  timelineDateBusy.value = false
-  timelineDateAddBusy.value = false
-  if (ownsViewSubmission) viewSubmitting.value = false
-}
 function onOnlineChange(): void {
   online.value = navigator.onLine
   if (!online.value) {
     propertyCreatorOpen.value = false; cellPopover.value = null; closeRelationPicker(); viewMenuOpen.value = false; settingsMenuOpen.value = false
-    invalidateTimelineDateOverlay()
+    invalidateTimelineOverlay()
     viewControlsOpen.value = ''
   }
   else if (viewReady.value && !loadError.value) void refreshLoadedWindow()
@@ -2215,6 +2258,7 @@ function onEscape(event: KeyboardEvent): void {
   const hadPopover = Boolean(cellPopover.value || relationPicker.value || propertyCreatorOpen.value || viewMenuOpen.value || settingsMenuOpen.value || viewControlsOpen.value)
   if (cellPopover.value) cellPopover.value = null
   closeRelationPicker()
+  invalidateTimelineOverlay()
   propertyCreatorOpen.value = false
   viewMenuOpen.value = false
   settingsMenuOpen.value = false
@@ -2224,7 +2268,7 @@ function onEscape(event: KeyboardEvent): void {
 }
 function onOutsidePointer(event: PointerEvent): void {
   if (event.target instanceof Element && event.target.closest('.eotion-database, .eotion-database-popover, .eotion-popover-panel, .eotion-product-overlay')) return
-  invalidateTimelineDateOverlay()
+  invalidateTimelineOverlay()
   propertyCreatorOpen.value = false
   cellPopover.value = null
   closeRelationPicker()
@@ -2279,7 +2323,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', closePopoversForViewportChange)
 })
 watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous) => {
-  timelineDateEpoch += 1
+  invalidateTimelineOverlay()
   timelineDateBusy.value = false
   timelineDateAddBusy.value = false
   viewSubmitting.value = false
@@ -2334,6 +2378,7 @@ watch([workspaceId, databaseId, viewId, () => auth.user?.id], (current, previous
 watch([timelineScope, viewType], ([scope], [previousScope]) => {
   timelineVisibleRecordIds.value = []
   if (scope !== previousScope) {
+    invalidateTimelineOverlay()
     viewIdentityEpoch += 1
     savingCell.value = false
     externalRefreshPending = false
@@ -2421,6 +2466,10 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
             <p v-if="timelineDateError" role="alert">{{ timelineDateError }}</p>
           </section>
           <template #footer><EotionButton v-if="timelineDateMode === 'create'" variant="primary" type="button" :disabled="timelineDateSubmitDisabled || (!pendingTimelineCreate && views.length >= 100)" @click.stop="submitTimelineDateSource">{{ timelineDateBusy ? '正在创建…' : '创建时间线' }}</EotionButton><EotionButton v-else variant="primary" type="button" :disabled="timelineDateSubmitDisabled" @click.stop="submitTimelineDateSource">{{ timelineDateBusy || viewSubmitting ? '正在保存…' : '保存日期属性' }}</EotionButton></template>
+        </EotionProductOverlay>
+        <EotionProductOverlay :open="viewControlsOpen === 'timeline-settings'" :mode="layoutMode === 'mobile' ? 'bottom-drawer' : 'modal'" :dismissible="!viewSubmitting" title="时间线设置" @update:open="onSettingsOverlayChange">
+          <DatabaseTimelineSettingsForm ref="timelineSettingsForm" :key="`${activeTimelineOverlayCapture?.scope ?? ''}-${timelineOverlayEpoch}`" :config="viewConfig" :properties="properties" :database-id="databaseId" :disabled="viewBusy || !writable" :saving="viewSubmitting" :error="viewError" @save="saveTimelineSettings" />
+          <template #footer><EotionButton variant="primary" type="button" :disabled="viewBusy || !writable || !timelineSettingsForm?.isDirty" @click.stop="timelineSettingsForm?.save()">{{ viewSubmitting ? '正在保存…' : '保存时间线设置' }}</EotionButton></template>
         </EotionProductOverlay>
         <EotionProductOverlay :open="viewControlsOpen === 'columns'" :mode="settingOverlayMode" title="属性" @update:open="onSettingsOverlayChange"><section :id="`database-property-settings-${blockId}`" class="eotion-database-settings eotion-database-property-settings" role="group" aria-label="属性管理">
           <p v-if="mutationError" role="alert">{{ mutationError }}</p>

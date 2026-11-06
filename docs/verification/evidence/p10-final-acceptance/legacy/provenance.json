@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "2aad764b1c5028c9ed2175da8f02d1871d42b2bc",
+  "sourcePath": "apps/api/src/modules/server-domain/services/document-mutation.service.ts",
+  "sourceSha256": "3c1aa5f82e052f16e822fc2796117c1b1cc9e9106cc99588bd933407c25a1aed",
+  "generator": "scripts/generate-p104-legacy-fixture.mjs",
+  "databaseName": "eotion_p104_legacy_ca7bff813f4c4db29ec0e92862fb503e",
+  "mongoPort": 63687,
+  "startedAt": "2026-10-26T03:03:57.507Z",
+  "historicalRunnerExecuted": true,
+  "currentRunnerUsedToCreateReceipts": false,
+  "mockTransactions": false,
+  "outcome": "PASS",
+  "databaseDropped": true,
+  "replicaSet": "p104_74a8b5b969",
+  "finishedAt": "2026-10-26T03:03:58.865Z"
+}

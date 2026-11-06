@@ -1,0 +1,707 @@
+{
+  "observedAt": "2026-10-13T12:00:00.000Z",
+  "elapsedSincePagingStartedMs": 8108,
+  "tableResources": [],
+  "browserResourceSamples": [],
+  "loadedRecords": 500,
+  "temporalGeometryCount": 499,
+  "rawTickCount": 21,
+  "rulerTickCount": 10,
+  "renderedRows": 16,
+  "renderedFrozenRows": 16,
+  "frozenDisplayCount": 500,
+  "frozenAndTimelineRowsShareGeometry": true,
+  "resolvedRelationTitleCount": null,
+  "rowIndexPairsAligned": true,
+  "rowWindow": {
+    "first": 484,
+    "last": 500,
+    "height": 768,
+    "totalHeight": 24000
+  },
+  "pageScroll": {
+    "top": 23824,
+    "scrollHeight": 24680,
+    "clientHeight": 856
+  },
+  "domRowsWithinBound": true,
+  "virtualizationExpected": true,
+  "projectionAndTemporalIdentityPreserved": true,
+  "frozenDisplayIdentityPreserved": true,
+  "tableRequestTimings": [
+    {
+      "startTime": 1792983542064.6692,
+      "responseEndMs": 21.322
+    },
+    {
+      "startTime": 1792983542561.826,
+      "responseEndMs": 9.14
+    },
+    {
+      "startTime": 1792983542756.37,
+      "responseEndMs": 7.912
+    },
+    {
+      "startTime": 1792983542989.037,
+      "responseEndMs": 6.64
+    },
+    {
+      "startTime": 1792983543243.19,
+      "responseEndMs": 7.503
+    },
+    {
+      "startTime": 1792983543500.2598,
+      "responseEndMs": 7.262
+    },
+    {
+      "startTime": 1792983543874.12,
+      "responseEndMs": 9.575
+    },
+    {
+      "startTime": 1792983544459.4067,
+      "responseEndMs": 10.118
+    },
+    {
+      "startTime": 1792983544705.986,
+      "responseEndMs": 9.283
+    },
+    {
+      "startTime": 1792983544994.312,
+      "responseEndMs": 7.88
+    },
+    {
+      "startTime": 1792983545298.5671,
+      "responseEndMs": 11.821
+    },
+    {
+      "startTime": 1792983545471.511,
+      "responseEndMs": 11.531
+    },
+    {
+      "startTime": 1792983545718.179,
+      "responseEndMs": 12.834
+    },
+    {
+      "startTime": 1792983545975.1738,
+      "responseEndMs": 8.614
+    },
+    {
+      "startTime": 1792983546204.491,
+      "responseEndMs": 7.834
+    },
+    {
+      "startTime": 1792983546435.3389,
+      "responseEndMs": 12.111
+    },
+    {
+      "startTime": 1792983546703.518,
+      "responseEndMs": 6.656
+    },
+    {
+      "startTime": 1792983546871.181,
+      "responseEndMs": 7.026
+    },
+    {
+      "startTime": 1792983547058.274,
+      "responseEndMs": 7.802
+    },
+    {
+      "startTime": 1792983547255.303,
+      "responseEndMs": 7.119
+    }
+  ],
+  "relationResolutionBatches": [
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 26
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 1
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 6
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 6
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 10
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 10
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 4
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 4
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 16
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 50
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 21
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 25
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-bar-relations/record-options/resolve",
+      "targetCount": 15
+    },
+    {
+      "path": "/api/workspaces/database-workspace/databases/timeline-500-frozen-relations/record-options/resolve",
+      "targetCount": 15
+    }
+  ]
+}

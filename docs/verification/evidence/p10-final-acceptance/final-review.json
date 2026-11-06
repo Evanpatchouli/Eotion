@@ -1,0 +1,65 @@
+{
+  "reviewDate": "2026-10-26",
+  "recordedAt": "2026-10-29T04:33:57.259Z",
+  "reviewCount": 1,
+  "reviewerTask": "/root/final_review",
+  "role": "reviewer",
+  "candidateSha": "217f6273fae46a554f910fe2f4b4146338d9e68c",
+  "conclusion": "P10.4 FINAL HOLD supported; P10 Database MCP is not COMPLETE.",
+  "newP10ProductDefects": [],
+  "newEvidenceBlockers": [],
+  "checks": [
+    "Current permission and true entity scope",
+    "Database/Record/Property/View/Page CAS",
+    "Shared transaction session for business writes, final DTO and committed receipt",
+    "Legacy P6 receipt provenance and replay",
+    "Canonical payload hash and first DTO replay",
+    "UnknownTransactionCommitResult handling",
+    "P6 and P10.2 compatibility",
+    "Actual command counts, frozen sources, client/product scope and cleanup"
+  ],
+  "mandatoryGateBlockers": [
+    {
+      "file": "apps/web/tests/product-database.spec.ts",
+      "line": 4667,
+      "reason": "Frozen projection expected bar absent in current window; root cause unconfirmed."
+    },
+    {
+      "file": "apps/web/tests/product-database.spec.ts",
+      "line": 4930,
+      "reason": "Property menu locator matches both 属性 and 日期属性."
+    },
+    {
+      "file": "apps/web/tests/product-database.spec.ts",
+      "line": 12386,
+      "reason": "Reload displays Fallback table and no Timeline; root cause unknown."
+    }
+  ],
+  "verifiedResults": {
+    "product": {
+      "pass": 508,
+      "fail": 3,
+      "total": 511
+    },
+    "database": {
+      "pass": 252,
+      "fail": 2,
+      "total": 254
+    },
+    "visual": {
+      "pass": 13,
+      "fail": 0,
+      "total": 13
+    },
+    "mcp": {
+      "pass": 50,
+      "fail": 0
+    }
+  },
+  "reportIndexFinding": {
+    "severity": "documentation",
+    "issue": "Three log link extensions disagreed with initial archive paths.",
+    "resolution": "Corrected; subsequent lossless packaging changed paths again and final report resolves against artifacts.json."
+  },
+  "subsequentWork": "Only original-byte-preserving packaging, documentation and mechanical Git/source hash verification; no second independent review or product code changes."
+}

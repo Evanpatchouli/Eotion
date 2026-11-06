@@ -37,6 +37,8 @@ import { McpTokenService } from './services/mcp-token.service'
 import { WorkspacePermissionService } from './services/workspace-permission.service'
 import { SyncService } from './services/sync.service'
 import { DocumentMutationService } from './services/document-mutation.service'
+import { McpMutationService } from './services/mcp-mutation.service'
+import { DatabaseMcpMutationService } from './services/database-mcp-mutation.service'
 
 @Module({
   imports: [
@@ -84,7 +86,9 @@ import { DocumentMutationService } from './services/document-mutation.service'
     WorkspacePermissionService,
     SyncService,
     DocumentMutationService,
+    McpMutationService,
+    DatabaseMcpMutationService,
   ],
-  exports: [WorkspaceService, PageService, BlockService, DatabaseService, FileMetadataService, AuthService, SessionService, McpTokenService, WorkspacePermissionService, SyncService, DocumentMutationService],
+  exports: [WorkspaceService, PageService, BlockService, DatabaseService, FileMetadataService, AuthService, SessionService, McpTokenService, WorkspacePermissionService, SyncService, DocumentMutationService, McpMutationService, DatabaseMcpMutationService],
 })
 export class ServerDomainModule {}

@@ -22,7 +22,7 @@
 | Desktop Shell | `apps/desktop/src/` | architecture §2、`runbooks/desktop-production.md`、`runbooks/desktop-packaging.md` | Electron、preload、renderer、IPC、production-protocol、Windows packaging、EOTION_DESKTOP_API_ORIGIN、Cookie Session |
 | Mobile Shell / Native Hosts | `apps/mobile/src/`、`apps/mobile-hosts/`、`scripts/package-mobile.mjs` | `p1-mobile-demo.md`、architecture §3、`runbooks/mobile-native-hosts.md` | Lynx、webview、Android、HarmonyOS、Gradle、Hvigor、signing、lifecycle |
 | API | `apps/api/src/` | architecture §4、`p4-server-domain.md`、`p4-auth-session.md`、`p4-http-api.md`、`p4-sync.md`、`p4-file-storage.md`、`architecture/agent-integration.md` | NestJS、Fastify、health、Mongo、User、Auth、Session、WorkspacePermission、HTTP、repository、sync receipt、FileObjectStorage、MCP |
-| MCP（P6 + P10.2） | `apps/api/src/modules/mcp/`、`apps/api/src/modules/server-domain/services/mcp-token.service.ts`、`database.service.ts` | `p6-mcp.md`、`p10-database-mcp.md`、`architecture/agent-integration.md` | /mcp、Streamable HTTP、McpToken、Bearer、Database MCP、eotion_list_databases、eotion_get_database_schema、eotion_query_database、eotion_get_record、eotion_resolve_relation_records、temporary Filter/Sort、cursor fence |
+| MCP（P6 + P10.2/P10.3） | `apps/api/src/modules/mcp/`、`apps/api/src/modules/server-domain/services/{mcp-token,mcp-mutation,database-mcp-mutation,database}.service.ts` | `p6-mcp.md`、`p10-database-mcp.md`、`architecture/agent-integration.md` | /mcp、Streamable HTTP、Bearer、Database MCP、temporary Filter/Sort、cursor fence、eotion_create_record、eotion_update_record_cell、eotion_create_property/update_property、eotion_create_view/update_view、eotion_rename_database、snapshot transaction、CAS、mcp_mutation_receipts |
 | Contracts | `packages/contracts/src/` | `p4-http-api.md`、`p4-sync.md` | DTO、runtime schema、contract、protocol、sync operation |
 | Domain | `packages/domain/src/` | `p4-server-domain.md`、architecture / specs | domain model、workspace、page、block、file metadata |
 | SDK | `packages/sdk/src/` | `p4-http-api.md`、`p4-sync.md` | typed client、Cookie credentials、API error、OperationTransport |
@@ -34,6 +34,10 @@
 P5.6 Settings 已完成：`apps/web/src/layouts/SettingsLayout.vue`、`views/settings/`、`settingsNavigation.ts`、`theme.ts`、`stores/preferences.ts`；验收入口 `tests/product-settings.spec.ts`、`tests/theme.spec.ts`、`tests/theme-production.spec.ts`，完整状态见 `docs/p5-settings.md`。账号资料链路检索 `ProfileUpdateRequestSchema`、`ChangePasswordRequestSchema`、`updateProfile`、`changePassword`、`credentialVersion`、`revokeAllByUserId`；P5 Final Acceptance 与移动宿主真机边界单独保留。
 
 ## Eotion 特有的检索约束
+
+2026-11-07 P11 COMPLETE / FINAL PASS。正式设置入口见 `DatabaseTimelineSettingsForm.vue`、`DatabaseNodeView.vue` 中的 Timeline overlay 与 `saveViewConfig`；标尺边界见 `TimelineRuler.vue` 与 `product-timeline-real.spec.ts`。[最终验收](../verification/p11-6-timeline-final-acceptance.md)汇总 §24 结果及后置项。下方分阶段说明按当时范围保留。
+
+2026-11-07 P10 COMPLETE / FINAL PASS。十八工具包括 P6 六个、Database 读取五个、写入七个。契约见 [Database MCP](../p10-database-mcp.md)，集成门禁与历史 HOLD 见[最终验收](../verification/p10-final-acceptance.md)。检索 `McpMutationService.execute`、`runInSession`、`expectedDatabaseVersion`、`fixtures/mcp-tools.snapshot.ts`、`scripts/verify-p104-mcp.mjs` 和 `scripts/verify-p104-web-mcp.mjs`。
 
 P5.7.5.3 共享交互入口：`components/ui/EotionNavItem.vue`、`components/product/SyncStatus.vue`、`components/ui/EotionCommandOverlay.vue`；契约与验证见 `docs/design/interaction-foundation-implementation.md`，Playwright 入口 `tests/interaction-foundation.spec.ts`。Command 本阶段只提供容器，后续 Search / Command 消费。
 

@@ -15,6 +15,7 @@ import { McpMutationRepository } from "../server-domain/repositories/mcp-mutatio
 import { UserEntity } from "../server-domain/schemas/user.schema";
 import { getModelToken } from "@nestjs/mongoose";
 import type { Model } from "mongoose";
+import { P6_LEGACY_RECEIPTS } from "./fixtures/p6-mutation-receipts.fixture";
 
 type JsonResponse = { status: number; headers: Headers; body: Record<string, any>; text: string };
 type RunningApp = Awaited<ReturnType<typeof NestFactory.create>>;
@@ -178,10 +179,12 @@ test("MCP write tools persist bounded page mutations atomically and enforce docu
     const clientA = await openClient(baseUrl, tokenA.body.token);
     const clientB = await openClient(baseUrl, tokenB.body.token);
     const tools = (await clientA.listTools()).tools;
-    assert.deepEqual(tools.map(({ name }) => name), [
-      "eotion_list_workspaces", "eotion_list_pages", "eotion_search_pages", "eotion_list_databases",
-      "eotion_get_database_schema", "eotion_query_database", "eotion_get_record", "eotion_resolve_relation_records",
-      "eotion_get_page", "eotion_create_page", "eotion_update_page",
+    assert.deepEqual(tools.map(({ name }) => name).sort(), [
+      "eotion_create_page", "eotion_create_property", "eotion_create_record", "eotion_create_view",
+      "eotion_get_database_schema", "eotion_get_page", "eotion_get_record", "eotion_list_databases",
+      "eotion_list_pages", "eotion_list_workspaces", "eotion_query_database", "eotion_rename_database",
+      "eotion_resolve_relation_records", "eotion_search_pages", "eotion_update_page", "eotion_update_property",
+      "eotion_update_record_cell", "eotion_update_view",
     ]);
     const annotations = new Map(tools.map(({ name, annotations }) => [name, annotations]));
     assert.deepEqual(annotations.get("eotion_create_page"), {
@@ -258,6 +261,84 @@ test("MCP write tools persist bounded page mutations atomically and enforce docu
     assert.deepEqual(retriedCreate, created);
     const conflictingCreate = { ...createInput, title: "different payload with same key" };
     expectToolFailure(await clientA.callTool({ name: "eotion_create_page", arguments: conflictingCreate }), /idempot|key|different|conflict/i);
+
+    const canonicalKey = `canonical-order-${randomUUID()}`;
+    const canonicalInput = {
+      workspaceId: "mcp-write-a-one", parentPageId: null, title: "Canonical JSON replay", idempotencyKey: canonicalKey,
+      blocks: [{ type: "paragraph", text: "stable nested payload" }],
+    };
+    const canonicalFirst = expectToolSuccess(await clientA.callTool({ name: "eotion_create_page", arguments: canonicalInput }));
+    const canonicalReplay = expectToolSuccess(await clientA.callTool({
+      name: "eotion_create_page",
+      arguments: {
+        blocks: [{ text: "stable nested payload", type: "paragraph" }],
+        idempotencyKey: canonicalKey, title: "Canonical JSON replay", parentPageId: null, workspaceId: "mcp-write-a-one",
+      },
+    }));
+    assert.deepEqual(canonicalReplay, canonicalFirst, "nested and top-level object key order must not change the canonical request hash");
+    const crossScopeReplay = await clientA.callTool({
+      name: "eotion_create_page",
+      arguments: { ...canonicalInput, workspaceId: "mcp-write-a-two" },
+    });
+    const crossScopeText = expectToolFailure(crossScopeReplay, /idempot|key|different|conflict/i);
+    assert.doesNotMatch(crossScopeText, /NOT_FOUND/i, "the changed scope is writable and must conflict on payload hash");
+
+    const legacyCreateReceipt = P6_LEGACY_RECEIPTS[0];
+    await seedPage(pages, userA.id, "mcp-write-a-one", legacyCreateReceipt.result.id, legacyCreateReceipt.result.title);
+    await seedBlock(
+      blocks, userA.id, "mcp-write-a-one", legacyCreateReceipt.result.id,
+      legacyCreateReceipt.result.blocks[0]!.id, legacyCreateReceipt.result.blocks[0]!.text,
+    );
+    const legacyCreatePageCount = (await pages.list(userA.id, "mcp-write-a-one")).length;
+    const legacyCreateBlockCount = (await blocks.listByWorkspace(userA.id, "mcp-write-a-one")).length;
+    await connection!.db!.collection("mcp_mutation_receipts").insertOne({
+      id: "p6-legacy-create-receipt", userId: userA.id, tool: legacyCreateReceipt.tool,
+      idempotencyKey: legacyCreateReceipt.idempotencyKey, requestHash: legacyCreateReceipt.requestHash,
+      status: "committed", result: legacyCreateReceipt.result,
+    });
+    assert.deepEqual(expectToolSuccess(await clientA.callTool({
+      name: legacyCreateReceipt.tool, arguments: legacyCreateReceipt.payload,
+    })), legacyCreateReceipt.result);
+    assert.equal((await pages.list(userA.id, "mcp-write-a-one")).length, legacyCreatePageCount);
+    assert.equal((await blocks.listByWorkspace(userA.id, "mcp-write-a-one")).length, legacyCreateBlockCount);
+
+    const legacyUpdateReceipt = P6_LEGACY_RECEIPTS[1];
+    const legacyUpdatePage = await seedPage(
+      pages, userA.id, "mcp-write-a-one", legacyUpdateReceipt.result.id, legacyUpdateReceipt.result.title,
+    );
+    await seedBlock(
+      blocks, userA.id, "mcp-write-a-one", legacyUpdatePage.id,
+      legacyUpdateReceipt.result.blocks[0]!.id, legacyUpdateReceipt.result.blocks[0]!.text,
+    );
+    const legacyUpdateBefore = await pages.find(userA.id, "mcp-write-a-one", legacyUpdatePage.id);
+    const legacyUpdateBlocksBefore = await blocks.listBounded(userA.id, "mcp-write-a-one", legacyUpdatePage.id, 1000);
+    await connection!.db!.collection("mcp_mutation_receipts").insertOne({
+      id: "p6-legacy-update-receipt", userId: userA.id, tool: legacyUpdateReceipt.tool,
+      idempotencyKey: legacyUpdateReceipt.idempotencyKey, requestHash: legacyUpdateReceipt.requestHash,
+      status: "committed", result: legacyUpdateReceipt.result,
+    });
+    assert.deepEqual(expectToolSuccess(await clientA.callTool({
+      name: legacyUpdateReceipt.tool, arguments: legacyUpdateReceipt.payload,
+    })), legacyUpdateReceipt.result);
+    const legacyConflict = expectToolFailure(await clientA.callTool({
+      name: legacyUpdateReceipt.tool,
+      arguments: { ...legacyUpdateReceipt.payload, title: "different legacy payload" },
+    }), /idempot|key|different|conflict/i);
+    assert.doesNotMatch(legacyConflict, /NOT_FOUND/i, "the old receipt exists in the current writable scope");
+    assert.deepEqual(await pages.find(userA.id, "mcp-write-a-one", legacyUpdatePage.id), legacyUpdateBefore);
+    assert.deepEqual(await blocks.listBounded(userA.id, "mcp-write-a-one", legacyUpdatePage.id, 1000), legacyUpdateBlocksBefore);
+    const laterPageChange = expectToolSuccess(await clientA.callTool({
+      name: "eotion_update_page",
+      arguments: {
+        pageId: legacyUpdatePage.id, expectedUpdatedAt: legacyUpdateBefore!.updatedAt,
+        title: "Changed after legacy receipt", idempotencyKey: `after-p6-${randomUUID()}`,
+      },
+    }));
+    assert.equal(laterPageChange.title, "Changed after legacy receipt");
+    assert.deepEqual(expectToolSuccess(await clientA.callTool({
+      name: legacyUpdateReceipt.tool, arguments: legacyUpdateReceipt.payload,
+    })), legacyUpdateReceipt.result, "a historical replay returns its first DTO after the entity changes");
+    assert.equal((await pages.find(userA.id, "mcp-write-a-one", legacyUpdatePage.id))!.title, "Changed after legacy receipt");
 
     const calloutCreateInput = {
       workspaceId: "mcp-write-a-one", title: "MCP callout roundtrip", idempotencyKey: `mcp-callout-create-${randomUUID()}`,
@@ -607,6 +688,53 @@ test("MCP write tools persist bounded page mutations atomically and enforce docu
       },
     }));
     assert.equal((await pages.find(userA.id, "mcp-write-a-one", largePage.id))!.title, "original title survives rollback");
+
+    const unicodeProjectionPage = await seedPage(pages, userA.id, "mcp-write-a-one", "unicode-projection", "original Unicode title");
+    const unicodeProjectionRead = expectToolSuccess(await clientA.callTool({
+      name: "eotion_get_page", arguments: { pageId: unicodeProjectionPage.id },
+    }));
+    const unicodeText = "界".repeat(90_000);
+    const oversizedUnicodeProjection = Array.from({ length: 4 }, (_, index) => ({
+      id: `unicode-projection-block-${index}`,
+      workspaceId: "mcp-write-a-one",
+      pageId: unicodeProjectionPage.id,
+      parentBlockId: null,
+      type: "paragraph",
+      orderKey: `000${index}`,
+      createdAt: unicodeProjectionPage.createdAt,
+      updatedAt: unicodeProjectionPage.updatedAt,
+      props: { node: { type: "paragraph", content: [{ type: "text", text: unicodeText }] } },
+    }));
+    assert.ok(oversizedUnicodeProjection.reduce((total, block) => total + unicodeText.length, 0) < 1_048_576);
+    assert.ok(Buffer.byteLength(JSON.stringify({ ...unicodeProjectionRead, blocks: oversizedUnicodeProjection.map(({ id, props }) => ({
+      id, type: "paragraph", text: props.node.content[0]!.text,
+    })) }), "utf8") > 1_048_576, "the output fixture must exceed 1 MiB in UTF-8 bytes while its text remains below the character limit");
+    const unicodeUpdateInput = {
+      pageId: unicodeProjectionPage.id,
+      expectedUpdatedAt: unicodeProjectionRead.updatedAt,
+      title: "rolled back after Unicode output limit",
+      idempotencyKey: `unicode-projection-${randomUUID()}`,
+    };
+    const originalListBounded = blocks.listBounded.bind(blocks);
+    blocks.listBounded = async (...args: Parameters<BlockService["listBounded"]>) =>
+      oversizedUnicodeProjection as Awaited<ReturnType<BlockService["listBounded"]>>;
+    let unicodeLimitFailure: string;
+    try {
+      unicodeLimitFailure = expectToolFailure(await clientA.callTool({ name: "eotion_update_page", arguments: unicodeUpdateInput }));
+    } finally {
+      blocks.listBounded = originalListBounded;
+    }
+    assert.equal(unicodeLimitFailure, "Unable to write page.", "P6 page writes retain their generic write error contract");
+    assert.deepEqual(
+      expectToolSuccess(await clientA.callTool({ name: "eotion_get_page", arguments: { pageId: unicodeProjectionPage.id } })),
+      unicodeProjectionRead,
+      "oversized UTF-8 projection must roll back the page version and leave persisted blocks unchanged",
+    );
+    assert.equal(await mutationReceipts.find({
+      userId: userA.id, tool: "eotion_update_page", idempotencyKey: unicodeUpdateInput.idempotencyKey,
+    }), null, "oversized UTF-8 projection must not commit its receipt");
+    const unicodeRetry = expectToolSuccess(await clientA.callTool({ name: "eotion_update_page", arguments: unicodeUpdateInput }));
+    assert.equal(unicodeRetry.title, unicodeUpdateInput.title, "the same key must remain available after the rejected output transaction");
 
     // Verify the receipt and returned value survive a fresh Nest/application service instance.
     const persistedCreateInput = { ...createInput, title: "restart idempotency proof", idempotencyKey: `restart-${randomUUID()}` };

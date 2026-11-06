@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-29T04:35:10.233Z",
+  "candidateSha": "217f6273fae46a554f910fe2f4b4146338d9e68c",
+  "masterSha": "bdd6748ace0bb6880981257b9b64bcbdb16c517c",
+  "sourceFilesVerified": 478,
+  "sourceAggregateSha256": "b634acd6d5cb1b9daa06074919bb6f93ae59b1894f864f6ae48ba5c2f3acb7c0",
+  "productOrFormalConfigChangesSinceCandidate": [],
+  "artifactSourceMappings": 314,
+  "uniqueArtifactIndexBlobsVerified": 287,
+  "allIndexBytesAndSourceHashesMatch": true,
+  "archivedBytesUnique": 17134045,
+  "originalSourceBytes": 74882667,
+  "sourceDataUnchangedByPackaging": true,
+  "readableCopies": [
+    {
+      "path": "backend/overall-final-summary.json",
+      "bytes": 20498,
+      "sha256": "332b97339cd2a1b2344db78d51fecf685fac27b0b6d2f1c46fa3cc943a3a8cd9",
+      "derivedFromSourceSha256": "e1a7e388efe5c438eb7e4425045136a75cb47da7fc71a8b498c7e69267d83d6a",
+      "note": "Readable LF JSON view; original exact bytes are in the mapped gzip artifact."
+    },
+    {
+      "path": "backend/cleanup.json",
+      "bytes": 1190,
+      "sha256": "2d362196d6799702cb4d9077d36cfbf92b531e22300ebb2ef5acdf6e45c93edc",
+      "derivedFromSourceSha256": "07f5a5481798b2e04f57925cb143c61a8aa767336b6c6146cd7113f4c2952d37",
+      "note": "Readable LF JSON view; original exact bytes are in the mapped gzip artifact."
+    },
+    {
+      "path": "backend/mongo-instance.json",
+      "bytes": 1118,
+      "sha256": "f9f7247925bcd03131b8eff6e8d75daf7cddb26ec47f277bf1a0d8c0860e6747",
+      "derivedFromSourceSha256": "eff5821a8cf0481633fa7b9a08a476934af58d9f0d60ad21e296ec1ac34dfa8f",
+      "note": "Readable LF JSON view; original exact bytes are in the mapped gzip artifact."
+    }
+  ],
+  "localReportLinksVerified": 24,
+  "stagedTextFilesUtf8WithoutBom": 111,
+  "diffCheckExit": 0,
+  "cachedDiffCheckExit": 0,
+  "version": "0.0.1",
+  "buildNumber": 2,
+  "reviewPassCount": 1,
+  "productStatus": "HOLD",
+  "checksNotRepeated": "Completed 2026-10-26 product/API/client runs retained; continuation validates frozen sources, documentation and packaging only."
+}

@@ -27,6 +27,10 @@ export class DatabaseRepository {
     const doc = await this.model.findOneAndUpdate({ workspaceId, id, version: expectedVersion }, [{ $set: { version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
     return doc ? { id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) } : null
   }
+  async rename(workspaceId: string, id: string, expectedVersion: number, name: string, session: ClientSession): Promise<Database | null> {
+    const doc = await this.model.findOneAndUpdate({ workspaceId, id, version: expectedVersion }, [{ $set: { name: { $literal: name }, version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
+    return doc ? { id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) } : null
+  }
   async touchAdvancedReferenceFence(workspaceId: string, id: string, session: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndUpdate({ workspaceId, id }, { $inc: { advancedReferenceFence: 1 } }, { session, returnDocument: 'after' }).exec())
   }

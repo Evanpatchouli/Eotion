@@ -1,0 +1,57 @@
+{
+  "outcome": "FAIL",
+  "checks": 39,
+  "evidence": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-client-riJXTW",
+  "databaseName": "eotion_p104_client_3c41356104154077a0c12c8f10dcec9f",
+  "mongoPort": 65337,
+  "owned": [
+    {
+      "name": "mongo-replica",
+      "pid": 42748,
+      "command": "C:/Program Files/MongoDB/Server/8.2/bin/mongod.exe",
+      "args": [
+        "--dbpath",
+        "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-client-riJXTW\\mongo-data",
+        "--bind_ip",
+        "127.0.0.1",
+        "--port",
+        "65337",
+        "--replSet",
+        "p104_a3415aac"
+      ],
+      "startedAt": "2026-10-26T03:19:03.266Z",
+      "osStartedAt": "2026-10-26T03:19:03.1980526Z",
+      "exitCode": 0,
+      "signal": null,
+      "exitedAt": "2026-10-26T03:19:09.301Z"
+    },
+    {
+      "name": "api-replica",
+      "pid": 11140,
+      "command": "C:\\Users\\31250\\.vite-plus\\js_runtime\\node\\24.22.0\\node.exe",
+      "args": [
+        "dist/main.js"
+      ],
+      "startedAt": "2026-10-26T03:19:04.879Z",
+      "osStartedAt": "2026-10-26T03:19:04.8204776Z",
+      "exitCode": null,
+      "signal": "SIGTERM",
+      "exitedAt": "2026-10-26T03:19:09.100Z"
+    }
+  ],
+  "processesExited": true,
+  "inspector": {
+    "version": "2.12.0",
+    "entry": "C:/Users/31250/AppData/Local/pnpm-cache/dlx/415612ac9c907e9cebea4cf4ffe9475f/mvjgoxp7-1310/node_modules/.pnpm/@modelcontextprotocol+inspector@2.12.0/node_modules/@modelcontextprotocol/inspector/clients/cli/build/index.js",
+    "sha256": "921e9beafe9d3d6ec2e7429fa88d34049cbe123e08a50d5333529371f46373e9",
+    "wrapper": "C:\\Users\\31250\\AppData\\Local\\Temp\\eotion-p104-inspector-wrapper-5f904c50-8003-4933-aca9-4edcf960904d.mjs",
+    "tokenPassedOnlyThroughEnvironment": true
+  },
+  "cleanup": {
+    "databaseDropped": true,
+    "credentialsLogged": false,
+    "tokensStoredInMemoryOnly": true
+  },
+  "version": "0.0.1",
+  "buildNumber": 2
+}

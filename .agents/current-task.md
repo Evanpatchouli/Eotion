@@ -1,4 +1,137 @@
-# 当前任务：P10.2 独立验证与代码审查（2026-10-22）
+# 当前任务：P10 / P11 集成验收（2026-11-07）
+
+从 `4de6ed1` 续作，在候选分支集成远端 master `bdd6748`。完成两个阶段后合入本地主分支、推送并清理已合入的本地分支。
+
+阶段验收已完成。代码候选 `978b4f7`，P10 收口 `6843a5b`。P11 正式设置入口、跨月标尺与真实 E2E 已交付。完整 Product 513/513、独立 Database 256/256、正式 Visual 13/13。最终提交、合并及远端状态以 Git refs 为准。
+
+| 单元 | 模式 | 验收 |
+| --- | --- | --- |
+| 剩余差距与验收范围 | investigate / S0 | 核实正式创建配置入口、历史日期与启动失败、视觉环境 |
+| P10 阻断处理 | execute / S1 | 冻结创建流程用例的可见日期，保留切换、持久化与刷新断言 |
+| P10.4 组合门禁 | verify / S0 | 在集成候选执行共享包、Mongo/API/MCP、真实 Client/Web、完整 Product/Database 与正式视觉门禁 |
+| P11.6 收口 | verify / S0 | Timeline 逻辑、产品矩阵、真实创建及刷新，按版本运行手册核对元数据 |
+| 最终复核及 Git 交付 | review | 独立复核，阶段提交，核对远端主分支 SHA 与本地剩余分支 |
+
+---
+
+# 历史任务：P10.4 阻断修复与最终复验（FINAL HOLD，2026-10-29）
+
+起点工作树干净，交付 HEAD `75f5f1026bb96626ff70e84d53b908c5738b834e`；已从该状态创建 `codex/p10.4-acceptance-blockers`。冻结候选 `217f627` 与 master `bdd6748` 分叉，未集成。保留原 HOLD 历史和 314 原件映射；版本 0.0.1/build2、P11.6 HOLD 不变，不 push/merge/tag/发布。
+
+| 单元 | 模式 / 评级 | 验收 |
+| --- | --- | --- |
+| E1 | investigate / S0 scout | 复用原始失败证据，调查投影与 reload 调用链和身份 |
+| E2 | execute / S1 fast_worker | 精确作用域定位属性菜单并保持修复断言 |
+| E3 | decide / S2 主 Agent | 两项未知根因按证据判断，冻结最小 Brief |
+| E4 | execute / S1 fast_worker | 按 Brief 串行修复及回归 |
+| E5 | verify / S0 scout | 定向及冻结源码后的完整强制门槛、隔离真实 Web 链路与清理 |
+| E6 | review / 独立 reviewer | 一次末态独立复核断言、身份、持久化和证据 |
+
+仅解决三个授权阻断；失败与中间轮独立留证。完整 Product 使用原 14 spec 和正式配置，Visual 使用正式预检；任何未满足强制门槛均保留 HOLD。
+
+- A 日期夹具漂移、B 属性菜单歧义、C 测试在保存 Table 引用后错误期待 Timeline，均已按原证据修复并通过定向及两轮正式 suite 中的对应测试。代码提交 `ccc835f`、`03e7be4`、`b1f2cad`；没有产品代码/API/模型/协议变更。
+- 冻结候选 `b1f2cada460298006d658bfaa2b76d643d763140`：typecheck、Web/API build、version check 和 diff check 通过；完整 Product 511/512、独立 Database 254/255，唯一失败为另一条固定日期 Timeline create 测试落到离屏，未擅自扩范围修复。Visual 预检 spi.contrast 1000 与基准 1200 不符，未运行截图测试。正式报告与本轮证据见 `docs/verification/p10-final-acceptance.md`。
+- 真实 Web/MCP 50 条通过，自有随机库已删、Mongo/API/preview 已退出，7173 与三随机端口无监听；128 个后端/共享包/P104 脚本文件 hash 与旧清单一致。原 314 项证据映射及历史 HOLD 保留。独立最终 review 完成，无新增确定代码 blocker，认可 HOLD；结论仍为 P10.4 FINAL HOLD，P10 未 COMPLETE，P11.6 HOLD 不变。
+
+---
+
+# 历史任务：P10.4 Database MCP Final Acceptance（已收口 / FINAL HOLD，2026-10-29）
+
+起始工作树干净，HEAD `1950ec233bb9563395d4cbbe81fdf9538d9c7acf`（含 P10.3 三提交），从此创建 `codex/p10.4-database-mcp-final-acceptance`。本地 master/origin/master 为 `bdd6748ace0bb6880981257b9b64bcbdb16c517c`，共同祖先 `2aad764`；候选领先三个 P10.3 提交，master 另有两个部署提交，互不包含，不自动合并。版本固定 0.0.1 / build 2，P11.6 HOLD 不变，不恢复启动专项，不进入 P12/P15，不 push/merge/tag/Release/发布。
+
+| 单元 | 模式 / 评级 / 执行者 | 验收 |
+| --- | --- | --- |
+| A1 | investigate / S0 scout | 复用 P10.3 Evidence Pack，映射 A–E 到实际测试/Client/Product，列出最少缺口 |
+| A2 | decide / S2 主 Agent（只在必要时） | 未定契约或真实失败根因，形成紧凑 Brief 后降级 |
+| A3 | execute / S1 fast_worker | 按 Brief 补必要回归、验收 harness、范围内最小修复；不新增产品/API/模型 |
+| A4 | verify / S0 scout | 同一冻结源码的全部强制命令、真实隔离 Mongo / Client / Web 组合链路、环境预检和清理 |
+| A5 | review / 独立 reviewer | 唯一一次最终独立 review：权限/CAS/session/旧 receipt/replay/unknown/P6/P10.2/证据 |
+| A6 | execute / 主 Agent | 正式报告、文档/任务/交接同步、证据 SHA、最终 diff 和本地逻辑单元提交 |
+
+所有数据库验证显式使用本轮自有隔离 Mongo；记录端口、PID+出生身份、数据库名和清理，不连接用户原数据库。Token 不写仓库或原始日志。完整 Product 保持原集合/正式配置，一次命令；Visual 先正式环境预检，环境不符记录阻断，不修改黄金环境/flags/阈值/快照。历史/中间失败独立保留，不拼接不同源码状态。只有全部强制门槛通过且无 blocker 才标 FINAL PASS，否则 HOLD。
+
+当前：A1–A6已完成，唯一最终独立review未发现新的P10范围产品缺陷或证据阻断，支持FINAL HOLD。候选代码`217f6273fae46a554f910fe2f4b4146338d9e68c`，生产/正式配置相对1950ec2无改动；本地测试提交`d42b122`、真实验收harness提交`217f627`。正式报告 `docs/verification/p10-final-acceptance.md`。10月29日恢复仅完成原始证据换行/长路径无损打包、478文件冻结校验与Git收口，没有重跑测试或恢复P11.6专项。
+
+- 全部强制命令已真实执行：typecheck/API-Web build、Domain92/Contracts29/SDK24/Storage7、API Domain16/HTTP43/MCP50/Performance1、version/diff通过；API final-r2同一hash、Web215原文件前后不变。
+- 真实构建API Client+Inspector最终74条PASS（5轮中4轮harness失败均保留），真实无mock Web/API/Mongo/MCP最终50条PASS（2轮harness失败/1轮中间PASS/1轮最终PASS），九写真实standalone拒绝且八集合快照不变；旧P6 runner真实产生的receipt fixture已重放验证。
+- 完整Product一次原14集合508PASS/3FAIL，独立Database252PASS/2FAIL，均exit1；后两项是前者子集。Visual正式环境匹配13/13，未改快照/阈值/flags。P10.4 FINAL HOLD、P10未COMPLETE；不为取得通过修改Timeline或恢复启动专项。
+- 自有后端Mongo63687、Client52092、Web56863及API/Web进程均退出，随机库删除；10月29日自有端口仍无监听。验收时已有27017/PID4796早于本轮，未连接/修改/停止。314个原件映射、Git归档blob与解压SHA一致；中间打包失败、历史测试失败和原TEMP证据均保留。
+- 当前 master仍bdd6748，与候选分叉，未merge/push/发布；0.0.1/build2、P11.6 HOLD不变。最终文档证据提交SHA以Git交付为准，完成后停止，不自动接续修复或下一Phase。
+
+---
+
+# 历史任务：P10.3 Database MCP Write Tools（Scope PASS，2026-10-23）
+
+起始 `master/2aad764`，工作树干净；在 `codex/p10.3-database-mcp-write-tools` 实施。P10.2 已随 2aad764 合入，以下旧“未合并/实施中”记录仅为历史。版本固定 0.0.1 / build 2；P11.6 HOLD，不重启启动诊断；不进入 P10.4 / P12 / P15，不 push/merge/发布。
+
+| 单元 | 模式 / 评级 / 执行者 | 产出 / 验收 |
+| --- | --- | --- |
+| W1 | investigate / S0 scout（两个独立边界） | Database 领域写入与 CAS/session 证据；MCP receipt/transport/测试环境证据 |
+| W2 | decide / S2 主 Agent | 七工具严格 Schema、空值、CAS、事务/幂等及版本推进 Implementation Brief |
+| W3 | execute / S1 fast_worker | session-aware 领域 seam、最小 rename、成功回执及 MCP adapter/契约测试，按写入范围串行 |
+| W4 | execute / S1 fast_worker | 真实 Mongo/MCP 回归、失败注入与真实客户端验收 harness |
+| W5 | verify / S0 scout | 定向回归、完整最小门槛、隔离 replset/standalone 与构建 API 的真实 Client 链路 |
+| W6 | review / 独立 reviewer | 一次最终独立复核，修复 blocker，正式文档/交接与最终 diff、按逻辑单元提交 |
+
+所有测试仅用自有隔离 Mongo，绝不连接用户原数据库。
+
+## 当前进度
+
+- W1–W6实施、验证与唯一一次独立review均完成；七工具按下方Brief交付，未增加HTTP/SDK/模型/同步协议，原P6/P10.2兼容。正式结果与范围见 `docs/p10-database-mcp.md`；本地领域提交 `3faadd2`、MCP/回归提交 `4fc4aee`，本文档/证据独立提交SHA及最终工作树见Git/交付消息。不push/merge/发布。
+- 最终独立完整门槛 `Eotion-P10.3-full-gate-r2-final-20261023`：pnpm typecheck/build:api exit0、Domain16/16、HTTP43/43、MCP50/50、version:check/diff --check exit0；所有测试fail/skip/cancel0，17个代码/配置/脚本SHA256前后一致。不拼接首轮通过结果。
+- 构建API+官方SDK Client最终第三轮独立PASS，42条验收记录（含七DB和两P6写工具真实standalone拒绝、全业务快照不变、网络响应丢失和真实API重启后原keyreplay）。证据 `C:/Users/31250/AppData/Local/Temp/eotion-p103-client-up3AMo`；自有API/Mongo全部退出，随机库已删除，无明文Token日志。
+- 独立review唯一生产finding（P6 unknown commit误报事务能力不足）已修复，并以真实transaction提交后模拟ACK丢失覆盖create/update_page与create_record：旧编译handler红1/0/1、修复绿1/1/0，首次green夹具版本错误单独留档，最终用独立Database。reviewer已核对最终7门槛与Client，确认无剩余blocker，支持Scope PASS。
+- 失败/中间记录均保留：新增集成R1–R5测试夹具/错误码断言问题，R6完整1/1；Client首轮date-only/timezone夹具与shutdown ECONNRESET误判，第二轮40条通过；首轮完整门槛在review修复前到Domain/HTTP通过后暂停。日志/原字节SHA压缩归档在 `docs/verification/evidence/p10-3-mcp-write-tools/`，不将中间结果冒充终态。
+- 隔离门槛Mongo51059/PID49968已按instance.json核出生身份后admin shutdown，进程与监听退出；清理前发现并只删除自建探针库（最初dropDatabase参数误用导致未删除），之后仅admin/config/local，证据final-gate-cleanup.json。原27017从未连接/操作。
+- **P10.3 Scope PASS，无范围内未完成项。** 完成本地提交后停止，等待P10.4指令；P10未COMPLETE，P11.6 HOLD、0.0.1/build2保持，不进入P12/P15。
+
+## Implementation Brief（W1 完成，W2 冻结）
+
+没有发现与本轮七工具范围冲突的更早正式写入契约；P10.1/P10.2 仅预留写入。以下为新增 MCP 契约，不新增 HTTP/SDK、持久字段或同步协议。
+
+### 严格输入/输出
+
+共用字段 S = `workspaceId,databaseId,expectedDatabaseVersion,idempotencyKey`。ID 为非空、首尾无空白、最长256字符的稳定字符串；version 为正 safe integer；key trim 后1–128字符。name/title trim 后1–200字符。所有对象顶层 strict；Property config / Formula AST / Date / Filter / Sort 的未知字段继续由现有 domain validator 严格拒绝，只有 View.options 按既有契约开放未知扩展 JSON。
+
+| 工具 | 输入（除S外；?表示可省略，禁止未列字段） | 严格成功DTO |
+| --- | --- | --- |
+| eotion_create_record | title, properties?: Record<PropertyId,Value> | {database,record} |
+| eotion_update_record_cell | recordId, propertyId, value, expectedRecordVersion, expectedPageUpdatedAt?: ISO datetime | {database,record} |
+| eotion_create_property | name, type: title/text/number/checkbox/select/date/relation/rollup/formula, options?: [{id,name}], config?: 既有PropertyConfig | {database,property} |
+| eotion_update_property | propertyId, expectedPropertyVersion, name?, options?, config?；至少一个patch字段 | {database,property} |
+| eotion_create_view | name, type: table/list/board/timeline, config?: 完整ViewConfig | {database,view} |
+| eotion_update_view | viewId, expectedViewVersion, name?, config?；至少一个patch字段 | {database,view} |
+| eotion_rename_database | name | {database} |
+
+DTO 的 database/property/view/record 复用 P10.2 严格业务投影（不含 persistence/fence 字段）；record 包含 properties（Page.title 的 Title投影及现有派生投影）、pageId/pageVersion/Record version，不新增第二份持久标题。新Record/Page/Property/View ID由应用服务生成UUID；Record Page orderKey用既有nextOrderKey规则；Select option ID保留既有业务定义输入，更新完整options按ID保留/清理引用。调用方不能指定新实体ID、orderKey、userId、时间或内部字段。
+
+Value = string（无额外长度限制）| finite number | boolean | null | 最多50个唯一稳定Record ID | {start,end?,timeZone?}；合法性由现有Property/Date/Relation validator决定，不复制日期模型。Formula/Rollup不可写，Title初始值只使用title字段；初始properties中的Title和派生值拒绝。options无额外100项限制；输入与最终成功DTO各自按JSON UTF-8字节最多1MiB。
+
+### 省略、null、空集合与版本
+
+- create_record省略properties等于空初始值；null清除可空非Relation值，Relation清空用[]；Title拒绝null/空白。单Cell不支持省略value；更新Title必须Page CAS，普通Cell传Page版本不参与校验，沿用领域语义。
+- Property的name/options/config省略保留；options提供时完整替换（[]清空Select并触发既有cleanup）；config提供时完整替换，null拒绝，不支持类型转换；无config类型不能添加config。重复Title、类型/config/引用/依赖/数量限制全部复用现有领域检查。
+- View省略config保留（create使用既有默认）；提供config为完整替换，必填filters/sorts/visibleProperties/propertyOrder；[]明确清空对应列表，visibleProperties/propertyOrder的null沿用默认投影语义；config:null/options:null拒绝。options中的未知扩展原样存取；完整替换时调用方应带回需要保留的options；仅改名绝不覆盖现有config。type在update输入中拒绝，不做View类型转换。
+- 每次新成功写入Database version+1；新Record/Property/View version=1。单Cell使Record+1，即使值相同也沿用既有单Cell语义；Title额外推进Page.updatedAt，普通Cell不改变Page。updateProperty/View各自实体+1；Select cleanup中实际受影响的Record/View各+1。rename只推进Database version/updatedAt；不改Page/View/正文。Replay返回首次DTO且不推进任何版本。
+
+### 应用/事务/回执边界
+
+- 将P6的canonical hash、事务/replay/duplicate处理提取为共用McpMutationService，仍写原mcp_mutation_receipts，只扩展tool枚举，不改唯一键/旧hash算法/无TTL/committed-only语义；DocumentMutationService内部复用且保持P6工具契约。
+- DatabaseService六写方法增加session-aware内部调用通道，provided session必须处于事务；HTTP不传session仍走原transact。createRecordPage额外内部CAS参数只给MCP，不改HTTP输入/返回。补最小renameDatabase领域入口与repository CAS名称更新；adapter不访问repository。
+- 新DatabaseMcpMutationService组合共用runner与DatabaseService/PageService，生成ID/orderKey、转交全部领域检查。数据库写权限/真实Database及目标Property/View/Record/Page归属由DatabaseService.assertWriteScope在replay前校验；不先验证CAS。create_record与create_view显式传客户端Database版本，绝不读最新版本替代。
+- 顺序：strict输入及1MiB输入检查 → receipt唯一索引ready、replica set/mongos能力确认（standalone任何业务写前拒绝）→ 一个snapshot transaction中复核当前权限/scope → 持久receipt查询/hash比较/replay → 领域CAS/校验/所有关联写入和版本推进 → DTO严格parse与实际JSON大小检查 → 同session保存成功receipt → commit → 返回DTO。
+- (userId,tool,key)全局持久唯一；canonical hash包含tool及完整规范化输入（scope、目标、业务参数、CAS）。同key不同payload冲突，同payload在CAS前replay；并发duplicate仅在重查当前权限/scope后返回已提交相同hash回执。失败已回滚无成功receipt/key占用。未知commit不写失败/pending、不声称回滚；客户端只可用原key/原payload重试或读取状态，绝不自动换key。
+- View/property生命周期、Relation advanced fence、Formula/Rollup读取投影均保留原领域实现；无View context调度承诺。P11 batch pending/uncertain identity与MCP成功receipt严格分开。
+
+### 文件/验收
+
+生产：server-domain/services/{database,document-mutation,mcp-mutation,database-mcp-mutation}.service.ts、database/mcp receipt repository与schema、server-domain.module.ts；MCP新增write contract并注册七工具（旧十一工具不变），read contract仅导出可复用DTO schema。测试：新增契约/真实MCP集成、完整18工具清单、真实standalone与构建API Client harness；不写新HTTP/SDK/UI。
+
+最小门槛：先定向MCP contracts/写入及原P6回归；随后pnpm typecheck/build:api、API test:domain/test:http/test:mcp、version:check、diff --check。隔离Mongo replica set+构建API+官方真实SDK Client完成Schema→Record→Cell/Title→Property/View→rename→读回→replay/stale CAS；真实standalone无业务写。覆盖七工具成功/输入/不存在/跨scope/越权、全工具replay/hash冲突、并发/重启/响应丢失、receipt与DTO失败回滚、Select cleanup/Relation/Date/派生拒绝、P6/P10.2兼容。一次最终独立review，按独立逻辑单元提交；P10.3 Scope PASS不等于P10 COMPLETE，不解除P11.6 HOLD。
+
+---
+
+# 历史任务：P10.2 独立验证与代码审查（2026-10-22）
 
 ## 2026-10-23 提交与推送授权
 

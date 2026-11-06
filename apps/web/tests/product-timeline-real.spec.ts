@@ -71,6 +71,14 @@ test('creates a Timeline through the product UI and keeps its date source and sc
   await expect(databaseDialog).toBeVisible()
   await databaseDialog.getByRole('button', { name: '创建新数据库' }).click()
   await databaseDialog.getByRole('textbox', { name: '数据库名称' }).fill('时间线项目')
+  // Database insertion requires a synchronized host page. Wait for the last
+  // slash edit, not an earlier page-create or partial slash acknowledgment.
+  await expect.poll(() => page.evaluate(async workspace => {
+    const response = await fetch(`/api/sync/workspaces/${workspace}/snapshot`)
+    if (!response.ok) return false
+    const snapshot = await response.json() as { blocks: Array<{ props?: { node?: { content?: Array<{ text?: string }> } } }> }
+    return snapshot.blocks.some(block => block.props?.node?.content?.some(node => node.text === '/database'))
+  }, workspaceId)).toBe(true)
   await databaseDialog.getByRole('button', { name: '创建数据库', exact: true }).click()
 
   const databaseBlock = page.locator('.eotion-database').filter({ has: page.getByRole('button', { name: '切换视图' }) })
@@ -143,6 +151,14 @@ test('creates a Timeline through the product UI and keeps its date source and sc
   await expect(openedRecord.getByRole('textbox', { name: '记录标题' })).toHaveValue('验收里程碑')
   await openedRecord.getByRole('button', { name: '关闭记录' }).click()
 
+  await databaseBlock.getByRole('button', { name: '数据库设置' }).click()
+  await page.getByRole('menuitem', { name: '时间线设置', exact: true }).click()
+  const settings = page.getByRole('dialog', { name: '时间线设置', exact: true })
+  await settings.getByLabel('显示冻结表格').check()
+  await settings.getByRole('checkbox', { name: '日期', exact: true }).check()
+  await page.getByRole('button', { name: '保存时间线设置' }).click()
+  await expect(timeline.getByTestId('timeline-frozen-table')).toContainText(scheduledDate)
+
   // The authenticated API checks below are read-only; creation and mutation above
   // have gone through the visible product controls.
   await expect.poll(() => page.evaluate(async ({ workspaceId, viewId }) => {
@@ -179,10 +195,27 @@ test('creates a Timeline through the product UI and keeps its date source and sc
   await page.reload()
   const reloadedDatabase = page.locator('.eotion-database').first()
   await expect(reloadedDatabase).toHaveAttribute('data-view-id', timelineViewId!)
+  await expect(reloadedDatabase.getByTestId('timeline-frozen-table')).toContainText(scheduledDate)
   await expect(reloadedDatabase.getByTestId('database-timeline').locator('[data-testid="timeline-bar"]')).toHaveCount(1)
   const reloadedBar = reloadedDatabase.getByTestId('database-timeline').locator('[data-testid="timeline-bar"]')
   await expect(reloadedBar).toContainText('验收里程碑')
   await page.screenshot({ path: testInfo.outputPath('timeline-reloaded.png'), fullPage: true, animations: 'disabled' })
+  // Leave a sliver of the first month visible and check that its pinned label
+  // cannot cover the next month, including when Frozen Table narrows the ruler.
+  const ruler = reloadedDatabase.getByTestId('timeline-ruler')
+  const scroller = reloadedDatabase.getByTestId('timeline-scroll')
+  const initialScroll = await scroller.evaluate(element => element.scrollLeft)
+  const toBoundary = await ruler.locator('.eotion-timeline-ruler-tick--major').first().evaluate(tick =>
+    tick.getBoundingClientRect().right - tick.parentElement!.getBoundingClientRect().left)
+  await scroller.evaluate((element, distance) => { element.scrollLeft += distance - 30 }, toBoundary)
+  const months = ruler.locator('.eotion-timeline-ruler-label--major')
+  await expect.poll(() => months.evaluateAll(labels => {
+    if (labels.length < 2) return false
+    const current = labels[0]!.getBoundingClientRect()
+    const next = labels[1]!.getBoundingClientRect()
+    return current.width <= 32 && current.right <= next.left + 1
+  })).toBe(true)
+  await scroller.evaluate((element, value) => { element.scrollLeft = value }, initialScroll)
   await reloadedBar.click()
   const reloadedRecord = page.locator('[data-overlay-mode="drawer"]')
   await expect(reloadedRecord).toBeVisible()

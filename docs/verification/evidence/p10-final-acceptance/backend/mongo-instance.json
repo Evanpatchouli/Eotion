@@ -1,0 +1,20 @@
+{
+  "root": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid",
+  "mongoRoot": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo",
+  "dbPath": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo\\7296bf9668c24dc5957db69d5c31ec88",
+  "port": 63687,
+  "replSet": "p104_74a8b5b969",
+  "uri": "mongodb://127.0.0.1:63687/eotion_p104_backend_fb396d8119bf45f5944cd4515bff3d09?directConnection=true&replicaSet=p104_74a8b5b969",
+  "exe": "C:\\Program Files\\MongoDB\\Server\\8.2\\bin\\mongod.exe",
+  "pid": 40268,
+  "startedAt": "2026-10-26T02:56:44.9869424Z",
+  "stdout": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo.stdout.log",
+  "stderr": "C:\\Users\\31250\\AppData\\Local\\Temp\\Eotion-P10.4-backend-uuid\\mongo.stderr.log",
+  "verified": {
+    "setName": "p104_74a8b5b969",
+    "verifiedAt": "2026-10-26T02:57:32.1487251Z",
+    "transactionProbe": "PASS",
+    "hello": "PRIMARY"
+  },
+  "testUri": "mongodb://127.0.0.1:63687/eotion_p104_backend_fb396d8119bf45f5944cd4515bff3d09?directConnection=true&replicaSet=p104_74a8b5b969"
+}
