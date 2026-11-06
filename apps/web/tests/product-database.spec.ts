@@ -3262,6 +3262,9 @@ test('Timeline can be created from a database view selector and keeps its date s
   const createRequests = api.requests.filter(({ method, path }) => method === 'POST' && path.endsWith(`/databases/${rootDatabase.id}/views`))
   expect(createRequests).toHaveLength(1)
   expect(createRequests[0]?.payload).toMatchObject({ type: 'timeline', config: { options: { timeline: { dateSource: { mode: 'date-property', propertyId: date.id } } } } })
+  // Observe the first saved Timeline reference before switching away. Otherwise
+  // the initial Table reference can satisfy the next poll before that switch is saved.
+  await expect.poll(() => api.blocks.find(item => item.id === 'timeline-create-block')?.props.node?.attrs).toEqual({ databaseId: rootDatabase.id, viewId: created.id })
 
   await selector.click()
   await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: '表格视图', exact: true }).click()
@@ -3489,7 +3492,8 @@ test('Timeline date settings ignore an older PATCH response after offline closes
 })
 
 test('database view selector creates a Board view through the existing DatabaseView API', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 })
+  // Keep the host toolbar reachable with the non-modal record drawer fully open.
+  await page.setViewportSize({ width: 1920, height: 1000 })
   const api = await installApi(page, [
     block('create-board-view-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 100),
     block('create-board-linked-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: 'view-root-id' } }, 200),
