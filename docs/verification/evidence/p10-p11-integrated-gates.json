@@ -1,0 +1,183 @@
+{
+  "date": "2026-11-07",
+  "candidate": "978b4f707fc8f29a401dca5229d0706567fd0aaf",
+  "baseMaster": "bdd6748ace0bb6880981257b9b64bcbdb16c517c",
+  "browserSuites": {
+    "product": {
+      "file": "%TEMP%/eotion-final-gates-978b4f7-3f556c86ac784c1aa514ae0ae2e91390/product.json",
+      "sha256": "bd35dd2a92d89dcbc01b1af1e3b4f23c536f9d1a101b1b56ade9d80e05f80527",
+      "startTime": "2026-11-06T21:15:21.400Z",
+      "duration": 1231812.446,
+      "expected": 513,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "database": {
+      "file": "%TEMP%/eotion-final-gates-978b4f7-3f556c86ac784c1aa514ae0ae2e91390/database.json",
+      "sha256": "27f7fc7336b7d0ce08d0db33c272b4dec81fb5932cb021b380d969f240be8eda",
+      "startTime": "2026-11-06T21:52:52.173Z",
+      "duration": 547322.608,
+      "expected": 256,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "logic-theme": {
+      "file": "%TEMP%/eotion-final-gates-978b4f7-3f556c86ac784c1aa514ae0ae2e91390/logic-theme.json",
+      "sha256": "fcee1fa29643d114ab47d5dcad121a72eecf977e5bcd61de5e5c1f8875a43487",
+      "startTime": "2026-11-06T22:02:40.564Z",
+      "duration": 13635.716,
+      "expected": 92,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "timeline-real": {
+      "file": "%TEMP%/eotion-p11-978b4f7-real-20261107/timeline-real-reporter.json",
+      "sha256": "d33a506edcbebb403958247654241f0627363beb4a716324c97accb458bad770",
+      "startTime": "2026-11-06T21:16:55.427Z",
+      "duration": 18374.198999999997,
+      "expected": 1,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "visual": {
+    "file": "%TEMP%/eotion-visual-p11-978b4f7/formal-output/visual-environment.json",
+    "sha256": "2b4e294dc12b1daf2d49d969cf9ef75d2f0a3740d6e21c180f71c5751694f981",
+    "run": {
+      "file": "%TEMP%/eotion-visual-p11-978b4f7/formal-run-summary.txt",
+      "sha256": "ff1076a46c77e624a8522c03ec6de92349afc03d511f91c30acb3475feda3c85"
+    },
+    "passed": 13,
+    "expectedEnvironmentMatched": true,
+    "chrome": "156.0.8078.47",
+    "playwright": "1.63.0"
+  },
+  "serverAndPackages": {
+    "candidate": "62a1d8a01142c4880b5ec57c54e60f8b28396aa7",
+    "file": "%TEMP%/eotion-gates-62a1d8a-summary.json",
+    "sha256": "8018fe8f9b4ec754774ac096e3296aac11c4430c90092f38d8fad8ba7b473d44",
+    "commands": [
+      {
+        "command": "pnpm typecheck",
+        "status": "PASS",
+        "scope": "web,desktop,api"
+      },
+      {
+        "command": "pnpm version:check",
+        "status": "PASS",
+        "details": "0.0.1 build 2 across 9 workspace packages"
+      },
+      {
+        "command": "pnpm build:api",
+        "status": "PASS"
+      },
+      {
+        "command": "pnpm build:web",
+        "status": "PASS",
+        "details": "2270 modules; existing large editor chunk advisory"
+      },
+      {
+        "command": "pnpm --filter @eotion/domain test",
+        "status": "PASS",
+        "tests": 92
+      },
+      {
+        "command": "pnpm --filter @eotion/contracts test",
+        "status": "PASS",
+        "tests": 29
+      },
+      {
+        "command": "pnpm --filter @eotion/sdk test",
+        "status": "PASS",
+        "tests": 24
+      },
+      {
+        "command": "pnpm --filter @eotion/storage test",
+        "status": "PASS",
+        "tests": 7
+      },
+      {
+        "command": "pnpm --filter @eotion/domain typecheck",
+        "status": "PASS"
+      },
+      {
+        "command": "pnpm --filter @eotion/contracts typecheck",
+        "status": "PASS"
+      },
+      {
+        "command": "pnpm --filter @eotion/sdk typecheck",
+        "status": "PASS"
+      },
+      {
+        "command": "pnpm --filter @eotion/sdk build",
+        "status": "PASS"
+      },
+      {
+        "command": "pnpm --filter @eotion/api test:domain",
+        "status": "PASS",
+        "tests": 16,
+        "database": "isolated random test database"
+      },
+      {
+        "command": "pnpm --filter @eotion/api test:database:performance",
+        "status": "PASS",
+        "tests": 1,
+        "details": "5k/10k record acceptance"
+      },
+      {
+        "command": "pnpm --filter @eotion/api test:http",
+        "status": "PASS",
+        "tests": 43,
+        "breakdown": {
+          "databaseHttp": 18,
+          "syncHttp": 1,
+          "fileHttp": 24
+        }
+      },
+      {
+        "command": "pnpm --filter @eotion/api test:mcp",
+        "status": "PASS",
+        "tests": 50,
+        "database": "isolated random test database"
+      }
+    ]
+  },
+  "clientInspector": {
+    "file": "%TEMP%/eotion-p104-client-TH8lDk/summary.json",
+    "sha256": "8fe8c5e36ad33faf0b95204ae3ee3b4b974b0002a668e0e43bfec26aba933cb3",
+    "checks": 74,
+    "status": "PASS",
+    "temporaryDatabaseDropped": true,
+    "processesExited": true
+  },
+  "productMcp": {
+    "file": "%TEMP%/eotion-p104-web-mcp-td0vGq/summary.json",
+    "sha256": "db26fc81c029ce1849da4cf0e4472ef176cd1d70f527b04b15de9d7bfc45eebe",
+    "checks": 50,
+    "status": "PASS",
+    "temporaryDatabaseDropped": true,
+    "processesExited": true
+  },
+  "productionTheme": {
+    "candidate": "384597c",
+    "summary": {
+      "file": "%TEMP%/eotion-p11-384597c-ui-summary.json",
+      "sha256": "7378906458ca7907d492837eeeeedc1ff9813efa3b58e3651a5516946e69b19a"
+    },
+    "passed": 2
+  },
+  "firstProductRun": {
+    "file": "%TEMP%/eotion-p10p11-web-gates-122f10eab0264329ad6e6c6de4d10930/product.json",
+    "sha256": "0acb84607ce82963734dc1558c802d35cffe7766991f7e9d4ff8f4040ab6ab74",
+    "startTime": "2026-11-06T20:37:19.600Z",
+    "duration": 2077088.719,
+    "expected": 507,
+    "skipped": 0,
+    "unexpected": 5,
+    "flaky": 0
+  }
+}

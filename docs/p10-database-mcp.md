@@ -1,6 +1,6 @@
 # P10 Database MCP Extension
 
-状态：P10.1 契约已批准；P10.2 Read Tools 及验证修复已通过 `2aad764` 合入 master；P10.3 七写工具 Scope PASS 的历史交付保持。**P10.4 FINAL HOLD（2026-10-26），P10 未 COMPLETE**：本轮完整 Product508/511、独立Database252/254失败；API/包测试、真实Client74条、真实Web50条、Visual13/13通过。候选 `217f627` 未集成 master，完整证据与阻断见 [最终验收](verification/p10-final-acceptance.md)。版本保持 0.0.1 / build 2，P11.6 继续 HOLD。
+状态：**P10 COMPLETE / FINAL PASS（2026-11-07）**。集成候选 `978b4f7` 已通过十八工具契约、真实 Client/Web、完整 Product、独立 Database 和正式 Visual 门禁。阶段结果与此前 HOLD 的原始记录见[最终验收](verification/p10-final-acceptance.md)。
 
 ## 范围
 

@@ -1,5 +1,24 @@
 # P10.4 Database MCP Final Acceptance
 
+## 2026-11-07 集成验收 · P10 FINAL PASS
+
+集成代码 `978b4f7` 包含主分支 `bdd6748`、P10.2 五个读工具、P10.3 七个写工具及原 P6 六工具。十八工具按本报告下方 A–E 契约验收。当前产品版本为 0.0.1 / build 2。运行摘要、原始报告路径及 SHA-256 见[集成门禁记录](evidence/p10-p11-integrated-gates.json)。
+
+| 门禁 | 本轮通过结果 |
+| --- | --- |
+| 共享包 | Domain 92、Contracts 29、SDK 24、Storage 7 |
+| 隔离 Mongo 8.2.3 | Domain 16、HTTP 43、MCP 50、性能 1 |
+| 官方 MCP Client / Inspector | 74 项操作检查，包括权限、CAS、幂等重放、服务重启和 standalone 写入拒绝 |
+| 构建 Web / API / Mongo / MCP | 50 项操作检查，最终代码重新构建并实跑 |
+| 完整 Product / 独立 Database | 513/513、256/256，分别单次执行，1 worker、0 retries、0 skip |
+| 正式 Visual | 13/13，环境预检通过，沿用原图和原阈值 |
+
+在 `62a1d8a` 执行了全仓 typecheck、Web/API build、version check 及表中后端、共享包和 Client 门禁。到最终候选的差异仅涉及 Web 与文档，API、共享包及 Inspector 脚本逐文件无差异。最终 Web 重新通过 typecheck、生产构建和全部浏览器门禁。验收所用临时数据库已清理。
+
+**首轮记录。** `62a1d8a` 的带 trace 完整 Product 为 507/512。图标用例因两个 runner 共用输出目录而在关闭 trace 时遇到 ENOENT，后续各门禁使用独立目录。Timeline 切换测试漏等首次时间线引用持久化，旧表格引用可能提前满足断言；看板创建测试的按钮中心被展开的抽屉覆盖。这两项由 `8ade13f` 修正。另有一项在开发模块 `auth.ts` 请求时出现 Chromium `ERR_NO_BUFFER_SPACE`，一项 5,000 区块用例在输入步骤达到整例超时。最终使用仓库正式配置的默认 trace 策略，完整运行全部通过。此结果针对当前候选，历史网络资源错误的底层来源仍未确定。
+
+Windows 系统 Chrome 已更新至 .76。本轮在 TEMP 使用 Google Chrome for Testing 156.0.8078.47，并仅在测试进程内设置 Chrome 查找目录；正式预检核对浏览器、Playwright、字体及 Windows 渲染参数后才比较截图。
+
 ## 阻断修复与复验（2026-10-29，FINAL HOLD）
 
 本轮从交付 HEAD `75f5f1026bb96626ff70e84d53b908c5738b834e` 创建分支 `codex/p10.4-acceptance-blockers`，修复代码候选 `b1f2cad`；master 仍为 `bdd6748`，两者未集成。原验收的 HOLD、原始失败及 314 项证据映射保留在下文，不能由定向结果取代完整门槛。P11.6 HOLD、历史启动问题结论和版本 0.0.1/build2 不变。
