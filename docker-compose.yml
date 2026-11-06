@@ -45,6 +45,7 @@ services:
       - '127.0.0.1:8001:80'
     networks:
       - app
+      - public_web
 
   eotion-site:
     build:
