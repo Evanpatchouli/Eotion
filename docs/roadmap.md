@@ -204,6 +204,8 @@ P9.1–P9.6 implementation COMPLETE（2026-10-13）：同一 Database 模型上�
 
 ## P11 - Timeline（目标版本 0.0.3）
 
+**P11 COMPLETE / FINAL PASS（2026-11-07）。** 已按产品标准 §24 完成读取、日期修改、依赖、冻结表格与设置入口的集成验收。完整 Product 513/513、独立 Database 256/256、逻辑与主题 92/92、正式视觉 13/13、真实创建与刷新链路 1/1。详见[P11.6 最终验收](verification/p11-6-timeline-final-acceptance.md)。
+
 Timeline 是 0.0.2 后最高优先级的 Database View。
 
 目标：在同一 `DatabaseView + generic records` 模型上增加 Timeline，不复制 Database/Record，不建立 TimelineRecord/TimelineDatabase 等平行实体。

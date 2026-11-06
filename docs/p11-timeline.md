@@ -1,6 +1,6 @@
 # P11 Timeline — Notion Parity Product Standard
 
-> Status: **P11.1、P11.2 核心 Read PASS；P11.3 Timeline Mutation COMPLETE（A/B/C/D PASS）；P11.4A Scope PASS；P11.4B Dependency Editing COMPLETE / PASS；P11.4C COMPLETE / PASS（Scope）；P11.4D COMPLETE / PASS（Dependency Scope）；P11.5 COMPLETE / Scope PASS（用户接受旧视觉例外）；P11.6 HOLD，未具备 P11 Final PASS 条件**
+> 当前状态为 **P11 COMPLETE / FINAL PASS（2026-11-07，§24 Web 产品矩阵）**。真实设置、刷新、跨月标尺与完整回归见[P11.6 最终验收](verification/p11-6-timeline-final-acceptance.md)。
 > Target release: **0.0.3**  
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。

@@ -1,5 +1,9 @@
 # Handoff
 
+## 2026-11-07 P10 / P11 集成验收通过
+
+集成代码 `978b4f7` 包含 P10 十八工具与 P11 正式配置入口、跨月标尺修复。以本次 P10.4、P11.6 最终报告及 `docs/verification/evidence/p10-p11-integrated-gates.json` 为当前状态，以下 HOLD 记录均为历史。完整 Product 513/513、独立 Database 256/256、Visual 13/13，真实 MCP Client/Web 与 Timeline 创建刷新均通过。版本 0.0.1/build 2，下一阶段及发布另行安排。
+
 ## 2026-10-29 P10.4 阻断修复与复验（FINAL HOLD）
 
 从干净交付 HEAD `75f5f10` 创建 `codex/p10.4-acceptance-blockers`；代码候选 `b1f2cada460298006d658bfaa2b76d643d763140`，master `bdd6748` 仍分叉未集成，版本 0.0.1/build2 不变。三个指定问题均为测试缺陷：Frozen 日期夹具与窗口漂移、属性菜单非精确定位、刷新测试先选并持久化 Table 却期待 Timeline。提交 `ccc835f`、`03e7be4`、`b1f2cad` 分别修复；无生产/API/模型/协议修改。原失败、314 项映射和旧 HOLD 原样保留。
