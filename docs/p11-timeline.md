@@ -701,7 +701,7 @@ interface TimelineViewOptions {
   稳定合法 ID 和无重复规则，所有 ID 必须属于当前 schema。
 - 非 null `visibleProperties` 必须包含唯一 Title；即使 `visible === false` 也保留
   这些有效列。`propertyOrder` 沿用现有部分排序规则，不强制重复列出所有可见属性。
-- 隐藏不清空已配置的列，不持久化像素/滚动位置；本轮不实现冻结表格 UI。
+- 在时间线的“数据库设置 → 时间线设置”中打开或隐藏左表、选择属性列、调整列序，然后保存。隐藏后保留列选择与顺序，标题始终显示。桌面使用对话框，手机使用底部抽屉。
 
 ### 21.4 Dependency 配置
 
@@ -709,8 +709,8 @@ interface TimelineViewOptions {
   `config.targetDatabaseId === 当前 Database ID`，即 self-relation。
 - `depends-on` 表示当前 Record 依赖 Relation 值中列出的 Records；`blocks` 表示
   当前 Record 阻塞列出的 Records。方向必须显式保存，不从名称推断。
-- 三种 shiftMode 沿用 §14.3，avoidWeekends 只保存显式 boolean。
-  本轮不实现依赖图、反向 projection、连线、cycle mutation 或自动日期联动。
+- 在同一个“时间线设置”面板启用依赖关系，选择关联属性、方向、日期偏移策略和是否避免周末。没有可用关联时，先在“属性”中创建目标为当前数据库的关联属性。
+- 保存通过通用 View 更新提交，使用 Database 和 View 版本检查。关闭依赖保留记录里的关联值。日期联动规则见 §14.3。
 
 ### 21.5 本轮边界与后续入口
 

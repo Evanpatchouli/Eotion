@@ -3436,6 +3436,91 @@ test('Timeline date settings cancel without a PATCH, save distinct date columns,
   expect(api.views.find(item => item.id === timelineView.id)?.config.options?.timeline?.dateSource).toEqual({ mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id })
 })
 
+test('Timeline settings configure a Frozen Table and self-relation policy from the phone UI', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const self = { ...property('team-links', rootDatabase.id, 'Predecessors', 'relation'), config: { targetDatabaseId: rootDatabase.id } }
+  const external = { ...property('external-links', rootDatabase.id, 'Other database', 'relation'), config: { targetDatabaseId: nestedDatabase.id } }
+  const timelineView = view('settings-policy-view', rootDatabase.id, 'Schedule', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG, visibleProperties: ['root-title'],
+    options: { futureFlag: 'keep', timeline: { scale: 'week', dateSource: { mode: 'date-property', propertyId: 'root-date' } } },
+  }, 'timeline')
+  const api = await installApi(page, [
+    block('policy-settings', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
+  ], { databases: [rootDatabase, nestedDatabase], properties: [...rootProperties, external, self], views: [timelineView], records: [] })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const db = page.locator('#database-block-policy-settings')
+  const openSettings = async () => {
+    await db.getByRole('button', { name: '数据库设置' }).click()
+    await page.getByRole('menuitem', { name: '时间线设置', exact: true }).click()
+  }
+  const dialog = page.getByRole('dialog', { name: '时间线设置', exact: true })
+  const save = page.getByRole('button', { name: '保存时间线设置' })
+  const writes = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith('/views/settings-policy-view'))
+  const config = () => api.views.find(item => item.id === timelineView.id)!.config
+  await openSettings()
+  await dialog.getByLabel('显示冻结表格').check()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  expect(writes()).toHaveLength(0)
+
+  await openSettings()
+  await dialog.getByLabel('显示冻结表格').check()
+  const notes = dialog.getByRole('checkbox', { name: 'Notes', exact: true })
+  await expect(dialog.getByRole('checkbox', { name: '标题（始终显示）' })).toBeDisabled()
+  await notes.check()
+  await dialog.getByRole('checkbox', { name: 'Points', exact: true }).uncheck()
+  await dialog.getByRole('button', { name: '上移属性 Notes', exact: true }).click()
+  await dialog.getByLabel('启用时间线依赖关系').check()
+  await dialog.getByRole('button', { name: '依赖关联属性' }).click()
+  await expect(page.getByRole('menuitem', { name: 'Other database' })).toHaveCount(0)
+  await page.getByRole('menuitem', { name: 'Predecessors', exact: true }).click()
+  await dialog.getByRole('button', { name: '依赖方向' }).click()
+  await page.getByRole('menuitem', { name: '记录关联其后续项' }).click()
+  await dialog.getByRole('button', { name: '自动调整日期' }).click()
+  await page.getByRole('menuitem', { name: '偏移并保持间隔' }).click()
+  await dialog.getByLabel('避免周末').check()
+  await save.click()
+  await expect(dialog).toHaveCount(0)
+  expect(writes()).toHaveLength(1)
+  expect(config()).toMatchObject({
+    visibleProperties: ['root-title'],
+    options: { futureFlag: 'keep', timeline: {
+      scale: 'week', dateSource: { mode: 'date-property', propertyId: 'root-date' },
+      frozenTable: { visible: true },
+      dependency: { propertyId: self.id, direction: 'blocks', shiftMode: 'shift_and_keep_gap', avoidWeekends: true },
+    } },
+  })
+  const columns = config().options?.timeline?.frozenTable
+  expect(columns?.visibleProperties).toContain('root-text')
+  expect(columns?.visibleProperties).not.toContain('root-number')
+  expect(columns?.propertyOrder?.[0]).toBe('root-text')
+  await page.reload()
+  await expect(db.getByTestId('timeline-frozen-header').filter({ hasText: 'Notes' })).toBeVisible()
+  await openSettings()
+  await dialog.getByLabel('显示冻结表格').uncheck()
+  await dialog.getByLabel('启用时间线依赖关系').uncheck()
+  await save.click()
+  await expect(db.getByTestId('timeline-frozen-table')).toHaveCount(0)
+  expect(config().options?.timeline?.frozenTable).toEqual({ ...columns, visible: false })
+  expect(config().options?.timeline?.dependency).toBeUndefined()
+  expect(writes()).toHaveLength(2)
+
+  await openSettings()
+  await dialog.getByLabel('显示冻结表格').check()
+  api.databases[0]!.version += 1
+  await save.click()
+  await expect(dialog.getByRole('alert')).toContainText('请重新选择')
+  await expect(dialog.getByLabel('显示冻结表格')).not.toBeChecked()
+  await expect(save).toBeDisabled()
+  expect(writes()).toHaveLength(3)
+  expect(config().options?.timeline?.frozenTable?.visible).toBe(false)
+  await dialog.getByLabel('显示冻结表格').check()
+  await save.click()
+  await expect(dialog).toHaveCount(0)
+  expect(writes()).toHaveLength(4)
+  expect(config().options?.timeline?.frozenTable?.visible).toBe(true)
+})
+
 test('Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens', async ({ page, context }) => {
   const start = property('timeline-offline-start', rootDatabase.id, 'Start', 'date')
   const end = property('timeline-offline-end', rootDatabase.id, 'End', 'date')
