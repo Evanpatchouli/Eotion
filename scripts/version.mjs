@@ -134,7 +134,7 @@ async function main() {
   if (command === "set") {
     nextVersion = process.argv[3];
     if (!nextVersion) {
-      throw new Error("Usage: pnpm version:set -- <x.y.z[-prerelease]>");
+      throw new Error("Usage: pnpm version:set <x.y.z[-prerelease]>");
     }
     parseVersion(nextVersion);
   } else if (["patch", "minor", "major"].includes(command)) {

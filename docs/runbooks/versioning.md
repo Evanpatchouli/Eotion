@@ -5,8 +5,8 @@ Eotion 采用单一产品版本。Web、Desktop、Mobile、API、HarmonyOS / And
 当前基线：
 
 ```text
-version     0.0.1
-buildNumber 1
+version     0.1.0
+buildNumber 3
 ```
 
 ## Source of truth
@@ -15,9 +15,9 @@ buildNumber 1
 
 ```json
 {
-  "version": "0.0.1",
+  "version": "0.1.0",
   "eotion": {
-    "buildNumber": 1
+    "buildNumber": 3
   }
 }
 ```
@@ -71,10 +71,10 @@ pnpm version:major
 指定版本：
 
 ```bash
-pnpm version:set -- 0.1.0
+pnpm version:set 0.1.0
 ```
 
-如果指定值与当前版本不同，同样会将 build number 加 1。当前脚本只接受稳定的 `x.y.z` SemVer，不接受 prerelease/build metadata。
+如果指定值与当前版本不同，同样会将 build number 加 1。当前脚本接受 `x.y.z` 和带 prerelease 的版本，不接受 build metadata。
 
 ## Build metadata
 
@@ -110,8 +110,8 @@ GET /api/health
 
 ```json
 {
-  "version": "0.0.1",
-  "buildNumber": 1,
+  "version": "0.1.0",
+  "buildNumber": 3,
   "gitSha": "<short sha>"
 }
 ```
@@ -145,8 +145,8 @@ Android Gradle 直接读取根版本源；HarmonyOS 构建命令从根版本源�
 例如当前：
 
 ```text
-Eotion 0.0.1
-Build 1
+Eotion 0.1.0
+Build 3
 ```
 
 如果 UI / 功能仍属于同一产品版本，但需要重新打 HAP 测试：
@@ -155,7 +155,7 @@ Build 1
 pnpm build:bump
 ```
 
-得到 `0.0.1 build 2`，不需要为了每个测试包修改 SemVer。
+得到 `0.1.0 build 4`，不需要为了每个测试包修改 SemVer。
 
 ## Git tags
 
