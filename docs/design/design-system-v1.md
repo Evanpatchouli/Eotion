@@ -203,7 +203,7 @@ Settings 继续保持 P5.6 已验收的 Desktop list-detail IA。不得扩展成
 
 | Token | Value | Usage |
 | --- | --- | --- |
-| canvas | `#FAF9F6` | Document open canvas |
+| canvas | `#FFFFFF` | 主视图、Document open canvas 与 Topbar 的纯白底色 |
 | sidebar | `#F5F4F0` | Sidebar |
 | surface | `#FFFFFF` | 普通浮层 / controls surface |
 | surface-subtle | `#F7F6F3` | Attachment / embedded subtle block |
@@ -239,7 +239,9 @@ Settings 继续保持 P5.6 已验收的 Desktop list-detail IA。不得扩展成
 
 这些色值是当前 Quiet Studio Light baseline，与生产 `tokens.css` 一致。后续有意变更需同步更新设计规范与视觉快照；不得改回冷蓝 SaaS / purple AI 方向。
 
-Light `text-muted` 已从 Stitch 初始 `#8F8D86` 修正为 `#706E67`：在 `sidebar #F5F4F0` 上约 4.64:1，在 `canvas #FAF9F6` 上约 4.85:1，适用于 12–13px muted text 的 AA 基线。
+2026-11-13：Light canvas 调整为纯白 `#FFFFFF`，由 `--e-color-canvas` 统一配置；Sidebar 与 Dark 配色保持现有基线。
+
+Light `text-muted` 已从 Stitch 初始 `#8F8D86` 修正为 `#706E67`：在 `sidebar #F5F4F0` 上约 4.64:1，在 `canvas #FFFFFF` 上约 5.10:1，适用于 12–13px muted text 的 AA 基线。
 
 ---
 

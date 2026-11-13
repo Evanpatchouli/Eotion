@@ -51,6 +51,8 @@ Snapshot 不覆盖所有交互状态。Drawer、Slash、Bubble、附件、Settin
 
 ## Accessibility Closeout
 
+2026-11-13 Light canvas 更新：主视图、文档画布与 Topbar 改为纯白 `#FFFFFF`。`ui-foundation.spec.ts` 5/5、production theme 2/2 与 Web build/typecheck 通过；视觉快照更新被 environment gate 拦截（当前 fonts、browserVersion 与审核基线不一致），未覆盖既有截图。既有截图与下方历史视觉 PASS 不能作为本次纯白背景的视觉验收证据；需在匹配的审核环境中补更新与复核。
+
 | 路径 | 本轮可验证证据 | 状态 |
 | --- | --- | --- |
 | Keyboard focus-visible / menu | `product-settings.spec.ts` 的焦点、键盘控件；`product-editor.spec.ts` 的 Bubble/Escape；`product-sync.spec.ts` 的诊断 disclosure 键盘与 focus-visible | 自动回归验证；完整键盘遍历仍需人工检查 |
@@ -58,7 +60,7 @@ Snapshot 不覆盖所有交互状态。Drawer、Slash、Bubble、附件、Settin
 | Reduced motion | `tokens.css` 在 `prefers-reduced-motion: reduce` 下将 motion tokens 归零；Settings 与 connectivity 测试覆盖该媒体偏好 | 自动/静态验证 |
 | No horizontal overflow | Mobile Page/Settings、connectivity 与编辑器触摸路径的现有断言；本次 Mobile snapshot 前额外断言 | 自动回归验证 |
 | Touch targets | Touch Toolbar 44px、Settings Back/navigation 44px 有几何断言；`EotionButton` coarse 36px 是已批准例外；Desktop Bubble 32px 属 fine pointer | 已验证所列控件；全站逐点审计仍需人工检查 |
-| Token contrast | 当前 token 静态计算：Light muted/sidebar 4.64:1、muted/canvas 4.85:1；Dark muted/subtle 4.84:1、danger/subtle 4.55:1 | 所列 token 配对 ≥4.5:1；完整 UI 状态组合 MANUAL CHECK REQUIRED |
+| Token contrast | 当前 token 静态计算（2026-11-13 Light canvas 更新为纯白）：Light muted/sidebar 4.64:1、muted/canvas 5.10:1；Dark muted/subtle 4.84:1、danger/subtle 4.55:1 | 所列 token 配对 ≥4.5:1；完整 UI 状态组合 MANUAL CHECK REQUIRED |
 | 200% zoom、真实设备安全区/IME、原生 Selection Menu、屏幕阅读器 | 本次没有新的真实设备或辅助技术证据 | **MANUAL CHECK REQUIRED** |
 
 ## Functional Regression Reference

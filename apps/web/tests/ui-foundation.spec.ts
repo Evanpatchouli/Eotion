@@ -4,7 +4,7 @@ import path from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 
 const lightPalette: Record<string, string> = {
-  canvas: '#FAF9F6', sidebar: '#F5F4F0', surface: '#FFFFFF', 'surface-subtle': '#F7F6F3', elevated: '#FFFFFF',
+  canvas: '#FFFFFF', sidebar: '#F5F4F0', surface: '#FFFFFF', 'surface-subtle': '#F7F6F3', elevated: '#FFFFFF',
   hover: '#EEEDE8', selected: '#E6E4DD', focus: '#3D3C38', border: '#E8E6E1', 'border-subtle': '#EFEEE9',
   'text-primary': '#1F1F1E', 'text-secondary': '#5A5852', 'text-muted': '#706E67', accent: '#3D3C38',
   success: '#4B6B54', warning: '#9E6B34', danger: '#A8423F',
@@ -126,7 +126,7 @@ test('DEV 页面独立展示七个基础组件、精确主题 token 并保持 ge
     await expect(switchControl).toHaveAttribute('aria-checked', 'true')
     await page.getByRole('radio', { name: '浅色' }).check()
     await expect.poll(() => readShowcaseColors(page)).toEqual({
-      primaryBackground: 'rgb(61, 60, 56)', primaryText: 'rgb(250, 249, 246)',
+      primaryBackground: 'rgb(61, 60, 56)', primaryText: 'rgb(255, 255, 255)',
       secondaryBackground: 'rgb(255, 255, 255)', secondaryText: 'rgb(31, 31, 30)',
       switchTrackColor: 'rgb(61, 60, 56)', switchThumbTransform: 'matrix(1, 0, 0, 1, 16, 0)',
     })

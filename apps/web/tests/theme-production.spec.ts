@@ -30,7 +30,8 @@ test('production HTML resolves system light tokens without the bundled entry', a
   await page.goto('/')
 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-  expect(await page.locator('html').evaluate((element) => getComputedStyle(element).getPropertyValue('--e-color-canvas').trim().toUpperCase())).toBe('#FAF9F6')
+  // Production CSS may shorten the equivalent white hex value to #FFF.
+  expect(await page.locator('html').evaluate((element) => getComputedStyle(element).getPropertyValue('--e-color-canvas').trim().toUpperCase())).toMatch(/^#(?:FFF|FFFFFF)$/)
   expect(await page.locator('html').evaluate((element) => getComputedStyle(element).getPropertyValue('--e-color-text-primary').trim().toUpperCase())).toBe('#1F1F1E')
   await expect(page.locator('#app')).toBeEmpty()
 })
