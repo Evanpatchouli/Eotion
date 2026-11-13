@@ -30,10 +30,11 @@ Snapshot 不覆盖所有交互状态。Drawer、Slash、Bubble、附件、Settin
 ## Screenshot Regression Policy
 
 - Tool：Playwright 官方 `expect(page).toHaveScreenshot()`，Chromium / Chrome channel，device scale 1；不自建 pixel diff。
-- Suite：`apps/web/tests/visual-regression.spec.ts`；独立配置：`apps/web/playwright.visual.config.ts`；基线目录：`apps/web/tests/visual-regression.spec.ts-snapshots/`。
+- Suite：`apps/web/tests/visual-regression.spec.ts` 与 `apps/web/tests/timeline-visual.spec.ts`；独立配置：`apps/web/playwright.visual.config.ts`；基线分别位于各自的 `*.spec.ts-snapshots/` 目录，环境清单共用 `visual-regression.spec.ts-snapshots/environment.json`。
 - 固定 mock API、用户/Workspace/Page/Block、时间戳、viewport、语言/时区、主题与 reduced motion；截图关闭动画与 caret，等待可观察的页面内容和稳定同步状态。浏览器、操作系统与字体渲染差异可能影响像素；当前基线在 Windows 本地 Chrome 生成。跨操作系统 CI 启用前须固定镜像/字体并在相同环境重建已审阅的基线。
 - 本地比较：`pnpm --filter @eotion/web test:visual`。
 - 有意更新：`pnpm --filter @eotion/web test:visual:update`，随后重新运行比较并人工逐张审阅 diff。只在获批准的 UI 变化或确定性渲染环境更新时提交新图；测试失败不能直接无脑更新。
+- 环境预检：`tests/helpers/visualEnvironment.ts` 在截图前只读采集系统、字体 hash 与浏览器版本，对比 `tests/visual-regression.spec.ts-snapshots/environment.json`。若不匹配，先审核具体字段；用户明确授权迁移基线后，仅更新已确认的环境字段，重建并逐图审阅全部受影响截图，最后不带更新参数运行 `test:visual`。不跳过预检，不自动修改系统字体/ClearType，不放宽比较阈值。
 - 允许差异：`maxDiffPixelRatio: 0.001`，用于极小的渲染噪声；布局、文本、色彩变化仍需人工审阅。失败时先排查 fixture、字体、浏览器版本、动画和真实 UI 变更。
 - CI：仓库当前没有既有 CI 配置；本轮提供稳定本地入口，**CI visual comparison 尚未启用**。不为本轮新增大型 CI 管道。
 
@@ -51,7 +52,18 @@ Snapshot 不覆盖所有交互状态。Drawer、Slash、Bubble、附件、Settin
 
 ## Accessibility Closeout
 
-2026-11-13 Light canvas 更新：主视图、文档画布与 Topbar 改为纯白 `#FFFFFF`。`ui-foundation.spec.ts` 5/5、production theme 2/2 与 Web build/typecheck 通过；视觉快照更新被 environment gate 拦截（当前 fonts、browserVersion 与审核基线不一致），未覆盖既有截图。既有截图与下方历史视觉 PASS 不能作为本次纯白背景的视觉验收证据；需在匹配的审核环境中补更新与复核。
+2026-11-13 Light canvas 更新：主视图、文档画布与 Topbar 改为纯白 `#FFFFFF`，Settings 返回按钮左边缘与导航项对齐。`ui-foundation.spec.ts` 5/5、production theme 2/2、Settings 布局与返回导航 8/8、Web build/typecheck 通过。首轮快照更新因 fonts、browserVersion 不符被预检拦截；后续用户明确授权迁移环境与截图基线，阻断已解决，详见下节。
+
+### 2026-11-13 环境与截图基线迁移
+
+- 审核差异：Chrome `156.0.8078.47` → `156.0.8078.80`；`arial.ttf` SHA-256 从 `B3658EADAE55E682B5F69EB64C439C1ECC8F196C0BB8D4756D145D13BC86476A` → `EDFBD22A3D088FC2F5D7C79B8C9C732DF6DC878A60F0A80BE0F92A3C7A634404`。只确认本地文件与版本变化，不将其归因于未经证实的系统更新。
+- 保持一致：Windows build `26200`、Playwright `1.63.0`、微软雅黑常规/粗体与 Segoe UI hash、SPI（type=2、contrast=1200、orientation=0）、Avalon 参数。没有修改系统设置、产品实现、fixture、浏览器 flags、预检代码或 `maxDiffPixelRatio: 0.001`。
+- 完整基线包含 Page / Settings / Connectivity 7 张及 Timeline 6 张，覆盖 Desktop 1440×900、Tablet 1024×900、Mobile 390×844 与既有 Light/Dark 组合。全部 13 张已重建，并逐张对照旧图审核背景、排版、按钮及 Timeline 行/标尺/依赖线。
+- 旧图差异审阅：Timeline Mobile Light/Dark 的离屏定位箭头来自既有提交 `98ba631`（2026-10-21）；旧 Mobile 快照来自更早的 `721e139`（2026-10-19），本次同步收录。Page 品牌/文字、Connectivity 阴影等细微栅格差异按当前环境逐图审核收录，不将其强行归因于未证实的源码或字体更新。未见新增截断、错位或内容缺失。
+- 验证：通过正式环境预检，重建 13/13；随后不带 `--update-snapshots` 的正式视觉比较 **13/13 PASS**。纯白背景与 Settings 对齐现已有当前截图证据；不将重建本身算作回归通过，也不改写下方历史验收结论。
+- 独立 review：确认授权范围、环境清单与实际捕获一致、7+6 项正式 suite 和比较阈值保持原样，未发现可操作的阻断问题。
+
+### 无障碍证据
 
 | 路径 | 本轮可验证证据 | 状态 |
 | --- | --- | --- |
