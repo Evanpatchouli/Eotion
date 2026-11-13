@@ -53,6 +53,8 @@ MCP / Agent 在本阶段只作为未来信息架构入口展示“即将推出�
 
 ## Responsive Settings Surface
 
+顶部栏返回按钮的可点击区域左边缘与设置导航项左边缘对齐：宽屏左侧间距为 17px，紧凑布局为 18px。返回按钮保持至少 44px 高，紧凑布局的点击区域至少为 44×44px。
+
 ### Expanded / 宽屏
 
 当可用宽度足够时采用 list-detail：
