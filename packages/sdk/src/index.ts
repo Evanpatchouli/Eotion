@@ -1,4 +1,9 @@
-import { ApiErrorResponseSchema, SyncOperationSchema } from '@eotion/contracts'
+import {
+  ApiErrorResponseSchema,
+  DatabaseViewRecordReorderRequestSchema,
+  DatabaseViewRecordReorderResponseSchema,
+  SyncOperationSchema,
+} from '@eotion/contracts'
 import type {
   ApiErrorResponse,
   AuthUserDto,
@@ -27,6 +32,8 @@ import type {
   DatabaseViewRecordsQuery,
   DatabaseViewRecordsResponse,
   DatabaseViewResponse,
+  DatabaseViewRecordReorderRequest,
+  DatabaseViewRecordReorderResponse,
   DatabaseWindowResponse,
   DatabaseNavigationWindowResponse,
   DatabaseResponse,
@@ -138,6 +145,7 @@ export class EotionApiClient {
     createDatabaseView: (workspaceId: string, databaseId: string, input: DatabaseViewHttpCreateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; view: DatabaseViewResponse }>
     updateDatabaseView: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; view: DatabaseViewResponse }>
     deleteDatabaseView: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewDeleteRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse }>
+    reorderDatabaseViewRecord: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewRecordReorderRequest, signal?: AbortSignal) => Promise<DatabaseViewRecordReorderResponse>
     updateDatabaseRecordCell: (workspaceId: string, databaseId: string, recordId: string, propertyId: string, input: DatabaseRecordCellUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; record: DatabaseTableRecordResponse; page?: PageResponse }>
     mutateDatabaseCells: (workspaceId: string, databaseId: string, input: DatabaseCellBatchMutationRequest, signal?: AbortSignal) => Promise<DatabaseCellBatchMutationResponse>
     getDatabaseCellMutationReceipt: (workspaceId: string, databaseId: string, mutationId: string, signal?: AbortSignal) => Promise<DatabaseCellBatchMutationReceipt>
@@ -227,6 +235,11 @@ export class EotionApiClient {
       createDatabaseView: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views`, { method: 'POST', body: input, signal }),
       updateDatabaseView: (workspaceId, databaseId, viewId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}`, { method: 'PATCH', body: input, signal }),
       deleteDatabaseView: (workspaceId, databaseId, viewId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}`, { method: 'DELETE', body: input, signal }),
+      reorderDatabaseViewRecord: async (workspaceId, databaseId, viewId, input, signal) => {
+        const request = DatabaseViewRecordReorderRequestSchema.parse(input)
+        const response: unknown = await this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}/record-order`, { method: 'POST', body: request, signal })
+        return DatabaseViewRecordReorderResponseSchema.parse(response)
+      },
       updateDatabaseRecordCell: (workspaceId, databaseId, recordId, propertyId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/records/${segment(recordId)}/cells/${segment(propertyId)}`, { method: 'PATCH', body: input, signal }),
       // Mutation requests are deliberately single-shot; an uncertain response must be resolved via the receipt endpoint.
       mutateDatabaseCells: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/cell-mutations`, { method: 'POST', body: input, signal }),

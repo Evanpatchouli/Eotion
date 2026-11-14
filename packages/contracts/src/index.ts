@@ -467,6 +467,23 @@ export const DatabaseViewDeleteRequestSchema = z.object({
 }).strict()
 export type DatabaseViewDeleteRequest = z.infer<typeof DatabaseViewDeleteRequestSchema>
 
+export const DatabaseViewRecordReorderRequestSchema = z.object({
+  recordId: databaseStableIdSchema,
+  anchorRecordId: databaseStableIdSchema,
+  placement: z.enum(['before', 'after']),
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+  expectedViewVersion: z.number().int().positive().safe(),
+}).strict().refine(value => value.recordId !== value.anchorRecordId, {
+  message: 'A record cannot be reordered relative to itself',
+  path: ['anchorRecordId'],
+})
+export type DatabaseViewRecordReorderRequest = z.infer<typeof DatabaseViewRecordReorderRequestSchema>
+export const DatabaseViewRecordReorderResponseSchema = z.object({
+  database: DatabaseSchema,
+  view: DatabaseViewSchema,
+}).strict()
+export type DatabaseViewRecordReorderResponse = z.infer<typeof DatabaseViewRecordReorderResponseSchema>
+
 export const SAFE_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'] as const
 
 const attachmentFileIdSchema = z.string().trim().min(1).max(256)
