@@ -460,7 +460,7 @@ export function useTimelineViewport(options: Options) {
     return isCurrent() && document.activeElement === target
   }
 
-  async function revealInstant(instantMs: number, rowIndex: number, isTargetCurrent: () => boolean = () => true): Promise<boolean> {
+  async function revealInstant(instantMs: number, rowIndex: number, isTargetCurrent: () => boolean = () => true, focus = true): Promise<boolean> {
     const capturedEpoch = epoch
     const capturedScope = toValue(options.scope)
     const root = options.root.value
@@ -485,7 +485,7 @@ export function useTimelineViewport(options: Options) {
     queueFrame(capturedEpoch)
     await nextTick()
     if (!isCurrent()) return false
-    return revealRow(rowIndex, isCurrent, '[data-testid="timeline-bar"]')
+    return focus ? revealRow(rowIndex, isCurrent, '[data-testid="timeline-bar"]') : true
   }
 
   watch(() => toValue(options.scope), (nextScope, previousScope) => {

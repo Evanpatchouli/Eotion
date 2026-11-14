@@ -36,7 +36,7 @@ import {
   isProductDatabaseRecordCreationUncertain, loadProductDatabaseTable, prepareProductDatabaseRecordPage,
   mutateProductDatabaseCells, getProductDatabaseCellMutationReceipt,
   updateProductDatabaseProperty, changeProductDatabasePropertyType, updateProductDatabaseRecordCell, updateProductDatabaseView,
-  listProductDatabases, listProductRelationCandidates, resolveProductRelationTitles,
+  listProductDatabases, listProductRelationCandidates, resolveProductRelationTitles, reorderProductDatabaseViewRecord, DatabaseMutationNotSentError,
 } from '../../services/productDatabases'
 import { ApiError, errorMessage } from '../../services/productApi'
 import { useAuthStore } from '../../stores/auth'
@@ -333,6 +333,74 @@ const cellDraft = computed({ get: () => cellEdit.value?.value ?? '', set: value 
 let requestEpoch = 0
 let viewIdentityEpoch = 0
 let externalRefreshPending = false
+
+type TimelineOrderCapture = Readonly<{
+  scope: string; userId: string; workspaceId: string; databaseId: string; viewId: string; blockId: string
+  viewIdentityEpoch: number; viewRoot: HTMLElement; expectedDatabaseVersion: number; expectedViewVersion: number; configIdentity: string
+}>
+function captureTimelineOrder(): TimelineOrderCapture | null {
+  if (viewType.value !== 'timeline' || viewBusy.value || !writable.value || !props.editor.isEditable || viewConfig.value.sorts.length) return null
+  const viewRoot = document.getElementById(`database-block-${blockId.value}`)
+  if (!viewRoot?.isConnected || viewRoot.getAttribute('data-view-id') !== viewId.value) return null
+  return Object.freeze({ scope: timelineScope.value, userId: userId.value, workspaceId: workspaceId.value,
+    databaseId: databaseId.value, viewId: viewId.value, blockId: blockId.value, viewIdentityEpoch, viewRoot,
+    expectedDatabaseVersion: databaseVersion.value, expectedViewVersion: viewVersion.value,
+    configIdentity: JSON.stringify(viewConfig.value) })
+}
+function isCurrentTimelineOrder(capture: TimelineOrderCapture): boolean {
+  if (capture.scope !== timelineScope.value || capture.userId !== userId.value || capture.workspaceId !== workspaceId.value
+    || capture.databaseId !== databaseId.value || capture.viewId !== viewId.value || capture.blockId !== blockId.value
+    || capture.viewIdentityEpoch !== viewIdentityEpoch || !capture.viewRoot.isConnected || !viewReady.value
+    || viewType.value !== 'timeline' || JSON.stringify(viewConfig.value) !== capture.configIdentity) return false
+  const root = document.getElementById(`database-block-${blockId.value}`)
+  if (root !== capture.viewRoot || root.getAttribute('data-view-id') !== capture.viewId || root.getAttribute('data-view-ready') !== 'true') return false
+  let editorViewId = ''
+  props.editor.state.doc.descendants(node => {
+    if (node.type.name === 'eotionDatabase' && node.attrs.blockId === capture.blockId) editorViewId = String(node.attrs.viewId ?? '')
+  })
+  return editorViewId === capture.viewId
+}
+async function reorderTimelineRecord(capture: TimelineOrderCapture, recordId: string, anchorRecordId: string, placement: 'before' | 'after'): Promise<boolean> {
+  if (!isCurrentTimelineOrder(capture) || viewBusy.value || !writable.value || !props.editor.isEditable
+    || recordId === anchorRecordId || capture.expectedDatabaseVersion !== databaseVersion.value
+    || capture.expectedViewVersion !== viewVersion.value || !recordsById.value.has(recordId) || !recordsById.value.has(anchorRecordId)) return false
+  savingCell.value = true
+  mutationError.value = ''
+  try {
+    await reorderProductDatabaseViewRecord(capture.workspaceId, capture.databaseId, capture.viewId, {
+      recordId, anchorRecordId, placement,
+      expectedDatabaseVersion: capture.expectedDatabaseVersion, expectedViewVersion: capture.expectedViewVersion,
+    })
+    if (!isCurrentTimelineOrder(capture)) return false
+    externalRefreshPending = false
+    await refreshLoadedWindow()
+    return isCurrentTimelineOrder(capture) && !staleReadonly.value
+  } catch (cause) {
+    if (!isCurrentTimelineOrder(capture)) return false
+    externalRefreshPending = false
+    if (cause instanceof DatabaseMutationNotSentError) {
+      mutationError.value = online.value ? '记录重排未发送，已取消本次操作。' : '已离线，记录重排未发送；联网后将刷新当前视图。'
+      if (online.value) await refreshLoadedWindow()
+      return false
+    }
+    await refreshLoadedWindow()
+    if (!isCurrentTimelineOrder(capture)) return false
+    if (cause instanceof ApiError && cause.statusCode === 409) mutationError.value = '记录顺序已变化，已刷新当前视图。'
+    else if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) mutationError.value = '记录顺序未保存，请检查权限后重试。'
+    else {
+      staleReadonly.value = true
+      refreshError.value = '记录重排提交结果暂未确认，请重新加载当前视图。'
+      mutationError.value = refreshError.value
+    }
+    return false
+  } finally {
+    if (capture.viewIdentityEpoch === viewIdentityEpoch && capture.scope === timelineScope.value
+      && capture.viewRoot === document.getElementById(`database-block-${blockId.value}`)) {
+      savingCell.value = false
+      if (online.value) runDeferredRefresh()
+    }
+  }
+}
 
 function selectBlock(): void {
   const position = props.getPos?.()
@@ -2622,7 +2690,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable && timelineEditorEditable" :view-busy="viewBusy" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :prepare-schedule="prepareTimelineSchedule" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" @toggle-frozen-table="setTimelineFrozenTableVisibility" />
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable && timelineEditorEditable" :view-busy="viewBusy" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :prepare-schedule="prepareTimelineSchedule" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" :capture-order="captureTimelineOrder" :reorder-record="reorderTimelineRecord" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" @toggle-frozen-table="setTimelineFrozenTableVisibility" />
       <div v-else-if="viewType === 'table' && properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>

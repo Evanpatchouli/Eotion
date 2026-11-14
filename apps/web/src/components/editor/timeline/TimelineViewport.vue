@@ -43,6 +43,8 @@ const props = defineProps<{
   mutateDependency: (command: TimelineDependencyCommand) => Promise<boolean>
   recordVersionById: ReadonlyMap<string, number>
   recordMutationBusyById: ReadonlyMap<string, boolean>
+  orderEnabled: boolean
+  orderSorted: boolean
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
   commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
   isViewportCurrent: (snapshot: Transform) => boolean
@@ -211,6 +213,15 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
         <TimelineRuler :ticks="rulerTicks" :today-x="todayX === null ? null : todayX - (state?.scrollLeft ?? 0)" />
       </div>
     </div>
+    <div class="eotion-timeline-order-rail" aria-label="记录顺序操作区">
+      <button v-for="row in rows" :key="row.item.recordId" class="eotion-timeline-order-handle" type="button" data-testid="timeline-order-handle"
+        :style="{ top: `${row.top + row.height / 2}px` }"
+        :data-record-id="row.item.recordId"
+        :aria-label="`调整顺序：${row.item.title || '无标题'}。方向键上移或下移，也可拖动`"
+        :aria-disabled="!orderEnabled ? 'true' : undefined"
+        :title="orderSorted ? '当前视图设置了排序，关闭排序后可手动调整顺序' : '拖动或用方向键调整顺序'"
+        @focus="emit('focusRow', row.rowIndex)" @pointerdown.stop @click.stop.prevent>⋮⋮</button>
+    </div>
     <div
       class="eotion-timeline-scroll"
       data-testid="timeline-scroll"
@@ -362,7 +373,8 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 
 <style scoped>
 .eotion-timeline-viewport { --timeline-offscreen-jump-size:28px; --timeline-dependency-handle-half-size:9px; position:relative; min-width:0; max-width:100%; overflow:clip; }
-.eotion-timeline-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); }
+.eotion-timeline-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); margin-left:36px; }
+.eotion-timeline-order-rail { position:absolute; z-index:8; top:var(--timeline-header-height, 56px); left:0; bottom:0; width:36px; background:var(--e-color-canvas, var(--editor-canvas)); pointer-events:none; }
 .eotion-timeline-dependency-toolbar { display:flex; min-width:0; align-items:center; justify-content:flex-end; gap:8px; padding:4px 0; }
 .eotion-timeline-dependency-control { min-height:26px; border:0; border-radius:var(--e-radius-control, 6px); padding:2px 8px; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; font-size:11px; cursor:pointer; }
 .eotion-timeline-dependency-control:hover { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }
@@ -371,7 +383,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-dependency-live { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0, 0, 0, 0); clip-path:inset(50%); white-space:nowrap; }
 .eotion-timeline-dependency-live.is-visible { z-index:5; top:32px; left:8px; box-sizing:border-box; width:max-content; max-width:calc(100% - 16px); height:auto; overflow:hidden; clip:auto; clip-path:none; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:3px 8px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-primary, var(--editor-text)); font-size:11px; line-height:16px; white-space:normal; overflow-wrap:anywhere; pointer-events:none; }
 .eotion-timeline-ruler-anchor { position:absolute; top:0; left:0; width:100%; height:var(--timeline-header-height, 56px); overflow:hidden; background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
-.eotion-timeline-scroll { width:100%; min-width:0; max-width:100%; min-height:240px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; }
+.eotion-timeline-scroll { width:calc(100% - 36px); min-width:0; max-width:calc(100% - 36px); min-height:240px; margin-left:36px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; }
 @supports (scrollbar-color:auto) and (not selector(::-webkit-scrollbar)) {
   .eotion-timeline-scroll { scrollbar-color:var(--e-color-text-muted, var(--editor-muted)) var(--e-color-canvas, var(--editor-canvas)); }
 }
@@ -386,11 +398,16 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-body { position:relative; width:100%; min-height:240px; isolation:isolate; }
 .eotion-timeline-draw-window { position:absolute; z-index:0; left:0; overflow:hidden; pointer-events:none; }
 .eotion-timeline-today { position:absolute; z-index:2; left:0; overflow:hidden; pointer-events:none; }
-.eotion-timeline-row { position:absolute; left:0; width:100%; }
+.eotion-timeline-row { position:absolute; left:0; width:100%; scroll-margin-top:var(--timeline-header-height, 56px); }
 .eotion-timeline-row:has(.eotion-timeline-bar[data-drag-state="dragging"]), .eotion-timeline-row:has(.eotion-timeline-bar[data-drag-state="saving"]) { z-index:6; }
 .eotion-timeline-row.is-hovered { background:color-mix(in srgb, var(--e-color-hover, var(--editor-hover)) 48%, transparent); }
 .eotion-timeline-row.is-selected { background:color-mix(in srgb, var(--e-color-selected, var(--editor-selected)) 56%, transparent); }
 .eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+.eotion-timeline-order-handle { position:absolute; left:3px; transform:translateY(-50%); width:30px; height:32px; border:0; border-radius:4px; background:var(--e-color-canvas, var(--editor-canvas)); color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; font-size:15px; letter-spacing:-3px; cursor:grab; pointer-events:auto; touch-action:none; }
+.eotion-timeline-order-handle:hover { color:var(--e-color-text-primary, var(--editor-text)); background:var(--e-color-hover, var(--editor-hover)); }
+.eotion-timeline-order-handle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); }
+.eotion-timeline-order-handle[aria-disabled="true"] { opacity:.45; cursor:not-allowed; touch-action:pan-y; }
+@media (pointer:coarse) { .eotion-timeline-order-handle { left:0; width:36px; height:40px; } }
 .eotion-timeline-offscreen-jump { position:absolute; z-index:7; top:50%; display:grid; width:var(--timeline-offscreen-jump-size); height:var(--timeline-offscreen-jump-size); transform:translateY(-50%); place-items:center; border:0; border-radius:var(--e-radius-control, 6px); padding:0; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; line-height:1; cursor:pointer; pointer-events:auto; }
 .eotion-timeline-offscreen-jump.is-clipped { top:0; height:20px; transform:none; }
 .eotion-timeline-offscreen-jump:hover { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }

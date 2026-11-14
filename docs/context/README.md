@@ -39,8 +39,12 @@ P5.6 Settings 已完成：`apps/web/src/layouts/SettingsLayout.vue`、`views/set
 标尺显示今天与周末。单 Date 空值可从未排期列表拖入时间网格。独立 Start/End 的同精度有效记录支持拖动和两端调整，使用通用
 Cell batch、View/Database/Record CAS 和 receipt；混合精度及空开始值的边界见
 [P11 §21.2](../p11-timeline.md#212-日期来源) 与
-[Cell mutations](../architecture/database-cell-mutations.md)。按属性分组与持久行重排
-仍未实现，不能用当前分页窗口的本地重排替代。
+[Cell mutations](../architecture/database-cell-mutations.md)。
+2026-11-15 增加按 View 独立持久行重排：检索 `reorderDatabaseViewRecord`、
+`readManualWindow`、`creationOrdinal`、`orderScopeId`、`positionBetween` 与
+`timeline-order-handle`；分页、事务、失败恢复和旧数据边界见
+[通用 View 排序](../p9-multi-view.md#通用-view-记录手动排序2026-11-15)。
+Timeline 按属性分组仍未实现，不能用当前分页窗口的本地重排替代持久顺序。
 
 2026-11-07 P11 COMPLETE / FINAL PASS。正式设置入口见 `DatabaseTimelineSettingsForm.vue`、`DatabaseNodeView.vue` 中的 Timeline overlay 与 `saveViewConfig`；标尺边界见 `TimelineRuler.vue` 与 `product-timeline-real.spec.ts`。[最终验收](../verification/p11-6-timeline-final-acceptance.md)汇总 §24 结果及后置项。下方分阶段说明按当时范围保留。
 

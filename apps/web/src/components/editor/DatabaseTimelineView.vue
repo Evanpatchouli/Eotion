@@ -6,7 +6,7 @@ import type { TimelineMoveCommand, TimelineScheduleCapture, TimelineScheduleComm
 import { normalizeDatabaseDateValue } from '@eotion/domain/date'
 import { resolveTimelineDependencyProperty, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
 import { isDraggableTimelineDateSource, isWritableTimelineDateSource } from './timeline/mutation'
-import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
 
 import { IconName } from '../ui/icons'
 import EotionIcon from '../ui/EotionIcon.vue'
@@ -25,6 +25,7 @@ import { scheduleDropToDateValue, type ScheduleDropValue } from './timeline/sche
 import type { Transform } from './timeline/types'
 
 type TimelineRecord = DatabaseViewRecordsResponse['records'][number]
+type TimelineOrderCapture = Readonly<{ scope: string; userId: string; workspaceId: string; databaseId: string; viewId: string; blockId: string; viewIdentityEpoch: number; viewRoot: HTMLElement; expectedDatabaseVersion: number; expectedViewVersion: number; configIdentity: string }>
 
 const props = defineProps<{
   databaseId: string
@@ -42,6 +43,8 @@ const props = defineProps<{
   moveRecord: (command: TimelineMoveCommand | TimelineScheduleCommand) => Promise<boolean>
   captureDependency: () => TimelineDependencyCapture | null
   mutateDependency: (command: TimelineDependencyCommand) => Promise<boolean>
+  captureOrder: () => TimelineOrderCapture | null
+  reorderRecord: (capture: TimelineOrderCapture, recordId: string, anchorRecordId: string, placement: 'before' | 'after') => Promise<boolean>
 }>()
 
 const emit = defineEmits<{
@@ -151,6 +154,194 @@ const validScheduleDate = computed(() => Boolean(scheduleDate.value && normalize
 const pendingTimelineMutations = reactive(new Map<string, { recordId: string; propertyId: string }>())
 
 const root = ref<HTMLElement | null>(null)
+type OrderTarget = { anchorRecordId: string; placement: 'before' | 'after'; x: number; width: number; y: number }
+type OrderGesture = { pointerId: number; sourceId: string; startX: number; startY: number; clientX: number; clientY: number; scope: string; root: HTMLElement; host: HTMLElement; capture: TimelineOrderCapture; handle: HTMLElement; ownsPointerCapture: boolean; dragging: boolean }
+const orderPreview = shallowRef<OrderTarget | null>(null)
+const orderPending = ref(false)
+let orderGesture: OrderGesture | null = null
+let orderScrollFrame: number | null = null
+let suppressOrderClick = false
+const manualOrderEnabled = computed(() => props.config.sorts.length === 0)
+const orderEnabled = computed(() => manualOrderEnabled.value && props.writable && online.value && !props.viewBusy && !orderPending.value && !pendingTimelineMutations.size)
+function clearOrderGesture(): void {
+  const gesture = orderGesture
+  orderGesture = null
+  orderPreview.value = null
+  window.removeEventListener('pointermove', moveOrderPointer, true)
+  window.removeEventListener('pointerup', releaseOrderPointer, true)
+  window.removeEventListener('pointercancel', cancelOrderPointer, true)
+  window.removeEventListener('keydown', cancelOrderKey, true)
+  window.removeEventListener('blur', clearOrderGesture)
+  document.removeEventListener('visibilitychange', cancelOrderVisibility)
+  if (orderScrollFrame !== null) cancelAnimationFrame(orderScrollFrame)
+  orderScrollFrame = null
+  if (gesture?.ownsPointerCapture && gesture.handle.hasPointerCapture(gesture.pointerId)) {
+    try { gesture.handle.releasePointerCapture(gesture.pointerId) } catch { /* detached */ }
+  }
+}
+function cancelOrderPointer(event: PointerEvent): void { if (event.pointerId === orderGesture?.pointerId) clearOrderGesture() }
+function cancelOrderKey(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || !orderGesture) return
+  event.preventDefault(); event.stopPropagation(); clearOrderGesture()
+}
+function cancelOrderVisibility(): void { if (document.hidden) clearOrderGesture() }
+function orderGestureCurrent(gesture: OrderGesture): boolean {
+  return orderGesture === gesture && root.value === gesture.root && gesture.root.isConnected && gesture.scope === props.scope
+    && orderEnabled.value && gesture.capture.expectedDatabaseVersion === props.databaseVersion
+    && gesture.host.isConnected && (gesture.dragging || gesture.handle.isConnected && gesture.root.contains(gesture.handle))
+    && projectedItems.value.some(item => item.recordId === gesture.sourceId)
+}
+function visibleOrderUnchanged(sourceId: string, target: OrderTarget): boolean {
+  const before = projectedItems.value.map(item => item.recordId)
+  const after = before.filter(id => id !== sourceId)
+  const anchor = after.indexOf(target.anchorRecordId)
+  if (anchor < 0) return true
+  after.splice(anchor + (target.placement === 'after' ? 1 : 0), 0, sourceId)
+  return after.every((id, index) => id === before[index])
+}
+function orderWorkArea(): DOMRect | null {
+  const viewport = root.value?.querySelector<HTMLElement>('[data-testid="timeline-viewport"]')
+  const bodyElement = body.value
+  const host = root.value?.closest<HTMLElement>('.document-wrap') ?? document.scrollingElement as HTMLElement | null
+  if (!viewport || !bodyElement || !host) return null
+  const view = viewport.getBoundingClientRect(), grid = bodyElement.getBoundingClientRect(), page = host.getBoundingClientRect()
+  const left = Math.max(0, view.left), right = Math.min(window.innerWidth, view.right)
+  const top = Math.max(0, grid.top, page.top, rulerAnchor.value?.getBoundingClientRect().bottom ?? 0)
+  const bottom = Math.min(window.innerHeight, grid.bottom, page.bottom)
+  return right > left && bottom > top ? new DOMRect(left, top, right - left, bottom - top) : null
+}
+function targetAt(clientX: number, clientY: number, sourceId: string): OrderTarget | null {
+  const rows = root.value?.querySelectorAll<HTMLElement>('[data-timeline-row]')
+  const scrollerBounds = scroller.value?.getBoundingClientRect()
+  const area = orderWorkArea()
+  if (!rows?.length || !scrollerBounds || !area || clientX < area.left || clientX >= area.right || clientY < area.top || clientY >= area.bottom) return null
+  let closest: OrderTarget | null = null
+  let distance = Infinity
+  for (const row of rows) {
+    const anchorRecordId = row.dataset.recordId
+    if (!anchorRecordId || anchorRecordId === sourceId || !row.isConnected) continue
+    const bounds = row.getBoundingClientRect()
+    if (bounds.bottom <= area.top || bounds.top >= area.bottom) continue
+    const middle = (bounds.top + bounds.bottom) / 2
+    const placement = clientY < middle ? 'before' : 'after'
+    const y = placement === 'before' ? bounds.top : bounds.bottom
+    const currentDistance = Math.abs(clientY - Math.max(bounds.top, Math.min(bounds.bottom, clientY)))
+    if (currentDistance < distance) { closest = { anchorRecordId, placement, x: scrollerBounds.left, width: scrollerBounds.width, y }; distance = currentDistance }
+  }
+  return closest && !visibleOrderUnchanged(sourceId, closest) ? closest : null
+}
+function startOrderPointer(event: PointerEvent): void {
+  if (event.button === 0 && event.isPrimary) suppressOrderClick = false
+  if (orderGesture || event.button !== 0 || !event.isPrimary || !orderEnabled.value) return
+  const target = event.target
+  if (!(target instanceof Element)) return
+  const handle = target.closest<HTMLElement>('[data-testid="timeline-order-handle"]')
+  const bar = target.closest<HTMLElement>('[data-testid="timeline-bar"]')
+  if (!handle && (!bar || event.pointerType === 'touch')) return
+  const source = handle ?? bar
+  const sourceId = source?.dataset.recordId
+  const currentRoot = root.value
+  if (!sourceId || !currentRoot || !currentRoot.contains(source) || !projectedItems.value.some(item => item.recordId === sourceId)) return
+  const capture = props.captureOrder()
+  if (!capture || capture.scope !== props.scope || capture.expectedDatabaseVersion !== props.databaseVersion) return
+  const host = currentRoot.closest<HTMLElement>('.document-wrap') ?? document.scrollingElement as HTMLElement | null
+  if (!host?.isConnected) return
+  if (handle) { event.preventDefault(); event.stopPropagation(); try { handle.setPointerCapture(event.pointerId) } catch { return } }
+  suppressOrderClick = false
+  orderGesture = { pointerId: event.pointerId, sourceId, startX: event.clientX, startY: event.clientY,
+    clientX: event.clientX, clientY: event.clientY, scope: props.scope,
+    root: currentRoot, host, capture, handle: source, ownsPointerCapture: Boolean(handle), dragging: false }
+  focusedRecordId.value = sourceId
+  window.addEventListener('pointermove', moveOrderPointer, true)
+  window.addEventListener('pointerup', releaseOrderPointer, true)
+  window.addEventListener('pointercancel', cancelOrderPointer, true)
+  window.addEventListener('keydown', cancelOrderKey, true)
+  window.addEventListener('blur', clearOrderGesture)
+  document.addEventListener('visibilitychange', cancelOrderVisibility)
+}
+function moveOrderPointer(event: PointerEvent): void {
+  const gesture = orderGesture
+  if (!gesture || event.pointerId !== gesture.pointerId) return
+  if (!orderGestureCurrent(gesture)) { clearOrderGesture(); return }
+  const dx = event.clientX - gesture.startX, dy = event.clientY - gesture.startY
+  if (!gesture.dragging && Math.hypot(dx, dy) < 4) return
+  if (!gesture.dragging && Math.abs(dx) >= Math.abs(dy)) { clearOrderGesture(); return }
+  gesture.dragging = true
+  gesture.clientX = event.clientX
+  gesture.clientY = event.clientY
+  suppressOrderClick = true
+  event.preventDefault()
+  orderPreview.value = targetAt(event.clientX, event.clientY, gesture.sourceId)
+  scheduleOrderScroll()
+}
+function scheduleOrderScroll(): void {
+  if (orderScrollFrame !== null || !orderGesture?.dragging) return
+  orderScrollFrame = requestAnimationFrame(() => {
+    orderScrollFrame = null
+    const gesture = orderGesture
+    if (!gesture || !orderGestureCurrent(gesture)) { clearOrderGesture(); return }
+    const area = orderWorkArea()
+    if (!area || gesture.clientX < area.left || gesture.clientX >= area.right
+      || gesture.clientY < area.top - 24 || gesture.clientY > area.bottom + 24) return
+    const edge = 64
+    const upper = Math.max(0, Math.min(1, (area.top + edge - gesture.clientY) / edge))
+    const lower = Math.max(0, Math.min(1, (gesture.clientY - (area.bottom - edge)) / edge))
+    const direction = lower > 0 ? lower : upper > 0 ? -upper : 0
+    if (!direction) return
+    const maximum = Math.max(0, gesture.host.scrollHeight - gesture.host.clientHeight)
+    if (!Number.isFinite(maximum) || maximum <= 0) return
+    const previous = gesture.host.scrollTop
+    // One bounded native scroll step per frame. Reduced motion keeps the same
+    // immediate, nonanimated step; no smooth-scroll queue can survive cancel.
+    gesture.host.scrollTop = Math.max(0, Math.min(maximum, previous + direction * 24))
+    if (Math.abs(gesture.host.scrollTop - previous) < 0.5) return
+    orderPreview.value = targetAt(gesture.clientX, gesture.clientY, gesture.sourceId)
+    scheduleOrderScroll()
+  })
+}
+function releaseOrderPointer(event: PointerEvent): void {
+  const gesture = orderGesture
+  if (!gesture || event.pointerId !== gesture.pointerId) return
+  const target = gesture.dragging && orderGestureCurrent(gesture) ? targetAt(event.clientX, event.clientY, gesture.sourceId) : null
+  clearOrderGesture()
+  if (target) void commitOrder(gesture.capture, gesture.sourceId, target, null)
+}
+async function commitOrder(capture: TimelineOrderCapture, sourceId: string, target: OrderTarget, focus: HTMLElement | null): Promise<void> {
+  if (!orderEnabled.value || capture.scope !== props.scope || visibleOrderUnchanged(sourceId, target)) return
+  const currentRoot = root.value
+  orderPending.value = true
+  try {
+    await props.reorderRecord(capture, sourceId, target.anchorRecordId, target.placement)
+    await nextTick()
+    if (focus && currentRoot === root.value && currentRoot?.isConnected && capture.scope === props.scope
+      && (document.activeElement === focus || document.activeElement === document.body)) {
+      currentRoot.querySelector<HTMLElement>(`[data-testid="timeline-order-handle"][data-record-id="${CSS.escape(sourceId)}"]`)?.focus({ preventScroll: true })
+    }
+  } finally { orderPending.value = false }
+}
+function onOrderKeydown(event: KeyboardEvent): void {
+  const handle = (event.target as Element | null)?.closest<HTMLElement>('[data-testid="timeline-order-handle"]')
+  if (!handle || !['ArrowUp', 'ArrowDown'].includes(event.key)) return
+  event.preventDefault(); event.stopPropagation()
+  if (!orderEnabled.value) return
+  const sourceId = handle.dataset.recordId
+  const index = projectedItems.value.findIndex(item => item.recordId === sourceId)
+  const next = projectedItems.value[index + (event.key === 'ArrowUp' ? -1 : 1)]
+  const capture = props.captureOrder()
+  if (!sourceId || !next || !capture) return
+  void commitOrder(capture, sourceId, { anchorRecordId: next.recordId,
+    placement: event.key === 'ArrowUp' ? 'before' : 'after', x: 0, width: 0, y: 0 }, handle)
+}
+function onOrderClick(event: MouseEvent): void {
+  if (event.detail === 0) { suppressOrderClick = false; return }
+  if (!suppressOrderClick) return
+  suppressOrderClick = false
+  if (!(event.target instanceof Element) || !event.target.closest('[data-testid="timeline-bar"], [data-testid="timeline-order-handle"]')) return
+  event.preventDefault(); event.stopPropagation()
+}
+onBeforeUnmount(clearOrderGesture)
+onMounted(() => { root.value?.addEventListener('pointerdown', startOrderPointer, true); root.value?.addEventListener('click', onOrderClick, true); root.value?.addEventListener('keydown', onOrderKeydown, true) })
+onBeforeUnmount(() => { root.value?.removeEventListener('pointerdown', startOrderPointer, true); root.value?.removeEventListener('click', onOrderClick, true); root.value?.removeEventListener('keydown', onOrderKeydown, true) })
 const scroller = ref<HTMLElement | null>(null)
 const rulerAnchor = ref<HTMLElement | null>(null)
 const body = ref<HTMLElement | null>(null)
@@ -165,6 +356,7 @@ const dependencyConfigKey = computed(() => JSON.stringify([
   props.scope, dependencyProperty.value?.configIdentity, dependencyProperty.value?.propertyVersion,
 ]))
 const online = ref(typeof navigator === 'undefined' || navigator.onLine)
+watch([() => props.scope, () => props.config, () => props.writable, () => props.viewBusy, online], clearOrderGesture, { flush: 'sync' })
 const offscreenNavigationBusy = ref(false)
 if (typeof window !== 'undefined') {
   const onOnline = () => { online.value = true }
@@ -321,9 +513,23 @@ function prepareTimelineDrag(recordId: string): TimelineBarDragSession | null {
 
 async function commitTimelineDrag(command: TimelineMoveCommand | TimelineScheduleCommand): Promise<boolean> {
   const captured = { recordId: command.recordId, propertyId: command.propertyId }
+  const currentRoot = root.value
+  const currentScope = props.scope
   pendingTimelineMutations.set(captured.recordId, captured)
   try {
-    return await props.moveRecord(command)
+    const saved = await props.moveRecord(command)
+    if (saved && !('kind' in command && command.kind === 'schedule') && currentRoot === root.value && currentRoot?.isConnected && currentScope === props.scope) {
+      await nextTick()
+      const row = rowGeometry.value.find(item => item.item.recordId === command.recordId)
+      const temporal = temporalMap.value.get(command.recordId)
+      const offscreen = row?.geometry?.offscreen
+      if (offscreen && temporal) {
+        const instant = offscreen === 'right' ? temporal.startMs : temporal.visualEndMs ?? temporal.startMs
+        await viewport.revealInstant(instant, row.rowIndex, () => currentRoot === root.value && currentRoot?.isConnected === true
+          && currentScope === props.scope && rowIndexByRecordId.value.get(command.recordId) === row.rowIndex, false)
+      }
+    }
+    return saved
   } finally {
     const pending = pendingTimelineMutations.get(captured.recordId)
     if (pending && pending.propertyId === captured.propertyId) pendingTimelineMutations.delete(captured.recordId)
@@ -532,6 +738,8 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         :mutate-dependency="mutateDependency"
         :record-version-by-id="recordVersionById"
         :record-mutation-busy-by-id="recordMutationBusyById"
+        :order-enabled="orderEnabled"
+        :order-sorted="!manualOrderEnabled"
         :prepare-drag="prepareTimelineDrag"
         :commit-drag="commitTimelineDrag"
         :is-viewport-current="isBarViewportCurrent"
@@ -544,6 +752,8 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         @hover-record="hoveredRecordId = $event"
       />
     </div>
+    <p v-if="!manualOrderEnabled" class="eotion-timeline-order-hint" data-testid="timeline-order-sorted-hint">当前视图设置了排序，关闭排序后可手动调整记录顺序。</p>
+    <div v-if="orderPreview" class="eotion-timeline-order-target" data-testid="timeline-order-target" :style="{ left: `${orderPreview.x}px`, width: `${orderPreview.width}px`, top: `${orderPreview.y}px` }" aria-hidden="true" />
     <p v-if="records.length === 0" class="eotion-database-timeline-empty">暂无记录</p>
     <details v-if="unscheduledItems.length > 0" :key="scope" class="eotion-database-timeline-records" @toggle="onUnscheduledToggle">
       <summary>未排期（{{ unscheduledItems.length }}）</summary>
@@ -595,6 +805,8 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
 .eotion-timeline-schedule-handle:disabled { opacity:.5; cursor:not-allowed; }
 .eotion-timeline-schedule-target { position:fixed; z-index:100; width:2px; background:var(--e-color-accent, var(--editor-accent)); pointer-events:none; }
 .eotion-timeline-schedule-target span { position:absolute; top:4px; left:8px; white-space:nowrap; padding:4px 7px; border-radius:4px; background:var(--e-color-canvas, var(--editor-canvas)); color:var(--e-color-text-primary, var(--editor-text)); box-shadow:0 1px 5px #0003; }
+.eotion-timeline-order-hint { margin:4px 8px; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; }
+.eotion-timeline-order-target { position:fixed; z-index:100; height:2px; background:var(--e-color-accent, var(--editor-accent)); pointer-events:none; }
 .eotion-database-timeline {
   position: relative;
   width: 100%;

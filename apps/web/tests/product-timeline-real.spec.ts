@@ -240,6 +240,7 @@ test('creates a Timeline through the product UI and keeps its date source and sc
   const dragHandle = unscheduledList.getByRole('button', { name: '拖动安排：真实拖放验收' })
   await expect(dragHandle).toBeEnabled()
   const draggedRecordId = await dragHandle.getAttribute('data-record-id')
+  expect(draggedRecordId).toBeTruthy()
   await dragHandle.scrollIntoViewIfNeeded()
   const handleBox = await dragHandle.boundingBox()
   const scrollBox = await reloadedTimeline.getByTestId('timeline-scroll').boundingBox()
@@ -261,6 +262,18 @@ test('creates a Timeline through the product UI and keeps its date source and sc
   await expect(reloadedTimeline.getByTestId('timeline-bar').filter({ hasText: '真实拖放验收' })).toBeVisible()
   await page.reload()
   await expect(page.locator('.eotion-database').first().getByTestId('timeline-bar').filter({ hasText: '真实拖放验收' })).toBeVisible()
+
+  // A keyboard move must persist the View's canonical order through the real API.
+  const reorderedTimeline = page.locator('.eotion-database').first().getByTestId('database-timeline')
+  const orderHandle = reorderedTimeline.locator(`[data-testid="timeline-order-handle"][data-record-id="${draggedRecordId}"]`)
+  await expect(orderHandle).toBeEnabled()
+  const orderResponse = page.waitForResponse(response => response.url().endsWith('/record-order') && response.request().method() === 'POST')
+  await orderHandle.press('ArrowUp')
+  expect((await orderResponse).ok()).toBe(true)
+  await expect(reorderedTimeline.locator(`[data-timeline-row][data-record-id="${draggedRecordId}"]`)).toHaveAttribute('data-row-index', '0')
+  await page.reload()
+  await expect(page.locator('.eotion-database').first().getByTestId('database-timeline')
+    .locator(`[data-timeline-row][data-record-id="${draggedRecordId}"]`)).toHaveAttribute('data-row-index', '0')
 
   await reloadedDatabase.getByRole('button', { name: '数据库设置' }).click()
   await page.getByRole('menuitem', { name: '日期属性', exact: true }).click()

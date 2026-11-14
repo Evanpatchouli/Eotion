@@ -5,6 +5,8 @@ import type { Editor } from '@tiptap/core'
 import type { AuthUserDto, BlockResponse, PageResponse, WorkspaceResponse } from '@eotion/contracts'
 import { convertDatabasePropertyValueForTypeChange, DEFAULT_DATABASE_VIEW_CONFIG, type DatabaseFilter, type DatabaseViewConfig, type DatabasePropertyConfig, type DatabasePropertyValue } from '@eotion/domain/database'
 import { getTimelineScale, pxPerMs } from '../src/components/editor/timeline/scale'
+import { scheduleDropToDateValue } from '../src/components/editor/timeline/scheduleDrop'
+import { viewportTransform } from '../src/components/editor/timeline/viewport'
 import { planDatabaseSchedule } from '../../../packages/domain/src/scheduling'
 import { waitForEditorSelection } from './helpers/editorSelection'
 
@@ -13,6 +15,343 @@ const later = '2027-09-30T00:00:00.000Z'
 const user: AuthUserDto = { id: 'database-user', email: 'database@example.com', displayName: 'Database user', createdAt: now, updatedAt: now }
 const workspace: WorkspaceResponse = { id: 'database-workspace', name: 'Database workspace', ownerId: user.id, createdAt: now, updatedAt: now }
 const pageRecord: PageResponse = { id: 'database-page', workspaceId: workspace.id, parentPageId: null, title: 'Database references', orderKey: '0000000000000001', createdAt: now, updatedAt: now }
+
+test('Timeline manual record order persists across loaded pages and remains scoped to its View', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('manual-order-db')
+  const date = property('manual-order-date', db.id, 'Date', 'date')
+  const config: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }
+  const first = view('manual-order-first', db.id, 'First', config, 'timeline')
+  const second = view('manual-order-second', db.id, 'Second', config, 'timeline')
+  const items = Array.from({ length: 30 }, (_, index) => record(`manual-order-${String(index).padStart(2, '0')}`, db.id,
+    `manual-order-page-${index}`, { 'root-title': `Item ${index}`, [date.id]: '2026-10-13' }))
+  const api = await installApi(page, [block('manual-order-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: first.id } }, 100)], {
+    databases: [db], views: [first, second], properties: [property('root-title', db.id, 'Name', 'title'), date], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const blockRoot = page.locator('#database-block-manual-order-block')
+  const timeline = blockRoot.getByTestId('database-timeline')
+  await expect(timeline).toBeVisible()
+  await blockRoot.getByRole('button', { name: '加载更多' }).click()
+  await expect(blockRoot.getByRole('button', { name: '加载更多' })).toHaveCount(0)
+  const last = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="manual-order-25"]')
+  await last.scrollIntoViewIfNeeded()
+  await last.focus()
+  await last.press('ArrowUp')
+  await expect.poll(() => api.recordOrderByView.get(first.id)?.indexOf('manual-order-25')).toBe(24)
+  await expect.poll(() => api.requests.filter(request => request.path.endsWith('/record-order')).length).toBe(1)
+  expect(api.recordOrderByView.has(second.id)).toBe(false)
+  expect(api.requests.find(request => request.path.endsWith('/record-order'))?.payload).toMatchObject({
+    recordId: 'manual-order-25', anchorRecordId: 'manual-order-24', placement: 'before', expectedDatabaseVersion: 1, expectedViewVersion: 1,
+  })
+  await page.reload()
+  await expect(timeline).toBeVisible()
+  await blockRoot.getByRole('button', { name: '加载更多' }).click()
+  await expect(blockRoot.getByRole('button', { name: '加载更多' })).toHaveCount(0)
+  await expect(timeline.locator('[data-timeline-row][data-record-id="manual-order-25"]')).toHaveAttribute('data-row-index', '24')
+  await expect(timeline.locator('[data-timeline-row][data-record-id="manual-order-24"]')).toHaveAttribute('data-row-index', '25')
+  const firstBar = timeline.locator('[data-testid="timeline-bar"][data-record-id="manual-order-00"]')
+  const targetRow = timeline.locator('[data-timeline-row][data-record-id="manual-order-02"]')
+  await firstBar.scrollIntoViewIfNeeded()
+  const barBounds = await firstBar.boundingBox()
+  const targetBounds = await targetRow.boundingBox()
+  if (!barBounds || !targetBounds) throw new Error('Expected rendered Timeline rows for vertical drag')
+  await page.mouse.move(barBounds.x + barBounds.width / 2, barBounds.y + barBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(barBounds.x + barBounds.width / 2, targetBounds.y + targetBounds.height * .75, { steps: 5 })
+  await expect(timeline.getByTestId('timeline-order-target')).toBeVisible()
+  await page.mouse.up()
+  await expect.poll(() => api.recordOrderByView.get(first.id)?.indexOf('manual-order-00')).toBe(2)
+  await expect.poll(() => api.requests.filter(request => request.path.endsWith('/record-order')).length).toBe(2)
+  const noOp = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="manual-order-00"]')
+  await noOp.focus()
+  await noOp.press('ArrowUp')
+  await expect.poll(() => api.recordOrderByView.get(first.id)?.indexOf('manual-order-00')).toBe(1)
+  await expect(timeline.locator('[data-timeline-row][data-record-id="manual-order-00"]')).toHaveAttribute('data-row-index', '1')
+  await noOp.press('ArrowDown')
+  await expect.poll(() => api.recordOrderByView.get(first.id)?.indexOf('manual-order-00')).toBe(2)
+  await expect(timeline.locator('[data-timeline-row][data-record-id="manual-order-00"]')).toHaveAttribute('data-row-index', '2')
+  api.recordOrderFailure = 'conflict'
+  await noOp.press('ArrowUp')
+  await expect(blockRoot.getByRole('alert').filter({ hasText: '记录顺序已变化' })).toBeVisible()
+  expect(api.recordOrderByView.get(first.id)?.indexOf('manual-order-00')).toBe(2)
+  api.views.find(item => item.id === first.id)!.config = { ...config, sorts: [{ propertyId: date.id, direction: 'asc' }] }
+  await page.reload()
+  await expect(timeline.getByTestId('timeline-order-sorted-hint')).toBeVisible()
+  await expect(timeline.locator('[data-testid="timeline-order-handle"][data-record-id="manual-order-00"]')).toHaveAttribute('aria-disabled', 'true')
+  const count = api.requests.filter(request => request.path.endsWith('/record-order')).length
+  await timeline.locator('[data-testid="timeline-order-handle"][data-record-id="manual-order-00"]').press('ArrowUp')
+  expect(api.requests.filter(request => request.path.endsWith('/record-order')).length).toBe(count)
+  await settleTimelineGestureLayout(timeline)
+  await expect(page.getByRole('textbox', { name: '页面正文编辑区域' })).toHaveAttribute('contenteditable', 'true')
+  await dragTimelineBar(page, timeline.locator('[data-testid="timeline-bar"][data-record-id="manual-order-00"]'), pxPerMs('month') * 86_400_000)
+  await expect.poll(() => api.records.find(item => item.id === 'manual-order-00')?.properties[date.id]).toEqual('2026-10-14')
+  api.views.find(item => item.id === first.id)!.config = config
+  await page.reload()
+  await expect(timeline.getByTestId('timeline-order-sorted-hint')).toHaveCount(0)
+  const orderHandle = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="manual-order-00"]')
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: false }); window.dispatchEvent(new Event('offline')) })
+  await expect(orderHandle).toHaveAttribute('aria-disabled', 'true')
+  await orderHandle.press('ArrowUp')
+  expect(api.requests.filter(request => request.path.endsWith('/record-order')).length).toBe(count)
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: true }); window.dispatchEvent(new Event('online')) })
+  await expect(orderHandle).not.toHaveAttribute('aria-disabled', 'true')
+  api.recordOrderFailure = 'unknown'
+  await orderHandle.press('ArrowUp')
+  await expect(blockRoot.getByRole('alert').filter({ hasText: '提交结果暂未确认' }).first()).toBeVisible()
+  await expect(orderHandle).toHaveAttribute('aria-disabled', 'true')
+  expect(api.requests.filter(request => request.path.endsWith('/record-order')).length).toBe(count + 1)
+})
+
+test.describe('Timeline touch record order', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+  test('moves a record through its touch handle while the page remains scrollable', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+    const db = database('touch-order-db')
+    const date = property('touch-order-date', db.id, 'Date', 'date')
+    const timelineView = view('touch-order-view', db.id, 'Touch order', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }, 'timeline')
+    const items = Array.from({ length: 4 }, (_, index) => record(`touch-order-${index}`, db.id, `touch-order-page-${index}`,
+      { 'root-title': `Touch ${index}`, [date.id]: index === 3 ? null : '2026-10-13' }))
+    const api = await installApi(page, [block('touch-order-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timelineView.id } }, 100)], {
+      databases: [db], views: [timelineView], properties: [property('root-title', db.id, 'Name', 'title'), date], records: items,
+    })
+    for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const timeline = page.locator('#database-block-touch-order-block').getByTestId('database-timeline')
+    const handle = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="touch-order-0"]')
+    await handle.scrollIntoViewIfNeeded()
+    await expect(handle).toBeVisible()
+    await expect.poll(() => handle.evaluate(element => getComputedStyle(element).touchAction)).toBe('none')
+    const source = await handle.boundingBox()
+    const anchor = await timeline.locator('[data-timeline-row][data-record-id="touch-order-2"]').boundingBox()
+    if (!source || !anchor) throw new Error('Missing touch reorder rows')
+    const client = await page.context().newCDPSession(page)
+    const x = source.x + source.width / 2
+    const y = source.y + source.height / 2
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: anchor.y + anchor.height * .75 }] })
+    await expect(timeline.getByTestId('timeline-order-target')).toBeVisible()
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await expect.poll(() => api.recordOrderByView.get(timelineView.id)?.indexOf('touch-order-0')).toBe(2)
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="timeline-scroll"]')!).touchAction)).not.toBe('none')
+    await timeline.getByTestId('timeline-scroll').evaluate(element => { element.scrollLeft += 250 })
+    const unscheduledHandle = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="touch-order-3"]')
+    await expect(unscheduledHandle).toBeVisible()
+    const hit = await unscheduledHandle.evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      return document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2) === element
+    })
+    expect(hit).toBe(true)
+    await unscheduledHandle.press('ArrowUp')
+    await expect.poll(() => api.recordOrderByView.get(timelineView.id)?.indexOf('touch-order-3')).toBe(2)
+  })
+
+  test('sorted and offline order handles allow native vertical swipe without a request', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+    const db = database('touch-disabled-order-db')
+    const date = property('touch-disabled-order-date', db.id, 'Date', 'date')
+    const base: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }
+    const timelineView = view('touch-disabled-order-view', db.id, 'Disabled order', { ...base, sorts: [{ propertyId: date.id, direction: 'asc' }] }, 'timeline')
+    const items = Array.from({ length: 30 }, (_, index) => record(`touch-disabled-${String(index).padStart(2, '0')}`, db.id,
+      `touch-disabled-page-${index}`, { 'root-title': `Item ${index}`, [date.id]: '2026-10-13' }))
+    const api = await installApi(page, [block('touch-disabled-order-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timelineView.id } }, 100)], {
+      databases: [db], views: [timelineView], properties: [property('root-title', db.id, 'Name', 'title'), date], records: items,
+    })
+    for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+    const client = await page.context().newCDPSession(page)
+    const swipeFromHandle = async () => {
+      const handle = page.locator('#database-block-touch-disabled-order-block [data-testid="timeline-order-handle"][data-record-id="touch-disabled-00"]')
+      await handle.scrollIntoViewIfNeeded()
+      await expect(handle).toHaveAttribute('aria-disabled', 'true')
+      await expect.poll(() => handle.evaluate(element => getComputedStyle(element).touchAction)).toBe('pan-y')
+      const host = page.locator('.document-wrap')
+      await host.evaluate(element => { element.scrollTop = 0 })
+      const bounds = await handle.boundingBox()
+      if (!bounds) throw new Error('Missing disabled touch order handle')
+      const x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2
+      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] })
+      for (const offset of [40, 80, 120, 160]) await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y - offset }] })
+      await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+      await expect.poll(() => host.evaluate(element => element.scrollTop)).toBeGreaterThan(0)
+      expect(api.requests.filter(request => request.path.endsWith('/record-order'))).toHaveLength(0)
+    }
+    await page.goto('/#/app/database-workspace/page/database-page')
+    await swipeFromHandle()
+    api.views.find(item => item.id === timelineView.id)!.config = base
+    await page.reload()
+    await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: false }); window.dispatchEvent(new Event('offline')) })
+    await swipeFromHandle()
+  })
+})
+
+test('Timeline filtered adjacent drop is a no-op and delayed A→B→A response stays fenced', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('order-fence-db')
+  const date = property('order-fence-date', db.id, 'Date', 'date')
+  const shown = property('order-fence-shown', db.id, 'Shown', 'checkbox')
+  const config: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    filters: [{ propertyId: shown.id, operator: 'checked' }],
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }
+  const first = view('order-fence-first', db.id, 'First', config, 'timeline')
+  const second = view('order-fence-second', db.id, 'Second', config, 'timeline')
+  const items = [
+    record('order-fence-s', db.id, 'order-fence-page-s', { 'root-title': 'Source', [date.id]: '2026-10-13', [shown.id]: true }),
+    record('order-fence-h', db.id, 'order-fence-page-h', { 'root-title': 'Hidden', [date.id]: '2026-10-13', [shown.id]: false }),
+    record('order-fence-a', db.id, 'order-fence-page-a', { 'root-title': 'Anchor', [date.id]: '2026-10-13', [shown.id]: true }),
+  ]
+  const api = await installApi(page, [block('order-fence-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: first.id } }, 100)], {
+    databases: [db], views: [first, second], properties: [property('root-title', db.id, 'Name', 'title'), date, shown], records: items,
+    holdRecordOrderResponse: true,
+  })
+  api.recordOrderByView.set(first.id, ['order-fence-s', 'order-fence-h', 'order-fence-a'])
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const blockRoot = page.locator('#database-block-order-fence-block')
+  const timeline = blockRoot.getByTestId('database-timeline')
+  const source = timeline.locator('[data-testid="timeline-bar"][data-record-id="order-fence-s"]')
+  const anchor = timeline.locator('[data-timeline-row][data-record-id="order-fence-a"]')
+  await source.scrollIntoViewIfNeeded()
+  const sourceBounds = await source.boundingBox(), anchorBounds = await anchor.boundingBox()
+  if (!sourceBounds || !anchorBounds) throw new Error('Missing filtered Timeline rows')
+  await page.mouse.move(sourceBounds.x + sourceBounds.width / 2, sourceBounds.y + sourceBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(sourceBounds.x + sourceBounds.width / 2, anchorBounds.y + anchorBounds.height * .25, { steps: 5 })
+  await expect(timeline.getByTestId('timeline-order-target')).toHaveCount(0)
+  await page.mouse.up()
+  expect(api.requests.filter(request => request.path.endsWith('/record-order'))).toHaveLength(0)
+  await page.mouse.move(sourceBounds.x + sourceBounds.width / 2, sourceBounds.y + sourceBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(sourceBounds.x + sourceBounds.width / 2, anchorBounds.y + anchorBounds.height * .75, { steps: 5 })
+  await expect(timeline.getByTestId('timeline-order-target')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await page.mouse.move(0, 0)
+  await page.mouse.up()
+  expect(api.requests.filter(request => request.path.endsWith('/record-order'))).toHaveLength(0)
+  await source.focus()
+  await source.press('Enter')
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await closeTimelineDrawer(page)
+  const sourceHandle = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="order-fence-s"]')
+  await sourceHandle.focus()
+  await sourceHandle.press('ArrowDown')
+  await api.recordOrderResponseStarted
+  await expect(blockRoot.getByRole('button', { name: '切换视图' })).toBeDisabled()
+  const changeView = async (viewId: string) => page.evaluate(targetViewId => {
+    const root = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null
+    const exposed = root?.__vueParentComponent?.exposed?.editor
+    const editor = exposed?.commands ? exposed : exposed?.value
+    if (!editor?.view) throw new Error('Missing active editor')
+    let position = -1, attrs: Record<string, unknown> | undefined
+    editor.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, unknown> }, nodePosition: number) => {
+      if (position < 0 && node.type.name === 'eotionDatabase') { position = nodePosition; attrs = node.attrs }
+    })
+    if (position < 0 || !attrs) throw new Error('Missing database node')
+    editor.view.dispatch(editor.state.tr.setNodeMarkup(position, undefined, { ...attrs, viewId: targetViewId }))
+  }, viewId)
+  await changeView(second.id)
+  await expect(blockRoot).toHaveAttribute('data-view-id', second.id)
+  await changeView(first.id)
+  await expect(blockRoot).toHaveAttribute('data-view-id', first.id)
+  await expect(timeline).toBeVisible()
+  await page.getByRole('textbox', { name: '页面正文编辑区域' }).focus()
+  api.releaseRecordOrderResponse()
+  await expect.poll(() => api.recordOrderByView.get(first.id)).toEqual(['order-fence-h', 'order-fence-a', 'order-fence-s'])
+  await expect(blockRoot).toHaveAttribute('data-view-id', first.id)
+  await expect(page.getByRole('textbox', { name: '页面正文编辑区域' })).toBeFocused()
+  expect(api.recordOrderByView.has(second.id)).toBe(false)
+})
+
+test('Timeline order drag autoscrolls across a virtual window and rejects release outside the work area', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('order-window-db')
+  const date = property('order-window-date', db.id, 'Date', 'date')
+  const timelineView = view('order-window-view', db.id, 'Window order', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }, 'timeline')
+  const items = Array.from({ length: 225 }, (_, index) => record(`order-window-${String(index).padStart(3, '0')}`, db.id,
+    `order-window-page-${index}`, { 'root-title': `Window ${index}`, [date.id]: '2026-10-13' }))
+  const api = await installApi(page, [block('order-window-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timelineView.id } }, 100)], {
+    databases: [db], views: [timelineView], properties: [property('root-title', db.id, 'Name', 'title'), date], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const blockRoot = page.locator('#database-block-order-window-block')
+  const timeline = blockRoot.getByTestId('database-timeline')
+  const loadMore = blockRoot.getByRole('button', { name: '加载更多' })
+  for (let pageNumber = 1; pageNumber < 9; pageNumber++) await loadMore.click()
+  await expect(loadMore).toHaveCount(0)
+  await timeline.evaluate(root => { const host = root.closest<HTMLElement>('.document-wrap'); if (host) host.scrollTop = 0 })
+  await expect(timeline.getByTestId('timeline-canvas-body')).toHaveAttribute('data-row-window-first', '0')
+  const source = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="order-window-000"]')
+  await source.scrollIntoViewIfNeeded()
+  const bounds = await source.boundingBox()
+  if (!bounds) throw new Error('Missing virtual window source handle')
+  const x = bounds.x + bounds.width / 2, y = bounds.y + bounds.height / 2
+  const edgeY = await timeline.evaluate(root => {
+    const host = root.closest('.document-wrap')!
+    const grid = root.querySelector('[data-testid="timeline-canvas-body"]')!
+    return Math.min(window.innerHeight, host.getBoundingClientRect().bottom, grid.getBoundingClientRect().bottom) - 8
+  })
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x, edgeY, { steps: 8 })
+  await expect.poll(async () => Number(await timeline.getByTestId('timeline-canvas-body').getAttribute('data-row-window-first'))).toBeGreaterThan(20)
+  await expect(source).toHaveCount(1)
+  await expect(timeline.getByTestId('timeline-order-target')).toBeVisible()
+  await page.mouse.up()
+  await expect.poll(() => api.recordOrderByView.get(timelineView.id)?.indexOf('order-window-000') ?? 0).toBeGreaterThan(20)
+  const saved = api.requests.filter(request => request.path.endsWith('/record-order')).length
+  const currentHandle = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="order-window-000"]')
+  await currentHandle.scrollIntoViewIfNeeded()
+  const currentBounds = await currentHandle.boundingBox()
+  if (!currentBounds) throw new Error('Missing moved record handle')
+  await page.mouse.move(currentBounds.x + currentBounds.width / 2, currentBounds.y + currentBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(currentBounds.x + currentBounds.width / 2, currentBounds.y + currentBounds.height / 2 + 90, { steps: 5 })
+  await page.mouse.move(0, 0)
+  await expect(timeline.getByTestId('timeline-order-target')).toHaveCount(0)
+  await page.mouse.up()
+  expect(api.requests.filter(request => request.path.endsWith('/record-order'))).toHaveLength(saved)
+  const stoppedAt = await timeline.evaluate(root => root.closest<HTMLElement>('.document-wrap')?.scrollTop ?? 0)
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  expect(await timeline.evaluate(root => root.closest<HTMLElement>('.document-wrap')?.scrollTop ?? 0)).toBe(stoppedAt)
+})
+
+test('queued Timeline reorder that goes offline before send stays known and writable after reconnect', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('order-queue-db')
+  const date = property('order-queue-date', db.id, 'Date', 'date')
+  const timelineView = view('order-queue-view', db.id, 'Queue order', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }, 'timeline')
+  const items = [
+    record('order-queue-a', db.id, 'order-queue-page-a', { 'root-title': 'A', [date.id]: '2026-10-13' }),
+    record('order-queue-b', db.id, 'order-queue-page-b', { 'root-title': 'B', [date.id]: '2026-10-13' }),
+  ]
+  const api = await installApi(page, [
+    block('order-queue-first', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timelineView.id } }, 100),
+    block('order-queue-second', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timelineView.id } }, 200),
+  ], { databases: [db], views: [timelineView], properties: [property('root-title', db.id, 'Name', 'title'), date], records: items, holdCellUpdateResponse: true })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const first = page.locator('#database-block-order-queue-first')
+  const second = page.locator('#database-block-order-queue-second')
+  await dragTimelineBar(page, first.locator('[data-testid="timeline-bar"][data-record-id="order-queue-a"]'), pxPerMs('month') * 86_400_000)
+  await api.cellUpdateResponseStarted
+  await second.locator('[data-testid="timeline-order-handle"][data-record-id="order-queue-a"]').press('ArrowDown')
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: false }); window.dispatchEvent(new Event('offline')) })
+  api.releaseCellUpdateResponse()
+  await expect(second.getByRole('alert').filter({ hasText: '记录重排未发送' })).toBeVisible()
+  expect(api.requests.filter(request => request.path.endsWith('/record-order'))).toHaveLength(0)
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: true }); window.dispatchEvent(new Event('online')) })
+  await expect(second.getByRole('button', { name: '切换视图' })).toBeEnabled()
+  await expect(second.getByTestId('database-timeline').locator('[data-testid="timeline-order-handle"][data-record-id="order-queue-a"]')).not.toHaveAttribute('aria-disabled', 'true')
+})
 
 type TestDatabase = { id: string; workspaceId: string; name: string; version: number; createdAt: string; updatedAt: string }
 type TestProperty = { id: string; databaseId: string; workspaceId: string; name: string; type: 'title' | 'text' | 'number' | 'checkbox' | 'select' | 'date' | 'relation' | 'rollup' | 'formula'; version: number; createdAt: string; updatedAt: string; options?: Array<{ id: string; name: string }>; config?: DatabasePropertyConfig }
@@ -612,21 +951,32 @@ type DatabaseApi = {
   cellBatchMutationOutcome: 'success' | 'committed' | 'not_committed' | 'uncertain' | 'receipt-read-failure'
   failCellBatchReceiptReads: number
   cellBatchMutationReceipts: Map<string, 'committed' | 'not_committed' | 'uncertain'>
+  recordOrderByView: Map<string, string[]>
+  recordOrderFailure: 'none' | 'conflict' | 'unknown'
+  holdRecordOrderResponse: boolean
+  recordOrderResponseStarted: Promise<void>
+  recordOrderResponseGate: Promise<void>
+  signalRecordOrderResponseStarted: () => void
+  releaseRecordOrderResponse: () => void
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'abortCellUpdatesAfterCommit' | 'abortCellUpdatesWithoutCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'holdCellUpdateResponse' | 'conflictCellBatchMutations' | 'cellBatchMutationOutcome' | 'failCellBatchReceiptReads' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'abortCellUpdatesAfterCommit' | 'abortCellUpdatesWithoutCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'holdCellUpdateResponse' | 'holdRecordOrderResponse' | 'conflictCellBatchMutations' | 'cellBatchMutationOutcome' | 'failCellBatchReceiptReads' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
   let releaseDatabaseCreateResponse!: () => void
   let signalCellUpdateResponseStarted!: () => void
   let releaseCellUpdateResponse!: () => void
+  let signalRecordOrderResponseStarted!: () => void
+  let releaseRecordOrderResponse!: () => void
   const recordCreateResponseStarted = new Promise<void>((resolve) => { signalRecordCreateResponseStarted = resolve })
   const recordCreateResponseGate = new Promise<void>((resolve) => { releaseRecordCreateResponse = resolve })
   const databaseCreateResponseStarted = new Promise<void>((resolve) => { signalDatabaseCreateResponseStarted = resolve })
   const databaseCreateResponseGate = new Promise<void>((resolve) => { releaseDatabaseCreateResponse = resolve })
   const cellUpdateResponseStarted = new Promise<void>((resolve) => { signalCellUpdateResponseStarted = resolve })
   const cellUpdateResponseGate = new Promise<void>((resolve) => { releaseCellUpdateResponse = resolve })
+  const recordOrderResponseStarted = new Promise<void>(resolve => { signalRecordOrderResponseStarted = resolve })
+  const recordOrderResponseGate = new Promise<void>(resolve => { releaseRecordOrderResponse = resolve })
   const api: DatabaseApi = {
     pages: [{ ...pageRecord }], blocks: [...seed], databases: (options.databases ?? []).map((item) => ({ ...item })), views: (options.views ?? []).map((item) => ({ ...item })),
     properties: (options.properties ?? []).map((item) => ({ ...item, ...(item.options ? { options: [...item.options] } : {}) })), records: (options.records ?? []).map((item) => ({ ...item, properties: { ...item.properties } })), requests: [],
@@ -642,7 +992,9 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     conflictCellBatchMutations: options.conflictCellBatchMutations ?? 0,
     cellBatchMutationOutcome: options.cellBatchMutationOutcome ?? 'success',
     failCellBatchReceiptReads: options.failCellBatchReceiptReads ?? 0,
-    cellBatchMutationReceipts: new Map(),
+    cellBatchMutationReceipts: new Map(), recordOrderByView: new Map(), recordOrderFailure: 'none',
+    holdRecordOrderResponse: options.holdRecordOrderResponse ?? false, recordOrderResponseStarted, recordOrderResponseGate,
+    signalRecordOrderResponseStarted: () => signalRecordOrderResponseStarted(), releaseRecordOrderResponse: () => releaseRecordOrderResponse(),
     failViewUpdates: options.failViewUpdates ?? 0,
     failPropertyUpdates: options.failPropertyUpdates ?? 0,
     failPropertyDeletes: options.failPropertyDeletes ?? 0,
@@ -839,6 +1191,29 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       return json(route, 201, { database: databaseItem, view: created })
     }
     const viewPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views/([^/]+)$`, 'u').exec(pathname)
+    const orderPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views/([^/]+)/record-order$`, 'u').exec(pathname)
+    if (orderPath && request.method() === 'POST') {
+      const databaseItem = api.databases.find(item => item.id === orderPath[1])
+      const viewItem = api.views.find(item => item.id === orderPath[2] && item.databaseId === orderPath[1])
+      const input = payload as { recordId: string; anchorRecordId: string; placement: 'before' | 'after'; expectedDatabaseVersion: number; expectedViewVersion: number }
+      if (!databaseItem || !viewItem) return json(route, 404, { statusCode: 404, message: 'Database view not found' })
+      if (api.recordOrderFailure === 'conflict' || input.expectedDatabaseVersion !== databaseItem.version || input.expectedViewVersion !== viewItem.version) {
+        api.recordOrderFailure = 'none'
+        return json(route, 409, { statusCode: 409, message: 'Database view version conflict' })
+      }
+      if (viewItem.config.sorts.length || input.recordId === input.anchorRecordId || !['before', 'after'].includes(input.placement)) return json(route, 400, { statusCode: 400, message: 'Invalid record order' })
+      const all = api.records.filter(item => item.databaseId === databaseItem.id).map(item => item.id).sort()
+      if (!all.includes(input.recordId) || !all.includes(input.anchorRecordId)) return json(route, 404, { statusCode: 404, message: 'Record not found' })
+      const previous = api.recordOrderByView.get(viewItem.id) ?? all
+      const ordered = previous.filter(id => id !== input.recordId)
+      const anchor = ordered.indexOf(input.anchorRecordId)
+      ordered.splice(anchor + (input.placement === 'after' ? 1 : 0), 0, input.recordId)
+      api.recordOrderByView.set(viewItem.id, ordered)
+      viewItem.version += 1; databaseItem.version += 1
+      if (api.holdRecordOrderResponse) { api.signalRecordOrderResponseStarted(); await api.recordOrderResponseGate }
+      if (api.recordOrderFailure === 'unknown') { api.recordOrderFailure = 'none'; return route.abort('failed') }
+      return json(route, 200, { database: databaseItem, view: viewItem })
+    }
     if (viewPath && request.method() === 'PATCH') {
       if (api.failViewUpdates > 0) { api.failViewUpdates -= 1; return json(route, 503, { statusCode: 503, message: 'View temporarily unavailable' }) }
       const databaseItem = api.databases.find(item => item.id === viewPath[1])
@@ -893,9 +1268,10 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
             return leftEmpty || rightEmpty || sort.direction === 'asc' ? compared : -compared
           }
         }
-        return left.id < right.id ? -1 : left.id > right.id ? 1 : 0
+        const manual = api.recordOrderByView.get(view.id)
+        return manual ? manual.indexOf(left.id) - manual.indexOf(right.id) : left.id < right.id ? -1 : left.id > right.id ? 1 : 0
       })
-      const remainingRecords = cursor ? matchingRecords.filter((item) => item.id > cursor) : matchingRecords
+      const remainingRecords = cursor ? matchingRecords.slice(Math.max(0, matchingRecords.findIndex(item => item.id === cursor) + 1)) : matchingRecords
       const titleProperty = properties.find(item => item.type === 'title')
       const records = remainingRecords.slice(0, limit).map(item => ({
         ...item,
@@ -12855,9 +13231,19 @@ test('P11.6 touch drag schedules an unplanned record on the visible Timeline', a
     for (let step = 1; step <= 6; step++) {
       await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x + (end.x - start.x) * step / 6, y: start.y + (end.y - start.y) * step / 6, id: 1 }] })
     }
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
     const preview = timeline.getByTestId('timeline-schedule-target')
     await expect(preview).toBeVisible()
     const expected = (await preview.textContent())!.split(' · ')[0]!
+    const dropGeometry = await timeline.evaluate(root => {
+      const setup = (root as HTMLElement & { __vueParentComponent?: { setupState?: Record<string, any> } }).__vueParentComponent?.setupState
+      const scroller = root.querySelector<HTMLElement>('[data-testid="timeline-scroll"]')!
+      return { state: { ...setup?.viewport?.state?.value }, zone: setup?.viewport?.displayTimeZone?.value as string,
+        left: scroller.getBoundingClientRect().left, width: scroller.clientWidth }
+    })
+    const coordinateValue = scheduleDropToDateValue({ clientX: end.x, viewportLeft: dropGeometry.left, viewportWidth: dropGeometry.width,
+      transform: viewportTransform(dropGeometry.state), displayTimeZone: dropGeometry.zone })
+    expect(expected).toBe(typeof coordinateValue === 'string' ? coordinateValue : coordinateValue?.start)
     await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
     await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
     expect(p114cBatchPosts(api)[0]?.payload.records[0].cells).toEqual([{ propertyId: 'root-date', value: expected }])

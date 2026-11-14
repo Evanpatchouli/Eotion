@@ -9,6 +9,8 @@
 > 以 Notion 的公开界面为参考。独立 Start/End 日期来源支持拖动和调整范围；单 Date 来源的
 > 空值可从未排期列表拖入时间网格。本页各阶段中
 > 关于该来源“手动只读”的描述保留为历史记录，当前行为以 §21.2 和通用 Cell 事务契约为准。
+> 2026-11-15 增加通用 View 持久行顺序与时间轴行重排；旧阶段的行重排后置记录保留
+> 作为历史背景。按属性分组仍未实现。
 
 ## 1. 目标
 
@@ -234,7 +236,12 @@ timestamp/date  <->  logical time coordinate  <->  x pixel
 - Bar 可以跨越多个时间 tick，但不改变 row 高度。
 - 多条 Record 不共享一个 row，因此不需要在单 row 内做事件碰撞排版。
 
-Notion 支持拖动 Timeline item 上下调整顺序。P11 将此行为列为 parity requirement，但持久化必须设计成 **generic View row ordering**，不能创建 TimelineRecord / TimelineRow 实体。若 P11.1 需要新增 View-record order persistence，应设计成未来 List/Gallery 等也可复用的通用能力。
+Timeline 行可用左侧手柄纵向拖动，也可用键盘上下移动；触屏使用同一手柄。拖动时可在
+长列表边缘自动滚动，释放在时间轴工作区以外不会提交。行顺序按 View 持久保存，刷新和
+分页后仍生效；实现位于通用 View records 层，不创建 Timeline 专属 Record 或 Row。
+显式 Sort 生效时手动移动不可用。筛选状态下，可见顺序不变的移动不写入，隐藏记录之间
+的相对顺序保持不变；新记录追加到该 View 的末尾。409 冲突刷新数据且不自动重试，
+已发送请求的提交结果未知时需要刷新确认。接口和生命周期见[通用 View 排序契约](p9-multi-view.md#通用-view-记录手动排序2026-11-15)。
 
 ## 9. Timeline Item Bar
 
@@ -590,6 +597,7 @@ Notion Timeline 支持按属性分组。Eotion P11 若实现 grouping，必须�
 P11.6 范围裁定（2026-10-19）：用户明确选择“后置；本轮按 §24 最低矩阵验收”。
 Timeline grouping 和持久行重排后置，不进入本轮通用 View 数据/配置设计；本轮不宣称完整
 Notion parity。此裁定不改变 §24 其余强制项，也不豁免未排期安排或视觉门禁。
+2026-11-15 已实现通用 View 持久行重排；Timeline grouping 仍未实现。
 
 ## 19. Responsive
 

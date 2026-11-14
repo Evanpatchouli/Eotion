@@ -1,5 +1,5 @@
 import { createLocalId } from '@eotion/storage'
-import type { DatabaseCellBatchMutationRequest, DatabaseCellBatchMutationResponse, DatabaseCellBatchMutationReceipt, DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyTypeChangeRequest, DatabasePropertyTypeChangeResponse, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest } from '@eotion/contracts'
+import type { DatabaseCellBatchMutationRequest, DatabaseCellBatchMutationResponse, DatabaseCellBatchMutationReceipt, DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyTypeChangeRequest, DatabasePropertyTypeChangeResponse, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest, DatabaseViewRecordReorderRequest } from '@eotion/contracts'
 import { nextOrderKey } from '../utils/pageTree'
 
 import { flushActivePageEditor } from '../editor/activePageEditor'
@@ -36,6 +36,10 @@ const uncertainRecordScopes = reactive(new Set<string>())
 const uncertainDatabaseInsertionScopes = reactive(new Set<string>())
 const uncertainRecordMessage = '上次记录创建结果尚未确认，请联网并刷新页面后确认。'
 const databaseMutationTails = new Map<string, Promise<unknown>>()
+
+export class DatabaseMutationNotSentError extends Error {
+  constructor(message: string) { super(message); this.name = 'DatabaseMutationNotSentError' }
+}
 
 function serializeDatabaseMutation<T>(workspaceId: string, databaseId: string, mutation: () => Promise<T>): Promise<T> {
   const key = JSON.stringify([workspaceId, databaseId])
@@ -166,6 +170,19 @@ export async function updateProductDatabaseView(workspaceId: string, databaseId:
   return serializeDatabaseMutation(workspaceId, databaseId, async () => {
     assertOnlineAndCurrent(workspaceId, userId)
     const result = await api.databases.updateDatabaseView(workspaceId, databaseId, viewId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
+}
+
+export async function reorderProductDatabaseViewRecord(workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewRecordReorderRequest) {
+  const userId = useAuthStore().user?.id
+  if (!userId) throw new DatabaseMutationNotSentError('请先登录后再调整记录顺序。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    try { assertOnlineAndCurrent(workspaceId, userId) }
+    catch (cause) { throw new DatabaseMutationNotSentError(cause instanceof Error ? cause.message : '记录重排未发送。') }
+    const result = await api.databases.reorderDatabaseViewRecord(workspaceId, databaseId, viewId, input)
     assertOnlineAndCurrent(workspaceId, userId)
     notifyDatabaseUpdated({ workspaceId, databaseId })
     return result
