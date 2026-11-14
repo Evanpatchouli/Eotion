@@ -1,5 +1,23 @@
 # Handoff
 
+## 2026-11-14 Notion 时间轴体验改版
+
+用户要求尽可能对齐 Notion 时间轴，不考虑旧数据兼容，并指定在主分支实施；仓库实际默认
+主分支为 `master`。已提交 `c413581`（双日期事务）、`166cfab`（界面与交互）和
+`0de5383`（六张视觉基线）。未推送或发布。
+
+本轮完成左表快捷开关、独立 Start/End 拖动和两端调整、单 Date 空值从未排期拖入网格、
+时区/周末/今天标记及桌面和手机布局。最终 Database 266/266、Timeline 逻辑 105/105、
+Visual 13/13、隔离真实 API/Web 1/1、API 事务测试 12/12；构建及独立 review 通过。
+中间失败及复验边界见 `.agents/current-task.md`。自有服务已停止；隔离 Mongo 临时目录
+`C:/Users/31250/AppData/Local/Temp/eotion-split-date-e83adcadc59341a580c5f6f6140da8a1`
+的递归清理被自动审批以 `blocked by policy` 拒绝，保留原样，未重试绕过。
+
+尚未达到完整 Notion parity：按属性分组、跨分页持久行重排、左表直接编辑等仍缺失。
+手动行重排需要通用 View 顺序存储、写 API 和分页/游标语义；拟按每视图独立顺序、
+显式 Sort 时禁用手动拖动、筛选保留隐藏项相对顺序、新记录追加设计。按项目 AGENTS
+有关公共 API/数据模型的确认规则，继续前应获得用户对该影响的确认；不要只重排当前页。
+
 ## 2026-11-07 P10 / P11 集成验收通过
 
 集成代码 `978b4f7` 包含 P10 十八工具与 P11 正式配置入口、跨月标尺修复。以本次 P10.4、P11.6 最终报告及 `docs/verification/evidence/p10-p11-integrated-gates.json` 为当前状态，以下 HOLD 记录均为历史。完整 Product 513/513、独立 Database 256/256、Visual 13/13，真实 MCP Client/Web 与 Timeline 创建刷新均通过。版本 0.0.1/build 2，下一阶段及发布另行安排。
