@@ -1,7 +1,12 @@
 'use strict'
 const assert = require('node:assert/strict')
 const { test } = require('node:test')
-const { isViewOrderRank, rankBetween } = require('../dist/view-order-rank.js')
+const {
+  compareViewOrderPosition,
+  isViewOrderRank,
+  positionBetween,
+  rankBetween,
+} = require('../dist/view-order-rank.js')
 
 function compareAscii(left, right) {
   return left < right ? -1 : left > right ? 1 : 0
@@ -81,5 +86,72 @@ test('1000 repeated insertions in the same narrowing gap remain valid and ordere
   for (let index = 1; index < ordered.length; index += 1) {
     assert.equal(isViewOrderRank(ordered[index]), true)
     assert.equal(compareAscii(ordered[index - 1], ordered[index]), -1)
+  }
+})
+
+test('view positions compare slot ordinals before ASCII ranks', () => {
+  assert.equal(compareViewOrderPosition({ slotOrdinal: 0, rank: '11' }, { slotOrdinal: 1, rank: '1' }), -1)
+  assert.equal(compareViewOrderPosition({ slotOrdinal: 2, rank: '01' }, { slotOrdinal: 2, rank: '1' }), -1)
+  assert.equal(compareViewOrderPosition({ slotOrdinal: 2, rank: '1' }, { slotOrdinal: 2, rank: '1' }), 0)
+  assert.equal(compareViewOrderPosition({ slotOrdinal: 2, rank: '1' }, { slotOrdinal: 2, rank: '01' }), 1)
+})
+
+test('positionBetween handles empty, first, last, cross-slot, and same-slot boundaries', () => {
+  assert.deepEqual(positionBetween(null, null), { slotOrdinal: 0, rank: '1' })
+  assert.deepEqual(positionBetween(null, { slotOrdinal: 0, rank: '1' }), { slotOrdinal: 0, rank: '01' })
+  assert.deepEqual(positionBetween(null, { slotOrdinal: 3, rank: '1' }), { slotOrdinal: 0, rank: '1' })
+  assert.deepEqual(positionBetween({ slotOrdinal: 2, rank: '1' }, null), { slotOrdinal: 2, rank: '11' })
+  assert.deepEqual(positionBetween(
+    { slotOrdinal: 2, rank: '1' },
+    { slotOrdinal: 3, rank: '1' },
+  ), { slotOrdinal: 2, rank: '11' })
+  assert.deepEqual(positionBetween(
+    { slotOrdinal: 2, rank: '1' },
+    { slotOrdinal: 2, rank: '11' },
+  ), { slotOrdinal: 2, rank: '101' })
+})
+
+test('positionBetween supports 2048 adjacent same-slot insertions in order', () => {
+  const positions = [{ slotOrdinal: 0, rank: '1' }]
+  const right = { slotOrdinal: 0, rank: '11' }
+  for (let index = 0; index < 2048; index += 1) {
+    const next = positionBetween(positions.at(-1), right)
+    assert.equal(compareViewOrderPosition(positions.at(-1), next), -1)
+    assert.equal(compareViewOrderPosition(next, right), -1)
+    positions.push(next)
+  }
+  for (let index = 1; index < positions.length; index += 1) {
+    assert.equal(compareViewOrderPosition(positions[index - 1], positions[index]), -1)
+  }
+})
+
+test('a position in a new ordinal slot follows every existing position', () => {
+  const existing = [
+    { slotOrdinal: 0, rank: '111' },
+    { slotOrdinal: 1, rank: '1' },
+    { slotOrdinal: 4, rank: '101' },
+    { slotOrdinal: 8, rank: '11' },
+  ]
+  const nextRecord = { slotOrdinal: Math.max(...existing.map(({ slotOrdinal }) => slotOrdinal)) + 1, rank: '1' }
+  for (const position of existing) assert.equal(compareViewOrderPosition(position, nextRecord), -1)
+})
+
+test('view position helpers reject unsafe slots, invalid ranks, and unordered boundaries', () => {
+  const invalidPositions = [
+    { slotOrdinal: -1, rank: '1' },
+    { slotOrdinal: 1.5, rank: '1' },
+    { slotOrdinal: Number.MAX_SAFE_INTEGER + 1, rank: '1' },
+    { slotOrdinal: 0, rank: '10' },
+  ]
+  for (const invalid of invalidPositions) {
+    assert.throws(() => compareViewOrderPosition(invalid, { slotOrdinal: 1, rank: '1' }), TypeError)
+    assert.throws(() => positionBetween(invalid, null), TypeError)
+  }
+  for (const [left, right] of [
+    [{ slotOrdinal: 0, rank: '1' }, { slotOrdinal: 0, rank: '1' }],
+    [{ slotOrdinal: 1, rank: '1' }, { slotOrdinal: 0, rank: '11' }],
+    [{ slotOrdinal: 1, rank: '11' }, { slotOrdinal: 1, rank: '1' }],
+  ]) {
+    assert.throws(() => positionBetween(left, right), TypeError)
   }
 })

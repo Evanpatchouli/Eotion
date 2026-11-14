@@ -140,7 +140,8 @@ export {
 } from './block-tree'
 export type { BlockLink, BlockTreeOrderLink, BlockTreeNode, ParentRejection } from './block-tree'
 export { assignBlockOrder, assignBlockTreeOrder, nextOrderKey } from './order'
-export { isViewOrderRank, rankBetween } from './view-order-rank'
+export { compareViewOrderPosition, isViewOrderRank, positionBetween, rankBetween } from './view-order-rank'
+export type { ViewOrderPosition } from './view-order-rank'
 
 export interface BlockRecord {
   id: Id
