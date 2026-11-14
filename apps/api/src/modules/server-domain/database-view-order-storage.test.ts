@@ -8,6 +8,7 @@ import { getConnectionToken, getModelToken, MongooseModule } from '@nestjs/mongo
 import type { Connection, Model } from 'mongoose'
 import { ServerDomainModule } from './server-domain.module'
 import { DatabaseRecordEntity } from './schemas/database-record.schema'
+import { DatabaseViewEntity } from './schemas/database-view.schema'
 import { DatabaseViewOrderOverrideEntity, DatabaseViewOrderCleanupJobEntity } from './schemas/database-view-order.schema'
 import { DatabaseRecordRepository, DatabaseViewRepository } from './repositories/database.repository'
 import { DatabaseViewOrderRepository } from './repositories/database-view-order.repository'
@@ -32,12 +33,16 @@ test('view order storage keeps creation, scopes, rollback and retired cleanup tr
   const orders = app.get(DatabaseViewOrderRepository)
   const cleanup = app.get(DatabaseViewOrderCleanupService)
   const recordModel = app.get<Model<unknown>>(getModelToken(DatabaseRecordEntity.name))
+  const viewModel = app.get<Model<unknown>>(getModelToken(DatabaseViewEntity.name))
   const overrideModel = app.get<Model<unknown>>(getModelToken(DatabaseViewOrderOverrideEntity.name))
   const jobModel = app.get<Model<unknown>>(getModelToken(DatabaseViewOrderCleanupJobEntity.name))
-  await Promise.all([recordModel.init(), overrideModel.init(), jobModel.init()])
+  await Promise.all([recordModel.init(), viewModel.init(), overrideModel.init(), jobModel.init()])
   const slotIndex = (await overrideModel.collection.indexes()).find(index => index.key?.slotOrdinal === 1 && index.key?.rank === 1)
   assert.equal(slotIndex?.unique, true)
   assert.equal(slotIndex?.collation?.locale ?? 'simple', 'simple')
+  const sourceIndex = (await overrideModel.collection.indexes()).find(index => index.key?.sourceCreationOrdinal === 1)
+  assert.equal(sourceIndex?.unique, true)
+  assert.equal(sourceIndex?.collation?.locale ?? 'simple', 'simple')
   const owner = await app.get(AuthService).register(`order-${randomUUID()}@example.com`, 'correct horse battery staple')
   const workspaces = app.get(WorkspaceService)
   const pages = app.get(PageService)
@@ -61,6 +66,44 @@ test('view order storage keeps creation, scopes, rollback and retired cleanup tr
   assert.equal(firstOrder.creationOrdinal < secondOrder.creationOrdinal, true)
   assert.deepEqual((await records.listCreationOrderWindow('order-ws', 'db', undefined, 10)).map(row => row.recordId), ['r1', 'r2'])
   assert.equal(await records.hasMissingCreationOrdinal('order-ws', 'db'), false)
+  await recordModel.collection.updateOne({ id: 'r1' }, { $unset: { creationOrdinal: '' } })
+  await assert.rejects(service.getViewRecords(owner.id, 'order-ws', 'db', 'view', { limit: 10 }), error => (error as { status?: number }).status === 409)
+  await recordModel.collection.updateOne({ id: 'r1' }, { $set: { creationOrdinal: firstOrder.creationOrdinal } })
+  await recordModel.collection.updateOne({ id: 'r1' }, { $set: { creationOrdinal: null } })
+  await assert.rejects(service.getViewRecords(owner.id, 'order-ws', 'db', 'view', { limit: 10 }), error => (error as { status?: number }).status === 409)
+  await recordModel.collection.updateOne({ id: 'r1' }, { $set: { creationOrdinal: firstOrder.creationOrdinal } })
+  await viewModel.collection.updateOne({ id: 'view' }, { $unset: { orderScopeId: '' } })
+  await assert.rejects(service.getViewRecords(owner.id, 'order-ws', 'db', 'view', { limit: 10 }), error => (error as { status?: number }).status === 409)
+  await viewModel.collection.updateOne({ id: 'view' }, { $set: { orderScopeId: firstScope.orderScopeId } })
+  const beforeInjectedFailure = (await service.find(owner.id, 'order-ws', 'db'))!
+  const putBeforeFailure = orders.putOverride.bind(orders)
+  orders.putOverride = async () => { throw new Error('injected override write failure') }
+  try {
+    await assert.rejects(service.reorderViewRecord(owner.id, 'order-ws', 'db', 'view', {
+      recordId: 'r1', anchorRecordId: 'r2', placement: 'after',
+      expectedDatabaseVersion: beforeInjectedFailure.version, expectedViewVersion: created.view.version,
+    }), /injected override write failure/)
+  } finally { orders.putOverride = putBeforeFailure }
+  assert.equal((await service.find(owner.id, 'order-ws', 'db'))!.version, beforeInjectedFailure.version)
+  assert.equal((await views.getOrderState('order-ws', 'db', 'view'))!.version, created.view.version)
+  assert.equal((await views.getOrderState('order-ws', 'db', 'view'))!.manualOrderActive, false)
+  assert.equal(await overrideModel.countDocuments({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId }), 0)
+  const oversizedNeighborRank = `${'0'.repeat(1_048_575)}1`
+  await overrideModel.collection.insertOne({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId,
+    recordId: 'r1', joinKey: { workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId, recordId: 'r1' },
+    sourceCreationOrdinal: firstOrder.creationOrdinal, slotOrdinal: 0, rank: oversizedNeighborRank })
+  await viewModel.collection.updateOne({ id: 'view' }, { $set: { manualOrderActive: true } })
+  try {
+    await assert.rejects(service.reorderViewRecord(owner.id, 'order-ws', 'db', 'view', {
+      recordId: 'r2', anchorRecordId: 'r1', placement: 'before',
+      expectedDatabaseVersion: beforeInjectedFailure.version, expectedViewVersion: created.view.version,
+    }), error => (error as { status?: number }).status === 409)
+    assert.equal((await service.find(owner.id, 'order-ws', 'db'))!.version, beforeInjectedFailure.version)
+    assert.equal((await views.getOrderState('order-ws', 'db', 'view'))!.version, created.view.version)
+  } finally {
+    await overrideModel.collection.deleteOne({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId, recordId: 'r1' })
+    await viewModel.collection.updateOne({ id: 'view' }, { $set: { manualOrderActive: false } })
+  }
   const beforeFailedCreate = (await service.find(owner.id, 'order-ws', 'db'))!.version
   await assert.rejects(service.createRecordPage(owner.id, 'order-ws', 'db', { id: 'r1', pageId: 'duplicate-page', title: 'Duplicate', orderKey: 'b' }), /duplicate key/i)
   assert.equal(await pages.find(owner.id, 'order-ws', 'duplicate-page'), null)
@@ -80,14 +123,14 @@ test('view order storage keeps creation, scopes, rollback and retired cleanup tr
   const session = await connection.startSession()
   try {
     await session.withTransaction(async () => {
-      await orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId, recordId: 'r1', slotOrdinal: secondOrder.creationOrdinal, rank: '1' }, session)
-      await orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId, recordId: 'r2', slotOrdinal: secondOrder.creationOrdinal, rank: '01' }, session)
-      await orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: extraScope.orderScopeId, recordId: 'r1', slotOrdinal: secondOrder.creationOrdinal, rank: '1' }, session)
-      await orders.putOverride({ workspaceId: 'other-ws', databaseId: 'other-db', orderScopeId: (await views.getOrderState('other-ws', 'other-db', 'other-view', session))!.orderScopeId, recordId: 'r1', slotOrdinal: 1, rank: '1' }, session)
+      await orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId, recordId: 'r1', sourceCreationOrdinal: firstOrder.creationOrdinal, slotOrdinal: secondOrder.creationOrdinal, rank: '1' }, session)
+      await orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId, recordId: 'r2', sourceCreationOrdinal: secondOrder.creationOrdinal, slotOrdinal: secondOrder.creationOrdinal, rank: '01' }, session)
+      await orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: extraScope.orderScopeId, recordId: 'r1', sourceCreationOrdinal: firstOrder.creationOrdinal, slotOrdinal: secondOrder.creationOrdinal, rank: '1' }, session)
+      await orders.putOverride({ workspaceId: 'other-ws', databaseId: 'other-db', orderScopeId: (await views.getOrderState('other-ws', 'other-db', 'other-view', session))!.orderScopeId, recordId: 'r1', sourceCreationOrdinal: 1, slotOrdinal: 1, rank: '1' }, session)
     })
   } finally { await session.endSession() }
   assert.deepEqual((await orders.listOverrideWindow({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId }, undefined, 10)).map(row => row.recordId), ['r2', 'r1'])
-  await assert.rejects(orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId, recordId: 'invalid', slotOrdinal: 1, rank: `${'0'.repeat(1_048_576)}1` }, session), /Invalid database view order override/)
+  await assert.rejects(orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: firstScope.orderScopeId, recordId: 'invalid', sourceCreationOrdinal: 99, slotOrdinal: 1, rank: `${'0'.repeat(1_048_576)}1` }, session), /Invalid database view order override/)
   const activated = await connection.startSession()
   try {
     await activated.withTransaction(async () => {
@@ -114,7 +157,7 @@ test('view order storage keeps creation, scopes, rollback and retired cleanup tr
   const insertSession = await connection.startSession()
   try {
     await insertSession.withTransaction(async () => {
-      for (let i = 0; i < 1001; i++) await orders.putOverride({ ...scope, recordId: `synthetic-${i}`, slotOrdinal: i, rank: '1' }, insertSession)
+      for (let i = 0; i < 1001; i++) await orders.putOverride({ ...scope, recordId: `synthetic-${i}`, sourceCreationOrdinal: i + 1, slotOrdinal: i, rank: '1' }, insertSession)
     })
   } finally { await insertSession.endSession() }
   const beforeViewDelete = (await service.find(owner.id, 'order-ws', 'db'))!
@@ -132,7 +175,7 @@ test('view order storage keeps creation, scopes, rollback and retired cleanup tr
   assert.notEqual(replacementScope, extraScope.orderScopeId)
   const replacementSession = await connection.startSession()
   try {
-    await replacementSession.withTransaction(async () => { await orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: replacementScope, recordId: 'new', slotOrdinal: 1, rank: '1' }, replacementSession) })
+    await replacementSession.withTransaction(async () => { await orders.putOverride({ workspaceId: 'order-ws', databaseId: 'db', orderScopeId: replacementScope, recordId: 'new', sourceCreationOrdinal: 1, slotOrdinal: 1, rank: '1' }, replacementSession) })
   } finally { await replacementSession.endSession() }
   const secondWorker = new DatabaseViewOrderCleanupService(orders, views)
   const batches = await Promise.all([cleanup.drainBatch(), secondWorker.drainBatch()])

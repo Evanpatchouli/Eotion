@@ -2,6 +2,26 @@
 
 P8 Database 已 COMPLETE / SEALED。P9.1–P9.6 implementation COMPLETE：同一 Database 模型支持 Table / List / Board、通用 records、Select 分组配置、显式 picker / Desktop drag 与响应生命周期保护。2026-10-13 独立 Final Acceptance 已通过，**P9 FINAL PASS**；完整 Product 367/367、P9 补验 65/65、既有 visual 7/7，无确定 P1/P2。证据与结论见 [P9 Final Acceptance](p9-final-acceptance.md)。
 
+## 通用 View 记录手动排序（2026-11-15）
+
+每个 View 独立维护记录顺序。未配置显式 Sort 时，记录默认按创建顺序追加；移动只修改
+当前 View 的顺序。配置显式 Sort 后，服务端拒绝手动移动，读取沿用显式排序。筛选后的
+可见记录保持原相邻顺序时，移动为 no-op；真正移动只改变所移动记录的位置，隐藏记录
+彼此的相对顺序保持不变。
+
+通用写接口为 `POST /api/workspaces/:workspaceId/databases/:databaseId/views/:viewId/record-order`，
+请求包括 `recordId`、`anchorRecordId`、`placement`（`before` / `after`）、
+`expectedDatabaseVersion` 和 `expectedViewVersion`，返回最新 `database` 与 `view`。
+服务端在事务内校验权限、归属、保存的筛选和排序、两个版本并持久化；冲突返回 409，
+客户端不自动重试。SDK 使用 `reorderDatabaseViewRecord`。
+
+默认顺序使用 Record 创建事务内的不可变序号，移动记录使用 View 私有 scope 的稀疏覆盖
+位置。无显式 Sort 的通用读取按完整位置合并并分页；游标仍绑定有效 View 配置、作用域
+与版本，顺序发生变化后旧游标失效。删除 Record 会清理其覆盖位置，删除 View 后其退休
+scope 在后台分批清理；同 ID 重建不会复用旧顺序。排序键最多 1 MiB，达到上限时写入
+明确失败。按用户要求不迁移旧数据；缺少创建序号或 View 顺序 scope 的历史数据会明确
+报错，不会被静默过滤。实现细节见[执行方案](exec-plans/view-record-order.md)。
+
 ## P9.1A — Generic View Records Read Foundation
 
 基线：master `13053793ffa4683e3ffdb6d7f1f512f270ebc499`。

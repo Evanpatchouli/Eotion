@@ -2,15 +2,15 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException, 
 import { InjectConnection } from '@nestjs/mongoose'
 import { createHash } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
-import { planDatabaseSchedule, SchedulingError, MAX_SCHEDULE_RECORDS } from '@eotion/domain'
+import { planDatabaseSchedule, SchedulingError, MAX_SCHEDULE_RECORDS, positionBetween } from '@eotion/domain'
 import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type DatabaseFilter, type DatabaseSort, type FormulaExpression, type TimelineViewOptions } from '@eotion/domain'
-import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
-import type { DatabaseRecordPageCreateRequest } from '@eotion/contracts'
+import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseViewRecordReorderRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
+import type { DatabaseRecordPageCreateRequest, DatabaseViewRecordReorderRequest } from '@eotion/contracts'
 import { DatabaseCellBatchMutationRequestSchema } from '@eotion/contracts'
 import type { DatabaseCellBatchMutationRequest, DatabaseCellBatchMutationResponse, DatabaseCellBatchMutationReceipt } from '@eotion/contracts'
 import type { DatabaseTableResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
-import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
+import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository, type ManualBoundary } from '../repositories/database.repository'
 import { DatabaseViewOrderRepository } from '../repositories/database-view-order.repository'
 import { DatabaseCellMutationRepository, type DatabaseCellMutationReceiptKey } from '../repositories/database-cell-mutation.repository'
 import { PageRepository } from '../repositories/page.repository'
@@ -192,21 +192,100 @@ export class DatabaseService {
       const titleProperty = properties.find(property => property.type === 'title')!
       anchor = { ...record, properties: { ...record.properties, [titleProperty.id]: page.title }, pageVersion: page.updatedAt }
     }
-    const isDefaultQuery = config.filters.length === 0 && config.sorts.length === 0
-    const rows = isDefaultQuery
-      ? await this.records.listWindow(workspaceId, databaseId, { limit: input.limit, ...(anchor ? { cursor: anchor.id } : {}) }, session)
-      : await this.records.queryTableWindow({ workspaceId, databaseId, properties, config, limit: input.limit, ...(anchor ? { anchor } : {}), session })
-    const projectedRows: DatabaseTableRecord[] = isDefaultQuery
-      ? await this.projectRecords(workspaceId, rows, properties, session)
-      : rows as DatabaseTableRecord[]
+    const manual = config.sorts.length === 0
+    let rows: DatabaseTableRecord[]
+    let projectedRows: DatabaseTableRecord[]
+    if (manual) {
+      if (await this.records.hasMissingCreationOrdinal(workspaceId, databaseId, session)) throw new ConflictException('Database records lack creation order; repair the database before querying')
+      let orderState
+      try { orderState = await this.views.getOrderState(workspaceId, databaseId, viewId, session) }
+      catch { throw new ConflictException('Database view order state is missing; repair the view before querying') }
+      if (!orderState || orderState.version !== view.version) throw new ConflictException('Database view order state changed; refresh and retry')
+      let boundary: ManualBoundary | undefined
+      if (anchor) boundary = await this.manualBoundary(workspaceId, databaseId, orderState.orderScopeId, anchor.id, session)
+      if (!orderState.manualOrderActive && config.filters.length === 0) {
+        const ordered = await this.records.listCreationOrderWindow(workspaceId, databaseId, boundary?.position.slotOrdinal, input.limit + 1, session)
+        const fetched = await this.records.findManyInDatabase(workspaceId, databaseId, ordered.map(item => item.recordId), session)
+        const byId = new Map(fetched.map(record => [record.id, record]))
+        if (ordered.some(item => !byId.has(item.recordId))) throw new ConflictException('Database record disappeared during table read; refresh and retry')
+        projectedRows = await this.projectRecords(workspaceId, ordered.map(item => byId.get(item.recordId)!), properties, session)
+        if (projectedRows.length !== ordered.length) throw new ConflictException('Record page missing from workspace; reload the table after repairing record data')
+        rows = projectedRows
+      } else {
+        projectedRows = await this.records.readManualWindow({ workspaceId, databaseId, scopeId: orderState.orderScopeId, manualActive: orderState.manualOrderActive,
+          properties, filters: config.filters, ...(boundary ? { boundary } : {}), direction: 'after', take: input.limit + 1, session })
+        rows = projectedRows
+      }
+    } else {
+      rows = await this.records.queryTableWindow({ workspaceId, databaseId, properties, config, limit: input.limit, ...(anchor ? { anchor } : {}), session })
+      projectedRows = rows
+    }
     if (projectedRows.length !== rows.length) throw new ConflictException('Record page missing from workspace; reload the table after repairing record data')
     const hasMore = rows.length > input.limit
-    const projected = await this.projectDerived(workspaceId, projectedRows.slice(0, input.limit), properties, session)
+    const publicRows = projectedRows.slice(0, input.limit).map(row => {
+      const { position: _position, ...publicRow } = row as DatabaseTableRecord & { position?: unknown }
+      return publicRow
+    })
+    const projected = await this.projectDerived(workspaceId, publicRows, properties, session)
     const latestDatabase = await this.databases.findInWorkspace(workspaceId, databaseId, session)
     const latestView = await this.views.findInWorkspace(workspaceId, viewId, session)
     if (!latestDatabase || latestDatabase.version !== database.version || !latestView || latestView.version !== view.version) throw new ConflictException('Database or view changed during table read; refresh and retry')
     const last = projected.at(-1)
     return { database, view, properties, records: projected, nextCursor: hasMore && last ? this.encodeTableCursor({ w: workspaceId, d: databaseId, v: viewId, dv: database.version, vv: view.version, ch: configHash, r: last.id, p: last.pageVersion }) : null }
+  }
+
+  private async manualBoundary(workspaceId: string, databaseId: string, scopeId: string, recordId: string, session?: ClientSession): Promise<ManualBoundary> {
+    const creation = await this.records.getCreationOrder(workspaceId, databaseId, recordId, session)
+    if (!creation) throw new ConflictException('Table cursor anchor changed; reload the table before continuing')
+    const override = await this.viewOrders.findOverride({ workspaceId, databaseId, orderScopeId: scopeId }, recordId, session)
+    return { position: override ? { slotOrdinal: override.slotOrdinal, rank: override.rank } : { slotOrdinal: creation.creationOrdinal, rank: '1' }, recordId }
+  }
+
+  async reorderViewRecord(userId: string, workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewRecordReorderRequest): Promise<{ database: Database; view: DatabaseView }> {
+    this.parse(DatabaseViewRecordReorderRequestSchema, input)
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    return this.transact(async session => {
+      const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
+      const view = await this.views.findInWorkspace(workspaceId, viewId, session)
+      if (!view || view.databaseId !== databaseId) throw new NotFoundException('Database view not found')
+      if (database.version !== input.expectedDatabaseVersion || view.version !== input.expectedViewVersion) throw new ConflictException('Database or view version is stale')
+      if (database.version >= Number.MAX_SAFE_INTEGER || view.version >= Number.MAX_SAFE_INTEGER) throw new ConflictException('Database or view version cannot be incremented safely')
+      const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+      const properties = await this.properties.list(workspaceId, databaseId, session)
+      if (!validateDatabaseViewConfig(config, properties, view.type)) throw new ConflictException('Database view configuration is invalid')
+      if (config.sorts.length > 0) throw new ConflictException('Manual record ordering is unavailable while the view has a sort')
+      if (await this.records.hasMissingCreationOrdinal(workspaceId, databaseId, session)) throw new ConflictException('Database records lack creation order')
+      let orderState
+      try { orderState = await this.views.getOrderState(workspaceId, databaseId, viewId, session) }
+      catch { throw new ConflictException('Database view order state is missing') }
+      if (!orderState || orderState.version !== view.version) throw new ConflictException('Database view order state changed')
+      const scopeId = orderState.orderScopeId
+      if (!await this.records.findInDatabase(workspaceId, databaseId, input.recordId, session)
+        || !await this.records.findInDatabase(workspaceId, databaseId, input.anchorRecordId, session)) throw new NotFoundException('Database record not found')
+      const source = await this.records.findManualRecord({ workspaceId, databaseId, recordId: input.recordId, properties, filters: config.filters, session })
+      const anchor = await this.records.findManualRecord({ workspaceId, databaseId, recordId: input.anchorRecordId, properties, filters: config.filters, session })
+      if (!source || !anchor) throw new ConflictException('Source or anchor is missing from the view; refresh and retry')
+      const anchorBoundary = await this.manualBoundary(workspaceId, databaseId, scopeId, anchor.id, session)
+      const neighborDirection = input.placement === 'before' ? 'before' : 'after'
+      const visibleNeighbor = await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: orderState.manualOrderActive,
+        properties, filters: config.filters, boundary: anchorBoundary, direction: neighborDirection, take: 1, session })
+      if (visibleNeighbor[0]?.id === source.id) return { database, view }
+      const adjacent = await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: orderState.manualOrderActive,
+        properties, filters: [], boundary: anchorBoundary, direction: neighborDirection, excludeRecordId: source.id, take: 1, session })
+      const before = input.placement === 'before' ? adjacent[0]?.position ?? null : anchorBoundary.position
+      const after = input.placement === 'before' ? anchorBoundary.position : adjacent[0]?.position ?? null
+      const position = positionBetween(before, after)
+      if (position.rank.length > 1_048_576) throw new ConflictException('View order rank exceeds its maximum length')
+      const bumped = await this.databases.compareAndBump(workspaceId, databaseId, database.version, session)
+      if (!bumped) throw new ConflictException('Database version is stale')
+      const updatedView = await this.views.activateManualOrder(workspaceId, databaseId, viewId, view.version, session)
+      if (!updatedView) throw new ConflictException('Database view version is stale')
+      if (!Number.isSafeInteger(bumped.version) || !Number.isSafeInteger(updatedView.version)) throw new ConflictException('Database or view version cannot be represented safely')
+      const sourceCreation = await this.records.getCreationOrder(workspaceId, databaseId, source.id, session)
+      if (!sourceCreation) throw new ConflictException('Source record changed during reorder')
+      await this.viewOrders.putOverride({ workspaceId, databaseId, orderScopeId: scopeId, recordId: source.id, sourceCreationOrdinal: sourceCreation.creationOrdinal, ...position }, session)
+      return { database: bumped, view: updatedView }
+    })
   }
 
   async linkInPage(userId: string, workspaceId: string, pageId: string, input: { databaseId: string; viewId: string; blockId: string; orderKey: string; parentBlockId: string | null }): Promise<{ block: ServerBlockRecord }> {
@@ -1113,7 +1192,7 @@ export class DatabaseService {
   }
 
   private viewConfigHash(config: DatabaseViewConfig): string {
-    return createHash('sha256').update(JSON.stringify(config)).digest('hex')
+    return createHash('sha256').update('view-record-order-v1:').update(JSON.stringify(config)).digest('hex')
   }
 
   private encodeTableCursor(cursor: TableCursor): string {

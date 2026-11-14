@@ -5,7 +5,7 @@ import { isViewOrderRank } from '@eotion/domain'
 import { DatabaseViewOrderOverrideEntity, type DatabaseViewOrderOverrideDocument, DatabaseViewOrderCleanupJobEntity, type DatabaseViewOrderCleanupJobDocument } from '../schemas/database-view-order.schema'
 
 export type DatabaseViewOrderScope = Pick<DatabaseViewOrderOverrideEntity, 'workspaceId' | 'databaseId' | 'orderScopeId'>
-export type DatabaseViewOrderOverride = DatabaseViewOrderScope & Pick<DatabaseViewOrderOverrideEntity, 'recordId' | 'slotOrdinal' | 'rank'>
+export type DatabaseViewOrderOverride = DatabaseViewOrderScope & Pick<DatabaseViewOrderOverrideEntity, 'recordId' | 'slotOrdinal' | 'rank' | 'sourceCreationOrdinal'>
 
 @Injectable()
 export class DatabaseViewOrderRepository {
@@ -15,13 +15,14 @@ export class DatabaseViewOrderRepository {
   ) {}
 
   async putOverride(input: DatabaseViewOrderOverride, session: ClientSession): Promise<void> {
-    if (!Number.isSafeInteger(input.slotOrdinal) || input.slotOrdinal < 0 || !isViewOrderRank(input.rank) || input.rank.length > 1_048_576) throw new TypeError('Invalid database view order override')
-    await this.overrides.updateOne({ workspaceId: input.workspaceId, databaseId: input.databaseId, orderScopeId: input.orderScopeId, recordId: input.recordId }, { $set: input }, { session, upsert: true, collation: { locale: 'simple' } }).exec()
+    if (!Number.isSafeInteger(input.slotOrdinal) || input.slotOrdinal < 0 || !Number.isSafeInteger(input.sourceCreationOrdinal) || input.sourceCreationOrdinal < 1 || !isViewOrderRank(input.rank) || input.rank.length > 1_048_576) throw new TypeError('Invalid database view order override')
+    const joinKey = { workspaceId: input.workspaceId, databaseId: input.databaseId, orderScopeId: input.orderScopeId, recordId: input.recordId }
+    await this.overrides.updateOne({ workspaceId: input.workspaceId, databaseId: input.databaseId, orderScopeId: input.orderScopeId, recordId: input.recordId }, { $set: { ...input, joinKey } }, { session, upsert: true, collation: { locale: 'simple' } }).exec()
   }
 
   async findOverride(scope: DatabaseViewOrderScope, recordId: string, session?: ClientSession): Promise<DatabaseViewOrderOverride | null> {
     const doc = await this.overrides.findOne({ ...scope, recordId }).collation({ locale: 'simple' }).session(session ?? null).lean().exec()
-    return doc ? { ...scope, recordId: doc.recordId, slotOrdinal: doc.slotOrdinal, rank: doc.rank } : null
+    return doc ? { ...scope, recordId: doc.recordId, slotOrdinal: doc.slotOrdinal, rank: doc.rank, sourceCreationOrdinal: doc.sourceCreationOrdinal } : null
   }
 
   async listOverrideWindow(scope: DatabaseViewOrderScope, after: { slotOrdinal: number; rank: string } | undefined, limit: number, session?: ClientSession): Promise<DatabaseViewOrderOverride[]> {
@@ -31,7 +32,7 @@ export class DatabaseViewOrderRepository {
       { slotOrdinal: after.slotOrdinal, rank: { $gt: after.rank } },
     ] }
     const docs = await this.overrides.find({ ...scope, ...keyFilter }).collation({ locale: 'simple' }).sort({ slotOrdinal: 1, rank: 1 }).limit(limit).session(session ?? null).lean().exec()
-    return docs.map(doc => ({ ...scope, recordId: doc.recordId, slotOrdinal: doc.slotOrdinal, rank: doc.rank }))
+    return docs.map(doc => ({ ...scope, recordId: doc.recordId, slotOrdinal: doc.slotOrdinal, rank: doc.rank, sourceCreationOrdinal: doc.sourceCreationOrdinal }))
   }
 
   async deleteRecordFromActiveScopes(workspaceId: string, databaseId: string, recordId: string, scopeIds: readonly string[], session: ClientSession): Promise<void> {

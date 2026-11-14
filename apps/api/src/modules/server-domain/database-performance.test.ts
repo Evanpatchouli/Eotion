@@ -188,6 +188,7 @@ test('P8.6 database Mongo performance acceptance at 5k and 10k records', async t
     const relation = await databases.createProperty(owner.id, workspaceId, databaseId, { id: `perf-relation-${suffix}`, name: 'Related', type: 'relation', config: { targetDatabaseId: databaseId }, expectedDatabaseVersion: date.database.version })
     const ids = Array.from({ length: size }, (_, index) => `perf-row-${suffix}-${String(index).padStart(5, '0')}`)
     const timestamp = new Date()
+    const ordinalStart = (await databases.find(owner.id, workspaceId, databaseId))!.version + 1
     for (let offset = 0; offset < size; offset += 1000) {
       const end = Math.min(offset + 1000, size)
       const pageRows = Array.from({ length: end - offset }, (_, localIndex) => {
@@ -207,12 +208,13 @@ test('P8.6 database Mongo performance acceptance at 5k and 10k records', async t
             [select.property.id]: index % 2 === 0 ? 'even' : 'odd',
             [date.property.id]: `2026-01-${String((index % 28) + 1).padStart(2, '0')}`,
             [relation.property.id]: linkedIds,
-          }, version: 1, createdAt: timestamp, updatedAt: timestamp,
+          }, version: 1, creationOrdinal: ordinalStart + index, createdAt: timestamp, updatedAt: timestamp,
         }
       })
       await pageModel.insertMany(pageRows, { ordered: true })
       await recordModel.insertMany(recordRows, { ordered: true })
     }
+    await databaseModel.updateOne({ workspaceId, id: databaseId }, { $set: { version: ordinalStart + size - 1 } })
 
     const navigationPages = await measure(`${size}: sidebar page tree`, () => pages.listNavigation(owner.id, workspaceId))
     assert.deepEqual(navigationPages.map(page => page.id), [...releasedRecordPageIds, homePageId], 'record count must not expand the sidebar; Pages released by an earlier Record deletion remain ordinary documents')
@@ -231,7 +233,7 @@ test('P8.6 database Mongo performance acceptance at 5k and 10k records', async t
     assert.equal(new Set([...defaultPage.records, ...defaultNext.records].map(row => row.id)).size, 200)
     await measure(`${size}: default query explain`, async () => {
       try {
-        const explained = await recordModel.find({ workspaceId, databaseId }).sort({ id: 1 }).limit(101).explain('executionStats')
+        const explained = await recordModel.find({ workspaceId, databaseId, creationOrdinal: { $gt: 0 } }).sort({ creationOrdinal: 1 }).limit(101).explain('executionStats')
         const summary = explainSummary(explained)
         console.log(`[P8.6 perf] ${size}: default explain ${JSON.stringify(summary)}`)
         return summary
@@ -297,8 +299,10 @@ test('P8.6 database Mongo performance acceptance at 5k and 10k records', async t
     releasedRecordPageIds.push(`perf-page-${suffix}-00000`)
 
     if (size === 10_000) {
-      const extras = ['cleanup-over-bound-a', 'cleanup-over-bound-b'].map(id => ({ id: `${id}-${suffix}`, workspaceId, databaseId, pageId: `${id}-page-${suffix}`, properties: {}, version: 1, createdAt: timestamp, updatedAt: timestamp }))
+      const extraOrdinalStart = (await databases.find(owner.id, workspaceId, databaseId))!.version + 1
+      const extras = ['cleanup-over-bound-a', 'cleanup-over-bound-b'].map((id, index) => ({ id: `${id}-${suffix}`, workspaceId, databaseId, pageId: `${id}-page-${suffix}`, properties: {}, version: 1, creationOrdinal: extraOrdinalStart + index, createdAt: timestamp, updatedAt: timestamp }))
       await recordModel.insertMany(extras, { ordered: true })
+      await databaseModel.updateOne({ workspaceId, id: databaseId }, { $set: { version: extraOrdinalStart + extras.length - 1 } })
       const overflowProperty = await databases.createProperty(owner.id, workspaceId, databaseId, { id: `perf-cleanup-overflow-${suffix}`, name: 'Cleanup overflow', type: 'text', expectedDatabaseVersion: (await databases.find(owner.id, workspaceId, databaseId))!.version })
       const beforeOverflowPropertyDelete = (await databases.find(owner.id, workspaceId, databaseId))!
       await measure(`${size}: property cleanup over-bound fail-closed`, async () => {
