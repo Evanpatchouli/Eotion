@@ -18,9 +18,49 @@
 及持久、分批、幂等清理，避免大事务和 View ID 重用污染。历史记录缺少序号时明确拒绝手排
 读取，不能静默丢行。排序键与请求契约已分别提交 `5171c2c`、`a48fe1d`。
 
+行重排现已实施，API `086425a`、Web `4276b4a`；真实 API/Mongo/浏览器端到端 1/1、
+视觉 13/13、API Domain 16/16、HTTP 44/44、MCP 50/50 通过。完整 Database 首轮 268/272，
+其中两项时间轴布局回归已修复并通过定向复验；一次触摸失败确认是未等渲染帧，保留
+预览与提交相等断言并追加最终坐标校验，重复通过；一次无 Timeline 的 Slash 焦点失败
+独立重跑 2/2 通过，原因未证实。后续左表编辑完成后仍须重跑完整 Database。
+
 验收重点：两路流各先过滤再取 `limit+1`；跨相同 slot 的游标不得漏项；筛选可见 no-op
 不改变隐藏记录；99% 覆盖及稀疏筛选需真实 Mongo 压测；验证删除、创建、View ID 重用、
 并发/CAS、unknown 结果和 Timeline 日期/依赖/触控手势互不干扰。
+
+## 时间轴左表属性编辑（原 Notion 对齐目标的后续工作单元）
+
+| 单元 | 模式 / 评级 | 验收 |
+| --- | --- | --- |
+| F1 | investigate / S0 | 对照现有 Table Cell 编辑与 Timeline 虚拟行，确定可复用接口 |
+| F2 | decide / S2 | 明确共享编辑器、焦点与虚拟行生命周期；不新增公共 API 或数据模型 |
+| F3 | execute / S1–S2 | 左表支持已有可写属性的直接编辑，标题保留打开记录入口 |
+| F4 | verify / S0 + Review | 类型、Table 回归、时间轴虚拟行、弹层、冲突和离线验证 |
+
+已确认可复用现有 Cell 更新、版本检查与恢复逻辑。日期编辑器必须避免被固定高度和
+`overflow: clip` 裁剪；滚动、折叠、切 View 和虚拟卸载需要保护焦点与未完成编辑。
+按属性分组需要通用配置和跨页查询语义，不能只对已加载窗口分组；用户已批准下述方案。
+
+实施 Brief：通过 FrozenTablePane 的单元格 scoped slot 将当前 Record 和 Property 传回
+DatabaseNodeView；提取共享 Cell 内容，让 Table 与 Timeline 调用同一编辑状态和 mutation，
+不复制业务写逻辑。Title 同时提供可见的打开记录入口；Date 编辑器在左表使用锚定浮层，
+Select/Relation 沿用已有 Teleport，Formula/Rollup 只读。移除或扩展冻结行 memo 的编辑
+依赖，编辑焦点所属行必须保留在虚拟窗口中；取消、提交、折叠和 scope 变化时释放资源，
+防止旧 View 的异步结果写入当前编辑状态。验收覆盖 Table / Timeline 各属性写入、日期
+浮层裁剪、打开记录、虚拟滚动、手机、离线、409、未知结果及 View 身份切换。
+
+## 通用 View Select 分组（2026-11-15 用户已批准）
+
+方案见 [timeline-view-grouping.md](../docs/exec-plans/timeline-view-grouping.md)。Select 与未
+分组分别由服务端分页，按 View Filter/Sort/手序投影；跨组拖动的属性修改和有锚点的
+手序调整必须同事务；折叠保存在当前设备。不得只对已加载窗口分组或伪造组总数。
+
+| 单元 | 模式 / 评级 | 验收 |
+| --- | --- | --- |
+| G1 | decide / S2 | 冻结通用配置、查询及写入契约、生命周期和不变量 |
+| G2 | execute / S1–S2 | Domain/Contracts/SDK 与服务端按组查询、跨组事务和索引 |
+| G3 | execute / S1–S2 | Timeline 与 Board 按组窗口、折叠及拖放/键盘 |
+| G4 | verify / S0 + Review | 隔离 Mongo/API、跨页/并发/权限、Web 响应式及性能复核 |
 
 ---
 
