@@ -3,11 +3,18 @@ import type { DatabaseProperty } from '@eotion/domain/database'
 import type { TimelineRowGeometry } from './layout'
 import EotionIcon from '../../ui/EotionIcon.vue'
 import { IconName } from '../../ui/icons'
+import type { DatabaseViewGroupKey } from '@eotion/contracts'
+import type { DatabaseGroupWindow } from '../databaseGroupWindows'
+import { databaseGroupKeyId } from '../databaseGroupWindows'
+import type { TimelineGroupHeader } from './groupLayout'
+import TimelineGroupHeaderView from './TimelineGroupHeader.vue'
 
 const props = defineProps<{
   columns: readonly DatabaseProperty[]
   displayMap: ReadonlyMap<string, ReadonlyMap<string, string>>
   rows: readonly TimelineRowGeometry[]
+  groupHeaders?: readonly TimelineGroupHeader[]
+  groupWindows?: readonly DatabaseGroupWindow[]
   bodyHeight: number
   pinY: number
   selectedPageId: string | null
@@ -20,7 +27,10 @@ const emit = defineEmits<{
   hoverRecord: [recordId: string | null]
   focusRow: [rowIndex: number]
   toggleVisibility: []
+  toggleGroup: [key: DatabaseViewGroupKey, collapsed: boolean]
+  loadGroupMore: [key: DatabaseViewGroupKey]
 }>()
+function groupWindow(header: TimelineGroupHeader): DatabaseGroupWindow { return props.groupWindows!.find(group => databaseGroupKeyId(group.key) === databaseGroupKeyId(header.key))! }
 
 function isTitle(property: DatabaseProperty): boolean {
   return property.type === 'title'
@@ -56,6 +66,9 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
       </div>
     </div>
     <div class="eotion-timeline-frozen-body" :style="{ height: `${bodyHeight}px`, minHeight: `${bodyHeight}px` }" data-testid="timeline-frozen-body">
+      <div v-for="header in groupHeaders" :key="databaseGroupKeyId(header.key)" class="eotion-timeline-frozen-group" :style="{ top: `${header.top}px`, height: `${header.height}px` }">
+        <TimelineGroupHeaderView :header="header" :window="groupWindow(header)" @toggle="emit('toggleGroup', header.key, !header.collapsed)" @load-more="emit('loadGroupMore', header.key)" />
+      </div>
       <div
         v-for="row in rows"
         :key="row.item.recordId"
@@ -98,6 +111,7 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
 .eotion-timeline-frozen-toggle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:2px; }
 .eotion-timeline-frozen-toggle:disabled { cursor:not-allowed; opacity:.55; }
 .eotion-timeline-frozen-body { position:relative; min-height:240px; overflow:clip; }
+.eotion-timeline-frozen-group { position:absolute; left:0; width:100%; }
 .eotion-timeline-frozen-row { position:absolute; left:0; display:flex; width:100%; border-bottom:1px solid var(--e-color-border, var(--border-editor)); }
 .eotion-timeline-frozen-row.is-hovered { background:var(--e-color-hover, var(--editor-hover)); }
 .eotion-timeline-frozen-row.is-selected { background:var(--e-color-selected, var(--editor-selected)); }

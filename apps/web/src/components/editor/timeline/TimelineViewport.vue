@@ -15,6 +15,11 @@ import TimelineRuler from './TimelineRuler.vue'
 import TimelineTodayLine from './TimelineTodayLine.vue'
 import TimelineBar from './TimelineBar.vue'
 import TimelineDependencyLayer from './TimelineDependencyLayer.vue'
+import type { DatabaseViewGroupKey } from '@eotion/contracts'
+import type { DatabaseGroupWindow } from '../databaseGroupWindows'
+import { databaseGroupKeyId } from '../databaseGroupWindows'
+import type { TimelineGroupHeader } from './groupLayout'
+import TimelineGroupHeaderView from './TimelineGroupHeader.vue'
 
 const props = defineProps<{
   state: TimelineViewportState | null
@@ -26,6 +31,8 @@ const props = defineProps<{
   bodyHeight: number
   rowWindow: TimelineRowWindow
   rows: TimelineRowGeometry[]
+  groupHeaders?: readonly TimelineGroupHeader[]
+  groupWindows?: readonly DatabaseGroupWindow[]
   dependencyEdges: readonly TimelineDependencyEdge[]
   windowDependencyEdges: readonly TimelineDependencyEdge[]
   dependencyGeometryById: ReadonlyMap<string, TimelineItemGeometry>
@@ -174,7 +181,12 @@ const emit = defineEmits<{
   focusRow: [rowIndex: number]
   hoverRecord: [recordId: string | null]
   navigateOffscreen: [recordId: string, direction: 'left' | 'right']
+  groupVisible: [key: DatabaseViewGroupKey]
+  toggleGroup: [key: DatabaseViewGroupKey, collapsed: boolean]
+  loadGroupMore: [key: DatabaseViewGroupKey]
+  selectGroup: [recordId: string, groupId: string]
 }>()
+function groupWindow(header: TimelineGroupHeader): DatabaseGroupWindow { return props.groupWindows!.find(group => databaseGroupKeyId(group.key) === databaseGroupKeyId(header.key))! }
 
 function setScroller(element: unknown): void {
   emit('scrollerRef', typeof HTMLElement !== 'undefined' && element instanceof HTMLElement ? element : null)
@@ -201,7 +213,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 </script>
 
 <template>
-  <div class="eotion-timeline-viewport" data-testid="timeline-viewport" :data-generation="state?.generation">
+  <div class="eotion-timeline-viewport" :class="{ 'is-grouped': !!groupWindows }" data-testid="timeline-viewport" :data-generation="state?.generation">
     <span class="eotion-timeline-dependency-live" :class="{ 'is-visible': dependency.showKeyboardStatus.value }" aria-live="polite" aria-atomic="true" data-testid="timeline-dependency-live">{{ dependency.liveMessage.value }}</span>
     <div class="eotion-timeline-ruler-slot">
       <div
@@ -214,13 +226,19 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
       </div>
     </div>
     <div class="eotion-timeline-order-rail" aria-label="记录顺序操作区">
-      <button v-for="row in rows" :key="row.item.recordId" class="eotion-timeline-order-handle" type="button" data-testid="timeline-order-handle"
+      <button v-for="row in rows" :key="row.item.recordId" class="eotion-timeline-order-handle" :class="{ 'is-grouped': !!groupWindows }" type="button" data-testid="timeline-order-handle"
         :style="{ top: `${row.top + row.height / 2}px` }"
         :data-record-id="row.item.recordId"
-        :aria-label="`调整顺序：${row.item.title || '无标题'}。方向键上移或下移，也可拖动`"
+        :aria-label="groupWindows && orderSorted ? `移动分组：${row.item.title || '无标题'}。拖动到其他分组` : `调整顺序：${row.item.title || '无标题'}。方向键上移或下移，也可拖动`"
         :aria-disabled="!orderEnabled ? 'true' : undefined"
-        :title="orderSorted ? '当前视图设置了排序，关闭排序后可手动调整顺序' : '拖动或用方向键调整顺序'"
+        :title="orderSorted ? groupWindows ? '拖动到其他分组；当前排序禁用组内手排' : '当前视图设置了排序，关闭排序后可手动调整顺序' : '拖动或用方向键调整顺序'"
         @focus="emit('focusRow', row.rowIndex)" @pointerdown.stop @click.stop.prevent>⋮⋮</button>
+      <select v-for="row in groupWindows ? rows : []" :key="`group-${row.item.recordId}`" class="eotion-timeline-group-select" :style="{ top: `${row.top + row.height / 2}px` }"
+        :value="groupWindows?.find(group => group.records.some(record => record.id === row.item.recordId)) && databaseGroupKeyId(groupWindows!.find(group => group.records.some(record => record.id === row.item.recordId))!.key)"
+        :aria-label="`移动${row.item.title || '无标题'}到分组`" :disabled="!orderEnabled" :data-record-id="row.item.recordId"
+        @focus="emit('focusRow', row.rowIndex)" @change="emit('selectGroup', row.item.recordId, ($event.target as HTMLSelectElement).value)">
+        <option v-for="group in groupWindows" :key="databaseGroupKeyId(group.key)" :value="databaseGroupKeyId(group.key)">{{ group.label }}</option>
+      </select>
     </div>
     <div
       class="eotion-timeline-scroll"
@@ -265,6 +283,11 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
           />
           <div class="eotion-timeline-today" :style="overlayStyle" aria-hidden="true">
             <TimelineTodayLine :x="todayX" />
+          </div>
+          <div v-for="header in groupHeaders" :key="databaseGroupKeyId(header.key)" class="eotion-timeline-grid-group"
+            :style="{ top: `${header.top}px`, left: `${state?.scrollLeft ?? 0}px`, width: `${state?.width ?? 0}px`, height: `${header.height}px` }">
+            <TimelineGroupHeaderView :header="header" :window="groupWindow(header)" observe
+              @visible="emit('groupVisible', header.key)" @toggle="emit('toggleGroup', header.key, !header.collapsed)" @load-more="emit('loadGroupMore', header.key)" />
           </div>
           <div
             v-for="row in rows"
@@ -372,9 +395,12 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 </template>
 
 <style scoped>
-.eotion-timeline-viewport { --timeline-offscreen-jump-size:28px; --timeline-dependency-handle-half-size:9px; position:relative; min-width:0; max-width:100%; overflow:clip; }
-.eotion-timeline-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); margin-left:36px; }
-.eotion-timeline-order-rail { position:absolute; z-index:8; top:var(--timeline-header-height, 56px); left:0; bottom:0; width:36px; background:var(--e-color-canvas, var(--editor-canvas)); pointer-events:none; }
+.eotion-timeline-viewport { --timeline-offscreen-jump-size:28px; --timeline-dependency-handle-half-size:9px; --timeline-order-rail-width:36px; position:relative; min-width:0; max-width:100%; overflow:clip; }
+.eotion-timeline-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); margin-left:var(--timeline-order-rail-width); }
+.eotion-timeline-order-rail { position:absolute; z-index:8; top:var(--timeline-header-height, 56px); left:0; bottom:0; width:var(--timeline-order-rail-width); background:var(--e-color-canvas, var(--editor-canvas)); pointer-events:none; }
+.eotion-timeline-grid-group { position:absolute; z-index:5; }
+.eotion-timeline-group-select { position:absolute; right:0; transform:translateY(-50%); width:18px; height:32px; overflow:hidden; border:0; padding:0; background:var(--e-color-canvas, var(--editor-canvas)); color:var(--e-color-accent, var(--editor-accent)); font-size:11px; pointer-events:auto; cursor:pointer; }
+.eotion-timeline-group-select:focus-visible { outline:2px solid var(--e-color-focus, var(--editor-focus)); }
 .eotion-timeline-dependency-toolbar { display:flex; min-width:0; align-items:center; justify-content:flex-end; gap:8px; padding:4px 0; }
 .eotion-timeline-dependency-control { min-height:26px; border:0; border-radius:var(--e-radius-control, 6px); padding:2px 8px; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; font-size:11px; cursor:pointer; }
 .eotion-timeline-dependency-control:hover { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }
@@ -383,7 +409,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-dependency-live { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0, 0, 0, 0); clip-path:inset(50%); white-space:nowrap; }
 .eotion-timeline-dependency-live.is-visible { z-index:5; top:32px; left:8px; box-sizing:border-box; width:max-content; max-width:calc(100% - 16px); height:auto; overflow:hidden; clip:auto; clip-path:none; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:3px 8px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-primary, var(--editor-text)); font-size:11px; line-height:16px; white-space:normal; overflow-wrap:anywhere; pointer-events:none; }
 .eotion-timeline-ruler-anchor { position:absolute; top:0; left:0; width:100%; height:var(--timeline-header-height, 56px); overflow:hidden; background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
-.eotion-timeline-scroll { width:calc(100% - 36px); min-width:0; max-width:calc(100% - 36px); min-height:240px; margin-left:36px; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; }
+.eotion-timeline-scroll { width:calc(100% - var(--timeline-order-rail-width)); min-width:0; max-width:calc(100% - var(--timeline-order-rail-width)); min-height:240px; margin-left:var(--timeline-order-rail-width); overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; }
 @supports (scrollbar-color:auto) and (not selector(::-webkit-scrollbar)) {
   .eotion-timeline-scroll { scrollbar-color:var(--e-color-text-muted, var(--editor-muted)) var(--e-color-canvas, var(--editor-canvas)); }
 }
@@ -404,10 +430,16 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-row.is-selected { background:color-mix(in srgb, var(--e-color-selected, var(--editor-selected)) 56%, transparent); }
 .eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
 .eotion-timeline-order-handle { position:absolute; left:3px; transform:translateY(-50%); width:30px; height:32px; border:0; border-radius:4px; background:var(--e-color-canvas, var(--editor-canvas)); color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; font-size:15px; letter-spacing:-3px; cursor:grab; pointer-events:auto; touch-action:none; }
+.eotion-timeline-order-handle.is-grouped { left:0; width:18px; }
 .eotion-timeline-order-handle:hover { color:var(--e-color-text-primary, var(--editor-text)); background:var(--e-color-hover, var(--editor-hover)); }
 .eotion-timeline-order-handle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); }
 .eotion-timeline-order-handle[aria-disabled="true"] { opacity:.45; cursor:not-allowed; touch-action:pan-y; }
-@media (pointer:coarse) { .eotion-timeline-order-handle { left:0; width:36px; height:40px; } }
+@media (pointer:coarse) {
+  .eotion-timeline-viewport.is-grouped { --timeline-order-rail-width:96px; }
+  .eotion-timeline-order-handle { left:0; width:36px; height:40px; }
+  .eotion-timeline-order-handle.is-grouped { left:0; width:48px; height:44px; }
+  .eotion-timeline-group-select { right:0; width:48px; height:44px; }
+}
 .eotion-timeline-offscreen-jump { position:absolute; z-index:7; top:50%; display:grid; width:var(--timeline-offscreen-jump-size); height:var(--timeline-offscreen-jump-size); transform:translateY(-50%); place-items:center; border:0; border-radius:var(--e-radius-control, 6px); padding:0; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; line-height:1; cursor:pointer; pointer-events:auto; }
 .eotion-timeline-offscreen-jump.is-clipped { top:0; height:20px; transform:none; }
 .eotion-timeline-offscreen-jump:hover { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }

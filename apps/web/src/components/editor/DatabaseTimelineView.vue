@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DatabasePropertyResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
+import type { DatabasePropertyResponse, DatabaseViewGroupKey, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { DatabaseTimelineViewOptions, DatabaseViewConfig } from '@eotion/domain/database'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import type { TimelineMoveCommand, TimelineScheduleCapture, TimelineScheduleCommand } from './timeline/mutation'
@@ -23,9 +23,12 @@ import { timelineInstantBounds } from './timeline/coordinates'
 import { projectTimelineDependencies, selectTimelineDependencyEdges } from './timeline/dependency'
 import { scheduleDropToDateValue, type ScheduleDropValue } from './timeline/scheduleDrop'
 import type { Transform } from './timeline/types'
+import { databaseGroupKeyId, type DatabaseGroupWindow } from './databaseGroupWindows'
+import { layoutTimelineGroupSections } from './timeline/groupLayout'
 
 type TimelineRecord = DatabaseViewRecordsResponse['records'][number]
 type TimelineOrderCapture = Readonly<{ scope: string; userId: string; workspaceId: string; databaseId: string; viewId: string; blockId: string; viewIdentityEpoch: number; viewRoot: HTMLElement; expectedDatabaseVersion: number; expectedViewVersion: number; configIdentity: string }>
+type TimelineGroupMoveCapture = TimelineOrderCapture & Readonly<{ expectedRecordVersion: number }>
 
 const props = defineProps<{
   databaseId: string
@@ -46,12 +49,18 @@ const props = defineProps<{
   mutateDependency: (command: TimelineDependencyCommand) => Promise<boolean>
   captureOrder: () => TimelineOrderCapture | null
   reorderRecord: (capture: TimelineOrderCapture, recordId: string, anchorRecordId: string, placement: 'before' | 'after') => Promise<boolean>
+  groupWindows?: readonly DatabaseGroupWindow[]
+  captureGroupMove?: (recordId: string) => TimelineGroupMoveCapture | null
+  moveGroupedRecord?: (capture: TimelineGroupMoveCapture, recordId: string, sourceKey: DatabaseViewGroupKey, targetKey: DatabaseViewGroupKey, anchorRecordId?: string, placement?: 'before' | 'after') => Promise<boolean>
 }>()
 
 const emit = defineEmits<{
   openRecord: [event: MouseEvent, pageId: string]
   visibleRecords: [scope: string, recordIds: readonly string[]]
   toggleFrozenTable: [visible: boolean]
+  groupVisible: [key: DatabaseViewGroupKey]
+  toggleGroup: [key: DatabaseViewGroupKey, collapsed: boolean]
+  loadGroupMore: [key: DatabaseViewGroupKey]
 }>()
 
 const recordsExpanded = ref(false)
@@ -155,15 +164,18 @@ const validScheduleDate = computed(() => Boolean(scheduleDate.value && normalize
 const pendingTimelineMutations = reactive(new Map<string, { recordId: string; propertyId: string }>())
 
 const root = ref<HTMLElement | null>(null)
-type OrderTarget = { anchorRecordId: string; placement: 'before' | 'after'; x: number; width: number; y: number }
-type OrderGesture = { pointerId: number; sourceId: string; startX: number; startY: number; clientX: number; clientY: number; scope: string; root: HTMLElement; host: HTMLElement; capture: TimelineOrderCapture; handle: HTMLElement; ownsPointerCapture: boolean; dragging: boolean }
+type OrderTarget = { anchorRecordId?: string; placement?: 'before' | 'after'; groupId?: string; x: number; width: number; y: number }
+type OrderGesture = { pointerId: number; sourceId: string; startX: number; startY: number; clientX: number; clientY: number; scope: string; root: HTMLElement; host: HTMLElement; capture: TimelineOrderCapture | null; groupCapture: TimelineGroupMoveCapture | null; handle: HTMLElement; ownsPointerCapture: boolean; dragging: boolean }
 const orderPreview = shallowRef<OrderTarget | null>(null)
 const orderPending = ref(false)
+let orderPendingEpoch = 0
+function beginOrderPending(): number { orderPending.value = true; return ++orderPendingEpoch }
+function finishOrderPending(epoch: number): void { if (epoch === orderPendingEpoch) orderPending.value = false }
 let orderGesture: OrderGesture | null = null
 let orderScrollFrame: number | null = null
 let suppressOrderClick = false
 const manualOrderEnabled = computed(() => props.config.sorts.length === 0)
-const orderEnabled = computed(() => manualOrderEnabled.value && props.writable && online.value && !props.viewBusy && !orderPending.value && !pendingTimelineMutations.size)
+const orderEnabled = computed(() => (manualOrderEnabled.value || !!props.groupWindows && !!props.moveGroupedRecord) && props.writable && online.value && !props.viewBusy && !orderPending.value && !pendingTimelineMutations.size)
 function clearOrderGesture(): void {
   const gesture = orderGesture
   orderGesture = null
@@ -188,12 +200,18 @@ function cancelOrderKey(event: KeyboardEvent): void {
 function cancelOrderVisibility(): void { if (document.hidden) clearOrderGesture() }
 function orderGestureCurrent(gesture: OrderGesture): boolean {
   return orderGesture === gesture && root.value === gesture.root && gesture.root.isConnected && gesture.scope === props.scope
-    && orderEnabled.value && gesture.capture.expectedDatabaseVersion === props.databaseVersion
+    && orderEnabled.value && (gesture.capture ?? gesture.groupCapture)?.expectedDatabaseVersion === props.databaseVersion
+    && (!props.groupWindows || !!gesture.groupCapture && gesture.groupCapture.expectedRecordVersion === recordVersionById.value.get(gesture.sourceId)
+      && gesture.groupCapture.configIdentity === JSON.stringify(props.config)
+      && (!gesture.capture || gesture.groupCapture.expectedViewVersion === gesture.capture.expectedViewVersion))
     && gesture.host.isConnected && (gesture.dragging || gesture.handle.isConnected && gesture.root.contains(gesture.handle))
     && projectedItems.value.some(item => item.recordId === gesture.sourceId)
 }
 function visibleOrderUnchanged(sourceId: string, target: OrderTarget): boolean {
-  const before = projectedItems.value.map(item => item.recordId)
+  if (!target.anchorRecordId || !target.placement) return false
+  const sourceGroup = groupIdByRecordId.value.get(sourceId)
+  if (props.groupWindows && target.groupId !== sourceGroup) return false
+  const before = projectedItems.value.filter(item => !props.groupWindows || groupIdByRecordId.value.get(item.recordId) === sourceGroup).map(item => item.recordId)
   const after = before.filter(id => id !== sourceId)
   const anchor = after.indexOf(target.anchorRecordId)
   if (anchor < 0) return true
@@ -215,19 +233,29 @@ function targetAt(clientX: number, clientY: number, sourceId: string): OrderTarg
   const rows = root.value?.querySelectorAll<HTMLElement>('[data-timeline-row]')
   const scrollerBounds = scroller.value?.getBoundingClientRect()
   const area = orderWorkArea()
-  if (!rows?.length || !scrollerBounds || !area || clientX < area.left || clientX >= area.right || clientY < area.top || clientY >= area.bottom) return null
+  if (!scrollerBounds || !area || clientX < area.left || clientX >= area.right || clientY < area.top || clientY >= area.bottom) return null
   let closest: OrderTarget | null = null
   let distance = Infinity
-  for (const row of rows) {
+  for (const row of rows ?? []) {
     const anchorRecordId = row.dataset.recordId
     if (!anchorRecordId || anchorRecordId === sourceId || !row.isConnected) continue
     const bounds = row.getBoundingClientRect()
     if (bounds.bottom <= area.top || bounds.top >= area.bottom) continue
+    const groupId = groupIdByRecordId.value.get(anchorRecordId)
+    if (props.groupWindows && groupId === groupIdByRecordId.value.get(sourceId) && !manualOrderEnabled.value) continue
     const middle = (bounds.top + bounds.bottom) / 2
     const placement = clientY < middle ? 'before' : 'after'
     const y = placement === 'before' ? bounds.top : bounds.bottom
     const currentDistance = Math.abs(clientY - Math.max(bounds.top, Math.min(bounds.bottom, clientY)))
-    if (currentDistance < distance) { closest = { anchorRecordId, placement, x: scrollerBounds.left, width: scrollerBounds.width, y }; distance = currentDistance }
+    if (currentDistance < distance) { closest = { anchorRecordId, placement, groupId, x: scrollerBounds.left, width: scrollerBounds.width, y }; distance = currentDistance }
+  }
+  if (props.groupWindows) for (const header of root.value?.querySelectorAll<HTMLElement>('[data-timeline-group-header]') ?? []) {
+    const groupId = header.dataset.groupId
+    if (!groupId || groupId === groupIdByRecordId.value.get(sourceId)) continue
+    const bounds = header.getBoundingClientRect()
+    if (bounds.bottom <= area.top || bounds.top >= area.bottom) continue
+    const currentDistance = Math.abs(clientY - Math.max(bounds.top, Math.min(bounds.bottom, clientY)))
+    if (currentDistance < distance) { closest = { groupId, x: scrollerBounds.left, width: scrollerBounds.width, y: bounds.bottom }; distance = currentDistance }
   }
   return closest && !visibleOrderUnchanged(sourceId, closest) ? closest : null
 }
@@ -238,20 +266,23 @@ function startOrderPointer(event: PointerEvent): void {
   if (!(target instanceof Element)) return
   const handle = target.closest<HTMLElement>('[data-testid="timeline-order-handle"]')
   const bar = target.closest<HTMLElement>('[data-testid="timeline-bar"]')
+  if (props.groupWindows && !manualOrderEnabled.value && !handle) return
   if (!handle && (!bar || event.pointerType === 'touch')) return
   const source = handle ?? bar
   const sourceId = source?.dataset.recordId
   const currentRoot = root.value
   if (!sourceId || !currentRoot || !currentRoot.contains(source) || !projectedItems.value.some(item => item.recordId === sourceId)) return
   const capture = props.captureOrder()
-  if (!capture || capture.scope !== props.scope || capture.expectedDatabaseVersion !== props.databaseVersion) return
+  const groupCapture = props.groupWindows ? props.captureGroupMove?.(sourceId) ?? null : null
+  if ((!capture && !groupCapture) || (capture ?? groupCapture)?.scope !== props.scope || (capture ?? groupCapture)?.expectedDatabaseVersion !== props.databaseVersion) return
+  if (props.groupWindows && (!groupCapture || groupCapture.expectedRecordVersion !== recordVersionById.value.get(sourceId))) return
   const host = currentRoot.closest<HTMLElement>('.document-wrap') ?? document.scrollingElement as HTMLElement | null
   if (!host?.isConnected) return
   if (handle) { event.preventDefault(); event.stopPropagation(); try { handle.setPointerCapture(event.pointerId) } catch { return } }
   suppressOrderClick = false
   orderGesture = { pointerId: event.pointerId, sourceId, startX: event.clientX, startY: event.clientY,
     clientX: event.clientX, clientY: event.clientY, scope: props.scope,
-    root: currentRoot, host, capture, handle: source, ownsPointerCapture: Boolean(handle), dragging: false }
+    root: currentRoot, host, capture, groupCapture, handle: source, ownsPointerCapture: Boolean(handle), dragging: false }
   focusedRecordId.value = sourceId
   window.addEventListener('pointermove', moveOrderPointer, true)
   window.addEventListener('pointerup', releaseOrderPointer, true)
@@ -305,20 +336,30 @@ function releaseOrderPointer(event: PointerEvent): void {
   if (!gesture || event.pointerId !== gesture.pointerId) return
   const target = gesture.dragging && orderGestureCurrent(gesture) ? targetAt(event.clientX, event.clientY, gesture.sourceId) : null
   clearOrderGesture()
-  if (target) void commitOrder(gesture.capture, gesture.sourceId, target, null)
+  if (target) void commitOrder(gesture.capture, gesture.sourceId, target, null, gesture.groupCapture)
 }
-async function commitOrder(capture: TimelineOrderCapture, sourceId: string, target: OrderTarget, focus: HTMLElement | null): Promise<void> {
-  if (!orderEnabled.value || capture.scope !== props.scope || visibleOrderUnchanged(sourceId, target)) return
+async function commitOrder(capture: TimelineOrderCapture | null, sourceId: string, target: OrderTarget, focus: HTMLElement | null, groupCapture: TimelineGroupMoveCapture | null = null): Promise<void> {
+  if (!orderEnabled.value || (capture ?? groupCapture)?.scope !== props.scope || visibleOrderUnchanged(sourceId, target)) return
+  const sourceKey = groupKeyByRecordId.value.get(sourceId)
+  const targetGroup = props.groupWindows?.find(group => databaseGroupKeyId(group.key) === target.groupId)
+  if (props.groupWindows && (!sourceKey || !targetGroup || !groupCapture || groupCapture.expectedRecordVersion !== recordVersionById.value.get(sourceId)
+    || groupCapture.configIdentity !== JSON.stringify(props.config) || groupCapture.expectedDatabaseVersion !== props.databaseVersion)) return
+  if (props.groupWindows && sourceKey && target.groupId === databaseGroupKeyId(sourceKey) && (!manualOrderEnabled.value || !target.anchorRecordId || !target.placement)) return
+  if (!props.groupWindows && (!target.anchorRecordId || !target.placement)) return
   const currentRoot = root.value
-  orderPending.value = true
+  const pendingEpoch = beginOrderPending()
   try {
-    await props.reorderRecord(capture, sourceId, target.anchorRecordId, target.placement)
+    if (props.groupWindows && targetGroup && sourceKey && groupCapture) {
+      if (target.groupId === databaseGroupKeyId(sourceKey) && capture) await props.reorderRecord(capture, sourceId, target.anchorRecordId!, target.placement!)
+      else await props.moveGroupedRecord?.(groupCapture, sourceId, sourceKey, targetGroup.key,
+        manualOrderEnabled.value ? target.anchorRecordId : undefined, manualOrderEnabled.value ? target.placement : undefined)
+    } else if (capture) await props.reorderRecord(capture, sourceId, target.anchorRecordId!, target.placement!)
     await nextTick()
-    if (focus && currentRoot === root.value && currentRoot?.isConnected && capture.scope === props.scope
+    if (focus && currentRoot === root.value && currentRoot?.isConnected && (capture ?? groupCapture)?.scope === props.scope
       && (document.activeElement === focus || document.activeElement === document.body)) {
       currentRoot.querySelector<HTMLElement>(`[data-testid="timeline-order-handle"][data-record-id="${CSS.escape(sourceId)}"]`)?.focus({ preventScroll: true })
     }
-  } finally { orderPending.value = false }
+  } finally { finishOrderPending(pendingEpoch) }
 }
 function onOrderKeydown(event: KeyboardEvent): void {
   const handle = (event.target as Element | null)?.closest<HTMLElement>('[data-testid="timeline-order-handle"]')
@@ -329,9 +370,10 @@ function onOrderKeydown(event: KeyboardEvent): void {
   const index = projectedItems.value.findIndex(item => item.recordId === sourceId)
   const next = projectedItems.value[index + (event.key === 'ArrowUp' ? -1 : 1)]
   const capture = props.captureOrder()
-  if (!sourceId || !next || !capture) return
+  if (!sourceId || !next || !capture || props.groupWindows && groupIdByRecordId.value.get(sourceId) !== groupIdByRecordId.value.get(next.recordId)) return
   void commitOrder(capture, sourceId, { anchorRecordId: next.recordId,
-    placement: event.key === 'ArrowUp' ? 'before' : 'after', x: 0, width: 0, y: 0 }, handle)
+    placement: event.key === 'ArrowUp' ? 'before' : 'after', groupId: groupIdByRecordId.value.get(sourceId), x: 0, width: 0, y: 0 }, handle,
+    props.groupWindows ? props.captureGroupMove?.(sourceId) ?? null : null)
 }
 function onOrderClick(event: MouseEvent): void {
   if (event.detail === 0) { suppressOrderClick = false; return }
@@ -358,6 +400,7 @@ const dependencyConfigKey = computed(() => JSON.stringify([
 ]))
 const online = ref(typeof navigator === 'undefined' || navigator.onLine)
 watch([() => props.scope, () => props.config, () => props.writable, () => props.viewBusy, online], clearOrderGesture, { flush: 'sync' })
+watch(() => props.scope, () => { orderPendingEpoch++; orderPending.value = false }, { flush: 'sync' })
 const offscreenNavigationBusy = ref(false)
 if (typeof window !== 'undefined') {
   const onOnline = () => { online.value = true }
@@ -367,8 +410,9 @@ if (typeof window !== 'undefined') {
   onBeforeUnmount(() => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline) })
 }
 const barTransform = computed(() => viewport.state.value ? viewportTransform(viewport.state.value) : null)
-const recordVersionById = computed(() => new Map(props.records.map(record => [record.id, record.version])))
-const recordsById = computed(() => new Map(props.records.map(record => [record.id, record])))
+const displayRecords = computed(() => props.groupWindows ? props.groupWindows.flatMap(group => group.records) : props.records)
+const recordVersionById = computed(() => new Map(displayRecords.value.map(record => [record.id, record.version])))
+const recordsById = computed(() => new Map(displayRecords.value.map(record => [record.id, record])))
 const writablePropertyId = computed(() => {
   const source = timelineOptions.value?.dateSource
   return source?.mode === 'start-end' ? source.startPropertyId : isWritableTimelineDateSource(source) ? source.propertyId : ''
@@ -427,14 +471,41 @@ function toggleFrozenTable(visible: boolean): void {
   emit('toggleFrozenTable', visible)
 }
 const frozenDisplayMap = computed(() => frozenTableVisible.value
-  ? projectFrozenTableDisplay(props.records, frozenColumns.value, props.formatValue)
+  ? projectFrozenTableDisplay(displayRecords.value, frozenColumns.value, props.formatValue)
   : new Map())
-const projectedItems = computed(() => projectTimelineRecords({
-  records: props.records,
+const projectedSource = computed(() => projectTimelineRecords({
+  records: displayRecords.value,
   properties: props.properties,
   config: props.config,
   formatValue: props.formatValue,
 }))
+const groupedLayout = computed(() => {
+  if (!props.groupWindows) return null
+  const byId = new Map(projectedSource.value.map(item => [item.recordId, item]))
+  return layoutTimelineGroupSections(props.groupWindows.map(group => ({
+    key: group.key, label: group.label, collapsed: group.collapsed,
+    items: group.records.map(record => byId.get(record.id)!),
+  })))
+})
+const projectedItems = computed(() => groupedLayout.value?.items ?? projectedSource.value)
+const groupKeyByRecordId = computed(() => new Map(props.groupWindows?.flatMap(group => group.records.map(record => [record.id, group.key] as const)) ?? []))
+const groupIdByRecordId = computed(() => new Map([...groupKeyByRecordId.value].map(([id, key]) => [id, databaseGroupKeyId(key)])))
+const visibleGroupHeaders = computed(() => groupedLayout.value?.headers.filter(header => header.rowIndex >= viewport.rowWindow.value.first && header.rowIndex < viewport.rowWindow.value.last) ?? [])
+const groupWindowById = computed(() => new Map(props.groupWindows?.map(group => [databaseGroupKeyId(group.key), group]) ?? []))
+function selectGroup(recordId: string, groupId: string): void {
+  if (!props.groupWindows || !orderEnabled.value || !props.moveGroupedRecord) return
+  const sourceKey = groupKeyByRecordId.value.get(recordId)
+  const target = groupWindowById.value.get(groupId)
+  const capture = props.captureGroupMove?.(recordId)
+  if (!sourceKey || !target || databaseGroupKeyId(sourceKey) === groupId || !capture
+    || capture.scope !== props.scope || capture.expectedDatabaseVersion !== props.databaseVersion
+    || capture.expectedRecordVersion !== recordVersionById.value.get(recordId)
+    || capture.configIdentity !== JSON.stringify(props.config)) return
+  const anchorRecordId = manualOrderEnabled.value ? target.records[0]?.id : undefined
+  const pendingEpoch = beginOrderPending()
+  void props.moveGroupedRecord(capture, recordId, sourceKey, target.key, anchorRecordId, anchorRecordId ? 'before' : undefined)
+    .finally(() => finishOrderPending(pendingEpoch))
+}
 const recordTitleById = computed(() => new Map(projectedItems.value.map(item => [item.recordId, item.title])))
 const rowIndexByRecordId = computed(() => new Map(projectedItems.value.map(item => [item.recordId, item.rowIndex])))
 const focusedRowIndex = computed(() => {
@@ -451,7 +522,7 @@ const viewport = useTimelineViewport({
   body,
   scope: () => props.scope,
   configuredScale,
-  rowCount: () => projectedItems.value.length,
+  rowCount: () => groupedLayout.value?.rowCount ?? projectedItems.value.length,
   focusedRowIndex: () => focusedRowIndex.value,
 })
 watch([() => props.scope, () => props.config, () => props.writable, () => props.viewBusy, online,
@@ -460,7 +531,7 @@ const temporalMap = computed(() => resolveTimelineTemporalGeometry(projectedItem
 const dependencyEdges = computed(() => projectTimelineDependencies({
   databaseId: props.databaseId,
   properties: props.properties,
-  records: props.records,
+  records: displayRecords.value,
   config: props.config,
 }))
 const dependencyGeometryById = computed(() => {
@@ -504,7 +575,7 @@ function onFocusOut(event: FocusEvent): void {
 }
 
 function focusRow(rowIndex: number): void {
-  focusedRecordId.value = projectedItems.value[rowIndex]?.recordId ?? null
+  focusedRecordId.value = projectedItems.value.find(item => item.rowIndex === rowIndex)?.recordId ?? null
 }
 
 function prepareTimelineDrag(recordId: string): TimelineBarDragSession | null {
@@ -588,7 +659,7 @@ async function saveSchedule(): Promise<void> {
   focusedRecordId.value = form.capture.recordId
   await viewport.revealInstant(temporal.startMs, row, () => root.value === expectedRoot && props.scope === form.capture.scope && scheduleForm.value === null
     && rowIndexByRecordId.value.get(form.capture.recordId) === row && temporalMap.value.get(form.capture.recordId) === temporal
-    && projectedItems.value[row] === item)
+    && projectedItems.value.find(candidate => candidate.rowIndex === row) === item)
 }
 
 function isBarViewportCurrent(snapshot: NonNullable<typeof barTransform.value>): boolean {
@@ -694,6 +765,8 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         :columns="frozenColumns"
         :display-map="frozenDisplayMap"
         :rows="rowGeometry"
+        :group-headers="visibleGroupHeaders"
+        :group-windows="groupWindows"
         :body-height="bodyHeight"
         :pin-y="viewport.pinY.value"
         :selected-page-id="selectedPageId"
@@ -703,6 +776,8 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         @hover-record="hoveredRecordId = $event"
         @focus-row="focusRow"
         @toggle-visibility="toggleFrozenTable(false)"
+        @toggle-group="(key, collapsed) => emit('toggleGroup', key, collapsed)"
+        @load-group-more="key => emit('loadGroupMore', key)"
       ><template #cell="cell"><slot name="frozen-cell" v-bind="cell" /></template></FrozenTablePane>
       <button
         v-if="!frozenTableVisible"
@@ -725,6 +800,8 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         :body-height="bodyHeight"
         :row-window="viewport.rowWindow.value"
         :rows="rowGeometry"
+        :group-headers="visibleGroupHeaders"
+        :group-windows="groupWindows"
         :dependency-edges="dependencyEdges"
         :window-dependency-edges="windowDependencyEdges"
         :dependency-geometry-by-id="dependencyGeometryById"
@@ -754,11 +831,15 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         @open-record="(event, pageId) => emit('openRecord', event, pageId)"
         @focus-row="focusRow"
         @hover-record="hoveredRecordId = $event"
+        @group-visible="key => emit('groupVisible', key)"
+        @toggle-group="(key, collapsed) => emit('toggleGroup', key, collapsed)"
+        @load-group-more="key => emit('loadGroupMore', key)"
+        @select-group="selectGroup"
       />
     </div>
     <p v-if="!manualOrderEnabled" class="eotion-timeline-order-hint" data-testid="timeline-order-sorted-hint">当前视图设置了排序，关闭排序后可手动调整记录顺序。</p>
     <div v-if="orderPreview" class="eotion-timeline-order-target" data-testid="timeline-order-target" :style="{ left: `${orderPreview.x}px`, width: `${orderPreview.width}px`, top: `${orderPreview.y}px` }" aria-hidden="true" />
-    <p v-if="records.length === 0" class="eotion-database-timeline-empty">暂无记录</p>
+    <p v-if="!groupWindows && records.length === 0" class="eotion-database-timeline-empty">暂无记录</p>
     <details v-if="unscheduledItems.length > 0" :key="scope" class="eotion-database-timeline-records" @toggle="onUnscheduledToggle">
       <summary>未排期（{{ unscheduledItems.length }}）</summary>
       <ul v-if="recordsExpanded">
