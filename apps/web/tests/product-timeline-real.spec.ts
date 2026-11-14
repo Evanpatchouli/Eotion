@@ -275,6 +275,120 @@ test('creates a Timeline through the product UI and keeps its date source and sc
   await expect(page.locator('.eotion-database').first().getByTestId('database-timeline')
     .locator(`[data-timeline-row][data-record-id="${draggedRecordId}"]`)).toHaveAttribute('data-row-index', '0')
 
+  // The Select property is test data; configure grouping and move records only
+  // through the visible Timeline controls.
+  const groupPropertyId = `timeline-group-${randomUUID()}`
+  const databaseId = persisted.databaseBlock?.props?.node?.attrs?.databaseId
+  expect(databaseId).toBeTruthy()
+  const createdGroupProperty = await page.evaluate(async ({ workspaceId, databaseId, viewId, propertyId }) => {
+    const root = `/api/workspaces/${workspaceId}/databases/${databaseId}`
+    const current = await fetch(`${root}/views/${viewId}/records?limit=2`)
+    if (!current.ok) throw new Error(`Database read failed: ${current.status}`)
+    const state = await current.json() as { database: { version: number } }
+    const response = await fetch(`${root}/properties`, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: propertyId, name: '验收分组', type: 'select',
+        options: [{ id: 'timeline-alpha', name: '验收第一组' }, { id: 'timeline-beta', name: '验收空组' }],
+        expectedDatabaseVersion: state.database.version }) })
+    if (!response.ok) throw new Error(`Select property setup failed: ${response.status} ${await response.text()}`)
+    return response.json() as Promise<{ property: { id: string } }>
+  }, { workspaceId, databaseId: databaseId!, viewId: timelineViewId!, propertyId: groupPropertyId })
+  expect(createdGroupProperty.property.id).toBe(groupPropertyId)
+  await page.reload()
+  const groupedDatabase = page.locator('.eotion-database').first()
+  await expect(groupedDatabase).toHaveAttribute('data-view-id', timelineViewId!)
+  await expect(groupedDatabase).toHaveAttribute('data-view-ready', 'true')
+  await groupedDatabase.getByRole('button', { name: '数据库设置' }).click()
+  await page.getByRole('menuitem', { name: '分组属性', exact: true }).click()
+  const groupingSettings = page.getByRole('dialog', { name: '分组属性', exact: true })
+  await expect(groupingSettings).toBeVisible()
+  await groupingSettings.getByRole('button', { name: '分组属性', exact: true }).click()
+  await groupingSettings.getByRole('menuitem', { name: '验收分组', exact: true }).click()
+  const groupingSaved = page.waitForResponse(response => response.url().endsWith(`/views/${timelineViewId}`) && response.request().method() === 'PATCH')
+  await groupingSettings.getByRole('button', { name: '保存分组', exact: true }).click()
+  expect((await groupingSaved).ok()).toBe(true)
+  const groupedTimeline = groupedDatabase.getByTestId('database-timeline')
+  const groupHeader = (label: string) => groupedTimeline.getByTestId('timeline-frozen-table').locator('[data-timeline-group-header]').filter({ hasText: label })
+  await expect(groupHeader('验收第一组')).toBeVisible()
+  await expect(groupHeader('验收空组')).toBeVisible()
+  await expect(groupHeader('未分组')).toBeVisible()
+  await expect(groupHeader('验收空组').getByTestId('timeline-group-complete-count')).toHaveText('0')
+
+  const moveThroughGroupControl = async (title: string) => {
+    const control = groupedTimeline.getByRole('combobox', { name: `移动${title}到分组` })
+    await expect(control).toBeEnabled()
+    const responsePromise = page.waitForResponse(response => response.url().endsWith('/record-group') && response.request().method() === 'POST')
+    await control.selectOption({ label: '验收第一组' })
+    const response = await responsePromise
+    expect(response.ok()).toBe(true)
+    const body = await response.json() as { record: { id: string; properties: Record<string, unknown> } }
+    expect(body.record.properties[groupPropertyId]).toBe('timeline-alpha')
+    return body.record.id
+  }
+  expect(await moveThroughGroupControl('真实拖放验收')).toBe(draggedRecordId)
+  const milestoneRecordId = await moveThroughGroupControl('验收里程碑')
+  const movedRow = groupedTimeline.locator(`[data-timeline-row][data-record-id="${draggedRecordId}"]`)
+  const milestoneRow = groupedTimeline.locator(`[data-timeline-row][data-record-id="${milestoneRecordId}"]`)
+  await expect(groupedDatabase.locator('.eotion-database-refreshing')).toHaveCount(0)
+  await expect(groupHeader('验收第一组').getByTestId('timeline-group-complete-count')).toHaveText('2')
+  await expect(groupHeader('未分组').getByTestId('timeline-group-complete-count')).toHaveText('0')
+  await expect(movedRow).toBeVisible()
+  await expect(milestoneRow).toBeVisible()
+  await expect.poll(async () => {
+    const [first, next, moved, milestone] = await Promise.all([
+      groupHeader('验收第一组').getAttribute('data-row-index'),
+      groupHeader('验收空组').getAttribute('data-row-index'),
+      movedRow.getAttribute('data-row-index'),
+      milestoneRow.getAttribute('data-row-index'),
+    ])
+    return [first, next, moved, milestone].every(value => value !== null)
+      && Number(first) < Number(moved) && Number(moved) < Number(next)
+      && Number(first) < Number(milestone) && Number(milestone) < Number(next)
+  }).toBe(true)
+  await expect.poll(async () => Number(await movedRow.getAttribute('data-row-index'))
+    < Number(await milestoneRow.getAttribute('data-row-index'))).toBe(true)
+  await page.screenshot({ path: testInfo.outputPath('timeline-grouped-desktop.png'), fullPage: true, animations: 'disabled' })
+
+  await groupedDatabase.getByRole('button', { name: '新建记录', exact: true }).click()
+  const groupedRecordDrawer = page.locator('[data-overlay-mode="drawer"]')
+  await expect(groupedRecordDrawer).toBeVisible()
+  await groupedRecordDrawer.getByRole('textbox', { name: '记录标题' }).fill('分组后新记录')
+  await groupedRecordDrawer.getByRole('textbox', { name: '记录标题' }).press('Enter')
+  await groupedRecordDrawer.getByRole('button', { name: '关闭记录' }).click()
+  await expect(groupedTimeline.locator('[data-timeline-row]').filter({ hasText: '分组后新记录' })).toBeVisible()
+  await expect(groupHeader('验收空组').getByTestId('timeline-group-complete-count')).toHaveText('0')
+
+  const collapse = groupHeader('验收第一组').getByRole('button', { name: '折叠分组：验收第一组' })
+  await collapse.click()
+  await expect(groupHeader('验收第一组').getByRole('button', { name: '展开分组：验收第一组' })).toHaveAttribute('aria-expanded', 'false')
+  await page.reload()
+  const groupedAfterReload = page.locator('.eotion-database').first().getByTestId('database-timeline')
+  const groupFrozenAfterReload = groupedAfterReload.getByTestId('timeline-frozen-table')
+  const firstGroupAfterReload = groupFrozenAfterReload.locator('[data-timeline-group-header]').filter({ hasText: '验收第一组' })
+  await expect(firstGroupAfterReload.getByRole('button', { name: '展开分组：验收第一组' })).toHaveAttribute('aria-expanded', 'false')
+  await expect(groupFrozenAfterReload.locator('[data-timeline-group-header]').filter({ hasText: '验收空组' })).toBeVisible()
+  await expect(groupedAfterReload.locator('[data-timeline-row]').filter({ hasText: '分组后新记录' })).toBeVisible()
+  await firstGroupAfterReload.getByRole('button', { name: '展开分组：验收第一组' }).click()
+  const movedAfterReload = groupedAfterReload.locator(`[data-timeline-row][data-record-id="${draggedRecordId}"]`)
+  const milestoneAfterReload = groupedAfterReload.locator(`[data-timeline-row][data-record-id="${milestoneRecordId}"]`)
+  await expect(page.locator('.eotion-database').first().locator('.eotion-database-refreshing')).toHaveCount(0)
+  await expect(firstGroupAfterReload.getByTestId('timeline-group-complete-count')).toHaveText('2')
+  await expect(groupFrozenAfterReload.locator('[data-timeline-group-header]').filter({ hasText: '未分组' }).getByTestId('timeline-group-complete-count')).toHaveText('1')
+  await expect(movedAfterReload).toBeVisible()
+  await expect(milestoneAfterReload).toBeVisible()
+  await expect.poll(async () => {
+    const [first, next, moved, milestone] = await Promise.all([
+      firstGroupAfterReload.getAttribute('data-row-index'),
+      groupFrozenAfterReload.locator('[data-timeline-group-header]').filter({ hasText: '验收空组' }).getAttribute('data-row-index'),
+      movedAfterReload.getAttribute('data-row-index'),
+      milestoneAfterReload.getAttribute('data-row-index'),
+    ])
+    return [first, next, moved, milestone].every(value => value !== null)
+      && Number(first) < Number(moved) && Number(moved) < Number(next)
+      && Number(first) < Number(milestone) && Number(milestone) < Number(next)
+  }).toBe(true)
+  await expect.poll(async () => Number(await movedAfterReload.getAttribute('data-row-index'))
+    < Number(await milestoneAfterReload.getAttribute('data-row-index'))).toBe(true)
+
   await reloadedDatabase.getByRole('button', { name: '数据库设置' }).click()
   await page.getByRole('menuitem', { name: '日期属性', exact: true }).click()
   const dateSettings = page.getByRole('dialog', { name: '时间线日期属性', exact: true })
