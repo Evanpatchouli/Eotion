@@ -108,7 +108,7 @@ test('Timeline routes manual order, cross-group anchors, empty headers and keybo
       writable: true, viewBusy: false, databaseVersion: 1,
       groupWindows: [
         { key: { kind: 'option', optionId: 'open' }, label: 'Open', collapsed: false, records: [record('a'), record('b')], nextCursor: null, hasLoaded: true, loading: false, error: null },
-        { key: { kind: 'option', optionId: 'done' }, label: 'Done', collapsed: false, records: [record('c')], nextCursor: null, hasLoaded: true, loading: false, error: null },
+        { key: { kind: 'option', optionId: 'done' }, label: 'Done', collapsed: false, records: [record('c'), record('d')], nextCursor: null, hasLoaded: true, loading: false, error: null },
         { key: { kind: 'ungrouped' }, label: 'Empty', collapsed: false, records: [], nextCursor: null, hasLoaded: true, loading: false, error: null },
       ],
       prepareDrag: () => null, prepareSchedule: () => null, moveRecord: async () => false,
@@ -122,13 +122,15 @@ test('Timeline routes manual order, cross-group anchors, empty headers and keybo
   const handle = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="a"]')
   await handle.press('ArrowDown')
   await handle.dragTo(timeline.locator('[data-timeline-row][data-record-id="c"]'), { targetPosition: { x: 5, y: 4 } })
-  await handle.dragTo(timeline.locator('[data-testid="timeline-canvas-body"] [data-timeline-group-header][data-row-index="5"]'), { targetPosition: { x: 5, y: 24 } })
+  await handle.dragTo(timeline.locator('[data-timeline-row][data-record-id="d"]'), { targetPosition: { x: 5, y: 44 } })
+  await handle.dragTo(timeline.locator('[data-testid="timeline-canvas-body"] [data-timeline-group-header][data-row-index="6"]'), { targetPosition: { x: 5, y: 24 } })
   await timeline.getByRole('combobox', { name: '移动a到分组' }).selectOption('["option","done"]')
   expect(await page.evaluate(() => (window as any).timelineGroupEvents)).toEqual([
     ['reorder', 'a', 'b', 'after'],
     ['move', 'a', { kind: 'option', optionId: 'open' }, { kind: 'option', optionId: 'done' }, 'c', 'before'],
+    ['move', 'a', { kind: 'option', optionId: 'open' }, { kind: 'option', optionId: 'done' }, 'd', 'after'],
     ['move', 'a', { kind: 'option', optionId: 'open' }, { kind: 'ungrouped' }, undefined, undefined],
-    ['move', 'a', { kind: 'option', optionId: 'open' }, { kind: 'option', optionId: 'done' }, 'c', 'before'],
+    ['move', 'a', { kind: 'option', optionId: 'open' }, { kind: 'option', optionId: 'done' }],
   ])
   const bounds = await handle.boundingBox()
   if (!bounds) throw new Error('Order handle missing')
@@ -137,7 +139,7 @@ test('Timeline routes manual order, cross-group anchors, empty headers and keybo
   await page.evaluate(() => { (window as any).timelineScope.value = 'other-view' })
   await page.mouse.move(bounds.x + 8, bounds.y + 170)
   await page.mouse.up()
-  expect(await page.evaluate(() => (window as any).timelineGroupEvents)).toHaveLength(4)
+  expect(await page.evaluate(() => (window as any).timelineGroupEvents)).toHaveLength(5)
 })
 
 test('Timeline keeps a focused virtual record and group controls reachable on a narrow viewport', async ({ page }) => {

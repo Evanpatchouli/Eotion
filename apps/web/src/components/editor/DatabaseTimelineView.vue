@@ -501,9 +501,8 @@ function selectGroup(recordId: string, groupId: string): void {
     || capture.scope !== props.scope || capture.expectedDatabaseVersion !== props.databaseVersion
     || capture.expectedRecordVersion !== recordVersionById.value.get(recordId)
     || capture.configIdentity !== JSON.stringify(props.config)) return
-  const anchorRecordId = manualOrderEnabled.value ? target.records[0]?.id : undefined
   const pendingEpoch = beginOrderPending()
-  void props.moveGroupedRecord(capture, recordId, sourceKey, target.key, anchorRecordId, anchorRecordId ? 'before' : undefined)
+  void props.moveGroupedRecord(capture, recordId, sourceKey, target.key)
     .finally(() => finishOrderPending(pendingEpoch))
 }
 const recordTitleById = computed(() => new Map(projectedItems.value.map(item => [item.recordId, item.title])))
