@@ -31,7 +31,8 @@ onBeforeUnmount(() => { generation++; observer?.disconnect() })
     <span class="eotion-timeline-group-label">{{ header.label }}</span>
     <span v-if="window.loading" role="status">加载中…</span>
     <span v-else-if="window.error" role="alert">加载失败</span>
-    <span v-else-if="window.hasLoaded">已加载 {{ window.records.length }} 条{{ window.nextCursor ? '，还有更多' : '' }}</span>
+    <span v-else-if="window.hasLoaded && window.nextCursor" data-testid="timeline-group-partial-count">已加载 {{ window.records.length }} 条，还有更多</span>
+    <span v-else-if="window.hasLoaded" data-testid="timeline-group-complete-count" data-group-count-state="complete" role="status" :aria-label="`共 ${window.records.length} 条记录`">{{ window.records.length }}</span>
     <button v-if="!window.collapsed && !window.loading && (window.error || !window.hasLoaded || window.nextCursor)" type="button" class="eotion-timeline-group-load" @click="emit('loadMore')">{{ window.error ? '重试' : window.hasLoaded ? '加载更多' : '加载记录' }}</button>
     </template>
   </div>

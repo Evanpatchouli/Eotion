@@ -36,6 +36,9 @@ test('Timeline groups share visual rows and expose independent loading controls'
   const timeline = page.getByTestId('database-timeline')
   await expect(timeline.locator('[data-testid="timeline-canvas-body"]')).toHaveAttribute('data-row-window-total-height', '288')
   await expect(timeline.locator('[data-timeline-group-header]')).toHaveCount(6)
+  await expect(timeline.getByTestId('timeline-group-partial-count')).toHaveText('已加载 2 条，还有更多')
+  await expect(timeline.getByTestId('timeline-group-complete-count')).toHaveText('1')
+  await expect(timeline.getByTestId('timeline-group-complete-count')).toHaveAttribute('aria-label', '共 1 条记录')
   await expect(timeline.locator('[data-testid="timeline-canvas-body"] [data-timeline-group-header]').first()).toHaveAttribute('aria-hidden', 'true')
   await expect(timeline.locator('[data-testid="timeline-canvas-body"] [data-timeline-group-header] button')).toHaveCount(0)
   await expect(timeline.locator('[data-testid="timeline-frozen-body"] [data-timeline-group-header] button')).toHaveCount(5)
@@ -61,6 +64,41 @@ test('Timeline groups share visual rows and expose independent loading controls'
   expect(await page.evaluate(() => (window as any).timelineGroupEvents)).toEqual([
     ['load', { kind: 'ungrouped' }], ['toggle', { kind: 'option', optionId: 'done' }, true], ['load', { kind: 'option', optionId: 'open' }],
   ])
+})
+
+test('Timeline group count distinguishes complete, partial, empty, pending and error windows', async ({ page }) => {
+  await page.goto('/login')
+  await page.evaluate(async () => {
+    const Vue = await import('/node_modules/.vite/deps/vue.js')
+    const { default: Header } = await import('/src/components/editor/timeline/TimelineGroupHeader.vue')
+    const windows = [
+      { label: 'Complete', records: [{ id: 'a' }, { id: 'b' }], hasLoaded: true, nextCursor: null, loading: false, error: null },
+      { label: 'Partial', records: [{ id: 'c' }], hasLoaded: true, nextCursor: 'next', loading: false, error: null },
+      { label: 'Empty', records: [], hasLoaded: true, nextCursor: null, loading: false, error: null },
+      { label: 'Pending', records: [], hasLoaded: false, nextCursor: null, loading: true, error: null },
+      { label: 'Error', records: [], hasLoaded: false, nextCursor: null, loading: false, error: 'Network error' },
+    ]
+    const host = document.createElement('div')
+    document.body.append(host)
+    Vue.createApp({ render: () => Vue.h('div', {}, windows.map((window, index) => Vue.h('section', { 'data-count-case': window.label }, [
+      Vue.h(Header, { header: { key: { kind: 'option', optionId: String(index) }, label: window.label, collapsed: false, rowIndex: index, top: index * 48, height: 48 },
+        window: { ...window, key: { kind: 'option', optionId: String(index) }, collapsed: false } }),
+    ]))) }).mount(host)
+  })
+  const complete = page.locator('[data-count-case="Complete"]')
+  await expect(complete.getByTestId('timeline-group-complete-count')).toHaveText('2')
+  await expect(complete.getByTestId('timeline-group-complete-count')).toHaveAttribute('aria-label', '共 2 条记录')
+  await expect(complete.getByTestId('timeline-group-complete-count')).toHaveAttribute('data-group-count-state', 'complete')
+  const partial = page.locator('[data-count-case="Partial"]')
+  await expect(partial.getByTestId('timeline-group-partial-count')).toHaveText('已加载 1 条，还有更多')
+  await expect(partial.getByTestId('timeline-group-complete-count')).toHaveCount(0)
+  const empty = page.locator('[data-count-case="Empty"]')
+  await expect(empty.getByTestId('timeline-group-complete-count')).toHaveText('0')
+  await expect(empty.getByTestId('timeline-group-complete-count')).toHaveAttribute('aria-label', '共 0 条记录')
+  for (const label of ['Pending', 'Error']) {
+    const section = page.locator(`[data-count-case="${label}"]`)
+    await expect(section.locator('[data-testid$="-count"]')).toHaveCount(0)
+  }
 })
 
 test('Timeline sends one grouped move and omits anchors under explicit sort', async ({ page }) => {
