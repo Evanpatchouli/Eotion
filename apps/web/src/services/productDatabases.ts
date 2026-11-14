@@ -1,5 +1,5 @@
 import { createLocalId } from '@eotion/storage'
-import type { DatabaseCellBatchMutationRequest, DatabaseCellBatchMutationResponse, DatabaseCellBatchMutationReceipt, DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyTypeChangeRequest, DatabasePropertyTypeChangeResponse, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest, DatabaseViewRecordReorderRequest } from '@eotion/contracts'
+import type { DatabaseCellBatchMutationRequest, DatabaseCellBatchMutationResponse, DatabaseCellBatchMutationReceipt, DatabasePropertyCreateRequest, DatabasePropertyDeleteRequest, DatabasePropertyTypeChangeRequest, DatabasePropertyTypeChangeResponse, DatabasePropertyUpdateRequest, DatabaseRecordCellUpdateRequest, DatabaseViewGroupKey, DatabaseViewGroupRecordsQuery, DatabaseViewRecordGroupMoveRequest, DatabaseViewHttpCreateRequest, DatabaseViewDeleteRequest, DatabaseViewUpdateRequest, DatabaseViewRecordReorderRequest } from '@eotion/contracts'
 import { nextOrderKey } from '../utils/pageTree'
 
 import { flushActivePageEditor } from '../editor/activePageEditor'
@@ -119,6 +119,33 @@ export async function loadProductDatabaseTable(
   return result
 }
 
+export async function loadProductDatabaseViewGroupRecords(
+  workspaceId: string,
+  databaseId: string,
+  viewId: string,
+  groupKey: DatabaseViewGroupKey,
+  window?: Partial<Pick<DatabaseViewGroupRecordsQuery, 'limit' | 'cursor'>>,
+  signal?: AbortSignal,
+) {
+  const auth = useAuthStore()
+  const userId = auth.user?.id
+  if (!userId) throw new Error('请先登录后再加载分组记录。')
+  assertOnlineAndCurrent(workspaceId, userId)
+  let result
+  try {
+    result = await api.databases.getDatabaseViewGroupRecords(workspaceId, databaseId, viewId, groupKey, window, signal)
+  } catch (cause) {
+    if (cause instanceof Error && cause.name === 'AbortError') throw cause
+    if (auth.user?.id !== userId || useProductPagesStore().forWorkspaceId !== workspaceId) {
+      throw new Error('登录状态或工作区已切换，请重新加载分组记录。')
+    }
+    if (!navigator.onLine) throw new Error('离线时无法加载分组记录。')
+    throw cause
+  }
+  assertOnlineAndCurrent(workspaceId, userId)
+  return result
+}
+
 export async function listProductDatabaseViews(workspaceId: string, databaseId: string) {
   const auth = useAuthStore()
   const userId = auth.user?.id
@@ -183,6 +210,19 @@ export async function reorderProductDatabaseViewRecord(workspaceId: string, data
     try { assertOnlineAndCurrent(workspaceId, userId) }
     catch (cause) { throw new DatabaseMutationNotSentError(cause instanceof Error ? cause.message : '记录重排未发送。') }
     const result = await api.databases.reorderDatabaseViewRecord(workspaceId, databaseId, viewId, input)
+    assertOnlineAndCurrent(workspaceId, userId)
+    notifyDatabaseUpdated({ workspaceId, databaseId })
+    return result
+  })
+}
+
+export async function moveProductDatabaseViewRecordGroup(workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewRecordGroupMoveRequest) {
+  const userId = useAuthStore().user?.id
+  if (!userId) throw new DatabaseMutationNotSentError('请先登录后再移动记录分组。')
+  return serializeDatabaseMutation(workspaceId, databaseId, async () => {
+    try { assertOnlineAndCurrent(workspaceId, userId) }
+    catch (cause) { throw new DatabaseMutationNotSentError(cause instanceof Error ? cause.message : '记录分组移动未发送。') }
+    const result = await api.databases.moveDatabaseViewRecordGroup(workspaceId, databaseId, viewId, input)
     assertOnlineAndCurrent(workspaceId, userId)
     notifyDatabaseUpdated({ workspaceId, databaseId })
     return result
