@@ -60,11 +60,26 @@ export function timelineRowWindow(args: { count: number; visibleTop: number; vis
   return { first, last, top: first * TIMELINE_ROW_HEIGHT, height: Math.max(0, (last - first) * TIMELINE_ROW_HEIGHT), totalHeight, focusedRowIndex }
 }
 
+/** Items are ordered by their visual rowIndex; group headers may leave gaps. */
+function firstItemAtOrAfter(items: readonly TimelineItemProjection[], rowIndex: number): number {
+  let low = 0
+  let high = items.length
+  while (low < high) {
+    const middle = low + Math.floor((high - low) / 2)
+    if (items[middle]!.rowIndex < rowIndex) low = middle + 1
+    else high = middle
+  }
+  return low
+}
+
 function visibleIndices(items: readonly TimelineItemProjection[], window: TimelineRowWindow): number[] {
   const indices: number[] = []
-  for (let index = Math.max(0, window.first); index < Math.min(items.length, window.last); index++) indices.push(index)
+  for (let index = firstItemAtOrAfter(items, window.first); index < items.length && items[index]!.rowIndex < window.last; index++) indices.push(index)
   const focused = window.focusedRowIndex
-  if (focused !== null && focused >= 0 && focused < items.length && (focused < window.first || focused >= window.last)) indices.push(focused)
+  if (focused !== null && (focused < window.first || focused >= window.last)) {
+    const index = firstItemAtOrAfter(items, focused)
+    if (items[index]?.rowIndex === focused) indices.push(index)
+  }
   return indices.sort((a, b) => a - b)
 }
 
@@ -102,8 +117,9 @@ export function layoutTimelineItem(item: ScheduledTimelineItem, temporal: Timeli
 }
 
 export function layoutTimelineItems(items: readonly TimelineItemProjection[], temporalMap: ReadonlyMap<string, TimelineTemporalGeometry>, state: Transform, rowWindow: TimelineRowWindow): TimelineRowGeometry[] {
-  return visibleIndices(items, rowWindow).map(rowIndex => {
-    const item = items[rowIndex]!
+  return visibleIndices(items, rowWindow).map(index => {
+    const item = items[index]!
+    const rowIndex = item.rowIndex
     const top = rowIndex * TIMELINE_ROW_HEIGHT
     const temporal = temporalMap.get(item.recordId)
     return {
