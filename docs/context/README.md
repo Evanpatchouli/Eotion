@@ -35,6 +35,13 @@ P5.6 Settings 已完成：`apps/web/src/layouts/SettingsLayout.vue`、`views/set
 
 ## Eotion 特有的检索约束
 
+2026-11-14 Timeline 体验改版：左表可直接展开/折叠并保存 View 配置；单点记录显示标题，
+标尺显示今天与周末。单 Date 空值可从未排期列表拖入时间网格。独立 Start/End 的同精度有效记录支持拖动和两端调整，使用通用
+Cell batch、View/Database/Record CAS 和 receipt；混合精度及空开始值的边界见
+[P11 §21.2](../p11-timeline.md#212-日期来源) 与
+[Cell mutations](../architecture/database-cell-mutations.md)。按属性分组与持久行重排
+仍未实现，不能用当前分页窗口的本地重排替代。
+
 2026-11-07 P11 COMPLETE / FINAL PASS。正式设置入口见 `DatabaseTimelineSettingsForm.vue`、`DatabaseNodeView.vue` 中的 Timeline overlay 与 `saveViewConfig`；标尺边界见 `TimelineRuler.vue` 与 `product-timeline-real.spec.ts`。[最终验收](../verification/p11-6-timeline-final-acceptance.md)汇总 §24 结果及后置项。下方分阶段说明按当时范围保留。
 
 2026-11-07 P10 COMPLETE / FINAL PASS。十八工具包括 P6 六个、Database 读取五个、写入七个。契约见 [Database MCP](../p10-database-mcp.md)，集成门禁与历史 HOLD 见[最终验收](../verification/p10-final-acceptance.md)。检索 `McpMutationService.execute`、`runInSession`、`expectedDatabaseVersion`、`fixtures/mcp-tools.snapshot.ts`、`scripts/verify-p104-mcp.mjs` 和 `scripts/verify-p104-web-mcp.mjs`。

@@ -39,7 +39,9 @@ Date intent 总是按合并后的完整日期来源校验：独立 Start/End 在
 
 服务端读取完整 canonical graph，独立于 View filter、sort、pagination、viewport。沿用最大 10,000 records 扫描上限，超限拒绝，绝不截断。纯 domain `planDatabaseSchedule` 接收 predecessor→successor edges，不解释 Relation direction；最大 affected scheduled graph 为 500 records / 10,000 edges。
 
-没有 context 时，它是可复用的通用多 Record/多 Cell 原子更新能力。Timeline Web 可用同一 endpoint 与 receipt 提交独立 Start/End 日期来源；其他既有单 Cell 编辑行为不变。
+没有 context 时，它是可复用的通用多 Record/多 Cell 原子更新能力。Timeline Web 使用同一
+endpoint 与 receipt 提交独立 Start/End 日期来源及从未排期列表拖入时间网格的日期；其他
+既有单 Cell 编辑行为不变。
 
 ## Unknown result / receipt
 

@@ -13,5 +13,5 @@ const lineStyle = computed(() => ({ left: props.x === null ? undefined : `${prop
 
 <style scoped>
 .eotion-timeline-today-layer { position:absolute; z-index:1; inset:0; overflow:hidden; pointer-events:none; }
-.eotion-timeline-today-line { position:absolute; top:0; bottom:0; border-left:2px solid var(--e-color-danger, var(--editor-danger)); opacity:.85; pointer-events:none; }
+.eotion-timeline-today-line { position:absolute; top:0; bottom:0; border-left:1px solid var(--e-color-danger, var(--editor-danger)); opacity:.9; pointer-events:none; }
 </style>

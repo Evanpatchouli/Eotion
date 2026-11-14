@@ -26,7 +26,7 @@ import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTit
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import { beginTimelineDateMutation, endTimelineDateMutation } from './timeline/interaction'
 import type { TimelineMoveCommand, TimelineScheduleCapture, TimelineScheduleCommand } from './timeline/mutation'
-import { isWritableTimelineDateSource, timelineDateSourceIdentity } from './timeline/mutation'
+import { captureSplitTimelineDateSource, createSplitTimelineDateValue, isDraggableTimelineDateSource, isWritableTimelineDateSource, splitTimelineDateWrites, timelineDateSourceIdentity } from './timeline/mutation'
 import { resolveTimelineDependencyProperty, timelineDependencyConfigIdentity, prepareDependencyRelationMutation, isDependencyRelationMutationConfirmed, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
 
 import {
@@ -532,24 +532,45 @@ async function mutateTimelineDependency(command: TimelineDependencyCommand): Pro
 
 function captureTimelineDate(recordId: string, schedule: boolean): TimelineBarDragSession | TimelineScheduleCapture | null {
   const source = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline?.dateSource
-  if (!props.editor.isEditable || !writable.value || !viewReady.value || viewType.value !== 'timeline' || !isWritableTimelineDateSource(source)) return null
-  const property = properties.value.find(item => item.id === source.propertyId)
+  if (!source || !props.editor.isEditable || !writable.value || !viewReady.value || viewType.value !== 'timeline'
+    || (schedule ? !isWritableTimelineDateSource(source) : !isDraggableTimelineDateSource(source))) return null
   const record = recordsById.value.get(recordId)
-  const rawValue = record ? getCellValue(record, source.propertyId) : undefined
-  if (!online.value || !property || property.type !== 'date' || !record) return null
-  if (schedule ? rawValue !== null && rawValue !== undefined : !isValidDatabaseDateValue(rawValue)) return null
-  const originalValue = schedule ? null : typeof rawValue === 'string' ? rawValue : { ...(rawValue as object) }
+  if (!online.value || !record) return null
+  let propertyId: string
+  let originalValue: TimelineBarDragSession['originalValue'] | null
+  let splitSource: TimelineBarDragSession['splitSource']
+  if (source.mode === 'start-end') {
+    const startProperty = properties.value.find(item => item.id === source.startPropertyId)
+    const endProperty = properties.value.find(item => item.id === source.endPropertyId)
+    const startValue = getCellValue(record, source.startPropertyId)
+    const endValue = getCellValue(record, source.endPropertyId)
+    if (!startProperty || startProperty.type !== 'date' || !endProperty || endProperty.type !== 'date'
+      || !isValidDatabaseDateValue(startValue) || endValue !== null && endValue !== undefined && !isValidDatabaseDateValue(endValue)) return null
+    splitSource = captureSplitTimelineDateSource({ startPropertyId: source.startPropertyId, startValue,
+      endPropertyId: source.endPropertyId, endValue: endValue ?? null })
+    originalValue = createSplitTimelineDateValue(splitSource)
+    if (!originalValue) return null
+    propertyId = source.startPropertyId
+  } else {
+    const property = properties.value.find(item => item.id === source.propertyId)
+    const rawValue = getCellValue(record, source.propertyId)
+    if (!property || property.type !== 'date'
+      || (schedule ? rawValue !== null && rawValue !== undefined : !isValidDatabaseDateValue(rawValue))) return null
+    propertyId = property.id
+    originalValue = schedule ? null : typeof rawValue === 'string' ? rawValue : { ...(rawValue as object) } as TimelineBarDragSession['originalValue']
+  }
   const viewRoot = document.getElementById(`database-block-${blockId.value}`)
   return Object.freeze({
     scope: timelineScope.value,
     recordId,
-    propertyId: property.id,
+    propertyId,
     expectedDatabaseVersion: databaseVersion.value,
     expectedRecordVersion: record.version,
     expectedViewVersion: viewVersion.value,
     dateSourceIdentity: timelineDateSourceIdentity(source) ?? undefined,
     dependencyConfigIdentity: timelineDependencyConfigIdentity(viewConfig.value) ?? undefined,
     originalValue,
+    ...(splitSource ? { splitSource } : {}),
     ...(schedule ? { kind: 'schedule' as const } : {}),
     viewIdentityEpoch,
     viewRoot,
@@ -570,7 +591,7 @@ function prepareTimelineSchedule(recordId: string): TimelineScheduleCapture | nu
 async function moveTimelineRecord(command: TimelineMoveCommand | TimelineScheduleCommand): Promise<boolean> {
   const capturedEpoch = (command as TimelineMoveCommand & { viewIdentityEpoch?: number }).viewIdentityEpoch
   const capturedRoot = (command as TimelineMoveCommand & { viewRoot?: HTMLElement | null }).viewRoot
-  const isCurrent = (): boolean => {
+  const isSameViewInstance = (): boolean => {
     if (capturedEpoch !== viewIdentityEpoch || command.scope !== timelineScope.value || !capturedRoot || !capturedRoot.isConnected) return false
     const currentRoot = document.getElementById(`database-block-${blockId.value}`)
     if (currentRoot !== capturedRoot || currentRoot.getAttribute('data-view-id') !== viewId.value || currentRoot.getAttribute('data-view-ready') !== 'true') return false
@@ -580,19 +601,27 @@ async function moveTimelineRecord(command: TimelineMoveCommand | TimelineSchedul
     })
     return currentEditorViewId === viewId.value && viewReady.value && props.editor.isEditable
   }
+  const isCurrent = (): boolean => isSameViewInstance()
+    && command.dateSourceIdentity === timelineDateSourceIdentity((viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline?.dateSource)
+    && command.dependencyConfigIdentity === (timelineDependencyConfigIdentity(viewConfig.value) ?? undefined)
   // Last-line defence in front of the generic Cell API: identity, writability,
   // captured Database version and view type are all re-checked here.
   if (!isCurrent() || !online.value || !writable.value || command.expectedDatabaseVersion !== databaseVersion.value || viewType.value !== 'timeline') return false
   const timeline = (viewConfig.value.options as DatabaseTimelineViewOptions | undefined)?.timeline
-  if (!isWritableTimelineDateSource(timeline?.dateSource) || timeline.dateSource.propertyId !== command.propertyId) return false
+  const split = command.splitSource
+  if (!isDraggableTimelineDateSource(timeline?.dateSource)
+    || (split ? timeline.dateSource.mode !== 'start-end' || timeline.dateSource.startPropertyId !== split.startPropertyId
+      || timeline.dateSource.endPropertyId !== split.endPropertyId || command.propertyId !== split.startPropertyId
+      : !isWritableTimelineDateSource(timeline.dateSource) || timeline.dateSource.propertyId !== command.propertyId)) return false
   const shiftMode = timeline.dependency?.shiftMode
-  const atomicBatch = shiftMode !== undefined && shiftMode !== 'no_auto_shift'
+  const activePolicy = shiftMode !== undefined && shiftMode !== 'no_auto_shift'
+  const needsReceipt = Boolean(split) || activePolicy || ('kind' in command && command.kind === 'schedule' && command.intent === 'drop')
   const dateSourceIdentity = timelineDateSourceIdentity(timeline.dateSource)
   const dependencyConfigIdentity = timelineDependencyConfigIdentity(viewConfig.value) ?? undefined
   if (!dateSourceIdentity || command.dateSourceIdentity !== dateSourceIdentity
     || command.expectedViewVersion !== viewVersion.value
     || command.dependencyConfigIdentity !== dependencyConfigIdentity
-    || atomicBatch && !dependencyConfigIdentity) {
+    || activePolicy && !dependencyConfigIdentity) {
     await refreshLoadedWindow()
     return false
   }
@@ -601,29 +630,52 @@ async function moveTimelineRecord(command: TimelineMoveCommand | TimelineSchedul
   if (!property || property.type !== 'date' || !record || record.version !== command.expectedRecordVersion) return false
   const currentValue = getCellValue(record, property.id)
   const scheduling = 'kind' in command && command.kind === 'schedule'
-  if (scheduling) {
-    if (command.originalValue !== null || currentValue !== null && currentValue !== undefined
-      || typeof command.value !== 'string'
-      || normalizeDatabaseDateValue(command.value)?.kind !== 'date-only') return false
-  } else if (!isValidDatabaseDateValue(currentValue) || JSON.stringify(currentValue) !== JSON.stringify(command.originalValue) || !isValidDatabaseDateValue(command.value)) return false
-  // Wire-shape aware no-op guard: an explicit equal `end` is not an absent end,
-  // so a resize that only re-states the canonical value must not send a PATCH.
-  if (JSON.stringify(normalizeDatabaseDateValue(currentValue)) === JSON.stringify(normalizeDatabaseDateValue(command.value))) return false
+  if (split && scheduling) return false
+  let cells: Array<{ propertyId: string; value: DatabasePropertyValue }>
+  if (split) {
+    const endProperty = properties.value.find(item => item.id === split.endPropertyId)
+    const currentEnd = getCellValue(record, split.endPropertyId)
+    if (!endProperty || endProperty.type !== 'date' || !isValidDatabaseDateValue(currentValue)
+      || JSON.stringify(currentValue) !== JSON.stringify(split.startValue)
+      || JSON.stringify(currentEnd ?? null) !== JSON.stringify(split.endValue)) return false
+    if (command.originalValue === null) return false
+    const writes = splitTimelineDateWrites(split, command.originalValue, command.value)
+    if (!writes?.length) return false
+    cells = writes
+  } else {
+    if (scheduling) {
+      if (command.originalValue !== null || currentValue !== null && currentValue !== undefined
+        || (command.intent === 'form'
+          ? typeof command.value !== 'string' || normalizeDatabaseDateValue(command.value)?.kind !== 'date-only'
+          : command.intent !== 'drop' || !isValidDatabaseDateValue(command.value))) return false
+    } else if (!isValidDatabaseDateValue(currentValue) || JSON.stringify(currentValue) !== JSON.stringify(command.originalValue) || !isValidDatabaseDateValue(command.value)) return false
+    // An explicit equal `end` is not an absent end; unchanged values do not write.
+    if (JSON.stringify(normalizeDatabaseDateValue(currentValue)) === JSON.stringify(normalizeDatabaseDateValue(command.value))) return false
+    cells = [{ propertyId: property.id, value: command.value }]
+  }
   // Acquire the view-scoped busy fence before the request exists; the same key is
   // released in the finally below. A second Timeline mutation for this record +
   // property is rejected here instead of queueing behind a stale version.
-  const dateMutationKey = { recordId: record.id, propertyId: property.id }
-  if (!beginTimelineDateMutation(dateMutationKey)) return false
+  const dateMutationKeys = (split ? [split.startPropertyId, split.endPropertyId] : [property.id])
+    .map(propertyId => ({ recordId: record.id, propertyId }))
+  const ownedMutationKeys: typeof dateMutationKeys = []
+  for (const key of dateMutationKeys) {
+    if (!beginTimelineDateMutation(key)) {
+      for (const owned of ownedMutationKeys) endTimelineDateMutation(owned)
+      return false
+    }
+    ownedMutationKeys.push(key)
+  }
 
   savingCell.value = true
   mutationError.value = ''
-  const mutationId = atomicBatch ? createLocalId() : null
+  const mutationId = needsReceipt ? createLocalId() : null
   try {
-    const result = atomicBatch
+    const result = needsReceipt
       ? await mutateProductDatabaseCells(workspaceId.value, databaseId.value, {
         mutationId: mutationId!,
         expectedDatabaseVersion: command.expectedDatabaseVersion,
-        records: [{ recordId: record.id, expectedRecordVersion: command.expectedRecordVersion, cells: [{ propertyId: property.id, value: command.value }] }],
+        records: [{ recordId: record.id, expectedRecordVersion: command.expectedRecordVersion, cells }],
         context: { viewId: viewId.value, expectedViewVersion: command.expectedViewVersion! },
       })
       : await updateProductDatabaseRecordCell(workspaceId.value, databaseId.value, record.id, property.id, {
@@ -652,14 +704,14 @@ async function moveTimelineRecord(command: TimelineMoveCommand | TimelineSchedul
       // and never keep the stale optimistic position.
       await refreshLoadedWindow()
       if (!isCurrent()) return false
-      mutationError.value = atomicBatch
+      mutationError.value = needsReceipt
         ? '相关记录已发生变化，已刷新到最新版本。'
         : staleReadonly.value
           ? '日期已在其他位置被修改；刷新未完成，当前内容保持只读，请重试加载。'
           : '日期已在其他位置被修改，已刷新到最新版本。'
       return false
     }
-    if (atomicBatch && !(cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500)) {
+    if (needsReceipt && !(cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500)) {
       let receipt: Awaited<ReturnType<typeof getProductDatabaseCellMutationReceipt>> | null = null
       try { receipt = await getProductDatabaseCellMutationReceipt(workspaceId.value, databaseId.value, mutationId!) } catch { /* unresolved below */ }
       if (!isCurrent()) return false
@@ -684,8 +736,8 @@ async function moveTimelineRecord(command: TimelineMoveCommand | TimelineSchedul
     }
     if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) {
       const text = errorMessage(cause, '日期未更新，已恢复当前记录。')
-      mutationError.value = atomicBatch && /cycle|循环/u.test(text) ? '检测到循环依赖，无法自动调整日期。'
-        : atomicBatch && /limit|edge|maximum|exceed|too many|bounded|cap|超过|过大|上限|限制/u.test(text) ? '依赖链过大，未执行日期调整。'
+      mutationError.value = activePolicy && /cycle|循环/u.test(text) ? '检测到循环依赖，无法自动调整日期。'
+        : activePolicy && /limit|edge|maximum|exceed|too many|bounded|cap|超过|过大|上限|限制/u.test(text) ? '依赖链过大，未执行日期调整。'
           : errorMessage(cause, '日期未更新，已恢复当前记录。')
       return false
     }
@@ -706,8 +758,8 @@ async function moveTimelineRecord(command: TimelineMoveCommand | TimelineSchedul
     // This call owns the fence (it returned false above otherwise), so the release
     // runs for every outcome, including an identity change: a stale response can
     // never leave the record permanently busy.
-    endTimelineDateMutation(dateMutationKey)
-    if (isCurrent()) {
+    for (const key of ownedMutationKeys) endTimelineDateMutation(key)
+    if (isSameViewInstance()) {
       savingCell.value = false
       runDeferredRefresh()
     }
@@ -1171,6 +1223,17 @@ function saveTimelineSettings(config: DatabaseViewConfig): void {
   const capture = activeTimelineOverlayCapture.value
   if (!timelineSettingsForm.value?.isDirty || !capture || !isCurrentTimelineOverlay(capture, 'timeline-settings') || !writable.value) return
   void saveViewConfig(config, capture)
+}
+function setTimelineFrozenTableVisibility(visible: boolean): void {
+  if (!viewReady.value || viewType.value !== 'timeline' || viewBusy.value || !writable.value || !props.editor.isEditable) return
+  const currentOptions = viewConfig.value.options
+  const options = { ...(currentOptions ?? {}) }
+  const currentTimeline = (currentOptions as DatabaseTimelineViewOptions | undefined)?.timeline
+  options.timeline = {
+    ...(currentTimeline ?? {}),
+    frozenTable: { visibleProperties: null, propertyOrder: null, ...(currentTimeline?.frozenTable ?? {}), visible },
+  }
+  void saveViewConfig({ ...viewConfig.value, options })
 }
 function captureTimelineOverlay(kind: TimelineOverlayKind): TimelineOverlayCapture {
   return { kind, epoch: timelineOverlayEpoch.value, identityEpoch: viewIdentityEpoch, scope: timelineScope.value, user: userId.value, workspace: workspaceId.value, database: databaseId.value, view: viewId.value, block: blockId.value }
@@ -2389,7 +2452,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
 </script>
 
 <template>
-  <NodeViewWrapper :id="`database-block-${blockId}`" class="eotion-database" :data-view-id="viewId" :data-view-ready="viewReady ? 'true' : 'false'" :data-cell-popover="cellPopover?.propertyId ?? ''" contenteditable="false" aria-label="数据库视图">
+  <NodeViewWrapper :id="`database-block-${blockId}`" class="eotion-database" :class="{ 'eotion-database--timeline': viewType === 'timeline' }" :data-view-id="viewId" :data-view-ready="viewReady ? 'true' : 'false'" :data-cell-popover="cellPopover?.propertyId ?? ''" contenteditable="false" aria-label="数据库视图">
     <header class="eotion-database-header">
       <span class="eotion-database-mark" data-icon-name="database" aria-hidden="true" @click.stop="selectBlock"><EotionIcon :name="IconName.Database" :size="20" /></span>
       <span class="eotion-database-copy" @click.stop="selectBlock"><strong>{{ title }}</strong></span>
@@ -2559,7 +2622,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable && timelineEditorEditable" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :prepare-schedule="prepareTimelineSchedule" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" />
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable && timelineEditorEditable" :view-busy="viewBusy" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :prepare-schedule="prepareTimelineSchedule" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" @toggle-frozen-table="setTimelineFrozenTableVisibility" />
       <div v-else-if="viewType === 'table' && properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>
@@ -2625,6 +2688,8 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
 
 <style scoped>
 .eotion-database { display:block; min-width:0; margin:12px 0; overflow:hidden; border:1px solid var(--border-editor); border-radius:9px; background:var(--surface-raised); color:var(--editor-text); }
+.eotion-database--timeline { border:0; border-radius:0; background:transparent; }
+.eotion-database--timeline > .eotion-database-header,:deep(.eotion-database--timeline .eotion-timeline-header) { padding-inline:14px; }
 .eotion-database :deep(.eotion-product-overlay--page) { position:fixed; inset:0; width:100vw; height:100dvh; z-index:1000; padding:24px max(24px,calc((100vw - 960px)/2)); }
 .eotion-database-advanced { display:grid; gap:10px; font-size:13px; }
 .eotion-database-advanced label { display:grid; gap:5px; min-width:0; color:var(--editor-muted); }

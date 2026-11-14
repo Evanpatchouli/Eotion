@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { DatabaseProperty } from '@eotion/domain/database'
 import type { TimelineRowGeometry } from './layout'
+import EotionIcon from '../../ui/EotionIcon.vue'
+import { IconName } from '../../ui/icons'
 
 const props = defineProps<{
   columns: readonly DatabaseProperty[]
@@ -10,12 +12,14 @@ const props = defineProps<{
   pinY: number
   selectedPageId: string | null
   hoveredRecordId: string | null
+  toggleDisabled: boolean
 }>()
 
 const emit = defineEmits<{
   openRecord: [event: MouseEvent, pageId: string]
   hoverRecord: [recordId: string | null]
   focusRow: [rowIndex: number]
+  toggleVisibility: []
 }>()
 
 function isTitle(property: DatabaseProperty): boolean {
@@ -39,6 +43,16 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
         <div v-for="property in columns" :key="property.id" class="eotion-timeline-frozen-cell" :class="{ 'is-title': isTitle(property) }" :title="property.name" :data-property-id="property.id">
           <span>{{ property.name }}</span>
         </div>
+        <button
+          class="eotion-timeline-frozen-toggle"
+          type="button"
+          data-testid="timeline-frozen-toggle"
+          aria-label="折叠左侧记录表格"
+          aria-expanded="true"
+          title="折叠左侧记录表格"
+          :disabled="toggleDisabled"
+          @click="emit('toggleVisibility')"
+        ><EotionIcon :name="IconName.SidebarClose" :size="18" aria-hidden="true" /></button>
       </div>
     </div>
     <div class="eotion-timeline-frozen-body" :style="{ height: `${bodyHeight}px`, minHeight: `${bodyHeight}px` }" data-testid="timeline-frozen-body">
@@ -77,6 +91,10 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
 .eotion-timeline-frozen { position:relative; flex:0 1 32%; width:32%; min-width:120px; max-width:min(480px, 45%); overflow:clip; border-right:1px solid var(--e-color-border, var(--border-editor)); }
 .eotion-timeline-frozen-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); }
 .eotion-timeline-frozen-header { position:absolute; top:0; left:0; display:flex; width:100%; height:var(--timeline-header-height, 56px); overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
+.eotion-timeline-frozen-toggle { position:absolute; z-index:2; top:8px; right:6px; display:inline-flex; width:36px; height:36px; flex:0 0 36px; align-items:center; justify-content:center; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:0; background:var(--e-color-canvas, var(--editor-canvas)); color:var(--e-color-text-secondary, var(--editor-muted)); cursor:pointer; }
+.eotion-timeline-frozen-toggle:hover:not(:disabled) { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }
+.eotion-timeline-frozen-toggle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:2px; }
+.eotion-timeline-frozen-toggle:disabled { cursor:not-allowed; opacity:.55; }
 .eotion-timeline-frozen-body { position:relative; min-height:240px; overflow:clip; }
 .eotion-timeline-frozen-row { position:absolute; left:0; display:flex; width:100%; border-bottom:1px solid var(--e-color-border, var(--border-editor)); }
 .eotion-timeline-frozen-row.is-hovered { background:var(--e-color-hover, var(--editor-hover)); }

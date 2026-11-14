@@ -360,7 +360,15 @@ export function useTimelineDependencyInteraction(options: Options) {
   }
   function onVisibilityChange(): void { if (document.visibilityState === 'hidden') cancel() }
 
-  watch([options.scope, options.transform, options.configKey], () => {
+  // A resize observer may replace the transform object without changing any
+  // coordinate. Only a real viewport transition invalidates an interaction;
+  // synchronous watching still fences an A → B → A transition.
+  const transformIdentity = () => {
+    const transform = options.transform()
+    return transform ? JSON.stringify([transform.originMs, transform.pxPerMs, transform.scrollLeft, transform.width,
+      transform.scale, transform.generation, transform.displayTimeZone]) : ''
+  }
+  watch([options.scope, transformIdentity, options.configKey], () => {
     contextEpoch += 1
     const current = active.value
     if (current && !contextCurrent(current)) cancel(false)

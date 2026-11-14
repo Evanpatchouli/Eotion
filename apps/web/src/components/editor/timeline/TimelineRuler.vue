@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { TimelineTick } from './types'
 
-const props = defineProps<{ ticks: (TimelineTick & { labelOffsetX: number })[] }>()
+const props = defineProps<{ ticks: (TimelineTick & { labelOffsetX: number })[]; todayX: number | null }>()
 const positionedTicks = computed(() => props.ticks.map(tick => ({
   ...tick,
   style: { left: `${tick.x}px`, width: `${tick.width}px` },
@@ -18,7 +18,7 @@ const positionedTicks = computed(() => props.ticks.map(tick => ({
 <template>
   <div class="eotion-timeline-ruler" data-testid="timeline-ruler" aria-hidden="true">
     <div v-for="tick in positionedTicks" :key="tick.key" class="eotion-timeline-ruler-tick" :class="`eotion-timeline-ruler-tick--${tick.level}`" :style="tick.style">
-      <span class="eotion-timeline-ruler-label" :class="`eotion-timeline-ruler-label--${tick.level}`" :style="tick.labelStyle" :title="tick.label">{{ tick.label }}</span>
+      <span class="eotion-timeline-ruler-label" :class="[`eotion-timeline-ruler-label--${tick.level}`, { 'is-today': tick.level === 'minor' && tick.unit === 'day' && todayX !== null && Math.abs(tick.x - todayX) < 0.5 }]" :style="tick.labelStyle" :title="tick.label" :data-today="tick.level === 'minor' && tick.unit === 'day' && todayX !== null && Math.abs(tick.x - todayX) < 0.5 ? 'true' : undefined">{{ tick.label }}</span>
     </div>
   </div>
 </template>
@@ -31,5 +31,6 @@ const positionedTicks = computed(() => props.ticks.map(tick => ({
 .eotion-timeline-ruler-label { position:absolute; display:block; width:max-content; max-width:min(260px,80vw); overflow:hidden; padding:5px; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:11px; line-height:14px; text-overflow:ellipsis; white-space:nowrap; }
 .eotion-timeline-ruler-label--major { top:0; color:var(--e-color-text-primary, var(--editor-text)); font-size:12px; font-weight:600; }
 .eotion-timeline-ruler-label--minor { top:28px; color:var(--e-color-text-secondary, var(--editor-muted)); }
+.eotion-timeline-ruler-label--minor.is-today { transform:translateX(-50%); border-radius:4px; background:var(--e-color-danger, var(--editor-danger)); color:var(--e-color-canvas, var(--editor-canvas)); font-weight:600; }
 @media (pointer:coarse) { .eotion-timeline-ruler-label--minor { top:32px; } }
 </style>

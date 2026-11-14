@@ -91,7 +91,7 @@ const selectedEdgePosition = computed(() => {
 })
 function selectDependencyEdge(id: string): void {
   dependency.selectEdge(id)
-  dependencyControl.value?.focus()
+  dependencyControl.value?.focus({ preventScroll: true })
 }
 function activateDependencyControl(keyboard: boolean): void {
   // Browser focus selects the first edge before click. A pointer's first
@@ -202,31 +202,13 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
   <div class="eotion-timeline-viewport" data-testid="timeline-viewport" :data-generation="state?.generation">
     <span class="eotion-timeline-dependency-live" :class="{ 'is-visible': dependency.showKeyboardStatus.value }" aria-live="polite" aria-atomic="true" data-testid="timeline-dependency-live">{{ dependency.liveMessage.value }}</span>
     <div class="eotion-timeline-ruler-slot">
-      <button
-        v-if="dependencyEdges.length"
-        ref="dependencyControl"
-        class="eotion-timeline-dependency-control"
-        type="button"
-        data-testid="timeline-dependency-control"
-        :data-selected-edge-id="dependency.selectedEdgeId.value ?? undefined"
-        :aria-label="dependency.selectedEdge.value ? `删除依赖：${recordTitleById.get(dependency.selectedEdge.value.predecessorRecordId) || '无标题'} → ${recordTitleById.get(dependency.selectedEdge.value.successorRecordId) || '无标题'}。第 ${selectedEdgePosition}/${dependencyEdges.length} 条，方向键选择` : `管理 ${dependencyEdges.length} 条依赖关系。方向键选择，Delete 删除`"
-        :aria-busy="dependency.pending.value ? 'true' : 'false'"
-        :aria-disabled="!dependencyEditable || !online || dependency.pending.value ? 'true' : undefined"
-        @focus="!dependency.selectedEdge.value && dependency.selectRelative(1)"
-        @keydown="onDependencyControlKeydown"
-        @pointerdown.stop="onDependencyControlPointerDown"
-        @pointerup.stop="onDependencyControlPointerUp"
-        @pointercancel="dependencyTouchSession = null"
-        @click="onDependencyControlClick"
-      >{{ dependency.selectedEdge.value ? `删除依赖 ${selectedEdgePosition}/${dependencyEdges.length}` : `依赖关系 ${dependencyEdges.length}` }}</button>
-      <span v-if="dependency.pending.value" class="eotion-timeline-dependency-status" role="status">正在保存依赖关系…</span>
       <div
         class="eotion-timeline-ruler-anchor"
         :style="rulerAnchorStyle"
         data-testid="timeline-ruler-anchor"
         :ref="setRulerAnchor"
       >
-        <TimelineRuler :ticks="rulerTicks" />
+        <TimelineRuler :ticks="rulerTicks" :today-x="todayX === null ? null : todayX - (state?.scrollLeft ?? 0)" />
       </div>
     </div>
     <div
@@ -255,7 +237,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
           :onPointerdownCapture="dependency.active.value ? guardConcurrentPointer : undefined"
         >
           <div class="eotion-timeline-draw-window" :style="overlayStyle" aria-hidden="true">
-            <TimelineGrid :ticks="gridTicks" />
+            <TimelineGrid :ticks="gridTicks" :display-time-zone="displayTimeZone" :state="state" :transform="transform" />
           </div>
           <TimelineDependencyLayer
             :edges="dependencyEdges"
@@ -355,15 +337,37 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
         </div>
       </div>
     </div>
+    <div v-if="dependencyEdges.length || dependency.pending.value" class="eotion-timeline-dependency-toolbar">
+      <span v-if="dependency.pending.value" class="eotion-timeline-dependency-status" role="status">正在保存依赖关系…</span>
+      <button
+        v-if="dependencyEdges.length"
+        ref="dependencyControl"
+        class="eotion-timeline-dependency-control"
+        type="button"
+        data-testid="timeline-dependency-control"
+        :data-selected-edge-id="dependency.selectedEdgeId.value ?? undefined"
+        :aria-label="dependency.selectedEdge.value ? `删除依赖：${recordTitleById.get(dependency.selectedEdge.value.predecessorRecordId) || '无标题'} → ${recordTitleById.get(dependency.selectedEdge.value.successorRecordId) || '无标题'}。第 ${selectedEdgePosition}/${dependencyEdges.length} 条，方向键选择` : `管理 ${dependencyEdges.length} 条依赖关系。方向键选择，Delete 删除`"
+        :aria-busy="dependency.pending.value ? 'true' : 'false'"
+        :aria-disabled="!dependencyEditable || !online || dependency.pending.value ? 'true' : undefined"
+        @focus="!dependency.selectedEdge.value && dependency.selectRelative(1)"
+        @keydown="onDependencyControlKeydown"
+        @pointerdown.stop="onDependencyControlPointerDown"
+        @pointerup.stop="onDependencyControlPointerUp"
+        @pointercancel="dependencyTouchSession = null"
+        @click="onDependencyControlClick"
+      >{{ dependency.selectedEdge.value ? `删除依赖 ${selectedEdgePosition}/${dependencyEdges.length}` : `依赖关系 ${dependencyEdges.length}` }}</button>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .eotion-timeline-viewport { --timeline-offscreen-jump-size:28px; --timeline-dependency-handle-half-size:9px; position:relative; min-width:0; max-width:100%; overflow:clip; }
 .eotion-timeline-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); }
-.eotion-timeline-dependency-control { position:absolute; z-index:4; right:6px; top:4px; min-height:26px; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:2px 8px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-primary, var(--editor-text)); font:inherit; font-size:11px; cursor:pointer; }
+.eotion-timeline-dependency-toolbar { display:flex; min-width:0; align-items:center; justify-content:flex-end; gap:8px; padding:4px 0; }
+.eotion-timeline-dependency-control { min-height:26px; border:0; border-radius:var(--e-radius-control, 6px); padding:2px 8px; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; font-size:11px; cursor:pointer; }
+.eotion-timeline-dependency-control:hover { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }
 .eotion-timeline-dependency-control:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); }
-.eotion-timeline-dependency-status { position:absolute; z-index:4; right:8px; bottom:2px; padding:2px 5px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-secondary, var(--editor-muted)); font-size:10px; }
+.eotion-timeline-dependency-status { padding:2px 5px; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:10px; }
 .eotion-timeline-dependency-live { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0, 0, 0, 0); clip-path:inset(50%); white-space:nowrap; }
 .eotion-timeline-dependency-live.is-visible { z-index:5; top:32px; left:8px; box-sizing:border-box; width:max-content; max-width:calc(100% - 16px); height:auto; overflow:hidden; clip:auto; clip-path:none; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:3px 8px; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-primary, var(--editor-text)); font-size:11px; line-height:16px; white-space:normal; overflow-wrap:anywhere; pointer-events:none; }
 .eotion-timeline-ruler-anchor { position:absolute; top:0; left:0; width:100%; height:var(--timeline-header-height, 56px); overflow:hidden; background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
@@ -387,7 +391,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-row.is-hovered { background:color-mix(in srgb, var(--e-color-hover, var(--editor-hover)) 48%, transparent); }
 .eotion-timeline-row.is-selected { background:color-mix(in srgb, var(--e-color-selected, var(--editor-selected)) 56%, transparent); }
 .eotion-timeline-row-content { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
-.eotion-timeline-offscreen-jump { position:absolute; z-index:7; top:50%; display:grid; width:var(--timeline-offscreen-jump-size); height:var(--timeline-offscreen-jump-size); transform:translateY(-50%); place-items:center; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:0; background:var(--e-color-surface, var(--editor-surface)); color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; line-height:1; cursor:pointer; pointer-events:auto; }
+.eotion-timeline-offscreen-jump { position:absolute; z-index:7; top:50%; display:grid; width:var(--timeline-offscreen-jump-size); height:var(--timeline-offscreen-jump-size); transform:translateY(-50%); place-items:center; border:0; border-radius:var(--e-radius-control, 6px); padding:0; background:transparent; color:var(--e-color-text-secondary, var(--editor-muted)); font:inherit; line-height:1; cursor:pointer; pointer-events:auto; }
 .eotion-timeline-offscreen-jump.is-clipped { top:0; height:20px; transform:none; }
 .eotion-timeline-offscreen-jump:hover { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }
 .eotion-timeline-offscreen-jump:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:2px; }
@@ -398,7 +402,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
 .eotion-timeline-unscheduled button { flex:0 0 auto; min-height:32px; border:0; border-radius:var(--e-radius-control, 6px); padding:0 8px; background:transparent; color:var(--e-color-accent, var(--editor-accent)); font:inherit; cursor:pointer; }
 .eotion-timeline-unscheduled button:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
 @media (pointer:coarse) {
-  .eotion-timeline-dependency-control { top:0; width:min(140px,calc(100% - 12px)); min-height:36px; }
+  .eotion-timeline-dependency-control { max-width:140px; min-height:36px; }
   .eotion-timeline-unscheduled button { min-height:36px; }
   .eotion-timeline-viewport { --timeline-offscreen-jump-size:36px; --timeline-dependency-handle-half-size:14px; }
 }

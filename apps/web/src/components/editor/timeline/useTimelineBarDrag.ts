@@ -8,7 +8,7 @@ import {
   isTimelineDateMutationBusy,
   type TimelineInteractionPhase,
 } from './interaction'
-import type { TimelineMoveCommand } from './mutation'
+import type { TimelineMoveCommand, TimelineSplitDateSource } from './mutation'
 import { offsetTimelineDateValue, resizeTimelineDateValueFromX, temporalOffsetFromX } from './mutation'
 import { resolveTimelineTemporalGeometry } from './geometry'
 import { layoutTimelineItem, type TimelineItemGeometry } from './layout'
@@ -22,9 +22,15 @@ export type TimelineBarDragSession = Readonly<{
   expectedDatabaseVersion: number
   expectedRecordVersion: number
   originalValue: DatabaseDateValue
+  splitSource?: TimelineSplitDateSource
   viewIdentityEpoch: number
   viewRoot: HTMLElement | null
 }>
+
+function isDateSourceMutationBusy(session: TimelineBarDragSession): boolean {
+  return isTimelineDateMutationBusy(session) || Boolean(session.splitSource
+    && isTimelineDateMutationBusy({ recordId: session.recordId, propertyId: session.splitSource.endPropertyId }))
+}
 
 /** DOM projection of the interaction phase; `armed`/`dragging` are both previewing. */
 export type TimelineBarDragState = 'idle' | 'armed' | 'dragging' | 'saving'
@@ -126,17 +132,42 @@ export function useTimelineBarDrag(options: Options) {
   const pendingMode = computed<DragMode | null>(() => pending.value?.mode ?? null)
   const suppressNextClick = ref(false)
   let previewListeners: AbortController | null = null
+  let blockedPointerListeners: AbortController | null = null
   const geometry = computed(() => previewGeometry.value ?? options.geometry())
   const date = computed(() => previewDate(previewValue.value))
   const mutationBusy = computed(() => {
     const session = pending.value?.session
     if (phase.value !== 'pending' || !session) return false
-    return isTimelineDateMutationBusy(session)
+    return isDateSourceMutationBusy(session)
   })
 
   function releasePreviewListeners(): void {
     previewListeners?.abort()
     previewListeners = null
+  }
+
+  /** A readonly bar still opens on click, but a failed drag must not open it. */
+  function trackBlockedPointer(event: PointerEvent): void {
+    blockedPointerListeners?.abort()
+    const controller = new AbortController()
+    blockedPointerListeners = controller
+    const { pointerId, clientX, clientY } = event
+    const moved = (next: PointerEvent) => Math.hypot(next.clientX - clientX, next.clientY - clientY) >= TIMELINE_DRAG_THRESHOLD_PX
+    const finish = (next: PointerEvent) => {
+      if (next.pointerId !== pointerId) return
+      if (moved(next)) suppressNextClick.value = true
+      controller.abort()
+      if (blockedPointerListeners === controller) blockedPointerListeners = null
+    }
+    window.addEventListener('pointermove', next => {
+      if (next.pointerId === pointerId && moved(next)) suppressNextClick.value = true
+    }, { capture: true, signal: controller.signal })
+    window.addEventListener('pointerup', finish, { capture: true, signal: controller.signal })
+    window.addEventListener('pointercancel', finish, { capture: true, signal: controller.signal })
+    window.addEventListener('blur', () => {
+      controller.abort()
+      if (blockedPointerListeners === controller) blockedPointerListeners = null
+    }, { signal: controller.signal })
   }
 
   function clearPreviewGeometry(): void {
@@ -186,14 +217,17 @@ export function useTimelineBarDrag(options: Options) {
   }
 
   function begin(event: PointerEvent, mode: DragMode = 'move'): void {
-    if (active.value || pending.value) return
+    if (active.value) return
+    blockedPointerListeners?.abort()
+    blockedPointerListeners = null
     suppressNextClick.value = false
-    if (!options.enabled() || event.button !== 0 || event.isPrimary === false || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (event.button !== 0 || event.isPrimary === false || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (pending.value || !options.enabled()) { if (mode === 'move') trackBlockedPointer(event); return }
     const transform = options.transform()
-    if (!transform || !options.isViewportCurrent(transform) || !Number.isFinite(options.recordVersion())) return
+    if (!transform || !options.isViewportCurrent(transform) || !Number.isFinite(options.recordVersion())) { if (mode === 'move') trackBlockedPointer(event); return }
     const session = options.prepareDrag(options.item().recordId)
-    if (!session || session.scope !== options.scope() || session.expectedRecordVersion !== options.recordVersion()) return
-    if (isTimelineDateMutationBusy(session)) return
+    if (!session || session.scope !== options.scope() || session.expectedRecordVersion !== options.recordVersion()) { if (mode === 'move') trackBlockedPointer(event); return }
+    if (isDateSourceMutationBusy(session)) { if (mode === 'move') trackBlockedPointer(event); return }
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
     if (ledger.begin() === null) return
@@ -324,6 +358,7 @@ export function useTimelineBarDrag(options: Options) {
   }
 
   function click(event: MouseEvent): boolean {
+    if (event.detail === 0) { suppressNextClick.value = false; return false }
     if (!suppressNextClick.value) return false
     event.preventDefault()
     event.stopPropagation()
@@ -383,6 +418,8 @@ export function useTimelineBarDrag(options: Options) {
   onBeforeUnmount(() => {
     cancel()
     suppressNextClick.value = false
+    blockedPointerListeners?.abort()
+    blockedPointerListeners = null
     window.removeEventListener('blur', onWindowBlur)
     releasePreviewListeners()
   })

@@ -252,8 +252,8 @@ test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, a
   const standaloneTimeline = page.locator('#database-block-p113b-start-end-block').getByTestId('database-timeline')
   const standalone = standaloneTimeline.locator('[data-testid="timeline-bar"][data-record-id="p113b-standalone"]')
   await expect(standalone).toBeVisible()
-  await expect(standaloneTimeline.locator('[data-testid="timeline-resize-start"][data-record-id="p113b-standalone"]')).toHaveCount(0)
-  await expect(standaloneTimeline.locator('[data-testid="timeline-resize-end"][data-record-id="p113b-standalone"]')).toHaveCount(0)
+  await expect(standaloneTimeline.locator('[data-testid="timeline-resize-start"][data-record-id="p113b-standalone"]')).toHaveCount(1)
+  await expect(standaloneTimeline.locator('[data-testid="timeline-resize-end"][data-record-id="p113b-standalone"]')).toHaveCount(1)
   expect(beforePatchCount()).toBe(4)
   const noOpCount = beforePatchCount()
   const noOpBounds = await endHandle.boundingBox()
@@ -354,6 +354,150 @@ test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, a
     await expect(databaseBlock.locator(`[data-timeline-frozen-row][data-record-id="${id}"] [data-property-id="${date.id}"]`)).toContainText(`${start} → ${start}`)
   }
   expect(runtimeErrors).toEqual([])
+})
+
+test('Timeline separate Start and End drag and resize submit one physical cell batch per gesture', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const start = property('split-start', rootDatabase.id, 'Start', 'date')
+  const end = property('split-end', rootDatabase.id, 'End', 'date')
+  const timelineView = view('split-view', rootDatabase.id, 'Separate dates', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id } } },
+  }, 'timeline')
+  const items = [
+    record('split-range', rootDatabase.id, 'split-range-page', { 'root-title': 'Separate range', [start.id]: '2026-10-13', [end.id]: '2026-10-15' }),
+    record('split-point', rootDatabase.id, 'split-point-page', { 'root-title': 'Separate point', [start.id]: '2026-10-18', [end.id]: null }),
+  ]
+  const api = await installApi(page, [block('split-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], views: [timelineView], properties: [...rootProperties, start, end], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties['root-title']), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-split-block').getByTestId('database-timeline')
+  const bar = (id: string) => timeline.locator(`[data-testid="timeline-bar"][data-record-id="${id}"]`)
+  const batches = () => api.requests.filter(request => request.method === 'POST' && request.path.endsWith('/cell-mutations'))
+  const cells = () => (batches().at(-1)?.payload as { records: Array<{ cells: Array<{ propertyId: string; value: unknown }> }>; context: { viewId: string; expectedViewVersion: number } }).records[0]!.cells
+  await expect(bar('split-range')).toBeVisible()
+  const before = batches().length
+  await dragTimelineBar(page, bar('split-range'), pxPerMs('month') * 86_400_000)
+  await expect.poll(() => api.records.find(item => item.id === 'split-range')?.properties).toMatchObject({ [start.id]: '2026-10-14', [end.id]: '2026-10-16' })
+  expect(batches()).toHaveLength(before + 1)
+  expect(cells()).toEqual([{ propertyId: start.id, value: '2026-10-14' }, { propertyId: end.id, value: '2026-10-16' }])
+  expect((batches().at(-1)?.payload as { context: unknown }).context).toEqual({ viewId: timelineView.id, expectedViewVersion: timelineView.version })
+  await expect(bar('split-range')).toHaveAttribute('title', /2026-10-14.*2026-10-16/u)
+  const startHandle = timeline.locator('[data-testid="timeline-resize-start"][data-record-id="split-range"]')
+  await p113bResize(page, bar('split-range'), startHandle, 'month', '2026-10-14T00:00:00.000Z', -1)
+  await expect.poll(() => api.records.find(item => item.id === 'split-range')?.properties[start.id]).toBe('2026-10-13')
+  expect(cells()).toEqual([{ propertyId: start.id, value: '2026-10-13' }])
+  const endHandle = timeline.locator('[data-testid="timeline-resize-end"][data-record-id="split-range"]')
+  await p113bResize(page, bar('split-range'), endHandle, 'month', '2026-10-17T00:00:00.000Z')
+  await expect.poll(() => api.records.find(item => item.id === 'split-range')?.properties[end.id]).toBe('2026-10-17')
+  expect(cells()).toEqual([{ propertyId: end.id, value: '2026-10-17' }])
+  const pointEnd = timeline.locator('[data-testid="timeline-resize-end"][data-record-id="split-point"]')
+  await p113bResize(page, bar('split-point'), pointEnd, 'month', '2026-10-18T00:00:00.000Z')
+  await expect.poll(() => api.records.find(item => item.id === 'split-point')?.properties[end.id]).toBe('2026-10-18')
+  expect(cells()).toEqual([{ propertyId: end.id, value: '2026-10-18' }])
+  const count = batches().length
+  const bounds = await pointEnd.boundingBox()
+  if (!bounds) throw new Error('Expected split point end handle')
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(bounds.x + bounds.width / 2 + pxPerMs('month') * 86_400_000, bounds.y + bounds.height / 2, { steps: 4 })
+  await expect(bar('split-point')).toHaveAttribute('data-drag-state', 'dragging')
+  await page.keyboard.press('Escape')
+  await page.mouse.up()
+  expect(batches()).toHaveLength(count)
+  api.conflictCellBatchMutations = 1
+  await dragTimelineBar(page, bar('split-range'), pxPerMs('month') * 86_400_000)
+  await expect(page.locator('#database-block-split-block').getByRole('alert')).toContainText('相关记录已发生变化')
+  expect(api.records.find(item => item.id === 'split-range')?.properties[start.id]).toBe('2026-10-13')
+  api.cellBatchMutationOutcome = 'uncertain'
+  await dragTimelineBar(page, bar('split-range'), pxPerMs('month') * 86_400_000)
+  await expect(page.locator('#database-block-split-block').getByRole('alert').first()).toContainText('提交结果暂未确认')
+  expect(api.records.find(item => item.id === 'split-range')?.properties[start.id]).toBe('2026-10-13')
+  await expect(bar('split-range')).toHaveAttribute('data-draggable', 'false')
+})
+
+test('Timeline split date fences both properties across views while either endpoint is pending', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const start = property('fence-start', rootDatabase.id, 'Start', 'date')
+  const end = property('fence-end', rootDatabase.id, 'End', 'date')
+  const splitConfig: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'start-end', startPropertyId: start.id, endPropertyId: end.id } } } }
+  const firstView = view('fence-split-first', rootDatabase.id, 'First split', splitConfig, 'timeline')
+  const secondView = view('fence-split-second', rootDatabase.id, 'Second split', splitConfig, 'timeline')
+  const endView = view('fence-end-single', rootDatabase.id, 'End only', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: end.id } } } }, 'timeline')
+  const item = record('fence-record', rootDatabase.id, 'fence-record-page', { 'root-title': 'Shared record', [start.id]: '2026-10-13', [end.id]: '2026-10-15' })
+  const api = await installApi(page, [
+    block('fence-first-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: firstView.id } }, 100),
+    block('fence-second-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: secondView.id } }, 200),
+    block('fence-end-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: endView.id } }, 300),
+  ], { databases: [rootDatabase], views: [firstView, secondView, endView], properties: [...rootProperties, start, end], records: [item] })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Shared record', role: 'database-record' })
+  let signalBatch!: () => void
+  let releaseBatch!: () => void
+  const batchStarted = new Promise<void>(resolve => { signalBatch = resolve })
+  const batchGate = new Promise<void>(resolve => { releaseBatch = resolve })
+  let signalCell!: () => void
+  let releaseCell!: () => void
+  const cellStarted = new Promise<void>(resolve => { signalCell = resolve })
+  const cellGate = new Promise<void>(resolve => { releaseCell = resolve })
+  let batchAttempts = 0
+  let cellAttempts = 0
+  await page.route(url => new URL(url).pathname.endsWith('/cell-mutations'), async route => {
+    batchAttempts += 1
+    signalBatch()
+    await batchGate
+    await route.fallback()
+  })
+  await page.route(url => new URL(url).pathname.endsWith(`/cells/${end.id}`), async route => {
+    cellAttempts += 1
+    signalCell()
+    await cellGate
+    await route.fallback()
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const first = page.locator('#database-block-fence-first-block').getByTestId('database-timeline')
+  const second = page.locator('#database-block-fence-second-block').getByTestId('database-timeline')
+  const endOnly = page.locator('#database-block-fence-end-block').getByTestId('database-timeline')
+  const bar = (timeline: Locator) => timeline.locator('[data-testid="timeline-bar"][data-record-id="fence-record"]')
+  const batchCount = () => api.requests.filter(request => request.method === 'POST' && request.path.endsWith('/cell-mutations')).length
+  const cellCount = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/cells/${end.id}`)).length
+  const firstHandle = first.locator('[data-testid="timeline-resize-start"][data-record-id="fence-record"]')
+  const firstBounds = await firstHandle.boundingBox()
+  if (!firstBounds) throw new Error('Expected first view Start handle')
+  await page.mouse.move(firstBounds.x + firstBounds.width / 2, firstBounds.y + firstBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(firstBounds.x + firstBounds.width / 2 - pxPerMs('month') * 86_400_000, firstBounds.y + firstBounds.height / 2, { steps: 4 })
+  await expect(bar(first)).toHaveAttribute('data-drag-state', 'dragging')
+  await page.mouse.up()
+  await batchStarted
+  const secondHandle = second.locator('[data-testid="timeline-resize-end"][data-record-id="fence-record"]')
+  const secondBounds = await secondHandle.boundingBox()
+  if (!secondBounds) throw new Error('Expected second view End handle')
+  await page.mouse.move(secondBounds.x + secondBounds.width / 2, secondBounds.y + secondBounds.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(secondBounds.x + secondBounds.width / 2 + pxPerMs('month') * 86_400_000, secondBounds.y + secondBounds.height / 2, { steps: 4 })
+  await expect(bar(second)).toHaveAttribute('data-drag-state', 'idle')
+  await page.mouse.up()
+  await dragTimelineBar(page, bar(endOnly), pxPerMs('month') * 86_400_000)
+  expect(batchAttempts).toBe(1)
+  expect(cellAttempts).toBe(0)
+  releaseBatch()
+  await expect(bar(first)).toHaveAttribute('data-drag-state', 'idle')
+  await expect.poll(() => api.records.find(record => record.id === item.id)?.properties[start.id]).toBe('2026-10-12')
+  await page.reload()
+  await expect(bar(first)).toBeVisible()
+  await dragTimelineBar(page, bar(endOnly), pxPerMs('month') * 86_400_000)
+  await cellStarted
+  await dragTimelineBar(page, bar(second), pxPerMs('month') * 86_400_000)
+  expect(cellAttempts).toBe(1)
+  expect(batchAttempts).toBe(1)
+  releaseCell()
+  await expect.poll(() => api.records.find(record => record.id === item.id)?.properties[end.id]).toBe('2026-10-16')
 })
 
 async function installLocalBlockReader(page: Page): Promise<void> {
@@ -3521,6 +3665,135 @@ test('Timeline settings configure a Frozen Table and self-relation policy from t
   expect(config().options?.timeline?.frozenTable?.visible).toBe(true)
 })
 
+test('Timeline Frozen Table toggle saves merged config without remounting the viewport', async ({ page }) => {
+  const timelineView = view('settings-policy-view', rootDatabase.id, 'Schedule', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: {
+      futureOption: { keep: true },
+      timeline: {
+        scale: 'week', dateSource: { mode: 'date-property', propertyId: 'root-date' },
+        frozenTable: { visible: true, visibleProperties: ['root-title', 'root-text'], propertyOrder: ['root-title', 'root-text'] },
+      },
+    },
+  }, 'timeline')
+  const api = await installApi(page, [
+    block('policy-settings', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100),
+  ], { databases: [rootDatabase], properties: rootProperties, views: [timelineView], records: [basicRecord] })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Database row', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const db = page.locator('#database-block-policy-settings')
+  const timeline = db.getByTestId('database-timeline')
+  const frozen = timeline.getByTestId('timeline-frozen-table')
+  const toggle = timeline.getByTestId('timeline-frozen-toggle')
+  const writes = () => api.requests.filter(request => request.method === 'PATCH' && request.path.endsWith(`/views/${timelineView.id}`))
+  const config = () => api.views.find(item => item.id === timelineView.id)!.config
+  await expect(timeline).toBeVisible()
+  await expect(frozen).toBeVisible()
+  await timeline.evaluate(root => {
+    const viewport = root.querySelector('[data-testid="timeline-viewport"]')
+    const scroller = root.querySelector('[data-testid="timeline-scroll"]')
+    if (!viewport || !scroller) throw new Error('Expected mounted Timeline viewport and native scroller')
+    ;(window as Window & { __frozenToggleRefs?: { viewport: Element; scroller: Element } }).__frozenToggleRefs = { viewport, scroller }
+  })
+
+  await toggle.click()
+  await expect(frozen).toHaveCount(0)
+  await expect.poll(() => config().options?.timeline?.frozenTable?.visible).toBe(false)
+  expect(writes()).toHaveLength(1)
+  expect(writes()[0]?.payload.config).toMatchObject({ options: {
+    futureOption: { keep: true },
+    timeline: {
+      scale: 'week', dateSource: { mode: 'date-property', propertyId: 'root-date' },
+      frozenTable: { visible: false, visibleProperties: ['root-title', 'root-text'], propertyOrder: ['root-title', 'root-text'] },
+    },
+  } })
+  await expect(timeline.getByTestId('timeline-frozen-toggle')).toHaveAttribute('aria-label', '展开左侧记录表格')
+  await expect(timeline.getByTestId('timeline-frozen-toggle')).toBeFocused()
+  await timeline.getByTestId('timeline-frozen-toggle').focus()
+  await page.keyboard.press('Enter')
+  await expect(frozen).toBeVisible()
+  await expect(timeline.getByTestId('timeline-frozen-toggle')).toBeFocused()
+  await expect.poll(() => config().options?.timeline?.frozenTable?.visible).toBe(true)
+  expect(writes()).toHaveLength(2)
+  expect(await timeline.evaluate(root => {
+    const previous = (window as Window & { __frozenToggleRefs?: { viewport: Element; scroller: Element } }).__frozenToggleRefs
+    return Boolean(previous && root.querySelector('[data-testid="timeline-viewport"]') === previous.viewport
+      && root.querySelector('[data-testid="timeline-scroll"]') === previous.scroller)
+  })).toBe(true)
+  await expect(timeline.locator('[data-timeline-frozen-row][data-record-id="root-record"]')).toHaveCount(1)
+
+  api.failViewUpdates = 1
+  await timeline.getByTestId('timeline-frozen-toggle').click()
+  await expect(db.getByRole('alert')).toContainText('View temporarily unavailable')
+  await expect(frozen).toBeVisible()
+  expect(config().options?.timeline?.frozenTable?.visible).toBe(true)
+  expect(writes()).toHaveLength(3)
+
+  await page.locator('.document-wrap .eotion-editor').evaluate(element => {
+    const candidate = (element as Element & { __vueParentComponent?: { exposed?: { editor?: any } } }).__vueParentComponent?.exposed?.editor
+    const editor = candidate?.view ? candidate : candidate?.value
+    if (!editor?.setEditable) throw new Error('Expected the parent Tiptap Editor to toggle editability')
+    editor.setEditable(false)
+  })
+  await expect(timeline.getByTestId('timeline-frozen-toggle')).toBeDisabled()
+  expect(config().options?.timeline?.frozenTable?.visible).toBe(true)
+  expect(writes()).toHaveLength(3)
+})
+
+test('Timeline default left table expands and does not reclaim focus moved during save', async ({ page }) => {
+  const timelineView = view('default-frozen-view', rootDatabase.id, 'Default Timeline', {
+    ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: 'root-date' } } },
+  }, 'timeline')
+  const api = await installApi(page, [block('default-frozen-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: timelineView.id } }, 100)], {
+    databases: [rootDatabase], properties: rootProperties, views: [timelineView], records: [basicRecord],
+  })
+  api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Database row', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const timeline = page.locator('#database-block-default-frozen-block').getByTestId('database-timeline')
+  const toggle = timeline.getByTestId('timeline-frozen-toggle')
+  const today = timeline.locator('button.eotion-timeline-today')
+  let startRequest!: () => void
+  let releaseRequest!: () => void
+  const started = new Promise<void>(resolve => { startRequest = resolve })
+  const gate = new Promise<void>(resolve => { releaseRequest = resolve })
+  await page.route(url => new URL(url).pathname.endsWith(`/views/${timelineView.id}`), async route => {
+    startRequest()
+    await gate
+    await route.fallback()
+  })
+  await toggle.focus()
+  await page.keyboard.press('Enter')
+  await started
+  await today.focus()
+  releaseRequest()
+  await expect(timeline.getByTestId('timeline-frozen-table')).toBeVisible()
+  await expect(today).toBeFocused()
+  await expect.poll(() => api.views.find(item => item.id === timelineView.id)?.config.options?.timeline?.frozenTable?.visible).toBe(true)
+  const patch = api.requests.find(request => request.method === 'PATCH' && request.path.endsWith(`/views/${timelineView.id}`))
+  expect(patch?.payload.config.options.timeline.frozenTable).toEqual({ visible: true, visibleProperties: null, propertyOrder: null })
+
+  let startSecondRequest!: () => void
+  let releaseSecondRequest!: () => void
+  const secondStarted = new Promise<void>(resolve => { startSecondRequest = resolve })
+  const secondGate = new Promise<void>(resolve => { releaseSecondRequest = resolve })
+  await page.route(url => new URL(url).pathname.endsWith(`/views/${timelineView.id}`), async route => {
+    startSecondRequest()
+    await secondGate
+    await route.fallback()
+  })
+  const editor = page.locator('.eotion-editor-content .tiptap')
+  await editor.focus()
+  await expect(editor).toBeFocused()
+  await timeline.getByTestId('timeline-frozen-toggle').click()
+  await secondStarted
+  await expect(editor).toBeFocused()
+  await page.keyboard.press('ArrowRight')
+  releaseSecondRequest()
+  await expect(timeline.getByTestId('timeline-frozen-table')).toHaveCount(0)
+  await expect(editor).toBeFocused()
+})
+
 test('Timeline date settings ignore an older PATCH response after offline closes and the overlay reopens', async ({ page, context }) => {
   const start = property('timeline-offline-start', rootDatabase.id, 'Start', 'date')
   const end = property('timeline-offline-end', rootDatabase.id, 'End', 'date')
@@ -5841,7 +6114,7 @@ test('Timeline keeps the viewport centered across navigation, rebase, resize, lo
     const style = getComputedStyle(element)
     return { borderWidth: style.borderLeftWidth, borderStyle: style.borderLeftStyle, borderColor: style.borderLeftColor, pointerEvents: style.pointerEvents }
   })
-  expect(todayLineStyle.borderWidth).toBe('2px')
+  expect(todayLineStyle.borderWidth).toBe('1px')
   expect(todayLineStyle.borderStyle).toBe('solid')
   expect(todayLineStyle.borderColor).not.toBe('rgba(0, 0, 0, 0)')
   expect(todayLineStyle.pointerEvents).toBe('none')
@@ -8732,7 +9005,7 @@ test('P11.3A Timeline date-property drag previews locally and commits one CAS up
   await expect(page.locator('vite-error-overlay')).toHaveCount(0)
 })
 
-test('P11.3A Timeline datetime drag preserves timezone, milliseconds, and range duration; start-end bars stay read-only', async ({ page }) => {
+test('P11.3A Timeline datetime drag preserves timezone, milliseconds, and range duration; start-end bars are draggable', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.clock.setFixedTime(new Date('2026-10-13T12:00:00.000Z'))
   const datetime = property('p113a-datetime', rootDatabase.id, 'When', 'date')
@@ -8776,15 +9049,9 @@ test('P11.3A Timeline datetime drag preserves timezone, milliseconds, and range 
   await moveByHour(items[1]!.id)
   expect(api.records.find(item => item.id === items[0]!.id)?.properties[datetime.id]).toEqual({ start: '2026-10-13T13:30:12.345Z', timeZone: 'America/New_York' })
   expect(api.records.find(item => item.id === items[1]!.id)?.properties[datetime.id]).toEqual({ start: '2026-10-13T14:15:12.345Z', end: '2026-10-13T15:45:45.678Z', timeZone: 'America/New_York' })
-  await expect(readonlyTimeline.locator('[data-testid="timeline-bar"][data-record-id="p113a-datetime-point"]')).toHaveAttribute('data-draggable', 'false')
+  await expect(readonlyTimeline.locator('[data-testid="timeline-bar"][data-record-id="p113a-datetime-point"]')).toHaveAttribute('data-draggable', 'true')
   const readonlyBar = readonlyTimeline.locator('[data-testid="timeline-bar"][data-record-id="p113a-datetime-point"]')
-  const readonlyBounds = await readonlyBar.boundingBox()
-  if (!readonlyBounds) throw new Error('Expected start-end bar to remain visible')
-  await page.mouse.move(readonlyBounds.x + 10, readonlyBounds.y + 12)
-  await page.mouse.down()
-  await page.mouse.move(readonlyBounds.x + 10 + hourPixels, readonlyBounds.y + 12, { steps: 4 })
-  await expect(readonlyBar).toHaveAttribute('data-drag-state', 'idle')
-  await page.mouse.up()
+  await expect(readonlyBar).toBeVisible()
   expect(api.requests.filter(item => item.method === 'PATCH' && item.path.includes('/cells/'))).toHaveLength(2)
   await page.reload()
   await expect(timeline).toContainText('America/New_York')
@@ -10439,6 +10706,9 @@ test('P11.3C offline fails closed before preview and cancels an active preview w
   expect(cellPatches()).toBe(before)
   await expect(page.locator('[data-overlay-mode="drawer"]')).toHaveCount(0)
   expect(api.records.find(candidate => candidate.id === item.id)?.properties[date.id]).toBe('2026-10-13')
+  await firstBar.locator('.eotion-timeline-bar-title').click()
+  await expect(page.locator('[data-overlay-mode="drawer"]')).toBeVisible()
+  await closeTimelineDrawer(page)
   await context.setOffline(false)
   await page.evaluate(() => window.dispatchEvent(new Event('online')))
   await expect(firstBar).toHaveAttribute('data-draggable', 'true')
@@ -11813,8 +12083,7 @@ test('P11.5 Timeline stays contained, aligned, and theme-neutral at supported vi
           return { x: value.x, y: value.y, right: value.right, bottom: value.bottom, width: value.width, height: value.height }
         }
         const arrows = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-arrow')].map(rect)
-        const navigationButtons = [...root.querySelectorAll<HTMLElement>('.eotion-timeline-navigation button')]
-        const today = rect(navigationButtons[1] ?? null)
+        const today = rect(root.querySelector<HTMLElement>('button.eotion-timeline-today'))
         const scale = rect(root.querySelector<HTMLElement>('.eotion-timeline-scale-control'))
         const period = rect(root.querySelector<HTMLElement>('.eotion-timeline-period'))
         const frozen = root.querySelector<HTMLElement>('[data-timeline-frozen-row]')?.getBoundingClientRect()
@@ -11876,14 +12145,20 @@ test('P11.5 Timeline stays contained, aligned, and theme-neutral at supported vi
       expect(evidence.frozenTitleBottom).toBeLessThanOrEqual(evidence.frozenRowBottom! + 1)
       expect(evidence.minorLabels.every((label, index, all) => index === 0 || all[index - 1]!.right <= label.left + 1)).toBe(true)
       if (evidence.rootWidth <= 420) {
-        expect(evidence.headerDisplay).toBe('grid')
         expect(evidence.arrows).toHaveLength(2)
-        expect(evidence.arrows.every(rect => !!rect && Math.abs((rect.y + rect.height / 2) - (evidence.today!.y + evidence.today!.height / 2)) <= 1)).toBe(true)
-        expect(Math.abs((evidence.today!.y + evidence.today!.height / 2) - (evidence.scale!.y + evidence.scale!.height / 2))).toBeLessThanOrEqual(1)
-        expect(evidence.period!.y).toBeGreaterThan(evidence.scale!.bottom - 1)
-        for (const rect of [...evidence.arrows, evidence.today!, evidence.scale!, evidence.period!]) {
+        const controls = [...evidence.arrows, evidence.today, evidence.scale, evidence.period]
+        expect(controls.every(Boolean)).toBe(true)
+        for (const rect of controls) {
+          if (!rect) continue
           expect(rect.x).toBeGreaterThanOrEqual(evidence.rootX)
           expect(rect.right).toBeLessThanOrEqual(evidence.rootX + evidence.rootWidth + 1)
+        }
+        for (let index = 0; index < controls.length; index++) {
+          const left = controls[index]!
+          for (const right of controls.slice(index + 1)) {
+            expect(Math.min(left!.right, right!.right) - Math.max(left!.x, right!.x) <= 1
+              || Math.min(left!.bottom, right!.bottom) - Math.max(left!.y, right!.y) <= 1).toBe(true)
+          }
         }
       }
       const themeGeometry = { headerDisplay: evidence.headerDisplay, rootWidth: evidence.rootWidth, frozenRowTop: evidence.frozenRowTop, rowTop: evidence.rowTop, rowHeight: evidence.rowHeight, scrollerWidth: evidence.scrollerWidth, canvasWidth: evidence.canvasWidth, bars: evidence.bars }
@@ -12325,9 +12600,9 @@ test('P11.5 coarse touch keeps controls reachable and scrolls the native Timelin
         const bounds = (element: HTMLElement | null) => {
           if (!element) return null
           const rect = element.getBoundingClientRect()
-          return { x: rect.x, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }
+          return { x: rect.x, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }
         }
-        return { dependency: bounds(dependency), summary: bounds(summary), unscheduledOpen: bounds(unscheduledOpen),
+        return { dependency: bounds(dependency), scroll: bounds(root.querySelector<HTMLElement>('[data-testid="timeline-scroll"]')), summary: bounds(summary), unscheduledOpen: bounds(unscheduledOpen),
           minorTextTop, minorTop: minorLabels[0] ? getComputedStyle(minorLabels[0]).top : '',
           pageFits: document.documentElement.scrollWidth <= document.documentElement.clientWidth }
       })
@@ -12335,7 +12610,7 @@ test('P11.5 coarse touch keeps controls reachable and scrolls the native Timelin
       expect(controls.dependency?.width).toBeLessThanOrEqual(140)
       expect(controls.minorTop).toBe('32px')
       expect(Number.isFinite(controls.minorTextTop)).toBe(true)
-      expect(controls.dependency!.bottom).toBeLessThanOrEqual(controls.minorTextTop)
+      expect(controls.dependency!.top).toBeGreaterThanOrEqual(controls.scroll!.bottom)
       expect(controls.summary?.height).toBeGreaterThanOrEqual(44)
       expect(controls.unscheduledOpen?.height).toBeGreaterThanOrEqual(44)
       expect(controls.pageFits).toBe(true)
@@ -12459,6 +12734,206 @@ async function p116OpenSchedule(timeline: Locator) {
   await details.getByRole('button', { name: '安排：Unplanned', exact: true }).click()
   return timeline.getByTestId('timeline-schedule-form')
 }
+
+test('P11.6 unplanned pointer drop writes one view-scoped batch and rejects outside release', async ({ page }) => {
+  const { timeline, api, timelineView } = await p116ScheduleFixture(page)
+  const details = timeline.locator('details')
+  await details.locator('summary').click()
+  await expect(details.getByTestId('timeline-schedule-drag')).toHaveCount(2)
+  await expect(details.getByRole('button', { name: '拖动安排：Invalid' })).toHaveCount(0)
+  const handle = details.getByRole('button', { name: '拖动安排：Unplanned' })
+  const source = await handle.boundingBox()
+  const target = await timeline.getByTestId('timeline-canvas-body').boundingBox()
+  const scroll = await timeline.getByTestId('timeline-scroll').boundingBox()
+  expect(source && target && scroll).toBeTruthy()
+  const start = { x: source!.x + source!.width / 2, y: source!.y + source!.height / 2 }
+  const drop = { x: scroll!.x + Math.min(120, scroll!.width / 3), y: Math.max(target!.y, scroll!.y) + 100 }
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  await page.mouse.move(drop.x, drop.y, { steps: 6 })
+  const preview = timeline.getByTestId('timeline-schedule-target')
+  await expect(preview).toBeVisible()
+  const marker = await preview.boundingBox()
+  expect(marker).not.toBeNull()
+  expect(Math.abs(marker!.x - drop.x)).toBeLessThanOrEqual(2)
+  expect(Math.abs(marker!.y - Math.max(target!.y, scroll!.y))).toBeLessThanOrEqual(2)
+  expect(Math.abs(marker!.height - (Math.min(target!.y + target!.height, scroll!.y + scroll!.height) - Math.max(target!.y, scroll!.y)))).toBeLessThanOrEqual(2)
+  const expected = (await preview.textContent())!.split(' · ')[0]!
+  await page.mouse.up()
+  await expect(preview).toHaveCount(0)
+  await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+  expect(p114cBatchPosts(api)[0]?.payload).toMatchObject({ context: { viewId: timelineView.id, expectedViewVersion: 1 },
+    records: [{ recordId: 'p116-empty', expectedRecordVersion: 1, cells: [{ propertyId: 'root-date', value: expected }] }] })
+  expect(p114bRelationPatch(api, 'root-date')).toHaveLength(0)
+  await expect.poll(() => api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBe(expected)
+
+  const second = details.getByRole('button', { name: '拖动安排：Second unplanned' })
+  const secondBox = await second.boundingBox()
+  expect(secondBox).not.toBeNull()
+  await page.mouse.move(secondBox!.x + secondBox!.width / 2, secondBox!.y + secondBox!.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(drop.x, drop.y, { steps: 5 })
+  await expect(preview).toBeVisible()
+  await page.mouse.move(scroll!.x - 8, drop.y)
+  await expect(preview).toHaveCount(0)
+  await page.mouse.up()
+  expect(p114cBatchPosts(api)).toHaveLength(1)
+  expect(api.records.find(item => item.id === 'p116-second')?.properties['root-date']).toBeUndefined()
+})
+
+test('P11.6 hour drop keeps display timezone and Escape or offline cancels without writes', async ({ page }) => {
+  const { timeline, api, timelineView } = await p116ScheduleFixture(page)
+  await timeline.getByLabel('时间轴刻度').selectOption('hour')
+  await expect(timeline).toHaveAttribute('data-scale', 'hour')
+  await settleTimelineGestureLayout(timeline)
+  await timeline.locator('details summary').click()
+  const handle = timeline.getByRole('button', { name: '拖动安排：Unplanned' })
+  const begin = async () => {
+    await expect(handle).toBeEnabled()
+    await settleTimelineGestureLayout(timeline)
+    const start = await handle.boundingBox()
+    const scroll = await timeline.getByTestId('timeline-scroll').boundingBox()
+    const body = await timeline.getByTestId('timeline-canvas-body').boundingBox()
+    expect(start && scroll && body).toBeTruthy()
+    const from = { x: start!.x + start!.width / 2, y: start!.y + start!.height / 2 }
+    const to = { x: scroll!.x + Math.min(140, scroll!.width / 3), y: Math.max(body!.y, scroll!.y) + 90 }
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(to.x, to.y, { steps: 5 })
+    await expect(timeline.getByTestId('timeline-schedule-target')).toBeVisible()
+  }
+  await begin()
+  await page.keyboard.press('Escape')
+  await page.mouse.up()
+  await expect(timeline.getByTestId('timeline-schedule-target')).toHaveCount(0)
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+
+  await begin()
+  await page.context().setOffline(true)
+  await expect(timeline.getByTestId('timeline-schedule-target')).toHaveCount(0)
+  await page.mouse.up()
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+  await page.context().setOffline(false)
+  await expect(handle).toBeEnabled()
+
+  await begin()
+  const expectedStart = (await timeline.getByTestId('timeline-schedule-target').textContent())!.split(' · ')[0]!
+  await page.mouse.up()
+  await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+  const value = p114cBatchPosts(api)[0]?.payload?.records?.[0]?.cells?.[0]?.value
+  expect(value).toEqual({ start: expectedStart, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })
+  expect(new Date(expectedStart).getUTCMinutes() % 15).toBe(0)
+  expect(p114cBatchPosts(api)[0]?.payload?.context).toEqual({ viewId: timelineView.id, expectedViewVersion: 1 })
+  await expect.poll(() => api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toEqual(value)
+})
+
+test('P11.6 touch drag schedules an unplanned record on the visible Timeline', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 })
+  try {
+    const page = await context.newPage()
+    const item = record('p116-touch', rootDatabase.id, 'p116-touch-page', { 'root-title': 'Touch unplanned', 'root-date': null })
+    const { timeline, api } = await p114bFixture(page, 'depends-on', [item])
+    await page.setViewportSize({ width: 390, height: 844 })
+    const closeMobileNav = page.getByRole('button', { name: '关闭导航菜单' })
+    if (await closeMobileNav.isVisible()) await closeMobileNav.click()
+    await settleTimelineGestureLayout(timeline)
+    await timeline.locator('details summary').tap()
+    const handle = timeline.getByRole('button', { name: '拖动安排：Touch unplanned' })
+    await handle.scrollIntoViewIfNeeded()
+    const source = await handle.boundingBox()
+    const scroll = await timeline.getByTestId('timeline-scroll').boundingBox()
+    const body = await timeline.getByTestId('timeline-canvas-body').boundingBox()
+    if (!source || !scroll || !body) throw new Error('Expected the touch handle and Timeline grid')
+    expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true)
+    const start = { x: source.x + source.width / 2, y: source.y + source.height / 2 }
+    const visibleTop = Math.max(0, scroll.y, body.y)
+    const visibleBottom = Math.min(844, scroll.y + scroll.height, body.y + body.height)
+    expect(visibleBottom - visibleTop).toBeGreaterThan(40)
+    const end = { x: scroll.x + Math.min(80, scroll.width / 2), y: visibleTop + Math.min(100, (visibleBottom - visibleTop) / 2) }
+    const session = await context.newCDPSession(page)
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...start, id: 1 }] })
+    for (let step = 1; step <= 6; step++) {
+      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x + (end.x - start.x) * step / 6, y: start.y + (end.y - start.y) * step / 6, id: 1 }] })
+    }
+    const preview = timeline.getByTestId('timeline-schedule-target')
+    await expect(preview).toBeVisible()
+    const expected = (await preview.textContent())!.split(' · ')[0]!
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+    expect(p114cBatchPosts(api)[0]?.payload.records[0].cells).toEqual([{ propertyId: 'root-date', value: expected }])
+    await expect.poll(() => api.records.find(record => record.id === item.id)?.properties['root-date']).toBe(expected)
+    await session.detach()
+  } finally {
+    await context.close()
+  }
+})
+
+async function p116DropUnplanned(page: Page, timeline: Locator, offsetX = 120) {
+  const details = timeline.locator('details')
+  if (!(await details.evaluate(element => (element as HTMLDetailsElement).open))) await details.locator('summary').click()
+  const source = await details.getByRole('button', { name: '拖动安排：Unplanned' }).boundingBox()
+  const scroll = await timeline.getByTestId('timeline-scroll').boundingBox()
+  const body = await timeline.getByTestId('timeline-canvas-body').boundingBox()
+  if (!source || !scroll || !body) throw new Error('Expected visible schedule handle and Timeline grid')
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(scroll.x + Math.min(offsetX, scroll.width - 20), Math.max(body.y, scroll.y) + 100, { steps: 6 })
+  await expect(timeline.getByTestId('timeline-schedule-target')).toBeVisible()
+  const value = (await timeline.getByTestId('timeline-schedule-target').textContent())!.split(' · ')[0]!
+  await page.mouse.up()
+  return value
+}
+
+test('P11.6 unplanned drop retains active dependency cascade in one batch', async ({ page }) => {
+  const { timeline, api, timelineView } = await p116ScheduleFixture(page, {}, true)
+  const value = await p116DropUnplanned(page, timeline, 520)
+  await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+  expect(p114cBatchPosts(api)[0]?.payload).toMatchObject({ context: { viewId: timelineView.id, expectedViewVersion: 1 },
+    records: [{ recordId: 'p116-empty', cells: [{ propertyId: 'root-date', value }] }] })
+  await expect.poll(() => api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBe(value)
+  await expect.poll(() => api.records.find(item => item.id === 'p116-child')?.properties['root-date']).toBe(value)
+})
+
+test('P11.6 unplanned drop uncertain receipt fails closed without automatic retry', async ({ page }) => {
+  const { timeline, api } = await p116ScheduleFixture(page, { cellBatchMutationOutcome: 'uncertain' })
+  await p116DropUnplanned(page, timeline)
+  await expect.poll(() => p114cBatchPosts(api).length).toBe(1)
+  await expect(page.locator('#database-block-p114b-depends-on-block > .eotion-database-error').filter({ hasText: /^提交结果暂未确认，请重新加载当前视图。$/u })).toHaveCount(1)
+  expect(api.records.find(item => item.id === 'p116-empty')?.properties['root-date']).toBeNull()
+  expect(p114cBatchPosts(api)).toHaveLength(1)
+})
+
+test('P11.6 unplanned gesture cancels when handle unmounts or pointer reaches scrollbar track', async ({ page }) => {
+  const { timeline, api } = await p116ScheduleFixture(page)
+  const details = timeline.locator('details')
+  await details.locator('summary').click()
+  const handle = details.getByRole('button', { name: '拖动安排：Unplanned' })
+  const scroll = timeline.getByTestId('timeline-scroll')
+  const from = await handle.boundingBox()
+  const area = await scroll.boundingBox()
+  const body = await timeline.getByTestId('timeline-canvas-body').boundingBox()
+  if (!from || !area || !body) throw new Error('Expected visible gesture surfaces')
+  const start = async () => {
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(area.x + Math.min(120, area.width / 3), Math.max(area.y, body.y) + 100, { steps: 5 })
+    await expect(timeline.getByTestId('timeline-schedule-target')).toBeVisible()
+  }
+  await start()
+  const clientHeight = await scroll.evaluate(element => element.clientHeight)
+  const trackY = area.y + clientHeight
+  expect(trackY).toBeGreaterThanOrEqual(area.y + clientHeight)
+  await page.mouse.move(area.x + 120, trackY)
+  await expect(timeline.getByTestId('timeline-schedule-target')).toHaveCount(0)
+  await page.mouse.up()
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+
+  await start()
+  await details.evaluate(element => { (element as HTMLDetailsElement).open = false })
+  await expect(handle).toHaveCount(0)
+  await page.mouse.up()
+  expect(p114cBatchPosts(api)).toHaveLength(0)
+})
 
 async function p116ArrangeBothRecords(timeline: Locator, api: DatabaseApi) {
   let form = await p116OpenSchedule(timeline)

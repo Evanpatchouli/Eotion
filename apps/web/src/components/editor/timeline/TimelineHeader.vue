@@ -29,39 +29,35 @@ const scales: { id: TimelineScaleId; label: string }[] = [
 
 <template>
   <header class="eotion-timeline-header">
-    <div class="eotion-timeline-navigation">
+    <span class="eotion-timeline-period" aria-live="polite">{{ periodLabel }}</span>
+    <div class="eotion-timeline-controls">
+      <label class="eotion-timeline-scale-control">
+        <span class="eotion-sr-only">时间轴刻度</span>
+        <select :value="scale" aria-label="时间轴刻度" @change="emit('selectScale', ($event.target as HTMLSelectElement).value as TimelineScaleId)">
+          <option v-for="item in scales" :key="item.id" :value="item.id">{{ item.label }}</option>
+        </select>
+      </label>
       <EotionButton class="eotion-timeline-arrow" variant="ghost" aria-label="上一个时间段" title="上一个时间段" @click="emit('previous')">
         <EotionIcon :name="IconName.ArrowLeft" :size="18" />
       </EotionButton>
-      <EotionButton variant="ghost" @click="emit('today')">今天</EotionButton>
+      <EotionButton class="eotion-timeline-today" variant="ghost" @click="emit('today')">今天</EotionButton>
       <EotionButton class="eotion-timeline-arrow" variant="ghost" aria-label="下一个时间段" title="下一个时间段" @click="emit('next')">
         <EotionIcon :name="IconName.ArrowLeft" :size="18" class="eotion-timeline-arrow-next" />
       </EotionButton>
-      <span class="eotion-timeline-period" aria-live="polite">{{ periodLabel }}</span>
     </div>
-    <label class="eotion-timeline-scale-control">
-      <span class="eotion-sr-only">时间轴刻度</span>
-      <select :value="scale" aria-label="时间轴刻度" @change="emit('selectScale', ($event.target as HTMLSelectElement).value as TimelineScaleId)">
-        <option v-for="item in scales" :key="item.id" :value="item.id">{{ item.label }}</option>
-      </select>
-    </label>
   </header>
 </template>
 
 <style scoped>
 .eotion-timeline-header { display:flex; min-width:0; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:4px 0; }
-.eotion-timeline-navigation { display:flex; min-width:0; align-items:center; gap:4px; flex-wrap:wrap; }
-.eotion-timeline-arrow { width:44px; min-height:44px; padding:0; }
+.eotion-timeline-controls { display:flex; min-width:0; flex:0 0 auto; align-items:center; justify-content:flex-end; gap:4px; }
+.eotion-timeline-arrow { width:36px; min-height:36px; padding:0; }
+.eotion-timeline-today { min-height:36px; padding:0 8px; }
 .eotion-timeline-arrow-next { transform:rotate(180deg); }
-.eotion-timeline-period { min-width:0; margin-left:6px; overflow:hidden; color:var(--e-color-text-primary, var(--editor-text)); font-size:14px; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
-.eotion-timeline-scale-control select { max-width:100%; min-height:36px; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:0 28px 0 10px; background:var(--e-color-surface, var(--editor-surface)); color:inherit; font:inherit; }
+.eotion-timeline-period { min-width:0; flex:1 1 140px; overflow:hidden; color:var(--e-color-text-primary, var(--editor-text)); font-size:14px; font-weight:600; text-overflow:ellipsis; white-space:nowrap; }
+.eotion-timeline-scale-control { min-width:0; }
+.eotion-timeline-scale-control select { max-width:100%; min-width:0; min-height:36px; border:0; border-radius:var(--e-radius-control, 6px); padding:0 4px 0 8px; background:transparent; color:var(--e-color-text-primary, var(--editor-text)); font:inherit; cursor:pointer; }
 .eotion-timeline-scale-control select:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:2px; }
 .eotion-sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; clip-path:inset(50%); }
-@container eotion-timeline-root (max-width:420px) {
-  .eotion-timeline-header { display:grid; grid-template-columns:44px max-content 44px minmax(0,1fr); align-items:center; justify-content:initial; gap:4px; }
-  .eotion-timeline-navigation { display:contents; }
-  .eotion-timeline-period { grid-column:1 / -1; grid-row:2; margin:0; overflow:hidden; }
-  .eotion-timeline-scale-control { grid-column:4; grid-row:1; justify-self:end; min-width:0; }
-  .eotion-timeline-scale-control select { width:100%; }
-}
+@media (pointer: coarse) { .eotion-timeline-arrow, .eotion-timeline-today { min-height:36px; } }
 </style>

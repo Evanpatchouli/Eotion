@@ -33,7 +33,18 @@ export interface TimelineMoveCommand {
   dependencyConfigIdentity?: string
   originalValue: DatabaseDateValue
   value: DatabaseDateValue
+  splitSource?: TimelineSplitDateSource
 }
+
+/** Physical Date cells captured at pointerdown; the projection reads only each cell's start. */
+export type TimelineSplitDateSource = Readonly<{
+  startPropertyId: string
+  startValue: DatabaseDateValue
+  endPropertyId: string
+  endValue: DatabaseDateValue | null
+}>
+
+export type TimelineSplitDateWrite = Readonly<{ propertyId: string; value: DatabaseDateValue }>
 
 /** Empty-cell intent; deliberately separate from the drag math contract. */
 export interface TimelineScheduleCapture extends Omit<TimelineMoveCommand, 'originalValue' | 'value'> {
@@ -43,7 +54,8 @@ export interface TimelineScheduleCapture extends Omit<TimelineMoveCommand, 'orig
   viewRoot: HTMLElement | null
 }
 export interface TimelineScheduleCommand extends TimelineScheduleCapture {
-  value: string
+  value: DatabaseDateValue
+  intent: 'form' | 'drop'
 }
 
 export function timelineDateSourceIdentity(source: unknown): string | null {
@@ -55,6 +67,87 @@ export function isWritableTimelineDateSource(
   source: TimelineDateSource | undefined,
 ): source is Extract<TimelineDateSource, { mode: 'date-property' }> {
   return source?.mode === 'date-property'
+}
+
+export function isDraggableTimelineDateSource(source: TimelineDateSource | undefined): source is TimelineDateSource {
+  return source?.mode === 'date-property' || source?.mode === 'start-end'
+}
+
+function cloneDateValue(value: DatabaseDateValue): DatabaseDateValue {
+  return typeof value === 'string' ? value : { ...value }
+}
+
+/** Snapshot physical cells before a gesture so subsequent record refreshes cannot mutate the session. */
+export function captureSplitTimelineDateSource(source: TimelineSplitDateSource): TimelineSplitDateSource {
+  return {
+    startPropertyId: source.startPropertyId,
+    startValue: cloneDateValue(source.startValue),
+    endPropertyId: source.endPropertyId,
+    endValue: source.endValue === null ? null : cloneDateValue(source.endValue),
+  }
+}
+
+/** A virtual range for the existing gesture math. Internal cell ranges are deliberately ignored. */
+export function createSplitTimelineDateValue(source: TimelineSplitDateSource): DatabaseDateValue | null {
+  if (!source.startPropertyId || !source.endPropertyId || source.startPropertyId === source.endPropertyId) return null
+  const start = normalizeDatabaseDateValue(source.startValue)
+  const end = source.endValue === null ? null : normalizeDatabaseDateValue(source.endValue)
+  if (!start || source.endValue !== null && !end || end && start.kind !== end.kind) return null
+  const virtual: DatabaseDateValue = {
+    start: start.start,
+    ...(end ? { end: end.start } : {}),
+    ...(start.kind === 'datetime' ? { timeZone: start.timeZone } : {}),
+  }
+  return normalizeDatabaseDateValue(virtual) ? virtual : null
+}
+
+/** Convert a virtual gesture result into minimal writes, offsetting each complete physical cell. */
+export function splitTimelineDateWrites(
+  source: TimelineSplitDateSource,
+  originalValue: DatabaseDateValue,
+  value: DatabaseDateValue,
+): TimelineSplitDateWrite[] | null {
+  const original = createSplitTimelineDateValue(source)
+  const baseline = normalizeDatabaseDateValue(original)
+  const captured = normalizeDatabaseDateValue(originalValue)
+  const next = normalizeDatabaseDateValue(value)
+  if (!baseline || !captured || !next || baseline.kind !== captured.kind || baseline.kind !== next.kind
+    || baseline.start !== captured.start || baseline.end !== captured.end
+    || baseline.kind === 'datetime' && captured.kind === 'datetime' && baseline.timeZone !== captured.timeZone
+    || baseline.kind === 'date-only' && next.kind !== 'date-only'
+    || baseline.kind === 'datetime' && next.kind !== 'datetime') return null
+  if (baseline.end !== undefined && next.end === undefined) return null
+  const writes: TimelineSplitDateWrite[] = []
+  const endpointOffset = (from: string, to: string): TimelineTemporalOffset | null => {
+    if (baseline.kind === 'date-only') {
+      const left = utcOrdinal(from)
+      const right = utcOrdinal(to)
+      return left === null || right === null ? null : { kind: 'date-only', days: right - left }
+    }
+    const milliseconds = Date.parse(to) - Date.parse(from)
+    return Number.isSafeInteger(milliseconds) ? { kind: 'datetime', milliseconds } : null
+  }
+  if (next.start !== baseline.start) {
+    const offset = endpointOffset(baseline.start, next.start)
+    const shifted = offset && offsetTimelineDateValue(source.startValue, offset)
+    if (!shifted) return null
+    writes.push({ propertyId: source.startPropertyId, value: cloneDateValue(shifted) })
+  }
+  if (next.end !== baseline.end) {
+    if (next.end === undefined) return null
+    let endValue: DatabaseDateValue | null
+    if (source.endValue === null) {
+      endValue = typeof source.startValue === 'string'
+        ? next.end
+        : { start: next.end, ...(baseline.kind === 'datetime' ? { timeZone: baseline.timeZone } : {}) }
+    } else {
+      const offset = endpointOffset(baseline.end!, next.end)
+      endValue = offset && offsetTimelineDateValue(source.endValue, offset)
+    }
+    if (!endValue || !normalizeDatabaseDateValue(endValue)) return null
+    writes.push({ propertyId: source.endPropertyId, value: cloneDateValue(endValue) })
+  }
+  return writes
 }
 
 function utcOrdinal(date: string): number | null {

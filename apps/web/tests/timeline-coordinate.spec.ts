@@ -120,7 +120,7 @@ test('month scale keeps minor day labels within readable tick widths', () => {
   const transform: Transform = { originMs: instant('2026-10-13T00:00:00Z'), pxPerMs: pxPerMs('month'), scrollLeft: 0, width: 500, scale: 'month', generation: 0, displayTimeZone: 'Asia/Shanghai' }
   const ticks = generateTimelineTicks({ transform, overscanStartMs: instant('2026-10-01T00:00:00Z'), overscanEndMs: instant('2026-11-01T00:00:00Z'), locale: 'zh-CN', weekStart: 1 })
   expect(ticks.minor.length).toBeGreaterThan(0)
-  expect(ticks.minor.every(tick => /^\d+日$/u.test(tick.label))).toBe(true)
+  expect(ticks.minor.every(tick => /^\d+$/u.test(tick.label))).toBe(true)
   expect(ticks.major.some(tick => tick.label.includes('10月'))).toBe(true)
 })
 

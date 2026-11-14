@@ -5,7 +5,7 @@ import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import type { TimelineMoveCommand, TimelineScheduleCapture, TimelineScheduleCommand } from './timeline/mutation'
 import { normalizeDatabaseDateValue } from '@eotion/domain/date'
 import { resolveTimelineDependencyProperty, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
-import { isWritableTimelineDateSource } from './timeline/mutation'
+import { isDraggableTimelineDateSource, isWritableTimelineDateSource } from './timeline/mutation'
 import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 
 import { IconName } from '../ui/icons'
@@ -21,6 +21,8 @@ import { viewportTransform } from './timeline/viewport'
 import { useTimelineViewport } from './timeline/useTimelineViewport'
 import { timelineInstantBounds } from './timeline/coordinates'
 import { projectTimelineDependencies, selectTimelineDependencyEdges } from './timeline/dependency'
+import { scheduleDropToDateValue, type ScheduleDropValue } from './timeline/scheduleDrop'
+import type { Transform } from './timeline/types'
 
 type TimelineRecord = DatabaseViewRecordsResponse['records'][number]
 
@@ -33,6 +35,7 @@ const props = defineProps<{
   formatValue: (value: unknown, property: DatabasePropertyResponse) => string
   selectedPageId: string | null
   writable: boolean
+  viewBusy: boolean
   databaseVersion: number
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
   prepareSchedule: (recordId: string) => TimelineScheduleCapture | null
@@ -44,11 +47,99 @@ const props = defineProps<{
 const emit = defineEmits<{
   openRecord: [event: MouseEvent, pageId: string]
   visibleRecords: [scope: string, recordIds: readonly string[]]
+  toggleFrozenTable: [visible: boolean]
 }>()
 
 const recordsExpanded = ref(false)
 const scheduleForm = shallowRef<{ capture: TimelineScheduleCapture; title: string; trigger: HTMLElement; root: HTMLElement; error: string } | null>(null)
 const scheduleDate = ref('')
+type ScheduleGesture = { pointerId: number; startX: number; startY: number; capture: TimelineScheduleCapture; transform: Transform; scroller: HTMLElement; root: HTMLElement; handle: HTMLElement; previewing: boolean }
+const schedulePreview = shallowRef<{ x: number; top: number; height: number; value: ScheduleDropValue } | null>(null)
+let scheduleGesture: ScheduleGesture | null = null
+function clearScheduleGesture(): void {
+  const gesture = scheduleGesture
+  scheduleGesture = null
+  schedulePreview.value = null
+  if (!gesture) return
+  window.removeEventListener('pointermove', moveSchedulePointer, true)
+  window.removeEventListener('pointerup', releaseSchedulePointer, true)
+  window.removeEventListener('pointercancel', cancelSchedulePointer, true)
+  window.removeEventListener('keydown', cancelScheduleKey, true)
+  window.removeEventListener('blur', clearScheduleGesture)
+  document.removeEventListener('visibilitychange', cancelScheduleVisibility)
+  gesture.scroller.removeEventListener('scroll', clearScheduleGesture)
+  gesture.handle.removeEventListener('lostpointercapture', cancelSchedulePointer)
+  try { if (gesture.handle.hasPointerCapture(gesture.pointerId)) gesture.handle.releasePointerCapture(gesture.pointerId) }
+  catch { /* Detached handles have already lost capture. */ }
+}
+function cancelSchedulePointer(event: PointerEvent): void { if (event.pointerId === scheduleGesture?.pointerId) clearScheduleGesture() }
+function cancelScheduleKey(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || !scheduleGesture) return
+  event.preventDefault()
+  event.stopPropagation()
+  clearScheduleGesture()
+}
+function cancelScheduleVisibility(): void { if (document.hidden) clearScheduleGesture() }
+function scheduleTarget(event: PointerEvent, gesture: ScheduleGesture): { x: number; top: number; height: number; value: ScheduleDropValue } | null {
+  const area = gesture.scroller.getBoundingClientRect()
+  const grid = gesture.scroller.querySelector<HTMLElement>('[data-testid="timeline-canvas-body"]')
+  const bodyRect = grid?.getBoundingClientRect()
+  const visibleTop = Math.max(area.top, bodyRect?.top ?? Infinity)
+  const visibleBottom = Math.min(area.top + gesture.scroller.clientHeight, bodyRect?.bottom ?? -Infinity)
+  if (!bodyRect || event.clientY < visibleTop || event.clientY >= visibleBottom) return null
+  const value = scheduleDropToDateValue({ clientX: event.clientX, viewportLeft: area.left, viewportWidth: gesture.scroller.clientWidth,
+    transform: gesture.transform, displayTimeZone: viewport.displayTimeZone.value })
+  return value ? { x: event.clientX, top: visibleTop, height: visibleBottom - visibleTop, value } : null
+}
+function scheduleGestureCurrent(gesture: ScheduleGesture): boolean {
+  return scheduleGesture === gesture && root.value === gesture.root && gesture.root.isConnected && scroller.value === gesture.scroller
+    && gesture.handle.isConnected && gesture.root.contains(gesture.handle)
+    && props.scope === gesture.capture.scope && props.writable && online.value && !props.viewBusy && !pendingTimelineMutations.size
+    && canSchedule(gesture.capture.recordId) && recordsById.value.get(gesture.capture.recordId)?.version === gesture.capture.expectedRecordVersion
+    && props.databaseVersion === gesture.capture.expectedDatabaseVersion && isBarViewportCurrent(gesture.transform)
+}
+function moveSchedulePointer(event: PointerEvent): void {
+  const gesture = scheduleGesture
+  if (!gesture || event.pointerId !== gesture.pointerId) return
+  if (!scheduleGestureCurrent(gesture)) { clearScheduleGesture(); return }
+  if (!gesture.previewing && Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) < 4) return
+  gesture.previewing = true
+  schedulePreview.value = scheduleTarget(event, gesture)
+}
+function releaseSchedulePointer(event: PointerEvent): void {
+  const gesture = scheduleGesture
+  if (!gesture || event.pointerId !== gesture.pointerId) return
+  const target = gesture.previewing && scheduleGestureCurrent(gesture) ? scheduleTarget(event, gesture) : null
+  clearScheduleGesture()
+  if (target) void commitTimelineDrag({ ...gesture.capture, value: target.value, intent: 'drop' })
+}
+function startSchedulePointer(event: PointerEvent, recordId: string): void {
+  if (event.button !== 0 || !event.isPrimary || scheduleGesture || !props.writable || !online.value || props.viewBusy
+    || pendingTimelineMutations.size || !canSchedule(recordId)) return
+  const handle = event.currentTarget
+  const currentRoot = root.value
+  const currentScroller = scroller.value
+  const transform = barTransform.value
+  if (!(handle instanceof HTMLElement) || !currentRoot || !currentScroller || !transform || !isBarViewportCurrent(transform)) return
+  const capture = props.prepareSchedule(recordId)
+  if (!capture || capture.scope !== props.scope || capture.expectedDatabaseVersion !== props.databaseVersion
+    || capture.propertyId !== writablePropertyId.value) return
+  event.preventDefault()
+  event.stopPropagation()
+  scheduleGesture = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, capture, transform,
+    scroller: currentScroller, root: currentRoot, handle, previewing: false }
+  try { handle.setPointerCapture(event.pointerId) }
+  catch { clearScheduleGesture(); return }
+  window.addEventListener('pointermove', moveSchedulePointer, true)
+  window.addEventListener('pointerup', releaseSchedulePointer, true)
+  window.addEventListener('pointercancel', cancelSchedulePointer, true)
+  window.addEventListener('keydown', cancelScheduleKey, true)
+  window.addEventListener('blur', clearScheduleGesture)
+  document.addEventListener('visibilitychange', cancelScheduleVisibility)
+  currentScroller.addEventListener('scroll', clearScheduleGesture)
+  handle.addEventListener('lostpointercapture', cancelSchedulePointer)
+}
+onBeforeUnmount(clearScheduleGesture)
 const validScheduleDate = computed(() => Boolean(scheduleDate.value && normalizeDatabaseDateValue(scheduleDate.value)?.kind === 'date-only'))
 /**
  * Timeline-local pending fence: the window between pointer release, session
@@ -67,7 +158,7 @@ const focusedRecordId = ref<string | null>(null)
 const hoveredRecordId = ref<string | null>(null)
 const timelineOptions = computed(() => (props.config.options as DatabaseTimelineViewOptions | undefined)?.timeline)
 const configuredScale = computed(() => timelineOptions.value?.scale ?? 'month')
-const barDraggable = computed(() => props.writable && isWritableTimelineDateSource(timelineOptions.value?.dateSource))
+const barDraggable = computed(() => props.writable && isDraggableTimelineDateSource(timelineOptions.value?.dateSource))
 const dependencyProperty = computed(() => resolveTimelineDependencyProperty(props.databaseId, props.properties, props.config))
 const dependencyEditable = computed(() => props.writable && dependencyProperty.value !== null)
 const dependencyConfigKey = computed(() => JSON.stringify([
@@ -87,12 +178,61 @@ const recordVersionById = computed(() => new Map(props.records.map(record => [re
 const recordsById = computed(() => new Map(props.records.map(record => [record.id, record])))
 const writablePropertyId = computed(() => {
   const source = timelineOptions.value?.dateSource
-  return isWritableTimelineDateSource(source) ? source.propertyId : ''
+  return source?.mode === 'start-end' ? source.startPropertyId : isWritableTimelineDateSource(source) ? source.propertyId : ''
 })
 watch(() => JSON.stringify([props.scope, props.config]), () => { scheduleForm.value = null }, { flush: 'sync' })
 const recordMutationBusyById = computed(() => new Map([...pendingTimelineMutations.values()].map(pending => [pending.recordId, true] as const)))
 const frozenColumns = computed(() => resolveFrozenTableProperties(props.properties, props.config))
 const frozenTableVisible = computed(() => timelineOptions.value?.frozenTable?.visible === true)
+let frozenToggleFocus: { scope: string; root: HTMLElement; visible: boolean; trigger: Element; initialFocus: Element | null; wasBusy: boolean } | null = null
+const clearFrozenToggleFocus = () => { frozenToggleFocus = null }
+if (typeof document !== 'undefined') {
+  const onDocumentPointer = (event: PointerEvent) => {
+    if (frozenToggleFocus && event.target !== frozenToggleFocus.trigger) clearFrozenToggleFocus()
+  }
+  const onDocumentKey = (event: KeyboardEvent) => {
+    if (frozenToggleFocus && (event.key === 'Tab' || event.key === 'Escape'
+      || event.target === frozenToggleFocus.initialFocus && event.target !== frozenToggleFocus.trigger)) clearFrozenToggleFocus()
+  }
+  const onDocumentFocus = (event: FocusEvent) => {
+    if (frozenToggleFocus && event.target !== frozenToggleFocus.trigger
+      && event.target !== frozenToggleFocus.initialFocus && event.target !== document.body) clearFrozenToggleFocus()
+  }
+  document.addEventListener('pointerdown', onDocumentPointer, true)
+  document.addEventListener('keydown', onDocumentKey, true)
+  document.addEventListener('focusin', onDocumentFocus, true)
+  onBeforeUnmount(() => { document.removeEventListener('pointerdown', onDocumentPointer, true); document.removeEventListener('keydown', onDocumentKey, true); document.removeEventListener('focusin', onDocumentFocus, true); clearFrozenToggleFocus() })
+}
+watch(() => props.scope, clearFrozenToggleFocus, { flush: 'sync' })
+watch([frozenTableVisible, () => props.viewBusy], async ([visible, busy]) => {
+  const intent = frozenToggleFocus
+  if (!intent) return
+  if (busy) intent.wasBusy = true
+  if (intent.scope !== props.scope || intent.root !== root.value || !intent.root.isConnected) { clearFrozenToggleFocus(); return }
+  if (visible === intent.visible && !busy) {
+    await nextTick()
+    if (frozenToggleFocus !== intent || intent.scope !== props.scope || intent.root !== root.value || !intent.root.isConnected) return
+    window.setTimeout(() => {
+      if (frozenToggleFocus !== intent || intent.scope !== props.scope || intent.root !== root.value || !intent.root.isConnected) return
+      if (document.activeElement && document.activeElement !== document.body && document.activeElement !== intent.trigger
+        && document.activeElement !== intent.initialFocus) {
+        clearFrozenToggleFocus()
+        return
+      }
+      intent.root.querySelector<HTMLButtonElement>('[data-testid="timeline-frozen-toggle"]')?.focus()
+      clearFrozenToggleFocus()
+    }, 0)
+  } else if (!busy && intent.wasBusy) {
+    window.setTimeout(() => {
+      if (frozenToggleFocus === intent && !props.viewBusy && frozenTableVisible.value !== intent.visible) clearFrozenToggleFocus()
+    }, 100)
+  }
+}, { flush: 'post' })
+function toggleFrozenTable(visible: boolean): void {
+  const trigger = root.value?.querySelector('[data-testid="timeline-frozen-toggle"]')
+  if (trigger && root.value) frozenToggleFocus = { scope: props.scope, root: root.value, visible, trigger, initialFocus: document.activeElement, wasBusy: false }
+  emit('toggleFrozenTable', visible)
+}
 const frozenDisplayMap = computed(() => frozenTableVisible.value
   ? projectFrozenTableDisplay(props.records, frozenColumns.value, props.formatValue)
   : new Map())
@@ -118,6 +258,8 @@ const viewport = useTimelineViewport({
   rowCount: () => projectedItems.value.length,
   focusedRowIndex: () => focusedRowIndex.value,
 })
+watch([() => props.scope, () => props.config, () => props.writable, () => props.viewBusy, online,
+  () => viewport.effectiveScale.value, () => viewport.state.value?.scrollLeft], clearScheduleGesture, { flush: 'sync' })
 const temporalMap = computed(() => resolveTimelineTemporalGeometry(projectedItems.value, viewport.displayTimeZone.value))
 const dependencyEdges = computed(() => projectTimelineDependencies({
   databaseId: props.databaseId,
@@ -225,7 +367,7 @@ async function saveSchedule(): Promise<void> {
   const form = scheduleForm.value
   const expectedRoot = root.value
   if (!form || !validScheduleDate.value || !props.writable || !online.value || pendingTimelineMutations.size) return
-  const saved = await commitTimelineDrag({ ...form.capture, value: scheduleDate.value })
+  const saved = await commitTimelineDrag({ ...form.capture, value: scheduleDate.value, intent: 'form' })
   if (scheduleForm.value !== form || form.capture.scope !== props.scope || root.value !== expectedRoot || !expectedRoot?.isConnected) return
   if (!saved) { scheduleForm.value = { ...form, error: '日期未保存，请检查当前记录或重新加载后再安排。' }; return }
   scheduleForm.value = null
@@ -346,10 +488,23 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         :pin-y="viewport.pinY.value"
         :selected-page-id="selectedPageId"
         :hovered-record-id="hoveredRecordId"
+        :toggle-disabled="viewBusy || !writable"
         @open-record="(event, pageId) => emit('openRecord', event, pageId)"
         @hover-record="hoveredRecordId = $event"
         @focus-row="focusRow"
+        @toggle-visibility="toggleFrozenTable(false)"
       />
+      <button
+        v-if="!frozenTableVisible"
+        class="eotion-timeline-frozen-toggle eotion-timeline-frozen-toggle--expand"
+        type="button"
+        data-testid="timeline-frozen-toggle"
+        aria-label="展开左侧记录表格"
+        aria-expanded="false"
+        title="展开左侧记录表格"
+        :disabled="viewBusy || !writable"
+        @click="toggleFrozenTable(true)"
+      ><EotionIcon :name="IconName.SidebarOpen" :size="18" aria-hidden="true" /></button>
       <TimelineViewport
         :state="viewport.state.value"
         :ruler-ticks="viewport.rulerTicks.value"
@@ -408,6 +563,10 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
             :data-record-id="item.recordId" :data-scope="scope"
             :aria-label="`安排：${item.title || item.recordId}`" :disabled="!writable || !online || pendingTimelineMutations.size > 0"
             @click="openSchedule($event, item.recordId)">安排</button>
+          <button v-if="canSchedule(item.recordId)" type="button" class="eotion-timeline-schedule-handle"
+            data-testid="timeline-schedule-drag" :data-record-id="item.recordId" :aria-label="`拖动安排：${item.title || item.recordId}`"
+            :disabled="!writable || !online || viewBusy || pendingTimelineMutations.size > 0"
+            @pointerdown="startSchedulePointer($event, item.recordId)" @click.stop.prevent>拖动到时间轴</button>
           <form v-if="scheduleForm?.capture.recordId === item.recordId" class="eotion-timeline-schedule-form" data-testid="timeline-schedule-form" @submit.prevent="saveSchedule" @keydown.esc.stop.prevent="cancelSchedule">
             <span>安排：{{ scheduleForm.title }}</span>
             <p v-if="scheduleForm.error" role="status">{{ scheduleForm.error }}</p>
@@ -419,6 +578,10 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         </li>
       </ul>
     </details>
+    <div v-if="schedulePreview" class="eotion-timeline-schedule-target" data-testid="timeline-schedule-target"
+      :style="{ left: `${schedulePreview.x}px`, top: `${schedulePreview.top}px`, height: `${schedulePreview.height}px` }" aria-hidden="true">
+      <span>{{ typeof schedulePreview.value === 'string' ? schedulePreview.value : schedulePreview.value.start }} · 松开安排</span>
+    </div>
   </section>
 </template>
 
@@ -428,6 +591,10 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
 .eotion-timeline-schedule-form label { display:flex; flex-direction:column; gap:4px; min-width:0; max-width:100%; }
 .eotion-timeline-schedule-form input { min-width:0; max-width:100%; box-sizing:border-box; min-height:44px; }
 .eotion-timeline-schedule-form button, .eotion-timeline-schedule-action { min-height:44px; padding:6px 12px; }
+.eotion-timeline-schedule-handle { min-height:44px; padding:6px 12px; border:1px dashed var(--e-color-border, var(--border-editor)); border-radius:6px; background:transparent; color:var(--e-color-accent, var(--editor-accent)); cursor:grab; touch-action:none; }
+.eotion-timeline-schedule-handle:disabled { opacity:.5; cursor:not-allowed; }
+.eotion-timeline-schedule-target { position:fixed; z-index:100; width:2px; background:var(--e-color-accent, var(--editor-accent)); pointer-events:none; }
+.eotion-timeline-schedule-target span { position:absolute; top:4px; left:8px; white-space:nowrap; padding:4px 7px; border-radius:4px; background:var(--e-color-canvas, var(--editor-canvas)); color:var(--e-color-text-primary, var(--editor-text)); box-shadow:0 1px 5px #0003; }
 .eotion-database-timeline {
   position: relative;
   width: 100%;
@@ -437,7 +604,12 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
   container: eotion-timeline-root / inline-size;
   color: var(--e-color-text-primary, var(--editor-text));
 }
-.eotion-timeline-content { display:flex; width:100%; min-width:0; max-width:100%; align-items:stretch; overflow:clip; }
+.eotion-timeline-content { position:relative; display:flex; width:100%; min-width:0; max-width:100%; align-items:stretch; overflow:clip; }
+.eotion-timeline-frozen-toggle { position:absolute; z-index:5; display:inline-flex; width:36px; height:36px; align-items:center; justify-content:center; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:0; background:var(--e-color-canvas, var(--editor-canvas)); color:var(--e-color-text-secondary, var(--editor-muted)); cursor:pointer; }
+.eotion-timeline-frozen-toggle:hover:not(:disabled) { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }
+.eotion-timeline-frozen-toggle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:2px; }
+.eotion-timeline-frozen-toggle:disabled { cursor:not-allowed; opacity:.55; }
+.eotion-timeline-frozen-toggle--expand { top:10px; left:6px; }
 .eotion-timeline-content > :deep(.eotion-timeline-viewport) { flex:1 1 0; width:auto; min-width:0; }
 @container eotion-timeline-root (max-width:700px) {
   .eotion-timeline-content > :deep(.eotion-timeline-frozen) { flex:0 0 min(120px, 40%); width:min(120px, 40%); min-width:0; max-width:40%; }

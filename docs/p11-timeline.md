@@ -5,6 +5,11 @@
 > Stage: **P11**  
 > Product direction: Eotion Timeline 在产品结构与交互上以 Notion Timeline 为直接基准，同时继续遵守 Eotion 的 Database / View / generic records / CAS / Quiet Studio 体系，不复制 Notion 的内部实现。
 
+> 2026-11-14 改版：时间轴工具栏、日期标尺、周末背景、今天标记、记录条和左表快捷开关
+> 以 Notion 的公开界面为参考。独立 Start/End 日期来源支持拖动和调整范围；单 Date 来源的
+> 空值可从未排期列表拖入时间网格。本页各阶段中
+> 关于该来源“手动只读”的描述保留为历史记录，当前行为以 §21.2 和通用 Cell 事务契约为准。
+
 ## 1. 目标
 
 P11 的目标不是“做一个能画横条的甘特图”，而是实现一个真正可作为 Eotion Database 第四种正式 View 的 Timeline。
@@ -560,6 +565,11 @@ Frozen Table：
 
 最终呈现位置可以在 P11 Visual Design 时微调，但“无日期记录可发现、可安排”是硬要求。
 
+当前单 Date 来源中，空日期记录可从未排期列表拖入时间网格；小时、日尺度分别按
+15 分钟、1 小时吸附并保存显示时区，其他尺度保存落点对应的当地日期。网格外释放、
+取消或离线不写入。拖放使用通用 batch、版本检查及 receipt；键盘用户仍可使用“安排”
+日期表单。已有非空无效日期不被拖放覆盖；独立 Start/End 的空开始日期仍需在记录中编辑。
+
 ## 18. Filter / Sort / Group
 
 ### Filter / Sort
@@ -678,20 +688,25 @@ interface TimelineViewOptions {
 正式 UI 创建流程：数据库视图菜单 → “新建时间线视图” → 选择日期来源 → “创建时间线”。
 确认前不创建 View；没有原生 Date 时可在配置中显式新增日期属性。已有 Timeline 通过
 “数据库设置 → 日期属性”修改来源；保存只替换 dateSource，保留其他 Timeline 设置。
-单日期属性模式支持 range 与单点；独立 Start / End 模式要求选择两个不同的日期属性，
-沿用既有只读交互边界。两种模式均不会自动给记录赋日期。
+单日期属性模式支持 range 与单点；独立 Start / End 模式要求选择两个不同的日期属性。
+两种模式均不会自动给记录赋日期。
 
 - 引用稳定 Property ID，必须属于当前 Database 和 Workspace，且 `type === 'date'`。
   只接受可写入原生 Date，不接受 Formula 的 date 结果或 Rollup。
 - `date-property` 使用该 Property 的 normalized start/end；end 省略仍是单点。
 - `start-end` 的两个 ID 必须不同，各取对应 Property 值的 normalized start；各自
   对象中的 end 不充当该模式的边界。
-- 两个独立 Cell 各自遵守 Date 值契约，不要求跨 Cell 精度或 timeZone 相同。现有只读
+- 两个独立 Cell 各自遵守 Date 值契约，不要求跨 Cell 精度或 timeZone 相同。当前
   renderer 将混合精度显示为“起止日期精度不同”的未排期记录；这不改变 generic Date
   的合法性。自动调度按下述 P11.4D 精度规则处理完整 canonical graph。
+- 同精度且有效的独立 Start/End 可移动整个时间条，或拖动两端调整范围。结束值为空时，
+  向右调整会创建与开始值同精度的结束值；每个原 Cell 的内部范围和时区在移动时保留。
+  所有双日期写入通过通用 batch、View/Database/Record 版本检查和 receipt 处理，
+  包括未启用自动依赖调度的视图。
 - config 合法性不依赖 Record 是否已填值；未配置 dateSource 的 Timeline 合法。
   缺值的 Record 保持存在，后续 renderer 处理未排期状态，不能偷偷赋日期。
-- 本轮仅冻结引用和语义，不新增 Record 的 Timeline 日期解析或写入行为。
+- 未排期列表的“安排”表单目前只支持单 Date 来源的空值；独立 Start/End 的空开始日期
+  仍需通过记录属性编辑。
 
 ### 21.3 Frozen Table 独立投影
 
@@ -701,7 +716,9 @@ interface TimelineViewOptions {
   稳定合法 ID 和无重复规则，所有 ID 必须属于当前 schema。
 - 非 null `visibleProperties` 必须包含唯一 Title；即使 `visible === false` 也保留
   这些有效列。`propertyOrder` 沿用现有部分排序规则，不强制重复列出所有可见属性。
-- 在时间线的“数据库设置 → 时间线设置”中打开或隐藏左表、选择属性列、调整列序，然后保存。隐藏后保留列选择与顺序，标题始终显示。桌面使用对话框，手机使用底部抽屉。
+- 可用时间轴左侧的快捷按钮展开或折叠左表，也可在“数据库设置 → 时间线设置”中
+  选择属性列、调整列序。可见状态经 View 配置保存；隐藏后保留列选择与顺序，标题
+  始终显示。桌面设置使用对话框，手机使用底部抽屉。
 
 ### 21.4 Dependency 配置
 
