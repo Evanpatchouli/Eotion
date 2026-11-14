@@ -44,7 +44,10 @@ Cell batch、View/Database/Record CAS 和 receipt；混合精度及空开始值�
 `readManualWindow`、`creationOrdinal`、`orderScopeId`、`positionBetween` 与
 `timeline-order-handle`；分页、事务、失败恢复和旧数据边界见
 [通用 View 排序](../p9-multi-view.md#通用-view-记录手动排序2026-11-15)。
-Timeline 按属性分组仍未实现，不能用当前分页窗口的本地重排替代持久顺序。
+Timeline 与 Board 已支持 Select 分组并各组独立分页；检索 `groupByPropertyId`、
+`getDatabaseViewGroupRecords`、`moveDatabaseViewRecordGroup`、`databaseGroupWindows` 与
+`layoutTimelineGroupSections`。当前窗口不能冒充完整组顺序或总数，查询与性能边界见
+[分组方案](../exec-plans/timeline-view-grouping.md)。
 时间轴左侧冻结表可直接编辑可写属性；检索 `DatabaseCellContent`、`activeEditRecordId`、
 `FrozenTablePane` 与 `saveCell`，Table 和 Timeline 共用 Cell 状态及版本检查。
 

@@ -585,6 +585,563 @@ test('shared Table and Timeline cells retain 44px touch targets on phone and coa
   } finally { await context.close() }
 })
 
+test('grouped Board and Timeline load only per-group windows and remember collapsed groups', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('group-window-db')
+  const title = property('group-window-title', db.id, 'Name', 'title')
+  const status = property('group-window-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }, { id: 'later', name: 'Later' }])
+  const date = property('group-window-date', db.id, 'Date', 'date')
+  const board = view('group-window-board', db.id, 'Grouped board', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: status.id } }, 'board')
+  const timeline = view('group-window-timeline', db.id, 'Grouped timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: status.id, timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }, 'timeline')
+  const items = [
+    ...Array.from({ length: 80 }, (_, index) => record(`group-window-open-${String(index).padStart(2, '0')}`, db.id, `group-window-page-open-${index}`,
+      { [title.id]: `Open ${index}`, [status.id]: 'open', [date.id]: '2026-10-13' })),
+    record('group-window-done', db.id, 'group-window-page-done', { [title.id]: 'Done row', [status.id]: 'done', [date.id]: '2026-10-14' }),
+    record('group-window-null', db.id, 'group-window-page-null', { [title.id]: 'No status', [status.id]: null, [date.id]: '2026-10-15' }),
+  ]
+  const api = await installApi(page, [block('group-window-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: board.id } }, 100)], {
+    databases: [db], views: [board, timeline], properties: [title, status, date], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties[title.id]), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-window-block')
+  const boardView = root.getByTestId('database-board')
+  await expect(boardView.locator('.eotion-database-board-column')).toHaveCount(4)
+  await expect.poll(() => api.requests.filter(request => request.path.endsWith('/group-records')).length).toBeGreaterThan(0)
+  await expect(root.locator('.eotion-database-more')).toHaveCount(0)
+  const open = boardView.getByRole('region', { name: 'Open' })
+  await expect(open.getByRole('button', { name: '加载更多' })).toBeVisible()
+  await open.getByRole('button', { name: '加载更多' }).click()
+  await expect(open.locator('[data-record-id]')).toHaveCount(50)
+  await open.getByRole('button', { name: '加载更多' }).click()
+  await expect(open.locator('[data-record-id]')).toHaveCount(75)
+  const openReads = () => api.requests.filter(request => request.path.endsWith('/group-records') && request.search?.includes('optionId=open')).length
+  await open.getByRole('button', { name: '折叠分组：Open' }).click()
+  const beforeRefresh = openReads()
+  api.databases[0]!.version += 1
+  api.pages.find(page => page.id === items[0]!.pageId)!.title = 'Externally updated'
+  await page.evaluate(({ workspaceId, databaseId }) => window.dispatchEvent(new CustomEvent('eotion:database-updated', { detail: { workspaceId, databaseId } })), { workspaceId: workspace.id, databaseId: db.id })
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeEnabled()
+  await expect(open.locator('[data-record-id]')).toHaveCount(0)
+  expect(openReads()).toBe(beforeRefresh)
+  await open.getByRole('button', { name: '展开分组：Open' }).click()
+  await expect(open.locator('[data-record-id]')).toHaveCount(75)
+  await expect(open).toContainText('Externally updated')
+  await expect.poll(openReads).toBe(beforeRefresh + 3)
+  api.databases[0]!.version += 1
+  api.pages.find(page => page.id === items[0]!.pageId)!.title = 'Updated while expanded'
+  await page.evaluate(({ workspaceId, databaseId }) => window.dispatchEvent(new CustomEvent('eotion:database-updated', { detail: { workspaceId, databaseId } })), { workspaceId: workspace.id, databaseId: db.id })
+  await expect(open).toContainText('Updated while expanded')
+  await expect(open.locator('[data-record-id]')).toHaveCount(75)
+  expect(openReads()).toBe(beforeRefresh + 6)
+  const done = boardView.getByRole('region', { name: 'Done' })
+  await done.getByRole('button', { name: '折叠分组：Done' }).click()
+  await expect(done.getByRole('button', { name: '展开分组：Done' })).toBeVisible()
+  await page.reload()
+  await expect(boardView.getByRole('region', { name: 'Done' }).getByRole('button', { name: '展开分组：Done' })).toBeVisible()
+  await root.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Grouped timeline', exact: true }).click()
+  const timelineView = root.getByTestId('database-timeline')
+  await expect(timelineView).toBeVisible()
+  await expect.poll(() => api.requests.filter(request => request.path.endsWith('/group-records') && request.search?.includes('groupKind=option') && request.search.includes('optionId=open')).length).toBeGreaterThan(1)
+  await expect(root.locator('.eotion-database-more')).toHaveCount(0)
+})
+
+test('busy Board group loads when its horizontal scroller returns after idle', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const db = database('horizontal-db')
+  const title = property('horizontal-title', db.id, 'Title', 'title')
+  const status = property('horizontal-status', db.id, 'Status', 'select', Array.from({ length: 12 }, (_, index) => ({ id: String(index), name: `Group ${index}` })))
+  const board = view('horizontal-board', db.id, 'Wide board', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: status.id } }, 'board')
+  const item = record('horizontal-last', db.id, 'horizontal-page', { [title.id]: 'Last card', [status.id]: '11' })
+  const api = await installApi(page, [block('horizontal-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: board.id } }, 100)], {
+    databases: [db], views: [board], properties: [title, status], records: [item],
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Last card', role: 'database-record' })
+  let started!: () => void, release!: () => void
+  const pending = new Promise<void>(resolve => { started = resolve })
+  const gate = new Promise<void>(resolve => { release = resolve })
+  await page.route(url => url.pathname.endsWith(`/views/${board.id}`), async route => {
+    if (route.request().method() !== 'PATCH') return route.fallback()
+    started()
+    await gate
+    await route.fulfill({ status: 400, json: { statusCode: 400, message: 'Rename rejected' } })
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-horizontal-block')
+  const scroll = root.locator('.eotion-database-board-columns')
+  const last = root.getByRole('region', { name: 'Group 11' })
+  const reads = () => api.requests.filter(request => request.path.endsWith('/group-records') && request.search?.includes('optionId=11')).length
+  await root.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Wide board', exact: true }).hover()
+  await page.getByRole('button', { name: '编辑视图 Wide board' }).click()
+  const name = page.getByRole('textbox', { name: '视图名称 Wide board' })
+  await name.fill('Renamed')
+  await name.press('Enter')
+  await pending
+  const frames = () => page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await scroll.evaluate(node => { node.scrollLeft = node.scrollWidth })
+  await expect(last).toBeInViewport()
+  await frames()
+  expect(reads()).toBe(0)
+  await scroll.evaluate(node => { node.scrollLeft = 0 })
+  await expect(last).not.toBeInViewport()
+  release()
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeEnabled()
+  await frames()
+  expect(reads()).toBe(0)
+  await scroll.evaluate(node => { node.scrollLeft = node.scrollWidth })
+  await expect(last.getByRole('button', { name: '打开记录：Last card' })).toBeVisible()
+  expect(reads()).toBe(1)
+})
+
+test('grouped Board uses generic same-group order and atomic cross-group move', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const db = database('group-move-db')
+  const title = property('group-move-title', db.id, 'Name', 'title')
+  const status = property('group-move-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }])
+  const board = view('group-move-board', db.id, 'Move board', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: status.id } }, 'board')
+  const items = [
+    record('group-move-a', db.id, 'group-move-page-a', { [title.id]: 'A', [status.id]: 'open' }),
+    record('group-move-b', db.id, 'group-move-page-b', { [title.id]: 'B', [status.id]: 'open' }),
+    record('group-move-c', db.id, 'group-move-page-c', { [title.id]: 'C', [status.id]: 'done' }),
+  ]
+  const api = await installApi(page, [block('group-move-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: board.id } }, 100)], {
+    databases: [db], views: [board], properties: [title, status], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties[title.id]), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-move-block')
+  const boardView = root.getByTestId('database-board')
+  const open = boardView.locator('[aria-label="Open"]')
+  const done = boardView.locator('[aria-label="Done"]')
+  await expect(open.locator('.eotion-database-board-card')).toHaveCount(2)
+  await open.locator('[data-record-id="group-move-b"]').getByRole('button', { name: '上移记录：group-move-b' }).click()
+  await expect.poll(() => api.recordOrderByView.get(board.id)?.[0]).toBe('group-move-b')
+  await expect(open.locator('.eotion-database-board-card').first()).toHaveAttribute('data-record-id', 'group-move-b')
+  await open.locator('[data-record-id="group-move-a"]').getByRole('button', { name: '移动记录分组：Open' }).click()
+  await page.getByRole('menuitem', { name: 'Done' }).click()
+  await expect.poll(() => api.records.find(item => item.id === 'group-move-a')?.properties[status.id]).toBe('done')
+  await expect(done.locator('.eotion-database-board-card')).toHaveCount(2)
+  expect(api.requests.filter(request => request.path.endsWith('/record-group'))).toHaveLength(1)
+  expect(api.requests.find(request => request.path.endsWith('/record-group'))?.payload).toMatchObject({
+    recordId: 'group-move-a', sourceGroup: { kind: 'option', optionId: 'open' }, targetGroup: { kind: 'option', optionId: 'done' },
+  })
+})
+
+test('sorted group move omits anchors, handles 409 once, and unknown result fails closed', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const db = database('group-sort-db')
+  const title = property('group-sort-title', db.id, 'Name', 'title')
+  const status = property('group-sort-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }])
+  const board = view('group-sort-view', db.id, 'Sorted board', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    sorts: [{ propertyId: title.id, direction: 'asc' }], options: { groupByPropertyId: status.id } }, 'board')
+  const item = record('group-sort-record', db.id, 'group-sort-page', { [title.id]: 'Sorted', [status.id]: 'open' })
+  const api = await installApi(page, [block('group-sort-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: board.id } }, 100)], {
+    databases: [db], views: [board], properties: [title, status], records: [item],
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Sorted', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-sort-block')
+  const move = async () => {
+    await root.getByRole('button', { name: '移动记录分组：Open' }).click()
+    await page.getByRole('menuitem', { name: 'Done' }).click()
+  }
+  await expect(root.getByRole('button', { name: '移动记录分组：Open' })).toBeVisible()
+  api.groupMoveFailure = 'conflict'
+  await move()
+  await expect(root.getByRole('alert').filter({ hasText: '分组记录已变化' })).toBeVisible()
+  expect(api.records.find(record => record.id === item.id)?.properties[status.id]).toBe('open')
+  await expect(root.getByRole('button', { name: '移动记录分组：Open' })).toBeEnabled()
+  api.groupMoveFailure = 'unknown'
+  await move()
+  await expect(root.getByRole('alert').filter({ hasText: '分组移动提交结果暂未确认' }).first()).toBeVisible()
+  expect(api.records.find(record => record.id === item.id)?.properties[status.id]).toBe('done')
+  const moves = api.requests.filter(request => request.path.endsWith('/record-group'))
+  expect(moves).toHaveLength(2)
+  expect(moves.every(request => request.payload.anchorRecordId === undefined && request.payload.placement === undefined)).toBe(true)
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeDisabled()
+})
+
+test('group windows fail closed when two visible groups return different Database versions', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const db = database('group-version-db')
+  const title = property('group-version-title', db.id, 'Name', 'title')
+  const status = property('group-version-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }])
+  const board = view('group-version-view', db.id, 'Version board', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: status.id } }, 'board')
+  const items = [record('group-version-open', db.id, 'group-version-page-open', { [title.id]: 'Open row', [status.id]: 'open' }),
+    record('group-version-done', db.id, 'group-version-page-done', { [title.id]: 'Done row', [status.id]: 'done' })]
+  const api = await installApi(page, [block('group-version-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: board.id } }, 100)], {
+    databases: [db], views: [board], properties: [title, status], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties[title.id]), role: 'database-record' })
+  let releaseDone!: () => void, signalDone!: () => void
+  const doneStarted = new Promise<void>(resolve => { signalDone = resolve })
+  const doneGate = new Promise<void>(resolve => { releaseDone = resolve })
+  await page.route(url => url.pathname.endsWith(`/views/${board.id}/group-records`) && url.searchParams.get('optionId') === 'done', async route => {
+    signalDone(); await doneGate; await route.fallback()
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-version-block')
+  await doneStarted
+  await expect(root.locator('[data-record-id="group-version-open"]')).toBeVisible()
+  api.databases[0]!.version += 1
+  releaseDone()
+  await expect(root.getByRole('alert').filter({ hasText: '分组窗口版本不一致' })).toBeVisible()
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeDisabled()
+  expect(api.requests.filter(request => request.path.endsWith('/group-records') && request.search?.includes('optionId=done'))).toHaveLength(1)
+})
+
+test('late group records from an A→B→A View switch cannot contaminate the current window', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const db = database('group-epoch-db')
+  const title = property('group-epoch-title', db.id, 'Name', 'title')
+  const status = property('group-epoch-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }])
+  const config: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: status.id } }
+  const first = view('group-epoch-first', db.id, 'First', config, 'board')
+  const second = view('group-epoch-second', db.id, 'Second', config, 'board')
+  const item = record('group-epoch-record', db.id, 'group-epoch-page', { [title.id]: 'Only row', [status.id]: 'open' })
+  const api = await installApi(page, [block('group-epoch-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: first.id } }, 100)], {
+    databases: [db], views: [first, second], properties: [title, status], records: [item],
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Only row', role: 'database-record' })
+  let releaseOld!: () => void, signalOld!: () => void, attempts = 0
+  const oldStarted = new Promise<void>(resolve => { signalOld = resolve })
+  const oldGate = new Promise<void>(resolve => { releaseOld = resolve })
+  await page.route(url => url.pathname.endsWith(`/views/${first.id}/group-records`) && url.searchParams.get('optionId') === 'open', async route => {
+    attempts++
+    if (attempts === 1) { signalOld(); await oldGate }
+    await route.fallback()
+  })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  await oldStarted
+  const root = page.locator('#database-block-group-epoch-block')
+  const changeView = async (viewId: string) => page.evaluate(targetViewId => {
+    const editorRoot = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null
+    const exposed = editorRoot?.__vueParentComponent?.exposed?.editor
+    const editor = exposed?.commands ? exposed : exposed?.value
+    if (!editor?.view) throw new Error('Missing editor')
+    let position = -1, attrs: Record<string, unknown> | undefined
+    editor.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, unknown> }, nodePosition: number) => {
+      if (position < 0 && node.type.name === 'eotionDatabase') { position = nodePosition; attrs = node.attrs }
+    })
+    if (position < 0 || !attrs) throw new Error('Missing database node')
+    editor.view.dispatch(editor.state.tr.setNodeMarkup(position, undefined, { ...attrs, viewId: targetViewId }))
+  }, viewId)
+  await changeView(second.id)
+  await expect(root).toHaveAttribute('data-view-id', second.id)
+  await changeView(first.id)
+  await expect(root).toHaveAttribute('data-view-id', first.id)
+  await expect(root.locator('[data-record-id="group-epoch-record"]')).toHaveCount(1)
+  releaseOld()
+  await expect.poll(() => attempts).toBeGreaterThanOrEqual(2)
+  await expect(root.locator('[data-record-id="group-epoch-record"]')).toHaveCount(1)
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeEnabled()
+})
+
+test('grouped Timeline reads back an interrupted Date cell write and locks only when unconfirmed', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('group-timeline-db')
+  const title = property('group-timeline-title', db.id, 'Name', 'title')
+  const status = property('group-timeline-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }])
+  const date = property('group-timeline-date', db.id, 'Date', 'date')
+  const timeline = view('group-timeline-view', db.id, 'Grouped Timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: status.id, timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id },
+      frozenTable: { visible: true, visibleProperties: [title.id, date.id], propertyOrder: [title.id, date.id] } } } }, 'timeline')
+  const items = [record('group-timeline-open', db.id, 'group-timeline-page-open', { [title.id]: 'Open row', [status.id]: 'open', [date.id]: '2026-10-13' }),
+    record('group-timeline-done', db.id, 'group-timeline-page-done', { [title.id]: 'Done row', [status.id]: 'done', [date.id]: '2026-10-14' })]
+  const api = await installApi(page, [block('group-timeline-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timeline.id } }, 100)], {
+    databases: [db], views: [timeline], properties: [title, status, date], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties[title.id]), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-timeline-block')
+  const surface = root.getByTestId('database-timeline')
+  await expect(surface.getByTestId('timeline-viewport').locator('[data-timeline-group-header]')).toHaveCount(3)
+  await expect(surface.locator('[data-timeline-row][data-record-id="group-timeline-open"]')).toBeVisible()
+  const cell = surface.locator(`[data-timeline-frozen-row][data-record-id="${items[0]!.id}"] [data-property-id="${date.id}"]`)
+  await cell.getByRole('button').click()
+  const editor = page.getByRole('group', { name: '编辑日期：Date' })
+  await editor.getByLabel('Date 值').fill('2026-10-16')
+  api.abortCellUpdatesAfterCommit = 1
+  await editor.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(cell.getByRole('button')).toContainText('2026-10-16')
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeEnabled()
+  await cell.getByRole('button').click()
+  await editor.getByLabel('Date 值').fill('2026-10-19')
+  api.abortCellUpdatesWithoutCommit = 1
+  await editor.getByRole('button', { name: '保存', exact: true }).click()
+  await expect(root.getByText('单元格提交结果暂未确认，请重新加载当前视图。')).toBeVisible()
+  await expect(editor.getByLabel('Date 值')).toBeDisabled()
+})
+
+test('grouped Timeline uses lazy group windows, collapse, and the shared cross-group move', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('group-timeline-db')
+  const title = property('group-timeline-title', db.id, 'Name', 'title')
+  const status = property('group-timeline-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }])
+  const date = property('group-timeline-date', db.id, 'Date', 'date')
+  const timeline = view('group-timeline-view', db.id, 'Grouped Timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: status.id, timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id },
+      frozenTable: { visible: true, visibleProperties: [title.id, status.id], propertyOrder: [title.id, status.id] } } } }, 'timeline')
+  const items = [record('group-timeline-open', db.id, 'group-timeline-page-open', { [title.id]: 'Open row', [status.id]: 'open', [date.id]: '2026-10-13' }),
+    record('group-timeline-done', db.id, 'group-timeline-page-done', { [title.id]: 'Done row', [status.id]: 'done', [date.id]: '2026-10-14' })]
+  const api = await installApi(page, [block('group-timeline-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timeline.id } }, 100)], {
+    databases: [db], views: [timeline], properties: [title, status, date], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties[title.id]), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-timeline-block')
+  const surface = root.getByTestId('database-timeline')
+  await expect(surface.getByTestId('timeline-viewport').locator('[data-timeline-group-header]')).toHaveCount(3)
+  await expect(surface.locator('[data-timeline-row][data-record-id="group-timeline-open"]')).toBeVisible()
+  const openReads = () => api.requests.filter(request => request.path.endsWith('/group-records') && request.search?.includes('optionId=open')).length
+  const beforeCollapse = openReads()
+  await surface.getByRole('button', { name: '折叠分组：Open' }).first().click()
+  await expect(surface.locator('[data-timeline-row][data-record-id="group-timeline-open"]')).toHaveCount(0)
+  expect(openReads()).toBe(beforeCollapse)
+  await surface.getByRole('button', { name: '展开分组：Open' }).first().click()
+  await expect(surface.locator('[data-timeline-row][data-record-id="group-timeline-open"]')).toBeVisible()
+  await surface.getByRole('combobox', { name: '移动Open row到分组' }).selectOption({ label: 'Done' })
+  await expect.poll(() => api.records.find(item => item.id === 'group-timeline-open')?.properties[status.id]).toBe('done')
+  await expect(surface.locator('[data-timeline-row][data-record-id="group-timeline-open"]')).toBeVisible()
+  expect(api.requests.filter(request => request.path.endsWith('/record-group'))).toHaveLength(1)
+  api.views.find(item => item.id === timeline.id)!.config = { ...timeline.config, sorts: [{ propertyId: title.id, direction: 'asc' }] }
+  await page.reload()
+  await expect(surface.getByRole('combobox', { name: '移动Open row到分组' })).toBeVisible()
+  await surface.getByRole('combobox', { name: '移动Open row到分组' }).selectOption({ label: 'Open' })
+  await expect.poll(() => api.records.find(item => item.id === 'group-timeline-open')?.properties[status.id]).toBe('open')
+  const sortedMove = api.requests.filter(request => request.path.endsWith('/record-group')).at(-1)?.payload
+  expect(sortedMove).toMatchObject({ sourceGroup: { kind: 'option', optionId: 'done' }, targetGroup: { kind: 'option', optionId: 'open' } })
+  expect(sortedMove.anchorRecordId).toBeUndefined()
+})
+
+test('Timeline grouping settings enable and clear the generic Select grouping without losing date options', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('group-settings-db')
+  const title = property('group-settings-title', db.id, 'Name', 'title')
+  const status = property('group-settings-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }])
+  const date = property('group-settings-date', db.id, 'Date', 'date')
+  const timeline = view('group-settings-view', db.id, 'Settings timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { futureFlag: 'keep', timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }, 'timeline')
+  const item = record('group-settings-record', db.id, 'group-settings-page', { [title.id]: 'Settings row', [status.id]: 'open', [date.id]: '2026-10-13' })
+  const api = await installApi(page, [block('group-settings-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timeline.id } }, 100)], {
+    databases: [db], views: [timeline], properties: [title, status, date], records: [item],
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Settings row', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-settings-block')
+  const openSettings = async () => {
+    await root.getByRole('button', { name: '数据库设置' }).click()
+    await page.getByRole('menuitem', { name: '分组属性', exact: true }).click()
+  }
+  await openSettings()
+  const panel = page.getByRole('group', { name: '分组属性' })
+  await selectSettingOption(panel, '分组属性', status.id, 'Status')
+  await overlayFooter(panel).getByRole('button', { name: '保存分组' }).click()
+  await expect(root.getByTestId('database-timeline').locator('[data-timeline-group-header]')).toHaveCount(2)
+  await expect.poll(() => api.views.find(view => view.id === timeline.id)?.config.options?.groupByPropertyId).toBe(status.id)
+  expect(api.views.find(view => view.id === timeline.id)?.config.options?.timeline?.dateSource).toEqual({ mode: 'date-property', propertyId: date.id })
+  await openSettings()
+  await selectSettingOption(panel, '分组属性', '', '未设置')
+  await overlayFooter(panel).getByRole('button', { name: '保存分组' }).click()
+  await expect(root.getByTestId('database-timeline').locator('[data-timeline-group-header]')).toHaveCount(0)
+  await expect(root.getByTestId('database-timeline').locator('[data-timeline-row][data-record-id="group-settings-record"]')).toBeVisible()
+})
+
+test('queued group move that goes offline before send makes zero POST and recovers on reconnect', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const db = database('group-queue-db')
+  const title = property('group-queue-title', db.id, 'Name', 'title')
+  const notes = property('group-queue-notes', db.id, 'Notes', 'text')
+  const status = property('group-queue-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }])
+  const table = view('group-queue-table', db.id, 'Table')
+  const board = view('group-queue-board', db.id, 'Board', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: status.id } }, 'board')
+  const item = record('group-queue-record', db.id, 'group-queue-page', { [title.id]: 'Queue row', [notes.id]: 'Before', [status.id]: 'open' })
+  const api = await installApi(page, [
+    block('group-queue-table-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: table.id } }, 100),
+    block('group-queue-board-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: board.id } }, 200),
+  ], { databases: [db], views: [table, board], properties: [title, notes, status], records: [item], holdCellUpdateResponse: true })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Queue row', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const tableRoot = page.locator('#database-block-group-queue-table-block')
+  const boardRoot = page.locator('#database-block-group-queue-board-block')
+  await tableRoot.locator('tbody tr').first().locator('td').nth(1).getByRole('button').click()
+  const input = tableRoot.getByRole('textbox', { name: 'Notes 值' })
+  await input.fill('Table write')
+  await input.press('Enter')
+  await api.cellUpdateResponseStarted
+  await boardRoot.getByRole('button', { name: '移动记录分组：Open' }).click()
+  await page.getByRole('menuitem', { name: 'Done' }).click()
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: false }); window.dispatchEvent(new Event('offline')) })
+  api.releaseCellUpdateResponse()
+  await expect(boardRoot.getByRole('alert').filter({ hasText: '分组移动未发送' })).toBeVisible()
+  expect(api.requests.filter(request => request.path.endsWith('/record-group'))).toHaveLength(0)
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: true }); window.dispatchEvent(new Event('online')) })
+  await expect(boardRoot.getByRole('button', { name: '切换视图' })).toBeEnabled()
+  expect(api.records.find(record => record.id === item.id)?.properties[status.id]).toBe('open')
+})
+
+test('stale group cursor returns one 409 and locks the mixed window without retry', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const db = database('group-cursor-db')
+  const title = property('group-cursor-title', db.id, 'Name', 'title')
+  const status = property('group-cursor-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }])
+  const board = view('group-cursor-view', db.id, 'Cursor board', { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { groupByPropertyId: status.id } }, 'board')
+  const items = Array.from({ length: 26 }, (_, index) => record(`group-cursor-${String(index).padStart(2, '0')}`, db.id,
+    `group-cursor-page-${index}`, { [title.id]: `Row ${index}`, [status.id]: 'open' }))
+  const api = await installApi(page, [block('group-cursor-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: board.id } }, 100)], {
+    databases: [db], views: [board], properties: [title, status], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties[title.id]), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-cursor-block')
+  const open = root.getByTestId('database-board').locator('[aria-label="Open"]')
+  await expect(open.locator('.eotion-database-board-card')).toHaveCount(25)
+  api.databases[0]!.version += 1
+  const reads = () => api.requests.filter(request => request.path.endsWith('/group-records') && request.search?.includes('optionId=open') && request.search.includes('cursor=')).length
+  await open.getByRole('button', { name: '加载更多' }).click()
+  await expect(root.getByRole('alert').filter({ hasText: '分组记录已变化' })).toBeVisible()
+  expect(reads()).toBe(1)
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeDisabled()
+})
+
+test('visible grouped Timeline header skipped offline loads after reconnect', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('group-resume-db')
+  const title = property('group-resume-title', db.id, 'Name', 'title')
+  const status = property('group-resume-status', db.id, 'Status', 'select', Array.from({ length: 24 }, (_, index) => ({ id: `group-${index}`, name: `Group ${index}` })))
+  const date = property('group-resume-date', db.id, 'Date', 'date')
+  const timeline = view('group-resume-view', db.id, 'Resume timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: status.id, timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }, 'timeline')
+  const item = record('group-resume-record', db.id, 'group-resume-page', { [title.id]: 'Late row', [status.id]: 'group-23', [date.id]: '2026-10-13' })
+  const api = await installApi(page, [block('group-resume-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timeline.id } }, 100)], {
+    databases: [db], views: [timeline], properties: [title, status, date], records: [item],
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Late row', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-resume-block')
+  const surface = root.getByTestId('database-timeline')
+  await expect(surface).toBeVisible()
+  await expect(page.getByText('已同步', { exact: true })).toBeVisible()
+  const lateReads = () => api.requests.filter(request => request.path.endsWith('/group-records') && request.search?.includes('optionId=group-23')).length
+  expect(lateReads()).toBe(0)
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: false }); window.dispatchEvent(new Event('offline')) })
+  await root.evaluate(element => { const host = element.closest<HTMLElement>('.document-wrap'); if (host) host.scrollTop = 850 })
+  await expect(surface.getByTestId('timeline-viewport').locator('[data-timeline-group-header]').filter({ hasText: 'Group 23' })).toBeVisible()
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  expect(lateReads()).toBe(0)
+  await root.evaluate(element => { element.closest<HTMLElement>('.document-wrap')!.scrollTop = 0 })
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: true }); window.dispatchEvent(new Event('online')) })
+  await expect.poll(() => root.evaluate(element => element.closest<HTMLElement>('.document-wrap')?.scrollTop ?? 0)).toBe(0)
+  expect(lateReads()).toBe(0)
+  await root.evaluate(element => { const host = element.closest<HTMLElement>('.document-wrap'); if (host) host.scrollTop = 850 })
+  await expect(surface.getByTestId('timeline-viewport').locator('[data-timeline-group-header]').filter({ hasText: 'Group 23' })).toBeVisible()
+  await expect.poll(lateReads).toBeGreaterThanOrEqual(1)
+  await expect(surface.locator('[data-timeline-row][data-record-id="group-resume-record"]')).toBeVisible()
+})
+
+test('Timeline group manual first load and retry work without IntersectionObserver', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 })
+  await page.addInitScript(() => { Object.defineProperty(window, 'IntersectionObserver', { configurable: true, value: undefined }) })
+  const db = database('group-manual-db')
+  const title = property('group-manual-title', db.id, 'Name', 'title')
+  const status = property('group-manual-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }])
+  const date = property('group-manual-date', db.id, 'Date', 'date')
+  const timeline = view('group-manual-view', db.id, 'Manual timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: status.id, timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id } } } }, 'timeline')
+  const item = record('group-manual-record', db.id, 'group-manual-page', { [title.id]: 'Manual row', [status.id]: 'open', [date.id]: '2026-10-13' })
+  const api = await installApi(page, [block('group-manual-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timeline.id } }, 100)], {
+    databases: [db], views: [timeline], properties: [title, status, date], records: [item], failGroupLoads: 1,
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Manual row', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-manual-block')
+  const group = root.getByTestId('timeline-viewport').locator('[data-timeline-group-header]').filter({ hasText: 'Open' })
+  await expect(group.getByRole('button', { name: '加载记录' })).toBeVisible()
+  expect(api.requests.filter(request => request.path.endsWith('/group-records'))).toHaveLength(0)
+  await group.getByRole('button', { name: '加载记录' }).click()
+  await expect(group.getByRole('button', { name: '重试' })).toBeVisible()
+  await group.getByRole('button', { name: '重试' }).click()
+  await expect(root.getByTestId('database-timeline').locator(`[data-timeline-row][data-record-id="${item.id}"]`)).toBeVisible()
+  expect(api.requests.filter(request => request.path.endsWith('/group-records') && request.search?.includes('optionId=open'))).toHaveLength(2)
+})
+
+for (const waitForIdle of [false, true]) {
+test(`visible grouped Timeline header skipped during a pending edit waits until scrolled back (${waitForIdle ? 'after idle' : 'during refresh'})`, async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('group-busy-resume-db')
+  const title = property('group-busy-title', db.id, 'Name', 'title')
+  const notes = property('group-busy-notes', db.id, 'Points', 'number')
+  const status = property('group-busy-status', db.id, 'Status', 'select', Array.from({ length: 24 }, (_, index) => ({ id: `group-${index}`, name: `Group ${index}` })))
+  const date = property('group-busy-date', db.id, 'Date', 'date')
+  const timeline = view('group-busy-view', db.id, 'Busy timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { groupByPropertyId: status.id, timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id },
+      frozenTable: { visible: true, visibleProperties: [title.id, notes.id], propertyOrder: [title.id, notes.id] } } } }, 'timeline')
+  const first = record('group-busy-first', db.id, 'group-busy-page-first', { [title.id]: 'First row', [notes.id]: 12, [status.id]: 'group-0', [date.id]: '2026-10-13' })
+  const last = record('group-busy-last', db.id, 'group-busy-page-last', { [title.id]: 'Last row', [status.id]: 'group-23', [date.id]: '2026-10-14' })
+  const api = await installApi(page, [block('group-busy-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timeline.id } }, 100)], {
+    databases: [db], views: [timeline], properties: [title, notes, status, date], records: [first, last], holdCellUpdateResponse: true,
+  })
+  for (const item of [first, last]) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties[title.id]), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-group-busy-block')
+  const surface = root.getByTestId('database-timeline')
+  const cell = root.locator(`[data-timeline-frozen-row][data-record-id="${first.id}"] [data-property-id="${notes.id}"]`)
+  await expect(cell.getByRole('button')).toBeVisible()
+  await cell.getByRole('button').click()
+  const input = cell.getByRole('textbox', { name: 'Points 值' })
+  await input.fill('invalid')
+  await input.press('Enter')
+  const toggle = surface.getByRole('button', { name: '折叠分组：Group 0', exact: true }).first()
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  await expect(input).toHaveValue('invalid')
+  await expect(root).toContainText('请输入有效数字')
+  await input.fill('37')
+  await input.press('Enter')
+  await api.cellUpdateResponseStarted
+  const lateReads = () => api.requests.filter(request => request.path.endsWith('/group-records') && request.search?.includes('optionId=group-23')).length
+  expect(lateReads()).toBe(0)
+  await root.evaluate(element => { const host = element.closest<HTMLElement>('.document-wrap'); if (host) host.scrollTop = 850 })
+  await expect(surface.getByTestId('timeline-frozen-table').locator('[data-timeline-group-header]').filter({ hasText: 'Group 23' })).toBeVisible()
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  expect(lateReads()).toBe(0)
+  await root.evaluate(element => { const host = element.closest<HTMLElement>('.document-wrap'); if (host) host.scrollTop = 0 })
+  api.releaseCellUpdateResponse()
+  await expect.poll(() => api.records.find(record => record.id === first.id)?.properties[notes.id]).toBe(37)
+  await expect.poll(() => root.evaluate(element => element.closest<HTMLElement>('.document-wrap')?.scrollTop ?? 0)).toBe(0)
+  expect(lateReads()).toBe(0)
+  if (waitForIdle) {
+    await expect(root.getByRole('button', { name: '切换视图', exact: true })).toBeEnabled()
+    expect(lateReads()).toBe(0)
+  }
+  const geometry = await root.evaluate(element => {
+    const host = element.closest<HTMLElement>('.document-wrap')!
+    const header = [...element.querySelectorAll<HTMLElement>('[data-testid="timeline-frozen-table"] [data-timeline-group-header]')].find(node => node.textContent?.includes('Group 23'))!
+    const before = { top: host.scrollTop, height: host.scrollHeight, client: host.clientHeight, hostRect: host.getBoundingClientRect().toJSON(), headerRect: header.getBoundingClientRect().toJSON() }
+    host.scrollTop = 850
+    return { before, after: { top: host.scrollTop, height: host.scrollHeight, client: host.clientHeight, hostRect: host.getBoundingClientRect().toJSON(), headerRect: header.getBoundingClientRect().toJSON() } }
+  })
+  expect(geometry.before.top).toBe(0)
+  expect(geometry.after.height).toBe(geometry.before.height)
+  expect(geometry.after.client).toBe(geometry.before.client)
+  expect(geometry.after.top).toBeGreaterThan(0)
+  expect(geometry.after.headerRect.top).toBeLessThan(geometry.after.hostRect.bottom)
+  expect(geometry.after.headerRect.bottom).toBeGreaterThan(geometry.after.hostRect.top)
+  await expect(surface.getByTestId('timeline-frozen-table').locator('[data-timeline-group-header]').filter({ hasText: 'Group 23' })).toBeVisible()
+  await expect.poll(lateReads).toBeGreaterThanOrEqual(1)
+  await expect(surface.locator(`[data-timeline-row][data-record-id="${last.id}"]`)).toBeVisible()
+})
+}
+
 test('queued Timeline reorder that goes offline before send stays known and writable after reconnect', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
@@ -1216,6 +1773,9 @@ type DatabaseApi = {
   cellBatchMutationReceipts: Map<string, 'committed' | 'not_committed' | 'uncertain'>
   recordOrderByView: Map<string, string[]>
   recordOrderFailure: 'none' | 'conflict' | 'unknown'
+  groupMoveFailure: 'none' | 'conflict' | 'unknown'
+  groupMoveConflictValue: string | null | undefined
+  failGroupLoads: number
   holdRecordOrderResponse: boolean
   recordOrderResponseStarted: Promise<void>
   recordOrderResponseGate: Promise<void>
@@ -1223,7 +1783,7 @@ type DatabaseApi = {
   releaseRecordOrderResponse: () => void
 }
 
-async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'abortCellUpdatesAfterCommit' | 'abortCellUpdatesWithoutCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'holdCellUpdateResponse' | 'holdRecordOrderResponse' | 'conflictCellBatchMutations' | 'cellBatchMutationOutcome' | 'failCellBatchReceiptReads' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
+async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pick<DatabaseApi, 'databases' | 'views' | 'properties' | 'records' | 'failTableLoads' | 'failTableAppendLoads' | 'failGroupLoads' | 'tableLoadDelayMs' | 'failDatabaseCreates' | 'abortDatabaseCreatesAfterCommit' | 'failDatabaseReferenceReads' | 'abortRecordCreatesAfterCommit' | 'abortCellUpdatesAfterCommit' | 'abortCellUpdatesWithoutCommit' | 'failCellUpdates' | 'conflictCellUpdates' | 'holdCellUpdateResponse' | 'holdRecordOrderResponse' | 'groupMoveConflictValue' | 'conflictCellBatchMutations' | 'cellBatchMutationOutcome' | 'failCellBatchReceiptReads' | 'failViewUpdates' | 'failPropertyUpdates' | 'failPropertyDeletes' | 'failPropertyTypeChanges' | 'conflictPropertyTypeChanges' | 'abortViewCreatesAfterCommit' | 'abortViewDeletesAfterCommit' | 'failRecordPageReads' | 'failSnapshots' | 'failSnapshotAfterRecordCreate' | 'holdRecordCreateResponse' | 'holdDatabaseCreateResponse' | 'offline' | 'failRelationCandidates'>> = {}) {
   let signalRecordCreateResponseStarted!: () => void
   let releaseRecordCreateResponse!: () => void
   let signalDatabaseCreateResponseStarted!: () => void
@@ -1243,7 +1803,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
   const api: DatabaseApi = {
     pages: [{ ...pageRecord }], blocks: [...seed], databases: (options.databases ?? []).map((item) => ({ ...item })), views: (options.views ?? []).map((item) => ({ ...item })),
     properties: (options.properties ?? []).map((item) => ({ ...item, ...(item.options ? { options: [...item.options] } : {}) })), records: (options.records ?? []).map((item) => ({ ...item, properties: { ...item.properties } })), requests: [],
-    failTableLoads: options.failTableLoads ?? 0, failTableAppendLoads: options.failTableAppendLoads ?? 0,
+    failTableLoads: options.failTableLoads ?? 0, failTableAppendLoads: options.failTableAppendLoads ?? 0, failGroupLoads: options.failGroupLoads ?? 0,
     tableLoadDelayMs: options.tableLoadDelayMs ?? 0, failDatabaseCreates: options.failDatabaseCreates ?? 0,
     abortDatabaseCreatesAfterCommit: options.abortDatabaseCreatesAfterCommit ?? 0,
     failDatabaseReferenceReads: options.failDatabaseReferenceReads ?? 0,
@@ -1255,7 +1815,7 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
     conflictCellBatchMutations: options.conflictCellBatchMutations ?? 0,
     cellBatchMutationOutcome: options.cellBatchMutationOutcome ?? 'success',
     failCellBatchReceiptReads: options.failCellBatchReceiptReads ?? 0,
-    cellBatchMutationReceipts: new Map(), recordOrderByView: new Map(), recordOrderFailure: 'none',
+    cellBatchMutationReceipts: new Map(), recordOrderByView: new Map(), recordOrderFailure: 'none', groupMoveFailure: 'none', groupMoveConflictValue: options.groupMoveConflictValue,
     holdRecordOrderResponse: options.holdRecordOrderResponse ?? false, recordOrderResponseStarted, recordOrderResponseGate,
     signalRecordOrderResponseStarted: () => signalRecordOrderResponseStarted(), releaseRecordOrderResponse: () => releaseRecordOrderResponse(),
     failViewUpdates: options.failViewUpdates ?? 0,
@@ -1454,6 +2014,85 @@ async function installApi(page: Page, seed: BlockResponse[], options: Partial<Pi
       return json(route, 201, { database: databaseItem, view: created })
     }
     const viewPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views/([^/]+)$`, 'u').exec(pathname)
+    const groupPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views/([^/]+)/group-records$`, 'u').exec(pathname)
+    if (groupPath && request.method() === 'GET') {
+      if (api.failGroupLoads > 0) { api.failGroupLoads -= 1; return json(route, 503, { statusCode: 503, message: 'Group temporarily unavailable' }) }
+      const databaseItem = api.databases.find(item => item.id === groupPath[1])
+      const viewItem = api.views.find(item => item.id === groupPath[2] && item.databaseId === groupPath[1])
+      if (!databaseItem || !viewItem) return json(route, 404, { statusCode: 404, message: 'Database view not found' })
+      const property = api.properties.find(item => item.id === viewItem.config.options?.groupByPropertyId && item.databaseId === databaseItem.id && item.type === 'select')
+      if (!property) return json(route, 409, { statusCode: 409, message: 'Invalid group property' })
+      const kind = url.searchParams.get('groupKind')
+      const optionId = url.searchParams.get('optionId')
+      if (kind !== 'option' && kind !== 'ungrouped' || kind === 'option' && !property.options?.some(option => option.id === optionId)) return json(route, 400, { statusCode: 400, message: 'Invalid group' })
+      const group = kind === 'option' ? { kind: 'option' as const, optionId: optionId! } : { kind: 'ungrouped' as const }
+      const options = new Set((property.options ?? []).map(option => option.id))
+      const matching = api.records.filter(item => item.databaseId === databaseItem.id
+        && viewItem.config.filters.every(filter => matchesFilter(item, filter))
+        && (kind === 'option' ? item.properties[property.id] === optionId : !options.has(String(item.properties[property.id]))))
+      matching.sort((left, right) => {
+        for (const sort of viewItem.config.sorts) {
+          const compared = compareDatabaseValues(left.properties[sort.propertyId], right.properties[sort.propertyId])
+          if (compared) return sort.direction === 'asc' ? compared : -compared
+        }
+        const manual = api.recordOrderByView.get(viewItem.id)
+        return manual ? manual.indexOf(left.id) - manual.indexOf(right.id) : left.id.localeCompare(right.id)
+      })
+      const encoded = url.searchParams.get('cursor')
+      let start = 0
+      if (encoded) {
+        let cursor: { viewId: string; group: string; databaseVersion: number; viewVersion: number; lastId: string }
+        try { cursor = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')) }
+        catch { return json(route, 400, { statusCode: 400, message: 'Invalid cursor' }) }
+        if (cursor.viewId !== viewItem.id || cursor.group !== JSON.stringify(group)
+          || cursor.databaseVersion !== databaseItem.version || cursor.viewVersion !== viewItem.version) return json(route, 409, { statusCode: 409, message: 'Stale group cursor' })
+        start = matching.findIndex(item => item.id === cursor.lastId) + 1
+        if (!start) return json(route, 409, { statusCode: 409, message: 'Stale group anchor' })
+      }
+      const limit = Number(url.searchParams.get('limit') ?? 25)
+      const records = matching.slice(start, start + limit).map(item => ({ ...item, properties: {
+        ...item.properties, [api.properties.find(property => property.databaseId === databaseItem.id && property.type === 'title')?.id ?? '']: api.pages.find(page => page.id === item.pageId)?.title ?? item.properties[api.properties.find(property => property.databaseId === databaseItem.id && property.type === 'title')?.id ?? ''],
+      } }))
+      const lastId = records.at(-1)?.id
+      const nextCursor = start + limit < matching.length && lastId ? Buffer.from(JSON.stringify({ viewId: viewItem.id, group: JSON.stringify(group), databaseVersion: databaseItem.version, viewVersion: viewItem.version, lastId })).toString('base64url') : null
+      return json(route, 200, { database: databaseItem, view: viewItem, group, properties: api.properties.filter(item => item.databaseId === databaseItem.id), records, nextCursor })
+    }
+    const groupMovePath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views/([^/]+)/record-group$`, 'u').exec(pathname)
+    if (groupMovePath && request.method() === 'POST') {
+      const databaseItem = api.databases.find(item => item.id === groupMovePath[1])
+      const viewItem = api.views.find(item => item.id === groupMovePath[2] && item.databaseId === groupMovePath[1])
+      const input = payload as { recordId: string; sourceGroup: { kind: string; optionId?: string }; targetGroup: { kind: string; optionId?: string }; anchorRecordId?: string; placement?: 'before' | 'after'; expectedDatabaseVersion: number; expectedViewVersion: number; expectedRecordVersion: number }
+      const recordItem = api.records.find(item => item.id === input.recordId && item.databaseId === groupMovePath[1])
+      const property = api.properties.find(item => item.id === viewItem?.config.options?.groupByPropertyId && item.databaseId === groupMovePath[1])
+      if (!databaseItem || !viewItem || !recordItem || !property) return json(route, 404, { statusCode: 404, message: 'Group record not found' })
+      if (api.groupMoveFailure === 'conflict' || input.expectedDatabaseVersion !== databaseItem.version || input.expectedViewVersion !== viewItem.version || input.expectedRecordVersion !== recordItem.version) {
+        if (api.groupMoveFailure === 'conflict' && api.groupMoveConflictValue !== undefined) {
+          recordItem.properties[property.id] = api.groupMoveConflictValue
+          recordItem.version += 1; databaseItem.version += 1
+        }
+        api.groupMoveFailure = 'none'; return json(route, 409, { statusCode: 409, message: 'Group move conflict' })
+      }
+      if (viewItem.config.sorts.length && input.anchorRecordId) return json(route, 400, { statusCode: 400, message: 'Sorted move cannot anchor' })
+      const sourceValue = recordItem.properties[property.id]
+      const options = new Set((property.options ?? []).map(option => option.id))
+      const sourceMatches = input.sourceGroup.kind === 'option' ? sourceValue === input.sourceGroup.optionId : !options.has(String(sourceValue))
+      if (!sourceMatches) return json(route, 409, { statusCode: 409, message: 'Source group changed' })
+      if (input.anchorRecordId) {
+        const anchor = api.records.find(item => item.id === input.anchorRecordId && item.databaseId === databaseItem.id)
+        if (!anchor || (input.targetGroup.kind === 'option' ? anchor.properties[property.id] !== input.targetGroup.optionId : options.has(String(anchor.properties[property.id])))) return json(route, 409, { statusCode: 409, message: 'Target anchor changed' })
+      }
+      recordItem.properties[property.id] = input.targetGroup.kind === 'option' ? input.targetGroup.optionId! : null
+      recordItem.version += 1; databaseItem.version += 1; viewItem.version += 1
+      if (input.anchorRecordId && input.placement) {
+        const all = api.recordOrderByView.get(viewItem.id) ?? api.records.filter(item => item.databaseId === databaseItem.id).map(item => item.id).sort()
+        const ordered = all.filter(id => id !== recordItem.id)
+        const index = ordered.indexOf(input.anchorRecordId)
+        ordered.splice(index + (input.placement === 'after' ? 1 : 0), 0, recordItem.id)
+        api.recordOrderByView.set(viewItem.id, ordered)
+      }
+      if (api.groupMoveFailure === 'unknown') { api.groupMoveFailure = 'none'; return route.abort('failed') }
+      return json(route, 200, { database: databaseItem, view: viewItem, record: recordItem })
+    }
     const orderPath = new RegExp(`^/api/workspaces/${workspace.id}/databases/([^/]+)/views/([^/]+)/record-order$`, 'u').exec(pathname)
     if (orderPath && request.method() === 'POST') {
       const databaseItem = api.databases.find(item => item.id === orderPath[1])
@@ -5051,7 +5690,7 @@ test('Table List Board switch matrix keeps the database reference, renderer sett
     }
     await database.getByRole('button', { name: '数据库设置' }).click()
     const settingsMenu = page.getByRole('menu', { name: '数据库设置' })
-    if (transition.renderer === 'board') await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toBeVisible()
+    if (transition.renderer === 'board' || transition.renderer === 'timeline') await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toBeVisible()
     else await expect(settingsMenu.getByRole('menuitem', { name: '分组属性', exact: true })).toHaveCount(0)
     if (transition.renderer === 'timeline') {
       await expect(settingsMenu.getByRole('menuitem', { name: '日期属性', exact: true })).toBeVisible()
@@ -7644,13 +8283,17 @@ test('board renderer groups generic records by option IDs with projected titles 
   await page.goto('/#/app/database-workspace/page/database-page')
   const board = page.getByTestId('database-board')
   await expect(board).toBeVisible()
-  await expect(board.locator('.eotion-database-board-column-name')).toHaveText(['Todo', 'Doing', 'Done', '未分组'])
-  const todo = board.locator('[data-option-id="todo"]')
+  const columnsByOption = board.locator('.eotion-database-board-column')
+  await expect(columnsByOption).toHaveCount(4)
+  expect(await columnsByOption.evaluateAll(elements => elements.map(element => element.getAttribute('aria-label')))).toEqual(['Todo', 'Doing', 'Done', '未分组'])
+  const todo = columnsByOption.nth(0)
   await expect(todo.locator('.eotion-database-board-card')).toHaveCount(2)
   expect(await todo.locator('.eotion-database-board-card').evaluateAll(elements => elements.map(element => element.getAttribute('data-record-id')))).toEqual(['board-b', 'board-a'])
-  await expect(board.locator('[data-option-id="doing"] .eotion-database-board-card')).toHaveAttribute('data-record-id', 'board-c')
-  await expect(board.locator('[data-option-id="unassigned"] .eotion-database-board-card')).toHaveCount(0)
-  expect(await board.locator('[data-option-id=""] .eotion-database-board-card').evaluateAll(elements => elements.map(element => element.getAttribute('data-record-id')))).toEqual(['board-e', 'board-d'])
+  await expect(columnsByOption.nth(1).locator('.eotion-database-board-card')).toHaveAttribute('data-record-id', 'board-c')
+  await expect(columnsByOption.nth(2).locator('.eotion-database-board-card')).toHaveCount(0)
+  await columnsByOption.nth(3).scrollIntoViewIfNeeded()
+  await expect(columnsByOption.nth(3).locator('.eotion-database-board-card')).toHaveCount(2)
+  expect(await columnsByOption.nth(3).locator('.eotion-database-board-card').evaluateAll(elements => elements.map(element => element.getAttribute('data-record-id')))).toEqual(['board-e', 'board-d'])
   const card = board.locator('[data-record-id="board-a"]')
   await expect(card.getByRole('button', { name: '打开记录：Projected board-a' })).toBeVisible()
   await expect(card).toHaveAttribute('draggable', 'true')
@@ -7767,7 +8410,7 @@ test('board renderer handles missing grouping and empty select options without t
   await expect(page.locator('.eotion-database table')).toHaveCount(0)
 })
 
-test('Board drag preserves the current column while the cell update is pending', async ({ page }) => {
+test('Board drag preserves the current column while the generic group move is pending', async ({ page }) => {
   const boardView = view('board-drag-pending-view', rootDatabase.id, 'Board', {
     ...DEFAULT_DATABASE_VIEW_CONFIG,
     options: { groupByPropertyId: 'root-select' },
@@ -7786,7 +8429,7 @@ test('Board drag preserves the current column while the cell update is pending',
   const patchGate = new Promise<void>(resolve => { releasePatch = resolve })
   const boardRefreshStarted = new Promise<void>(resolve => { signalBoardRefreshStarted = resolve })
   const boardRefreshGate = new Promise<void>(resolve => { releaseBoardRefresh = resolve })
-  await page.route(`**/records/${basicRecord.id}/cells/root-select`, async route => {
+  await page.route(`**/views/${boardView.id}/record-group`, async route => {
     pendingPatch = { method: route.request().method(), payload: route.request().postDataJSON() }
     signalPatchStarted()
     await patchGate
@@ -7802,18 +8445,17 @@ test('Board drag preserves the current column while the cell update is pending',
   await page.goto('/#/app/database-workspace/page/database-page')
 
   const board = page.getByTestId('database-board')
-  const openColumn = board.locator('[data-option-id="status-open"]')
-  const doneColumn = board.locator('[data-option-id="status-done"]')
+  const openColumn = board.locator('.eotion-database-board-column[aria-label="Open"]')
+  const doneColumn = board.locator('.eotion-database-board-column[aria-label="Done"]')
   const card = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
-  const picker = card.getByRole('button', { name: '移动记录分组' })
   try {
     await card.dragTo(doneColumn)
     await patchStarted
     await expect(openColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
     await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toHaveCount(0)
     await expect(card).toHaveAttribute('draggable', 'false')
-    await expect(picker).toBeDisabled()
-    expect(pendingPatch).toEqual({ method: 'PATCH', payload: { value: 'status-done', expectedDatabaseVersion: 1, expectedRecordVersion: 1 } })
+    await expect(card.getByRole('button', { name: '移动记录分组：Open' })).toHaveCount(0)
+    expect(pendingPatch).toMatchObject({ method: 'POST', payload: { recordId: basicRecord.id, sourceGroup: { kind: 'option', optionId: 'status-open' }, targetGroup: { kind: 'option', optionId: 'status-done' }, expectedDatabaseVersion: 1, expectedViewVersion: 1, expectedRecordVersion: 1 } })
     expect(api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/views/${boardView.id}/table`))).toHaveLength(1)
   } finally {
     holdBoardRefresh = true
@@ -7829,10 +8471,10 @@ test('Board drag preserves the current column while the cell update is pending',
   }
   await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
   await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toContainText('Changed during refresh')
-  await expect.poll(() => api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`)).length).toBe(1)
+  await expect.poll(() => api.requests.filter(item => item.method === 'POST' && item.path.endsWith(`/views/${boardView.id}/record-group`)).length).toBe(1)
   await expect.poll(() => api.requests.filter(item => item.method === 'GET' && item.path.endsWith(`/views/${boardView.id}/table`)).length).toBe(3)
-  const update = api.requests.find(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))
-  expect(update?.payload).toEqual({ value: 'status-done', expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+  const update = api.requests.find(item => item.method === 'POST' && item.path.endsWith(`/views/${boardView.id}/record-group`))
+  expect(update?.payload).toMatchObject({ recordId: basicRecord.id, targetGroup: { kind: 'option', optionId: 'status-done' }, expectedDatabaseVersion: 1, expectedViewVersion: 1, expectedRecordVersion: 1 })
 })
 
 test('Board drag to the ungrouped column stores null and a same-column drop does nothing', async ({ page }) => {
@@ -7847,22 +8489,22 @@ test('Board drag to the ungrouped column stores null and a same-column drop does
   await page.goto('/#/app/database-workspace/page/database-page')
 
   const board = page.getByTestId('database-board')
-  const openColumn = board.locator('[data-option-id="status-open"]')
-  const ungroupedColumn = board.locator('[data-option-id=""]')
+  const openColumn = board.locator('.eotion-database-board-column[aria-label="Open"]')
+  const ungroupedColumn = board.locator('.eotion-database-board-column[aria-label="未分组"]')
   const card = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
   await card.dragTo(openColumn)
   await expect(card).toBeVisible()
-  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.includes('/cells/'))).toHaveLength(0)
+  expect(api.requests.filter(item => item.path.endsWith('/record-group'))).toHaveLength(0)
 
   await card.dragTo(ungroupedColumn)
   const ungroupedCard = ungroupedColumn.locator(`[data-record-id="${basicRecord.id}"]`)
   await expect(ungroupedCard).toBeVisible()
-  const updates = api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))
+  const updates = api.requests.filter(item => item.method === 'POST' && item.path.endsWith(`/views/${boardView.id}/record-group`))
   expect(updates).toHaveLength(1)
-  expect(updates[0]?.payload).toEqual({ value: null, expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+  expect(updates[0]?.payload).toMatchObject({ recordId: basicRecord.id, sourceGroup: { kind: 'option', optionId: 'status-open' }, targetGroup: { kind: 'ungrouped' }, expectedDatabaseVersion: 1, expectedViewVersion: 1, expectedRecordVersion: 1 })
   expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBeNull()
   await ungroupedCard.dragTo(ungroupedColumn)
-  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))).toHaveLength(1)
+  expect(api.requests.filter(item => item.method === 'POST' && item.path.endsWith(`/views/${boardView.id}/record-group`))).toHaveLength(1)
 })
 
 test('Board grouping picker clears a value on a 390px viewport', async ({ page }) => {
@@ -7878,13 +8520,13 @@ test('Board grouping picker clears a value on a 390px viewport', async ({ page }
   await page.goto('/#/app/database-workspace/page/database-page')
 
   const board = page.getByTestId('database-board')
-  const openColumn = board.locator('[data-option-id="status-open"]')
+  const openColumn = board.locator('.eotion-database-board-column[aria-label="Open"]')
   const card = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
-  await card.getByRole('button', { name: '移动记录分组' }).click()
-  await page.getByRole('menu', { name: '移动记录分组' }).getByRole('menuitem', { name: '未分组', exact: true }).click()
-  await expect(board.locator(`[data-option-id=""] [data-record-id="${basicRecord.id}"]`)).toBeVisible()
+  await card.getByRole('button', { name: '移动记录分组：Open' }).click()
+  await page.getByRole('menu', { name: '移动记录分组：Open' }).getByRole('menuitem', { name: '未分组', exact: true }).click()
+  await expect(board.locator(`.eotion-database-board-column[aria-label="未分组"] [data-record-id="${basicRecord.id}"]`)).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
-  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))).toHaveLength(1)
+  expect(api.requests.filter(item => item.method === 'POST' && item.path.endsWith(`/views/${boardView.id}/record-group`))).toHaveLength(1)
   expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBeNull()
 })
 
@@ -7921,10 +8563,10 @@ test('board grouping mutation updates the record, keeps linked Table and List in
   const tableBlock = page.locator('#database-block-board-mutation-table-block')
   const listBlock = page.locator('#database-block-board-mutation-list-block')
   const board = boardBlock.getByTestId('database-board')
-  const openColumn = board.locator('[data-option-id="status-open"]')
-  const doneColumn = board.locator('[data-option-id="status-done"]')
+  const openColumn = board.locator('.eotion-database-board-column[aria-label="Open"]')
+  const doneColumn = board.locator('.eotion-database-board-column[aria-label="Done"]')
   const movedCard = openColumn.locator('[data-record-id="board-mutation-a"]')
-  await expect(movedCard.getByRole('button', { name: '移动记录分组' })).toHaveAttribute('data-value', 'status-open')
+  await expect(movedCard.getByRole('button', { name: '移动记录分组：Open' })).toBeVisible()
   await expect(openColumn.locator('.eotion-database-board-card')).toHaveCount(2)
   await expect(doneColumn.locator('.eotion-database-board-card')).toHaveCount(1)
   await expect(tableBlock.getByRole('button', { name: '移动记录分组' })).toHaveCount(0)
@@ -7938,15 +8580,16 @@ test('board grouping mutation updates the record, keeps linked Table and List in
   await expect.poll(() => api.requests.filter(item => item.method === 'GET' && item.path === boardRecordsPath).length).toBe(boardReadsBeforeDrag + 1)
   await expect(openColumn.locator('[data-record-id="board-mutation-b"]')).toBeVisible()
   await expect(doneColumn.locator('[data-record-id="board-mutation-c"]')).toBeVisible()
-  await expect(movedDoneCard.getByRole('button', { name: '移动记录分组' })).toHaveAttribute('data-value', 'status-done')
+  await expect(movedDoneCard.getByRole('button', { name: '移动记录分组：Done' })).toBeVisible()
 
-  const cellUpdate = api.requests.find(item => item.method === 'PATCH' && item.path.endsWith(`/records/${moved.id}/cells/root-select`))
-  expect(cellUpdate?.payload).toEqual({ value: 'status-done', expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
+  const groupMove = api.requests.find(item => item.method === 'POST' && item.path.endsWith(`/views/${boardView.id}/record-group`))
+  expect(groupMove?.payload).toMatchObject({ recordId: moved.id, sourceGroup: { kind: 'option', optionId: 'status-open' }, targetGroup: { kind: 'option', optionId: 'status-done' }, expectedDatabaseVersion: 1, expectedViewVersion: 1, expectedRecordVersion: 1 })
   expect(api.records.find(item => item.id === moved.id)?.properties['root-select']).toBe('status-done')
   expect(api.records.find(item => item.id === other.id)?.properties['root-select']).toBe('status-open')
-  expect(api.views).toEqual(originalViews)
+  expect(api.views.find(item => item.id === boardView.id)?.config).toEqual(originalViews.find(item => item.id === boardView.id)?.config)
+  expect(api.views.find(item => item.id === boardView.id)?.version).toBe(originalViews.find(item => item.id === boardView.id)!.version + 1)
   expect(api.requests.filter(item => ['POST', 'PATCH', 'DELETE'].includes(item.method) && item.path.includes('/databases/')).map(item => item.path)).toEqual([
-    `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/records/${moved.id}/cells/root-select`,
+    `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/views/${boardView.id}/record-group`,
   ])
 
   const tableRow = tableBlock.locator('tbody tr').filter({ hasText: 'Move me' })
@@ -7995,7 +8638,7 @@ test('failed Board drag keeps the card and selected option unchanged', async ({ 
   const api = await installApi(page, [
     block('board-mutation-failure-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
   ], {
-    databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord], failCellUpdates: 1,
+    databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord],
   })
   api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan', role: 'database-record' })
   const originalRecords = structuredClone(api.records)
@@ -8003,21 +8646,22 @@ test('failed Board drag keeps the card and selected option unchanged', async ({ 
   await page.goto('/#/app/database-workspace/page/database-page')
 
   const board = page.getByTestId('database-board')
-  const openColumn = board.locator('[data-option-id="status-open"]')
+  const openColumn = board.locator('.eotion-database-board-column[aria-label="Open"]')
   const openCard = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
-  const doneColumn = board.locator('[data-option-id="status-done"]')
+  const doneColumn = board.locator('.eotion-database-board-column[aria-label="Done"]')
+  api.groupMoveFailure = 'conflict'
   await openCard.dragTo(doneColumn)
 
-  await expect(page.getByRole('alert')).toBeVisible()
+  await expect(page.getByRole('alert').filter({ hasText: '分组记录已变化' })).toBeVisible()
   await expect(openColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
-  await expect(board.locator(`[data-option-id="status-done"] [data-record-id="${basicRecord.id}"]`)).toHaveCount(0)
-  await expect(openCard.getByRole('button', { name: '移动记录分组' })).toHaveAttribute('data-value', 'status-open')
+  await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toHaveCount(0)
+  await expect(openCard.getByRole('button', { name: '移动记录分组：Open' })).toBeVisible()
   expect(api.records).toEqual(originalRecords)
   expect(api.views).toEqual(originalViews)
-  expect(api.requests.filter(item => item.method === 'PATCH' && item.path.includes('/databases/'))).toHaveLength(1)
+  expect(api.requests.filter(item => item.method === 'POST' && item.path.endsWith(`/views/${boardView.id}/record-group`))).toHaveLength(1)
 })
 
-test('Board drag conflict stays stale until refresh, then retries with fresh record versions', async ({ page }) => {
+test('Board drag conflict refreshes canonical group, then user retries with fresh record versions', async ({ page }) => {
   const boardView = view('board-mutation-conflict-view', rootDatabase.id, 'Board', {
     ...DEFAULT_DATABASE_VIEW_CONFIG,
     options: { groupByPropertyId: 'root-select' },
@@ -8025,41 +8669,38 @@ test('Board drag conflict stays stale until refresh, then retries with fresh rec
   const api = await installApi(page, [
     block('board-mutation-conflict-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: rootDatabase.id, viewId: boardView.id } }, 100),
   ], {
-    databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord], conflictCellUpdates: 1,
+    databases: [rootDatabase], views: [boardView], properties: rootProperties, records: [basicRecord], groupMoveConflictValue: null,
   })
   api.pages.push({ ...pageRecord, id: basicRecord.pageId, title: 'Launch plan', role: 'database-record' })
   await page.goto('/#/app/database-workspace/page/database-page')
 
   const board = page.getByTestId('database-board')
-  const openColumn = board.locator('[data-option-id="status-open"]')
-  const doneColumn = board.locator('[data-option-id="status-done"]')
+  const openColumn = board.locator('.eotion-database-board-column[aria-label="Open"]')
+  const doneColumn = board.locator('.eotion-database-board-column[aria-label="Done"]')
   const openCard = openColumn.locator(`[data-record-id="${basicRecord.id}"]`)
-  const picker = openCard.getByRole('button', { name: '移动记录分组' })
   const boardRecordsPath = `/api/workspaces/${workspace.id}/databases/${rootDatabase.id}/views/${boardView.id}/table`
+  const readsBeforeConflict = api.requests.filter(item => item.method === 'GET' && item.path === boardRecordsPath).length
+  api.groupMoveFailure = 'conflict'
   await openCard.dragTo(doneColumn)
 
-  const conflictAlert = page.getByRole('alert')
-  await expect(conflictAlert).toContainText('请刷新后重新选择')
-  await expect(openCard).toBeVisible()
-  await expect(picker).toHaveAttribute('data-value', 'status-open')
-  expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBe('Concurrent edit')
+  const conflictAlert = page.getByRole('alert').filter({ hasText: '分组记录已变化' })
+  await expect(conflictAlert).toContainText('分组记录已变化')
+  await expect.poll(() => api.requests.filter(item => item.method === 'GET' && item.path === boardRecordsPath).length).toBeGreaterThan(readsBeforeConflict)
+  await expect(openCard).toHaveCount(0)
+  expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBeNull()
 
-  const readsBeforeManualRefresh = api.requests.filter(item => item.method === 'GET' && item.path === boardRecordsPath).length
-  await conflictAlert.getByRole('button', { name: '刷新记录' }).click()
-  await expect.poll(() => api.requests.filter(item => item.method === 'GET' && item.path === boardRecordsPath).length).toBeGreaterThan(readsBeforeManualRefresh)
-  const unassignedColumn = board.locator('[data-option-id=""]')
+  const unassignedColumn = board.locator('.eotion-database-board-column[aria-label="未分组"]')
   const refreshedCard = unassignedColumn.locator(`[data-record-id="${basicRecord.id}"]`)
   await expect(refreshedCard).toBeVisible()
-  const refreshedPicker = refreshedCard.getByRole('button', { name: '移动记录分组' })
-  await expect(refreshedPicker).toHaveAttribute('data-value', '')
+  await expect(refreshedCard.getByRole('button', { name: '移动记录分组：未分组' })).toBeVisible()
 
   await refreshedCard.dragTo(doneColumn)
   await expect(doneColumn.locator(`[data-record-id="${basicRecord.id}"]`)).toBeVisible()
   expect(api.records.find(item => item.id === basicRecord.id)?.properties['root-select']).toBe('status-done')
-  const cellUpdates = api.requests.filter(item => item.method === 'PATCH' && item.path.endsWith(`/records/${basicRecord.id}/cells/root-select`))
-  expect(cellUpdates).toHaveLength(2)
-  expect(cellUpdates[0]?.payload).toEqual({ value: 'status-done', expectedDatabaseVersion: 1, expectedRecordVersion: 1 })
-  expect(cellUpdates[1]?.payload).toEqual({ value: 'status-done', expectedDatabaseVersion: 2, expectedRecordVersion: 2 })
+  const moves = api.requests.filter(item => item.method === 'POST' && item.path.endsWith(`/views/${boardView.id}/record-group`))
+  expect(moves).toHaveLength(2)
+  expect(moves[0]?.payload).toMatchObject({ expectedDatabaseVersion: 1, expectedViewVersion: 1, expectedRecordVersion: 1 })
+  expect(moves[1]?.payload).toMatchObject({ expectedDatabaseVersion: 2, expectedViewVersion: 1, expectedRecordVersion: 2, sourceGroup: { kind: 'ungrouped' }, targetGroup: { kind: 'option', optionId: 'status-done' } })
 })
 
 test('unconfigured Board stays read-only and exposes no grouping mutation control', async ({ page }) => {

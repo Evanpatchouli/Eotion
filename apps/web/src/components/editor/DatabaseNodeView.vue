@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { DatabasePropertyResponse, DatabasePropertyTypeChangeRequest, DatabaseRecordCellUpdateRequest, DatabaseViewRecordsResponse, DatabaseViewCreateRequest, DatabaseViewResponse, DatabaseResponse } from '@eotion/contracts'
+import type { DatabasePropertyResponse, DatabasePropertyTypeChangeRequest, DatabaseRecordCellUpdateRequest, DatabaseViewRecordsResponse, DatabaseViewCreateRequest, DatabaseViewResponse, DatabaseResponse, DatabaseViewGroupKey } from '@eotion/contracts'
 import type { TimelineDateSource } from '@eotion/domain'
 import { DEFAULT_DATABASE_VIEW_CONFIG, isValidFormulaExpression, validateDatabasePropertyDependencies, validateDatabaseViewConfig, type DatabaseFilter, type DatabaseFilterOperator, type DatabaseViewConfig, type DatabasePropertyType, type DatabasePropertyConfig, type DatabaseFormulaResultType, type FormulaExpression, type DatabaseViewType, type DatabasePropertyValue, type DatabaseTimelineViewOptions } from '@eotion/domain/database'
 import { isValidCanonicalUtcInstant, isValidDatabaseDateValue, normalizeDatabaseDateValue } from '@eotion/domain/date'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch, type ComponentPublicInstance } from 'vue'
 import { createLocalId } from '@eotion/storage'
 import { RouterLink } from 'vue-router'
 import { useRuntimeContext } from '../../composables/useRuntimeContext'
@@ -22,6 +22,7 @@ import DatabaseListView from './DatabaseListView.vue'
 import DatabaseBoardView from './DatabaseBoardView.vue'
 import DatabaseTimelineView from './DatabaseTimelineView.vue'
 import DatabaseCellContent from './DatabaseCellContent.vue'
+import { createDatabaseGroupWindows, databaseGroupKeyId, type DatabaseGroupDefinition, type DatabaseGroupWindow } from './databaseGroupWindows'
 import DatabaseTimelineSettingsForm from './DatabaseTimelineSettingsForm.vue'
 import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTitleColumn } from './timeline/frozenTable'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
@@ -34,7 +35,7 @@ import {
   createProductDatabaseProperty, createProductDatabaseRecord, deleteProductDatabaseProperty,
   createProductDatabaseView, deleteProductDatabaseView, listProductDatabaseViews,
   clearProductDatabaseViewDeleteState, getProductDatabaseViewDeleteState, setProductDatabaseViewDeleteState,
-  isProductDatabaseRecordCreationUncertain, loadProductDatabaseTable, prepareProductDatabaseRecordPage,
+  isProductDatabaseRecordCreationUncertain, loadProductDatabaseTable, loadProductDatabaseViewGroupRecords, moveProductDatabaseViewRecordGroup, prepareProductDatabaseRecordPage,
   mutateProductDatabaseCells, getProductDatabaseCellMutationReceipt,
   updateProductDatabaseProperty, changeProductDatabasePropertyType, updateProductDatabaseRecordCell, updateProductDatabaseView,
   listProductDatabases, listProductRelationCandidates, resolveProductRelationTitles, reorderProductDatabaseViewRecord, DatabaseMutationNotSentError,
@@ -270,7 +271,6 @@ const columnDraftProperties = computed(() => columnDraft.value.order
   .map(id => properties.value.find(property => property.id === id))
   .filter((property): property is DatabasePropertyResponse => Boolean(property)))
 const records = ref<TableRecord[]>([])
-const recordsById = computed(() => new Map(records.value.map(record => [record.id, record])))
 const propertiesById = computed(() => new Map(properties.value.map(property => [property.id, property])))
 const timelineScope = computed(() => [auth.user?.id ?? '', workspaceId.value, databaseId.value, viewId.value, blockId.value].join('\u0000'))
 const timelineVisibleRecordIds = ref<string[]>([])
@@ -289,6 +289,81 @@ const refreshError = ref('')
 const moreError = ref('')
 const online = ref(navigator.onLine)
 const staleReadonly = ref(false)
+const groupedViewActive = computed(() => (viewType.value === 'board' || viewType.value === 'timeline') && Boolean(currentGroupingPropertyId.value))
+const groupWindowManager = createDatabaseGroupWindows(
+  (key, window, signal) => loadProductDatabaseViewGroupRecords(workspaceId.value, databaseId.value, viewId.value, key, window, signal),
+  reason => { staleReadonly.value = true; refreshError.value = reason === 'conflict' ? '分组记录已变化，请刷新当前视图。' : '分组窗口版本不一致，请刷新当前视图。' },
+)
+// Keep the rendered row heights stable while the next group snapshot is rebuilt.
+const refreshingGroupSnapshot = shallowRef<DatabaseGroupWindow[] | null>(null)
+const groupedWindows = computed(() => groupedViewActive.value ? refreshingGroupSnapshot.value ?? groupWindowManager.groups.value : undefined)
+const deferredGroupDepth = new Map<string, number>()
+const pendingVisibleGroups = new Map<string, DatabaseViewGroupKey>()
+let pendingGroupVisibilityListeners = false
+let pendingGroupScrollHost: HTMLElement | null = null
+let pendingGroupBoardScroller: HTMLElement | null = null
+let pendingGroupVisibilityFrame: number | null = null
+let pendingGroupVisibilityEpoch = 0
+function scheduleVisibleGroupDrain(): void {
+  if (pendingVisibleGroups.size) syncPendingGroupVisibilityListeners()
+  drainVisibleGroups()
+  if (pendingGroupVisibilityFrame !== null || pendingVisibleGroups.size === 0) return
+  const epoch = pendingGroupVisibilityEpoch
+  // Timeline's row window is updated on the host's scroll frame. Check again
+  // after its DOM patch, when a newly visible group header has actually mounted.
+  pendingGroupVisibilityFrame = requestAnimationFrame(() => {
+    if (epoch !== pendingGroupVisibilityEpoch) return
+    pendingGroupVisibilityFrame = requestAnimationFrame(() => {
+      pendingGroupVisibilityFrame = null
+      if (epoch === pendingGroupVisibilityEpoch) drainVisibleGroups()
+    })
+  })
+}
+function syncPendingGroupVisibilityListeners(): void {
+  const wanted = pendingVisibleGroups.size > 0
+  const root = wanted ? document.getElementById(`database-block-${blockId.value}`) : null
+  const host = root?.closest<HTMLElement>('.document-wrap') ?? null
+  const boardScroller = root?.querySelector<HTMLElement>('.eotion-database-board-columns') ?? null
+  if (pendingGroupScrollHost !== host) {
+    pendingGroupScrollHost?.removeEventListener('scroll', scheduleVisibleGroupDrain)
+    pendingGroupScrollHost = host
+    host?.addEventListener('scroll', scheduleVisibleGroupDrain, { passive: true })
+  }
+  if (pendingGroupBoardScroller !== boardScroller) {
+    pendingGroupBoardScroller?.removeEventListener('scroll', scheduleVisibleGroupDrain)
+    pendingGroupBoardScroller = boardScroller
+    boardScroller?.addEventListener('scroll', scheduleVisibleGroupDrain, { passive: true })
+  }
+  if (wanted !== pendingGroupVisibilityListeners) {
+    pendingGroupVisibilityListeners = wanted
+    if (wanted) window.addEventListener('resize', scheduleVisibleGroupDrain)
+    else window.removeEventListener('resize', scheduleVisibleGroupDrain)
+  }
+  if (!wanted) {
+    pendingGroupVisibilityEpoch++
+    if (pendingGroupVisibilityFrame !== null) cancelAnimationFrame(pendingGroupVisibilityFrame)
+    pendingGroupVisibilityFrame = null
+  }
+}
+onBeforeUnmount(() => { deferredGroupDepth.clear(); pendingVisibleGroups.clear(); syncPendingGroupVisibilityListeners() })
+const activeRecords = computed<TableRecord[]>(() => groupedViewActive.value
+  ? (groupedWindows.value ?? []).filter(group => !group.collapsed).flatMap(group => group.records)
+  : records.value)
+const recordsById = computed(() => new Map(activeRecords.value.map(record => [record.id, record])))
+onBeforeUnmount(() => groupWindowManager.dispose())
+
+function configureGroupWindows(): void {
+  const property = properties.value.find(item => item.id === currentGroupingPropertyId.value && item.type === 'select')
+  if (!groupedViewActive.value || !property) { groupWindowManager.reset(); return }
+  const keys: DatabaseGroupDefinition[] = [
+    ...(property.options ?? []).map(option => ({ key: { kind: 'option' as const, optionId: option.id }, label: option.name,
+      collapsed: preferences.databaseGroupCollapsed(userId.value, workspaceId.value, databaseId.value, viewId.value, { kind: 'option', optionId: option.id }) })),
+    { key: { kind: 'ungrouped' as const }, label: '未分组', collapsed: preferences.databaseGroupCollapsed(userId.value, workspaceId.value, databaseId.value, viewId.value, { kind: 'ungrouped' }) },
+  ]
+  groupWindowManager.configure({ userId: userId.value, workspaceId: workspaceId.value, databaseId: databaseId.value,
+    viewId: viewId.value, databaseVersion: databaseVersion.value, viewVersion: viewVersion.value,
+    config: viewConfig.value, groups: keys })
+}
 const savingPropertyName = ref(false)
 let deleteRequestEpoch = 0
 const creationUncertain = computed(() => isProductDatabaseRecordCreationUncertain(auth.user?.id ?? '', workspaceId.value, databaseId.value))
@@ -348,6 +423,95 @@ type TimelineOrderCapture = Readonly<{
   scope: string; userId: string; workspaceId: string; databaseId: string; viewId: string; blockId: string
   viewIdentityEpoch: number; viewRoot: HTMLElement; expectedDatabaseVersion: number; expectedViewVersion: number; configIdentity: string
 }>
+type TimelineGroupMoveCapture = TimelineOrderCapture & Readonly<{ expectedRecordVersion: number }>
+function loadedGroupOf(recordId: string): DatabaseGroupWindow | undefined {
+  return groupWindowManager.groups.value.find(group => group.records.some(record => record.id === recordId))
+}
+function captureGroupMove(recordId: string): TimelineGroupMoveCapture | null {
+  if (!groupedViewActive.value || !viewReady.value || !writable.value || !props.editor.isEditable || groupWindowManager.stale.value
+    || groupWindowManager.groups.value.some(group => group.loading)) return null
+  const record = recordsById.value.get(recordId)
+  const group = loadedGroupOf(recordId)
+  const viewRoot = document.getElementById(`database-block-${blockId.value}`)
+  if (!record || !group || group.collapsed || !viewRoot?.isConnected || viewRoot.getAttribute('data-view-id') !== viewId.value) return null
+  return Object.freeze({ scope: timelineScope.value, userId: userId.value, workspaceId: workspaceId.value,
+    databaseId: databaseId.value, viewId: viewId.value, blockId: blockId.value, viewIdentityEpoch, viewRoot,
+    expectedDatabaseVersion: databaseVersion.value, expectedViewVersion: viewVersion.value,
+    configIdentity: JSON.stringify(viewConfig.value), expectedRecordVersion: record.version })
+}
+function isCurrentGroupMove(capture: TimelineGroupMoveCapture): boolean {
+  if (capture.viewIdentityEpoch !== viewIdentityEpoch || capture.scope !== timelineScope.value || capture.userId !== userId.value
+    || capture.workspaceId !== workspaceId.value || capture.databaseId !== databaseId.value || capture.viewId !== viewId.value
+    || capture.blockId !== blockId.value || !capture.viewRoot.isConnected || !viewReady.value || !groupedViewActive.value
+    || JSON.stringify(viewConfig.value) !== capture.configIdentity) return false
+  const root = document.getElementById(`database-block-${blockId.value}`)
+  if (root !== capture.viewRoot || root.getAttribute('data-view-id') !== capture.viewId || root.getAttribute('data-view-ready') !== 'true') return false
+  let editorViewId = ''
+  props.editor.state.doc.descendants(node => {
+    if (node.type.name === 'eotionDatabase' && node.attrs.blockId === capture.blockId) editorViewId = String(node.attrs.viewId ?? '')
+  })
+  return editorViewId === capture.viewId
+}
+async function moveGroupedRecord(capture: TimelineGroupMoveCapture, recordId: string, sourceKey: DatabaseViewGroupKey,
+  targetKey: DatabaseViewGroupKey, anchorRecordId?: string, placement?: 'before' | 'after'): Promise<boolean> {
+  const sourceId = databaseGroupKeyId(sourceKey), targetId = databaseGroupKeyId(targetKey)
+  if (!isCurrentGroupMove(capture) || !writable.value || !props.editor.isEditable || savingCell.value || groupWindowManager.stale.value
+    || capture.expectedDatabaseVersion !== databaseVersion.value || capture.expectedViewVersion !== viewVersion.value
+    || recordsById.value.get(recordId)?.version !== capture.expectedRecordVersion
+    || databaseGroupKeyId(loadedGroupOf(recordId)?.key ?? { kind: 'ungrouped' }) !== sourceId
+    || !groupWindowManager.groups.value.some(group => databaseGroupKeyId(group.key) === targetId)
+    || Boolean(anchorRecordId) !== Boolean(placement) || anchorRecordId === recordId
+    || anchorRecordId && databaseGroupKeyId(loadedGroupOf(anchorRecordId)?.key ?? { kind: 'ungrouped' }) !== targetId
+    || viewConfig.value.sorts.length > 0 && Boolean(anchorRecordId)
+    || sourceId === targetId && (!anchorRecordId || !placement || viewConfig.value.sorts.length > 0)) return false
+  savingCell.value = true
+  mutationError.value = ''
+  try {
+    if (sourceId === targetId) await reorderProductDatabaseViewRecord(capture.workspaceId, capture.databaseId, capture.viewId, {
+      recordId, anchorRecordId: anchorRecordId!, placement: placement!,
+      expectedDatabaseVersion: capture.expectedDatabaseVersion, expectedViewVersion: capture.expectedViewVersion,
+    })
+    else await moveProductDatabaseViewRecordGroup(capture.workspaceId, capture.databaseId, capture.viewId, {
+      recordId, sourceGroup: sourceKey, targetGroup: targetKey,
+      ...(anchorRecordId && placement ? { anchorRecordId, placement } : {}),
+      expectedDatabaseVersion: capture.expectedDatabaseVersion, expectedViewVersion: capture.expectedViewVersion,
+      expectedRecordVersion: capture.expectedRecordVersion,
+    })
+    if (!isCurrentGroupMove(capture)) return false
+    externalRefreshPending = false
+    await refreshLoadedWindow()
+    return isCurrentGroupMove(capture) && !staleReadonly.value
+  } catch (cause) {
+    if (!isCurrentGroupMove(capture)) return false
+    externalRefreshPending = false
+    if (cause instanceof DatabaseMutationNotSentError) {
+      mutationError.value = online.value ? '分组移动未发送，已取消本次操作。' : '已离线，分组移动未发送；联网后将刷新当前视图。'
+      if (online.value) await refreshLoadedWindow()
+      return false
+    }
+    await refreshLoadedWindow()
+    if (!isCurrentGroupMove(capture)) return false
+    if (cause instanceof ApiError && cause.statusCode === 409) mutationError.value = '分组记录已变化，已刷新当前视图。'
+    else if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) mutationError.value = '分组移动未保存，请检查记录和权限。'
+    else { staleReadonly.value = true; refreshError.value = '分组移动提交结果暂未确认，请重新加载当前视图。'; mutationError.value = refreshError.value }
+    return false
+  } finally {
+    if (capture.viewIdentityEpoch === viewIdentityEpoch && capture.scope === timelineScope.value && capture.viewRoot === document.getElementById(`database-block-${blockId.value}`)) {
+      savingCell.value = false
+      if (online.value) runDeferredRefresh()
+    }
+  }
+}
+function onBoardMoveGroup(recordId: string, source: DatabaseViewGroupKey, target: DatabaseViewGroupKey,
+  anchorRecordId?: string, placement?: 'before' | 'after'): void {
+  const capture = captureGroupMove(recordId)
+  if (capture) void moveGroupedRecord(capture, recordId, source, target, anchorRecordId, placement)
+}
+function onBoardReorderGroup(recordId: string, anchorRecordId: string, placement: 'before' | 'after'): void {
+  const capture = captureGroupMove(recordId)
+  const source = loadedGroupOf(recordId)
+  if (capture && source) void moveGroupedRecord(capture, recordId, source.key, source.key, anchorRecordId, placement)
+}
 function captureTimelineOrder(): TimelineOrderCapture | null {
   if (viewType.value !== 'timeline' || viewBusy.value || !writable.value || !props.editor.isEditable || viewConfig.value.sorts.length) return null
   return captureTimelineCellIdentity()
@@ -378,6 +542,8 @@ async function reorderTimelineRecord(capture: TimelineOrderCapture, recordId: st
   if (!isCurrentTimelineOrder(capture) || viewBusy.value || !writable.value || !props.editor.isEditable
     || recordId === anchorRecordId || capture.expectedDatabaseVersion !== databaseVersion.value
     || capture.expectedViewVersion !== viewVersion.value || !recordsById.value.has(recordId) || !recordsById.value.has(anchorRecordId)) return false
+  if (groupedViewActive.value && databaseGroupKeyId(loadedGroupOf(recordId)?.key ?? { kind: 'ungrouped' })
+    !== databaseGroupKeyId(loadedGroupOf(anchorRecordId)?.key ?? { kind: 'ungrouped' })) return false
   savingCell.value = true
   mutationError.value = ''
   try {
@@ -475,7 +641,7 @@ function captureTimelineDependency(): TimelineDependencyCapture | null {
     propertyId: dependency.propertyId, direction: dependency.direction,
     configIdentity: dependency.configIdentity, propertyVersion: dependency.propertyVersion,
     expectedDatabaseVersion: databaseVersion.value, expectedViewVersion: viewVersion.value, viewIdentityEpoch, viewRoot: root,
-    records: Object.freeze(records.value.map(record => {
+    records: Object.freeze(activeRecords.value.map(record => {
       const value = getCellValue(record, dependency.propertyId)
       return Object.freeze({ id: record.id, version: record.version, originalValue: Array.isArray(value) ? Object.freeze([...value]) : value })
     })),
@@ -865,20 +1031,20 @@ async function resolveVisibleRelationTitles(windowOnly = false): Promise<void> {
   let grouped: Map<string, string[]>
   if (isTimeline) {
     const visibleIds = new Set(timelineVisibleRecordIds.value)
-    const recordsById = new Map(records.value.map(record => [record.id, record]))
+    const recordsById = new Map(activeRecords.value.map(record => [record.id, record]))
     const visibleRecords = timelineVisibleRecordIds.value.flatMap(id => {
       const record = recordsById.get(id)
       return record ? [record] : []
     })
     const requestRecords = windowOnly
       ? visibleRecords
-      : [...visibleRecords, ...records.value.filter(record => !visibleIds.has(record.id))]
+      : [...visibleRecords, ...activeRecords.value.filter(record => !visibleIds.has(record.id))]
     grouped = collectRelationTitleIds(requestRecords, [...relationProperties.values()], 500, windowOnly ? new Set(relationTitles.value.keys()) : undefined)
   } else {
     grouped = new Map()
     let budget = 500
     for (const property of relationProperties.values()) {
-      for (const record of records.value) {
+      for (const record of activeRecords.value) {
         const value = getCellValue(record, property.propertyId)
         for (const id of Array.isArray(value) ? value.slice(0, 3) as string[] : []) {
           const ids = grouped.get(property.targetDatabaseId) ?? []
@@ -912,7 +1078,7 @@ async function resolveVisibleRelationTitles(windowOnly = false): Promise<void> {
 }
 function onTimelineVisibleRecords(scope: string, recordIds: readonly string[]): void {
   if (scope !== timelineScope.value || viewType.value !== 'timeline' || !viewReady.value) return
-  const availableIds = new Set(records.value.map(record => record.id))
+  const availableIds = new Set(activeRecords.value.map(record => record.id))
   const nextIds = [...new Set(recordIds.filter(id => typeof id === 'string' && availableIds.has(id)))]
   if (nextIds.length === timelineVisibleRecordIds.value.length && nextIds.every((id, index) => id === timelineVisibleRecordIds.value[index])) return
   timelineVisibleRecordIds.value = nextIds
@@ -938,6 +1104,7 @@ async function fetchWindow(cursor?: string) {
 }
 
 async function loadTable(append = false): Promise<void> {
+  if (append && groupedViewActive.value) return
   if (append && (loadingMore.value || loading.value || staleReadonly.value)) return
   const workspace = workspaceId.value
   const database = databaseId.value
@@ -945,6 +1112,7 @@ async function loadTable(append = false): Promise<void> {
   const userId = auth.user?.id
   if (!workspace || !database || !view) return
   const epoch = ++requestEpoch
+  if (!append) groupWindowManager.reset()
   refreshing.value = false
   if (append) { loadingMore.value = true; moreError.value = '' }
   else { loading.value = true; loadError.value = ''; moreError.value = '' }
@@ -960,8 +1128,9 @@ async function loadTable(append = false): Promise<void> {
     loadedViewIdentity.value = [workspace, database, view, userId ?? ''].join('\u0000')
     properties.value = result.properties
     if (append) records.value = [...records.value, ...result.records.filter(record => !records.value.some(existing => existing.id === record.id))]
-    else records.value = result.records
-    nextCursor.value = result.nextCursor
+    else records.value = groupedViewActive.value ? [] : result.records
+    nextCursor.value = groupedViewActive.value ? null : result.nextCursor
+    if (!append) { configureGroupWindows(); refreshingGroupSnapshot.value = null }
     void resolveVisibleRelationTitles()
     staleReadonly.value = false
     refreshError.value = ''
@@ -975,6 +1144,8 @@ async function loadTable(append = false): Promise<void> {
 }
 
 async function refreshLoadedWindow(): Promise<void> {
+  if (groupedViewActive.value) { await refreshGroupedWindow(); return }
+  groupWindowManager.reset()
   const desiredCount = records.value.length
   const epoch = ++requestEpoch
   const identity = [workspaceId.value, databaseId.value, viewId.value, auth.user?.id].join('\u0000')
@@ -1040,6 +1211,157 @@ async function refreshLoadedWindow(): Promise<void> {
   } finally {
     if (epoch === requestEpoch) refreshing.value = false
   }
+}
+
+async function refreshGroupedWindow(): Promise<void> {
+  externalRefreshPending = false
+  refreshingGroupSnapshot.value ??= groupWindowManager.groups.value
+  const previousDepth = new Map(deferredGroupDepth)
+  for (const group of refreshingGroupSnapshot.value) {
+    if (!group.hasLoaded) continue
+    const id = databaseGroupKeyId(group.key)
+    previousDepth.set(id, Math.max(previousDepth.get(id) ?? 0, group.records.length))
+  }
+  const epoch = ++requestEpoch
+  const identity = [workspaceId.value, databaseId.value, viewId.value, auth.user?.id].join('\u0000')
+  const current = () => epoch === requestEpoch && identity === [workspaceId.value, databaseId.value, viewId.value, auth.user?.id].join('\u0000')
+  refreshing.value = true
+  staleReadonly.value = true
+  groupWindowManager.reset()
+  cellPopover.value = null
+  loading.value = false
+  loadingMore.value = false
+  moreError.value = ''
+  try {
+    const result = await loadProductDatabaseTable(workspaceId.value, databaseId.value, viewId.value, { limit: 25 })
+    if (!current()) return
+    title.value = result.database.name
+    databaseVersion.value = result.database.version
+    viewName.value = result.view.name
+    viewType.value = result.view.type
+    viewVersion.value = result.view.version
+    viewConfig.value = result.view.config ?? { ...DEFAULT_DATABASE_VIEW_CONFIG }
+    properties.value = result.properties
+    loadedViewIdentity.value = identity
+    records.value = groupedViewActive.value ? [] : result.records
+    nextCursor.value = groupedViewActive.value ? null : result.nextCursor
+    configureGroupWindows()
+    deferredGroupDepth.clear()
+    if (groupedViewActive.value) {
+      for (const group of groupWindowManager.groups.value) {
+        const id = databaseGroupKeyId(group.key)
+        const depth = previousDepth.get(id)
+        if (depth !== undefined) deferredGroupDepth.set(id, depth)
+      }
+      for (const group of groupWindowManager.groups.value) {
+        const depth = previousDepth.get(databaseGroupKeyId(group.key))
+        if (group.collapsed || depth === undefined) continue
+        if (!await groupWindowManager.load(group.key)) {
+          if (current() && !groupWindowManager.stale.value) throw new Error('分组记录加载失败。')
+          return
+        }
+        while (current() && !groupWindowManager.stale.value) {
+          const loaded = groupWindowManager.groups.value.find(item => databaseGroupKeyId(item.key) === databaseGroupKeyId(group.key))
+          if (!loaded?.nextCursor || loaded.records.length >= depth || loaded.error) break
+          if (!await groupWindowManager.load(group.key, true)) {
+            if (current() && !groupWindowManager.stale.value) throw new Error('分组记录加载失败。')
+            return
+          }
+        }
+        if (!current() || groupWindowManager.stale.value) break
+        deferredGroupDepth.delete(databaseGroupKeyId(group.key))
+      }
+    }
+    if (!current() || groupWindowManager.stale.value) return
+    void resolveVisibleRelationTitles()
+    staleReadonly.value = false
+    refreshError.value = ''
+  } catch (cause) {
+    if (current()) { staleReadonly.value = true; refreshError.value = `分组更新未完成，已切换为只读。${errorMessage(cause, '请重新加载。')}` }
+  } finally {
+    if (current()) {
+      if (!staleReadonly.value) refreshingGroupSnapshot.value = null
+      refreshing.value = false
+    }
+  }
+}
+
+function onGroupVisible(key: DatabaseViewGroupKey): void {
+  if (!groupedViewActive.value) return
+  pendingVisibleGroups.set(databaseGroupKeyId(key), key)
+  syncPendingGroupVisibilityListeners()
+  drainVisibleGroups()
+}
+function isGroupCurrentlyVisible(id: string): boolean {
+  const root = document.getElementById(`database-block-${blockId.value}`)
+  if (!root?.isConnected) return false
+  const host = root.closest<HTMLElement>('.document-wrap')
+  const hostRect = host?.getBoundingClientRect()
+  const candidates = root.querySelectorAll<HTMLElement>('[data-timeline-group-header], .eotion-database-board-column[data-group-key]')
+  for (const element of candidates) {
+    if (element.dataset.groupId !== id && element.dataset.groupKey !== id) continue
+    const rect = element.getBoundingClientRect()
+    const boardRect = element.closest<HTMLElement>('.eotion-database-board-columns')?.getBoundingClientRect()
+    if (rect.right > Math.max(0, boardRect?.left ?? 0) && rect.left < Math.min(window.innerWidth, boardRect?.right ?? window.innerWidth)
+      && rect.bottom > Math.max(0, hostRect?.top ?? 0)
+      && rect.top < Math.min(window.innerHeight, hostRect?.bottom ?? window.innerHeight)) return true
+  }
+  return false
+}
+function drainVisibleGroups(): void {
+  if (!groupedViewActive.value || !viewReady.value || !online.value || loading.value || refreshing.value || savingCell.value
+    || viewSubmitting.value || staleReadonly.value || groupWindowManager.stale.value) return
+  for (const [id, key] of pendingVisibleGroups) {
+    const group = groupWindowManager.groups.value.find(item => databaseGroupKeyId(item.key) === id)
+    if (!group || group.collapsed) { pendingVisibleGroups.delete(id); continue }
+    if (!isGroupCurrentlyVisible(id)) continue
+    pendingVisibleGroups.delete(id)
+    if (!group.error) void loadVisibleGroup(key, false)
+  }
+  syncPendingGroupVisibilityListeners()
+}
+function onToggleGroup(key: DatabaseViewGroupKey, collapsed: boolean): void {
+  if (!groupedViewActive.value || !viewReady.value || groupWindowManager.stale.value) return
+  if (refreshingGroupSnapshot.value || collapsed && (savingCell.value || cellEdit.value || cellPopover.value || relationPicker.value)) return
+  groupWindowManager.setCollapsed(key, collapsed)
+  if (collapsed) { pendingVisibleGroups.delete(databaseGroupKeyId(key)); syncPendingGroupVisibilityListeners() }
+  preferences.setDatabaseGroupCollapsed(userId.value, workspaceId.value, databaseId.value, viewId.value, key, collapsed)
+  if (!collapsed) onGroupVisible(key)
+}
+watch([online, loading, refreshing, savingCell, viewSubmitting, staleReadonly], drainVisibleGroups, { flush: 'post' })
+watch(groupWindowManager.groups, scheduleVisibleGroupDrain, { flush: 'post' })
+watch([timelineScope, currentGroupingPropertyId], () => { deferredGroupDepth.clear(); refreshingGroupSnapshot.value = null; pendingVisibleGroups.clear(); syncPendingGroupVisibilityListeners() }, { flush: 'sync' })
+function onLoadGroupMore(key: DatabaseViewGroupKey): void {
+  if (!groupedViewActive.value || !viewReady.value || !online.value || staleReadonly.value || groupWindowManager.stale.value) return
+  const group = groupWindowManager.groups.value.find(item => databaseGroupKeyId(item.key) === databaseGroupKeyId(key))
+  if (!group || group.collapsed) return
+  void loadVisibleGroup(key, group.hasLoaded)
+}
+
+async function loadVisibleGroup(key: DatabaseViewGroupKey, append: boolean): Promise<void> {
+  const epoch = requestEpoch
+  const id = databaseGroupKeyId(key)
+  let group = groupWindowManager.groups.value.find(item => databaseGroupKeyId(item.key) === id)
+  if (!group || group.loading || group.collapsed) return
+  if (append || !group.hasLoaded) {
+    if (!await groupWindowManager.load(key, append)) return
+  }
+  while (epoch === requestEpoch && !groupWindowManager.stale.value) {
+    group = groupWindowManager.groups.value.find(item => databaseGroupKeyId(item.key) === id)
+    if (!group || group.collapsed || group.error) return
+    const depth = deferredGroupDepth.get(id)
+    if (depth === undefined || !group.nextCursor || group.records.length >= depth) {
+      deferredGroupDepth.delete(id)
+      break
+    }
+    if (!online.value || savingCell.value || viewSubmitting.value || !isGroupCurrentlyVisible(id)) {
+      pendingVisibleGroups.set(id, key)
+      syncPendingGroupVisibilityListeners()
+      return
+    }
+    if (!await groupWindowManager.load(key, true)) return
+  }
+  if (epoch === requestEpoch) void resolveVisibleRelationTitles()
 }
 
 async function refreshSchemaMutation(): Promise<void> {
@@ -1274,14 +1596,14 @@ const settingsMenuItems = computed(() => [
   { label: '筛选', icon: IconName.Filter, shortcut: visibleViewCount.value ? String(visibleViewCount.value) : undefined, action: () => openSettings('filters') },
   { label: '排序', icon: IconName.Sort, shortcut: sortViewCount.value ? String(sortViewCount.value) : undefined, action: () => openSettings('sorts') },
   { label: '属性', icon: IconName.Text, action: () => openSettings('columns') },
-  ...(viewReady.value && viewType.value === 'board' ? [{ label: '分组属性', icon: IconName.List, action: () => openSettings('grouping') }] : []),
+  ...(viewReady.value && (viewType.value === 'board' || viewType.value === 'timeline') ? [{ label: '分组属性', icon: IconName.List, action: () => openSettings('grouping') }] : []),
   ...(viewReady.value && viewType.value === 'timeline' ? [{ label: '时间线设置', icon: IconName.Settings, action: () => openTimelineSettings() }] : []),
   ...(viewReady.value && viewType.value === 'timeline' ? [{ label: '日期属性', icon: IconName.Appearance, action: () => openTimelineDateSettings() }] : []),
   { label: '记录打开方式', icon: IconName.Settings, action: () => openSettings('record-opening') },
   { label: '自动化', icon: IconName.Agent, disabled: true, action: () => {} },
 ])
 function openSettings(kind: 'filters' | 'sorts' | 'columns' | 'grouping' | 'record-opening'): void {
-  if (kind === 'grouping' && (!viewReady.value || viewType.value !== 'board')) return
+  if (kind === 'grouping' && (!viewReady.value || (viewType.value !== 'board' && viewType.value !== 'timeline'))) return
   settingsMenuOpen.value = false
   propertyCreatorOpen.value = false
   viewMenuOpen.value = false
@@ -1762,6 +2084,7 @@ async function saveViewConfig(next: DatabaseViewConfig, overlayCapture?: Timelin
     return
   }
   if (overlayCapture?.kind === 'timeline-date-source') timelineDateBusy.value = true
+  const wasGrouped = groupedViewActive.value
   viewSubmitting.value = true
   viewError.value = ''
   try {
@@ -1772,7 +2095,8 @@ async function saveViewConfig(next: DatabaseViewConfig, overlayCapture?: Timelin
     viewConfig.value = result.view.config ?? next
     if (overlayCapture) invalidateTimelineOverlay(overlayCapture)
     viewControlsOpen.value = ''
-    runDeferredRefresh()
+    if (wasGrouped || groupedViewActive.value) await refreshLoadedWindow()
+    else runDeferredRefresh()
   } catch (cause) {
     if (!isCurrent()) return
     await handleViewMutationError(cause, '视图设置未保存，请重试。', isCurrent)
@@ -1791,7 +2115,7 @@ function saveSorts(): void {
   void saveViewConfig({ ...viewConfig.value, sorts: sortDrafts.value.map(sort => ({ ...sort })) })
 }
 function saveGrouping(): void {
-  if (!viewReady.value || viewType.value !== 'board') return
+  if (!viewReady.value || (viewType.value !== 'board' && viewType.value !== 'timeline')) return
   if (groupingDraft.value && !groupingProperties.value.some(property => property.id === groupingDraft.value)) {
     viewError.value = '请选择当前数据库中的选择属性。'
     return
@@ -2184,7 +2508,7 @@ async function saveCell(record: TableRecord, property: DatabasePropertyResponse,
     }
   }
   const expectedValue = property.type === 'title' && value !== null ? String(value).trim() : value
-  const latestRecord = records.value.find(item => item.id === record.id) ?? record
+  const latestRecord = recordsById.value.get(record.id) ?? record
   const timelineCapture = viewType.value === 'timeline' ? captureTimelineCellIdentity() : null
   if (viewType.value === 'timeline' && !timelineCapture) return
   const isCurrent = () => !timelineCapture || isCurrentTimelineOrder(timelineCapture)
@@ -2216,7 +2540,7 @@ async function saveCell(record: TableRecord, property: DatabasePropertyResponse,
     } else {
       await refreshLoadedWindow()
       if (!isCurrent()) return
-      const refreshed = records.value.find(item => item.id === record.id)
+      const refreshed = staleReadonly.value || groupWindowManager.stale.value ? undefined : recordsById.value.get(record.id)
       const confirmedValue = refreshed ? getCellValue(refreshed, property.id) : undefined
       const confirmedDate = property.type === 'date' ? normalizeDatabaseDateValue(confirmedValue) : null
       const expectedDate = property.type === 'date' ? normalizeDatabaseDateValue(expectedValue) : null
@@ -2750,8 +3074,8 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
     <template v-else>
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
-      <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :active-edit-record-id="timelineActiveEditRecordId" :writable="writable && timelineEditorEditable" :view-busy="viewBusy" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :prepare-schedule="prepareTimelineSchedule" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" :capture-order="captureTimelineOrder" :reorder-record="reorderTimelineRecord" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" @toggle-frozen-table="setTimelineFrozenTableVisibility">
+      <DatabaseBoardView v-else-if="viewType === 'board'" :records="activeRecords" :properties="properties" :config="viewConfig" :format-value="formatValue" :group-windows="groupedWindows" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" @group-visible="onGroupVisible" @toggle-group="onToggleGroup" @load-group-more="onLoadGroupMore" @move-group="onBoardMoveGroup" @reorder-group="onBoardReorderGroup" />
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="activeRecords" :group-windows="groupedWindows" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :active-edit-record-id="timelineActiveEditRecordId" :writable="writable && timelineEditorEditable" :view-busy="viewBusy" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :prepare-schedule="prepareTimelineSchedule" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" :capture-order="captureTimelineOrder" :reorder-record="reorderTimelineRecord" :capture-group-move="captureGroupMove" :move-grouped-record="moveGroupedRecord" @group-visible="onGroupVisible" @toggle-group="onToggleGroup" @load-group-more="onLoadGroupMore" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" @toggle-frozen-table="setTimelineFrozenTableVisibility">
         <template #frozen-cell="{ recordId, propertyId }">
           <DatabaseCellContent v-if="recordsById.get(recordId) && propertiesById.get(propertyId)"
             :record="recordsById.get(recordId)!" :property="propertiesById.get(propertyId)!" :display-text="formatValue(getCellValue(recordsById.get(recordId)!, propertyId), propertiesById.get(propertyId)!)"
