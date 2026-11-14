@@ -35,6 +35,7 @@ const props = defineProps<{
   properties: readonly DatabasePropertyResponse[]
   formatValue: (value: unknown, property: DatabasePropertyResponse) => string
   selectedPageId: string | null
+  activeEditRecordId: string | null
   writable: boolean
   viewBusy: boolean
   databaseVersion: number
@@ -436,7 +437,10 @@ const projectedItems = computed(() => projectTimelineRecords({
 }))
 const recordTitleById = computed(() => new Map(projectedItems.value.map(item => [item.recordId, item.title])))
 const rowIndexByRecordId = computed(() => new Map(projectedItems.value.map(item => [item.recordId, item.rowIndex])))
-const focusedRowIndex = computed(() => focusedRecordId.value === null ? null : rowIndexByRecordId.value.get(focusedRecordId.value) ?? null)
+const focusedRowIndex = computed(() => {
+  const id = props.activeEditRecordId ?? focusedRecordId.value
+  return id === null ? null : rowIndexByRecordId.value.get(id) ?? null
+})
 const unscheduledItems = computed(() => projectedItems.value.filter(item => item.kind === 'unscheduled'))
 watch(() => unscheduledItems.value.length, count => { if (count === 0) recordsExpanded.value = false })
 watch(() => props.scope, () => { focusedRecordId.value = null; hoveredRecordId.value = null; recordsExpanded.value = false; scheduleForm.value = null }, { flush: 'sync' })
@@ -699,7 +703,7 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         @hover-record="hoveredRecordId = $event"
         @focus-row="focusRow"
         @toggle-visibility="toggleFrozenTable(false)"
-      />
+      ><template #cell="cell"><slot name="frozen-cell" v-bind="cell" /></template></FrozenTablePane>
       <button
         v-if="!frozenTableVisible"
         class="eotion-timeline-frozen-toggle eotion-timeline-frozen-toggle--expand"
@@ -824,9 +828,13 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
 .eotion-timeline-frozen-toggle--expand { top:10px; left:6px; }
 .eotion-timeline-content > :deep(.eotion-timeline-viewport) { flex:1 1 0; width:auto; min-width:0; }
 @container eotion-timeline-root (max-width:700px) {
-  .eotion-timeline-content > :deep(.eotion-timeline-frozen) { flex:0 0 min(120px, 40%); width:min(120px, 40%); min-width:0; max-width:40%; }
-  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-cell:not(.is-title)) { display:none; }
-  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-cell.is-title) { order:-1; flex:1 1 0; }
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen) { flex:0 0 min(120px, 40%); width:min(120px, 40%); min-width:0; max-width:40%; overflow-x:auto; overflow-y:clip; }
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-header),
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-body),
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-row) { width:max-content; min-width:100%; }
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-body) { overflow:visible; }
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-cell) { box-sizing:border-box; flex:0 0 120px; width:120px; min-width:120px; }
+  .eotion-timeline-content > :deep(.eotion-timeline-frozen .eotion-timeline-frozen-cell.is-title) { order:-1; }
 }
 .eotion-database-timeline-records { margin-top: 10px; border-top: 1px solid var(--e-color-border, var(--border-editor)); }
 .eotion-database-timeline-records summary { min-height: 44px; padding: 10px 2px; color: var(--e-color-text-secondary, var(--editor-muted)); cursor: pointer; }

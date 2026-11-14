@@ -45,6 +45,8 @@ Cell batch、View/Database/Record CAS 和 receipt；混合精度及空开始值�
 `timeline-order-handle`；分页、事务、失败恢复和旧数据边界见
 [通用 View 排序](../p9-multi-view.md#通用-view-记录手动排序2026-11-15)。
 Timeline 按属性分组仍未实现，不能用当前分页窗口的本地重排替代持久顺序。
+时间轴左侧冻结表可直接编辑可写属性；检索 `DatabaseCellContent`、`activeEditRecordId`、
+`FrozenTablePane` 与 `saveCell`，Table 和 Timeline 共用 Cell 状态及版本检查。
 
 2026-11-07 P11 COMPLETE / FINAL PASS。正式设置入口见 `DatabaseTimelineSettingsForm.vue`、`DatabaseNodeView.vue` 中的 Timeline overlay 与 `saveViewConfig`；标尺边界见 `TimelineRuler.vue` 与 `product-timeline-real.spec.ts`。[最终验收](../verification/p11-6-timeline-final-acceptance.md)汇总 §24 结果及后置项。下方分阶段说明按当时范围保留。
 

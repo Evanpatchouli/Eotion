@@ -322,6 +322,269 @@ test('Timeline order drag autoscrolls across a virtual window and rejects releas
   expect(await timeline.evaluate(root => root.closest<HTMLElement>('.document-wrap')?.scrollTop ?? 0)).toBe(stoppedAt)
 })
 
+test('Timeline Frozen cells edit through the shared Table controls and keep record opening separate', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('frozen-edit-db')
+  const title = property('frozen-edit-title', db.id, 'Name', 'title')
+  const notes = property('frozen-edit-notes', db.id, 'Notes', 'text')
+  const points = property('frozen-edit-points', db.id, 'Points', 'number')
+  const due = property('frozen-edit-due', db.id, 'Due', 'date')
+  const done = property('frozen-edit-done', db.id, 'Done', 'checkbox')
+  const status = property('frozen-edit-status', db.id, 'Status', 'select', [{ id: 'open', name: 'Open' }, { id: 'done', name: 'Done' }])
+  const relation = { ...property('frozen-edit-relation', db.id, 'Links', 'relation'), config: { targetDatabaseId: db.id } } as TestProperty
+  const formula = property('frozen-edit-formula', db.id, 'Computed', 'formula')
+  const frozenIds = [title.id, notes.id, points.id, due.id, done.id, status.id, relation.id, formula.id]
+  const timelineView = view('frozen-edit-view', db.id, 'Editable timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: due.id },
+      frozenTable: { visible: true, visibleProperties: frozenIds, propertyOrder: frozenIds } } } }, 'timeline')
+  const tableView = view('frozen-edit-table', db.id, 'Linked table')
+  const first = record('frozen-edit-first', db.id, 'frozen-edit-page-first', { [title.id]: 'First', [notes.id]: 'Original', [points.id]: 1,
+    [due.id]: '2026-10-13', [done.id]: false, [status.id]: 'open', [relation.id]: [], [formula.id]: 'Read only' })
+  const second = record('frozen-edit-second', db.id, 'frozen-edit-page-second', { [title.id]: 'Second', [due.id]: '2026-10-14' })
+  const api = await installApi(page, [block('frozen-edit-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timelineView.id } }, 100)], {
+    databases: [db], views: [timelineView, tableView], properties: [title, notes, points, due, done, status, relation, formula], records: [first, second],
+  })
+  for (const item of [first, second]) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties[title.id]), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-frozen-edit-block')
+  const row = root.locator('[data-timeline-frozen-row][data-record-id="frozen-edit-first"]')
+  const cell = (id: string) => row.locator(`[data-property-id="${id}"]`)
+  await expect(row).toBeVisible()
+  await cell(notes.id).getByRole('button').click()
+  await cell(notes.id).getByRole('textbox', { name: 'Notes 值' }).fill('Updated')
+  await cell(notes.id).getByRole('textbox', { name: 'Notes 值' }).press('Enter')
+  await expect.poll(() => api.records.find(item => item.id === first.id)?.properties[notes.id]).toBe('Updated')
+  await cell(points.id).getByRole('button').click()
+  await cell(points.id).getByRole('textbox', { name: 'Points 值' }).fill('7')
+  await cell(points.id).getByRole('textbox', { name: 'Points 值' }).press('Enter')
+  await expect.poll(() => api.records.find(item => item.id === first.id)?.properties[points.id]).toBe(7)
+  await cell(due.id).getByRole('button', { name: /编辑Due/u }).click()
+  const dateEditor = page.getByRole('group', { name: '编辑日期：Due' })
+  await expect(dateEditor).toBeVisible()
+  expect(await dateEditor.evaluate(element => element.closest('[data-timeline-frozen-row]'))).toBeNull()
+  expect(await dateEditor.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThan(48)
+  await dateEditor.getByRole('textbox', { name: 'Due 值' }).fill('2026-10-16')
+  await dateEditor.getByRole('button', { name: '保存' }).click()
+  await expect.poll(() => api.records.find(item => item.id === first.id)?.properties[due.id]).toBe('2026-10-16')
+  await cell(done.id).getByRole('button').click()
+  await expect.poll(() => api.records.find(item => item.id === first.id)?.properties[done.id]).toBe(true)
+  await cell(status.id).getByRole('button').click()
+  await page.locator('.eotion-database-cell-menu').getByRole('button', { name: 'Done' }).click()
+  await expect.poll(() => api.records.find(item => item.id === first.id)?.properties[status.id]).toBe('done')
+  await cell(relation.id).getByRole('button', { name: '编辑关联 Links' }).click()
+  await page.getByRole('group', { name: '关联记录：Links' }).getByRole('button', { name: 'Second' }).click()
+  await expect.poll(() => api.records.find(item => item.id === first.id)?.properties[relation.id]).toEqual([second.id])
+  await page.getByRole('group', { name: '关联记录：Links' }).getByRole('button', { name: '完成' }).click()
+  await expect(cell(formula.id).getByLabel('Computed，只读')).toBeVisible()
+  await expect(cell(formula.id).getByRole('button')).toHaveCount(0)
+  await cell(title.id).getByRole('button', { name: '编辑名称：First' }).click()
+  await cell(title.id).getByRole('textbox', { name: '名称 值' }).fill('Renamed')
+  await cell(title.id).getByRole('textbox', { name: '名称 值' }).press('Enter')
+  await expect.poll(() => api.pages.find(item => item.id === first.pageId)?.title).toBe('Renamed')
+  await cell(title.id).getByRole('button', { name: '打开记录：Renamed' }).click()
+  await expect(page.getByRole('button', { name: '关闭记录' })).toBeVisible()
+  await page.getByRole('button', { name: '关闭记录' }).click()
+  await root.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Linked table', exact: true }).click()
+  await expect(root.locator('tbody tr').first()).toContainText('Renamed')
+  await expect(root.locator('tbody tr').first()).toContainText('Updated')
+  await root.getByRole('button', { name: '切换视图' }).click()
+  await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Editable timeline', exact: true }).click()
+  await page.setViewportSize({ width: 390, height: 844 })
+  const mobileFrozen = root.getByTestId('timeline-frozen-table')
+  await expect.poll(() => mobileFrozen.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
+  const mobileDue = mobileFrozen.locator(`[data-timeline-frozen-row][data-record-id="${first.id}"] [data-property-id="${due.id}"]`)
+  await mobileDue.scrollIntoViewIfNeeded()
+  await mobileDue.getByRole('button', { name: /编辑Due/u }).click()
+  const mobileDateEditor = page.getByRole('group', { name: '编辑日期：Due' })
+  await expect(mobileDateEditor).toBeVisible()
+  expect(await mobileDateEditor.evaluate(element => {
+    const rect = element.getBoundingClientRect()
+    return rect.left >= 0 && rect.right <= window.innerWidth && rect.height > 48
+  })).toBe(true)
+  await mobileDateEditor.getByRole('button', { name: '取消' }).click()
+})
+
+test('Timeline Frozen edit keeps its focused row through a 205-record virtual window', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 800 })
+  await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
+  const db = database('frozen-virtual-edit-db')
+  const title = property('frozen-virtual-title', db.id, 'Name', 'title')
+  const text = property('frozen-virtual-text', db.id, 'Notes', 'text')
+  const date = property('frozen-virtual-date', db.id, 'Date', 'date')
+  const timelineView = view('frozen-virtual-view', db.id, 'Virtual edit', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id },
+      frozenTable: { visible: true, visibleProperties: [title.id, text.id], propertyOrder: [title.id, text.id] } } } }, 'timeline')
+  const items = Array.from({ length: 205 }, (_, index) => record(`frozen-virtual-${String(index).padStart(3, '0')}`, db.id,
+    `frozen-virtual-page-${index}`, { [title.id]: `Row ${index}`, [text.id]: `Notes ${index}`, [date.id]: '2026-10-13' }))
+  const api = await installApi(page, [block('frozen-virtual-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timelineView.id } }, 100)], {
+    databases: [db], views: [timelineView], properties: [title, text, date], records: items,
+  })
+  for (const item of items) api.pages.push({ ...pageRecord, id: item.pageId, title: String(item.properties[title.id]), role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-frozen-virtual-block')
+  const loadMore = root.getByRole('button', { name: '加载更多' })
+  for (let pageNumber = 1; pageNumber < 9; pageNumber++) await loadMore.click()
+  await expect(loadMore).toHaveCount(0)
+  await root.evaluate(element => { const host = element.closest<HTMLElement>('.document-wrap'); if (host) host.scrollTop = 0 })
+  const row = root.locator('[data-timeline-frozen-row][data-record-id="frozen-virtual-000"]')
+  await row.locator(`[data-property-id="${text.id}"]`).getByRole('button').click()
+  const input = row.getByRole('textbox', { name: 'Notes 值' })
+  await input.fill('Pinned draft')
+  await root.evaluate(element => { const host = element.closest<HTMLElement>('.document-wrap'); if (host) host.scrollTop += 4000 })
+  await expect.poll(async () => Number(await root.getByTestId('timeline-canvas-body').getAttribute('data-row-window-first'))).toBeGreaterThan(20)
+  await expect(row).toHaveCount(1)
+  await expect(input).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect.poll(() => api.records.find(item => item.id === items[0]!.id)?.properties[text.id]).toBe('Pinned draft')
+})
+
+test('Timeline Frozen cell conflict keeps its draft, offline blocks writes, and unknown result locks safely', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const db = database('frozen-conflict-db')
+  const title = property('frozen-conflict-title', db.id, 'Name', 'title')
+  const notes = property('frozen-conflict-notes', db.id, 'Notes', 'text')
+  const date = property('frozen-conflict-date', db.id, 'Date', 'date')
+  const timelineView = view('frozen-conflict-view', db.id, 'Conflict timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+    options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id },
+      frozenTable: { visible: true, visibleProperties: [title.id, notes.id], propertyOrder: [title.id, notes.id] } } } }, 'timeline')
+  const item = record('frozen-conflict-record', db.id, 'frozen-conflict-page', { [title.id]: 'Conflict', [notes.id]: 'Original', [date.id]: '2026-10-13' })
+  const api = await installApi(page, [block('frozen-conflict-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: timelineView.id } }, 100)], {
+    databases: [db], views: [timelineView], properties: [title, notes, date], records: [item], conflictCellUpdateValue: 'Other writer',
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Conflict', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-frozen-conflict-block')
+  const cell = root.locator(`[data-timeline-frozen-row][data-record-id="${item.id}"] [data-property-id="${notes.id}"]`)
+  await cell.getByRole('button').click()
+  const input = cell.getByRole('textbox', { name: 'Notes 值' })
+  await input.fill('My draft')
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeDisabled()
+  await expect(root.getByTestId('timeline-frozen-toggle')).toBeDisabled()
+  api.conflictCellUpdates = 1
+  await input.press('Enter')
+  await expect(cell.getByRole('alert')).toContainText('内容已变化')
+  await expect(input).toHaveValue('My draft')
+  expect(api.records.find(record => record.id === item.id)?.properties[notes.id]).toBe('Other writer')
+  await input.press('Enter')
+  await expect.poll(() => api.records.find(record => record.id === item.id)?.properties[notes.id]).toBe('My draft')
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeEnabled()
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: false }); window.dispatchEvent(new Event('offline')) })
+  await expect(cell.getByRole('button')).toBeDisabled()
+  const writes = api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/')).length
+  await page.evaluate(() => { Object.defineProperty(navigator, 'onLine', { configurable: true, value: true }); window.dispatchEvent(new Event('online')) })
+  await expect(cell.getByRole('button')).toBeEnabled()
+  await cell.getByRole('button').click()
+  await input.fill('Unknown draft')
+  api.abortCellUpdatesWithoutCommit = 1
+  await input.press('Enter')
+  await expect(root.getByRole('alert').filter({ hasText: '单元格提交结果暂未确认' }).first()).toBeVisible()
+  await expect(cell.getByRole('textbox', { name: 'Notes 值' })).toBeDisabled()
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/')).length).toBe(writes + 1)
+})
+
+test('Timeline Frozen pending cell response cannot write into an A→B→A View epoch', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const db = database('frozen-epoch-db')
+  const title = property('frozen-epoch-title', db.id, 'Name', 'title')
+  const notes = property('frozen-epoch-notes', db.id, 'Notes', 'text')
+  const date = property('frozen-epoch-date', db.id, 'Date', 'date')
+  const config: DatabaseViewConfig = { ...DEFAULT_DATABASE_VIEW_CONFIG, options: { timeline: { scale: 'month', dateSource: { mode: 'date-property', propertyId: date.id },
+    frozenTable: { visible: true, visibleProperties: [title.id, notes.id], propertyOrder: [title.id, notes.id] } } } }
+  const first = view('frozen-epoch-first', db.id, 'First', config, 'timeline')
+  const second = view('frozen-epoch-second', db.id, 'Second', config, 'timeline')
+  const item = record('frozen-epoch-record', db.id, 'frozen-epoch-page', { [title.id]: 'Epoch', [notes.id]: 'Before', [date.id]: '2026-10-13' })
+  const api = await installApi(page, [block('frozen-epoch-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: first.id } }, 100)], {
+    databases: [db], views: [first, second], properties: [title, notes, date], records: [item], holdCellUpdateResponse: true,
+  })
+  api.pages.push({ ...pageRecord, id: item.pageId, title: 'Epoch', role: 'database-record' })
+  await page.goto('/#/app/database-workspace/page/database-page')
+  const root = page.locator('#database-block-frozen-epoch-block')
+  const cell = root.locator(`[data-timeline-frozen-row][data-record-id="${item.id}"] [data-property-id="${notes.id}"]`)
+  await cell.getByRole('button').click()
+  const input = cell.getByRole('textbox', { name: 'Notes 值' })
+  await input.fill('Committed once')
+  await input.press('Enter')
+  await api.cellUpdateResponseStarted
+  await expect(root.getByRole('button', { name: '切换视图' })).toBeDisabled()
+  const changeView = async (viewId: string) => page.evaluate(targetViewId => {
+    const editorRoot = document.querySelector('.eotion-editor') as (Element & { __vueParentComponent?: { exposed?: { editor?: any } } }) | null
+    const exposed = editorRoot?.__vueParentComponent?.exposed?.editor
+    const editor = exposed?.commands ? exposed : exposed?.value
+    if (!editor?.view) throw new Error('Missing editor')
+    let position = -1, attrs: Record<string, unknown> | undefined
+    editor.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, unknown> }, nodePosition: number) => {
+      if (position < 0 && node.type.name === 'eotionDatabase') { position = nodePosition; attrs = node.attrs }
+    })
+    if (position < 0 || !attrs) throw new Error('Missing database node')
+    editor.view.dispatch(editor.state.tr.setNodeMarkup(position, undefined, { ...attrs, viewId: targetViewId }))
+  }, viewId)
+  await changeView(second.id)
+  await expect(root).toHaveAttribute('data-view-id', second.id)
+  await changeView(first.id)
+  await expect(root).toHaveAttribute('data-view-id', first.id)
+  await expect(root).toHaveAttribute('data-view-ready', 'true')
+  const focus = root.getByRole('button', { name: '切换视图' })
+  await focus.focus()
+  api.releaseCellUpdateResponse()
+  await expect.poll(() => api.records.find(record => record.id === item.id)?.properties[notes.id]).toBe('Committed once')
+  await expect(focus).toBeFocused()
+  await expect(cell).toContainText('Committed once')
+  expect(api.requests.filter(request => request.method === 'PATCH' && request.path.includes('/cells/'))).toHaveLength(1)
+})
+
+test('shared Table and Timeline cells retain 44px touch targets on phone and coarse hover', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  try {
+    const page = await context.newPage()
+    const db = database('touch-cell-size-db')
+    const title = property('touch-cell-title', db.id, 'Name', 'title')
+    const notes = property('touch-cell-notes', db.id, 'Notes', 'text')
+    const date = property('touch-cell-date', db.id, 'Date', 'date')
+    const tableView = view('touch-cell-table', db.id, 'Table')
+    const timelineView = view('touch-cell-timeline', db.id, 'Timeline', { ...DEFAULT_DATABASE_VIEW_CONFIG,
+      options: { timeline: { dateSource: { mode: 'date-property', propertyId: date.id },
+        frozenTable: { visible: true, visibleProperties: [title.id, notes.id], propertyOrder: [title.id, notes.id] } } } }, 'timeline')
+    const item = record('touch-cell-record', db.id, 'touch-cell-page', { [title.id]: 'Touch row', [notes.id]: 'Notes', [date.id]: '2026-10-13' })
+    const api = await installApi(page, [block('touch-cell-block', 'database', { type: 'eotionDatabase', attrs: { databaseId: db.id, viewId: tableView.id } }, 100)], {
+      databases: [db], views: [tableView, timelineView], properties: [title, notes, date], records: [item],
+    })
+    api.pages.push({ ...pageRecord, id: item.pageId, title: 'Touch row', role: 'database-record' })
+    await page.goto('/#/app/database-workspace/page/database-page')
+    const root = page.locator('#database-block-touch-cell-block')
+    const tableTitle = root.locator('tbody tr').first().locator('td').nth(0)
+    const tableNotes = root.locator('tbody tr').first().locator('td').nth(1)
+    const assertTarget = async (button: Locator) => {
+      const geometry = await button.evaluate(element => {
+        const rect = element.getBoundingClientRect()
+        return { width: rect.width, height: rect.height, hit: document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)?.closest('button') === element,
+          opacity: getComputedStyle(element).opacity }
+      })
+      expect(geometry.height).toBeGreaterThanOrEqual(44)
+      expect(geometry.hit).toBe(true)
+      return geometry
+    }
+    await assertTarget(tableNotes.getByRole('button', { name: 'Notes' }))
+    const tableOpen = tableTitle.getByRole('button', { name: '打开记录：Touch row' })
+    expect((await assertTarget(tableOpen)).width).toBeGreaterThanOrEqual(44)
+    await tableNotes.getByRole('button', { name: 'Notes' }).click()
+    const input = tableNotes.getByRole('textbox', { name: 'Notes 值' })
+    await expect.poll(() => input.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44)
+    await input.press('Escape')
+    await root.getByRole('button', { name: '切换视图' }).click()
+    await page.getByRole('group', { name: '数据库视图', exact: true }).getByRole('button', { name: 'Timeline', exact: true }).click()
+    const frozen = root.getByTestId('timeline-frozen-table')
+    const frozenTitle = frozen.locator(`[data-timeline-frozen-row][data-record-id="${item.id}"] [data-property-id="${title.id}"]`)
+    expect((await assertTarget(frozenTitle.getByRole('button', { name: '打开记录：Touch row' }))).width).toBeGreaterThanOrEqual(44)
+    await page.setViewportSize({ width: 820, height: 844 })
+    const coarse = await frozenTitle.getByRole('button', { name: '打开记录：Touch row' }).evaluate(element => ({ width: element.getBoundingClientRect().width, opacity: getComputedStyle(element).opacity, hoverNone: matchMedia('(hover:none)').matches }))
+    expect(coarse.hoverNone).toBe(true)
+    expect(coarse.width).toBeGreaterThanOrEqual(44)
+    expect(coarse.opacity).toBe('1')
+  } finally { await context.close() }
+})
+
 test('queued Timeline reorder that goes offline before send stays known and writable after reconnect', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.clock.setFixedTime(new Date('2026-10-13T00:00:00.000Z'))
@@ -5497,7 +5760,7 @@ test('Timeline Frozen Table resolves independent columns, formats shared propert
   })
   expect(topLevelProjection).toEqual({ title: 'Frozen A', visibleProperties: ['root-text'] })
 
-  const titleButton = frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="root-title"] button')
+  const titleButton = frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"]').getByRole('button', { name: '打开记录：Frozen A' })
   await titleButton.click()
   const drawer = page.locator('[data-overlay-mode="drawer"]')
   await expect(drawer).toBeVisible()
@@ -5556,7 +5819,11 @@ test('Timeline Frozen Table resolves independent columns, formats shared propert
         await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
         await expect(frozen.getByTestId('timeline-frozen-header').locator('[data-property-id="root-title"]')).toBeVisible()
         await expect(frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="root-title"]')).toBeVisible()
-        await expect.poll(() => frozen.locator('.eotion-timeline-frozen-cell:not(.is-title)').evaluateAll(cells => cells.every(cell => cell.getClientRects().length === 0))).toBe(true)
+        await expect.poll(() => frozen.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
+        const notesCell = frozen.locator('[data-timeline-frozen-row][data-record-id="frozen-record-a"] [data-property-id="root-text"]')
+        await notesCell.scrollIntoViewIfNeeded()
+        await expect(notesCell).toBeVisible()
+        await frozen.evaluate(element => { element.scrollLeft = 0 })
         const paneWidth = await frozen.evaluate(element => element.getBoundingClientRect().width)
         expect(paneWidth).toBeGreaterThan(0)
         expect(paneWidth).toBeLessThanOrEqual(120)
@@ -5628,7 +5895,7 @@ test('Timeline Frozen rows share row geometry, hover, selection, and page-host s
   await page.locator('body').hover({ position: { x: 1, y: 1 } })
   await expect(leftRow).not.toHaveClass(/is-hovered/u)
   await expect(rightRow).not.toHaveClass(/is-hovered/u)
-  const titleButton = leftRow.locator('[data-property-id="root-title"] button')
+  const titleButton = leftRow.getByRole('button', { name: '打开记录：Geometry 0' })
   await titleButton.click()
   await expect(titleButton).toHaveAttribute('aria-pressed', 'true')
   await expect(leftRow).toHaveClass(/is-selected/u)

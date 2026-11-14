@@ -21,6 +21,7 @@ import DatabasePropertyMenu from './DatabasePropertyMenu.vue'
 import DatabaseListView from './DatabaseListView.vue'
 import DatabaseBoardView from './DatabaseBoardView.vue'
 import DatabaseTimelineView from './DatabaseTimelineView.vue'
+import DatabaseCellContent from './DatabaseCellContent.vue'
 import DatabaseTimelineSettingsForm from './DatabaseTimelineSettingsForm.vue'
 import { collectRelationTitleIds, resolveFrozenTableProperties, type RelationTitleColumn } from './timeline/frozenTable'
 import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
@@ -73,7 +74,8 @@ const settingsMenuOpen = ref(false)
 const viewSubmitting = ref(false)
 const timelineEditorEditable = ref(props.editor.isEditable)
 const viewReady = computed(() => loadedViewIdentity.value === [workspaceId.value, databaseId.value, viewId.value, auth.user?.id ?? ''].join('\u0000'))
-const viewBusy = computed(() => !timelineEditorEditable.value || !viewReady.value || !online.value || staleReadonly.value || loading.value || loadingMore.value || savingCell.value || creating.value || viewSubmitting.value || scopedViewDeleteState.value?.status === 'pending')
+const viewBusy = computed(() => !timelineEditorEditable.value || !viewReady.value || !online.value || staleReadonly.value || loading.value || loadingMore.value || savingCell.value || creating.value || viewSubmitting.value || scopedViewDeleteState.value?.status === 'pending'
+  || viewType.value === 'timeline' && Boolean(cellEdit.value || cellPopover.value || relationPicker.value))
 const visibleViewCount = computed(() => viewConfig.value.filters.length)
 const sortViewCount = computed(() => viewConfig.value.sorts.length)
 const displayViewName = computed(() => viewName.value === 'Table' ? '表格视图' : viewName.value)
@@ -269,6 +271,7 @@ const columnDraftProperties = computed(() => columnDraft.value.order
   .filter((property): property is DatabasePropertyResponse => Boolean(property)))
 const records = ref<TableRecord[]>([])
 const recordsById = computed(() => new Map(records.value.map(record => [record.id, record])))
+const propertiesById = computed(() => new Map(properties.value.map(property => [property.id, property])))
 const timelineScope = computed(() => [auth.user?.id ?? '', workspaceId.value, databaseId.value, viewId.value, blockId.value].join('\u0000'))
 const timelineVisibleRecordIds = ref<string[]>([])
 const timelineSelectedPageId = computed(() => {
@@ -324,6 +327,13 @@ const optionEditName = ref('')
 type DateCellDraft = { start: string; end: string; hasEnd: boolean; datetime: boolean; timeZone: string; originalStart: string; originalEnd: string; objectValue: boolean }
 const cellEdit = ref<{ recordId: string; propertyId: string; value: string; date?: DateCellDraft } | null>(null)
 const cellPopover = ref<{ recordId: string; propertyId: string } | null>(null)
+const timelineActiveEditRecordId = computed(() => cellEdit.value?.recordId ?? cellPopover.value?.recordId ?? relationPicker.value?.recordId ?? null)
+const activeDateRecord = computed(() => cellEdit.value?.date ? recordsById.value.get(cellEdit.value.recordId) ?? null : null)
+const activeDateProperty = computed(() => cellEdit.value?.date ? propertiesById.value.get(cellEdit.value.propertyId) ?? null : null)
+const activeSelectRecord = computed(() => cellPopover.value ? recordsById.value.get(cellPopover.value.recordId) ?? null : null)
+const activeSelectProperty = computed(() => cellPopover.value ? propertiesById.value.get(cellPopover.value.propertyId) ?? null : null)
+const activeRelationRecord = computed(() => relationPicker.value ? recordsById.value.get(relationPicker.value.recordId) ?? null : null)
+const activeRelationProperty = computed(() => relationPicker.value ? propertiesById.value.get(relationPicker.value.propertyId) ?? null : null)
 const cellPopoverStyle = ref<Record<string, string>>({})
 const cellDraftError = ref('')
 const savingCell = ref(false)
@@ -340,6 +350,10 @@ type TimelineOrderCapture = Readonly<{
 }>
 function captureTimelineOrder(): TimelineOrderCapture | null {
   if (viewType.value !== 'timeline' || viewBusy.value || !writable.value || !props.editor.isEditable || viewConfig.value.sorts.length) return null
+  return captureTimelineCellIdentity()
+}
+function captureTimelineCellIdentity(): TimelineOrderCapture | null {
+  if (viewType.value !== 'timeline' || !viewReady.value) return null
   const viewRoot = document.getElementById(`database-block-${blockId.value}`)
   if (!viewRoot?.isConnected || viewRoot.getAttribute('data-view-id') !== viewId.value) return null
   return Object.freeze({ scope: timelineScope.value, userId: userId.value, workspaceId: workspaceId.value,
@@ -2065,9 +2079,11 @@ async function saveSelectOptions(property: DatabasePropertyResponse, options: Ar
   }
 }
 
-function startCellEdit(record: TableRecord, property: DatabasePropertyResponse): void {
+function startCellEdit(record: TableRecord, property: DatabasePropertyResponse, event?: MouseEvent): void {
   if (!writable.value || ['checkbox', 'select', 'relation', 'rollup', 'formula'].includes(property.type)) return
-  returnFocusTo.value = document.activeElement instanceof HTMLElement ? document.activeElement.closest<HTMLElement>('td') ?? document.activeElement : null
+  returnFocusTo.value = event?.currentTarget instanceof HTMLElement ? (viewType.value === 'timeline' ? event.currentTarget : event.currentTarget.closest<HTMLElement>('td') ?? event.currentTarget)
+    : document.activeElement instanceof HTMLElement ? document.activeElement.closest<HTMLElement>('td') ?? document.activeElement : null
+  if (viewType.value === 'timeline' && property.type === 'date' && event?.currentTarget instanceof HTMLElement) cellPopoverStyle.value = anchoredStyle(event.currentTarget, 320)
   cellPopover.value = null
   cellDraftError.value = ''
   const current = getCellValue(record, property.id)
@@ -2088,6 +2104,9 @@ function setCellInputRef(element: Element | ComponentPublicInstance | null): voi
 }
 
 function cancelCellEdit(): void {
+  const editing = cellEdit.value
+  const scope = timelineScope.value
+  const viewRoot = viewType.value === 'timeline' ? document.getElementById(`database-block-${blockId.value}`) : null
   cellEdit.value = null
   cellDraftError.value = ''
   runDeferredRefresh()
@@ -2095,6 +2114,9 @@ function cancelCellEdit(): void {
     const origin = returnFocusTo.value
     const target = origin?.matches('td') ? origin.querySelector<HTMLElement>('.eotion-database-title-body, .eotion-database-cell-button') : origin
     if (target?.isConnected) target.focus({ preventScroll: true })
+    else if (editing && viewRoot?.isConnected && scope === timelineScope.value) viewRoot.querySelector<HTMLElement>(
+      `[data-timeline-frozen-row][data-record-id="${CSS.escape(editing.recordId)}"] [data-property-id="${CSS.escape(editing.propertyId)}"] .eotion-database-cell-button`,
+    )?.focus({ preventScroll: true })
   })
 }
 function dateDraft(record: TableRecord, property: DatabasePropertyResponse): DateCellDraft | null {
@@ -2163,6 +2185,9 @@ async function saveCell(record: TableRecord, property: DatabasePropertyResponse,
   }
   const expectedValue = property.type === 'title' && value !== null ? String(value).trim() : value
   const latestRecord = records.value.find(item => item.id === record.id) ?? record
+  const timelineCapture = viewType.value === 'timeline' ? captureTimelineCellIdentity() : null
+  if (viewType.value === 'timeline' && !timelineCapture) return
+  const isCurrent = () => !timelineCapture || isCurrentTimelineOrder(timelineCapture)
   savingCell.value = true
   cellDraftError.value = ''
   mutationError.value = ''
@@ -2174,19 +2199,23 @@ async function saveCell(record: TableRecord, property: DatabasePropertyResponse,
       ...(property.type === 'title' ? { expectedPageUpdatedAt: latestRecord.pageVersion } : {}),
     }
     const result = await updateProductDatabaseRecordCell(workspaceId.value, databaseId.value, latestRecord.id, property.id, input)
+    if (!isCurrent()) return
     databaseVersion.value = result.database.version
     if ('refreshWarning' in result && result.refreshWarning) mutationError.value = result.refreshWarning
     cellEdit.value = null
     cellPopover.value = null
-    runDeferredRefresh()
+    if (timelineCapture) await refreshLoadedWindow()
+    else runDeferredRefresh()
   } catch (cause) {
+    if (!isCurrent()) return
     if (cause instanceof ApiError && cause.statusCode === 409) {
       await refreshLoadedWindow()
-      cellDraftError.value = '内容已变化，已刷新版本；检查草稿后再次保存。'
+      if (isCurrent()) cellDraftError.value = '内容已变化，已刷新版本；检查草稿后再次保存。'
     } else if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) {
       cellDraftError.value = errorMessage(cause, '内容未保存，请重试。')
     } else {
       await refreshLoadedWindow()
+      if (!isCurrent()) return
       const refreshed = records.value.find(item => item.id === record.id)
       const confirmedValue = refreshed ? getCellValue(refreshed, property.id) : undefined
       const confirmedDate = property.type === 'date' ? normalizeDatabaseDateValue(confirmedValue) : null
@@ -2199,9 +2228,10 @@ async function saveCell(record: TableRecord, property: DatabasePropertyResponse,
         cellDraftError.value = ''
       } else {
         cellDraftError.value = '提交结果暂未确认，已刷新记录；请核对当前值后再编辑。'
+        if (timelineCapture) { staleReadonly.value = true; refreshError.value = '单元格提交结果暂未确认，请重新加载当前视图。' }
       }
     }
-  } finally { savingCell.value = false }
+  } finally { if (isCurrent()) { savingCell.value = false; runDeferredRefresh() } }
 }
 function onCellEnter(event: KeyboardEvent, record: TableRecord, property: DatabasePropertyResponse): void {
   if (event.isComposing || event.keyCode === 229) return
@@ -2225,8 +2255,37 @@ function onDateEditorKeydown(event: KeyboardEvent, record: TableRecord, property
   if (event.key === 'Escape') { event.preventDefault(); cancelCellEdit(); return }
   if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); void saveCell(record, property) }
 }
+async function updateTimelineFrozenControlCell(record: TableRecord, property: DatabasePropertyResponse, value: DatabasePropertyValue): Promise<void> {
+  const capture = captureTimelineCellIdentity()
+  if (!capture || !writable.value || savingCell.value || !props.editor.isEditable) return
+  const isCurrent = () => isCurrentTimelineOrder(capture)
+  savingCell.value = true
+  mutationError.value = ''
+  try {
+    await updateProductDatabaseRecordCell(capture.workspaceId, capture.databaseId, record.id, property.id, {
+      value, expectedDatabaseVersion: capture.expectedDatabaseVersion, expectedRecordVersion: record.version,
+      ...(property.type === 'title' ? { expectedPageUpdatedAt: record.pageVersion } : {}),
+    })
+    if (!isCurrent()) return
+    cellPopover.value = null
+    await refreshLoadedWindow()
+  } catch (cause) {
+    if (!isCurrent()) return
+    if (cause instanceof ApiError && cause.statusCode === 409) {
+      await refreshLoadedWindow()
+      if (isCurrent()) mutationError.value = '记录已变化，已刷新版本，请重新操作。'
+    } else if (cause instanceof ApiError && cause.statusCode >= 400 && cause.statusCode < 500) mutationError.value = errorMessage(cause, '内容未保存，请重试。')
+    else {
+      await refreshLoadedWindow()
+      if (isCurrent()) { staleReadonly.value = true; refreshError.value = '单元格提交结果暂未确认，请重新加载当前视图。'; mutationError.value = refreshError.value }
+    }
+  } finally {
+    if (isCurrent()) { savingCell.value = false; runDeferredRefresh() }
+  }
+}
 async function toggleCheckbox(record: TableRecord, property: DatabasePropertyResponse): Promise<void> {
   if (!writable.value) return
+  if (viewType.value === 'timeline') { await updateTimelineFrozenControlCell(record, property, getCellValue(record, property.id) !== true); return }
   try {
     const result = await updateProductDatabaseRecordCell(workspaceId.value, databaseId.value, record.id, property.id, {
       value: getCellValue(record, property.id) !== true, expectedDatabaseVersion: databaseVersion.value, expectedRecordVersion: record.version,
@@ -2239,6 +2298,7 @@ async function toggleCheckbox(record: TableRecord, property: DatabasePropertyRes
 }
 
 async function chooseSelect(record: TableRecord, property: DatabasePropertyResponse, optionId: string | null): Promise<void> {
+  if (viewType.value === 'timeline') { await updateTimelineFrozenControlCell(record, property, optionId); return }
   try {
     const result = await updateProductDatabaseRecordCell(workspaceId.value, databaseId.value, record.id, property.id, {
       value: optionId, expectedDatabaseVersion: databaseVersion.value, expectedRecordVersion: record.version,
@@ -2284,6 +2344,7 @@ async function setRelation(record: TableRecord, property: DatabasePropertyRespon
   const current = Array.isArray(getCellValue(record, property.id)) ? getCellValue(record, property.id) as string[] : []
   const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id]
   if (next.length > 50) { relationError.value = '每条记录最多关联 50 条。'; return }
+  if (viewType.value === 'timeline') { await updateTimelineFrozenControlCell(record, property, next); return }
   savingCell.value = true; relationError.value = ''
   try {
     const result = await updateProductDatabaseRecordCell(workspaceId.value, databaseId.value, record.id, property.id, {
@@ -2690,7 +2751,22 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
       <p v-if="mutationError || creationUncertain" class="eotion-database-error" role="alert">{{ mutationError || '上次记录创建结果尚未确认，请联网并刷新页面后确认。' }}<button v-if="viewType === 'board' && mutationError" type="button" :disabled="!online || savingCell" @click.stop="void refreshLoadedWindow()">刷新记录</button></p>
       <DatabaseListView v-if="viewType === 'list'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" @open-record="openRecordPage" />
       <DatabaseBoardView v-else-if="viewType === 'board'" :records="records" :properties="properties" :config="viewConfig" :format-value="formatValue" :writable="props.editor.isEditable && writable && !loadingMore" @open-record="openRecordPage" @change-group="changeBoardGroup" />
-      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :writable="writable && timelineEditorEditable" :view-busy="viewBusy" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :prepare-schedule="prepareTimelineSchedule" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" :capture-order="captureTimelineOrder" :reorder-record="reorderTimelineRecord" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" @toggle-frozen-table="setTimelineFrozenTableVisibility" />
+      <DatabaseTimelineView v-else-if="viewType === 'timeline'" :database-id="databaseId" :scope="timelineScope" :config="viewConfig" :records="records" :properties="properties" :format-value="formatValue" :selected-page-id="timelineSelectedPageId" :active-edit-record-id="timelineActiveEditRecordId" :writable="writable && timelineEditorEditable" :view-busy="viewBusy" :database-version="databaseVersion" :prepare-drag="prepareTimelineBarDrag" :prepare-schedule="prepareTimelineSchedule" :move-record="moveTimelineRecord" :capture-dependency="captureTimelineDependency" :mutate-dependency="mutateTimelineDependency" :capture-order="captureTimelineOrder" :reorder-record="reorderTimelineRecord" @open-record="openRecordPage" @visible-records="onTimelineVisibleRecords" @toggle-frozen-table="setTimelineFrozenTableVisibility">
+        <template #frozen-cell="{ recordId, propertyId }">
+          <DatabaseCellContent v-if="recordsById.get(recordId) && propertiesById.get(propertyId)"
+            :record="recordsById.get(recordId)!" :property="propertiesById.get(propertyId)!" :display-text="formatValue(getCellValue(recordsById.get(recordId)!, propertyId), propertiesById.get(propertyId)!)"
+            :property-name="displayPropertyName(propertiesById.get(propertyId)!)" :value="getCellValue(recordsById.get(recordId)!, propertyId)"
+            mode="timeline" :touch="layoutMode !== 'desktop'" :disabled="!writable || !timelineEditorEditable" :saving="savingCell" :selected="timelineSelectedPageId === recordsById.get(recordId)!.pageId"
+            :editing="isEditingCell(recordsById.get(recordId)!, propertiesById.get(propertyId)!)" :draft="cellDraft" :error="cellDraftError"
+            @edit="startCellEdit(recordsById.get(recordId)!, propertiesById.get(propertyId)!, $event)"
+            @open-record="openRecordPage($event, recordsById.get(recordId)!.pageId)" @update-draft="cellDraft = $event"
+            @input-ref="setCellInputRef" @save="saveCell(recordsById.get(recordId)!, propertiesById.get(propertyId)!)" @cancel="cancelCellEdit"
+            @enter="onCellEnter($event, recordsById.get(recordId)!, propertiesById.get(propertyId)!)"
+            @checkbox="toggleCheckbox(recordsById.get(recordId)!, propertiesById.get(propertyId)!)"
+            @select="toggleCellPopover(recordsById.get(recordId)!, propertiesById.get(propertyId)!, $event)"
+            @relation="openRelationPicker(recordsById.get(recordId)!, propertiesById.get(propertyId)!, $event)" />
+        </template>
+      </DatabaseTimelineView>
       <div v-else-if="viewType === 'table' && properties.length" class="eotion-database-scroll" data-testid="database-table-scroll" role="region" aria-label="数据库记录" tabindex="0" @pointerdown.stop>
         <table class="eotion-database-table">
           <thead><tr>
@@ -2701,12 +2777,13 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
           <tbody>
             <tr v-for="record in records" :key="record.id">
               <td v-for="property in displayProperties" :key="property.id">
-                <div v-if="property.type === 'title'" class="eotion-database-title-cell" :class="{ 'eotion-database-title-cell--touch': layoutMode !== 'desktop' }">
-                  <input v-if="isEditingCell(record, property)" v-model="cellDraft" :ref="setCellInputRef" class="eotion-database-cell-input" type="text" :aria-label="`${displayPropertyName(property)} 值`" :disabled="savingCell || !writable" @keydown.enter="onCellEnter($event, record, property)" @keydown.tab.stop @keydown.esc.prevent="cancelCellEdit" @blur="saveCell(record, property)">
-                  <button v-else class="eotion-database-cell-button eotion-database-title-body" type="button" :disabled="!writable" :aria-label="`编辑${displayPropertyName(property)}：${formatValue(getCellValue(record, property.id), property)}`" @click.stop="startCellEdit(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
-                  <button class="eotion-database-title-detail" type="button" :tabindex="isEditingCell(record, property) ? -1 : 0" :aria-label="`打开记录：${formatValue(getCellValue(record, property.id), property)}`" @pointerdown.stop @mousedown.stop @click.stop="openRecordPage($event, record.pageId)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10" /></svg></button>
-                </div>
-                <div v-else-if="isEditingCell(record, property) && property.type === 'date' && dateDraft(record, property)" class="eotion-database-date-editor" @keydown="onDateEditorKeydown($event, record, property)" @keydown.tab.stop>
+                <DatabaseCellContent :record="record" :property="property" :display-text="formatValue(getCellValue(record, property.id), property)" :property-name="displayPropertyName(property)"
+                  :value="getCellValue(record, property.id)" mode="table" :touch="layoutMode !== 'desktop'" :disabled="!writable" :saving="savingCell" :selected="false"
+                  :editing="isEditingCell(record, property)" :draft="cellDraft" :error="cellDraftError"
+                  @edit="startCellEdit(record, property, $event)" @open-record="openRecordPage($event, record.pageId)" @update-draft="cellDraft = $event"
+                  @input-ref="setCellInputRef" @save="saveCell(record, property)" @cancel="cancelCellEdit" @enter="onCellEnter($event, record, property)"
+                  @checkbox="toggleCheckbox(record, property)" @select="toggleCellPopover(record, property, $event)" @relation="openRelationPicker(record, property, $event)">
+                  <template #date-editor><div v-if="dateDraft(record, property)" class="eotion-database-date-editor" @keydown="onDateEditorKeydown($event, record, property)" @keydown.tab.stop>
                   <label>{{ displayPropertyName(property) }} 值<input :ref="setCellInputRef" class="eotion-database-cell-input" :type="dateDraft(record, property)!.datetime ? 'datetime-local' : 'date'" :step="dateDraft(record, property)!.datetime ? '0.001' : undefined" :aria-label="`${displayPropertyName(property)} 值`" v-model="dateDraft(record, property)!.start" :disabled="savingCell || !writable"></label>
                   <label v-if="dateDraft(record, property)!.hasEnd">结束<input class="eotion-database-cell-input" :type="dateDraft(record, property)!.datetime ? 'datetime-local' : 'date'" :step="dateDraft(record, property)!.datetime ? '0.001' : undefined" aria-label="结束日期" v-model="dateDraft(record, property)!.end" :disabled="savingCell || !writable"></label>
                   <label class="eotion-database-date-end-toggle"><input type="checkbox" :checked="dateDraft(record, property)!.hasEnd" :disabled="savingCell || !writable" @change="dateDraft(record, property)!.hasEnd = ($event.target as HTMLInputElement).checked; dateDraft(record, property)!.objectValue = true; !dateDraft(record, property)!.hasEnd && (dateDraft(record, property)!.end = '')">结束日期</label>
@@ -2716,13 +2793,8 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
                     <small>按 UTC 输入；时区信息会保留，修改时区不会移动时间点。</small>
                   </template>
                   <div class="eotion-database-date-actions"><button type="button" :disabled="savingCell || !writable" @click.stop="saveCell(record, property)">保存</button><button type="button" :disabled="savingCell || !writable" @click.stop="saveCell(record, property, true)">清除</button><button type="button" :disabled="savingCell" @click.stop="cancelCellEdit">取消</button></div>
-                </div>
-                <input v-else-if="isEditingCell(record, property)" v-model="cellDraft" :ref="setCellInputRef" class="eotion-database-cell-input" :inputmode="property.type === 'number' ? 'decimal' : undefined" :aria-label="`${displayPropertyName(property)} 值`" :disabled="savingCell || !writable" @keydown.enter="onCellEnter($event, record, property)" @keydown.tab.stop @keydown.esc.prevent="cancelCellEdit" @blur="saveCell(record, property)">
-                <button v-else-if="property.type === 'checkbox'" class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-pressed="getCellValue(record, property.id) === true" @click.stop="toggleCheckbox(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
-                <button v-else-if="property.type === 'select'" class="eotion-database-cell-button" type="button" :disabled="!writable" @click.stop="toggleCellPopover(record, property, $event)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
-                <button v-else-if="property.type === 'relation'" class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-label="`编辑关联 ${property.name}`" @click.stop="openRelationPicker(record, property, $event)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
-                <span v-else-if="property.type === 'rollup' || property.type === 'formula'" class="eotion-database-derived-value" :aria-label="`${property.name}，只读`">{{ formatValue(getCellValue(record, property.id), property) }}</span>
-                <button v-else class="eotion-database-cell-button" type="button" :disabled="!writable" :aria-label="property.type === 'date' ? `编辑${displayPropertyName(property)}：${formatValue(getCellValue(record, property.id), property)}` : undefined" @click.stop="startCellEdit(record, property)">{{ formatValue(getCellValue(record, property.id), property) }}</button>
+                  </div></template>
+                </DatabaseCellContent>
                 <Teleport to="body"><div v-if="isOpenSelect(record, property)" class="eotion-database-popover eotion-database-teleport eotion-database-cell-menu" :style="cellPopoverStyle">
                   <button type="button" @click.stop="chooseSelect(record, property, null)">清除</button>
                   <button v-for="option in property.options ?? []" :key="option.id" type="button" @click.stop="chooseSelect(record, property, option.id)">{{ option.name }}</button>
@@ -2739,13 +2811,40 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
                   <button v-if="relationNextCursor" type="button" :disabled="relationLoading" @click="loadRelationOptions(true)">加载更多</button>
                   <button type="button" @click="closeRelationPicker">完成</button>
                 </section></Teleport>
-                <button v-if="isEditingCell(record, property) && property.type !== 'date'" class="eotion-database-cell-save" type="button" tabindex="-1" :disabled="savingCell || !writable" @pointerdown.prevent @click.stop="saveCell(record, property)">保存</button>
-                <small v-if="isEditingCell(record, property) && cellDraftError" class="eotion-database-cell-error" role="alert">{{ cellDraftError }} <button type="button" @click.stop="saveCell(record, property)">重试</button></small>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      <template v-if="viewType === 'timeline'">
+        <Teleport to="body"><section v-if="activeDateRecord && activeDateProperty && cellEdit?.date" class="eotion-database-popover eotion-database-teleport eotion-database-date-editor eotion-timeline-date-popover"
+          :style="cellPopoverStyle" role="group" :aria-label="`编辑日期：${activeDateProperty.name}`"
+          @keydown="onDateEditorKeydown($event, activeDateRecord, activeDateProperty)" @keydown.tab.stop>
+          <label>{{ displayPropertyName(activeDateProperty) }} 值<input :ref="setCellInputRef" class="eotion-database-cell-input" :type="cellEdit.date.datetime ? 'datetime-local' : 'date'" :step="cellEdit.date.datetime ? '0.001' : undefined" :aria-label="`${displayPropertyName(activeDateProperty)} 值`" v-model="cellEdit.date.start" :disabled="savingCell || !writable"></label>
+          <label v-if="cellEdit.date.hasEnd">结束<input class="eotion-database-cell-input" :type="cellEdit.date.datetime ? 'datetime-local' : 'date'" :step="cellEdit.date.datetime ? '0.001' : undefined" aria-label="结束日期" v-model="cellEdit.date.end" :disabled="savingCell || !writable"></label>
+          <label class="eotion-database-date-end-toggle"><input type="checkbox" v-model="cellEdit.date.hasEnd" :disabled="savingCell || !writable" @change="cellEdit.date.objectValue = true; !cellEdit.date.hasEnd && (cellEdit.date.end = '')">结束日期</label>
+          <label class="eotion-database-date-end-toggle"><input type="checkbox" :checked="cellEdit.date.datetime" :disabled="savingCell || !writable" @change="setDateTimeMode(cellEdit.date!, ($event.target as HTMLInputElement).checked)">包含时间</label>
+          <template v-if="cellEdit.date.datetime"><label>时区<input class="eotion-database-cell-input" aria-label="时区" v-model="cellEdit.date.timeZone" maxlength="128" :disabled="savingCell || !writable"></label><small>按 UTC 输入；时区信息会保留，修改时区不会移动时间点。</small></template>
+          <div class="eotion-database-date-actions"><button type="button" :disabled="savingCell || !writable" @click.stop="saveCell(activeDateRecord, activeDateProperty)">保存</button><button type="button" :disabled="savingCell || !writable" @click.stop="saveCell(activeDateRecord, activeDateProperty, true)">清除</button><button type="button" :disabled="savingCell" @click.stop="cancelCellEdit">取消</button></div>
+          <small v-if="cellDraftError" class="eotion-database-cell-error" role="alert">{{ cellDraftError }}</small>
+        </section></Teleport>
+        <Teleport to="body"><div v-if="activeSelectRecord && activeSelectProperty" class="eotion-database-popover eotion-database-teleport eotion-database-cell-menu" :style="cellPopoverStyle">
+          <button type="button" @click.stop="chooseSelect(activeSelectRecord, activeSelectProperty, null)">清除</button>
+          <button v-for="option in activeSelectProperty.options ?? []" :key="option.id" type="button" @click.stop="chooseSelect(activeSelectRecord, activeSelectProperty, option.id)">{{ option.name }}</button>
+        </div></Teleport>
+        <Teleport to="body"><section v-if="activeRelationRecord && activeRelationProperty" class="eotion-database-popover eotion-database-teleport eotion-database-relation-picker" :style="cellPopoverStyle" role="group" :aria-label="`关联记录：${activeRelationProperty.name}`" @click.stop>
+          <strong>关联记录 <small>最多 50 条</small></strong>
+          <label>搜索记录<input v-model="relationSearch" maxlength="200" placeholder="输入标题" @keydown.enter.prevent="loadRelationOptions()"></label>
+          <button type="button" :disabled="relationLoading" @click="loadRelationOptions()">搜索</button>
+          <div v-for="id in Array.isArray(getCellValue(activeRelationRecord, activeRelationProperty.id)) ? getCellValue(activeRelationRecord, activeRelationProperty.id) as string[] : []" :key="id" class="eotion-database-relation-selected"><span>{{ getRelationTitle(activeRelationProperty, id)?.title ?? id }}</span><button type="button" :disabled="savingCell" :aria-label="`移除关联 ${getRelationTitle(activeRelationProperty, id)?.title ?? id}`" @click="setRelation(activeRelationRecord, activeRelationProperty, id)">移除</button><RouterLink v-if="getRelationTitle(activeRelationProperty, id)" :to="{ name: 'product-page', params: { workspaceId, pageId: getRelationTitle(activeRelationProperty, id)?.pageId } }" @click.capture="openRecordPage($event, getRelationTitle(activeRelationProperty, id)!.pageId)">打开</RouterLink></div>
+          <p v-if="relationLoading" role="status">正在加载关联记录…</p>
+          <p v-if="relationError" role="alert">{{ relationError }} <button type="button" @click="loadRelationOptions()">重试</button></p>
+          <p v-if="relationTitleError" role="alert">{{ relationTitleError }} <button type="button" @click="resolveSelectedRelationTitles(activeRelationRecord, activeRelationProperty)">重试标题</button></p>
+          <button v-for="option in relationOptions" :key="option.recordId" type="button" :disabled="savingCell || (Array.isArray(getCellValue(activeRelationRecord, activeRelationProperty.id)) && (getCellValue(activeRelationRecord, activeRelationProperty.id) as string[]).includes(option.recordId))" @click="setRelation(activeRelationRecord, activeRelationProperty, option.recordId)">{{ option.title }}</button>
+          <button v-if="relationNextCursor" type="button" :disabled="relationLoading" @click="loadRelationOptions(true)">加载更多</button>
+          <button type="button" @click="closeRelationPicker">完成</button>
+        </section></Teleport>
+      </template>
       <p v-if="viewType !== 'list' && viewType !== 'timeline' && records.length === 0" class="eotion-database-state">暂无记录</p>
       <p v-else-if="viewType !== 'list' && viewType !== 'timeline' && !properties.length" class="eotion-database-state">这个数据库还没有可显示的属性。</p>
       <div v-if="moreError" class="eotion-database-error" role="alert"><span>{{ moreError }}</span><button type="button" :disabled="loadingMore" @click.stop="loadTable(true)">重试加载更多</button></div>
@@ -2843,6 +2942,7 @@ watch([timelineScope, viewType], ([scope], [previousScope]) => {
 .eotion-database-popover { z-index:10000; display:grid; min-width:170px; max-width:min(280px,80vw); gap:5px; border:1px solid var(--border-editor); border-radius:8px; padding:8px; background:var(--surface-raised); box-shadow:var(--e-shadow-popover,0 8px 24px #0002); color:var(--editor-text); }.eotion-database-popover button { min-height:32px; border:0; border-radius:4px; padding:5px 8px; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }.eotion-database-popover button:hover { background:var(--surface-editor-hover); }.eotion-database-popover form,.eotion-database-option-edit { display:flex; align-items:center; gap:4px; }.eotion-database-popover input { min-width:0; width:100%; min-height:32px; }.eotion-database-popover .danger { color:var(--danger); }.eotion-database-cell-save { margin-left:6px; min-height:28px; border:0; background:transparent; color:var(--editor-muted); font:inherit; cursor:pointer; }
 .eotion-database-title-cell { display:flex; align-items:center; gap:4px; min-width:0; }
 .eotion-database-date-editor { display:grid; gap:6px; width:100%; min-width:0; }.eotion-database-date-editor>label { display:grid; gap:3px; min-width:0; font-size:11px; color:var(--editor-muted); }.eotion-database-date-end-toggle { display:flex!important; grid-template-columns:auto 1fr; align-items:center; gap:6px!important; min-height:28px; }.eotion-database-date-end-toggle input { margin:0; }.eotion-database-date-editor small { color:var(--editor-muted); font-size:10px; line-height:1.35; }.eotion-database-date-actions { display:flex; gap:6px; }.eotion-database-date-actions button { min-height:28px; border:1px solid var(--border-editor); border-radius:4px; padding:3px 7px; background:var(--surface-editor-hover); color:inherit; font:inherit; cursor:pointer; }
+.eotion-timeline-date-popover { box-sizing:border-box; max-width:calc(100vw - 16px); width:min(320px, calc(100vw - 16px)); }
 .eotion-database-title-cell .eotion-database-cell-input { flex:1 1 auto; width:auto; min-width:0; }
 .eotion-database-title-body { flex:1 1 auto; width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .eotion-database-title-detail { display:inline-flex; flex:0 0 28px; align-items:center; justify-content:center; width:28px; min-width:28px; min-height:28px; border:0; border-radius:5px; padding:0; background:transparent; color:var(--editor-muted); font:inherit; opacity:0; cursor:pointer; }

@@ -472,6 +472,10 @@ Eotion 必须支持：
 - table column resize / reorder 若实现，应复用通用 View config 能力。
 - 左右区域 row 高度、hover、selection、open record 状态同步。
 - `<<` / `>>` 或 Eotion 等价 Quiet Studio affordance 必须清晰可发现。
+- 左表可直接编辑 Title、Text、Number、Date、Checkbox、Select 和 Relation；Formula 与
+  Rollup 保持只读。标题单元格同时提供独立的打开记录入口。左表与普通 Table 使用同一
+  Cell 更新和版本检查；日期编辑使用不受行裁剪的浮层，离线、冲突与未知结果遵循同一
+  恢复语义。编辑中的虚拟行保留焦点，手机可横向查看所选属性列。
 
 ## 14. Dependency Layer
 

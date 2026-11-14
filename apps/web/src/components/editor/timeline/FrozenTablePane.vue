@@ -59,17 +59,18 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
       <div
         v-for="row in rows"
         :key="row.item.recordId"
-        v-memo="[row.item, row.top, row.height, displayMap.get(row.item.recordId), selectedPageId === row.item.pageId, hoveredRecordId === row.item.recordId]"
         class="eotion-timeline-frozen-row"
         :class="{ 'is-hovered': hoveredRecordId === row.item.recordId, 'is-selected': selectedPageId === row.item.pageId }"
         :style="{ top: `${row.top}px`, height: `${row.height}px` }"
         data-timeline-frozen-row
         :data-row-index="row.rowIndex"
         :data-record-id="row.item.recordId"
+        @focusin="emit('focusRow', row.rowIndex)"
         @pointerenter="emit('hoverRecord', row.item.recordId)"
         @pointerleave="emit('hoverRecord', null)"
       >
         <div v-for="property in columns" :key="property.id" class="eotion-timeline-frozen-cell" :class="{ 'is-title': isTitle(property) }" :title="displayText(row, property)" :data-property-id="property.id">
+          <slot name="cell" :record-id="row.item.recordId" :property-id="property.id" :display-text="displayText(row, property)" :page-id="row.item.pageId">
           <button
             v-if="isTitle(property)"
             type="button"
@@ -81,6 +82,7 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
             {{ displayText(row, property) }}
           </button>
           <span v-else>{{ displayText(row, property) }}</span>
+          </slot>
         </div>
       </div>
     </div>
