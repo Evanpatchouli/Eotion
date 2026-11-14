@@ -22,6 +22,22 @@ scope 在后台分批清理；同 ID 重建不会复用旧顺序。排序键最�
 明确失败。按用户要求不迁移旧数据；缺少创建序号或 View 顺序 scope 的历史数据会明确
 报错，不会被静默过滤。实现细节见[执行方案](exec-plans/view-record-order.md)。
 
+### 通用 Select 分组基础
+
+Timeline 和 Board 可在 View 的 `options.groupByPropertyId` 引用同库 Select 属性；
+该属性删除或改型时会保护引用。分组读取使用
+`GET /api/workspaces/:workspaceId/databases/:databaseId/views/:viewId/group-records`，
+按选项组或未分组分别筛选和分页，返回该组及独立 cursor。游标绑定组键、实际筛选、
+排序及数据库、视图版本；显式排序时使用现有排序规则，否则使用该 View 手序的组内
+投影。失效的旧选项字符串在未分组的响应中投影为 null，数据库原值不因读取改变；
+数字、数组等损坏的 Select 值明确返回冲突。
+
+跨组使用 `POST .../views/:viewId/record-group`：校验源组、目标组、版本与可选锚点，
+在同一事务中更新 Select 和需要的手序。显式 Sort 生效时只允许无锚点的跨组移动；
+带锚点请求返回 409。同组精确重排仍用 `record-order` 并校验两条记录属于同一组。
+这两个读取和写入接口不提供准确组总数，不能把已加载条数标为总数。性能与 UI 接入
+边界见[分组实施方案](exec-plans/timeline-view-grouping.md)。
+
 ## P9.1A — Generic View Records Read Foundation
 
 基线：master `13053793ffa4683e3ffdb6d7f1f512f270ebc499`。

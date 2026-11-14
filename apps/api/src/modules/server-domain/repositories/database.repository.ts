@@ -21,7 +21,9 @@ type ManualWindowInput = {
   properties: readonly DatabaseProperty[]; filters: DatabaseViewConfig['filters'];
   boundary?: ManualBoundary; direction: 'after' | 'before'; excludeRecordId?: string;
   take: number; session?: ClientSession;
+  group?: DatabaseRecordGroupQuery;
 }
+export type DatabaseRecordGroupQuery = { propertyId: string; optionIds: readonly string[]; group: { kind: 'option'; optionId: string } | { kind: 'ungrouped' } }
 const dates = (doc: { createdAt: Date; updatedAt: Date }) => ({ createdAt: doc.createdAt.toISOString(), updatedAt: doc.updatedAt.toISOString() })
 
 @Injectable()
@@ -188,19 +190,20 @@ export class DatabaseRecordRepository {
   }
   async queryTableWindow(input: {
     workspaceId: string; databaseId: string; properties: readonly DatabaseProperty[]; config: DatabaseViewConfig;
-    limit: number; anchor?: DatabaseTableRecord; session?: ClientSession;
+    limit: number; anchor?: DatabaseTableRecord; session?: ClientSession; group?: DatabaseRecordGroupQuery;
   }): Promise<DatabaseTableRecord[]> {
     const title = input.properties.find(property => property.type === 'title')
     if (!title) throw new TypeError('Database title property is missing')
     const pipeline: Record<string, unknown>[] = [
       { $match: { workspaceId: input.workspaceId, databaseId: input.databaseId } },
+      ...this.groupStages(input.group),
       ...this.pageFilterStages(input.workspaceId, input.properties, input.config),
     ]
     return this.querySortedTableWindow(input, pipeline, title.id)
   }
   private async querySortedTableWindow(input: {
     workspaceId: string; databaseId: string; properties: readonly DatabaseProperty[]; config: DatabaseViewConfig;
-    limit: number; anchor?: DatabaseTableRecord; session?: ClientSession;
+    limit: number; anchor?: DatabaseTableRecord; session?: ClientSession; group?: DatabaseRecordGroupQuery;
   }, pipeline: Record<string, unknown>[], titleId: string): Promise<DatabaseTableRecord[]> {
     const expressions = new Map(input.properties.map(property => [property.id, property.type === 'title'
       ? '$_page.title'
@@ -347,6 +350,14 @@ export class DatabaseRecordRepository {
     if (filterExpr.length > 0) pipeline.push({ $match: { $expr: { $and: filterExpr } } })
     return pipeline
   }
+  private groupStages(group?: DatabaseRecordGroupQuery): Record<string, unknown>[] {
+    if (!group) return []
+    const value = { $ifNull: [{ $getField: { field: { $literal: group.propertyId }, input: { $ifNull: ['$properties', {}] } } }, null] }
+    const expression = group.group.kind === 'option'
+      ? { $eq: [value, { $literal: group.group.optionId }] }
+      : { $not: [{ $in: [value, { $literal: group.optionIds }] }] }
+    return [{ $match: { $expr: expression } }]
+  }
   private tableProjectionStages(titleId: string): Record<string, unknown>[] {
     return [
       { $set: { properties: { $arrayToObject: { $concatArrays: [{ $objectToArray: { $ifNull: ['$properties', {}] } }, [{ k: { $literal: titleId }, v: '$_page.title' }]] } }, pageVersion: '$_page.updatedAt' } },
@@ -394,6 +405,7 @@ export class DatabaseRecordRepository {
       ], as: '_record' } },
       { $unwind: '$_record' },
       { $replaceRoot: { newRoot: { $mergeObjects: ['$_record', { position: { slotOrdinal: '$slotOrdinal', rank: '$rank' } }] } } },
+      ...this.groupStages(input.group),
       ...this.pageFilterStages(input.workspaceId, input.properties, effectiveFilter),
       { $limit: input.take },
       ...this.tableProjectionStages(title.id),
@@ -404,7 +416,7 @@ export class DatabaseRecordRepository {
     const overrides = overrideDocs.map((doc: Record<string, unknown>) => ({ ...this.toTableRow(doc), position: doc.position as ManualRecordRow['position'] }))
     // The default rank is '1'. Only an override strictly before it excludes the
     // record at the same slot from the first-page prefix proof.
-    if (input.manualActive && input.filters.length === 0 && input.direction === 'after' && !input.boundary && !input.excludeRecordId && overrides.length >= input.take) {
+    if (input.manualActive && input.filters.length === 0 && !input.group && input.direction === 'after' && !input.boundary && !input.excludeRecordId && overrides.length >= input.take) {
       const remote = overrides.at(-1)!.position
       const maximumDefaultOrdinal = remote.slotOrdinal - (remote.rank < '1' ? 1 : 0)
       if (maximumDefaultOrdinal < 1) return overrides
@@ -423,6 +435,7 @@ export class DatabaseRecordRepository {
     const defaultPipeline: Record<string, unknown>[] = [
       { $match: baseMatch },
       { $sort: { creationOrdinal: sign, id: sign } },
+      ...this.groupStages(input.group),
       ...this.filterStages(input.properties, effectiveFilter, false),
       ...(input.manualActive ? [
         { $set: { _orderJoinKey: {
@@ -456,7 +469,7 @@ export class DatabaseRecordRepository {
   }
   private async readSelectiveManualWindow(input: ManualWindowInput, titleId: string): Promise<ManualRecordRow[] | null> {
     const config = { ...DEFAULT_DATABASE_VIEW_CONFIG, filters: input.filters }
-    const recordStages = this.filterStages(input.properties, config, false)
+    const recordStages = [...this.groupStages(input.group), ...this.filterStages(input.properties, config, false)]
     if (recordStages.length === 0) return null
     const candidates = await this.model.aggregate<{ id: string }>([
       { $match: { workspaceId: input.workspaceId, databaseId: input.databaseId } },
@@ -476,6 +489,7 @@ export class DatabaseRecordRepository {
           orderScopeId: { $literal: input.scopeId }, recordId: '$id' } } },
         { $lookup: { from: 'database_view_order_overrides', localField: '_orderJoinKey', foreignField: 'joinKey', as: '_override' } },
       ] : []),
+      ...this.groupStages(input.group),
       { $set: { position: input.manualActive
         ? { slotOrdinal: { $ifNull: [{ $first: '$_override.slotOrdinal' }, '$creationOrdinal'] }, rank: { $ifNull: [{ $first: '$_override.rank' }, '1'] } }
         : { slotOrdinal: '$creationOrdinal', rank: '1' } } },

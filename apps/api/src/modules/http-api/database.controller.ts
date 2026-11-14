@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
-import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabaseTableQuerySchema, DatabaseViewRecordsQuerySchema, DatabaseViewListQuerySchema, DatabaseViewHttpCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseViewRecordReorderRequestSchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
+import { DatabaseListQuerySchema, DatabaseRecordPageCreateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyUpdateRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabaseTableQuerySchema, DatabaseViewRecordsQuerySchema, DatabaseViewGroupRecordsQuerySchema, DatabaseViewListQuerySchema, DatabaseViewHttpCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseViewRecordReorderRequestSchema, DatabaseViewRecordGroupMoveRequestSchema, DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
 import { DatabaseService } from '../server-domain/services/database.service'
 import { DatabaseCellBatchMutationRequestSchema } from '@eotion/contracts'
 import type { UserRecord } from '../server-domain/types'
@@ -71,6 +71,17 @@ export class DatabaseController {
   @Get('databases/:databaseId/views/:viewId/records')
   viewRecords(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('viewId') viewId: string, @Query() query: unknown) {
     return this.databases.getViewRecords(user.id, parseId(workspaceId), parseId(databaseId), parseId(viewId), parseBody(DatabaseViewRecordsQuerySchema, query))
+  }
+
+  @Get('databases/:databaseId/views/:viewId/group-records')
+  groupRecords(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('viewId') viewId: string, @Query() query: unknown) {
+    return this.databases.getViewGroupRecords(user.id, parseId(workspaceId), parseId(databaseId), parseId(viewId), parseBody(DatabaseViewGroupRecordsQuerySchema, query))
+  }
+
+  @Post('databases/:databaseId/views/:viewId/record-group')
+  @HttpCode(200)
+  moveRecordGroup(@CurrentUser() user: UserRecord, @Param('workspaceId') workspaceId: string, @Param('databaseId') databaseId: string, @Param('viewId') viewId: string, @Body() body: unknown) {
+    return this.databases.moveViewRecordGroup(user.id, parseId(workspaceId), parseId(databaseId), parseId(viewId), parseBody(DatabaseViewRecordGroupMoveRequestSchema, body))
   }
 
   @Post('databases/:databaseId/views/:viewId/record-order')

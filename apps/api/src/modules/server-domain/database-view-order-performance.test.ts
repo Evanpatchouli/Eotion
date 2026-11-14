@@ -37,7 +37,8 @@ test('10k View order windows bound scans for zero, sparse, dense overrides and s
     id: `performance-record-${index}`, workspaceId, databaseId, pageId: pages[index]!.id,
     properties: { flag: index % 997 === 0 ? 'match' : 'other', bucket: index < 256 ? 'under' : index === 256 ? 'edge' : 'other',
       optional: index % 997 === 0 ? null : 'set', links: index % 997 === 0 ? ['linked'] : [],
-      due: index % 997 === 0 ? { start: '2026-11-15', end: '2026-11-16' } : null }, version: 1,
+      due: index % 997 === 0 ? { start: '2026-11-15', end: '2026-11-16' } : null,
+      membership: index % 997 === 0 ? 'a' : 'b' }, version: 1,
     creationOrdinal: index + 1, createdAt: now, updatedAt: now,
   }))
   await connection.db!.collection('pages').insertMany(pages)
@@ -64,6 +65,7 @@ test('10k View order windows bound scans for zero, sparse, dense overrides and s
     { id: 'optional', workspaceId, databaseId, name: 'Optional', type: 'text' as const, version: 1, createdAt: now.toISOString(), updatedAt: now.toISOString() },
     { id: 'links', workspaceId, databaseId, name: 'Links', type: 'relation' as const, version: 1, createdAt: now.toISOString(), updatedAt: now.toISOString() },
     { id: 'due', workspaceId, databaseId, name: 'Due', type: 'date' as const, version: 1, createdAt: now.toISOString(), updatedAt: now.toISOString() },
+    { id: 'membership', workspaceId, databaseId, name: 'Membership', type: 'select' as const, options: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], version: 1, createdAt: now.toISOString(), updatedAt: now.toISOString() },
   ]
   const measurements: Array<{ case: string; elapsedMs: number; returned: number; docsExamined: number; keysExamined: number; plans: string[]; streams: Array<{ collection: string; docsExamined: number; keysExamined: number; nreturned: number }>; explainStages?: string[] }> = []
   await connection.db!.command({ profile: 2, slowms: 0 })
@@ -108,6 +110,31 @@ test('10k View order windows bound scans for zero, sparse, dense overrides and s
     await connection.db!.command({ profile: 0 })
   }
   console.log(JSON.stringify({ viewOrder10k: measurements }))
+  await connection.db!.command({ profile: 2, slowms: 0 })
+  try {
+    for (const optionId of ['a', 'b']) {
+      const started = new Date()
+      const timer = performance.now()
+      const group = { propertyId: 'membership', optionIds: ['a', 'b'], group: { kind: 'option' as const, optionId } }
+      const window = await records.readManualWindow({ workspaceId, databaseId, scopeId: scopes[2]!.id, manualActive: true, properties, filters: [], group,
+        direction: 'after', take: 51 })
+      assert.equal(window.length, optionId === 'a' ? 11 : 51)
+      const profile = await connection.db!.collection('system.profile').find({ ts: { $gte: started },
+        'command.aggregate': { $in: ['database_records', 'database_view_order_overrides'] } }).toArray()
+      console.log(JSON.stringify({ viewGroup10k: { optionId, elapsedMs: Number((performance.now() - timer).toFixed(2)), returned: window.length,
+        docsExamined: profile.reduce((sum, entry) => sum + (entry.docsExamined ?? 0), 0),
+        keysExamined: profile.reduce((sum, entry) => sum + (entry.keysExamined ?? 0), 0) } }))
+    }
+    const started = new Date()
+    const timer = performance.now()
+    const counted = await recordModel.collection.aggregate([{ $match: { workspaceId, databaseId } },
+      { $match: { $expr: { $eq: [{ $getField: { field: 'membership', input: '$properties' } }, 'a'] } } }, { $count: 'total' }]).toArray()
+    assert.equal(counted[0]?.total, 11)
+    const profile = await connection.db!.collection('system.profile').find({ ts: { $gte: started }, 'command.aggregate': 'database_records' }).toArray()
+    console.log(JSON.stringify({ viewGroup10kCountCandidate: { elapsedMs: Number((performance.now() - timer).toFixed(2)), count: counted[0]?.total,
+      docsExamined: profile.reduce((sum, entry) => sum + (entry.docsExamined ?? 0), 0),
+      keysExamined: profile.reduce((sum, entry) => sum + (entry.keysExamined ?? 0), 0) } }))
+  } finally { await connection.db!.command({ profile: 0 }) }
   const dense = scopes[2]!
   const read = (filters: Array<{ propertyId: string; operator: string; value?: string }>, options: { boundary?: { position: { slotOrdinal: number; rank: string }; recordId: string }; direction?: 'after' | 'before'; take?: number } = {}) => records.readManualWindow({
     workspaceId, databaseId, scopeId: dense.id, manualActive: true, properties,
@@ -187,7 +214,7 @@ test('100k View order window with a unique default tail remains complete', { ski
     })))
     await recordModel.collection.insertMany(batch.map(index => ({
       id: `large-record-${index}`, workspaceId, databaseId, pageId: `large-page-${index}`,
-      properties: { flag: index % 10_003 === 0 ? 'match' : 'other' }, version: 1,
+      properties: { flag: index % 10_003 === 0 ? 'match' : 'other', membership: index % 10_003 === 0 ? 'a' : 'b' }, version: 1,
       creationOrdinal: index + 1, createdAt: now, updatedAt: now,
     })))
     await overrideModel.collection.insertMany(batch.filter(index => index < count - 1).map(index => ({
@@ -201,6 +228,7 @@ test('100k View order window with a unique default tail remains complete', { ski
   const properties = [
     { id: 'title', workspaceId, databaseId, name: 'Title', type: 'title' as const, version: 1, createdAt: now.toISOString(), updatedAt: now.toISOString() },
     { id: 'flag', workspaceId, databaseId, name: 'Flag', type: 'text' as const, version: 1, createdAt: now.toISOString(), updatedAt: now.toISOString() },
+    { id: 'membership', workspaceId, databaseId, name: 'Membership', type: 'select' as const, options: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], version: 1, createdAt: now.toISOString(), updatedAt: now.toISOString() },
   ]
   await connection.db!.command({ profile: 2, slowms: 0 })
   try {
@@ -230,6 +258,44 @@ test('100k View order window with a unique default tail remains complete', { ski
         keysExamined: profile.reduce((sum, entry) => sum + (entry.keysExamined ?? 0), 0),
         plans: [...new Set(profile.map(entry => String(entry.planSummary ?? 'unknown')))],
         streams: profile.map(entry => ({ collection: String(entry.command?.aggregate), docsExamined: entry.docsExamined ?? 0, keysExamined: entry.keysExamined ?? 0, nreturned: entry.nreturned ?? 0 })) } }))
+    }
+    const groupStarted = new Date()
+    const groupTimer = performance.now()
+    const groupRows = await records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: true, properties, filters: [],
+      group: { propertyId: 'membership', optionIds: ['a', 'b'], group: { kind: 'option', optionId: 'a' } }, direction: 'after', take: 51 })
+    assert.equal(groupRows.length, 10)
+    const groupProfile = await connection.db!.collection('system.profile').find({ ts: { $gte: groupStarted },
+      'command.aggregate': { $in: ['database_records', 'database_view_order_overrides'] } }).toArray()
+    console.log(JSON.stringify({ viewGroup100k: { elapsedMs: Number((performance.now() - groupTimer).toFixed(2)), returned: groupRows.length,
+      docsExamined: groupProfile.reduce((sum, entry) => sum + (entry.docsExamined ?? 0), 0),
+      keysExamined: groupProfile.reduce((sum, entry) => sum + (entry.keysExamined ?? 0), 0) } }))
+    const groupCountStarted = new Date()
+    const groupCountTimer = performance.now()
+    const countRows = await recordModel.collection.aggregate([{ $match: { workspaceId, databaseId } },
+      { $match: { $expr: { $eq: [{ $getField: { field: 'membership', input: '$properties' } }, 'a'] } } }, { $count: 'total' }]).toArray()
+    assert.equal(countRows[0]?.total, 10)
+    const groupCountProfile = await connection.db!.collection('system.profile').find({ ts: { $gte: groupCountStarted }, 'command.aggregate': 'database_records' }).toArray()
+    console.log(JSON.stringify({ viewGroup100kCountCandidate: { elapsedMs: Number((performance.now() - groupCountTimer).toFixed(2)), count: countRows[0]?.total,
+      docsExamined: groupCountProfile.reduce((sum, entry) => sum + (entry.docsExamined ?? 0), 0),
+      keysExamined: groupCountProfile.reduce((sum, entry) => sum + (entry.keysExamined ?? 0), 0) } }))
+    for (const titleFilter of [false, true]) {
+      const summaryStarted = new Date()
+      const summaryTimer = performance.now()
+      const grouped = await recordModel.collection.aggregate([
+        { $match: { workspaceId, databaseId } },
+        ...(titleFilter ? [{ $lookup: { from: 'pages', let: { pageId: '$pageId' }, pipeline: [
+          { $match: { $expr: { $and: [{ $eq: ['$id', '$$pageId'] }, { $eq: ['$workspaceId', workspaceId] }] } } },
+          { $project: { title: 1 } },
+        ], as: 'page' } }, { $unwind: '$page' }, { $match: { 'page.title': { $regex: 'Large row 1' } } }] : []),
+        { $group: { _id: { $let: { vars: { value: { $getField: { field: 'membership', input: '$properties' } } },
+          in: { $cond: [{ $in: ['$$value', ['a', 'b']] }, '$$value', null] } } }, total: { $sum: 1 } } },
+      ]).toArray()
+      assert.equal(grouped.reduce((sum, item) => sum + item.total, 0), titleFilter ? 11111 : count)
+      const summaryProfile = await connection.db!.collection('system.profile').find({ ts: { $gte: summaryStarted }, 'command.aggregate': 'database_records' }).toArray()
+      console.log(JSON.stringify({ viewGroup100kAllCounts: { titleFilter, elapsedMs: Number((performance.now() - summaryTimer).toFixed(2)),
+        groups: grouped, docsExamined: summaryProfile.reduce((sum, entry) => sum + (entry.docsExamined ?? 0), 0),
+        keysExamined: summaryProfile.reduce((sum, entry) => sum + (entry.keysExamined ?? 0), 0),
+        plans: [...new Set(summaryProfile.map(entry => String(entry.planSummary ?? 'unknown')))] } }))
     }
   } finally { await connection.db!.command({ profile: 0 }) }
 })

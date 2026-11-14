@@ -4,13 +4,13 @@ import { createHash } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { planDatabaseSchedule, SchedulingError, MAX_SCHEDULE_RECORDS, positionBetween } from '@eotion/domain'
 import { DATABASE_ADVANCED_MAX_WORKSPACE_PROPERTIES, DATABASE_DERIVED_MAX_DEPENDENCY_DEPTH, DATABASE_RELATION_SEARCH_MAX_RECORDS, DATABASE_DERIVED_MAX_LINKED_RECORDS, DATABASE_DERIVED_MAX_RECORDS, DATABASE_RECORD_SCAN_MAX_RECORDS, DATABASE_RELATION_CLEANUP_MAX_RECORDS, DATABASE_RELATION_MAX_LINKS, DATABASE_MAX_PROPERTIES, DATABASE_MAX_VIEWS, DATABASE_MAX_TABLE_ROWS, DEFAULT_DATABASE_VIEW_CONFIG, evaluateDatabaseFormula, evaluateDatabaseRollup, convertDatabasePropertyValueForTypeChange, isValidDatabaseProperty, validateDatabasePropertyDependencies, validateDatabaseRecordValues, validateStoredDatabaseRecordValues, validateDatabaseViewConfig, type Database, type DatabaseProperty, type DatabaseRecord, type DatabaseTableRecord, type DatabaseView, type DatabaseViewConfig, type DatabasePropertyValue, type DatabaseFilter, type DatabaseSort, type FormulaExpression, type TimelineViewOptions } from '@eotion/domain'
-import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseViewRecordReorderRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
-import type { DatabaseRecordPageCreateRequest, DatabaseViewRecordReorderRequest } from '@eotion/contracts'
+import { DatabaseCreateInPageRequestSchema, DatabaseLinkInPageRequestSchema, DatabasePropertyCreateRequestSchema, DatabasePropertyDeleteRequestSchema, DatabasePropertyTypeChangeRequestSchema, DatabasePropertyUpdateRequestSchema, DatabaseRecordCellUpdateRequestSchema, DatabaseRecordCreateRequestSchema, DatabaseRecordPageCreateRequestSchema, DatabaseViewCreateRequestSchema, DatabaseViewUpdateRequestSchema, DatabaseViewDeleteRequestSchema, DatabaseViewRecordReorderRequestSchema, DatabaseViewRecordGroupMoveRequestSchema, DatabaseRelationCandidatesQuerySchema, DatabaseRelationTitlesRequestSchema } from '@eotion/contracts'
+import type { DatabaseRecordPageCreateRequest, DatabaseViewRecordReorderRequest, DatabaseViewGroupKey, DatabaseViewGroupRecordsQuery, DatabaseViewGroupRecordsResponse, DatabaseViewRecordGroupMoveRequest, DatabaseViewRecordGroupMoveResponse } from '@eotion/contracts'
 import { DatabaseCellBatchMutationRequestSchema } from '@eotion/contracts'
 import type { DatabaseCellBatchMutationRequest, DatabaseCellBatchMutationResponse, DatabaseCellBatchMutationReceipt } from '@eotion/contracts'
 import type { DatabaseTableResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
-import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository, type ManualBoundary } from '../repositories/database.repository'
+import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository, type ManualBoundary, type DatabaseRecordGroupQuery } from '../repositories/database.repository'
 import { DatabaseViewOrderRepository } from '../repositories/database-view-order.repository'
 import { DatabaseCellMutationRepository, type DatabaseCellMutationReceiptKey } from '../repositories/database-cell-mutation.repository'
 import { PageRepository } from '../repositories/page.repository'
@@ -26,7 +26,7 @@ type ChangePropertyType = import('@eotion/contracts').DatabasePropertyTypeChange
 type CreateRecord = { id: string; pageId: string; properties: DatabaseRecord['properties'] }
 type CreateView = { id: string; name: string; type: DatabaseView['type']; config?: DatabaseViewConfig; expectedDatabaseVersion?: number }
 type WindowInput = { cursor?: string; limit: number }
-type ViewRecordsInput = WindowInput & { filters?: DatabaseFilter[]; sorts?: DatabaseSort[]; propertyIds?: string[] }
+type ViewRecordsInput = WindowInput & { filters?: DatabaseFilter[]; sorts?: DatabaseSort[]; propertyIds?: string[]; group?: DatabaseViewGroupKey }
 type TableCursor = { w: string; d: string; v: string; dv: number; vv: number; ch: string; r: string; p: string }
 type DatabaseViewPropertyDependency = { viewId: string; propertyId: string; required: 'select' | 'date' | 'self-relation' }
 
@@ -159,6 +159,13 @@ export class DatabaseService {
     return this.getViewRecords(userId, workspaceId, databaseId, viewId, input, session)
   }
 
+  async getViewGroupRecords(userId: string, workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewGroupRecordsQuery,
+    overrides?: { filters?: DatabaseFilter[]; sorts?: DatabaseSort[] }, session?: ClientSession): Promise<DatabaseViewGroupRecordsResponse> {
+    const group: DatabaseViewGroupKey = input.groupKind === 'option' ? { kind: 'option', optionId: input.optionId! } : { kind: 'ungrouped' }
+    const records = await this.getViewRecords(userId, workspaceId, databaseId, viewId, { limit: input.limit, ...(input.cursor ? { cursor: input.cursor } : {}), ...overrides, group }, session)
+    return { ...records, group }
+  }
+
   async getViewRecords(userId: string, workspaceId: string, databaseId: string, viewId: string, input: ViewRecordsInput, session?: ClientSession): Promise<DatabaseViewRecordsResponse> {
     this.validateTableWindow(input)
     const database = await this.requireDatabase(userId, workspaceId, databaseId, false, session)
@@ -180,7 +187,11 @@ export class DatabaseService {
       throw new BadRequestException('Invalid database query configuration')
     }
     if (input.propertyIds?.some(propertyId => !properties.some(property => property.id === propertyId))) throw new BadRequestException('Invalid database property projection')
-    const configHash = this.viewConfigHash(config)
+    if (input.group && view.type !== 'board' && view.type !== 'timeline') throw new ConflictException('This view type does not support grouping')
+    const groupQuery = input.group ? this.resolveGroupQuery(savedConfig, properties, input.group) : undefined
+    const configHash = input.group
+      ? createHash('sha256').update('view-record-group-v1:').update(JSON.stringify({ config, group: input.group })).digest('hex')
+      : this.viewConfigHash(config)
     let anchor: DatabaseTableRecord | undefined
     if (input.cursor !== undefined) {
       const cursor = this.decodeTableCursor(input.cursor)
@@ -203,7 +214,7 @@ export class DatabaseService {
       if (!orderState || orderState.version !== view.version) throw new ConflictException('Database view order state changed; refresh and retry')
       let boundary: ManualBoundary | undefined
       if (anchor) boundary = await this.manualBoundary(workspaceId, databaseId, orderState.orderScopeId, anchor.id, session)
-      if (!orderState.manualOrderActive && config.filters.length === 0) {
+      if (!orderState.manualOrderActive && config.filters.length === 0 && !groupQuery) {
         const ordered = await this.records.listCreationOrderWindow(workspaceId, databaseId, boundary?.position.slotOrdinal, input.limit + 1, session)
         const fetched = await this.records.findManyInDatabase(workspaceId, databaseId, ordered.map(item => item.recordId), session)
         const byId = new Map(fetched.map(record => [record.id, record]))
@@ -213,11 +224,11 @@ export class DatabaseService {
         rows = projectedRows
       } else {
         projectedRows = await this.records.readManualWindow({ workspaceId, databaseId, scopeId: orderState.orderScopeId, manualActive: orderState.manualOrderActive,
-          properties, filters: config.filters, ...(boundary ? { boundary } : {}), direction: 'after', take: input.limit + 1, session })
+          properties, filters: config.filters, ...(boundary ? { boundary } : {}), ...(groupQuery ? { group: groupQuery } : {}), direction: 'after', take: input.limit + 1, session })
         rows = projectedRows
       }
     } else {
-      rows = await this.records.queryTableWindow({ workspaceId, databaseId, properties, config, limit: input.limit, ...(anchor ? { anchor } : {}), session })
+      rows = await this.records.queryTableWindow({ workspaceId, databaseId, properties, config, limit: input.limit, ...(anchor ? { anchor } : {}), ...(groupQuery ? { group: groupQuery } : {}), session })
       projectedRows = rows
     }
     if (projectedRows.length !== rows.length) throw new ConflictException('Record page missing from workspace; reload the table after repairing record data')
@@ -227,11 +238,17 @@ export class DatabaseService {
       return publicRow
     })
     const projected = await this.projectDerived(workspaceId, publicRows, properties, session)
+    const groupRows = groupQuery && input.group?.kind === 'ungrouped' ? projected.map(row => {
+      const value = row.properties[groupQuery.propertyId]
+      if (value !== undefined && value !== null && typeof value !== 'string') throw new ConflictException('Database group Select value is invalid; repair the record before querying')
+      return typeof value === 'string' && !groupQuery.optionIds.includes(value)
+        ? { ...row, properties: { ...row.properties, [groupQuery.propertyId]: null } } : row
+    }) : projected
     const latestDatabase = await this.databases.findInWorkspace(workspaceId, databaseId, session)
     const latestView = await this.views.findInWorkspace(workspaceId, viewId, session)
     if (!latestDatabase || latestDatabase.version !== database.version || !latestView || latestView.version !== view.version) throw new ConflictException('Database or view changed during table read; refresh and retry')
-    const last = projected.at(-1)
-    return { database, view, properties, records: projected, nextCursor: hasMore && last ? this.encodeTableCursor({ w: workspaceId, d: databaseId, v: viewId, dv: database.version, vv: view.version, ch: configHash, r: last.id, p: last.pageVersion }) : null }
+    const last = groupRows.at(-1)
+    return { database, view, properties, records: groupRows, nextCursor: hasMore && last ? this.encodeTableCursor({ w: workspaceId, d: databaseId, v: viewId, dv: database.version, vv: view.version, ch: configHash, r: last.id, p: last.pageVersion }) : null }
   }
 
   private async manualBoundary(workspaceId: string, databaseId: string, scopeId: string, recordId: string, session?: ClientSession): Promise<ManualBoundary> {
@@ -239,6 +256,24 @@ export class DatabaseService {
     if (!creation) throw new ConflictException('Table cursor anchor changed; reload the table before continuing')
     const override = await this.viewOrders.findOverride({ workspaceId, databaseId, orderScopeId: scopeId }, recordId, session)
     return { position: override ? { slotOrdinal: override.slotOrdinal, rank: override.rank } : { slotOrdinal: creation.creationOrdinal, rank: '1' }, recordId }
+  }
+
+  private resolveGroupQuery(config: DatabaseViewConfig, properties: readonly DatabaseProperty[], group: DatabaseViewGroupKey): DatabaseRecordGroupQuery {
+    const propertyId = config.options?.groupByPropertyId
+    const property = properties.find(item => item.id === propertyId && item.type === 'select')
+    if (!property) throw new ConflictException('Database view grouping is not configured or is invalid')
+    const optionIds = property.options?.map(option => option.id) ?? []
+    if (group.kind === 'option' && !optionIds.includes(group.optionId)) throw new BadRequestException('Database group option does not exist')
+    return { propertyId: property.id, optionIds, group }
+  }
+
+  private recordGroup(record: Pick<DatabaseRecord, 'properties'>, group: DatabaseRecordGroupQuery): DatabaseViewGroupKey {
+    const value = record.properties[group.propertyId]
+    return typeof value === 'string' && group.optionIds.includes(value) ? { kind: 'option', optionId: value } : { kind: 'ungrouped' }
+  }
+
+  private sameGroup(left: DatabaseViewGroupKey, right: DatabaseViewGroupKey): boolean {
+    return left.kind === right.kind && (left.kind === 'ungrouped' || right.kind === 'option' && left.optionId === right.optionId)
   }
 
   async reorderViewRecord(userId: string, workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewRecordReorderRequest): Promise<{ database: Database; view: DatabaseView }> {
@@ -265,10 +300,13 @@ export class DatabaseService {
       const source = await this.records.findManualRecord({ workspaceId, databaseId, recordId: input.recordId, properties, filters: config.filters, session })
       const anchor = await this.records.findManualRecord({ workspaceId, databaseId, recordId: input.anchorRecordId, properties, filters: config.filters, session })
       if (!source || !anchor) throw new ConflictException('Source or anchor is missing from the view; refresh and retry')
+      const groupQuery = config.options?.groupByPropertyId && (view.type === 'board' || view.type === 'timeline')
+        ? this.resolveGroupQuery(config, properties, { kind: 'ungrouped' }) : undefined
+      if (groupQuery && !this.sameGroup(this.recordGroup(source, groupQuery), this.recordGroup(anchor, groupQuery))) throw new ConflictException('Source and anchor belong to different groups')
       const anchorBoundary = await this.manualBoundary(workspaceId, databaseId, scopeId, anchor.id, session)
       const neighborDirection = input.placement === 'before' ? 'before' : 'after'
       const visibleNeighbor = await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: orderState.manualOrderActive,
-        properties, filters: config.filters, boundary: anchorBoundary, direction: neighborDirection, take: 1, session })
+        properties, filters: config.filters, ...(groupQuery ? { group: { ...groupQuery, group: this.recordGroup(source, groupQuery) } } : {}), boundary: anchorBoundary, direction: neighborDirection, take: 1, session })
       if (visibleNeighbor[0]?.id === source.id) return { database, view }
       const adjacent = await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: orderState.manualOrderActive,
         properties, filters: [], boundary: anchorBoundary, direction: neighborDirection, excludeRecordId: source.id, take: 1, session })
@@ -285,6 +323,95 @@ export class DatabaseService {
       if (!sourceCreation) throw new ConflictException('Source record changed during reorder')
       await this.viewOrders.putOverride({ workspaceId, databaseId, orderScopeId: scopeId, recordId: source.id, sourceCreationOrdinal: sourceCreation.creationOrdinal, ...position }, session)
       return { database: bumped, view: updatedView }
+    })
+  }
+
+  async moveViewRecordGroup(userId: string, workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewRecordGroupMoveRequest): Promise<DatabaseViewRecordGroupMoveResponse> {
+    this.parse(DatabaseViewRecordGroupMoveRequestSchema, input)
+    await this.requireDatabase(userId, workspaceId, databaseId, true)
+    return this.transact(async session => {
+      const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
+      const view = await this.views.findInWorkspace(workspaceId, viewId, session)
+      if (!view || view.databaseId !== databaseId) throw new NotFoundException('Database view not found')
+      if (view.type !== 'board' && view.type !== 'timeline') throw new ConflictException('This view type does not support grouping')
+      if (database.version !== input.expectedDatabaseVersion || view.version !== input.expectedViewVersion) throw new ConflictException('Database or view version is stale')
+      if (database.version >= Number.MAX_SAFE_INTEGER) throw new ConflictException('Database version cannot be incremented safely')
+      const properties = await this.properties.list(workspaceId, databaseId, session)
+      const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
+      if (!validateDatabaseViewConfig(config, properties, view.type)) throw new ConflictException('Database view configuration is invalid')
+      if (config.sorts.length > 0 && input.anchorRecordId) throw new ConflictException('Manual placement is unavailable while the view has a sort')
+      const targetGroup = this.resolveGroupQuery(config, properties, input.targetGroup)
+      const sourceGroup = this.resolveGroupQuery(config, properties, input.sourceGroup)
+      const source = await this.records.findInDatabase(workspaceId, databaseId, input.recordId, session)
+      if (!source) throw new NotFoundException('Database record not found')
+      if (source.version !== input.expectedRecordVersion) throw new ConflictException('Database record version is stale')
+      if (!this.sameGroup(this.recordGroup(source, sourceGroup), input.sourceGroup)) throw new ConflictException('Source record group changed')
+      if (!await this.records.findManualRecord({ workspaceId, databaseId, recordId: source.id, properties, filters: config.filters, session })) throw new ConflictException('Source record is hidden from the view')
+      let anchor: DatabaseTableRecord | null = null
+      if (input.anchorRecordId) {
+        anchor = await this.records.findManualRecord({ workspaceId, databaseId, recordId: input.anchorRecordId, properties, filters: config.filters, session })
+        if (!anchor || !this.sameGroup(this.recordGroup(anchor, targetGroup), input.targetGroup)) throw new ConflictException('Target anchor is missing from the visible group')
+      }
+      const manual = config.sorts.length === 0
+      let position: { slotOrdinal: number; rank: string } | undefined
+      let scopeId: string | undefined
+      if (manual) {
+        if (view.version >= Number.MAX_SAFE_INTEGER) throw new ConflictException('Database view version cannot be incremented safely')
+        if (await this.records.hasMissingCreationOrdinal(workspaceId, databaseId, session)) throw new ConflictException('Database records lack creation order')
+        let state
+        try { state = await this.views.getOrderState(workspaceId, databaseId, viewId, session) }
+        catch { throw new ConflictException('Database view order state is missing') }
+        if (!state || state.version !== view.version) throw new ConflictException('Database view order state changed')
+        scopeId = state.orderScopeId
+        let anchorBoundary: ManualBoundary | undefined
+        let placement: 'before' | 'after' = 'after'
+        if (anchor) {
+          anchorBoundary = await this.manualBoundary(workspaceId, databaseId, scopeId, anchor.id, session)
+          placement = input.placement!
+        } else {
+          const targetTail = await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: state.manualOrderActive,
+            properties, filters: config.filters, group: targetGroup, direction: 'before', excludeRecordId: source.id, take: 1, session })
+          const tail = targetTail[0] ?? (await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: state.manualOrderActive,
+            properties, filters: [], direction: 'before', excludeRecordId: source.id, take: 1, session }))[0]
+          if (tail) anchorBoundary = { position: tail.position, recordId: tail.id }
+        }
+        let before: { slotOrdinal: number; rank: string } | null = null
+        let after: { slotOrdinal: number; rank: string } | null = null
+        if (anchorBoundary) {
+          const direction = placement === 'before' ? 'before' : 'after'
+          const adjacent = await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: state.manualOrderActive,
+            properties, filters: [], boundary: anchorBoundary, direction, excludeRecordId: source.id, take: 1, session })
+          before = placement === 'before' ? adjacent[0]?.position ?? null : anchorBoundary.position
+          after = placement === 'before' ? anchorBoundary.position : adjacent[0]?.position ?? null
+        }
+        position = positionBetween(before, after)
+        if (position.rank.length > 1_048_576) throw new ConflictException('View order rank exceeds its maximum length')
+      }
+      const values = { ...source.properties }
+      if (input.targetGroup.kind === 'option') values[targetGroup.propertyId] = input.targetGroup.optionId
+      else delete values[targetGroup.propertyId]
+      if (!validateStoredDatabaseRecordValues(values, properties)) throw new ConflictException('Database record values are invalid')
+      if (source.version >= Number.MAX_SAFE_INTEGER) throw new ConflictException('Database record version cannot be incremented safely')
+      const bumped = await this.databases.compareAndBump(workspaceId, databaseId, database.version, session)
+      if (!bumped) throw new ConflictException('Database version is stale')
+      await this.touchAdvanced(workspaceId, [databaseId], session)
+      const updatedRecord = await this.records.updateProperties(workspaceId, databaseId, source.id, source.version, values, session)
+      if (!updatedRecord) throw new ConflictException('Database record version is stale')
+      let updatedView = view
+      if (manual) {
+        const activated = await this.views.activateManualOrder(workspaceId, databaseId, viewId, view.version, session)
+        if (!activated) throw new ConflictException('Database view version is stale')
+        updatedView = activated
+        const creation = await this.records.getCreationOrder(workspaceId, databaseId, source.id, session)
+        if (!creation) throw new ConflictException('Source record changed during group move')
+        await this.viewOrders.putOverride({ workspaceId, databaseId, orderScopeId: scopeId!, recordId: source.id,
+          sourceCreationOrdinal: creation.creationOrdinal, ...position! }, session)
+      }
+      if (!Number.isSafeInteger(bumped.version) || !Number.isSafeInteger(updatedRecord.version) || !Number.isSafeInteger(updatedView.version)) throw new ConflictException('Database version cannot be represented safely')
+      const projected = await this.projectRecords(workspaceId, [updatedRecord], properties, session)
+      if (projected.length !== 1) throw new ConflictException('Record page missing from workspace')
+      const [record] = await this.projectDerived(workspaceId, projected, properties, session)
+      return { database: bumped, view: updatedView, record: record! }
     })
   }
 
@@ -1095,7 +1222,7 @@ export class DatabaseService {
     for (const view of views) {
       const config = view.config ?? DEFAULT_DATABASE_VIEW_CONFIG
       const options = config.options
-      if (view.type === 'board' && options?.groupByPropertyId === propertyId) {
+      if ((view.type === 'board' || view.type === 'timeline') && options?.groupByPropertyId === propertyId) {
         dependencies.push({ viewId: view.id, propertyId, required: 'select' })
       }
       if (view.type !== 'timeline') continue
