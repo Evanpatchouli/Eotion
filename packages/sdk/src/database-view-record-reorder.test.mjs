@@ -66,3 +66,14 @@ test('view record reorder rejects invalid input and malformed responses, and pre
     return true
   })
 })
+
+test('view record reorder rejects valid responses from a different view or database', async () => {
+  const cases = [
+    { ...response, view: { ...response.view, id: 'other-view' } },
+    { ...response, database: { ...response.database, id: 'other-db' }, view: { ...response.view, databaseId: 'other-db' } },
+  ]
+  for (const body of cases) {
+    const client = new EotionApiClient({ baseUrl: 'https://eotion.test', fetch: async () => Response.json(body) })
+    await assert.rejects(client.databases.reorderDatabaseViewRecord('workspace/1', 'db/1', 'view#1', input), TypeError)
+  }
+})

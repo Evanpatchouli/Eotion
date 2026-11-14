@@ -167,6 +167,18 @@ export const DatabaseViewRecordsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(DATABASE_MAX_TABLE_ROWS).default(50),
   cursor: z.string().min(1).max(16_384).refine(value => value.trim() === value).optional(),
 }).strict()
+export const DatabaseViewGroupKeySchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('option'), optionId: databaseStableIdSchema }).strict(),
+  z.object({ kind: z.literal('ungrouped') }).strict(),
+])
+export type DatabaseViewGroupKey = z.infer<typeof DatabaseViewGroupKeySchema>
+export const DatabaseViewGroupRecordsQuerySchema = DatabaseViewRecordsQuerySchema.extend({
+  groupKind: z.enum(['option', 'ungrouped']),
+  optionId: databaseStableIdSchema.optional(),
+}).strict().refine(value => value.groupKind === 'option' ? value.optionId !== undefined : value.optionId === undefined, {
+  message: 'optionId must be present exactly for an option group', path: ['optionId'],
+})
+export type DatabaseViewGroupRecordsQuery = z.infer<typeof DatabaseViewGroupRecordsQuerySchema>
 export const DatabaseTableQuerySchema = DatabaseViewRecordsQuerySchema
 export type DatabaseListQuery = z.infer<typeof DatabaseListQuerySchema>
 export type DatabaseViewListQuery = z.infer<typeof DatabaseViewListQuerySchema>
@@ -483,6 +495,54 @@ export const DatabaseViewRecordReorderResponseSchema = z.object({
   view: DatabaseViewSchema,
 }).strict()
 export type DatabaseViewRecordReorderResponse = z.infer<typeof DatabaseViewRecordReorderResponseSchema>
+
+export type DatabaseViewGroupRecordsResponse = DatabaseViewRecordsResponse & { group: DatabaseViewGroupKey }
+export const DatabaseViewGroupRecordsResponseSchema = z.custom<DatabaseViewGroupRecordsResponse>(value => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const response = value as Record<string, unknown>
+  if (Object.keys(response).sort().join(',') !== 'database,group,nextCursor,properties,records,view') return false
+  if (!DatabaseViewGroupKeySchema.safeParse(response.group).success) return false
+  const { group, ...base } = response
+  if (!isValidDatabaseViewRecordsResponse(base)) return false
+  const key = group as DatabaseViewGroupKey
+  const groupedPropertyId = base.view.config?.options?.groupByPropertyId
+  const property = base.properties.find(item => item.id === groupedPropertyId && item.type === 'select')
+  if (!property || (base.view.type !== 'board' && base.view.type !== 'timeline')) return false
+  const options = new Set(property.options?.map(option => option.id) ?? [])
+  if (key.kind === 'option' && !options.has(key.optionId)) return false
+  return base.records.every(record => {
+    const value = record.properties[property.id]
+    return key.kind === 'option' ? value === key.optionId : typeof value !== 'string' || !options.has(value)
+  })
+})
+
+export const DatabaseViewRecordGroupMoveRequestSchema = z.object({
+  recordId: databaseStableIdSchema,
+  sourceGroup: DatabaseViewGroupKeySchema,
+  targetGroup: DatabaseViewGroupKeySchema,
+  anchorRecordId: databaseStableIdSchema.optional(),
+  placement: z.enum(['before', 'after']).optional(),
+  expectedDatabaseVersion: z.number().int().positive().safe(),
+  expectedViewVersion: z.number().int().positive().safe(),
+  expectedRecordVersion: z.number().int().positive().safe(),
+}).strict().refine(value => (value.anchorRecordId === undefined) === (value.placement === undefined), {
+  message: 'anchorRecordId and placement must be supplied together', path: ['anchorRecordId'],
+}).refine(value => value.anchorRecordId === undefined || value.anchorRecordId !== value.recordId, {
+  message: 'A record cannot be moved relative to itself', path: ['anchorRecordId'],
+}).refine(value => value.sourceGroup.kind !== value.targetGroup.kind
+  || value.sourceGroup.kind === 'option' && value.targetGroup.kind === 'option' && value.sourceGroup.optionId !== value.targetGroup.optionId, {
+  message: 'Source and target groups must differ', path: ['targetGroup'],
+})
+export type DatabaseViewRecordGroupMoveRequest = z.infer<typeof DatabaseViewRecordGroupMoveRequestSchema>
+export const DatabaseViewRecordGroupMoveResponseSchema = z.object({
+  database: DatabaseSchema,
+  view: DatabaseViewSchema,
+  record: DatabaseCellBatchMutationRecordSchema,
+}).strict().refine(value => value.view.databaseId === value.database.id && value.view.workspaceId === value.database.workspaceId
+  && value.record.databaseId === value.database.id && value.record.workspaceId === value.database.workspaceId, {
+  message: 'Group move response scope does not match',
+})
+export type DatabaseViewRecordGroupMoveResponse = z.infer<typeof DatabaseViewRecordGroupMoveResponseSchema>
 
 export const SAFE_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'] as const
 

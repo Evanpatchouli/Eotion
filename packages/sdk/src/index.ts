@@ -2,6 +2,11 @@ import {
   ApiErrorResponseSchema,
   DatabaseViewRecordReorderRequestSchema,
   DatabaseViewRecordReorderResponseSchema,
+  DatabaseViewGroupKeySchema,
+  DatabaseViewGroupRecordsQuerySchema,
+  DatabaseViewGroupRecordsResponseSchema,
+  DatabaseViewRecordGroupMoveRequestSchema,
+  DatabaseViewRecordGroupMoveResponseSchema,
   SyncOperationSchema,
 } from '@eotion/contracts'
 import type {
@@ -34,6 +39,11 @@ import type {
   DatabaseViewResponse,
   DatabaseViewRecordReorderRequest,
   DatabaseViewRecordReorderResponse,
+  DatabaseViewGroupKey,
+  DatabaseViewGroupRecordsQuery,
+  DatabaseViewGroupRecordsResponse,
+  DatabaseViewRecordGroupMoveRequest,
+  DatabaseViewRecordGroupMoveResponse,
   DatabaseWindowResponse,
   DatabaseNavigationWindowResponse,
   DatabaseResponse,
@@ -133,6 +143,7 @@ export class EotionApiClient {
     listDatabaseViews: (workspaceId: string, databaseId: string, signal?: AbortSignal) => Promise<DatabaseViewResponse[]>
     getDatabaseTable: (workspaceId: string, databaseId: string, viewId: string, window?: Partial<Pick<DatabaseTableQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseTableResponse>
     getDatabaseViewRecords: (workspaceId: string, databaseId: string, viewId: string, window?: Partial<Pick<DatabaseViewRecordsQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseViewRecordsResponse>
+    getDatabaseViewGroupRecords: (workspaceId: string, databaseId: string, viewId: string, groupKey: DatabaseViewGroupKey, window?: Partial<Pick<DatabaseViewGroupRecordsQuery, 'limit' | 'cursor'>>, signal?: AbortSignal) => Promise<DatabaseViewGroupRecordsResponse>
     listRelationCandidates: (workspaceId: string, databaseId: string, input?: Partial<DatabaseRelationCandidatesQuery>, signal?: AbortSignal) => Promise<DatabaseRelationCandidatesResponse>
     resolveRelationTitles: (workspaceId: string, databaseId: string, input: DatabaseRelationTitlesRequest, signal?: AbortSignal) => Promise<DatabaseRelationTitlesResponse>
     createDatabaseInPage: (workspaceId: string, pageId: string, input: DatabaseCreateInPageRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; titleProperty: DatabasePropertyResponse; view: DatabaseViewResponse; block: BlockResponse }>
@@ -146,6 +157,7 @@ export class EotionApiClient {
     updateDatabaseView: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; view: DatabaseViewResponse }>
     deleteDatabaseView: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewDeleteRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse }>
     reorderDatabaseViewRecord: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewRecordReorderRequest, signal?: AbortSignal) => Promise<DatabaseViewRecordReorderResponse>
+    moveDatabaseViewRecordGroup: (workspaceId: string, databaseId: string, viewId: string, input: DatabaseViewRecordGroupMoveRequest, signal?: AbortSignal) => Promise<DatabaseViewRecordGroupMoveResponse>
     updateDatabaseRecordCell: (workspaceId: string, databaseId: string, recordId: string, propertyId: string, input: DatabaseRecordCellUpdateRequest, signal?: AbortSignal) => Promise<{ database: DatabaseResponse; record: DatabaseTableRecordResponse; page?: PageResponse }>
     mutateDatabaseCells: (workspaceId: string, databaseId: string, input: DatabaseCellBatchMutationRequest, signal?: AbortSignal) => Promise<DatabaseCellBatchMutationResponse>
     getDatabaseCellMutationReceipt: (workspaceId: string, databaseId: string, mutationId: string, signal?: AbortSignal) => Promise<DatabaseCellBatchMutationReceipt>
@@ -223,6 +235,23 @@ export class EotionApiClient {
       listDatabaseViews: (workspaceId, databaseId, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views`, { method: 'GET', signal }),
       getDatabaseTable: (workspaceId, databaseId, viewId, window = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}/table${query(window)}`, { method: 'GET', signal }),
       getDatabaseViewRecords: (workspaceId, databaseId, viewId, window = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}/records${query(window)}`, { method: 'GET', signal }),
+      getDatabaseViewGroupRecords: async (workspaceId, databaseId, viewId, groupKey, window = {}, signal) => {
+        const group = DatabaseViewGroupKeySchema.parse(groupKey)
+        const request = DatabaseViewGroupRecordsQuerySchema.parse({ groupKind: group.kind, ...(group.kind === 'option' ? { optionId: group.optionId } : {}), ...window })
+        const params = new URLSearchParams({ groupKind: request.groupKind })
+        if (request.optionId !== undefined) params.set('optionId', request.optionId)
+        params.set('limit', String(request.limit))
+        if (request.cursor !== undefined) params.set('cursor', request.cursor)
+        const response: unknown = await this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}/group-records?${params}`, { method: 'GET', signal })
+        const result = DatabaseViewGroupRecordsResponseSchema.parse(response)
+        if (result.database.workspaceId !== workspaceId || result.database.id !== databaseId || result.view.id !== viewId) {
+          throw new TypeError('Group records response belongs to a different workspace, database, or view')
+        }
+        if (result.group.kind !== group.kind || (group.kind === 'option' && result.group.kind === 'option' && result.group.optionId !== group.optionId)) {
+          throw new TypeError('Group records response belongs to a different group')
+        }
+        return result
+      },
       listRelationCandidates: (workspaceId, databaseId, input = {}, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/record-options${query(input)}`, { method: 'GET', signal }),
       resolveRelationTitles: (workspaceId, databaseId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/record-options/resolve`, { method: 'POST', body: input, signal }),
       createDatabaseInPage: (workspaceId, pageId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/pages/${segment(pageId)}/databases`, { method: 'POST', body: input, signal }),
@@ -238,7 +267,30 @@ export class EotionApiClient {
       reorderDatabaseViewRecord: async (workspaceId, databaseId, viewId, input, signal) => {
         const request = DatabaseViewRecordReorderRequestSchema.parse(input)
         const response: unknown = await this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}/record-order`, { method: 'POST', body: request, signal })
-        return DatabaseViewRecordReorderResponseSchema.parse(response)
+        const result = DatabaseViewRecordReorderResponseSchema.parse(response)
+        if (result.database.workspaceId !== workspaceId || result.database.id !== databaseId || result.view.id !== viewId) {
+          throw new TypeError('Record reorder response belongs to a different workspace, database, or view')
+        }
+        return result
+      },
+      moveDatabaseViewRecordGroup: async (workspaceId, databaseId, viewId, input, signal) => {
+        const request = DatabaseViewRecordGroupMoveRequestSchema.parse(input)
+        const response: unknown = await this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/views/${segment(viewId)}/record-group`, { method: 'POST', body: request, signal })
+        const result = DatabaseViewRecordGroupMoveResponseSchema.parse(response)
+        if (result.database.workspaceId !== workspaceId || result.database.id !== databaseId || result.view.id !== viewId) {
+          throw new TypeError('Record group move response belongs to a different workspace, database, or view')
+        }
+        if (result.record.id !== request.recordId) throw new TypeError('Record group move response belongs to a different record')
+        const propertyId = result.view.config?.options?.groupByPropertyId
+        if ((result.view.type !== 'board' && result.view.type !== 'timeline')
+          || !DatabaseViewGroupKeySchema.safeParse({ kind: 'option', optionId: propertyId }).success) {
+          throw new TypeError('Record group move response has no valid grouping property')
+        }
+        const value = result.record.properties[propertyId as string]
+        if (request.targetGroup.kind === 'option' ? value !== request.targetGroup.optionId : value !== null && value !== undefined) {
+          throw new TypeError('Record group move response does not match the target group')
+        }
+        return result
       },
       updateDatabaseRecordCell: (workspaceId, databaseId, recordId, propertyId, input, signal) => this.request(`/api/workspaces/${segment(workspaceId)}/databases/${segment(databaseId)}/records/${segment(recordId)}/cells/${segment(propertyId)}`, { method: 'PATCH', body: input, signal }),
       // Mutation requests are deliberately single-shot; an uncertain response must be resolved via the receipt endpoint.

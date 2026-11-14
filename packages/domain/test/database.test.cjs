@@ -128,6 +128,12 @@ test('view config shape and property-aware validation enforce strict operators a
   assert.equal(validateDatabaseViewConfig(boardConfig({ groupByPropertyId: 'prop-select' }), [title, { ...properties[4], databaseId: 'other-db' }], 'board'), false)
   assert.equal(validateDatabaseViewConfig(boardConfig({ groupByPropertyId: 'prop-select' }), [title, { ...properties[4], workspaceId: 'other-ws' }], 'board'), false)
   assert.equal(validateDatabaseViewConfig(boardConfig({ groupByPropertyId: 'prop-select' }), [title, { ...properties[4], options: undefined }], 'board'), false)
+  assert.equal(validateDatabaseViewConfig(boardConfig({ groupByPropertyId: 'prop-select', timeline: {} }), properties, 'timeline'), true)
+  assert.equal(validateDatabaseViewConfig(boardConfig({ groupByPropertyId: 'prop-select' }), [title, { ...properties[4], options: [] }], 'timeline'), true)
+  for (const groupByPropertyId of [null, '', 'missing', 'prop-text', 'prop-number', 42]) {
+    assert.equal(validateDatabaseViewConfig(boardConfig({ groupByPropertyId }), properties, 'timeline'), false)
+  }
+  assert.equal(validateDatabaseViewConfig(boardConfig({ groupByPropertyId: 'prop-select' }), [title, { ...properties[4], options: undefined }], 'timeline'), false)
   assert.equal(validateDatabaseViewConfig(boardConfig({ groupByPropertyId: 42 }), properties, 'table'), true)
   assert.equal(validateDatabaseViewConfig(boardConfig({ groupByPropertyId: 'groupId42' }), properties, 'list'), true)
   for (const options of [null, [], 'opaque', 1, true]) assert.equal(isValidDatabaseViewConfigShape({ ...base, options }), false)

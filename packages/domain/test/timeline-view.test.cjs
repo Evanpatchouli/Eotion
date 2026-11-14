@@ -133,7 +133,7 @@ test('timeline dependencies require same-database relation properties', () => {
   assert.equal(validateDatabaseViewConfig(config({ dependency: { ...dependency, propertyId: 'foreign-relation' } }), [title, foreignRelation], 'timeline'), false)
 })
 
-test('timeline semantic references do not change table, list, or board validation', () => {
+test('timeline date references remain view-specific while Select grouping is shared with Board', () => {
   const configWithUnresolvedSemantics = config({
     dateSource: { mode: 'date-property', propertyId: 'missing' },
     dependency: { propertyId: 'missing', direction: 'depends-on', shiftMode: 'shift_when_overlapping', avoidWeekends: false },
@@ -142,5 +142,6 @@ test('timeline semantic references do not change table, list, or board validatio
   assert.equal(validateDatabaseViewConfig(configWithUnresolvedSemantics, properties, 'timeline'), false)
   const boardOptions = { ...base, options: { groupByPropertyId: 'missing' } }
   assert.equal(validateDatabaseViewConfig(boardOptions, properties, 'board'), false)
-  assert.equal(validateDatabaseViewConfig(boardOptions, properties, 'timeline'), true)
+  assert.equal(validateDatabaseViewConfig(boardOptions, properties, 'timeline'), false)
+  for (const type of ['table', 'list']) assert.equal(validateDatabaseViewConfig(boardOptions, properties, type), true)
 })

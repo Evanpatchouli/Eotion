@@ -284,7 +284,7 @@ function isValidTimelinePropertyIds(ids: unknown): ids is string[] | null {
     && ids.every(isStableId) && new Set(ids).size === ids.length
 }
 
-/** Validates config structure, property-specific filter/operator semantics, and board grouping. */
+/** Validates config structure, property-specific filter/operator semantics, and shared Select grouping. */
 export function validateDatabaseViewConfig(value: unknown, properties: readonly DatabaseProperty[], viewType: DatabaseViewType = 'table'): value is DatabaseViewConfig {
   if (!isValidDatabaseViewConfigShape(value) || !Array.isArray(properties)) return false
   const byId = new Map<string, DatabaseProperty>()
@@ -324,7 +324,7 @@ export function validateDatabaseViewConfig(value: unknown, properties: readonly 
     const timeline = (value.options as Record<string, unknown>).timeline as TimelineViewOptions
     if (!validateTimelinePropertySemantics(timeline, byId, titleId, databaseId!)) return false
   }
-  if (viewType === 'board' && value.options !== undefined && Object.hasOwn(value.options, 'groupByPropertyId')) {
+  if ((viewType === 'board' || viewType === 'timeline') && value.options !== undefined && Object.hasOwn(value.options, 'groupByPropertyId')) {
     const groupByPropertyId: unknown = value.options.groupByPropertyId
     if (!isStableId(groupByPropertyId)) return false
     const property = byId.get(groupByPropertyId)
