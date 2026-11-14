@@ -33,11 +33,13 @@ P11.4C 增加通用 Database 能力；不引入 Timeline Record、独立调度�
 
 ## View policy context
 
-可选 context 表示按 canonical View 的配置执行当前 root Cell intent。目前支持 Timeline date-source Cell 更新和 self Relation Cell 更新；context 请求仅接受单 root Record/Cell，避免多根语义歧义。Relation Cell 最多新增一条边，检测到新增时触发调度；同次可移除旧边，纯移除不触发调度。View type/config/property lifecycle 与 expectedViewVersion 在事务内复核。
+可选 context 表示按 canonical View 的配置执行当前 root Cell intent。目前支持 Timeline date-source Cell 更新和 self Relation Cell 更新；context 请求仅接受单 root Record。单 Date source 只接受其唯一 Date Cell；独立 Start/End source 接受这两个 Date Cell 中任意一个或两个，同 Record 合并后一次 CAS。不能在一个 root intent 混写 Date、Relation 或其他属性。Date intent 不要求 dependency；Relation intent 要求配置 dependency，且恰好一个 Relation Cell。Relation Cell 最多新增一条边，检测到新增时触发调度；同次可移除旧边，纯移除不触发调度。View type/config/property lifecycle 与 expectedViewVersion 在事务内复核。
+
+Date intent 总是按合并后的完整日期来源校验：独立 Start/End 在两端均存在时校验时序；End 为空保持 point。即使未配置 dependency 或 `shiftMode=no_auto_shift`，逆序日期仍整体拒绝并回滚。日期实际变化且 dependency 启用自动位移时，才在完整 canonical graph 上运行调度；无变化不触发。日期解释、精度和 UTC 语义复用 domain planner，不由 HTTP 层另行实现。
 
 服务端读取完整 canonical graph，独立于 View filter、sort、pagination、viewport。沿用最大 10,000 records 扫描上限，超限拒绝，绝不截断。纯 domain `planDatabaseSchedule` 接收 predecessor→successor edges，不解释 Relation direction；最大 affected scheduled graph 为 500 records / 10,000 edges。
 
-没有 context 时，它是可复用的通用多 Record/多 Cell 原子更新能力。当前 Timeline Web 仅在 active auto shift 的 Date/create release 时使用 context；其他既有单 Cell 编辑行为不变。
+没有 context 时，它是可复用的通用多 Record/多 Cell 原子更新能力。Timeline Web 可用同一 endpoint 与 receipt 提交独立 Start/End 日期来源；其他既有单 Cell 编辑行为不变。
 
 ## Unknown result / receipt
 

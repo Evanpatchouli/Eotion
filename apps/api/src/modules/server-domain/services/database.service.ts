@@ -769,20 +769,34 @@ export class DatabaseService {
       if (!view || view.databaseId !== databaseId) throw new NotFoundException('Database view not found')
       if (view.version !== input.context.expectedViewVersion) throw new ConflictException('Database view version is stale')
       if (view.type !== 'timeline' || !validateDatabaseViewConfig(view.config, properties, view.type)) throw new ConflictException('Timeline view configuration is invalid')
-      if (input.records.length !== 1 || input.records[0]!.cells.length !== 1) throw new BadRequestException('View context requires one root cell intent')
+      if (input.records.length !== 1) throw new BadRequestException('View context requires one root record intent')
       const timeline = (view.config.options as { timeline?: TimelineViewOptions } | undefined)?.timeline
       const dependency = timeline?.dependency
       const dateSource = timeline?.dateSource
-      if (!dependency || !dateSource) throw new BadRequestException('Timeline scheduling is not configured')
+      if (!dateSource) throw new BadRequestException('Timeline date source is not configured')
       const rootRequest = input.records[0]!
-      const rootCell = rootRequest.cells[0]!
+      const rootCells = rootRequest.cells
       let rootId = rootRequest.recordId
       let shouldPlan = false
-      if (dateSource.mode === 'date-property' && rootCell.propertyId === dateSource.propertyId) {
-        shouldPlan = !isDeepStrictEqual(recordById.get(rootId)!.properties[dateSource.propertyId] ?? null,
-          candidates.get(rootId)![dateSource.propertyId] ?? null)
+      const datePropertyIds = dateSource.mode === 'date-property'
+        ? [dateSource.propertyId] : [dateSource.startPropertyId, dateSource.endPropertyId]
+      const isDateIntent = rootCells.length <= datePropertyIds.length
+        && rootCells.every(cell => datePropertyIds.includes(cell.propertyId))
+      if (isDateIntent) {
+        shouldPlan = rootCells.some(cell => !isDeepStrictEqual(recordById.get(rootId)!.properties[cell.propertyId] ?? null,
+          candidates.get(rootId)![cell.propertyId] ?? null))
+        // Use the domain planner's date reader even when scheduling is disabled.
+        // An empty graph validates the merged root date pair without shifting records.
+        try {
+          planDatabaseSchedule({ records: [recordById.get(rootId)!], edges: [], dateSource,
+            rootRecordId: rootId, rootProperties: candidates.get(rootId)!,
+            shiftMode: 'shift_when_overlapping', avoidWeekends: false })
+        } catch (error) {
+          if (error instanceof SchedulingError) throw new BadRequestException(`Timeline scheduling failed: ${error.code}`)
+          throw error
+        }
       }
-      else if (rootCell.propertyId === dependency.propertyId) {
+      else if (dependency && rootCells.length === 1 && rootCells[0]!.propertyId === dependency.propertyId) {
         const oldLinks = recordById.get(rootId)!.properties[dependency.propertyId]
         const newLinks = candidates.get(rootId)![dependency.propertyId]
         const before = Array.isArray(oldLinks) ? oldLinks as string[] : []
@@ -794,7 +808,7 @@ export class DatabaseService {
           shouldPlan = true
         }
       } else throw new BadRequestException('Cell is not a configured Timeline root intent')
-      if (shouldPlan && dependency.shiftMode !== 'no_auto_shift') {
+      if (shouldPlan && dependency && dependency.shiftMode !== 'no_auto_shift') {
         const edges: { predecessorRecordId: string; successorRecordId: string }[] = []
         for (const record of canonical) {
           const links = (candidates.get(record.id) ?? record.properties)[dependency.propertyId]

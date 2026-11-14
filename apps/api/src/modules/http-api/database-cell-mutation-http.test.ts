@@ -850,6 +850,11 @@ test('Separate source mixed-precision Relation create commits atomically and rol
         expectedDatabaseVersion: state.database.version })
     assert.equal(relation.status, 201, JSON.stringify(relation.body))
     state = await snapshot()
+    const unrelatedPropertyId = `notes-${suffix}`
+    const unrelatedProperty = await request(base, `${route}/properties`, 'POST', cookie,
+      { id: unrelatedPropertyId, name: 'Notes', type: 'text', expectedDatabaseVersion: state.database.version })
+    assert.equal(unrelatedProperty.status, 201, JSON.stringify(unrelatedProperty.body))
+    state = await snapshot()
 
     const initialDates: Record<string, { start: any; end: any }> = {
       root: { start: { start: '2026-01-01T23:00:00.123Z', timeZone: 'UTC' }, end: '2026-01-01' },
@@ -875,6 +880,132 @@ test('Separate source mixed-precision Relation create commits atomically and rol
     const timeline = await request(base, `${route}/views`, 'POST', cookie,
       { id: timelineViewId, name: 'Timeline', type: 'timeline', config, expectedDatabaseVersion: state.database.version })
     assert.equal(timeline.status, 201, JSON.stringify(timeline.body))
+
+    const noDependencyViewId = `no-dependency-${suffix}`
+    const noDependencyConfig = { ...config, options: { timeline: { dateSource: config.options.timeline.dateSource } } }
+    const noDependencyView = await request(base, `${route}/views`, 'POST', cookie,
+      { id: noDependencyViewId, name: 'Dates only', type: 'timeline', config: noDependencyConfig,
+        expectedDatabaseVersion: (await snapshot()).database.version })
+    assert.equal(noDependencyView.status, 201, JSON.stringify(noDependencyView.body))
+    const noShiftViewId = `no-shift-${suffix}`
+    const noShiftConfig = { ...config, options: { timeline: { ...config.options.timeline,
+      dependency: { ...config.options.timeline.dependency, shiftMode: 'no_auto_shift' } } } }
+    const noShiftView = await request(base, `${route}/views`, 'POST', cookie,
+      { id: noShiftViewId, name: 'Manual dates', type: 'timeline', config: noShiftConfig,
+        expectedDatabaseVersion: (await snapshot()).database.version })
+    assert.equal(noShiftView.status, 201, JSON.stringify(noShiftView.body))
+    const editRootId = `edit-root-${suffix}`
+    const editNextId = `edit-next-${suffix}`
+    for (const [id, start, end] of [[editRootId, '2026-02-01', '2026-02-02'],
+      [editNextId, '2026-02-03', '2026-02-04']] as const) {
+      const created = await request(base, `${route}/records`, 'POST', cookie,
+        { id, pageId: `page-${id}`, title: id, orderKey: id,
+          properties: { [startPropertyId]: { start }, [endPropertyId]: { start: end } } })
+      assert.equal(created.status, 201, JSON.stringify(created.body))
+    }
+    const dateContext = (viewId: string, version: number) => ({ viewId, expectedViewVersion: version })
+    const edit = (before: any, mutationId: string, cells: readonly unknown[], viewId: string, version: number, recordId = editRootId) => ({
+      mutationId, expectedDatabaseVersion: before.database.version,
+      records: [{ recordId, expectedRecordVersion: row(before, recordId).version, cells }],
+      context: dateContext(viewId, version),
+    })
+    const startCell = (start: string) => ({ propertyId: startPropertyId, value: { start } })
+    const endCell = (end: string | null) => ({ propertyId: endPropertyId, value: end === null ? null : { start: end } })
+    const sendEdit = (body: unknown) => request(base, `${route}/cell-mutations`, 'POST', cookie, body)
+
+    let editBefore = await snapshot()
+    const twoDates = await sendEdit(edit(editBefore, `separate-two-${suffix}`,
+      [startCell('2026-02-05'), endCell('2026-02-06')], noDependencyViewId, noDependencyView.body.view.version))
+    assert.equal(twoDates.status, 201, JSON.stringify(twoDates.body))
+    assert.equal(twoDates.body.database.version, editBefore.database.version + 1)
+    assert.equal(twoDates.body.records[0].version, row(editBefore, editRootId).version + 1)
+    assert.deepEqual(twoDates.body.records[0].properties[startPropertyId], { start: '2026-02-05' })
+    assert.deepEqual(twoDates.body.records[0].properties[endPropertyId], { start: '2026-02-06' })
+    assert.equal((await request(base, `${route}/cell-mutations/separate-two-${suffix}`, 'GET', cookie)).body.status, 'committed')
+
+    editBefore = await snapshot()
+    const resized = await sendEdit(edit(editBefore, `separate-resize-${suffix}`,
+      [endCell('2026-02-08')], noDependencyViewId, noDependencyView.body.view.version))
+    assert.equal(resized.status, 201, JSON.stringify(resized.body))
+    assert.deepEqual(resized.body.records[0].properties[startPropertyId], { start: '2026-02-05' })
+    assert.deepEqual(resized.body.records[0].properties[endPropertyId], { start: '2026-02-08' })
+    editBefore = await snapshot()
+    const point = await sendEdit(edit(editBefore, `separate-point-${suffix}`,
+      [endCell(null)], noDependencyViewId, noDependencyView.body.view.version))
+    assert.equal(point.status, 201, JSON.stringify(point.body))
+    assert.equal(point.body.records[0].properties[endPropertyId], undefined)
+    editBefore = await snapshot()
+    const manual = await sendEdit(edit(editBefore, `separate-manual-${suffix}`,
+      [startCell('2026-02-09'), endCell('2026-02-10')], noShiftViewId, noShiftView.body.view.version))
+    assert.equal(manual.status, 201, JSON.stringify(manual.body))
+    assert.deepEqual(manual.body.records.map((item: any) => item.id), [editRootId])
+
+    const invalidCases = [
+      ['unrelated-only', [{ propertyId: unrelatedPropertyId, value: 'not a date' }], noDependencyViewId, noDependencyView.body.view.version],
+      ['unrelated', [startCell('2026-02-11'), { propertyId: relationPropertyId, value: [editNextId] }], noDependencyViewId, noDependencyView.body.view.version],
+      ['other-date', [{ propertyId: startPropertyId, value: { start: '2026-02-11' } }, { propertyId: relationPropertyId, value: [] }], timelineViewId, timeline.body.view.version],
+      ['reverse-pair', [startCell('2026-02-15'), endCell('2026-02-12')], noDependencyViewId, noDependencyView.body.view.version],
+      ['reverse-manual', [startCell('2026-02-15'), endCell('2026-02-12')], noShiftViewId, noShiftView.body.view.version],
+    ] as const
+    for (const [name, cells, viewId, viewVersion] of invalidCases) {
+      const beforeRejected = await snapshot()
+      const mutationId = `separate-${name}-${suffix}`
+      const rejected = await sendEdit(edit(beforeRejected, mutationId, cells, viewId, viewVersion))
+      assert.equal(rejected.status, 400, `${name}: ${JSON.stringify(rejected.body)}`)
+      assert.equal((await request(base, `${route}/cell-mutations/${mutationId}`, 'GET', cookie)).body.status, 'not_committed')
+      const afterRejected = await snapshot()
+      assert.equal(afterRejected.database.version, beforeRejected.database.version)
+      assert.deepEqual(row(afterRejected, editRootId), row(beforeRejected, editRootId))
+    }
+    editBefore = await snapshot()
+    const manyRoots = await sendEdit({ ...edit(editBefore, `separate-many-roots-${suffix}`,
+      [startCell('2026-02-11')], noDependencyViewId, noDependencyView.body.view.version),
+      records: [{ recordId: editRootId, expectedRecordVersion: row(editBefore, editRootId).version, cells: [startCell('2026-02-11')] },
+        { recordId: editNextId, expectedRecordVersion: row(editBefore, editNextId).version, cells: [startCell('2026-02-12')] }] })
+    assert.equal(manyRoots.status, 400, JSON.stringify(manyRoots.body))
+    const relationWithoutDependency = await sendEdit(edit(editBefore, `separate-no-dependency-relation-${suffix}`,
+      [{ propertyId: relationPropertyId, value: [editNextId] }], noDependencyViewId, noDependencyView.body.view.version))
+    assert.equal(relationWithoutDependency.status, 400, JSON.stringify(relationWithoutDependency.body))
+
+    const graphSeed = await sendEdit({ mutationId: `separate-graph-${suffix}`, expectedDatabaseVersion: (await snapshot()).database.version,
+      records: [{ recordId: editRootId, expectedRecordVersion: row(await snapshot(), editRootId).version,
+        cells: [{ propertyId: relationPropertyId, value: [editNextId] }] }] })
+    assert.equal(graphSeed.status, 201, JSON.stringify(graphSeed.body))
+    editBefore = await snapshot()
+    const manualWithGraph = await sendEdit(edit(editBefore, `separate-manual-graph-${suffix}`,
+      [endCell('2026-02-11')], noShiftViewId, noShiftView.body.view.version))
+    assert.equal(manualWithGraph.status, 201, JSON.stringify(manualWithGraph.body))
+    assert.deepEqual(manualWithGraph.body.records.map((item: any) => item.id), [editRootId])
+    assert.deepEqual(row(await snapshot(), editNextId).properties[startPropertyId], row(editBefore, editNextId).properties[startPropertyId])
+    editBefore = await snapshot()
+    const cascade = await sendEdit(edit(editBefore, `separate-cascade-${suffix}`,
+      [endCell('2026-02-12')], timelineViewId, timeline.body.view.version))
+    assert.equal(cascade.status, 201, JSON.stringify(cascade.body))
+    assert.deepEqual(cascade.body.records.map((item: any) => item.id).sort(), [editRootId, editNextId].sort())
+    const afterCascadeEdit = await snapshot()
+    assert.deepEqual(row(afterCascadeEdit, editRootId).properties[endPropertyId], { start: '2026-02-12' })
+    assert.ok(row(afterCascadeEdit, editNextId).properties[startPropertyId].start >= '2026-02-13')
+    assert.equal(afterCascadeEdit.database.version, editBefore.database.version + 1)
+    assert.equal((await request(base, `${route}/cell-mutations/separate-cascade-${suffix}`, 'GET', cookie)).body.status, 'committed')
+    const staleEdit = await sendEdit(edit(editBefore, `separate-stale-${suffix}`,
+      [startCell('2026-02-10')], timelineViewId, timeline.body.view.version))
+    assert.equal(staleEdit.status, 409, JSON.stringify(staleEdit.body))
+    const staleViewEdit = await sendEdit(edit(afterCascadeEdit, `separate-stale-view-${suffix}`,
+      [startCell('2026-02-10')], timelineViewId, timeline.body.view.version + 1))
+    assert.equal(staleViewEdit.status, 409, JSON.stringify(staleViewEdit.body))
+    const staleRecordEdit = await sendEdit({ ...edit(afterCascadeEdit, `separate-stale-record-${suffix}`,
+      [startCell('2026-02-10')], timelineViewId, timeline.body.view.version),
+      records: [{ recordId: editRootId, expectedRecordVersion: row(editBefore, editRootId).version,
+        cells: [startCell('2026-02-10')] }] })
+    assert.equal(staleRecordEdit.status, 409, JSON.stringify(staleRecordEdit.body))
+    const raceBefore = await snapshot()
+    const race = await Promise.all(['a', 'b'].map(name => sendEdit(edit(raceBefore, `separate-race-${name}-${suffix}`,
+      [endCell(name === 'a' ? '2026-02-15' : '2026-02-16')], timelineViewId, timeline.body.view.version))))
+    assert.deepEqual(race.map(result => result.status).sort(), [201, 409])
+    const raceAfter = await snapshot()
+    assert.equal(raceAfter.database.version, raceBefore.database.version + 1)
+    assert.deepEqual(row(raceAfter, editRootId).properties[endPropertyId],
+      race.find(result => result.status === 201)!.body.records.find((item: any) => item.id === editRootId).properties[endPropertyId])
 
     const before = await snapshot()
     const rootId = `root-${suffix}`
