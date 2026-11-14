@@ -9,6 +9,9 @@ import { DatabaseEntity, DatabaseSchema } from './schemas/database.schema'
 import { DatabasePropertyEntity, DatabasePropertySchema } from './schemas/database-property.schema'
 import { DatabaseRecordEntity, DatabaseRecordSchema } from './schemas/database-record.schema'
 import { DatabaseViewEntity, DatabaseViewSchema } from './schemas/database-view.schema'
+import { DatabaseViewOrderOverrideEntity, DatabaseViewOrderOverrideSchema, DatabaseViewOrderCleanupJobEntity, DatabaseViewOrderCleanupJobSchema } from './schemas/database-view-order.schema'
+import { DatabaseViewOrderRepository } from './repositories/database-view-order.repository'
+import { DatabaseViewOrderCleanupService } from './services/database-view-order-cleanup.service'
 import { DatabaseService } from './services/database.service'
 import { FileMetadataRepository } from './repositories/file-metadata.repository'
 import { PageRepository } from './repositories/page.repository'
@@ -50,6 +53,8 @@ import { DatabaseMcpMutationService } from './services/database-mcp-mutation.ser
       { name: DatabasePropertyEntity.name, schema: DatabasePropertySchema },
       { name: DatabaseRecordEntity.name, schema: DatabaseRecordSchema },
       { name: DatabaseViewEntity.name, schema: DatabaseViewSchema },
+      { name: DatabaseViewOrderOverrideEntity.name, schema: DatabaseViewOrderOverrideSchema },
+      { name: DatabaseViewOrderCleanupJobEntity.name, schema: DatabaseViewOrderCleanupJobSchema },
       { name: DatabaseCellMutationReceiptEntity.name, schema: DatabaseCellMutationReceiptSchema },
       { name: FileMetadataEntity.name, schema: FileMetadataSchema },
       { name: UserEntity.name, schema: UserSchema },
@@ -67,6 +72,8 @@ import { DatabaseMcpMutationService } from './services/database-mcp-mutation.ser
     DatabasePropertyRepository,
     DatabaseRecordRepository,
     DatabaseViewRepository,
+    DatabaseViewOrderRepository,
+    DatabaseViewOrderCleanupService,
     DatabaseCellMutationRepository,
     FileMetadataRepository,
     UserRepository,

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
+import { randomUUID } from 'node:crypto'
 import { DATABASE_RECORD_SCAN_MAX_RECORDS, DEFAULT_DATABASE_VIEW_CONFIG } from '@eotion/domain'
 import type { Database, DatabaseProperty, DatabaseRecord, DatabaseTableRecord, DatabaseView, DatabaseViewConfig } from '@eotion/domain'
 import { getDatabaseDateStartInstant } from '@eotion/domain/date'
@@ -10,6 +11,8 @@ import { DatabaseRecordDocument, DatabaseRecordEntity } from '../schemas/databas
 import { DatabaseViewDocument, DatabaseViewEntity } from '../schemas/database-view.schema'
 
 type Stored<T> = Omit<T, 'createdAt' | 'updatedAt'>
+export type DatabaseViewOrderState = { orderScopeId: string; manualOrderActive: boolean; version: number }
+export type DatabaseRecordCreationOrder = { recordId: string; creationOrdinal: number }
 const dates = (doc: { createdAt: Date; updatedAt: Date }) => ({ createdAt: doc.createdAt.toISOString(), updatedAt: doc.updatedAt.toISOString() })
 
 @Injectable()
@@ -104,7 +107,8 @@ export class DatabaseRecordRepository {
     const rows = await this.model.find({ workspaceId }, { pageId: 1, _id: 0 }).session(session ?? null).lean().exec()
     return rows.map(row => row.pageId)
   }
-  async create(input: Stored<DatabaseRecord>, session: ClientSession): Promise<DatabaseRecord> {
+  async create(input: Stored<DatabaseRecord> & { creationOrdinal: number }, session: ClientSession): Promise<DatabaseRecord> {
+    if (!Number.isSafeInteger(input.creationOrdinal) || input.creationOrdinal < 1) throw new TypeError('Invalid record creation ordinal')
     const [doc] = await this.model.create([input], { session })
     return this.toRecord(doc!)
   }
@@ -114,6 +118,21 @@ export class DatabaseRecordRepository {
   async findInDatabase(workspaceId: string, databaseId: string, id: string, session?: ClientSession): Promise<DatabaseRecord | null> {
     const doc = await this.model.findOne({ workspaceId, databaseId, id }).session(session ?? null).exec()
     return doc ? this.toRecord(doc) : null
+  }
+  async hasMissingCreationOrdinal(workspaceId: string, databaseId: string, session?: ClientSession): Promise<boolean> {
+    return !!(await this.model.exists({ workspaceId, databaseId, creationOrdinal: null }).session(session ?? null))
+  }
+  async getCreationOrder(workspaceId: string, databaseId: string, id: string, session?: ClientSession): Promise<DatabaseRecordCreationOrder | null> {
+    const doc = await this.model.findOne({ workspaceId, databaseId, id }).select({ id: 1, creationOrdinal: 1 }).session(session ?? null).lean().exec()
+    if (!doc) return null
+    if (!Number.isSafeInteger(doc.creationOrdinal) || doc.creationOrdinal < 1) throw new TypeError('Database record creation ordinal is invalid')
+    return { recordId: doc.id, creationOrdinal: doc.creationOrdinal }
+  }
+  async listCreationOrderWindow(workspaceId: string, databaseId: string, after: number | undefined, limit: number, session?: ClientSession): Promise<DatabaseRecordCreationOrder[]> {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 101 || (after !== undefined && (!Number.isSafeInteger(after) || after < 0))) throw new TypeError('Invalid creation order window')
+    const filter = { workspaceId, databaseId, creationOrdinal: { $gt: after ?? 0 } }
+    const docs = await this.model.find(filter).select({ id: 1, creationOrdinal: 1 }).sort({ creationOrdinal: 1 }).limit(limit).session(session ?? null).lean().exec()
+    return docs.map(doc => ({ recordId: doc.id, creationOrdinal: doc.creationOrdinal }))
   }
   async findManyInDatabase(workspaceId: string, databaseId: string, ids: readonly string[], session?: ClientSession): Promise<DatabaseRecord[]> {
     if (ids.length === 0) return []
@@ -298,11 +317,26 @@ export class DatabaseRecordRepository {
 export class DatabaseViewRepository {
   constructor(@InjectModel(DatabaseViewEntity.name) private readonly model: Model<DatabaseViewDocument>) {}
   async create(input: Stored<DatabaseView>, session: ClientSession): Promise<DatabaseView> {
-    const [doc] = await this.model.create([{ ...input, config: input.config ?? DEFAULT_DATABASE_VIEW_CONFIG }], { session })
+    const [doc] = await this.model.create([{ ...input, config: input.config ?? DEFAULT_DATABASE_VIEW_CONFIG, orderScopeId: randomUUID(), manualOrderActive: false }], { session })
     return this.toRecord(doc!)
   }
   async findInWorkspace(workspaceId: string, id: string, session?: ClientSession): Promise<DatabaseView | null> {
     const doc = await this.model.findOne({ workspaceId, id }).session(session ?? null).exec()
+    return doc ? this.toRecord(doc) : null
+  }
+  async getOrderState(workspaceId: string, databaseId: string, id: string, session?: ClientSession): Promise<DatabaseViewOrderState | null> {
+    const doc = await this.model.findOne({ workspaceId, databaseId, id }).select({ orderScopeId: 1, manualOrderActive: 1, version: 1 }).session(session ?? null).lean().exec()
+    if (!doc) return null
+    if (!doc.orderScopeId || typeof doc.manualOrderActive !== 'boolean') throw new TypeError('Database view order state is missing')
+    return { orderScopeId: doc.orderScopeId, manualOrderActive: doc.manualOrderActive, version: doc.version }
+  }
+  async listActiveOrderScopeIds(workspaceId: string, databaseId: string, session?: ClientSession): Promise<string[]> {
+    const docs = await this.model.find({ workspaceId, databaseId }).select({ orderScopeId: 1 }).limit(101).session(session ?? null).lean().exec()
+    if (docs.length > 100 || docs.some(doc => !doc.orderScopeId)) throw new TypeError('Database view order scopes are invalid')
+    return docs.map(doc => doc.orderScopeId)
+  }
+  async activateManualOrder(workspaceId: string, databaseId: string, id: string, expectedVersion: number, session: ClientSession): Promise<DatabaseView | null> {
+    const doc = await this.model.findOneAndUpdate({ workspaceId, databaseId, id, version: expectedVersion, orderScopeId: { $exists: true } }, [{ $set: { manualOrderActive: true, version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
     return doc ? this.toRecord(doc) : null
   }
   async list(workspaceId: string, databaseId: string, session?: ClientSession): Promise<DatabaseView[]> {

@@ -11,6 +11,7 @@ import type { DatabaseCellBatchMutationRequest, DatabaseCellBatchMutationRespons
 import type { DatabaseTableResponse, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { ClientSession, Connection } from 'mongoose'
 import { DatabasePropertyRepository, DatabaseRecordRepository, DatabaseRepository, DatabaseViewRepository } from '../repositories/database.repository'
+import { DatabaseViewOrderRepository } from '../repositories/database-view-order.repository'
 import { DatabaseCellMutationRepository, type DatabaseCellMutationReceiptKey } from '../repositories/database-cell-mutation.repository'
 import { PageRepository } from '../repositories/page.repository'
 import { BlockRepository } from '../repositories/block.repository'
@@ -36,6 +37,7 @@ export class DatabaseService {
     private readonly properties: DatabasePropertyRepository,
     private readonly records: DatabaseRecordRepository,
     private readonly views: DatabaseViewRepository,
+    private readonly viewOrders: DatabaseViewOrderRepository,
     private readonly cellMutations: DatabaseCellMutationRepository,
     private readonly pages: PageRepository,
     private readonly blocks: BlockService,
@@ -233,7 +235,8 @@ export class DatabaseService {
     return this.runInSession(activeSession, async session => {
       const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
       if (expectedDatabaseVersion !== undefined && database.version !== expectedDatabaseVersion) throw new ConflictException('Database version is stale')
-      await this.bumpDatabaseVersion(database, session)
+      const bumped = await this.bumpDatabaseVersion(database, session)
+      if (!Number.isSafeInteger(bumped.version) || bumped.version < 1) throw new ConflictException('Database creation ordinal is invalid')
       await this.touchAdvanced(workspaceId, [databaseId], session)
       const properties = await this.properties.list(workspaceId, databaseId, session)
       const title = properties.find(property => property.type === 'title')
@@ -247,7 +250,7 @@ export class DatabaseService {
       }
       for (const [propertyId, value] of Object.entries(values)) if (value === null) delete values[propertyId]
       const page = await this.pages.create(workspaceId, { id: input.pageId, parentPageId: null, title: input.title, orderKey: input.orderKey, role: 'database-record' }, session)
-      const record = await this.records.create({ id: input.id, workspaceId, databaseId: database.id, pageId: page.id, properties: values, version: 1 }, session)
+      const record = await this.records.create({ id: input.id, workspaceId, databaseId: database.id, pageId: page.id, properties: values, version: 1, creationOrdinal: bumped.version }, session)
       const projected = { ...record, properties: { ...record.properties, [title.id]: page.title }, pageVersion: page.updatedAt }
       return { record: (await this.projectDerived(workspaceId, [projected], properties, session))[0]!, page }
     })
@@ -869,7 +872,8 @@ export class DatabaseService {
     this.parse(DatabaseRecordCreateRequestSchema, input)
     return this.transact(async session => {
       const database = await this.requireDatabase(userId, workspaceId, databaseId, true, session)
-      await this.bumpDatabaseVersion(database, session)
+      const bumped = await this.bumpDatabaseVersion(database, session)
+      if (!Number.isSafeInteger(bumped.version) || bumped.version < 1) throw new ConflictException('Database creation ordinal is invalid')
       await this.touchAdvanced(workspaceId, [databaseId], session)
       const properties = await this.properties.list(workspaceId, databaseId, session)
       if (!validateDatabaseRecordValues(input.properties, properties)) throw new BadRequestException('Invalid database record properties')
@@ -886,7 +890,7 @@ export class DatabaseService {
       const persisted = { ...input.properties }
       delete persisted[title.id]
       if (!validateStoredDatabaseRecordValues(persisted, properties)) throw new BadRequestException('Derived values cannot be persisted')
-      const record = await this.records.create({ id: input.id, workspaceId, databaseId, pageId: input.pageId, properties: persisted, version: 1 }, session)
+      const record = await this.records.create({ id: input.id, workspaceId, databaseId, pageId: input.pageId, properties: persisted, version: 1, creationOrdinal: bumped.version }, session)
       if (!await this.pages.markDatabaseRecordRole(workspaceId, input.pageId, session)) throw new ConflictException('Record page is missing')
       return record
     })
@@ -933,6 +937,7 @@ export class DatabaseService {
       }
       const deletedRecord = await this.records.findInDatabase(workspaceId, databaseId, recordId, session)
       if (!await this.records.delete(workspaceId, databaseId, recordId, input.expectedRecordVersion, session)) throw new ConflictException('Database record version is stale')
+      await this.viewOrders.deleteRecordFromActiveScopes(workspaceId, databaseId, recordId, await this.views.listActiveOrderScopeIds(workspaceId, databaseId, session), session)
       if (deletedRecord && (await this.records.findForPage(workspaceId, deletedRecord.pageId, session)).length === 0
         && !await this.pages.clearDatabaseRecordRole(workspaceId, deletedRecord.pageId, session)) throw new ConflictException('Record page is missing')
       return { database }
@@ -989,10 +994,13 @@ export class DatabaseService {
       const existing = await this.views.findInWorkspace(workspaceId, viewId, session)
       if (!existing || existing.databaseId !== databaseId) throw new NotFoundException('Database view not found')
       if ((await this.views.listWindow(workspaceId, databaseId, 2, session)).length <= 1) throw new ConflictException('A database must keep at least one view')
+      const orderState = await this.views.getOrderState(workspaceId, databaseId, viewId, session)
+      if (!orderState) throw new ConflictException('Database view order state is missing')
       if (!await this.views.delete(workspaceId, databaseId, viewId, input.expectedViewVersion, session)) throw new ConflictException('Database view version is stale')
       if (await this.blocks.hasDatabaseViewReference(workspaceId, databaseId, viewId, session)) {
         throw new ConflictException('This view is still referenced by a Database Block. Switch those blocks to another view or remove the references, then retry.')
       }
+      await this.viewOrders.enqueueRetiredScope({ workspaceId, databaseId, orderScopeId: orderState.orderScopeId }, session)
       return { database }
     })
   }

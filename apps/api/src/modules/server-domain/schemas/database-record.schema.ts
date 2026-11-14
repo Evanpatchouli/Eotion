@@ -10,6 +10,7 @@ export class DatabaseRecordEntity {
   @Prop({ type: String, required: true }) pageId!: string
   @Prop({ type: Object, required: true, default: {} }) properties!: DatabaseRecordValues
   @Prop({ type: Number, required: true, default: 1 }) version!: number
+  @Prop({ type: Number, required: true, min: 1 }) creationOrdinal!: number
   createdAt!: Date
   updatedAt!: Date
 }
@@ -18,3 +19,5 @@ export type DatabaseRecordDocument = HydratedDocument<DatabaseRecordEntity>
 export const DatabaseRecordSchema = SchemaFactory.createForClass(DatabaseRecordEntity)
 DatabaseRecordSchema.index({ workspaceId: 1, databaseId: 1, id: 1 })
 DatabaseRecordSchema.index({ workspaceId: 1, pageId: 1 })
+DatabaseRecordSchema.index({ workspaceId: 1, databaseId: 1, creationOrdinal: 1 }, { unique: true, partialFilterExpression: { creationOrdinal: { $type: 'number' } } })
+DatabaseRecordSchema.index({ workspaceId: 1, databaseId: 1, creationOrdinal: 1, id: 1 })

@@ -617,7 +617,7 @@ test('Database property and view service caps accept 100 and roll back limit plu
   await propertyModel.deleteOne({ id: overflowPropertyId })
 
   await viewModel.insertMany(Array.from({ length: DATABASE_MAX_VIEWS - 2 }, (_, index) => ({
-    id: `seed-view-${index}-${randomUUID()}`, workspaceId, databaseId, name: `Seed ${index}`, type: 'table', config: DEFAULT_DATABASE_VIEW_CONFIG, version: 1, referenceFence: 0, createdAt: timestamp, updatedAt: timestamp,
+    id: `seed-view-${index}-${randomUUID()}`, workspaceId, databaseId, name: `Seed ${index}`, type: 'table', config: DEFAULT_DATABASE_VIEW_CONFIG, version: 1, referenceFence: 0, orderScopeId: randomUUID(), manualOrderActive: false, createdAt: timestamp, updatedAt: timestamp,
   })))
   assert.equal((await databases.listViewsWindow(owner.id, workspaceId, databaseId, DATABASE_MAX_VIEWS)).length, DATABASE_MAX_VIEWS - 1)
   const beforeLastView = (await databases.find(owner.id, workspaceId, databaseId))!
@@ -628,7 +628,7 @@ test('Database property and view service caps accept 100 and roll back limit plu
     id: `overflow-view-${randomUUID()}`, name: 'View 101', type: 'table', expectedDatabaseVersion: beforeViewOverflow.version,
   }), /maximum of 100 views/)
   assert.equal((await databases.find(owner.id, workspaceId, databaseId))?.version, beforeViewOverflow.version, 'view limit rejection rolls back the Database version bump')
-  await viewModel.insertMany([{ id: `seed-view-overflow-${randomUUID()}`, workspaceId, databaseId, name: 'Corrupt overflow', type: 'table', config: DEFAULT_DATABASE_VIEW_CONFIG, version: 1, referenceFence: 0, createdAt: timestamp, updatedAt: timestamp }])
+  await viewModel.insertMany([{ id: `seed-view-overflow-${randomUUID()}`, workspaceId, databaseId, name: 'Corrupt overflow', type: 'table', config: DEFAULT_DATABASE_VIEW_CONFIG, version: 1, referenceFence: 0, orderScopeId: randomUUID(), manualOrderActive: false, createdAt: timestamp, updatedAt: timestamp }])
   await assert.rejects(databases.listViewsWindow(owner.id, workspaceId, databaseId, DATABASE_MAX_VIEWS), /maximum of 100 views/)
   assert.equal(lastProperty.property.type, 'text')
   assert.ok(await databases.find(owner.id, workspaceId, databaseId))
@@ -657,7 +657,7 @@ test('default table windows read only limit plus one records and Pages', async t
   }))
   const recordsToInsert = Array.from({ length: totalRecords }, (_, index) => ({
     id: `window-record-${String(index).padStart(4, '0')}`, workspaceId: 'window-workspace', databaseId: 'window-database',
-    pageId: pagesToInsert[index]!.id, properties: {}, version: 1, createdAt: now, updatedAt: now,
+    pageId: pagesToInsert[index]!.id, properties: {}, version: 1, creationOrdinal: 1_000_000 + index, createdAt: now, updatedAt: now,
   }))
   await connection.db!.collection('pages').insertMany(pagesToInsert)
   await recordModel.insertMany(recordsToInsert)
@@ -696,7 +696,7 @@ test('database writes reject unsupported transactions before any write', async (
   const repository = new Proxy({}, { get: () => () => { writes += 1; throw new Error('unexpected write') } })
   const connection = { db: { admin: () => ({ command: async () => ({}) }) }, startSession: () => { sessions += 1; throw new Error('unexpected session') } }
   const permissions = { assertCanWrite: async () => {} }
-  const service = new DatabaseService(repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, permissions as never, connection as never)
+  const service = new DatabaseService(repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, repository as never, permissions as never, connection as never)
   await assert.rejects(service.createInPage('user', 'workspace', 'page', { id: 'db', name: 'Tasks', titlePropertyId: 'title', viewId: 'view', blockId: 'block', orderKey: 'a', parentBlockId: null }), error => (error as { status?: number }).status === 503)
   assert.equal(writes, 0)
   assert.equal(sessions, 0)
@@ -738,7 +738,7 @@ test('advanced properties keep links scoped, project values, and clean incoming 
   await assert.rejects(databases.deleteProperty(owner.id, 'advanced-ws', 'advanced-target', 'target-number', { expectedDatabaseVersion: 4, expectedPropertyVersion: 1 }), /rollup/)
   await assert.rejects(databases.updateProperty(owner.id, 'advanced-ws', 'advanced-source', 'links.alt', { config: { targetDatabaseId: 'advanced-source' }, expectedDatabaseVersion: linked.database.version, expectedPropertyVersion: 1 }), /Clear relation values/)
   await assert.rejects(databases.deleteRecord(owner.id, 'advanced-ws', 'advanced-target', 'target-row', { expectedDatabaseVersion: 4, expectedRecordVersion: 1 }), /version is stale/)
-  await recordModel.create({ id: 'target-row-shadow', workspaceId: 'advanced-ws', databaseId: 'advanced-target', pageId: target.page.id, properties: {}, version: 1 })
+  await recordModel.create({ id: 'target-row-shadow', workspaceId: 'advanced-ws', databaseId: 'advanced-target', pageId: target.page.id, properties: {}, version: 1, creationOrdinal: 1_000_000 })
   const deleted = await databases.deleteRecord(owner.id, 'advanced-ws', 'advanced-target', 'target-row', { expectedDatabaseVersion: 4, expectedRecordVersion: 2 })
   assert.equal(deleted.database.version, 5)
   const preservedTargetPage = await pages.find(owner.id, 'advanced-ws', target.page.id)
@@ -763,9 +763,9 @@ test('advanced properties keep links scoped, project values, and clean incoming 
   assert.ok(preservedSourcePage, 'self-linked record deletion preserves its Page')
   assert.equal(preservedSourcePage.role, undefined)
   assert.deepEqual((await databases.getTable(owner.id, 'advanced-ws', 'advanced-source', 'advanced-source-view', { limit: 10 })).records, [])
-  await recordModel.insertMany(Array.from({ length: 101 }, (_, index) => ({ id: `advanced-bounded-${index}`, workspaceId: 'advanced-ws', databaseId: 'advanced-source', pageId: `advanced-page-${index}`, properties: {}, version: 1 })))
+  await recordModel.insertMany(Array.from({ length: 101 }, (_, index) => ({ id: `advanced-bounded-${index}`, workspaceId: 'advanced-ws', databaseId: 'advanced-source', pageId: `advanced-page-${index}`, properties: {}, version: 1, creationOrdinal: 1_000_000 + index })))
   await assert.rejects(databases.listRecords(owner.id, 'advanced-ws', 'advanced-source'), /maximum of 100 records/)
-  await recordModel.insertMany(Array.from({ length: 9900 }, (_, index) => ({ id: `advanced-large-${index}`, workspaceId: 'advanced-ws', databaseId: 'advanced-source', pageId: `advanced-large-page-${index}`, properties: {}, version: 1 })))
+  await recordModel.insertMany(Array.from({ length: 9900 }, (_, index) => ({ id: `advanced-large-${index}`, workspaceId: 'advanced-ws', databaseId: 'advanced-source', pageId: `advanced-large-page-${index}`, properties: {}, version: 1, creationOrdinal: 2_000_000 + index })))
   await assert.rejects(databases.listRecordOptions(owner.id, 'advanced-ws', 'advanced-source', { search: 'anything', limit: 50 }), /maximum of 5000 candidate records/)
   const boundedTarget = await databases.createRecordPage(owner.id, 'advanced-ws', 'advanced-target', { id: 'bounded-target', pageId: 'bounded-target-page', title: 'Bounded', orderKey: 'd' })
   await assert.rejects(databases.deleteRecord(owner.id, 'advanced-ws', 'advanced-target', boundedTarget.record.id, { expectedDatabaseVersion: (await databases.find(owner.id, 'advanced-ws', 'advanced-target'))!.version, expectedRecordVersion: boundedTarget.record.version }), /maximum of 10000 scanned records/)
@@ -888,7 +888,7 @@ test('derived reads reject more than 5000 distinct linked records before fetchin
     const linksB = index === 0 ? ['derived-bound-target-5000'] : []
     return {
       id: `derived-bound-row-${String(index).padStart(3, '0')}`, workspaceId: 'derived-bound-ws', databaseId: 'derived-bound-source',
-      pageId: `derived-bound-page-${String(index).padStart(3, '0')}`, properties: { [relationA.property.id]: linksA, ...(linksB.length ? { [relationB.property.id]: linksB } : {}) }, version: 1, createdAt: now, updatedAt: now,
+      pageId: `derived-bound-page-${String(index).padStart(3, '0')}`, properties: { [relationA.property.id]: linksA, ...(linksB.length ? { [relationB.property.id]: linksB } : {}) }, version: 1, creationOrdinal: 1_000_000 + index, createdAt: now, updatedAt: now,
     }
   })
   const sourcePages = sourceRows.map((row, index) => ({ id: row.pageId, workspaceId: 'derived-bound-ws', parentPageId: null, title: `Row ${index}`, orderKey: String(index).padStart(3, '0'), structureFence: 0, createdAt: now, updatedAt: now }))
@@ -1221,7 +1221,7 @@ test('property type mutation atomically migrates records, repairs views and prot
   for (const targetType of ['relation', 'rollup', 'formula']) await assert.rejects(change('value', targetType), /Invalid database input/)
 
   // Real overflow scan: repository must return the 10001st row and abort before migration.
-  await recordModel.insertMany(Array.from({ length: 9996 }, (_, i) => ({ id: `overflow-${i}`, databaseId: db, workspaceId: ws, pageId: `overflow-page-${i}`, properties: {}, version: 1 })))
+  await recordModel.insertMany(Array.from({ length: 9996 }, (_, i) => ({ id: `overflow-${i}`, databaseId: db, workspaceId: ws, pageId: `overflow-page-${i}`, properties: {}, version: 1, creationOrdinal: 1_000_000 + i })))
   const overflowBefore = await snapshot()
   await assert.rejects(change('value', 'text'), /10000/)
   assert.deepEqual(await snapshot(), overflowBefore)
