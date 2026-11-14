@@ -801,6 +801,7 @@ async function navigateOffscreen(recordId: string, direction: 'left' | 'right'):
         :rows="rowGeometry"
         :group-headers="visibleGroupHeaders"
         :group-windows="groupWindows"
+        :group-controls-visible="!frozenTableVisible"
         :dependency-edges="dependencyEdges"
         :window-dependency-edges="windowDependencyEdges"
         :dependency-geometry-by-id="dependencyGeometryById"

@@ -33,6 +33,7 @@ const props = defineProps<{
   rows: TimelineRowGeometry[]
   groupHeaders?: readonly TimelineGroupHeader[]
   groupWindows?: readonly DatabaseGroupWindow[]
+  groupControlsVisible?: boolean
   dependencyEdges: readonly TimelineDependencyEdge[]
   windowDependencyEdges: readonly TimelineDependencyEdge[]
   dependencyGeometryById: ReadonlyMap<string, TimelineItemGeometry>
@@ -286,7 +287,7 @@ function reasonLabel(reason: TimelineUnscheduledReason): string {
           </div>
           <div v-for="header in groupHeaders" :key="databaseGroupKeyId(header.key)" class="eotion-timeline-grid-group"
             :style="{ top: `${header.top}px`, left: `${state?.scrollLeft ?? 0}px`, width: `${state?.width ?? 0}px`, height: `${header.height}px` }">
-            <TimelineGroupHeaderView :header="header" :window="groupWindow(header)" observe
+            <TimelineGroupHeaderView :header="header" :window="groupWindow(header)" observe :decorative="!groupControlsVisible"
               @visible="emit('groupVisible', header.key)" @toggle="emit('toggleGroup', header.key, !header.collapsed)" @load-more="emit('loadGroupMore', header.key)" />
           </div>
           <div

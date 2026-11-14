@@ -11,6 +11,8 @@ test('Timeline groups share visual rows and expose independent loading controls'
       { key: { kind: 'option', optionId: 'done' }, label: 'Done', collapsed: false, records: [record('c')], nextCursor: null, hasLoaded: true, loading: false, error: null },
       { key: { kind: 'ungrouped' }, label: 'Empty', collapsed: false, records: [], nextCursor: null, hasLoaded: false, loading: false, error: 'Network error' },
     ])
+    const config = Vue.ref({ filters: [], sorts: [], visibleProperties: null, propertyOrder: null,
+      options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'date' }, frozenTable: { visible: true } } } })
     const events: unknown[][] = []
     Object.assign(window, { timelineGroups: groups, timelineGroupEvents: events })
     const host = document.createElement('div')
@@ -19,7 +21,7 @@ test('Timeline groups share visual rows and expose independent loading controls'
     document.body.append(host)
     Vue.createApp({ render: () => Vue.h(Timeline, {
       databaseId: 'db', scope: 'scope', records: [], properties: [{ id: 'title', type: 'title', name: 'Name' }, { id: 'date', type: 'date', name: 'Date' }],
-      config: { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'date' }, frozenTable: { visible: true } } } },
+      config: config.value,
       formatValue: (value: unknown) => String(value ?? ''), selectedPageId: null, activeEditRecordId: null,
       writable: true, viewBusy: false, databaseVersion: 1, groupWindows: groups.value,
       prepareDrag: () => null, prepareSchedule: () => null, moveRecord: async () => false,
@@ -27,11 +29,16 @@ test('Timeline groups share visual rows and expose independent loading controls'
       captureOrder: () => null, reorderRecord: async () => false,
       onToggleGroup: (...args: unknown[]) => events.push(['toggle', ...args]),
       onLoadGroupMore: (...args: unknown[]) => events.push(['load', ...args]),
+      onToggleFrozenTable: (visible: boolean) => { config.value = { ...config.value, options: { ...config.value.options,
+        timeline: { ...config.value.options.timeline, frozenTable: { visible } } } } },
     }) }).mount(host)
   })
   const timeline = page.getByTestId('database-timeline')
   await expect(timeline.locator('[data-testid="timeline-canvas-body"]')).toHaveAttribute('data-row-window-total-height', '288')
   await expect(timeline.locator('[data-timeline-group-header]')).toHaveCount(6)
+  await expect(timeline.locator('[data-testid="timeline-canvas-body"] [data-timeline-group-header]').first()).toHaveAttribute('aria-hidden', 'true')
+  await expect(timeline.locator('[data-testid="timeline-canvas-body"] [data-timeline-group-header] button')).toHaveCount(0)
+  await expect(timeline.locator('[data-testid="timeline-frozen-body"] [data-timeline-group-header] button')).toHaveCount(5)
   await expect(timeline.locator('[data-timeline-row]')).toHaveCount(3)
   await expect(timeline.locator('[data-timeline-row][data-record-id="a"]')).toHaveAttribute('data-row-index', '1')
   await expect(timeline.locator('[data-timeline-frozen-row][data-record-id="c"]')).toHaveAttribute('data-row-index', '4')
@@ -41,10 +48,18 @@ test('Timeline groups share visual rows and expose independent loading controls'
     return [grid.getBoundingClientRect().top, frozen.getBoundingClientRect().top]
   })
   expect(positions[0]).toBeCloseTo(positions[1], 0)
-  await timeline.locator('[data-testid="timeline-canvas-body"]').getByRole('button', { name: '重试' }).click()
-  await timeline.locator('[data-testid="timeline-canvas-body"]').getByRole('button', { name: '折叠分组：Done' }).click()
+  await timeline.locator('[data-testid="timeline-frozen-body"]').getByRole('button', { name: '重试' }).click()
+  await timeline.locator('[data-testid="timeline-frozen-body"]').getByRole('button', { name: '折叠分组：Done' }).click()
   expect(await page.evaluate(() => (window as any).timelineGroupEvents)).toEqual([
     ['load', { kind: 'ungrouped' }], ['toggle', { kind: 'option', optionId: 'done' }, true],
+  ])
+  await timeline.getByTestId('timeline-frozen-toggle').click()
+  await expect(timeline.getByTestId('timeline-frozen-table')).toHaveCount(0)
+  await expect(timeline.locator('[data-testid="timeline-canvas-body"] [data-timeline-group-header] button')).toHaveCount(5)
+  await expect(timeline.locator('[data-testid="timeline-canvas-body"] [data-timeline-group-header]').first()).not.toHaveAttribute('aria-hidden', 'true')
+  await timeline.locator('[data-testid="timeline-canvas-body"]').getByRole('button', { name: '加载更多' }).click()
+  expect(await page.evaluate(() => (window as any).timelineGroupEvents)).toEqual([
+    ['load', { kind: 'ungrouped' }], ['toggle', { kind: 'option', optionId: 'done' }, true], ['load', { kind: 'option', optionId: 'open' }],
   ])
 })
 
@@ -92,7 +107,7 @@ test('Timeline routes manual order, cross-group anchors, empty headers and keybo
     const Vue = await import('/node_modules/.vite/deps/vue.js')
     const { default: Timeline } = await import('/src/components/editor/DatabaseTimelineView.vue')
     const record = (id: string) => ({ id, version: 1, pageId: `page-${id}`, properties: { title: id, date: '2026-11-15' } })
-    const config = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'date' } } } }
+    const config = { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: { timeline: { dateSource: { mode: 'date-property', propertyId: 'date' }, frozenTable: { visible: true } } } }
     const events: unknown[][] = []
     const scope = Vue.ref('scope')
     Object.assign(window, { timelineGroupEvents: events, timelineScope: scope })
@@ -120,6 +135,7 @@ test('Timeline routes manual order, cross-group anchors, empty headers and keybo
   })
   const timeline = page.getByTestId('database-timeline')
   const handle = timeline.locator('[data-testid="timeline-order-handle"][data-record-id="a"]')
+  await expect(timeline.locator('[data-testid="timeline-canvas-body"] [data-timeline-group-header]').first()).toHaveAttribute('aria-hidden', 'true')
   await handle.press('ArrowDown')
   await handle.dragTo(timeline.locator('[data-timeline-row][data-record-id="c"]'), { targetPosition: { x: 5, y: 4 } })
   await handle.dragTo(timeline.locator('[data-timeline-row][data-record-id="d"]'), { targetPosition: { x: 5, y: 44 } })
@@ -204,7 +220,7 @@ test('Timeline observes only visible expanded groups and disconnects on unmount'
     document.body.append(host)
     const app = Vue.createApp({ render: () => Vue.h(Timeline, {
       databaseId: 'db', scope: 'scope', records: [], properties: [],
-      config: { filters: [], sorts: [], visibleProperties: null, propertyOrder: null }, formatValue: () => '',
+      config: { filters: [], sorts: [], visibleProperties: null, propertyOrder: null, options: { timeline: { frozenTable: { visible: true } } } }, formatValue: () => '',
       selectedPageId: null, activeEditRecordId: null, writable: false, viewBusy: false, databaseVersion: 1,
       groupWindows: [
         { key: { kind: 'option', optionId: 'open' }, label: 'Open', collapsed: false, records: [], nextCursor: null, hasLoaded: false, loading: false, error: null },
@@ -217,13 +233,14 @@ test('Timeline observes only visible expanded groups and disconnects on unmount'
     }) })
     app.mount(host)
     await Vue.nextTick()
+    const decorative = host.querySelector('[data-testid="timeline-canvas-body"] [data-timeline-group-header]')?.getAttribute('aria-hidden')
     for (const instance of instances) if (!instance.disconnected) instance.fire()
     const seen = [...events]
     app.unmount()
     await Vue.nextTick()
-    return { seen, allDisconnected: instances.every(instance => instance.disconnected) }
+    return { seen, decorative, allDisconnected: instances.every(instance => instance.disconnected) }
   })
-  expect(result).toEqual({ seen: [{ kind: 'option', optionId: 'open' }], allDisconnected: true })
+  expect(result).toEqual({ seen: [{ kind: 'option', optionId: 'open' }], decorative: 'true', allDisconnected: true })
 })
 
 test('Timeline pending group moves remain owned by their scope epoch', async ({ page }) => {
