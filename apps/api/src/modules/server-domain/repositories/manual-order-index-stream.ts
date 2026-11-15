@@ -12,6 +12,14 @@ export class ManualOrderIndexCorruptionError extends Error {
   }
 }
 
+/** Rejects an ordinal tie at a keyset page edge before dropping the lookahead. */
+export function checkedManualOrdinalPage<Key extends { ordinal: number }>(keys: readonly Key[], limit: number, kind: string): Key[] {
+  if (keys.length > limit && keys[limit]!.ordinal === keys[limit - 1]!.ordinal) {
+    throw new ManualOrderIndexCorruptionError(`${kind} ordinal repeats across key pages`)
+  }
+  return keys.slice(0, limit)
+}
+
 export type ManualOrderIndexStreamInput<Row extends ManualOrderDefaultRow> = {
   direction: ManualOrderDirection
   take: number
@@ -20,6 +28,7 @@ export type ManualOrderIndexStreamInput<Row extends ManualOrderDefaultRow> = {
   remote?: ManualOrderTuple
   excludeRecordId?: string
   batchSize?: number
+  keyBatchSize?: number
   // Both callbacks use an exclusive ordinal cursor in the requested direction.
   // They must use the same database/session/scope and return keys in strict order.
   fetchRecordKeys: (afterOrdinal: number | undefined, limit: number) => Promise<readonly ManualOrderKey[]>
@@ -58,12 +67,14 @@ export async function readManualOrderDefaultIndexStream<Row extends ManualOrderD
   if (!Number.isSafeInteger(min) || min < 1 || !Number.isSafeInteger(max) || max < min) throw new TypeError('Invalid manual order ordinal range')
   const batchSize = input.batchSize ?? 256
   if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 1024) throw new TypeError('Invalid manual order batch size')
+  const keyBatchSize = input.keyBatchSize ?? batchSize
+  if (!Number.isSafeInteger(keyBatchSize) || keyBatchSize < batchSize || keyBatchSize > 8192) throw new TypeError('Invalid manual order key batch size')
   assertTuple(input.boundary, 'boundary')
   assertTuple(input.remote, 'remote')
   const sign = input.direction === 'after' ? 1 : -1
   const debug = { recordKeys: 0, overrideKeys: 0, recordBatches: 0, overrideBatches: 0, candidateBatches: 0, candidates: 0 }
   const rows: Row[] = []
-  let keyLimit = Math.min(batchSize, Math.max(16, input.take))
+  let keyLimit = Math.min(keyBatchSize, Math.max(16, input.take))
 
   const makeStream = (kind: 'record' | 'override', fetch: ManualOrderIndexStreamInput<Row>['fetchRecordKeys']) => {
     let batch: readonly ManualOrderKey[] = []
@@ -129,7 +140,7 @@ export async function readManualOrderDefaultIndexStream<Row extends ManualOrderD
     }
     if (accepted.size === 0) {
       target = Math.min(batchSize, Math.max(1, target * 2))
-      keyLimit = Math.max(keyLimit, target)
+      keyLimit = Math.min(keyBatchSize, Math.max(keyLimit, target, keyBatchSize > batchSize ? keyLimit * 2 : 0))
     } else target = Math.min(batchSize, Math.max(1, input.take - rows.length))
   }
 
@@ -153,7 +164,7 @@ export async function readManualOrderDefaultIndexStream<Row extends ManualOrderD
     if (override?.ordinal === record.ordinal) {
       if (override.recordId !== record.recordId) throw new ManualOrderIndexCorruptionError('override source Record identity differs')
       await overrides.shift()
-      keyLimit = Math.min(batchSize, keyLimit * 2)
+      keyLimit = Math.min(keyBatchSize, keyLimit * 2)
       continue
     }
     const tuple = { position: { slotOrdinal: record.ordinal, rank: '1' }, recordId: record.recordId }
