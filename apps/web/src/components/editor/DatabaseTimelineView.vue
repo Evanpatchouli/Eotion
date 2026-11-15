@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DatabasePropertyResponse, DatabaseViewGroupKey, DatabaseViewRecordsResponse } from '@eotion/contracts'
 import type { DatabaseTimelineViewOptions, DatabaseViewConfig } from '@eotion/domain/database'
-import type { TimelineBarDragSession } from './timeline/useTimelineBarDrag'
+import type { TimelineBarDragMode, TimelineBarDragSession } from './timeline/useTimelineBarDrag'
 import type { TimelineMoveCommand, TimelineScheduleCapture, TimelineScheduleCommand } from './timeline/mutation'
 import { normalizeDatabaseDateValue } from '@eotion/domain/date'
 import { resolveTimelineDependencyProperty, type TimelineDependencyCapture, type TimelineDependencyCommand } from './timeline/dependencyMutation'
@@ -585,22 +585,31 @@ function prepareTimelineDrag(recordId: string): TimelineBarDragSession | null {
   return session?.expectedDatabaseVersion === props.databaseVersion && session.propertyId === propertyId ? session : null
 }
 
-async function commitTimelineDrag(command: TimelineMoveCommand | TimelineScheduleCommand): Promise<boolean> {
+async function commitTimelineDrag(command: TimelineMoveCommand | TimelineScheduleCommand, mode: TimelineBarDragMode = 'move'): Promise<boolean> {
   const captured = { recordId: command.recordId, propertyId: command.propertyId }
   const currentRoot = root.value
   const currentScope = props.scope
+  const horizontalRevision = viewport.horizontalRevision.value
   pendingTimelineMutations.set(captured.recordId, captured)
   try {
     const saved = await props.moveRecord(command)
-    if (saved && !('kind' in command && command.kind === 'schedule') && currentRoot === root.value && currentRoot?.isConnected && currentScope === props.scope) {
+    if (saved && !('kind' in command && command.kind === 'schedule') && currentRoot === root.value && currentRoot?.isConnected
+      && currentScope === props.scope && viewport.horizontalRevision.value === horizontalRevision) {
       await nextTick()
       const row = rowGeometry.value.find(item => item.item.recordId === command.recordId)
       const temporal = temporalMap.value.get(command.recordId)
-      const offscreen = row?.geometry?.offscreen
-      if (offscreen && temporal) {
-        const instant = offscreen === 'right' ? temporal.startMs : temporal.visualEndMs ?? temporal.startMs
+      const geometry = row?.geometry
+      const offscreen = geometry?.offscreen
+      const operatedEndpointClipped = mode === 'start' ? geometry?.clippedLeft : mode === 'end' ? geometry?.clippedRight : false
+      if (row && temporal && (offscreen || operatedEndpointClipped) && viewport.horizontalRevision.value === horizontalRevision) {
+        const version = recordVersionById.value.get(command.recordId)
+        const instant = mode === 'start' ? temporal.startMs : mode === 'end' ? temporal.visualEndMs ?? temporal.startMs
+          : offscreen === 'right' ? temporal.startMs : temporal.visualEndMs ?? temporal.startMs
         await viewport.revealInstant(instant, row.rowIndex, () => currentRoot === root.value && currentRoot?.isConnected === true
-          && currentScope === props.scope && rowIndexByRecordId.value.get(command.recordId) === row.rowIndex, false)
+          && currentScope === props.scope && rowIndexByRecordId.value.get(command.recordId) === row.rowIndex
+          && viewport.horizontalRevision.value === horizontalRevision
+          && recordVersionById.value.get(command.recordId) === version && temporalMap.value.get(command.recordId) === temporal
+          && projectedItems.value.find(item => item.recordId === command.recordId) === row.item, false, 'automatic')
       }
     }
     return saved

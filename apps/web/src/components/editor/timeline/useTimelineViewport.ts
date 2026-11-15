@@ -35,6 +35,7 @@ function readTimeZone(): string {
 
 export function useTimelineViewport(options: Options) {
   const state = ref<TimelineViewportState | null>(null)
+  const horizontalRevision = ref(0)
   const localScaleOverride = ref<TimelineScaleId | null>(null)
   const effectiveScale = computed(() => localScaleOverride.value ?? toValue(options.configuredScale))
   const locale = ref(typeof document === 'undefined' ? 'en-US' : readLocale())
@@ -68,6 +69,7 @@ export function useTimelineViewport(options: Options) {
   let lastTickGeneration = -1
   let stopped = false
   let connectedEpoch = -1
+  let expectedNativeScrollLeft: number | null = null
 
   function currentCenter(): number | null {
     const value = state.value
@@ -152,6 +154,7 @@ export function useTimelineViewport(options: Options) {
     if (!snapshot || !target || !target.isConnected) return
     const canvasReady = target.clientWidth > 0 && target.scrollWidth + 0.5 >= canvasWidth(snapshot.width)
     if (canvasReady && target.scrollLeft === snapshot.scrollLeft) {
+      expectedNativeScrollLeft = null
       cancelScrollCommit()
       return
     }
@@ -179,7 +182,9 @@ export function useTimelineViewport(options: Options) {
       }
 
       const maximumScroll = Math.max(0, Math.min(target.scrollWidth - target.clientWidth, canvasWidth(current.width) - current.width))
-      target.scrollLeft = Math.max(0, Math.min(current.scrollLeft, maximumScroll))
+      const desiredScrollLeft = Math.max(0, Math.min(current.scrollLeft, maximumScroll))
+      if (Math.abs(target.scrollLeft - desiredScrollLeft) > 0.5) expectedNativeScrollLeft = desiredScrollLeft
+      target.scrollLeft = desiredScrollLeft
       const actualScrollLeft = target.scrollLeft
       if (stopped || capturedEpoch !== epoch || serial !== scrollCommitSerial || pendingScrollCommit !== serial
         || target !== activeScroller || !target.isConnected || state.value?.generation !== generation) return
@@ -323,6 +328,7 @@ export function useTimelineViewport(options: Options) {
     langObserver?.disconnect()
     langObserver = null
     activeScroller = null
+    expectedNativeScrollLeft = null
     activeHost = null
     connectedEpoch = -1
     if (timer !== null) clearTimeout(timer)
@@ -340,7 +346,14 @@ export function useTimelineViewport(options: Options) {
     activeScroller = scroller
     activeHost = root.closest<HTMLElement>('.document-wrap') ?? (typeof document !== 'undefined' ? document.scrollingElement as HTMLElement | null : null)
 
-    const onScroll = () => { if (capturedEpoch === epoch && scroller.isConnected) queueFrame(capturedEpoch) }
+    const onScroll = () => {
+      if (capturedEpoch !== epoch || !scroller.isConnected) return
+      const actual = scroller.scrollLeft
+      const programmatic = expectedNativeScrollLeft !== null && Math.abs(actual - expectedNativeScrollLeft) <= 0.5
+      expectedNativeScrollLeft = null
+      if (!programmatic && state.value && Math.abs(actual - state.value.scrollLeft) > 0.5) horizontalRevision.value++
+      queueFrame(capturedEpoch)
+    }
     const host = activeHost
     const onHostScroll = () => { if (capturedEpoch === epoch) queueFrame(capturedEpoch) }
     const onEnvironment = () => refreshEnvironment(capturedEpoch)
@@ -398,6 +411,7 @@ export function useTimelineViewport(options: Options) {
 
   function selectScale(scale: TimelineScaleId): void {
     if (scale === effectiveScale.value) return
+    horizontalRevision.value++
     const before = currentCenter()
     localScaleOverride.value = scale
     if (state.value) {
@@ -412,6 +426,7 @@ export function useTimelineViewport(options: Options) {
   function next(): void { navigate(1) }
   function navigate(direction: -1 | 1): void {
     if (!state.value) return
+    horizontalRevision.value++
     state.value = stepViewport(state.value, direction)
     syncNativeScroll()
     refreshTicks(true)
@@ -420,6 +435,7 @@ export function useTimelineViewport(options: Options) {
   function today(): void {
     updateToday()
     if (!state.value || todayMs.value === null) return
+    horizontalRevision.value++
     state.value = centerViewport(state.value, todayMs.value)
     syncNativeScroll()
     refreshTicks(true)
@@ -460,7 +476,7 @@ export function useTimelineViewport(options: Options) {
     return isCurrent() && document.activeElement === target
   }
 
-  async function revealInstant(instantMs: number, rowIndex: number, isTargetCurrent: () => boolean = () => true, focus = true): Promise<boolean> {
+  async function revealInstant(instantMs: number, rowIndex: number, isTargetCurrent: () => boolean = () => true, focus = true, intent: 'user' | 'automatic' = 'user'): Promise<boolean> {
     const capturedEpoch = epoch
     const capturedScope = toValue(options.scope)
     const root = options.root.value
@@ -479,6 +495,7 @@ export function useTimelineViewport(options: Options) {
 
     const centered = centerViewport(current, instantMs)
     if (!centered) return false
+    if (intent === 'user') horizontalRevision.value++
     state.value = centered
     refreshTicks(true)
     syncNativeScroll()
@@ -490,6 +507,7 @@ export function useTimelineViewport(options: Options) {
 
   watch(() => toValue(options.scope), (nextScope, previousScope) => {
     if (previousScope === undefined || nextScope === previousScope) return
+    horizontalRevision.value++
     const capturedEpoch = ++epoch
     disconnect()
     localScaleOverride.value = null
@@ -505,6 +523,7 @@ export function useTimelineViewport(options: Options) {
     const changed = nextScale !== lastConfiguredScale
     lastConfiguredScale = nextScale
     if (!changed) return
+    horizontalRevision.value++
     const center = currentCenter()
     localScaleOverride.value = null
     if (state.value && state.value.scale !== effectiveScale.value) {
@@ -533,7 +552,7 @@ export function useTimelineViewport(options: Options) {
   })
 
   return {
-    state, effectiveScale, locale, displayTimeZone, ticks: rawTicks, screenTicks, rulerTicks, todayMs, todayX, pinY, periodLabel, rowWindow,
+    state, horizontalRevision, effectiveScale, locale, displayTimeZone, ticks: rawTicks, screenTicks, rulerTicks, todayMs, todayX, pinY, periodLabel, rowWindow,
     canvasWidthPx,
     previous, next, today, selectScale, revealRow, revealInstant, bindScroller, bindRulerAnchor, bindBody,
   }

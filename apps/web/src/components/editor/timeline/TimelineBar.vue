@@ -2,7 +2,7 @@
 import type { TimelineItemGeometry } from './layout'
 import type { TimelineItemProjection } from './projection'
 import type { Transform } from './types'
-import type { TimelineBarDragSession } from './useTimelineBarDrag'
+import type { TimelineBarDragMode, TimelineBarDragSession } from './useTimelineBarDrag'
 import type { TimelineMoveCommand } from './mutation'
 import { computed, onBeforeUnmount, watch } from 'vue'
 import EotionIcon from '../../ui/EotionIcon.vue'
@@ -33,7 +33,7 @@ const props = defineProps<{
   finishDependency: (event: PointerEvent) => void
   cancelDependency: () => void
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
-  commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
+  commitDrag: (command: TimelineMoveCommand, mode: TimelineBarDragMode) => Promise<boolean>
   isViewportCurrent: (snapshot: Transform) => boolean
 }>()
 
@@ -52,7 +52,7 @@ const drag = useTimelineBarDrag({
   recordVersion: () => props.recordVersion,
   enabled: () => props.draggable,
   prepareDrag: recordId => props.prepareDrag(recordId),
-  commitDrag: command => props.commitDrag(command),
+  commitDrag: (command, mode) => props.commitDrag(command, mode),
   isViewportCurrent: snapshot => props.isViewportCurrent(snapshot),
 })
 const saving = computed(() => drag.state.value === 'saving')

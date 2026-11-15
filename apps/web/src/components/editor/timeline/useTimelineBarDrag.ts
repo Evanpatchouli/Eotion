@@ -35,7 +35,8 @@ function isDateSourceMutationBusy(session: TimelineBarDragSession): boolean {
 /** DOM projection of the interaction phase; `armed`/`dragging` are both previewing. */
 export type TimelineBarDragState = 'idle' | 'armed' | 'dragging' | 'saving'
 
-type DragMode = 'move' | 'start' | 'end'
+/** Local gesture intent; never becomes part of the Date cell mutation command. */
+export type TimelineBarDragMode = 'move' | 'start' | 'end'
 
 type Options = {
   geometry: () => TimelineItemGeometry
@@ -46,12 +47,12 @@ type Options = {
   recordVersion: () => number | undefined
   enabled: () => boolean
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
-  commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
+  commitDrag: (command: TimelineMoveCommand, mode: TimelineBarDragMode) => Promise<boolean>
   isViewportCurrent: (snapshot: Transform) => boolean
 }
 
 type ActiveDrag = {
-  mode: DragMode
+  mode: TimelineBarDragMode
   pointerId: number
   target: HTMLElement
   startX: number
@@ -127,9 +128,9 @@ export function useTimelineBarDrag(options: Options) {
   const state = ref<TimelineBarDragState>('idle')
   const phase = ref<TimelineInteractionPhase>('idle')
   const active = ref<ActiveDrag | null>(null)
-  const pending = ref<{ session: TimelineBarDragSession; mode: DragMode; token: number } | null>(null)
-  const activeMode = computed<DragMode | null>(() => active.value?.mode ?? null)
-  const pendingMode = computed<DragMode | null>(() => pending.value?.mode ?? null)
+  const pending = ref<{ session: TimelineBarDragSession; mode: TimelineBarDragMode; token: number } | null>(null)
+  const activeMode = computed<TimelineBarDragMode | null>(() => active.value?.mode ?? null)
+  const pendingMode = computed<TimelineBarDragMode | null>(() => pending.value?.mode ?? null)
   const suppressNextClick = ref(false)
   let previewListeners: AbortController | null = null
   let blockedPointerListeners: AbortController | null = null
@@ -216,7 +217,7 @@ export function useTimelineBarDrag(options: Options) {
     suppressNextClick.value = suppressCanceledDragClick
   }
 
-  function begin(event: PointerEvent, mode: DragMode = 'move'): void {
+  function begin(event: PointerEvent, mode: TimelineBarDragMode = 'move'): void {
     if (active.value) return
     blockedPointerListeners?.abort()
     blockedPointerListeners = null
@@ -288,7 +289,7 @@ export function useTimelineBarDrag(options: Options) {
   }
 
   /** End an interaction that never produced a request and return the machine to idle. */
-  function settleWithoutCommit(mode: DragMode): void {
+  function settleWithoutCommit(mode: TimelineBarDragMode): void {
     // A resize handle is a control, not a Record open affordance: releasing it
     // without a commit must never fall through to the bar click handler.
     suppressNextClick.value = mode !== 'move'
@@ -338,7 +339,7 @@ export function useTimelineBarDrag(options: Options) {
     phase.value = ledger.phase
     state.value = 'saving'
     try {
-      const succeeded = await options.commitDrag({ ...current.session, value })
+      const succeeded = await options.commitDrag({ ...current.session, value }, current.mode)
       await nextTick()
       if (ledger.isCurrent(token) && current.session.scope === options.scope()) {
         if (!succeeded) clearPreviewGeometry()

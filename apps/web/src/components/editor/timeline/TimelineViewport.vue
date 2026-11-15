@@ -3,7 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import type { TimelineTick, TimelineViewportState } from './types'
 import type { TimelineRowGeometry, TimelineRowWindow } from './layout'
 import type { TimelineUnscheduledReason } from './projection'
-import type { TimelineBarDragSession } from './useTimelineBarDrag'
+import type { TimelineBarDragMode, TimelineBarDragSession } from './useTimelineBarDrag'
 import type { TimelineMoveCommand } from './mutation'
 import type { Transform } from './types'
 import type { TimelineItemGeometry } from './layout'
@@ -54,7 +54,7 @@ const props = defineProps<{
   orderEnabled: boolean
   orderSorted: boolean
   prepareDrag: (recordId: string) => TimelineBarDragSession | null
-  commitDrag: (command: TimelineMoveCommand) => Promise<boolean>
+  commitDrag: (command: TimelineMoveCommand, mode: TimelineBarDragMode) => Promise<boolean>
   isViewportCurrent: (snapshot: Transform) => boolean
 }>()
 
