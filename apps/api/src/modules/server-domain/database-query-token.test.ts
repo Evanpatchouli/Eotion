@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { test } from 'node:test'
-import { Module } from '@nestjs/common'
+import { Module, type INestApplicationContext } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
 import { FastifyAdapter } from '@nestjs/platform-fastify'
@@ -22,6 +22,15 @@ async function createIsolatedApp() {
   @Module({ imports: [MongooseModule.forRoot(uri.toString()), ServerDomainModule] })
   class QueryTokenTestModule {}
   return NestFactory.createApplicationContext(QueryTokenTestModule, { logger: false })
+}
+
+async function cleanupIsolatedApp(app: INestApplicationContext, connection: Connection, directTasks: readonly Promise<unknown>[] = []): Promise<void> {
+  try {
+    await app.get(DatabaseRepository).onModuleDestroy()
+    await Promise.allSettled(directTasks)
+  } finally {
+    try { await connection.dropDatabase() } finally { await app.close() }
+  }
 }
 
 async function eventually(check: () => Promise<boolean>, maxAttempts = 100): Promise<void> {
@@ -111,7 +120,7 @@ function beforeQueryTokenScan(model: Model<DatabaseRecordEntity>, onScan: (numbe
 test('legacy grouped reads remain complete until atomically rebuilt tokens are ready', async t => {
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
-  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const records = app.get(DatabaseRecordRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
@@ -168,7 +177,7 @@ test('legacy grouped reads remain complete until atomically rebuilt tokens are r
 test('new records and property updates keep short scalar tokens and ready version in one transaction', async t => {
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
-  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const records = app.get(DatabaseRecordRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
@@ -209,7 +218,7 @@ test('new records and property updates keep short scalar tokens and ready versio
 test('legacy database version writes never certify an absent ready marker', async t => {
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
-  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
   const now = new Date()
@@ -228,7 +237,7 @@ test('a deleted and recreated database ID cannot inherit the old backfill certif
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
   let gate: ReturnType<typeof pauseQueryTokenFinalizations> | undefined
-  t.after(async () => { gate?.restore(); try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { gate?.restore(); await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
   const recordModel = app.get<Model<DatabaseRecordEntity>>(getModelToken(DatabaseRecordEntity.name))
@@ -258,7 +267,7 @@ test('a version advance before lease acquisition starts the original build at th
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
   let gate: ReturnType<typeof pauseQueryTokenAcquisition> | undefined
-  t.after(async () => { gate?.restore(); try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { gate?.restore(); await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
   const recordModel = app.get<Model<DatabaseRecordEntity>>(getModelToken(DatabaseRecordEntity.name))
@@ -285,7 +294,7 @@ test('a concurrently appended record before the scan cursor stays visible after 
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
   let gate: ReturnType<typeof pauseQueryTokenFinalizations> | undefined
-  t.after(async () => { gate?.restore(); try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { gate?.restore(); await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const records = app.get(DatabaseRecordRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
@@ -326,7 +335,7 @@ test('an old writer permanently invalidates a build even after a newer writer ad
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
   let gate: ReturnType<typeof pauseQueryTokenFinalizations> | undefined
-  t.after(async () => { gate?.restore(); try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { gate?.restore(); await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const records = app.get(DatabaseRecordRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
@@ -374,7 +383,8 @@ test('an expired lease can be taken over without the previous worker certifying 
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
   let gate: ReturnType<typeof pauseQueryTokenFinalizations> | undefined
-  t.after(async () => { gate?.restore(); try { await connection.dropDatabase() } finally { await app.close() } })
+  let directTask: Promise<void> | undefined
+  t.after(async () => { gate?.restore(); await cleanupIsolatedApp(app, connection, directTask ? [directTask] : []) })
   const databases = app.get(DatabaseRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
   const recordModel = app.get<Model<DatabaseRecordEntity>>(getModelToken(DatabaseRecordEntity.name))
@@ -397,6 +407,7 @@ test('an expired lease can be taken over without the previous worker certifying 
   assert.equal((await databaseModel.collection.findOne({ id: 'legacy' }))?.queryTokenBuildId, first.queryTokenBuildId)
   await databaseModel.collection.updateOne({ id: 'legacy' }, { $set: { queryTokenBuildLeaseUntil: new Date(0) } })
   const secondTask = worker.backfillQueryTokens(target)
+  directTask = secondTask
   await gate.entered(1)
   const second = await databaseModel.collection.findOne({ id: 'legacy' })
   assert.ok(second?.queryTokenBuildId && second.queryTokenBuildId !== first.queryTokenBuildId)
@@ -418,7 +429,7 @@ test('a slow in-flight write batch cannot start another batch after its lease is
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
   let gate: ReturnType<typeof pauseFirstQueryTokenWriteBatch> | undefined
-  t.after(async () => { gate?.restore(); try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { gate?.restore(); await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
   const recordModel = app.get<Model<DatabaseRecordEntity>>(getModelToken(DatabaseRecordEntity.name))
@@ -449,7 +460,7 @@ test('new writers with increasing IDs do not extend the original build beyond it
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
   let hook: ReturnType<typeof beforeQueryTokenScan> | undefined
-  t.after(async () => { hook?.restore(); try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { hook?.restore(); await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const records = app.get(DatabaseRecordRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
@@ -487,7 +498,7 @@ test('complete new records cannot fill the bounded pending-token scan window', a
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
   let hook: ReturnType<typeof beforeQueryTokenScan> | undefined
-  t.after(async () => { hook?.restore(); try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { hook?.restore(); await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const records = app.get(DatabaseRecordRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
@@ -552,7 +563,7 @@ test('an old writer inserting above the fixed upper ID invalidates the original 
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
   let hook: ReturnType<typeof beforeQueryTokenScan> | undefined
-  t.after(async () => { hook?.restore(); try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { hook?.restore(); await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
   const recordModel = app.get<Model<DatabaseRecordEntity>>(getModelToken(DatabaseRecordEntity.name))
@@ -580,7 +591,7 @@ test('an old writer inserting above the fixed upper ID invalidates the original 
 test('an empty legacy database can certify without scanning a record window', async t => {
   const app = await createIsolatedApp()
   const connection = app.get<Connection>(getConnectionToken())
-  t.after(async () => { try { await connection.dropDatabase() } finally { await app.close() } })
+  t.after(async () => { await cleanupIsolatedApp(app, connection) })
   const databases = app.get(DatabaseRepository)
   const databaseModel = app.get<Model<DatabaseEntity>>(getModelToken(DatabaseEntity.name))
   const now = new Date()
@@ -610,8 +621,7 @@ test('HTTP record create and cell update accept empty Text without storing an em
   const base = `http://127.0.0.1:${address.port}`
   const connection = app.get<Connection>(getConnectionToken())
   t.after(async () => {
-    try { await connection.dropDatabase() } finally {
-      await app.close()
+    try { await cleanupIsolatedApp(app, connection) } finally {
       if (previousMongo === undefined) delete process.env.MONGODB_URI
       else process.env.MONGODB_URI = previousMongo
       if (previousOrigin === undefined) delete process.env.WEB_ORIGIN
