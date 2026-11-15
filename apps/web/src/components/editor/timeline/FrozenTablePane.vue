@@ -114,7 +114,7 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
 </template>
 
 <style scoped>
-.eotion-timeline-frozen { position:relative; flex:0 0 min(360px, 44%); width:min(360px, 44%); min-width:120px; max-width:45%; overflow:clip; border-right:1px solid var(--e-color-border, var(--border-editor)); }
+.eotion-timeline-frozen { position:relative; flex:0 1 32%; width:32%; min-width:120px; max-width:min(480px, 45%); overflow:clip; border-right:1px solid var(--e-color-border, var(--border-editor)); }
 .eotion-timeline-frozen-scroll { width:100%; max-width:100%; overflow-x:auto; overflow-y:clip; overscroll-behavior-inline:contain; }
 .eotion-timeline-frozen-scroll:focus-visible { outline:2px solid var(--e-color-focus, var(--editor-focus)); outline-offset:-2px; }
 .eotion-timeline-frozen-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); }

@@ -1426,9 +1426,16 @@ test('P11.3B date-only resize changes one endpoint, keeps inclusive end dates, a
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'))
   await screenshot(page, 'p113b-date-endpoints-desktop-dark')
   await page.setViewportSize({ width: 390, height: 844 })
+  await settleTimelineGestureLayout(timeline)
   for (const theme of ['light', 'dark'] as const) {
     await page.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+    if (!(await startHandle.isVisible())) {
+      const jumpToRangeStart = timeline.locator('[data-testid="timeline-offscreen-left"][data-record-id="p113b-range"]')
+      await expect(jumpToRangeStart).toBeVisible()
+      await jumpToRangeStart.click()
+    }
+    await expect(startHandle).toBeVisible()
     await startHandle.focus()
     await expect(startHandle).toBeFocused()
     if (theme === 'light') {
