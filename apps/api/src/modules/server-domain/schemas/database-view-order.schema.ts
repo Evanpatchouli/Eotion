@@ -15,9 +15,12 @@ export class DatabaseViewOrderOverrideEntity {
 
 export type DatabaseViewOrderOverrideDocument = HydratedDocument<DatabaseViewOrderOverrideEntity>
 export const DatabaseViewOrderOverrideSchema = SchemaFactory.createForClass(DatabaseViewOrderOverrideEntity)
+export const DATABASE_VIEW_ORDER_SOURCE_RECORD_INDEX = 'view_order_source_record_cover'
 DatabaseViewOrderOverrideSchema.index({ workspaceId: 1, databaseId: 1, orderScopeId: 1, recordId: 1 }, { unique: true, collation: { locale: 'simple' } })
 DatabaseViewOrderOverrideSchema.index({ joinKey: 1 }, { unique: true, collation: { locale: 'simple' } })
 DatabaseViewOrderOverrideSchema.index({ workspaceId: 1, databaseId: 1, orderScopeId: 1, sourceCreationOrdinal: 1 }, { unique: true, collation: { locale: 'simple' } })
+DatabaseViewOrderOverrideSchema.index({ workspaceId: 1, databaseId: 1, orderScopeId: 1, sourceCreationOrdinal: 1, recordId: 1 },
+  { name: DATABASE_VIEW_ORDER_SOURCE_RECORD_INDEX, collation: { locale: 'simple' } })
 DatabaseViewOrderOverrideSchema.index({ workspaceId: 1, databaseId: 1, orderScopeId: 1, slotOrdinal: 1, rank: 1 }, { unique: true, collation: { locale: 'simple' } })
 DatabaseViewOrderOverrideSchema.index({ workspaceId: 1, databaseId: 1, recordId: 1, orderScopeId: 1 }, { collation: { locale: 'simple' } })
 
