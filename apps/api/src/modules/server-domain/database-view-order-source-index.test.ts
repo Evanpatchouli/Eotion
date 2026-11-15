@@ -9,7 +9,9 @@ import {
   DatabaseViewOrderOverrideSchema,
 } from './schemas/database-view-order.schema'
 
-const uri = new URL(process.env.P4_TEST_MONGODB_URI?.trim() || 'mongodb://127.0.0.1:27017')
+const configuredUri = process.env.P4_TEST_MONGODB_URI?.trim()
+assert.ok(configuredUri, 'P4_TEST_MONGODB_URI must explicitly name an isolated MongoDB instance')
+const uri = new URL(configuredUri)
 uri.pathname = `/eotion_view_order_source_index_${randomUUID().replaceAll('-', '')}`
 
 test('source/record covering index is index-only in both directions while source remains unique', async t => {

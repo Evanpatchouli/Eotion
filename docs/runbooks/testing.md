@@ -33,6 +33,22 @@ pnpm --filter @eotion/api test:http
 
 HTTP 测试启动 Fastify/Nest 实例，通过真实 HTTP 请求覆盖 Session Cookie、身份边界、Workspace/Page/Block CRUD、跨用户权限、请求体运行时校验，以及 P4.4 sync 的真实本地 oplog → SDK transport → HTTP → Mongo → 本地 synced 路径、重复/并发重试与删除。P4.5 File HTTP 测试另外启动 fake ali-oss-server HTTP 服务；Eotion 仍调用真实 `@ali-oss-server/sdk@1.1.0`，不需要真实 Aliyun OSS。它覆盖文件 CRUD、对象键隔离和 OSS/Mongo 失败补偿。Domain 测试还覆盖 Mongo 未配置时的 `/api/health`。
 
+## Database 分组和手序索引
+
+显式设置 `P4_TEST_MONGODB_URI` 指向有事务和 profiler 权限的隔离 replica set 后运行：
+
+```powershell
+pnpm --filter @eotion/api test:database:indexes
+pnpm --filter @eotion/api test:database:index-performance
+```
+
+两项使用随机测试数据库并在结束时删除该库；不会自动退回本机 27017。第一项验证索引
+回填、事务、错误回退及跨页顺序；第二项默认使用 10,000 条记录，对照精确路径与索引
+路径。需要 100,000 条样本时，可分别设置 `EOTION_GROUP_INDEX_BENCH_100K=1`、
+`EOTION_ORDER_STREAM_BENCH_100K=1` 或 `EOTION_ORDER_PRODUCTION_BENCH_100K=1`
+后运行第二项。计时是指定环境的单次样本，应结合 `docsExamined`、`keysExamined`
+和结果 oracle 阅读，不能作为生产延迟保证。
+
 ## Change-to-Test Mapping
 
 修改 contracts、SDK 或 HTTP API 时运行相关包的 `typecheck` / `build`，并运行上述 API/SDK 测试。若改动 contracts 的运行时导出，还需验证 `pnpm --filter @eotion/web build` 与 API 的 CommonJS 导入。

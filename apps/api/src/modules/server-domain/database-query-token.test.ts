@@ -15,9 +15,14 @@ import { DatabaseEntity } from './schemas/database.schema'
 import { DatabaseRecordEntity } from './schemas/database-record.schema'
 import { DatabaseRepository, DatabaseRecordRepository } from './repositories/database.repository'
 
+function isolatedMongoUri(): URL {
+  const configured = process.env.P4_TEST_MONGODB_URI?.trim()
+  assert.ok(configured, 'P4_TEST_MONGODB_URI must explicitly name an isolated MongoDB instance')
+  return new URL(configured)
+}
+
 async function createIsolatedApp() {
-  const uri = new URL(process.env.P4_TEST_MONGODB_URI?.trim() || 'mongodb://127.0.0.1:27017')
-  assert.equal(uri.port, '55778', 'this test must use the isolated MongoDB instance')
+  const uri = isolatedMongoUri()
   uri.pathname = `/eotion_query_token_${randomUUID().replaceAll('-', '')}`
   @Module({ imports: [MongooseModule.forRoot(uri.toString()), ServerDomainModule] })
   class QueryTokenTestModule {}
@@ -604,8 +609,7 @@ test('an empty legacy database can certify without scanning a record window', as
 })
 
 test('HTTP record create and cell update accept empty Text without storing an empty token', async t => {
-  const uri = new URL(process.env.P4_TEST_MONGODB_URI?.trim() || 'mongodb://127.0.0.1:27017')
-  assert.equal(uri.port, '55778', 'this test must use the isolated MongoDB instance')
+  const uri = isolatedMongoUri()
   uri.pathname = `/eotion_query_token_${randomUUID().replaceAll('-', '')}`
   @Module({ imports: [ConfigModule.forRoot({ isGlobal: true }), MongooseModule.forRoot(uri.toString()), HttpApiModule] })
   class QueryTokenHttpModule {}

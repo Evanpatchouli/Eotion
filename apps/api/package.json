@@ -9,6 +9,8 @@
     "start": "node dist/main.js",
     "test:domain": "pnpm build && node --test dist/modules/server-domain/server-domain.test.js dist/modules/server-domain/database.test.js",
     "test:database:performance": "pnpm build && node --test dist/modules/server-domain/database-performance.test.js",
+    "test:database:indexes": "pnpm build && node --test --test-concurrency=1 dist/modules/server-domain/repositories/manual-order-index-stream.test.js dist/modules/server-domain/database-view-order-source-index.test.js dist/modules/server-domain/database-query-token.test.js dist/modules/server-domain/database-manual-stream-integration.test.js dist/modules/server-domain/database-group-move-performance.test.js",
+    "test:database:index-performance": "pnpm build && node --test --test-concurrency=1 dist/modules/server-domain/database-group-token-performance.test.js dist/modules/server-domain/database-manual-stream-performance.test.js dist/modules/server-domain/database-manual-stream-production-performance.test.js",
     "benchmark:page-tree": "pnpm build && node --test dist/modules/server-domain/page-tree-benchmark.test.js",
     "test:http": "pnpm build && node --test dist/modules/http-api/http-api.test.js dist/modules/http-api/database-http.test.js dist/modules/http-api/database-cell-mutation-http.test.js dist/modules/http-api/database-view-order-http.test.js dist/modules/http-api/database-view-group-http.test.js && node --experimental-strip-types --test src/modules/http-api/sync-http.test.mjs && node --experimental-strip-types --test src/modules/http-api/file-http.test.mjs",
     "typecheck": "tsc --noEmit",
