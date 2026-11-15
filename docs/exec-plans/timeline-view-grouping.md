@@ -1,6 +1,6 @@
 # 通用 View Select 分组与 Timeline 接入
 
-状态：2026-11-15 用户已批准实施。本方案冻结产品行为与验证边界；具体查询索引和准确计数的成本先实测再定。实施前 Timeline 尚无分组，Board 仅把已加载的全局分页窗口在前端分列。
+状态：2026-11-15 用户已批准，实施与验证完成。本方案冻结产品行为与验证边界；实施前 Timeline 尚无分组，Board 仅把已加载的全局分页窗口在前端分列。
 
 ## 目标行为
 
@@ -42,3 +42,8 @@
 5. **独立验收：**真实 HTTP/Mongo、SDK、完整相关 Web 回归、Desktop/Tablet/Phone 与性能复核；记录准确计数方案及未达到的性能目标。
 
 本方案新增公共行为、View 配置和查询/写入契约；用户已确认这些产品与 API 影响。
+
+最终验证：Database Web 292/292、时间轴与分组专项 137/137、Visual 13/13；最终 Web
+build 及隔离 Mongo/真实 API/Web 分组流程 1/1。API Domain 16/16、HTTP 45/45、MCP
+50/50、Database performance 1/1；Domain 102/102、Contracts 35/35、SDK 33/33。独立
+跨层 review 无剩余 P1/P2 blocker。以上为当前源码状态，历史失败与修复见当前任务记录。

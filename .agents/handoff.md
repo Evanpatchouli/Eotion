@@ -1,5 +1,28 @@
 # Handoff
 
+## 2026-11-15 Notion 时间轴行重排、左表与分组
+
+用户已明确批准通用 View 行顺序及 Select 分组的模型/API 变更；直接在实际默认主分支
+`master` 完成并提交，未推送。Timeline 现支持每 View 跨页持久行重排、左表直接编辑、
+Select 分组和跨组原子移动；Board 复用按组分页。折叠偏好保存在当前设备。记录顺序、
+筛选、显式排序、未知提交和数据生命周期见 [P9](../docs/p9-multi-view.md)、
+[P11](../docs/p11-timeline.md)、[分组方案](../docs/exec-plans/timeline-view-grouping.md)
+和[手序方案](../docs/exec-plans/view-record-order.md)。下方 2026-11-14 的未实施/待批准
+内容是历史，不再代表当前状态。
+
+最终 Database Web 292/292、时间轴/分组专项 137/137、Visual 13/13、隔离真实 API/Web
+1/1；API Domain 16/16、HTTP 45/45、MCP 50/50、Database performance 1/1、排序存储
+1/1；Domain 102/102、Contracts 35/35、SDK 33/33，API/Web build 与独立跨层 review
+通过。用户允许不兼容旧数据：缺少 creationOrdinal 或 View order scope 的旧数据会明确
+返回冲突，不做自动迁移。分组目前仅支持 Select；只在完整加载时显示准确组总数。
+
+10 万条稀疏组首窗本地约 368 ms、扫描约 10 万条 Record；Title contains 全组计数
+约 21.57 s，尚未提供同步全组计数。10k 条且99%曾手排的部分分布仍约 630–820 ms。
+这些是指定测试样本而非延迟保证。自有隔离 Mongo 55778 和本任务 Vite/API/preview
+均已停止，未操作用户 27017 服务。隔离 Mongo 临时目录
+`C:/Users/31250/AppData/Local/Temp/eotion-split-date-e83adcadc59341a580c5f6f6140da8a1`
+递归清理此前被自动审批以 `blocked by policy` 拒绝，保留原样，未重试绕过。
+
 ## 2026-11-14 Notion 时间轴体验改版
 
 用户要求尽可能对齐 Notion 时间轴，不考虑旧数据兼容，并指定在主分支实施；仓库实际默认
