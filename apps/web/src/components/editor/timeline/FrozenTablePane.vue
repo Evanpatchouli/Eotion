@@ -120,6 +120,7 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
 .eotion-timeline-frozen-ruler-slot { position:relative; z-index:2; height:var(--timeline-header-height, 56px); }
 .eotion-timeline-frozen-header { position:absolute; top:0; left:0; display:flex; height:var(--timeline-header-height, 56px); overflow:hidden; border-bottom:1px solid var(--e-color-border, var(--border-editor)); background:var(--e-color-canvas, var(--editor-canvas)); will-change:transform; }
 .eotion-timeline-frozen-toggle { position:absolute; z-index:3; top:8px; right:6px; display:inline-flex; width:36px; height:36px; flex:0 0 36px; align-items:center; justify-content:center; border:1px solid var(--e-color-border, var(--border-editor)); border-radius:var(--e-radius-control, 6px); padding:0; background:var(--e-color-canvas, var(--editor-canvas)); color:var(--e-color-text-secondary, var(--editor-muted)); cursor:pointer; }
+.eotion-timeline-frozen-toggle::before { content:""; position:absolute; top:-8px; right:100%; width:16px; height:var(--timeline-header-height, 56px); background:var(--e-color-canvas, var(--editor-canvas)); pointer-events:none; }
 .eotion-timeline-frozen-toggle:hover:not(:disabled) { background:var(--e-color-hover, var(--editor-hover)); color:var(--e-color-text-primary, var(--editor-text)); }
 .eotion-timeline-frozen-toggle:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:2px; }
 .eotion-timeline-frozen-toggle:disabled { cursor:not-allowed; opacity:.55; }

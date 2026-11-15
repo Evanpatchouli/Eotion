@@ -67,10 +67,39 @@ for (const narrow of [false, true]) {
     expect(measurements.bodyWidth).toBeGreaterThan(measurements.paneWidth)
     expect(Math.abs(measurements.rowTop - measurements.gridTop)).toBeLessThan(1)
 
-    const before = await pane.evaluate(element => ({ headerX: element.querySelector('[data-testid="timeline-frozen-header"] [data-property-id="name"]')!.getBoundingClientRect().x,
-      rowX: element.querySelector('[data-timeline-frozen-row] [data-property-id="name"]')!.getBoundingClientRect().x,
-      toggleX: element.querySelector('[data-testid="timeline-frozen-toggle"]')!.getBoundingClientRect().x,
-      groupX: element.querySelector('.eotion-timeline-group-toggle')!.getBoundingClientRect().x }))
+    const before = await pane.evaluate(element => {
+      const header = element.querySelector<HTMLElement>('[data-testid="timeline-frozen-header"]')!
+      const toggle = element.querySelector<HTMLElement>('[data-testid="timeline-frozen-toggle"]')!
+      const toggleRect = toggle.getBoundingClientRect()
+      const mask = getComputedStyle(toggle, '::before')
+      const titleText = header.querySelector<HTMLElement>('[data-property-id="name"] span')!.getBoundingClientRect()
+      const secondText = header.querySelector<HTMLElement>('[data-property-id="date"] span')!.getBoundingClientRect()
+      return { headerX: header.querySelector('[data-property-id="name"]')!.getBoundingClientRect().x,
+        rowX: element.querySelector('[data-timeline-frozen-row] [data-property-id="name"]')!.getBoundingClientRect().x,
+        toggleX: toggleRect.x, groupX: element.querySelector('.eotion-timeline-group-toggle')!.getBoundingClientRect().x,
+        maskLeft: toggleRect.left - parseFloat(mask.width), maskRight: toggleRect.left, maskWidth: parseFloat(mask.width),
+        maskHeight: parseFloat(mask.height), maskColor: mask.backgroundColor, headerColor: getComputedStyle(header).backgroundColor,
+        titleTextRight: titleText.right, secondTextLeft: secondText.left,
+        toggleHit: toggle.contains(document.elementFromPoint(toggleRect.x + toggleRect.width / 2, toggleRect.y + toggleRect.height / 2)) }
+    })
+    expect(before.maskWidth).toBe(16)
+    expect(before.maskHeight).toBe(56)
+    expect(before.maskColor).toBe(before.headerColor)
+    expect(before.toggleHit).toBe(true)
+    if (narrow) expect(before.titleTextRight).toBeLessThan(before.maskLeft)
+    else {
+      expect(before.secondTextLeft).toBeGreaterThanOrEqual(before.maskLeft)
+      expect(before.secondTextLeft).toBeLessThan(before.maskRight)
+    }
+    await scroll.evaluate((element, left) => { element.scrollLeft = left }, narrow ? 180 : 100)
+    const revealedHeader = await pane.evaluate(element => {
+      const rect = element.querySelector<HTMLElement>('[data-testid="timeline-frozen-header"] [data-property-id="date"] span')!.getBoundingClientRect()
+      const pane = element.getBoundingClientRect()
+      const toggle = element.querySelector<HTMLElement>('[data-testid="timeline-frozen-toggle"]')!.getBoundingClientRect()
+      return { left: rect.left, right: rect.right, paneLeft: pane.left, maskLeft: toggle.left - 16 }
+    })
+    expect(revealedHeader.left).toBeGreaterThanOrEqual(revealedHeader.paneLeft)
+    expect(revealedHeader.right).toBeLessThanOrEqual(revealedHeader.maskLeft)
     await scroll.evaluate(element => { element.scrollLeft = element.scrollWidth })
     const after = await pane.evaluate(element => {
       const toggle = element.querySelector<HTMLElement>('[data-testid="timeline-frozen-toggle"]')!
