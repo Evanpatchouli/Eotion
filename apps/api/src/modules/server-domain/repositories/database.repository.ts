@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { randomUUID } from 'node:crypto'
 import { DATABASE_RECORD_SCAN_MAX_RECORDS, DEFAULT_DATABASE_VIEW_CONFIG, compareViewOrderPosition } from '@eotion/domain'
 import type { Database, DatabaseProperty, DatabaseRecord, DatabaseTableRecord, DatabaseView, DatabaseViewConfig } from '@eotion/domain'
 import { getDatabaseDateStartInstant } from '@eotion/domain/date'
-import type { ClientSession, Model, PipelineStage } from 'mongoose'
+import type { ClientSession, Model, PipelineStage, Types } from 'mongoose'
 import { DatabaseDocument, DatabaseEntity } from '../schemas/database.schema'
 import { DatabasePropertyDocument, DatabasePropertyEntity } from '../schemas/database-property.schema'
 import { DatabaseRecordDocument, DatabaseRecordEntity } from '../schemas/database-record.schema'
@@ -22,15 +22,51 @@ type ManualWindowInput = {
   boundary?: ManualBoundary; direction: 'after' | 'before'; excludeRecordId?: string;
   take: number; session?: ClientSession;
   group?: DatabaseRecordGroupQuery;
+  queryTokensReady?: boolean;
 }
 export type DatabaseRecordGroupQuery = { propertyId: string; optionIds: readonly string[]; group: { kind: 'option'; optionId: string } | { kind: 'ungrouped' } }
 const dates = (doc: { createdAt: Date; updatedAt: Date }) => ({ createdAt: doc.createdAt.toISOString(), updatedAt: doc.updatedAt.toISOString() })
+const QUERY_TOKEN_BACKFILL_BATCH = 500
+const QUERY_TOKEN_BACKFILL_WRITE_BATCH = 50
+const QUERY_TOKEN_BACKFILL_CONCURRENCY = 2
+const QUERY_TOKEN_BACKFILL_RETRY_MS = 10_000
+const QUERY_TOKEN_BUILD_LEASE_SECONDS = 60
+
+function queryTokens(properties: DatabaseRecord['properties']): { p: string; v: string }[] {
+  return Object.entries(properties).flatMap(([p, value]) => {
+    if (typeof value !== 'string' || value.length === 0) return []
+    let length = 0
+    for (const _ of value) if (++length > 256) return []
+    return [{ p, v: value }]
+  })
+}
+
+const queryTokensFromCurrentProperties = { $map: {
+  input: { $filter: {
+    input: { $objectToArray: { $ifNull: ['$properties', {}] } }, as: 'item',
+    cond: { $cond: [{ $eq: [{ $type: '$$item.v' }, 'string'] }, { $and: [{ $gt: [{ $strLenCP: '$$item.v' }, 0] }, { $lte: [{ $strLenCP: '$$item.v' }, 256] }] }, false] },
+  } },
+  as: 'item', in: { p: '$$item.k', v: '$$item.v' },
+} }
+const missingQueryTokens = { $or: [
+  { queryTokenSourceVersion: { $exists: false } },
+  { $expr: { $ne: ['$queryTokenSourceVersion', { $ifNull: ['$version', 0] }] } },
+] }
 
 @Injectable()
-export class DatabaseRepository {
-  constructor(@InjectModel(DatabaseEntity.name) private readonly model: Model<DatabaseDocument>) {}
+export class DatabaseRepository implements OnModuleDestroy {
+  private readonly logger = new Logger(DatabaseRepository.name)
+  private readonly queryTokenBackfills = new Map<string, Promise<void>>()
+  private readonly queryTokenRetries = new Map<string, number>()
+  private stopping = false
+  constructor(@InjectModel(DatabaseEntity.name) private readonly model: Model<DatabaseDocument>,
+    @InjectModel(DatabaseRecordEntity.name) private readonly records: Model<DatabaseRecordDocument>) {}
+  async onModuleDestroy(): Promise<void> {
+    this.stopping = true
+    await Promise.allSettled(this.queryTokenBackfills.values())
+  }
   async create(input: Stored<Database> & { parentPageId?: string; orderKey?: string }, session: ClientSession): Promise<Database> {
-    const [doc] = await this.model.create([input], { session })
+    const [doc] = await this.model.create([{ ...input, queryTokenReadyVersion: input.version }], { session })
     return { id: doc!.id, workspaceId: doc!.workspaceId, name: doc!.name, version: doc!.version, ...dates(doc!) }
   }
   async findInWorkspace(workspaceId: string, id: string, session?: ClientSession): Promise<Database | null> {
@@ -38,15 +74,109 @@ export class DatabaseRepository {
     return doc ? { id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) } : null
   }
   async compareAndBump(workspaceId: string, id: string, expectedVersion: number, session: ClientSession): Promise<Database | null> {
-    const doc = await this.model.findOneAndUpdate({ workspaceId, id, version: expectedVersion }, [{ $set: { version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
+    const doc = await this.model.findOneAndUpdate({ workspaceId, id, version: expectedVersion }, [{ $set: {
+      queryTokenReadyVersion: { $cond: [{ $eq: ['$queryTokenReadyVersion', '$version'] }, { $add: ['$version', 1] }, '$queryTokenReadyVersion'] },
+      queryTokenBuildSafeVersion: { $cond: [{ $eq: ['$queryTokenBuildSafeVersion', '$version'] }, { $add: ['$version', 1] }, '$queryTokenBuildSafeVersion'] },
+      version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] },
+    } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
     return doc ? { id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) } : null
   }
   async rename(workspaceId: string, id: string, expectedVersion: number, name: string, session: ClientSession): Promise<Database | null> {
-    const doc = await this.model.findOneAndUpdate({ workspaceId, id, version: expectedVersion }, [{ $set: { name: { $literal: name }, version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
+    const doc = await this.model.findOneAndUpdate({ workspaceId, id, version: expectedVersion }, [{ $set: {
+      name: { $literal: name }, queryTokenReadyVersion: { $cond: [{ $eq: ['$queryTokenReadyVersion', '$version'] }, { $add: ['$version', 1] }, '$queryTokenReadyVersion'] },
+      queryTokenBuildSafeVersion: { $cond: [{ $eq: ['$queryTokenBuildSafeVersion', '$version'] }, { $add: ['$version', 1] }, '$queryTokenBuildSafeVersion'] },
+      version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] },
+    } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
     return doc ? { id: doc.id, workspaceId: doc.workspaceId, name: doc.name, version: doc.version, ...dates(doc) } : null
   }
   async touchAdvancedReferenceFence(workspaceId: string, id: string, session: ClientSession): Promise<boolean> {
     return !!(await this.model.findOneAndUpdate({ workspaceId, id }, { $inc: { advancedReferenceFence: 1 } }, { session, returnDocument: 'after' }).exec())
+  }
+  async queryTokensReadyOrSchedule(workspaceId: string, id: string, version: number, session?: ClientSession): Promise<boolean> {
+    const raw = await this.model.findOne({ workspaceId, id }).select({ _id: 1, workspaceId: 1, id: 1, version: 1, queryTokenReadyVersion: 1 })
+      .session(session ?? null).lean().exec()
+    if (!raw || raw.version !== version) return false
+    if (Object.hasOwn(raw, 'queryTokenReadyVersion') && raw.queryTokenReadyVersion === version) return true
+    this.scheduleQueryTokenBackfill({ _id: raw._id, workspaceId, id, version })
+    return false
+  }
+  private scheduleQueryTokenBackfill(target: { _id: Types.ObjectId; workspaceId: string; id: string; version: number }): void {
+    if (this.stopping) return
+    const key = String(target._id)
+    if (this.queryTokenBackfills.has(key) || this.queryTokenBackfills.size >= QUERY_TOKEN_BACKFILL_CONCURRENCY) return
+    if ((this.queryTokenRetries.get(key) ?? 0) > Date.now()) return
+    // Do not retain an unbounded registry of database identities.
+    if (this.queryTokenRetries.size > 256) this.queryTokenRetries.delete(this.queryTokenRetries.keys().next().value!)
+    const task = this.backfillQueryTokens(target).catch(error => {
+      this.logger.warn(`Query token backfill failed for database ${target.id}: ${error instanceof Error ? error.message : String(error)}`)
+    }).finally(() => {
+      this.queryTokenBackfills.delete(key)
+      this.queryTokenRetries.set(key, Date.now() + QUERY_TOKEN_BACKFILL_RETRY_MS)
+    })
+    this.queryTokenBackfills.set(key, task)
+  }
+  private async backfillQueryTokens(target: { _id: Types.ObjectId; workspaceId: string; id: string; version: number }): Promise<void> {
+    if (this.stopping) return
+    const buildId = randomUUID()
+    const acquired = await this.model.collection.findOneAndUpdate({ _id: target._id, workspaceId: target.workspaceId, id: target.id,
+      $expr: { $and: [
+        { $ne: ['$queryTokenReadyVersion', '$version'] },
+        { $or: [
+          { $eq: [{ $type: '$queryTokenBuildId' }, 'missing'] },
+          { $lte: [{ $ifNull: ['$queryTokenBuildLeaseUntil', new Date(0)] }, '$$NOW'] },
+        ] },
+      ] },
+    }, [{ $set: {
+      queryTokenBuildId: { $literal: buildId }, queryTokenBuildSafeVersion: '$version',
+      queryTokenBuildLeaseUntil: { $dateAdd: { startDate: '$$NOW', unit: 'second', amount: QUERY_TOKEN_BUILD_LEASE_SECONDS } },
+    } }], { returnDocument: 'after' })
+    if (!acquired) return
+    const owner = { _id: target._id, workspaceId: target.workspaceId, id: target.id, queryTokenBuildId: buildId }
+    const validLease = { $and: [
+      { $eq: ['$queryTokenBuildSafeVersion', '$version'] },
+      { $gt: ['$queryTokenBuildLeaseUntil', '$$NOW'] },
+    ] }
+    try {
+      // New writers maintain tokens themselves; a fixed high-water mark keeps this build finite.
+      const upperId = (await this.records.collection.find({ workspaceId: target.workspaceId, databaseId: target.id },
+        { projection: { _id: 0, id: 1 }, collation: { locale: 'simple' } }).sort({ id: -1 }).limit(1).toArray())[0]?.id
+      let after: string | undefined
+      while (!this.stopping && upperId !== undefined) {
+        const renewed = await this.model.collection.updateOne({ ...owner, $expr: validLease }, [{ $set: {
+          queryTokenBuildLeaseUntil: { $dateAdd: { startDate: '$$NOW', unit: 'second', amount: QUERY_TOKEN_BUILD_LEASE_SECONDS } },
+        } }])
+        if (renewed.matchedCount !== 1) return
+        const rows = await this.records.collection.find({ workspaceId: target.workspaceId, databaseId: target.id,
+          id: { ...(after === undefined ? {} : { $gt: after }), $lte: upperId }, ...missingQueryTokens },
+        { projection: { _id: 1, id: 1, version: 1, queryTokenSourceVersion: 1 }, collation: { locale: 'simple' } })
+          .sort({ id: 1 }).limit(QUERY_TOKEN_BACKFILL_BATCH).toArray()
+        if (rows.length === 0) break
+        for (let offset = 0; offset < rows.length; offset += QUERY_TOKEN_BACKFILL_WRITE_BATCH) {
+          if (this.stopping) return
+          const renewedWrite = await this.model.collection.updateOne({ ...owner, $expr: validLease }, [{ $set: {
+            queryTokenBuildLeaseUntil: { $dateAdd: { startDate: '$$NOW', unit: 'second', amount: QUERY_TOKEN_BUILD_LEASE_SECONDS } },
+          } }])
+          if (renewedWrite.matchedCount !== 1) return
+          const staleIds = rows.slice(offset, offset + QUERY_TOKEN_BACKFILL_WRITE_BATCH)
+            .filter(row => row.queryTokenSourceVersion !== (row.version ?? 0)).map(row => row._id)
+          if (staleIds.length === 0) continue
+          await this.records.collection.updateMany({ _id: { $in: staleIds }, workspaceId: target.workspaceId, databaseId: target.id,
+            ...missingQueryTokens }, [
+            { $set: { queryTokens: queryTokensFromCurrentProperties, queryTokenSourceVersion: { $ifNull: ['$version', 0] } } },
+          ])
+        }
+        after = rows.at(-1)!.id
+      }
+      if (this.stopping) return
+      const finished = await this.model.collection.updateOne({ ...owner, $expr: validLease }, [
+        { $set: { queryTokenReadyVersion: '$version' } },
+        { $unset: ['queryTokenBuildId', 'queryTokenBuildSafeVersion', 'queryTokenBuildLeaseUntil'] },
+      ])
+      if (finished.matchedCount !== 1) this.logger.warn(`Query token build lost its safety fence for database ${target.id}`)
+    } finally {
+      // A resumed or shutting-down worker can only release its own build, never a successor's lease.
+      await this.model.collection.updateOne(owner, { $unset: { queryTokenBuildId: '', queryTokenBuildSafeVersion: '', queryTokenBuildLeaseUntil: '' } })
+    }
   }
   async listWindow(workspaceId: string, input: { cursor?: string; limit: number }, session?: ClientSession): Promise<Database[]> {
     const filter: Record<string, unknown> = { workspaceId }
@@ -120,7 +250,7 @@ export class DatabaseRecordRepository {
   }
   async create(input: Stored<DatabaseRecord> & { creationOrdinal: number }, session: ClientSession): Promise<DatabaseRecord> {
     if (!Number.isSafeInteger(input.creationOrdinal) || input.creationOrdinal < 1) throw new TypeError('Invalid record creation ordinal')
-    const [doc] = await this.model.create([input], { session })
+    const [doc] = await this.model.create([{ ...input, queryTokens: queryTokens(input.properties), queryTokenSourceVersion: input.version }], { session })
     return this.toRecord(doc!)
   }
   async list(workspaceId: string, databaseId: string, session?: ClientSession): Promise<DatabaseRecord[]> {
@@ -190,20 +320,20 @@ export class DatabaseRecordRepository {
   }
   async queryTableWindow(input: {
     workspaceId: string; databaseId: string; properties: readonly DatabaseProperty[]; config: DatabaseViewConfig;
-    limit: number; anchor?: DatabaseTableRecord; session?: ClientSession; group?: DatabaseRecordGroupQuery;
+    limit: number; anchor?: DatabaseTableRecord; session?: ClientSession; group?: DatabaseRecordGroupQuery; queryTokensReady?: boolean;
   }): Promise<DatabaseTableRecord[]> {
     const title = input.properties.find(property => property.type === 'title')
     if (!title) throw new TypeError('Database title property is missing')
     const pipeline: Record<string, unknown>[] = [
       { $match: { workspaceId: input.workspaceId, databaseId: input.databaseId } },
-      ...this.groupStages(input.group),
+      ...this.groupStages(input.group, input.queryTokensReady),
       ...this.pageFilterStages(input.workspaceId, input.properties, input.config),
     ]
     return this.querySortedTableWindow(input, pipeline, title.id)
   }
   private async querySortedTableWindow(input: {
     workspaceId: string; databaseId: string; properties: readonly DatabaseProperty[]; config: DatabaseViewConfig;
-    limit: number; anchor?: DatabaseTableRecord; session?: ClientSession; group?: DatabaseRecordGroupQuery;
+    limit: number; anchor?: DatabaseTableRecord; session?: ClientSession; group?: DatabaseRecordGroupQuery; queryTokensReady?: boolean;
   }, pipeline: Record<string, unknown>[], titleId: string): Promise<DatabaseTableRecord[]> {
     const expressions = new Map(input.properties.map(property => [property.id, property.type === 'title'
       ? '$_page.title'
@@ -350,13 +480,18 @@ export class DatabaseRecordRepository {
     if (filterExpr.length > 0) pipeline.push({ $match: { $expr: { $and: filterExpr } } })
     return pipeline
   }
-  private groupStages(group?: DatabaseRecordGroupQuery): Record<string, unknown>[] {
+  private groupStages(group?: DatabaseRecordGroupQuery, queryTokensReady = false): Record<string, unknown>[] {
     if (!group) return []
     const value = { $ifNull: [{ $getField: { field: { $literal: group.propertyId }, input: { $ifNull: ['$properties', {}] } } }, null] }
     const expression = group.group.kind === 'option'
       ? { $eq: [value, { $literal: group.group.optionId }] }
       : { $not: [{ $in: [value, { $literal: group.optionIds }] }] }
-    return [{ $match: { $expr: expression } }]
+    return [
+      ...(queryTokensReady && group.group.kind === 'option'
+        ? [{ $match: { queryTokens: { $elemMatch: { p: group.propertyId, v: group.group.optionId } } } }]
+        : []),
+      { $match: { $expr: expression } },
+    ]
   }
   private tableProjectionStages(titleId: string): Record<string, unknown>[] {
     return [
@@ -405,7 +540,7 @@ export class DatabaseRecordRepository {
       ], as: '_record' } },
       { $unwind: '$_record' },
       { $replaceRoot: { newRoot: { $mergeObjects: ['$_record', { position: { slotOrdinal: '$slotOrdinal', rank: '$rank' } }] } } },
-      ...this.groupStages(input.group),
+      ...this.groupStages(input.group, input.queryTokensReady),
       ...this.pageFilterStages(input.workspaceId, input.properties, effectiveFilter),
       { $limit: input.take },
       ...this.tableProjectionStages(title.id),
@@ -435,7 +570,7 @@ export class DatabaseRecordRepository {
     const defaultPipeline: Record<string, unknown>[] = [
       { $match: baseMatch },
       { $sort: { creationOrdinal: sign, id: sign } },
-      ...this.groupStages(input.group),
+      ...this.groupStages(input.group, input.queryTokensReady),
       ...this.filterStages(input.properties, effectiveFilter, false),
       ...(input.manualActive ? [
         { $set: { _orderJoinKey: {
@@ -469,7 +604,7 @@ export class DatabaseRecordRepository {
   }
   private async readSelectiveManualWindow(input: ManualWindowInput, titleId: string): Promise<ManualRecordRow[] | null> {
     const config = { ...DEFAULT_DATABASE_VIEW_CONFIG, filters: input.filters }
-    const recordStages = [...this.groupStages(input.group), ...this.filterStages(input.properties, config, false)]
+    const recordStages = [...this.groupStages(input.group, input.queryTokensReady), ...this.filterStages(input.properties, config, false)]
     if (recordStages.length === 0) return null
     const candidates = await this.model.aggregate<{ id: string }>([
       { $match: { workspaceId: input.workspaceId, databaseId: input.databaseId } },
@@ -489,7 +624,7 @@ export class DatabaseRecordRepository {
           orderScopeId: { $literal: input.scopeId }, recordId: '$id' } } },
         { $lookup: { from: 'database_view_order_overrides', localField: '_orderJoinKey', foreignField: 'joinKey', as: '_override' } },
       ] : []),
-      ...this.groupStages(input.group),
+      ...this.groupStages(input.group, input.queryTokensReady),
       { $set: { position: input.manualActive
         ? { slotOrdinal: { $ifNull: [{ $first: '$_override.slotOrdinal' }, '$creationOrdinal'] }, rank: { $ifNull: [{ $first: '$_override.rank' }, '1'] } }
         : { slotOrdinal: '$creationOrdinal', rank: '1' } } },
@@ -512,7 +647,10 @@ export class DatabaseRecordRepository {
     return !!(await this.model.exists({ workspaceId, pageId }).session(session ?? null))
   }
   async updateProperties(workspaceId: string, databaseId: string, id: string, expectedVersion: number, properties: DatabaseRecord['properties'], session: ClientSession): Promise<DatabaseRecord | null> {
-    const doc = await this.model.findOneAndUpdate({ workspaceId, databaseId, id, version: expectedVersion }, [{ $set: { properties: { $literal: properties }, version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] } } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
+    const doc = await this.model.findOneAndUpdate({ workspaceId, databaseId, id, version: expectedVersion }, [{ $set: {
+      properties: { $literal: properties }, queryTokens: { $literal: queryTokens(properties) }, queryTokenSourceVersion: { $add: ['$version', 1] },
+      version: { $add: ['$version', 1] }, updatedAt: { $max: ['$$NOW', { $add: ['$updatedAt', 1] }] },
+    } }], { session, returnDocument: 'after', timestamps: false, updatePipeline: true }).exec()
     return doc ? this.toRecord(doc) : null
   }
   async listForCleanup(workspaceId: string, databaseId: string, session: ClientSession, limit = DATABASE_RECORD_SCAN_MAX_RECORDS): Promise<DatabaseRecord[]> {

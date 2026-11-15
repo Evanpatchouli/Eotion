@@ -189,6 +189,9 @@ export class DatabaseService {
     if (input.propertyIds?.some(propertyId => !properties.some(property => property.id === propertyId))) throw new BadRequestException('Invalid database property projection')
     if (input.group && view.type !== 'board' && view.type !== 'timeline') throw new ConflictException('This view type does not support grouping')
     const groupQuery = input.group ? this.resolveGroupQuery(savedConfig, properties, input.group) : undefined
+    const queryTokensReady = groupQuery?.group.kind === 'option'
+      ? await this.databases.queryTokensReadyOrSchedule(workspaceId, databaseId, database.version, session)
+      : false
     const configHash = input.group
       ? createHash('sha256').update('view-record-group-v1:').update(JSON.stringify({ config, group: input.group })).digest('hex')
       : this.viewConfigHash(config)
@@ -224,11 +227,11 @@ export class DatabaseService {
         rows = projectedRows
       } else {
         projectedRows = await this.records.readManualWindow({ workspaceId, databaseId, scopeId: orderState.orderScopeId, manualActive: orderState.manualOrderActive,
-          properties, filters: config.filters, ...(boundary ? { boundary } : {}), ...(groupQuery ? { group: groupQuery } : {}), direction: 'after', take: input.limit + 1, session })
+          properties, filters: config.filters, ...(boundary ? { boundary } : {}), ...(groupQuery ? { group: groupQuery } : {}), queryTokensReady, direction: 'after', take: input.limit + 1, session })
         rows = projectedRows
       }
     } else {
-      rows = await this.records.queryTableWindow({ workspaceId, databaseId, properties, config, limit: input.limit, ...(anchor ? { anchor } : {}), ...(groupQuery ? { group: groupQuery } : {}), session })
+      rows = await this.records.queryTableWindow({ workspaceId, databaseId, properties, config, limit: input.limit, ...(anchor ? { anchor } : {}), ...(groupQuery ? { group: groupQuery } : {}), queryTokensReady, session })
       projectedRows = rows
     }
     if (projectedRows.length !== rows.length) throw new ConflictException('Record page missing from workspace; reload the table after repairing record data')
