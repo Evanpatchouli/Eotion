@@ -9,9 +9,12 @@ import { DatabaseDocument, DatabaseEntity } from '../schemas/database.schema'
 import { DatabasePropertyDocument, DatabasePropertyEntity } from '../schemas/database-property.schema'
 import { DatabaseRecordDocument, DatabaseRecordEntity } from '../schemas/database-record.schema'
 import { DatabaseViewDocument, DatabaseViewEntity } from '../schemas/database-view.schema'
-import { DatabaseViewOrderOverrideEntity, type DatabaseViewOrderOverrideDocument } from '../schemas/database-view-order.schema'
+import { DATABASE_VIEW_ORDER_SOURCE_RECORD_INDEX, DatabaseViewOrderOverrideEntity, type DatabaseViewOrderOverrideDocument } from '../schemas/database-view-order.schema'
+import { ManualOrderIndexCorruptionError, checkedManualOrdinalPage, readManualOrderDefaultIndexStream } from './manual-order-index-stream'
+import type { ManualOrderKey } from './manual-order-index-stream'
 
 type Stored<T> = Omit<T, 'createdAt' | 'updatedAt'>
+const MANUAL_PREFIX_PROBE_RECORDS = 1024
 export type DatabaseViewOrderState = { orderScopeId: string; manualOrderActive: boolean; version: number }
 export type DatabaseRecordCreationOrder = { recordId: string; creationOrdinal: number }
 export type ManualRecordRow = DatabaseTableRecord & { position: { slotOrdinal: number; rank: string } }
@@ -99,6 +102,12 @@ export class DatabaseRepository implements OnModuleDestroy {
     if (Object.hasOwn(raw, 'queryTokenReadyVersion') && raw.queryTokenReadyVersion === version) return true
     this.scheduleQueryTokenBackfill({ _id: raw._id, workspaceId, id, version })
     return false
+  }
+  async queryTokensReadyForVersion(workspaceId: string, id: string, version: number, session: ClientSession): Promise<boolean> {
+    const raw = await this.model.findOne({ workspaceId, id }).select({ _id: 0, version: 1, queryTokenReadyVersion: 1 })
+      .session(session).lean().exec()
+    return !!raw && raw.version === version && Object.hasOwn(raw, 'queryTokenReadyVersion')
+      && raw.queryTokenReadyVersion === version
   }
   private scheduleQueryTokenBackfill(target: { _id: Types.ObjectId; workspaceId: string; id: string; version: number }): void {
     if (this.stopping) return
@@ -515,6 +524,133 @@ export class DatabaseRecordRepository {
     const docs = await this.model.aggregate(pipeline as unknown as PipelineStage[]).collation({ locale: 'simple' }).session(input.session ?? null).exec()
     return docs[0] ? this.toTableRow(docs[0] as Record<string, unknown>) : null
   }
+  private async hasManualStreamIndexes(): Promise<{ record: string; source: string } | null> {
+    try {
+      // listIndexes is deliberately outside the caller's transaction. A missing
+      // capability selects the exact legacy join; ordinary query errors propagate.
+      const records = await this.model.collection.indexes()
+      const overrides = await this.overrides.collection.indexes()
+      const recordInfo = await this.model.db.db!.listCollections({ name: this.model.collection.collectionName }, { nameOnly: false }).next()
+      const overrideInfo = await this.overrides.db.db!.listCollections({ name: this.overrides.collection.collectionName }, { nameOnly: false }).next()
+      const usable = (index: (typeof records)[number], expected: Array<[string, number]>, defaultLocale: string) =>
+        JSON.stringify(Object.entries(index.key ?? {})) === JSON.stringify(expected)
+        && index.hidden !== true && index.sparse !== true && index.partialFilterExpression === undefined
+        && (index.collation?.locale ?? defaultLocale) === 'simple'
+      const recordLocale = recordInfo?.options?.collation?.locale ?? 'simple'
+      const overrideLocale = overrideInfo?.options?.collation?.locale ?? 'simple'
+      const record = records.find(index => index.name
+        && usable(index, [['workspaceId', 1], ['databaseId', 1], ['creationOrdinal', 1], ['id', 1]], recordLocale))
+      const source = overrides.find(index => index.name === DATABASE_VIEW_ORDER_SOURCE_RECORD_INDEX
+        && usable(index, [['workspaceId', 1], ['databaseId', 1], ['orderScopeId', 1], ['sourceCreationOrdinal', 1], ['recordId', 1]], overrideLocale))
+      return record && source ? { record: record.name!, source: source.name! } : null
+    } catch (error) {
+      const mongo = error as { code?: number; codeName?: string }
+      if (mongo.code === 13 || mongo.code === 26 || mongo.codeName === 'Unauthorized' || mongo.codeName === 'NamespaceNotFound') return null
+      throw error
+    }
+  }
+  private isManualHintUnavailable(error: unknown): boolean {
+    const mongo = error as { code?: number; codeName?: string; message?: string }
+    return mongo?.code === 27 || mongo?.codeName === 'IndexNotFound'
+      || ((mongo?.code === 2 || mongo?.code === 175 || mongo?.codeName === 'QueryPlanKilled')
+        && /hint|index/iu.test(mongo.message ?? ''))
+  }
+  private async hasCompleteManualPrefixPairs(input: ManualWindowInput, maximumOrdinal: number, recordIndexName: string): Promise<boolean> {
+    const range = { $gte: 1, $lte: maximumOrdinal }
+    const anomalies = await this.model.aggregate([
+      { $match: { workspaceId: input.workspaceId, databaseId: input.databaseId, creationOrdinal: range } },
+      { $project: { _id: 0, ordinal: '$creationOrdinal', recordId: '$id', kind: { $literal: 'record' } } },
+      { $unionWith: { coll: 'database_view_order_overrides', pipeline: [
+        { $match: { workspaceId: input.workspaceId, databaseId: input.databaseId, orderScopeId: input.scopeId,
+          sourceCreationOrdinal: range } },
+        { $project: { _id: 0, ordinal: '$sourceCreationOrdinal', recordId: '$recordId', kind: { $literal: 'override' } } },
+      ] } },
+      { $group: { _id: { ordinal: '$ordinal', recordId: '$recordId' },
+        recordCount: { $sum: { $cond: [{ $eq: ['$kind', 'record'] }, 1, 0] } },
+        overrideCount: { $sum: { $cond: [{ $eq: ['$kind', 'override'] }, 1, 0] } } } },
+      { $match: { $or: [{ recordCount: { $ne: 1 } }, { overrideCount: { $ne: 1 } }] } },
+      { $limit: 1 },
+    ] as PipelineStage[]).hint(recordIndexName)
+      .collation({ locale: 'simple' }).allowDiskUse(true).exec()
+    return anomalies.length === 0
+  }
+  private async manualPrefixCannotBeSaturated(input: ManualWindowInput, maximumOrdinal: number,
+    indexes: { record: string; source: string }): Promise<boolean> {
+    // A mismatch in any real ordinal prefix disproves complete coverage. Equal
+    // counts are never a proof: the full (ordinal, recordId) check still follows.
+    const docs = await this.model.find({ workspaceId: input.workspaceId, databaseId: input.databaseId,
+      creationOrdinal: { $gte: 1, $lte: maximumOrdinal } })
+      .select({ _id: 0, creationOrdinal: 1, id: 1 }).sort({ creationOrdinal: 1, id: 1 })
+      .hint(indexes.record).collation({ locale: 'simple' }).limit(MANUAL_PREFIX_PROBE_RECORDS + 1).lean().exec()
+    for (let index = 0; index < docs.length; index++) {
+      if (!Number.isSafeInteger(docs[index]!.creationOrdinal) || docs[index]!.creationOrdinal < 1
+        || typeof docs[index]!.id !== 'string' || !docs[index]!.id) {
+        throw new ManualOrderIndexCorruptionError('Record prefix key is invalid')
+      }
+      if (index > 0 && docs[index]!.creationOrdinal === docs[index - 1]!.creationOrdinal) {
+        throw new ManualOrderIndexCorruptionError('Record creation ordinal repeats in prefix probe')
+      }
+    }
+    const sample = docs.slice(0, MANUAL_PREFIX_PROBE_RECORDS)
+    if (sample.length === 0) return false
+    const lastOrdinal = sample.at(-1)!.creationOrdinal
+    const sourceCount = await this.overrides.countDocuments({ workspaceId: input.workspaceId, databaseId: input.databaseId,
+      orderScopeId: input.scopeId, sourceCreationOrdinal: { $gte: 1, $lte: lastOrdinal } },
+    { limit: sample.length + 1 }).hint(indexes.source).collation({ locale: 'simple' }).exec()
+    return sourceCount !== sample.length
+  }
+  private async readIndexedManualDefaults(input: ManualWindowInput, titleId: string, remote?: ManualBoundary,
+    knownIndexes?: { record: string; source: string }): Promise<ManualRecordRow[] | null> {
+    const indexes = knownIndexes ?? await this.hasManualStreamIndexes()
+    if (!indexes) return null
+    const ascending = input.direction === 'after'
+    const sign = ascending ? 1 : -1
+    const min = Math.max(1, ascending ? input.boundary?.position.slotOrdinal ?? 1 : remote?.position.slotOrdinal ?? 1)
+    const max = ascending ? remote?.position.slotOrdinal ?? Number.MAX_SAFE_INTEGER : input.boundary?.position.slotOrdinal ?? Number.MAX_SAFE_INTEGER
+    if (max < min) return []
+    const scope = { workspaceId: input.workspaceId, databaseId: input.databaseId, orderScopeId: input.scopeId }
+    const config = { ...DEFAULT_DATABASE_VIEW_CONFIG, filters: input.filters }
+    const range = { $gte: min, $lte: max }
+    const fetchRecordKeys = async (after: number | undefined, limit: number): Promise<ManualOrderKey[]> => {
+      const docs = await this.model.find({ workspaceId: input.workspaceId, databaseId: input.databaseId,
+        creationOrdinal: { ...range, ...(after === undefined ? {} : { [ascending ? '$gt' : '$lt']: after }) } })
+        .select({ _id: 0, id: 1, creationOrdinal: 1 }).sort({ creationOrdinal: sign, id: sign })
+        .hint(indexes.record).collation({ locale: 'simple' })
+        .limit(limit + 1).session(input.session ?? null).lean().exec()
+      return checkedManualOrdinalPage(docs.map(doc => ({ ordinal: doc.creationOrdinal, recordId: doc.id })), limit, 'Record creation')
+    }
+    const fetchOverrideKeys = async (after: number | undefined, limit: number): Promise<ManualOrderKey[]> => {
+      const docs = await this.overrides.find({ ...scope,
+        sourceCreationOrdinal: { ...range, ...(after === undefined ? {} : { [ascending ? '$gt' : '$lt']: after }) } })
+        .select({ _id: 0, sourceCreationOrdinal: 1, recordId: 1 }).sort({ sourceCreationOrdinal: sign, recordId: sign })
+        .hint(indexes.source).collation({ locale: 'simple' })
+        .limit(limit + 1).session(input.session ?? null).lean().exec()
+      return checkedManualOrdinalPage(docs.map(doc => ({ ordinal: doc.sourceCreationOrdinal, recordId: doc.recordId })), limit, 'override source')
+    }
+    const result = await readManualOrderDefaultIndexStream<ManualRecordRow>({ direction: input.direction, take: input.take,
+      ordinalRange: { min, max }, ...(input.boundary ? { boundary: input.boundary } : {}), ...(remote ? { remote } : {}),
+      ...(input.excludeRecordId ? { excludeRecordId: input.excludeRecordId } : {}), batchSize: 1024, keyBatchSize: 8192,
+      fetchRecordKeys, fetchOverrideKeys,
+      verifyDefaultCandidates: async keys => {
+        const found = await this.overrides.find({ ...scope, recordId: { $in: keys.map(key => key.recordId) } })
+          .select({ _id: 0, recordId: 1 }).collation({ locale: 'simple' }).session(input.session ?? null).lean().exec()
+        if (found.length) throw new ManualOrderIndexCorruptionError('candidate has an override with a mismatched source ordinal')
+      },
+      filterAndProject: async keys => {
+        const pipeline: Record<string, unknown>[] = [
+          { $match: { workspaceId: input.workspaceId, databaseId: input.databaseId, id: { $in: keys.map(key => key.recordId) } } },
+          ...this.groupStages(input.group, input.queryTokensReady),
+          ...this.filterStages(input.properties, config, false),
+          { $set: { position: { slotOrdinal: '$creationOrdinal', rank: '1' } } },
+          ...this.pageAndTitleFilterStages(input.workspaceId, input.properties, config),
+          ...this.tableProjectionStages(titleId),
+        ]
+        const docs = await this.model.aggregate(pipeline as unknown as PipelineStage[]).collation({ locale: 'simple' }).session(input.session ?? null).exec()
+        return docs.map((doc: Record<string, unknown>) => ({ ...this.toTableRow(doc), position: doc.position as ManualRecordRow['position'] }))
+      },
+    })
+    return result.rows
+  }
   async readManualWindow(input: ManualWindowInput): Promise<ManualRecordRow[]> {
     const title = input.properties.find(property => property.type === 'title')
     if (!title) throw new TypeError('Database title property is missing')
@@ -549,23 +685,62 @@ export class DatabaseRecordRepository {
       ? await this.overrides.aggregate(overridePipeline as unknown as PipelineStage[]).collation({ locale: 'simple' }).session(input.session ?? null).exec()
       : []
     const overrides = overrideDocs.map((doc: Record<string, unknown>) => ({ ...this.toTableRow(doc), position: doc.position as ManualRecordRow['position'] }))
+    if (input.manualActive && await this.model.exists({ workspaceId: input.workspaceId, databaseId: input.databaseId,
+      $or: [{ creationOrdinal: { $lt: 1 } }, { creationOrdinal: { $gt: Number.MAX_SAFE_INTEGER } }] }).session(input.session ?? null)) {
+      throw new TypeError('Database record creation ordinal is outside the safe range')
+    }
+    let exactOnly = false
+    let streamIndexes: { record: string; source: string } | undefined
     // The default rank is '1'. Only an override strictly before it excludes the
     // record at the same slot from the first-page prefix proof.
-    if (input.manualActive && input.filters.length === 0 && !input.group && input.direction === 'after' && !input.boundary && !input.excludeRecordId && overrides.length >= input.take) {
+    if (input.manualActive && !input.session && input.filters.length === 0 && !input.group && input.direction === 'after' && !input.boundary && !input.excludeRecordId && overrides.length >= input.take) {
       const remote = overrides.at(-1)!.position
       const maximumDefaultOrdinal = remote.slotOrdinal - (remote.rank < '1' ? 1 : 0)
       if (maximumDefaultOrdinal < 1) return overrides
-      const recordCount = await this.model.countDocuments({ workspaceId: input.workspaceId, databaseId: input.databaseId,
-        creationOrdinal: { $gte: 1, $lte: maximumDefaultOrdinal } }).session(input.session ?? null).exec()
-      const overrideCount = await this.overrides.countDocuments({ ...scope,
-        sourceCreationOrdinal: { $gte: 1, $lte: maximumDefaultOrdinal } }).collation({ locale: 'simple' }).session(input.session ?? null).exec()
-      if (recordCount === overrideCount) return overrides
+      try {
+        const indexes = await this.hasManualStreamIndexes()
+        if (!indexes) exactOnly = true
+        else {
+          streamIndexes = indexes
+          const sourceFilter = { ...scope, sourceCreationOrdinal: { $gte: 1, $lte: maximumDefaultOrdinal } }
+          const smallOverrideCount = await this.overrides.countDocuments(sourceFilter, { limit: 257 })
+            .hint(indexes.source).collation({ locale: 'simple' }).exec()
+          let mayBeComplete = false
+          if (smallOverrideCount < 257) {
+            const recordCount = await this.model.countDocuments({ workspaceId: input.workspaceId, databaseId: input.databaseId,
+              creationOrdinal: { $gte: 1, $lte: maximumDefaultOrdinal } }, { limit: smallOverrideCount + 1 })
+              .hint(indexes.record).collation({ locale: 'simple' }).exec()
+            mayBeComplete = recordCount === smallOverrideCount
+          } else if (!await this.manualPrefixCannotBeSaturated(input, maximumDefaultOrdinal, indexes)) {
+            const overrideCount = await this.overrides.countDocuments(sourceFilter).hint(indexes.source)
+              .collation({ locale: 'simple' }).exec()
+            const recordCount = await this.model.countDocuments({ workspaceId: input.workspaceId, databaseId: input.databaseId,
+              creationOrdinal: { $gte: 1, $lte: maximumDefaultOrdinal } }, { limit: overrideCount + 1 })
+              .hint(indexes.record).collation({ locale: 'simple' }).exec()
+            mayBeComplete = recordCount === overrideCount
+          }
+          if (mayBeComplete && await this.hasCompleteManualPrefixPairs(input, maximumDefaultOrdinal, indexes.record)) return overrides
+        }
+      } catch (error) {
+        if (!(error instanceof ManualOrderIndexCorruptionError) && !this.isManualHintUnavailable(error)) throw error
+        exactOnly = true
+      }
     }
     // A full override window gives a remote bound for the default stream.
+    const remote = overrides.length >= input.take
+      ? { position: overrides.at(-1)!.position, recordId: overrides.at(-1)!.id }
+      : undefined
     if (overrides.length >= input.take) {
       const remote = overrides.at(-1)!.position.slotOrdinal
       const bound = baseMatch.creationOrdinal as Record<string, number>
       bound[ascending ? '$lte' : '$gte'] = remote
+    }
+    let indexedDefaults: ManualRecordRow[] | null = null
+    if (input.manualActive && !exactOnly) {
+      try { indexedDefaults = await this.readIndexedManualDefaults(input, title.id, remote, streamIndexes) }
+      catch (error) {
+        if (!(error instanceof ManualOrderIndexCorruptionError) && (input.session || !this.isManualHintUnavailable(error))) throw error
+      }
     }
     const defaultPipeline: Record<string, unknown>[] = [
       { $match: baseMatch },
@@ -595,8 +770,10 @@ export class DatabaseRecordRepository {
       { $limit: input.take },
       ...this.tableProjectionStages(title.id),
     ]
-    const defaultDocs = await this.model.aggregate(defaultPipeline as unknown as PipelineStage[]).collation({ locale: 'simple' }).session(input.session ?? null).exec()
-    const defaults = defaultDocs.map((doc: Record<string, unknown>) => ({ ...this.toTableRow(doc), position: doc.position as ManualRecordRow['position'] }))
+    const defaultDocs = indexedDefaults === null
+      ? await this.model.aggregate(defaultPipeline as unknown as PipelineStage[]).collation({ locale: 'simple' }).session(input.session ?? null).exec()
+      : []
+    const defaults = indexedDefaults ?? defaultDocs.map((doc: Record<string, unknown>) => ({ ...this.toTableRow(doc), position: doc.position as ManualRecordRow['position'] }))
     const merged = [...defaults, ...overrides].sort((a, b) => sign * (compareViewOrderPosition(a.position, b.position) || Buffer.compare(Buffer.from(a.id, 'utf8'), Buffer.from(b.id, 'utf8'))))
     if (new Set(merged.map(row => row.id)).size !== merged.length) throw new TypeError('Database view order streams overlap')
     if (merged.some((row, index) => index > 0 && compareViewOrderPosition(row.position, merged[index - 1]!.position) === 0)) throw new TypeError('Database view order positions overlap')

@@ -305,11 +305,16 @@ export class DatabaseService {
       if (!source || !anchor) throw new ConflictException('Source or anchor is missing from the view; refresh and retry')
       const groupQuery = config.options?.groupByPropertyId && (view.type === 'board' || view.type === 'timeline')
         ? this.resolveGroupQuery(config, properties, { kind: 'ungrouped' }) : undefined
-      if (groupQuery && !this.sameGroup(this.recordGroup(source, groupQuery), this.recordGroup(anchor, groupQuery))) throw new ConflictException('Source and anchor belong to different groups')
+      const sourceGroup = groupQuery ? this.recordGroup(source, groupQuery) : undefined
+      if (groupQuery && !this.sameGroup(sourceGroup!, this.recordGroup(anchor, groupQuery))) throw new ConflictException('Source and anchor belong to different groups')
+      const queryTokensReady = sourceGroup?.kind === 'option'
+        ? await this.databases.queryTokensReadyForVersion(workspaceId, databaseId, database.version, session)
+        : false
       const anchorBoundary = await this.manualBoundary(workspaceId, databaseId, scopeId, anchor.id, session)
       const neighborDirection = input.placement === 'before' ? 'before' : 'after'
       const visibleNeighbor = await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: orderState.manualOrderActive,
-        properties, filters: config.filters, ...(groupQuery ? { group: { ...groupQuery, group: this.recordGroup(source, groupQuery) } } : {}), boundary: anchorBoundary, direction: neighborDirection, take: 1, session })
+        properties, filters: config.filters, ...(groupQuery ? { group: { ...groupQuery, group: sourceGroup! } } : {}), queryTokensReady,
+        boundary: anchorBoundary, direction: neighborDirection, take: 1, session })
       if (visibleNeighbor[0]?.id === source.id) return { database, view }
       const adjacent = await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: orderState.manualOrderActive,
         properties, filters: [], boundary: anchorBoundary, direction: neighborDirection, excludeRecordId: source.id, take: 1, session })
@@ -372,8 +377,12 @@ export class DatabaseService {
           anchorBoundary = await this.manualBoundary(workspaceId, databaseId, scopeId, anchor.id, session)
           placement = input.placement!
         } else {
+          const queryTokensReady = targetGroup.group.kind === 'option'
+            ? await this.databases.queryTokensReadyForVersion(workspaceId, databaseId, database.version, session)
+            : false
           const targetTail = await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: state.manualOrderActive,
-            properties, filters: config.filters, group: targetGroup, direction: 'before', excludeRecordId: source.id, take: 1, session })
+            properties, filters: config.filters, group: targetGroup, queryTokensReady,
+            direction: 'before', excludeRecordId: source.id, take: 1, session })
           const tail = targetTail[0] ?? (await this.records.readManualWindow({ workspaceId, databaseId, scopeId, manualActive: state.manualOrderActive,
             properties, filters: [], direction: 'before', excludeRecordId: source.id, take: 1, session }))[0]
           if (tail) anchorBoundary = { position: tail.position, recordId: tail.id }
