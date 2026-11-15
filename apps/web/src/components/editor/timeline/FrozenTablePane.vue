@@ -131,9 +131,12 @@ function displayText(row: TimelineRowGeometry, property: DatabaseProperty): stri
 .eotion-timeline-frozen-row.is-hovered { background:var(--e-color-hover, var(--editor-hover)); }
 .eotion-timeline-frozen-row.is-selected { background:var(--e-color-selected, var(--editor-selected)); }
 .eotion-timeline-frozen-cell { box-sizing:border-box; display:flex; align-items:center; overflow:hidden; padding:0 8px; color:var(--e-color-text-secondary, var(--editor-muted)); font-size:12px; white-space:nowrap; }
-.eotion-timeline-frozen-cell.is-title { color:var(--e-color-text-primary, var(--editor-text)); font-weight:600; }
+.eotion-timeline-frozen-cell.is-title { overflow:visible; color:var(--e-color-text-primary, var(--editor-text)); font-weight:600; }
 .eotion-timeline-frozen-cell > span,.eotion-timeline-frozen-title { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .eotion-timeline-frozen-title { align-self:stretch; box-sizing:border-box; width:100%; height:100%; border:0; padding:0; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; }
+.eotion-timeline-frozen-cell.is-title :deep(.eotion-database-title-body) { min-height:44px; }
+.eotion-timeline-frozen-cell.is-title :deep(.eotion-database-cell-content.is-timeline) { overflow:visible; }
+.eotion-timeline-frozen-cell.is-title :deep(.eotion-database-title-detail) { position:sticky; right:0; z-index:1; background:var(--e-color-canvas, var(--editor-canvas)); }
 .eotion-timeline-frozen-title:hover { color:var(--e-color-accent, var(--editor-accent)); }
 .eotion-timeline-frozen-title:focus-visible { outline:var(--e-focus-ring-width, 2px) solid var(--e-color-focus, var(--editor-focus)); outline-offset:1px; }
 @media (prefers-reduced-motion: reduce) { .eotion-timeline-frozen-header { will-change:auto; } }

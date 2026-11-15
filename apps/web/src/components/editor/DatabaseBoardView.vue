@@ -283,7 +283,7 @@ function updateGroup(recordId: string, value: string): void {
         @drop="groupedDrop($event, groupKeyId(group.key))"
       >
         <h3 class="eotion-database-board-column-title">
-          <button type="button" class="eotion-database-board-collapse" :aria-expanded="!group.collapsed" :aria-label="`${group.collapsed ? '展开' : '折叠'}分组：${group.label}`" @click="emit('toggleGroup', group.key, !group.collapsed)">{{ group.collapsed ? '▸' : '▾' }} {{ group.label }}</button>
+          <button type="button" class="eotion-database-board-collapse" :aria-expanded="!group.collapsed" :aria-label="`${group.collapsed ? '展开' : '折叠'}分组：${group.label}`" @click="emit('toggleGroup', group.key, !group.collapsed)">{{ group.collapsed ? '▸' : '▾' }} <span class="eotion-database-board-column-name">{{ group.label }}</span></button>
           <span v-if="group.hasLoaded">{{ group.nextCursor === null ? group.records.length : `已加载 ${group.records.length}` }}</span>
         </h3>
         <template v-if="!group.collapsed">
